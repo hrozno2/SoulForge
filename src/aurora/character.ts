@@ -135,6 +135,8 @@ export interface Character {
   selections: Record<string, string[]>;
   /** Option elements the player enabled (type Option). */
   options: string[];
+  /** Bonuses the player adds by hand, for table rulings and things the content does not cover. */
+  customStats: { id: string; stat: string; value: number; note?: string }[];
   /** Content added by hand outside the normal rules: extra languages, feats, spells, features. */
   extras: string[];
   hpMode: "average" | "roll";
@@ -166,6 +168,7 @@ export function newCharacter(): Character {
     abilityMethod: "pointbuy",
     selections: {},
     options: [],
+    customStats: [],
     extras: [],
     hpMode: "average",
     hpRolls: {},

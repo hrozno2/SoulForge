@@ -123,11 +123,16 @@ function Abilities({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: 
         {ch.abilityMethod === "pointbuy" && <span className={spent > POINT_BUY_BUDGET ? "warn" : "muted"}>{spent} / {POINT_BUY_BUDGET} points</span>}
       </div>
       <table className="abilities">
-        <thead><tr><th>Ability</th><th>Base</th><th>Bonuses</th><th className="final">Score</th><th className="final">Mod</th></tr></thead>
+        <thead><tr><th>Ability</th><th>Base</th><th>Bonuses</th><th title="Your own modifier, for table rulings or items the content lacks">Custom</th><th className="final">Score</th><th className="final">Mod</th></tr></thead>
         <tbody>
           {ABILITY_IDS.map((a) => {
             const line = sheet.abilities.find((x) => x.id === a)!;
-            const bonuses = bonusOf(a);
+            const bonuses = bonusOf(a).filter((b) => b.from !== "Custom bonus" && !b.from.startsWith("Custom"));
+            const custom = ch.customStats.find((c) => c.stat === a && c.id.startsWith("ability-"));
+            const setCustom = (v: number) => set((c) => {
+              const rest = c.customStats.filter((x) => !(x.stat === a && x.id.startsWith("ability-")));
+              return { ...c, customStats: v ? [...rest, { id: `ability-${a}`, stat: a, value: v, note: "Custom bonus" }] : rest };
+            });
             return (
               <tr key={a}>
                 <td>{ABILITY_LABEL[a]}</td>
@@ -147,6 +152,7 @@ function Abilities({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: 
                   )}
                 </td>
                 <td className="muted">{bonuses.map((b) => `${b.value.startsWith("-") ? "" : "+"}${b.value} ${b.from}`).join(", ")}</td>
+                <td><input className="custom-in" type="number" value={custom?.value ?? ""} placeholder="0" onChange={(e) => setCustom(Number(e.target.value) || 0)} /></td>
                 <td className="final">{line.score}</td>
                 <td className="final">{line.mod >= 0 ? `+${line.mod}` : line.mod}</td>
               </tr>
@@ -174,18 +180,33 @@ function ActiveList({ title, items }: { title: string; items: string[] }) {
 export function BuildTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
   const [sub, setSub] = useState<Sub>("race");
   const sheet = useMemo(() => buildSheet(r), [r]);
-  const pending = (s: Sub) => r.slots.filter((x) => tabOfSlot(x) === s && !x.rule.optional && x.chosen.length < x.rule.number).length;
+  const open = (s: Sub) => r.slots.filter((x) => tabOfSlot(x) === s && !x.rule.optional && x.chosen.length < x.rule.number);
   const of = (s: Sub) => r.slots.filter((x) => tabOfSlot(x) === s);
+  /** What is still to do on a tab, for the number badge and its hover list. */
+  const todo = (s: Sub): string[] => {
+    const lines: string[] = [];
+    if (s === "race" && !ch.race) lines.push("Choose a species");
+    if (s === "class" && !ch.classes.length) lines.push("Choose a class");
+    if (s === "background" && !ch.background) lines.push("Choose a background");
+    for (const x of open(s)) lines.push(`${x.rule.name}: ${x.rule.number - x.chosen.length} more to choose${x.rule.number > 1 ? ` (${x.chosen.length}/${x.rule.number})` : ""}`);
+    return lines;
+  };
   const races = r.reg.ofType("Race");
   const backgrounds = r.reg.ofType("Background");
   return (
     <div>
       <nav className="subtabs">
         {SUBS.map(([k, label]) => {
-          const n = k === "class" ? ch.classes.length ? pending("class") : 1 : k === "race" ? (ch.race ? 0 : 1) + pending("race") : k === "background" ? (ch.background ? 0 : 1) + pending("background") : pending(k);
+          const lines = todo(k);
           return (
             <button key={k} className={sub === k ? "subtab active" : "subtab"} onClick={() => setSub(k)}>
-              {label}{n > 0 && <span className="badge">{n}</span>}
+              {label}
+              {lines.length > 0 && (
+                <span className="badge has-tip" tabIndex={0}>
+                  {lines.length}
+                  <span className="tip"><b>Still to choose</b><ul>{lines.map((l) => <li key={l}>{l}</li>)}</ul></span>
+                </span>
+              )}
             </button>
           );
         })}

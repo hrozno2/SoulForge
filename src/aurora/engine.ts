@@ -305,6 +305,10 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
     visit(el, lvlTotal, "", "item");
   }
 
+  for (const c of ch.customStats ?? []) {
+    if (c.stat && c.value) stats.add(c.stat, { value: String(c.value), from: c.note || "Custom bonus" });
+  }
+
   for (const [key, more] of extendLists) {
     const entry = spellcasting.get(key);
     if (entry) entry.lists = [...entry.lists, ...more];

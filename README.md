@@ -122,6 +122,18 @@ Characters made with Plutonium in Foundry export as normal dnd5e actors, so Foun
 
 No book content ships with CharForge and none is bundled by the importers. Content comes from files and addresses you supply. Aurora, the Aurora Legacy team, 5e.tools and Wizards of the Coast are not affiliated with CharForge.
 
+## Choosing things
+
+Every list of choices (species, class, background, feats, subclasses, spells, languages and so on) works the same way:
+
+- **Filters**, as on 5e.tools: rule set, source, official or playtest, release year, plus filters that suit the list. Spells filter by level (C for cantrip, 1 to 9), school, class, components (V, S, M), concentration, ritual, casting time and range. Species filter by size, speed and ability increase, classes by hit die and spellcasting, feats by category and prerequisite.
+- **Badges or list**, and **sort** by A to Z, Recommended (the usual favourites first, then the newest official books, playtest last) or Newest. The choice is remembered per kind of list.
+- **One entry per name.** The versions of the same thing from different books sit together as small tags with the book and release date, newest first, with a "newest" tag and a "playtest" tag for Unearthed Arcana. Pick the version you want on the entry itself. If two content providers supply the same book, it is shown once.
+- **Learn more** opens the full description in a window, in any layout.
+- Choices that need several picks say so, for example `1/3 choose 2 more (3 total)`, right next to the name. The number on a Build sub tab shows what is left when you hover over it.
+- Release dates come from the content (Aurora source files carry them; 5etools books have a publish date).
+- Ability scores have a Custom column for your own modifier, and the Manage tab has Custom bonuses for any other statistic.
+
 ## Fillable character sheets
 
 Sheet tab, Export PDF, "Fillable sheets": load your own copy of a sheet PDF once, and CharForge fills it in from the character and keeps the fields editable. The PDFs stay on your computer (CharForge does not include any sheet).

@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, type CastingLine } from "../aurora/sheet";
 import type { Character } from "../aurora/character";
-import { SlotList, tabOfSlot, metaLine, type SetCharacter } from "./Slots";
+import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
+import { Browse } from "./Browse";
 
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
 
@@ -54,27 +55,10 @@ function Prepared({ line, r, ch, set, onDetail }: { line: CastingLine; r: Resolv
       const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
       return { ...c, prepared: { ...c.prepared, [line.name]: next } };
     });
-  const [q, setQ] = useState("");
-  const shown = pool.filter((p) => !q.trim() || p.name.toLowerCase().includes(q.toLowerCase())).sort((a, b) => Number(a.setters.level?.value ?? 0) - Number(b.setters.level?.value ?? 0) || a.name.localeCompare(b.name));
   return (
     <>
       <h3>Prepared spells <span className={valid.length > line.prepareMax ? "warn" : "muted"}>{valid.length} / {line.prepareMax}</span></h3>
-      <input className="slot-search" placeholder={`Search ${pool.length} spells`} value={q} onChange={(e) => setQ(e.target.value)} />
-      <ul className="options boxed">
-        {shown.slice(0, 150).map((o) => {
-          const on = valid.includes(o.id);
-          return (
-            <li key={o.id} className={on ? "picked" : ""}>
-              <button onClick={() => toggle(o.id)} onMouseEnter={() => onDetail(o)}>
-                <span className="tick">{on ? "✓" : ""}</span>
-                <span className="opt-name">{o.name}</span>
-                <span className="opt-meta">{metaLine(o)}</span>
-                <span className="opt-src">{o.source}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <Browse items={pool} type="Spell" chosen={valid} onPick={(e) => toggle(e.id)} onHover={onDetail} defaultView="list" allowCards={false} perPage={60} />
     </>
   );
 }

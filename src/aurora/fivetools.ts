@@ -587,6 +587,17 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
     for (const b of json?.baseitem ?? []) ctx.baseItems.set(`${b.name}|${b.source}`.toLowerCase(), b);
   }
   const out: AElement[] = syntheticElements();
+  // One Source element per book, so lists can show release dates the way the Aurora content does.
+  for (const [, json] of all) {
+    for (const b of json?.book ?? []) {
+      if (!b.name) continue;
+      const rel = typeof b.published === "string" ? b.published.replace(/-/g, "").slice(0, 8) : "";
+      out.push(base(`ID_5ET_SOURCE_${slug(b.id ?? b.name)}`, b.name, "Source", "5etools", {
+        compendiumHidden: true,
+        setters: { release: set(rel), official: set(/^(UA|HB|Unearthed)/i.test(b.id ?? "") ? "false" : "true"), abbreviation: set(String(b.id ?? "")) },
+      }));
+    }
+  }
   const cf: J[] = [];
   const sc: J[] = [];
   const sf: J[] = [];

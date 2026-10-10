@@ -6,8 +6,8 @@ import { ABILITY_IDS, ABILITY_LABEL, XP_TABLE, uid, xpToLevel, type AbilityId, t
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { Html } from "./Html";
 
-type Sub = "level" | "options" | "additions" | "attacks" | "companions" | "conditions" | "info" | "sources";
-const SUBS: [Sub, string][] = [["level", "Level and hit points"], ["info", "Character details"], ["options", "Options"], ["additions", "Manual additions"], ["attacks", "Attacks"], ["companions", "Companions"], ["conditions", "Conditions"], ["sources", "Sources"]];
+type Sub = "level" | "options" | "bonuses" | "additions" | "attacks" | "companions" | "conditions" | "info" | "sources";
+const SUBS: [Sub, string][] = [["level", "Level and hit points"], ["info", "Character details"], ["options", "Options"], ["bonuses", "Custom bonuses"], ["additions", "Manual additions"], ["attacks", "Attacks"], ["companions", "Companions"], ["conditions", "Conditions"], ["sources", "Sources"]];
 
 export const CONDITIONS = ["Blinded", "Charmed", "Deafened", "Exhaustion", "Frightened", "Grappled", "Incapacitated", "Invisible", "Paralyzed", "Petrified", "Poisoned", "Prone", "Restrained", "Stunned", "Unconscious"];
 
@@ -135,6 +135,39 @@ function Options({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: Se
         );
       })}
     </ul>
+  );
+}
+
+const BONUS_PRESETS: [string, string][] = [
+  ["Armor Class", "ac:misc"], ["Initiative", "initiative:misc"], ["Speed", "speed:misc"], ["Hit points", "hp"], ["Proficiency bonus", "proficiency"],
+  ["Strength", "strength"], ["Dexterity", "dexterity"], ["Constitution", "constitution"], ["Intelligence", "intelligence"], ["Wisdom", "wisdom"], ["Charisma", "charisma"],
+  ["Strength save", "strength:save:misc"], ["Dexterity save", "dexterity:save:misc"], ["Constitution save", "constitution:save:misc"], ["Intelligence save", "intelligence:save:misc"], ["Wisdom save", "wisdom:save:misc"], ["Charisma save", "charisma:save:misc"],
+  ["Melee attacks", "melee:attack"], ["Melee damage", "melee:damage"], ["Ranged attacks", "ranged:attack"], ["Ranged damage", "ranged:damage"],
+  ...["acrobatics", "animal handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight of hand", "stealth", "survival"].map((k): [string, string] => [k.replace(/\b\w/g, (c) => c.toUpperCase()), `${k}:misc`]),
+];
+
+/** Table rulings and homebrew: add a number to any statistic. */
+function Bonuses({ ch, set }: { ch: Character; set: SetCharacter }) {
+  const [stat, setStat] = useState("ac:misc");
+  const [value, setValue] = useState(1);
+  const [note, setNote] = useState("");
+  const label = (s: string) => BONUS_PRESETS.find(([, k]) => k === s)?.[0] ?? s;
+  return (
+    <>
+      <p className="muted">Add or subtract from any statistic. It is counted like a bonus from content, and shows up on the sheet. Ability score changes can also be made on the Build tab.</p>
+      <div className="row">
+        <select value={stat} onChange={(e) => setStat(e.target.value)}>{BONUS_PRESETS.map(([l, k]) => <option key={k} value={k}>{l}</option>)}</select>
+        <input type="number" value={value} onChange={(e) => setValue(Number(e.target.value) || 0)} style={{ width: 80 }} />
+        <input placeholder="Why (optional)" value={note} onChange={(e) => setNote(e.target.value)} style={{ flex: 1 }} />
+        <button className="primary" disabled={!value} onClick={() => { set((c) => ({ ...c, customStats: [...c.customStats, { id: uid(), stat, value, note: note || "Custom bonus" }] })); setNote(""); }}>Add</button>
+      </div>
+      <ul className="added">
+        {ch.customStats.map((c) => (
+          <li key={c.id}><span>{label(c.stat)} {c.value >= 0 ? "+" : ""}{c.value} <small className="muted">{c.note}</small></span><button onClick={() => set((x) => ({ ...x, customStats: x.customStats.filter((y) => y.id !== c.id) }))}>Remove</button></li>
+        ))}
+        {!ch.customStats.length && <li className="muted">No custom bonuses.</li>}
+      </ul>
+    </>
   );
 }
 
@@ -285,6 +318,7 @@ export function ManageTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character
       {sub === "level" && <Level r={r} ch={ch} set={set} />}
       {sub === "info" && <Info ch={ch} set={set} r={r} />}
       {sub === "options" && (<><Options r={r} ch={ch} set={set} onDetail={onDetail} />{other.length > 0 && (<><h3>Other choices</h3><SlotList slots={other} r={r} set={set} onDetail={onDetail} /></>)}</>)}
+      {sub === "bonuses" && <Bonuses ch={ch} set={set} />}
       {sub === "additions" && <Additions r={r} ch={ch} set={set} onDetail={onDetail} />}
       {sub === "attacks" && <Attacks ch={ch} set={set} />}
       {sub === "companions" && <Companions r={r} ch={ch} set={set} onDetail={onDetail} />}

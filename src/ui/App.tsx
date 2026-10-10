@@ -16,6 +16,7 @@ import { StartTab } from "./StartTab";
 import { DetailPanel } from "./DetailPanel";
 import { UpdateBanner } from "./UpdateBanner";
 import { DicePanel } from "./Dice";
+import { UiProvider } from "./Learn";
 import { ThemePicker } from "./Theme";
 import { useUpdater } from "../updater";
 import { importForeignCharacter } from "../aurora/foreign";
@@ -96,6 +97,7 @@ export function App() {
   const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play";
 
   return (
+    <UiProvider reg={content.reg}>
     <div className="app">
       <header className="topbar">
         <strong className="brand">
@@ -136,5 +138,6 @@ export function App() {
       </main>
       <DicePanel />
     </div>
+    </UiProvider>
   );
 }

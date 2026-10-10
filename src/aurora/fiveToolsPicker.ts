@@ -39,7 +39,7 @@ export interface ParsedLink {
 }
 
 /** `https://5e.tools/spells.html#hunter%20sense_grimhollowpg24,flstlevel:0=1` -> spell "hunter sense" from grimhollowpg24. */
-export function parseLink(raw: string): ParsedLink | "unsupported" | null {
+export function parseLink(raw: string): ParsedLink | "unsupported" | "list" | null {
   let u: URL;
   try {
     u = new URL(raw.trim());
@@ -50,9 +50,10 @@ export function parseLink(raw: string): ParsedLink | "unsupported" | null {
   const hash = decodeURIComponent(u.hash.replace(/^#/, ""));
   const first = hash.split(",")[0];
   const cut = first.lastIndexOf("_");
-  if (!page || cut < 1) return page ? "unsupported" : null;
+  if (!page) return null;
   const kind = PAGES[page];
   if (!kind) return "unsupported";
+  if (cut < 1) return "list";
   return { kind, name: first.slice(0, cut).toLowerCase(), source: first.slice(cut + 1).toLowerCase() };
 }
 
@@ -105,6 +106,10 @@ export async function resolveLinks(base: string, links: string[]): Promise<{ fou
     const p = parseLink(l);
     if (!p) {
       problems.push(`Not a 5e.tools link: ${l.slice(0, 60)}`);
+      continue;
+    }
+    if (p === "list") {
+      problems.push(`That link points at a whole list, not one entry. On 5e.tools click an entry's name first, then copy the address: ${l.slice(0, 60)}`);
       continue;
     }
     if (p === "unsupported") {

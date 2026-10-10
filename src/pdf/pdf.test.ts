@@ -62,4 +62,38 @@ describe("pdf export", () => {
     expect(doc.getPageCount()).toBe(1);
     expect(doc.getPage(0).getSize()).toEqual({ width: 612, height: 792 });
   });
+
+  it("translates printed text, keeps the character name, and caches answers", async () => {
+    const { r, sheet } = setup();
+    const sent: string[] = [];
+    const store = new Map<string, string>();
+    const cache = { get: async (k: string) => store.get(k), put: async (k: string, v: string) => void store.set(k, v) };
+    const translator = async (texts: string[], target: string) => {
+      sent.push(...texts);
+      return texts.map((t) => `[${target}] ${t}`);
+    };
+    const opts = { ...DEFAULT_PDF_OPTIONS, spellCards: false, itemCards: false, featureCards: false, tips: true, translate: { target: "cs", translator, cache } };
+    const bytes = await buildPdf(r, sheet, opts, fonts);
+    expect(Buffer.from(bytes.slice(0, 5)).toString()).toBe("%PDF-");
+    expect(sent).toContain("Tips and tricks for play");
+    expect(sent.some((t) => t.includes("Čeněk"))).toBe(false);
+    const first = sent.length;
+    await buildPdf(r, sheet, opts, fonts);
+    expect(sent.length).toBe(first); // everything came from the cache the second time
+  });
+
+  it("falls back to English for pieces the service fails on", async () => {
+    const { r, sheet } = setup();
+    let calls = 0;
+    const translator = async (texts: string[]) => {
+      if (++calls > 1) throw new Error("rate limited");
+      return texts.map((t) => `x ${t}`);
+    };
+    const store = new Map<string, string>();
+    let failed = -1;
+    const cache = { get: async (k: string) => store.get(k), put: async (k: string, v: string) => void store.set(k, v) };
+    const bytes = await buildPdf(r, sheet, { ...DEFAULT_PDF_OPTIONS, tips: true, translate: { target: "de", translator, cache, onResult: (f) => (failed = f) } }, fonts);
+    expect(bytes.length).toBeGreaterThan(1000);
+    expect(failed).toBeGreaterThanOrEqual(0);
+  });
 });

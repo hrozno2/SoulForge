@@ -10,6 +10,9 @@ describe("5e.tools links", () => {
     expect(parseLink("https://5e.tools/feats.html#alert_xphb")).toMatchObject({ kind: "feat" });
     expect(parseLink("https://5e.tools/bestiary.html#goblin_mm")).toMatchObject({ kind: "monster" });
   });
+  it("tells a list page from an entry", () => {
+    expect(parseLink("https://5e.tools/spells.html")).toBe("list");
+  });
   it("flags pages it cannot import and non links", () => {
     expect(parseLink("https://5e.tools/classes.html#wizard_phb")).toBe("unsupported");
     expect(parseLink("hello")).toBeNull();

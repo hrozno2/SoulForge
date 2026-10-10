@@ -7,6 +7,7 @@ import { DEFAULT_PDF_OPTIONS, buildPdf, cardCounts, type PdfOptions } from "../p
 import type { SetCharacter } from "./Slots";
 import { CompanionCard, CONDITIONS } from "./ManageTab";
 import { requestRoll } from "./Dice";
+import { TranslateOptions, useTranslation } from "./TranslateOptions";
 import { TemplateExport } from "./SheetExport";
 
 const sign = (n: number) => (n >= 0 ? `+${n}` : String(n));
@@ -19,16 +20,19 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const counts = cardCounts(r, sheet);
+  const tr = useTranslation();
   const toggle = (k: "sheet" | "spellCards" | "itemCards" | "featureCards") => setOpts((o) => ({ ...o, [k]: !o[k] }));
   const run = async () => {
     setBusy(true);
     setMsg("");
     try {
       const { loadFonts } = await import("../pdf/fonts");
-      const bytes = await buildPdf(r, sheet, opts, await loadFonts());
+      let failed = 0;
+      const translate = tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`), (f) => (failed = f));
+      const bytes = await buildPdf(r, sheet, { ...opts, translate }, await loadFonts());
       const base = (r.character.name || "character").replace(/[^\p{L}\p{N}]+/gu, "-");
       const ok = await saveFile(`${base}.pdf`, bytes, "application/pdf");
-      setMsg(ok ? "PDF saved." : "Cancelled.");
+      setMsg([ok ? "PDF saved." : "Cancelled.", failed ? `${failed} pieces of text could not be translated and stayed in English.` : ""].join(" ").trim());
     } catch (e) {
       setMsg(`Could not create the PDF: ${(e as Error).message}`);
     } finally {
@@ -40,7 +44,8 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
       <button className="primary" onClick={() => setOpen(!open)}>Export PDF...</button>
       {open && (
         <div className="subcard">
-          <TemplateExport r={r} sheet={sheet} />
+          <TranslateOptions tr={tr} />
+          <TemplateExport r={r} sheet={sheet} tr={tr} />
           <h3>Soul Forge style PDF</h3>
           <p className="muted">A sheet in Soul Forge's own layout, with optional cards and play tips. Use this if you have no official sheet loaded.</p>
           <label className="check"><input type="checkbox" checked={opts.sheet} onChange={() => toggle("sheet")} /> Character sheet</label>
@@ -53,7 +58,7 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
             {(["a4", "letter"] as const).map((p) => <button key={p} className={opts.paper === p ? "pill active" : "pill"} onClick={() => setOpts((o) => ({ ...o, paper: p }))}>{p === "a4" ? "A4" : "Letter"}</button>)}
           </div>
           <p className="muted">Cards are 2.5 x 3.5 in (poker size), nine to a page, ready to cut.</p>
-          <button className="primary" disabled={busy || !(opts.sheet || opts.spellCards || opts.itemCards || opts.featureCards || opts.tips)} onClick={run}>{busy ? "Creating..." : "Create PDF"}</button>
+          <button className="primary" disabled={busy || !tr.ready || !(opts.sheet || opts.spellCards || opts.itemCards || opts.featureCards || opts.tips)} onClick={run}>{busy ? "Creating..." : "Create PDF"}</button>
           {msg && <p className="notice">{msg}</p>}
         </div>
       )}

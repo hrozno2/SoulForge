@@ -20,12 +20,13 @@ export function FiveToolsImport({ content, baseUrl, setBaseUrl }: { content: Con
   const [busy, setBusy] = useState(false);
   const list = cache[kind];
 
-  const load = async () => {
+  const load = async (k: Kind = kind) => {
+    if (cache[k] || !baseUrl.trim()) return;
     setBusy(true);
     setMsg("Loading the list...");
     try {
-      const entries = await loadCategory(baseUrl, kind, (d, t) => setMsg(`Loading ${d} of ${t} files...`));
-      setCache((c) => ({ ...c, [kind]: entries }));
+      const entries = await loadCategory(baseUrl, k, (d, t) => setMsg(`Loading ${d} of ${t} files...`));
+      setCache((c) => ({ ...c, [k]: entries }));
       setMsg(entries.length ? "" : `Nothing came back from ${baseUrl}. It should be the folder that holds races.json and the spells folder.`);
     } catch (e) {
       setMsg(`Could not load from ${baseUrl}: ${(e as Error).message}. Check the address, or use the GitHub button.`);
@@ -79,7 +80,8 @@ export function FiveToolsImport({ content, baseUrl, setBaseUrl }: { content: Con
 
   return (
     <div className="subcard">
-      <h3>Pick what to import</h3>
+      <h3>Import from 5etools or Plutonium</h3>
+      <h4>Step 1. Where the data comes from</h4>
       <div className="row">
         <input style={{ flex: 1 }} value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="Address of the 5etools data folder" aria-label="Data address" />
       </div>
@@ -95,16 +97,12 @@ export function FiveToolsImport({ content, baseUrl, setBaseUrl }: { content: Con
         </p>
       </details>
 
-      <h4>Paste links</h4>
-      <textarea className="code" rows={3} value={links} onChange={(e) => setLinks(e.target.value)} placeholder="https://5e.tools/spells.html#hunter%20sense_grimhollowpg24 (one per line)" />
-      <div className="row"><button className="primary" disabled={busy || !baseUrl.trim() || !links.trim()} onClick={importLinks}>Import links</button></div>
-
-      <h4>Search</h4>
+      <h4>Step 2. Pick what you want</h4>
       <div className="row">
-        {KINDS.map((k) => <button key={k.kind} className={kind === k.kind ? "pill active" : "pill"} onClick={() => setKind(k.kind)}>{k.label}</button>)}
+        {KINDS.map((k) => <button key={k.kind} className={kind === k.kind ? "pill active" : "pill"} onClick={() => { setKind(k.kind); load(k.kind); }}>{k.label}</button>)}
       </div>
       {!list ? (
-        <div className="row"><button disabled={busy || !baseUrl.trim()} onClick={load}>Load {KINDS.find((k) => k.kind === kind)!.label.toLowerCase()}</button></div>
+        <div className="row"><button disabled={busy || !baseUrl.trim()} onClick={() => load()}>{baseUrl.trim() ? `Load ${KINDS.find((k) => k.kind === kind)!.label.toLowerCase()}` : "Set the address above first"}</button></div>
       ) : (
         <>
           <div className="row">
@@ -127,6 +125,17 @@ export function FiveToolsImport({ content, baseUrl, setBaseUrl }: { content: Con
           </ul>
         </>
       )}
+      <details className="tip">
+        <summary>Or paste a link from 5e.tools</summary>
+        <ol className="muted">
+          <li>On 5e.tools, open the page (for example Spells) in your browser.</li>
+          <li>Click the entry's name in the list so its details open on the right.</li>
+          <li>Copy the address from the browser's address bar. It ends in something like <code>#fireball_xphb</code>. A link that ends at <code>spells.html</code> with no <code>#</code> part points at the whole list, not one entry.</li>
+          <li>Paste it below, one per line, and press Import links.</li>
+        </ol>
+        <textarea className="code" rows={3} value={links} onChange={(e) => setLinks(e.target.value)} placeholder="https://5e.tools/spells.html#hunter%20sense_grimhollowpg24 (one per line)" />
+        <div className="row"><button className="primary" disabled={busy || !baseUrl.trim() || !links.trim()} onClick={importLinks}>Import links</button></div>
+      </details>
       {picked.size > 0 && <div className="row"><button className="primary" disabled={busy} onClick={() => commit([...picked.values()])}>Import {picked.size} selected</button><button onClick={() => setPicked(new Map())}>Clear</button></div>}
       {msg && <p className="notice">{msg}</p>}
     </div>

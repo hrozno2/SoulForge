@@ -2,7 +2,7 @@ import type { Character } from "./character";
 import type { FileCache, SourceConfig } from "./sources";
 
 const DB_NAME = "charforge";
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -18,6 +18,7 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains("characters")) db.createObjectStore("characters", { keyPath: "id" });
       if (!db.objectStoreNames.contains("templates")) db.createObjectStore("templates", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("translations")) db.createObjectStore("translations");
       // PDF bytes live in their own store so listing templates stays light.
       if (!db.objectStoreNames.contains("templateBytes")) {
         db.createObjectStore("templateBytes");
@@ -195,3 +196,25 @@ export async function deleteTemplate(id: string): Promise<void> {
   tx.objectStore("templateBytes").delete(id);
   await done(tx);
 }
+
+/** Cache of translated strings, keyed by language and source text. */
+export const translationCache = {
+  async get(key: string): Promise<string | undefined> {
+    try {
+      const db = await openDb();
+      return (await wrap(db.transaction("translations").objectStore("translations").get(key))) as string | undefined;
+    } catch {
+      return undefined;
+    }
+  },
+  async put(key: string, value: string): Promise<void> {
+    try {
+      const db = await openDb();
+      const tx = db.transaction("translations", "readwrite");
+      tx.objectStore("translations").put(value, key);
+      await done(tx);
+    } catch {
+      /* the cache is optional */
+    }
+  },
+};

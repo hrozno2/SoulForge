@@ -5,6 +5,7 @@ import type { Resolved } from "../aurora/engine";
 import { ABILITY_LABEL, type Character } from "../aurora/character";
 import { headerInfo, stripHtml, type SheetData } from "../aurora/sheet";
 import { playTips } from "./tips";
+import { translatable, translateAll, type BatchTranslator } from "./translate";
 
 export interface PdfOptions {
   paper: "a4" | "letter";
@@ -13,6 +14,14 @@ export interface PdfOptions {
   itemCards: boolean;
   featureCards: boolean;
   tips?: boolean;
+  /** Translate the printed text. Names the player typed are kept as they are. */
+  translate?: {
+    target: string;
+    translator: BatchTranslator;
+    cache: { get(k: string): Promise<string | undefined>; put(k: string, v: string): Promise<void> };
+    onProgress?: (done: number, total: number) => void;
+    onResult?: (failed: number) => void;
+  };
 }
 
 export interface FontData {
@@ -39,6 +48,9 @@ const FILL = rgb(0.933, 0.898, 0.808); // #EEE5CE parchment
 const sign = (n: number) => (n >= 0 ? `+${n}` : String(n));
 const label = (id: string) => id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 // Strip control and zero-width characters the embedded font cannot draw.
+// While a translated PDF is built, every string that gets drawn passes through here.
+let TR: ((s: string) => string) | null = null;
+
 function clean(s: string): string {
   let out = "";
   for (const ch of s) {
@@ -47,7 +59,7 @@ function clean(s: string): string {
       (c < 32 && c !== 10) || c === 11 || c === 12 || (c >= 0x200b && c <= 0x200f) || c === 0x2028 || c === 0x2029 || c === 0xfeff;
     if (!bad) out += ch;
   }
-  return out;
+  return TR ? TR(out) : out;
 }
 
 interface Fonts {
@@ -58,7 +70,7 @@ interface Fonts {
 /** Wrap text to a pixel width, honouring explicit newlines. */
 function wrap(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const out: string[] = [];
-  for (const para of clean(text).split("\n")) {
+  for (const para of text.split("\n").map(clean)) {
     if (!para.trim()) {
       out.push("");
       continue;
@@ -410,6 +422,27 @@ function cardSources(r: Resolved, sh: SheetData) {
 }
 
 export async function buildPdf(r: Resolved, sh: SheetData, opts: PdfOptions, fonts: FontData): Promise<Uint8Array> {
+  const t = opts.translate;
+  if (!t) return buildPdfOnce(r, sh, opts, fonts);
+  // First pass only collects the strings that would be printed. Then they are translated, then the real pass runs.
+  const seen = new Set<string>();
+  const keep = new Set<string>([r.character.name, ...Object.values(r.character.info)].map((x) => String(x ?? "").trim()).filter(Boolean));
+  TR = (x) => {
+    if (translatable(x, keep)) seen.add(x);
+    return x;
+  };
+  try {
+    await buildPdfOnce(r, sh, opts, fonts);
+    const { map, failed } = await translateAll(seen, t.target, t.translator, t.cache, t.onProgress);
+    t.onResult?.(failed);
+    TR = (x) => map.get(x) ?? x;
+    return await buildPdfOnce(r, sh, opts, fonts);
+  } finally {
+    TR = null;
+  }
+}
+
+async function buildPdfOnce(r: Resolved, sh: SheetData, opts: PdfOptions, fonts: FontData): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
   pdf.setTitle(r.character.name || "Character");

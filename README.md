@@ -33,6 +33,8 @@ Original code, not affiliated with Aurora Builder or Wizards of the Coast.
 **Sheets and PDFs**
 - Fills the official 2024 character sheet, the DLDM 5E24 sheets and the DLDM companion sheets from your own copies.
 - Spell, item and feature cards, and tips and tricks for play, can be added to any export.
+- Translate the printed text into 18 languages with LibreTranslate or Google Cloud Translation (your own key; nothing is bundled).
+- Links to the free official sheets next to the Add sheet button.
 
 **Look**
 - Five themes: Obsidian, Leather, Tools blue, Daylight and Printed book. Stock portraits, or your own.

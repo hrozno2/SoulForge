@@ -68,13 +68,32 @@ Under any sheet you can tick **Spell cards**, **Item cards**, **Feature cards** 
 
 A sheet in Soul Forge's own layout. It has the same add-ons. Cards are poker size, nine to a page.
 
+### Getting a sheet
+
+Next to **Add sheet PDF** there are links to the free official 2024 sheet and the fillable 5th edition sheet from Wizards of the Coast. They open in your browser; save the PDF, then add it.
+
+### Translating the PDF
+
+Choose **Translate to** in the export panel. Soul Forge sends only the text that will be printed (feature and spell text, card text, play tips, labels) to the service you pick. Your character file is never sent, and your character's own names are kept as typed. Answers are cached on your computer.
+
+Pick a service under **Translation service**:
+
+| Service | Cost | Notes |
+|---|---|---|
+| LibreTranslate | free if you host it, or a paid key for the public server | open source; quality is fair |
+| Google Cloud Translation | you create an API key; the first 500,000 characters a month are free | best coverage |
+
+DeepL gives the best quality for European languages, but its API refuses requests from apps like this one. Support for it needs a desktop-only helper and is not in yet.
+
+Languages offered are those the PDF font can print: Latin, Cyrillic and Greek scripts. The official and fillable sheets keep their printed English labels; the translation covers the Soul Forge style PDF, the cards and the tips page.
+
 ## 6. Importing from 5e.tools and Plutonium
 
 Soul Forge cannot read 5e.tools directly (the site blocks apps). It reads the same JSON data files that Plutonium uses.
 
 Under **Content → 5etools data**:
 
-1. Enter the **address** of a 5etools `data` folder you have access to (for example a copy you host). Plutonium uses the same kind of data source in Foundry.
+1. Press **Use the public 5etools copy on GitHub**, or enter the **address** of a 5etools `data` folder you have access to (for example a copy you host). Plutonium uses the same kind of data source in Foundry.
 2. **Paste links**: copy a link from 5e.tools such as `https://5e.tools/spells.html#hunter%20sense_grimhollowpg24,flstlevel:0=1` and press **Import links**. Filters in the link are ignored; the name and book are used. One link per line.
 3. **Search**: pick spells, items, feats, species, backgrounds or creatures, load the list, search by name, tick entries, **Import selected**.
 

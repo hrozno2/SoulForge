@@ -9,10 +9,16 @@ import { buildFillData, companionFill } from "../sheets/data";
 import { DLDM_PAGES, detectPages, fillDldm, type DldmPage } from "../sheets/dldm";
 import { companionLayoutOfPdf, fillCompanion } from "../sheets/companion";
 import { readWidgets } from "../sheets/widgets";
-import { nextFrame, pickFiles, saveFile } from "../store";
+import { nextFrame, openExternal, pickFiles, saveFile } from "../store";
+import type { Translation } from "./TranslateOptions";
 
 /** Fill the player's own copy of a fillable character sheet PDF. The PDF is stored on this computer only. */
-export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) {
+const SHEET_LINKS: { label: string; url: string }[] = [
+  { label: "Official 2024 character sheet (Wizards of the Coast)", url: "https://media.dndbeyond.com/compendium-images/phb/downloads/DnD_2024_Character-Sheet.pdf" },
+  { label: "Fillable 5th edition sheet (Wizards of the Coast)", url: "https://media.dndbeyond.com/compendium-images/marketing/dnd_5e_charactersheet_formfillable.pdf" },
+];
+
+export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData; tr: Translation }) {
   const [templates, setTemplates] = useState<TemplateRecord[]>([]);
   const [pick, setPick] = useState("");
   const [pages, setPages] = useState<DldmPage[]>([]);
@@ -106,7 +112,7 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
         bytes = await fillCompanion(tpl, companionFill(el, name), { font: fonts, profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency), layout: current.pages[0] as "mount" | "ranger" });
       }
       if (cards.spells || cards.items || cards.features || cards.tips) {
-        const extra = await buildPdf(r, sheet, { paper: "letter", sheet: false, spellCards: cards.spells, itemCards: cards.items, featureCards: cards.features, tips: cards.tips }, fonts);
+        const extra = await buildPdf(r, sheet, { paper: "letter", sheet: false, spellCards: cards.spells, itemCards: cards.items, featureCards: cards.features, tips: cards.tips, translate: tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`)) }, fonts);
         const { PDFDocument } = await import("pdf-lib");
         const main = await PDFDocument.load(bytes);
         const add = await PDFDocument.load(extra);
@@ -128,6 +134,8 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
       <p className="muted">Load your own copy of a sheet. Supported: the official 2024 character sheet (free from Wizards of the Coast at dndbeyond.com, search "2024 character sheet"; filled as printed text), the DLDM 5E24 sheets (stay editable) and the DLDM companion sheets. Soul Forge keeps the file on this computer only.</p>
       <div className="row">
         <button onClick={choose}>Add sheet PDF...</button>
+        <span className="muted">Need one?</span>
+        {SHEET_LINKS.map((l) => <a key={l.url} href={l.url} onClick={(e) => { e.preventDefault(); openExternal(l.url); }}>{l.label}</a>)}
         <input ref={fileRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = ""; }} />
       </div>
       {templates.length > 0 && (
@@ -176,7 +184,7 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
               </select>
             </div>
           )}
-          <button className="primary" disabled={busy || !current || (current.kind === "dldm5e24" && pages.length === 0) || (current.kind === "wotc2024" && wotcPages.length === 0)} onClick={run}>{busy ? "Filling..." : "Fill and save"}</button>
+          <button className="primary" disabled={busy || !tr.ready || !current || (current.kind === "dldm5e24" && pages.length === 0) || (current.kind === "wotc2024" && wotcPages.length === 0)} onClick={run}>{busy ? "Filling..." : "Fill and save"}</button>
         </>
       )}
       {msg && <p className="notice">{msg}</p>}

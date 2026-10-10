@@ -79,6 +79,6 @@ export function playTips(r: Resolved, sh: SheetData): TipGroup[] {
   if (limited.length) mine.push(`Features to track: ${limited.map((f) => `${f.name} (${f.usage})`).join("; ")}.`);
   const ac = sh.ac.value;
   mine.push(`Your armor class is ${ac}. Attacks that roll lower than that miss you.`);
-  if (mine.length) out.push({ title: `For ${r.character.name || "this character"}`, items: mine });
+  if (mine.length) out.push({ title: "For this character", items: mine });
   return [...out, ...GENERAL];
 }

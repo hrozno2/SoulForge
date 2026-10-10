@@ -1,236 +1,232 @@
-import { useMemo, useState } from "react";
-import type { Registry } from "../engine/registry";
-import { validatePack } from "../engine/registry";
-import type { Character, ElementType, Pack, Rule } from "../engine/types";
-import { convertAuroraXml, type ImportReport } from "../engine/aurora";
-import { DEFAULT_GROUP, groupAuroraFiles, readAuroraUpload, type AuroraGroup } from "../engine/auroraFiles";
-import { importCharacterFile } from "../engine/importers";
+import { useRef, useState } from "react";
+import type { ContentState } from "./useContent";
+import { DEFAULT_LINK } from "../aurora/content";
+import type { IndexNode, SourceConfig } from "../aurora/sources";
+import { idbFileCache } from "../aurora/storage";
+import { readAuroraUpload, readFiveToolsUpload } from "../aurora/uploads";
+import { fetchFiveTools, storeFiveTools } from "../aurora/content";
 import { openExternal } from "../store";
+import type { AElement } from "../aurora/types";
 
-interface Props {
-  registry: Registry;
-  userPacks: Pack[];
-  addPack: (p: Pack) => Promise<void>;
-  removePack: (id: string) => Promise<void>;
-  character: Character;
-  setCharacter: (fn: (c: Character) => Character) => void;
+const TEMPLATE = `<?xml version="1.0" encoding="utf-8"?>
+<elements>
+  <element name="Stone Cunning" type="Racial Trait" source="My Homebrew" id="ID_HOMEBREW_TRAIT_STONE_CUNNING">
+    <description><p>You have advantage on Intelligence (History) checks about stonework.</p></description>
+    <sheet><description>Advantage on History checks about stonework.</description></sheet>
+    <rules>
+      <stat name="history:misc" value="1" />
+    </rules>
+  </element>
+</elements>
+`;
+
+function ago(ms: number): string {
+  if (!ms) return "never";
+  const m = Math.round((Date.now() - ms) / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  return h < 48 ? `${h} h ago` : `${Math.round(h / 24)} days ago`;
 }
 
-const AURORA_SITE = "https://aurorabuilder.com";
-const AURORA_REPO = "https://github.com/AuroraLegacy/elements";
-
-interface ModRow {
-  stat: string;
-  op: "add" | "set" | "max" | "min";
-  value: string;
+function Tree({ node, source, content, depth }: { node: IndexNode; source: SourceConfig; content: ContentState; depth: number }) {
+  const off = source.disabled.includes(node.url);
+  const [open, setOpen] = useState(depth < 1);
+  const total = (n: IndexNode): number => n.files.length + n.children.reduce((s, c) => s + total(c), 0);
+  return (
+    <div className="tree-node" style={{ marginLeft: depth ? 16 : 0 }}>
+      <div className="check">
+        {node.children.length > 0 ? <button className="more tiny" onClick={() => setOpen(!open)}>{open ? "▾" : "▸"}</button> : <span style={{ width: 22 }} />}
+        <label className="check">
+          <input type="checkbox" checked={!off} disabled={content.busy} onChange={() => content.toggleIndex(source.url, node.url)} />
+          {node.name} <small className="muted">{total(node)} files · v{node.version}</small>
+        </label>
+      </div>
+      {open && !off && node.children.map((c) => <Tree key={c.url} node={c} source={source} content={content} depth={depth + 1} />)}
+    </div>
+  );
 }
 
-export function ContentTab({ registry, userPacks, addPack, removePack, character, setCharacter }: Props) {
-  const [groups, setGroups] = useState<AuroraGroup[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [report, setReport] = useState<ImportReport | null>(null);
-  const [message, setMessage] = useState("");
-  const [query, setQuery] = useState("");
+function Compendium({ content, onDetail }: { content: ContentState; onDetail: (e: AElement) => void }) {
+  const [q, setQ] = useState("");
+  const [type, setType] = useState("");
+  const results = content.reg.search(q, type || undefined, 80);
+  const types = content.reg.types().sort();
+  return (
+    <section className="card">
+      <h2>Browse content</h2>
+      <p className="muted">{content.reg.size.toLocaleString()} elements loaded.</p>
+      <div className="row">
+        <input style={{ flex: 1 }} placeholder="Search by name" value={q} onChange={(e) => setQ(e.target.value)} />
+        <select value={type} onChange={(e) => setType(e.target.value)}>
+          <option value="">All types</option>
+          {types.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </div>
+      <ul className="options boxed">
+        {results.map((e) => (
+          <li key={e.id}><button onMouseEnter={() => onDetail(e)} onClick={() => onDetail(e)}><span className="tick" /><span className="opt-name">{e.name}</span><span className="opt-meta">{e.type}</span><span className="opt-src">{e.source}</span></button></li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
-  const [name, setName] = useState("");
-  const [type, setType] = useState<ElementType>("feat");
-  const [desc, setDesc] = useState("");
-  const [mods, setMods] = useState<ModRow[]>([{ stat: "ac", op: "add", value: "1" }]);
+export function ContentTab({ content, onDetail }: { content: ContentState; onDetail: (e: AElement) => void }) {
+  const [link, setLink] = useState(DEFAULT_LINK);
+  const [xmlName, setXmlName] = useState("My homebrew");
+  const [xml, setXml] = useState(TEMPLATE);
+  const [msg, setMsg] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [ftUrl, setFtUrl] = useState("");
+  const [ftMsg, setFtMsg] = useState("");
+  const [ftBusy, setFtBusy] = useState(false);
+  const pct = content.progress && content.progress.total ? Math.round((content.progress.done / content.progress.total) * 100) : 0;
 
-  const onAuroraFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setMessage("Reading files...");
-    const found = await readAuroraUpload([...files]);
-    const g = groupAuroraFiles(found);
-    setGroups(g);
-    setSelected(new Set(g.some((x) => x.key === DEFAULT_GROUP) ? [DEFAULT_GROUP] : g.map((x) => x.key)));
-    setMessage(found.length ? `Found ${found.length} XML files in ${g.length} groups.` : "No .xml files found. Use the ZIP from the repo's Code > Download ZIP.");
-  };
-
-  const runImport = async () => {
-    const files = groups.filter((g) => selected.has(g.key)).flatMap((g) => g.files);
-    if (files.length === 0) return setMessage("Select at least one group.");
-    const { pack, report } = convertAuroraXml(files, undefined, "Aurora import");
-    const errors = validatePack(pack);
-    if (errors.length) return setMessage(`Import produced invalid data: ${errors.slice(0, 3).join("; ")}`);
-    // Merge with any earlier Aurora import so groups can be added one at a time.
-    const prev = userPacks.find((p) => p.id === pack.id);
-    const merged = new Map((prev?.elements ?? []).map((e) => [e.id, e]));
-    pack.elements.forEach((e) => merged.set(e.id, e));
-    await addPack({ ...pack, elements: [...merged.values()] });
-    setReport(report);
-    setMessage(`Imported ${report.elements} elements.`);
-  };
-
-  const onPackFile = async (files: FileList | null) => {
-    if (!files?.[0]) return;
+  const importFiles = async (list: FileList | null) => {
+    if (!list || !list.length) return;
+    setMsg("Reading files...");
     try {
-      const data = JSON.parse(await files[0].text());
-      const errors = validatePack(data);
-      if (errors.length) return setMessage(`Pack rejected: ${errors.slice(0, 4).join("; ")}`);
-      await addPack(data as Pack);
-      setMessage(`Loaded pack "${(data as Pack).name}".`);
+      const files = await readAuroraUpload([...list]);
+      if (!files.length) {
+        setMsg("No .xml files found in that selection.");
+        return;
+      }
+      const name = list.length === 1 ? list[0].name.replace(/\.(zip|xml)$/i, "") : `${list.length} files`;
+      const root = `local://${name}`;
+      for (const f of files) await idbFileCache.put(`${root}/${f.path}`, f.xml, root);
+      const node: IndexNode = { url: root, name, description: "Imported from this computer", version: "local", files: files.map((f) => `${root}/${f.path}`), children: [] };
+      await content.addLocal({ url: root, name, kind: "local", tree: node, disabled: [], versions: {}, lastChecked: Date.now(), fileCount: files.length });
+      setMsg(`Imported ${files.length} files.`);
     } catch (e) {
-      setMessage(`Could not read pack: ${(e as Error).message}`);
+      setMsg(`Could not import: ${(e as Error).message}`);
     }
   };
 
-  const onCharFile = async (files: FileList | null) => {
-    if (!files?.[0]) return;
+  const ftStore = async (name: string, files: Map<string, string>, baseUrl?: string) => {
+    const cfg = await storeFiveTools(name, files, baseUrl);
+    await content.addLocal(cfg);
+    setFtMsg(`Imported ${files.size} files from ${name}.`);
+  };
+  const ftFetch = async (url: string) => {
+    setFtBusy(true);
+    setFtMsg("Fetching...");
     try {
-      const data = JSON.parse(await files[0].text());
-      // A CharForge export loads as is.
-      if (data && data.abilityBase && data.extras) {
-        setCharacter(() => data as Character);
-        return setMessage("Character loaded.");
-      }
-      const res = importCharacterFile(data, registry);
-      if ("error" in res) return setMessage(res.error);
-      if (res.elements.length) {
-        const id = `imported-${(res.character.name || "character").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-        await addPack({ id, name: `Imported: ${res.character.name || "character"}`, elements: res.elements });
-      }
-      setCharacter(() => res.character);
-      const r = res.report;
-      setMessage(
-        `${r.format}: matched ${r.matched.length} from your content, kept ${r.created.length} as plain entries` +
-          (r.warnings.length ? `. Notes: ${r.warnings.slice(0, 3).join("; ")}` : "."),
-      );
+      const { files, failed } = await fetchFiveTools(url, (p) => setFtMsg(`Fetching ${p.note ?? ""} (${p.done})`));
+      await ftStore(url.replace(/^https?:\/\//, "").replace(/\/+$/, ""), files, url);
+      if (failed.length) setFtMsg((m) => `${m} ${failed.length} optional files were not found.`);
     } catch (e) {
-      setMessage(`Could not read character: ${(e as Error).message}`);
+      setFtMsg(`Could not fetch from that address: ${(e as Error).message}. If it blocks apps, download the data folder and use Import files instead.`);
+    } finally {
+      setFtBusy(false);
+    }
+  };
+  const ftImport = async (list: FileList | null) => {
+    if (!list || !list.length) return;
+    setFtBusy(true);
+    setFtMsg("Reading files...");
+    try {
+      const files = await readFiveToolsUpload([...list]);
+      if (!files.size) throw new Error("no .json files found");
+      const name = list.length === 1 ? list[0].name.replace(/\.(zip|json)$/i, "") : "5etools data";
+      await ftStore(`5etools: ${name}`, files);
+    } catch (e) {
+      setFtMsg(`Could not import: ${(e as Error).message}`);
+    } finally {
+      setFtBusy(false);
     }
   };
 
   const saveCustom = async () => {
-    if (!name.trim()) return setMessage("Give the element a name.");
-    const rules: Rule[] = mods
-      .filter((m) => m.stat.trim() && m.value.trim())
-      .map((m) => ({
-        kind: "stat",
-        stat: m.stat.trim(),
-        op: m.op,
-        value: /^-?\d+(\.\d+)?$/.test(m.value.trim()) ? Number(m.value) : m.value.trim(),
-      }));
-    const id = `custom-${name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-    const pack: Pack = {
-      id: "custom-homebrew",
-      name: "My homebrew",
-      elements: [
-        ...(userPacks.find((p) => p.id === "custom-homebrew")?.elements.filter((e) => e.id !== id) ?? []),
-        { id, type, name: name.trim(), description: desc.trim() || undefined, rules },
-      ],
-    };
-    const errors = validatePack(pack);
-    if (errors.length) return setMessage(`Fix this first: ${errors[0]}`);
-    await addPack(pack);
-    setMessage(`Saved "${name.trim()}". Add it from the Build tab.`);
-    setName("");
-    setDesc("");
+    const name = xmlName.trim() || "My homebrew";
+    const root = `local://custom/${name}`;
+    try {
+      const { parseElementsXml, browserXml } = await import("../aurora/parse");
+      const parsed = parseElementsXml(xml, browserXml());
+      await idbFileCache.put(`${root}/content.xml`, xml, root);
+      const node: IndexNode = { url: root, name: `Custom: ${name}`, description: "", version: "local", files: [`${root}/content.xml`], children: [] };
+      await content.addLocal({ url: root, name: `Custom: ${name}`, kind: "local", tree: node, disabled: [], versions: {}, lastChecked: Date.now(), fileCount: 1 });
+      setMsg(`Saved ${parsed.elements.length} elements.`);
+    } catch (e) {
+      setMsg(`That XML is not valid: ${(e as Error).message}`);
+    }
   };
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (q.length < 2) return [];
-    return registry.all().filter((e) => e.name.toLowerCase().includes(q)).slice(0, 50);
-  }, [query, registry]);
-
   return (
-    <div className="grid two">
+    <div>
       <section className="card">
-        <h2>Content sources</h2>
-        <ul className="added">
-          <li>Starter sample <small>{registry.packs[0]?.elements.length} elements, built in</small></li>
-          {userPacks.map((p) => (
-            <li key={p.id}>
-              {p.name} <small>{p.elements.length} elements</small>
-              <button onClick={() => removePack(p.id)}>remove</button>
-            </li>
-          ))}
-        </ul>
-
-        <h3>Aurora content</h3>
+        <h2>Content links</h2>
         <p className="muted">
-          Aurora content is not bundled. Download it yourself, then import the file here.
+          Add the address of an Aurora index file. CharForge downloads everything it lists, keeps a copy for offline use, and checks for new versions each time it starts.
         </p>
         <div className="row">
-          <button onClick={() => openExternal(AURORA_SITE)}>Open aurorabuilder.com</button>
-          <button onClick={() => openExternal(AURORA_REPO)}>Open elements repository</button>
+          <input style={{ flex: 1 }} value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://.../something.index" />
+          <button className="primary" disabled={content.busy} onClick={() => content.addLink(link)}>Add link</button>
         </div>
-        <p className="muted">On GitHub use Code, then Download ZIP. Loose .xml files also work.</p>
-        <input type="file" accept=".zip,.xml" multiple onChange={(e) => onAuroraFiles(e.target.files)} />
-        {groups.length > 0 && (
-          <div className="subcard">
-            {groups.map((g) => (
-              <label key={g.key} className="check">
-                <input
-                  type="checkbox"
-                  checked={selected.has(g.key)}
-                  onChange={(e) => {
-                    const next = new Set(selected);
-                    if (e.target.checked) next.add(g.key);
-                    else next.delete(g.key);
-                    setSelected(next);
-                  }}
-                />
-                {g.key} <small>{g.files.length} files</small>
-              </label>
-            ))}
-            <button className="primary" onClick={runImport}>Import selected</button>
+        <div className="row">
+          <button onClick={() => openExternal("https://github.com/AuroraLegacy/elements")}>AuroraLegacy elements repo</button>
+          <button onClick={() => openExternal("https://aurorabuilder.com/documentation/")}>Aurora documentation</button>
+        </div>
+        {content.busy && (
+          <div className="progress">
+            <div style={{ width: `${pct}%` }} />
+            <span>{content.status || "Working..."} {content.progress ? `${content.progress.done}/${content.progress.total}` : ""}</span>
           </div>
         )}
-        {report && (
-          <p className="muted">
-            {report.elements} elements, {report.rulesConverted} rules converted, {report.rulesSkipped} rules skipped,{" "}
-            {report.selectionsSkipped} selection rules left for manual choices
-            {report.warnings.length > 0 && `, ${report.warnings.length} warnings`}.
-          </p>
-        )}
+        {!content.busy && content.status && <p className="notice">{content.status}</p>}
+        {content.errors.length > 0 && <details><summary className="warn">{content.errors.length} files could not be read</summary>{content.errors.slice(0, 20).map((e) => <p key={e} className="muted">{e}</p>)}</details>}
+      </section>
 
-        <h3>Packs and characters</h3>
-        <label className="field"><span>Load a CharForge pack (.json)</span><input type="file" accept=".json" onChange={(e) => onPackFile(e.target.files)} /></label>
-        <label className="field"><span>Import a character (Foundry, Roll20 or CharForge .json)</span><input type="file" accept=".json" onChange={(e) => onCharFile(e.target.files)} /></label>
-        {message && <p className="notice">{message}</p>}
-        <p className="muted">Current character: {character.name || "unnamed"}.</p>
+      {content.sources.map((s) => (
+        <section className="card" key={s.url}>
+          <h2>{s.name}</h2>
+          <p className="muted">{s.kind === "link" ? s.url : "Stored on this computer"}<br />{s.fileCount} files enabled · checked {ago(s.lastChecked)}</p>
+          <div className="row">
+            {s.format === "5etools" && s.baseUrl && <button disabled={ftBusy || content.busy} onClick={() => ftFetch(s.baseUrl!)}>Refresh from address</button>}
+            {s.kind === "link" && <button disabled={content.busy} onClick={() => content.update(s.url)}>Check for updates</button>}
+            {s.kind === "link" && <button disabled={content.busy} onClick={() => content.update(s.url, true)}>Download everything again</button>}
+            <button disabled={content.busy} onClick={() => content.remove(s.url)}>Remove</button>
+          </div>
+          {s.tree && <Tree node={s.tree} source={s} content={content} depth={0} />}
+        </section>
+      ))}
+
+      <section className="card">
+        <h2>5etools data (works with Plutonium)</h2>
+        <p className="muted">
+          Reads the JSON data that 5e.tools and the Plutonium Foundry module use: species, classes and subclasses, backgrounds, feats, spells, items and creatures.
+          5e.tools itself sits behind a bot check, so an app cannot fetch from it. Use the data folder of a copy you are entitled to use: a folder on this computer, a ZIP of it, or
+          an address that serves the folder (for example your own 5etools install).
+        </p>
+        <div className="row">
+          <input style={{ flex: 1 }} value={ftUrl} onChange={(e) => setFtUrl(e.target.value)} placeholder="https://your-server/data" />
+          <button className="primary" disabled={ftBusy || !ftUrl.trim()} onClick={() => ftFetch(ftUrl)}>Fetch from address</button>
+        </div>
+        <div className="row">
+          <label>Data folder or ZIP: <input type="file" accept=".json,.zip" multiple {...{ webkitdirectory: "" }} onChange={(e) => { ftImport(e.target.files); e.target.value = ""; }} /></label>
+        </div>
+        <div className="row">
+          <label>Or pick files: <input type="file" accept=".json,.zip" multiple onChange={(e) => { ftImport(e.target.files); e.target.value = ""; }} /></label>
+        </div>
+        <p className="muted">Homebrew exported from 5etools or Plutonium works too: import its .json file.</p>
+        {ftMsg && <p className="notice">{ftMsg}</p>}
       </section>
 
       <section className="card">
-        <h2>Create a custom element</h2>
-        <label className="field"><span>Name</span><input value={name} onChange={(e) => setName(e.target.value)} /></label>
-        <label className="field">
-          <span>Type</span>
-          <select value={type} onChange={(e) => setType(e.target.value as ElementType)}>
-            {["feat", "item", "feature", "custom", "species", "background"].map((t) => <option key={t}>{t}</option>)}
-          </select>
-        </label>
-        <label className="field"><span>Description</span><textarea rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} /></label>
-        <h3>Modifiers</h3>
-        <p className="muted">Stats: str, ac, hp, speed, initiative, skill.stealth, save.dex, or any name you invent. Values can be formulas such as level * 2 or 10 + dexMod.</p>
-        {mods.map((m, i) => (
-          <div className="row" key={i}>
-            <input placeholder="stat" value={m.stat} onChange={(e) => setMods(mods.map((x, j) => (j === i ? { ...x, stat: e.target.value } : x)))} />
-            <select value={m.op} onChange={(e) => setMods(mods.map((x, j) => (j === i ? { ...x, op: e.target.value as ModRow["op"] } : x)))}>
-              <option value="add">add</option><option value="set">set</option><option value="max">max</option><option value="min">min</option>
-            </select>
-            <input placeholder="value" value={m.value} onChange={(e) => setMods(mods.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} />
-            <button onClick={() => setMods(mods.filter((_, j) => j !== i))}>x</button>
-          </div>
-        ))}
-        <div className="row">
-          <button onClick={() => setMods([...mods, { stat: "", op: "add", value: "" }])}>Add modifier</button>
-          <button className="primary" onClick={saveCustom}>Save element</button>
-        </div>
-
-        <h2>Compendium</h2>
-        <input placeholder="Search everything loaded..." value={query} onChange={(e) => setQuery(e.target.value)} />
-        <ul className="results tall">
-          {results.map((e) => (
-            <li key={e.id}>
-              <b>{e.name}</b> <small>{e.type}</small>
-              {e.description && <p className="muted">{e.description}</p>}
-            </li>
-          ))}
-        </ul>
+        <h2>Import files</h2>
+        <p className="muted">A downloaded ZIP of an elements repository, or loose .xml element files.</p>
+        <input ref={fileRef} type="file" accept=".zip,.xml" multiple onChange={(e) => { importFiles(e.target.files); e.target.value = ""; }} />
+        {msg && <p className="notice">{msg}</p>}
       </section>
+
+      <section className="card">
+        <h2>Write your own content</h2>
+        <p className="muted">Homebrew uses the same element format as the official content: grants, selections and stat rules. See the Aurora documentation for the format.</p>
+        <div className="row"><input value={xmlName} onChange={(e) => setXmlName(e.target.value)} placeholder="Name" /><button className="primary" onClick={saveCustom}>Save content</button></div>
+        <textarea className="code" rows={14} value={xml} onChange={(e) => setXml(e.target.value)} spellCheck={false} />
+      </section>
+
+      <Compendium content={content} onDetail={onDetail} />
     </div>
   );
 }

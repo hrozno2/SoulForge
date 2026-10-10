@@ -1,0 +1,246 @@
+/**
+ * Importers for characters made elsewhere: Foundry VTT (dnd5e actor JSON, including actors made with
+ * the Plutonium module) and Roll20 (D&D 5e OGL sheet attributes as JSON). Both are best effort: the formats
+ * change between versions, so this reads what it recognises, matches names against the loaded content, and
+ * reports what it could not place.
+ */
+import { ABILITY_IDS, newCharacter, uid, type AbilityId, type Character } from "./character";
+import type { AElement } from "./types";
+import type { ARegistry } from "./registry";
+import { resolve } from "./engine";
+
+type Json = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+export interface ForeignImport {
+  character: Character;
+  notes: string[];
+  matched: string[];
+  missing: string[];
+}
+
+export function detectCharacterFormat(data: unknown): "foundry" | "roll20" | "charforge" | "unknown" {
+  const d = data as Json;
+  if (!d || typeof d !== "object") return "unknown";
+  if (d.version === 2 && d.abilityBase) return "charforge";
+  if (d.system && Array.isArray(d.items)) return "foundry";
+  if (Array.isArray(d.attribs) || Array.isArray(d.character?.attribs) || Array.isArray(d.attributes)) return "roll20";
+  return "unknown";
+}
+
+const normalize = (s: string) =>
+  s.toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
+
+function findByName(reg: ARegistry, types: string[], name: string): AElement | undefined {
+  const want = normalize(name);
+  if (!want) return undefined;
+  const hits = types.flatMap((t) => reg.ofType(t)).filter((e) => normalize(e.name) === want);
+  return hits.find((e) => /2024|24/.test(e.source + e.id)) ?? hits[hits.length - 1];
+}
+
+const ITEM_TYPES = ["Item", "Weapon", "Armor", "Magic Item"];
+
+class Importer {
+  ch: Character = newCharacter();
+  notes: string[] = [];
+  matched: string[] = [];
+  missing: string[] = [];
+  private wantedChoices: { types: string[]; name: string; label: string }[] = [];
+
+  constructor(private reg: ARegistry) {}
+
+  /** Remember something to put into whichever choice can hold it once the character is shaped. */
+  want(types: string[], name: string, label: string): void {
+    if (name) this.wantedChoices.push({ types, name, label });
+  }
+
+  addItem(name: string, qty: number, equipped: boolean, attuned: boolean): void {
+    const el = findByName(this.reg, ITEM_TYPES, name);
+    this.ch.inventory.push({ uid: uid(), id: el?.id ?? "", qty: Math.max(1, qty), equipped, attuned, custom: el ? undefined : { name } });
+    (el ? this.matched : this.missing).push(el ? `${el.name} (${el.type})` : `${name} (item, kept as a custom item)`);
+  }
+
+  /** Fill choices (subclass, feats, spells) with everything wanted, then derive base scores. */
+  finish(importedScores: Partial<Record<AbilityId, number>>): ForeignImport {
+    let ch = this.ch;
+    for (const w of this.wantedChoices) {
+      const el = findByName(this.reg, w.types, w.name);
+      if (!el) {
+        this.missing.push(`${w.name} (${w.label})`);
+        continue;
+      }
+      const r = resolve(ch, this.reg);
+      if (r.ids.has(el.id)) {
+        this.matched.push(`${el.name} (already granted)`);
+        continue;
+      }
+      const slot = r.slots.find((s) => s.chosen.length < s.rule.number && s.options.some((o) => o.id === el.id));
+      if (slot) {
+        ch = { ...ch, selections: { ...ch.selections, [slot.key]: [...slot.chosen, el.id] } };
+        this.matched.push(`${el.name} (${w.label})`);
+      } else {
+        this.missing.push(`${w.name} (${w.label}: no open choice for it at this level)`);
+      }
+    }
+    // Imported scores already include species and background bonuses, so remove them to get the base.
+    const r = resolve(ch, this.reg);
+    const base = { ...ch.abilityBase };
+    for (const a of ABILITY_IDS) {
+      const total = importedScores[a];
+      if (total === undefined) continue;
+      const bonus = r.stats.get(a) - ch.abilityBase[a];
+      base[a] = Math.max(1, total - bonus);
+    }
+    ch = { ...ch, abilityBase: base, abilityMethod: "manual" };
+    if (this.missing.length) this.notes.push(`${this.missing.length} things were not found in your loaded content and were skipped or kept as custom items.`);
+    this.notes.push(`${this.matched.length} matched.`);
+    return { character: ch, notes: this.notes, matched: this.matched, missing: this.missing };
+  }
+}
+
+// ---------------------------------------------------------------- Foundry
+
+const cap = (s: unknown) => (typeof s === "string" && s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
+const ABBR: Record<string, AbilityId> = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" };
+
+export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
+  const b = new Importer(reg);
+  const sys: Json = data.system ?? {};
+  b.ch.name = String(data.name ?? "");
+  const scores: Partial<Record<AbilityId, number>> = {};
+  for (const [k, a] of Object.entries(ABBR)) {
+    const v = Number(sys.abilities?.[k]?.value);
+    if (Number.isFinite(v)) scores[a] = v;
+  }
+  const items: Json[] = Array.isArray(data.items) ? data.items : [];
+  const subclasses: string[] = [];
+  for (const it of items) {
+    const name = String(it.name ?? "");
+    const isys: Json = it.system ?? {};
+    if (!name) continue;
+    switch (it.type as string) {
+      case "class": {
+        const el = findByName(reg, ["Class"], name);
+        if (el) {
+          b.ch.classes.push({ classId: el.id, level: Math.max(1, Math.min(20, Number(isys.levels) || 1)) });
+          b.matched.push(`${el.name} (class)`);
+        } else b.missing.push(`${name} (class)`);
+        break;
+      }
+      case "subclass":
+        subclasses.push(name);
+        break;
+      case "race": {
+        const el = findByName(reg, ["Race"], name);
+        if (el) {
+          b.ch.race = el.id;
+          b.matched.push(`${el.name} (species)`);
+        } else b.missing.push(`${name} (species)`);
+        break;
+      }
+      case "background": {
+        const el = findByName(reg, ["Background"], name);
+        if (el) {
+          b.ch.background = el.id;
+          b.matched.push(`${el.name} (background)`);
+        } else b.missing.push(`${name} (background)`);
+        break;
+      }
+      case "feat":
+        b.want(["Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature"], name, "feat or feature");
+        break;
+      case "spell":
+        b.want(["Spell"], name, "spell");
+        break;
+      case "weapon":
+      case "equipment":
+      case "consumable":
+      case "tool":
+      case "loot":
+      case "container": {
+        const equipped = !!(isys.equipped ?? isys.equipment?.equipped);
+        const attuned = isys.attuned === true || isys.attunement === 2 || isys.attuned === 1;
+        b.addItem(name, Number(isys.quantity) || 1, equipped, attuned);
+        break;
+      }
+      default:
+        b.notes.push(`Skipped "${name}" (${it.type})`);
+    }
+  }
+  if (!b.ch.classes.length) b.notes.push("No class found in the file.");
+  // Subclasses are choices of the class, so place them after the classes are set.
+  for (const s of subclasses) b.want(["Archetype"], s, "subclass");
+  const hp = Number(sys.attributes?.hp?.value);
+  if (Number.isFinite(hp) && hp > 0) b.ch.play.hp = hp;
+  const bio = typeof sys.details?.biography?.value === "string" ? sys.details.biography.value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
+  if (bio) b.ch.notes = bio.slice(0, 1500);
+  const coins = sys.currency ?? {};
+  for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) if (Number.isFinite(Number(coins[k]))) b.ch.coins[k] = Number(coins[k]);
+  const alignment = sys.details?.alignment;
+  if (typeof alignment === "string") b.ch.info.alignment = alignment;
+  return b.finish(scores);
+}
+
+// ---------------------------------------------------------------- Roll20
+
+interface Attrib { name: string; current?: unknown; max?: unknown }
+
+export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
+  const b = new Importer(reg);
+  const raw = data.attribs ?? data.character?.attribs ?? data.attributes;
+  const attribs: Attrib[] = Array.isArray(raw) ? raw : [];
+  const flat = new Map<string, Attrib>();
+  const rows = new Map<string, Map<string, Record<string, string>>>();
+  const rowRe = /^repeating_([a-z0-9-]+?)_(-[A-Za-z0-9_-]{19})_(.+)$/;
+  const rowFallback = /^repeating_([a-z0-9-]+?)_(-[^_]+)_(.+)$/;
+  for (const a of attribs) {
+    if (!a || typeof a.name !== "string") continue;
+    const m = rowRe.exec(a.name) ?? rowFallback.exec(a.name);
+    if (m) {
+      const [, section, id, field] = m;
+      const sec = rows.get(section) ?? rows.set(section, new Map()).get(section)!;
+      const row = sec.get(id) ?? sec.set(id, {}).get(id)!;
+      row[field] = String(a.current ?? "");
+    } else flat.set(a.name, a);
+  }
+  const val = (name: string) => String(flat.get(name)?.current ?? "").trim();
+  b.ch.name = String(data.name ?? data.character?.name ?? val("character_name") ?? "");
+
+  const scores: Partial<Record<AbilityId, number>> = {};
+  for (const a of ABILITY_IDS) {
+    const n = Number(val(a));
+    if (Number.isFinite(n) && n > 0) scores[a] = n;
+  }
+  const lvl = Math.min(20, Math.max(1, Number(val("base_level") || val("level")) || 1));
+  const className = val("class").replace(/\d+/g, "").trim();
+  const cls = className ? findByName(reg, ["Class"], className) : undefined;
+  if (cls) {
+    b.ch.classes.push({ classId: cls.id, level: lvl });
+    b.matched.push(`${cls.name} (class)`);
+  } else b.notes.push(className ? `Class "${className}" is not in your loaded content.` : "No class found in the file.");
+  const race = findByName(reg, ["Race"], val("race"));
+  if (race) { b.ch.race = race.id; b.matched.push(`${race.name} (species)`); } else if (val("race")) b.missing.push(`${val("race")} (species)`);
+  const bg = findByName(reg, ["Background"], val("background"));
+  if (bg) { b.ch.background = bg.id; b.matched.push(`${bg.name} (background)`); } else if (val("background")) b.missing.push(`${val("background")} (background)`);
+
+  for (const [section, byId] of rows) {
+    for (const f of byId.values()) {
+      if (section.startsWith("spell-") && f.spellname) b.want(["Spell"], f.spellname, "spell");
+      else if (section === "inventory" && f.itemname) b.addItem(f.itemname, Number(f.itemcount) || 1, false, false);
+      else if (section === "traits" && f.name) b.want(["Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature"], f.name, "feat or feature");
+    }
+  }
+  return b.finish(scores);
+}
+
+export function importForeignCharacter(data: unknown, reg: ARegistry): ForeignImport {
+  switch (detectCharacterFormat(data)) {
+    case "foundry":
+      return importFoundry(data as Json, reg);
+    case "roll20":
+      return importRoll20(data as Json, reg);
+    default:
+      throw new Error("Not a recognised Foundry or Roll20 character file.");
+  }
+}
+
+export { cap };

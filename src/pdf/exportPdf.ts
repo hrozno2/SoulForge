@@ -1,6 +1,9 @@
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import { ABILITIES, ABILITY_NAMES, SKILLS, type Character, type Element, type Sheet } from "../engine/types";
+import type { AElement } from "../aurora/types";
+import type { Resolved } from "../aurora/engine";
+import { ABILITY_LABEL, type Character } from "../aurora/character";
+import { headerInfo, stripHtml, type SheetData } from "../aurora/sheet";
 
 export interface PdfOptions {
   paper: "a4" | "letter";
@@ -93,23 +96,32 @@ function fit(s: string, font: PDFFont, size: number, maxWidth: number): string {
 
 // ---------------------------------------------------------------- sheet
 
-function drawSheet(pdf: PDFDocument, f: Fonts, ch: Character, sh: Sheet, size: readonly [number, number]): void {
+async function drawSheet(pdf: PDFDocument, f: Fonts, r: Resolved, sh: SheetData, size: readonly [number, number]): Promise<void> {
+  const ch: Character = r.character;
   const [W, H] = size;
   const M = 30;
   let page = pdf.addPage([W, H]);
   const innerW = W - 2 * M;
-  const byType = (t: string) => sh.elements.filter((e) => e.type === t && e.meta?.hidden !== "true");
-  // The header always shows the chosen species, class and background, even when they are hidden from lists.
-  const first = (t: string) => sh.elements.find((e) => e.type === t);
+  const head = headerInfo(r);
 
-  // Header
   text(page, ch.name || "Unnamed character", M, H - M - 18, f.b, 20);
+  if (ch.portrait) {
+    try {
+      const bytes = Uint8Array.from(atob(ch.portrait.split(",")[1] ?? ""), (c) => c.charCodeAt(0));
+      const img = await pdf.embedJpg(bytes);
+      const h = 40;
+      const w = (img.width / img.height) * h;
+      page.drawImage(img, { x: W - M - w, y: H - M - 38, width: w, height: h });
+    } catch {
+      /* skip a portrait that cannot be embedded */
+    }
+  }
   const meta: [string, string][] = [
-    ["SPECIES", first("species")?.name ?? "-"],
-    ["CLASS", first("class")?.name ?? "-"],
-    ["SUBCLASS", first("subclass")?.name ?? "-"],
-    ["BACKGROUND", first("background")?.name ?? "-"],
-    ["LEVEL", String(ch.level)],
+    ["SPECIES", head.species],
+    ["CLASS", head.classLine],
+    ["SUBCLASS", head.subclass],
+    ["BACKGROUND", head.background],
+    ["ALIGNMENT", head.alignment],
   ];
   const gap = 6;
   const mw = (innerW - gap * (meta.length - 1)) / meta.length;
@@ -121,15 +133,14 @@ function drawSheet(pdf: PDFDocument, f: Fonts, ch: Character, sh: Sheet, size: r
     text(page, fit(v, f.b, 9.5, mw - 10), x + 5, top - 23, f.b, 9.5);
   });
 
-  // Combat strip
   top -= 40;
-  const die = first("class")?.hitDie ? `${ch.level}d${first("class")!.hitDie}` : "-";
+  const hd = sh.hitDice.map((h) => `${h.count}d${h.die}`).join("+") || "-";
   const combat: [string, string][] = [
-    ["ARMOR CLASS", String(sh.ac)],
+    ["ARMOR CLASS", String(sh.ac.value)],
     ["INITIATIVE", sign(sh.initiative)],
     ["HIT POINTS", String(sh.hp)],
-    ["HIT DICE", die],
-    ["PROFICIENCY", sign(sh.proficiencyBonus)],
+    ["HIT DICE", hd],
+    ["PROFICIENCY", sign(sh.proficiency)],
     ["SPEED", `${sh.speed} ft`],
     ["PASSIVE PERC.", String(sh.passivePerception)],
     ["INSPIRATION", ""],
@@ -143,44 +154,33 @@ function drawSheet(pdf: PDFDocument, f: Fonts, ch: Character, sh: Sheet, size: r
     else text(page, fit(v, f.b, 16, cw - 8), x + 4, top - 32, f.b, 16);
   });
 
-  // Abilities with saves and skills underneath (2024 sheet layout)
   top -= 54;
   const aw = (innerW - gap * 2) / 3;
   const rowH = 124;
-  ABILITIES.forEach((a, i) => {
+  sh.abilities.forEach((a, i) => {
     const col = i % 3;
     const row = Math.floor(i / 3);
     const x = M + col * (aw + gap);
     const y = top - row * (rowH + gap);
     page.drawRectangle({ x, y: y - rowH, width: aw, height: rowH, borderColor: LINE, borderWidth: 0.8 });
-    text(page, ABILITY_NAMES[a].toUpperCase(), x + 6, y - 12, f.b, 8);
-    text(page, sign(sh.abilities[a].mod), x + aw - 56, y - 16, f.b, 16);
-    text(page, String(sh.abilities[a].score), x + aw - 22, y - 12, f.r, 8, MUTED);
+    text(page, ABILITY_LABEL[a.id].toUpperCase(), x + 6, y - 12, f.b, 8);
+    text(page, sign(a.mod), x + aw - 56, y - 16, f.b, 16);
+    text(page, String(a.score), x + aw - 22, y - 12, f.r, 8, MUTED);
     page.drawLine({ start: { x: x + 4, y: y - 22 }, end: { x: x + aw - 4, y: y - 22 }, color: LINE, thickness: 0.6 });
     const rows: { name: string; bonus: number; level: "none" | "proficient" | "expertise" }[] = [
-      { name: "Saving Throw", bonus: sh.saves[a].bonus, level: sh.saves[a].proficient ? "proficient" : "none" },
-      ...Object.entries(SKILLS)
-        .filter(([, ab]) => ab === a)
-        .map(([id]) => ({ name: label(id), bonus: sh.skills[id].bonus, level: sh.skills[id].level })),
+      { name: "Saving Throw", bonus: a.save, level: a.saveProficient ? "proficient" : "none" },
+      ...sh.skills.filter((s) => s.ability === a.id).map((s) => ({ name: label(s.name), bonus: s.bonus, level: s.level })),
     ];
-    rows.forEach((r, j) => {
+    rows.forEach((rw, j) => {
       const ly = y - 34 - j * 14;
-      page.drawCircle({
-        x: x + 11,
-        y: ly + 3,
-        size: 3.2,
-        borderColor: INK,
-        borderWidth: 0.7,
-        color: r.level === "none" ? undefined : INK,
-      });
-      if (r.level === "expertise") page.drawCircle({ x: x + 11, y: ly + 3, size: 5, borderColor: INK, borderWidth: 0.5 });
-      text(page, r.name, x + 22, ly, f.r, 8.5);
-      text(page, sign(r.bonus), x + aw - 26, ly, f.b, 8.5);
+      page.drawCircle({ x: x + 11, y: ly + 3, size: 3.2, borderColor: INK, borderWidth: 0.7, color: rw.level === "none" ? undefined : INK });
+      if (rw.level === "expertise") page.drawCircle({ x: x + 11, y: ly + 3, size: 5, borderColor: INK, borderWidth: 0.5 });
+      text(page, rw.name, x + 22, ly, f.r, 8.5);
+      text(page, sign(rw.bonus), x + aw - 26, ly, f.b, 8.5);
     });
   });
   top -= 2 * rowH + gap + 12;
 
-  // Flowing two-column text sections
   const colW = (innerW - 14) / 2;
   const bottom = M + 10;
   let col = 0;
@@ -207,8 +207,7 @@ function drawSheet(pdf: PDFDocument, f: Fonts, ch: Character, sh: Sheet, size: r
     if (y < bottom + 22) nextSlot();
     text(page, fit(extra ? `${name}  (${extra})` : name, f.b, 8.6, colW), colX(), y - 8, f.b, 8.6);
     y -= 11;
-    const paragraphs = (desc ?? "").split("\n").filter(Boolean);
-    for (const para of paragraphs) {
+    for (const para of (desc ?? "").split("\n").filter(Boolean)) {
       for (const line of wrap(para, f.r, 7.8, colW)) {
         if (y < bottom + 9) {
           nextSlot();
@@ -223,33 +222,53 @@ function drawSheet(pdf: PDFDocument, f: Fonts, ch: Character, sh: Sheet, size: r
     y -= 3;
   };
 
-  const section = (title: string, list: Element[], withExtra?: (e: Element) => string | undefined) => {
-    if (list.length === 0) return;
+  const pr = sh.proficiencies;
+  const profLines = ([["Armor", pr.armor], ["Weapons", pr.weapons], ["Tools", pr.tools], ["Languages", pr.languages], ["Other", pr.other], ["Senses", sh.vision]] as [string, string[]][]).filter(([, v]) => v.length);
+  if (profLines.length) {
+    heading("Training and proficiencies");
+    profLines.forEach(([k, v]) => entry(k, v.map((x) => x.replace(/^(Armor|Weapon|Tool) Proficiency \((.*)\)$/, "$2")).join(", ")));
+  }
+  if (sh.attacks.length) {
+    heading("Attacks");
+    sh.attacks.forEach((a) => entry(a.name, `Attack ${sign(a.bonus)}. ${a.damage} ${a.damageType}. ${[a.properties, a.notes].filter(Boolean).join("; ")}`.trim()));
+  }
+  for (const c of sh.casting) {
+    heading(`Spellcasting: ${c.name}`);
+    entry("Spell save DC / attack", `DC ${c.dc}, attack ${sign(c.attack)}${c.prepare ? `, prepare ${c.prepareMax}` : ""}`);
+    if (c.slots.length) entry("Spell slots", c.slots.map((s) => `Level ${s.level}: ${s.total}`).join(", "));
+    const name = (id: string) => r.reg.get(id)?.name ?? id;
+    if (c.cantripsKnown.length) entry("Cantrips", c.cantripsKnown.map((p) => name(p.id)).join(", "));
+    const lvl = (id: string) => Number(r.reg.get(id)?.setters.level?.value ?? 0);
+    const list = (c.prepare ? [...c.granted, ...c.spells.filter((s) => s.prepared)] : [...c.spells, ...c.granted]).filter((p) => lvl(p.id) > 0);
+    const levels = [...new Set(list.map((p) => lvl(p.id)))].sort((a, b) => a - b);
+    for (const l of levels) entry(`Level ${l}`, [...new Set(list.filter((p) => lvl(p.id) === l).map((p) => name(p.id)))].join(", "));
+  }
+  const groups: [string, string[]][] = [
+    ["Species traits", ["Racial Trait"]],
+    ["Class features", ["Class Feature"]],
+    ["Subclass features", ["Archetype Feature"]],
+    ["Feats", ["Feat", "Feat Feature"]],
+    ["Background", ["Background Feature"]],
+  ];
+  for (const [title, types] of groups) {
+    const list = sh.features.filter((x) => types.includes(x.type));
+    if (!list.length) continue;
     heading(title);
-    list.forEach((e) => entry(e.name, e.description, withExtra?.(e)));
-  };
-
-  section("Class features", [...byType("class").filter((e) => e.description), ...byType("subclass")]);
-  section("Species traits and features", [...byType("species").filter((e) => e.description), ...byType("feature")]);
-  section("Background and feats", [...byType("background"), ...byType("feat")]);
-  section("Equipment", byType("item"), (e) => e.meta?.damage ?? e.meta?.armor);
-
-  const spells = byType("spell").slice().sort((a, b) => Number(a.meta?.level ?? 0) - Number(b.meta?.level ?? 0) || a.name.localeCompare(b.name));
-  if (spells.length) {
-    heading("Spells");
-    const levels = [...new Set(spells.map((s) => Number(s.meta?.level ?? 0)))];
-    for (const lv of levels) {
-      const names = spells.filter((s) => Number(s.meta?.level ?? 0) === lv).map((s) => s.name).join(", ");
-      entry(lv === 0 ? "Cantrips" : `Level ${lv}`, names);
-    }
+    list.forEach((x) => entry(x.name, x.text, x.usage));
   }
-  if (Object.keys(sh.stats).length) {
-    heading("Custom stats");
-    Object.entries(sh.stats).forEach(([k, v]) => entry(k, sign(v)));
+  if (ch.inventory.length) {
+    heading("Equipment");
+    ch.inventory.forEach((i) => {
+      const el = i.id ? r.reg.get(i.id) : undefined;
+      entry(`${i.qty > 1 ? `${i.qty} x ` : ""}${el?.name ?? i.custom?.name ?? i.id}`, undefined, [i.equipped ? "equipped" : "", i.attuned ? "attuned" : ""].filter(Boolean).join(", "));
+    });
+    entry("Coins", (["pp", "gp", "ep", "sp", "cp"] as const).map((k) => `${ch.coins[k]} ${k.toUpperCase()}`).join(", "), `${sh.weight.carried}/${sh.weight.capacity} lb`);
   }
-  if (ch.notes) {
-    heading("Notes");
-    entry("Imported notes", ch.notes);
+  const info = ([["Alignment", ch.info.alignment], ["Deity", ch.info.deity], ["Traits", ch.info.traits], ["Ideals", ch.info.ideals], ["Bonds", ch.info.bonds], ["Flaws", ch.info.flaws], ["Backstory", ch.info.backstory], ["Notes", ch.notes]] as [string, string][]).filter(([, v]) => v);
+  if (info.length || sh.lists.length) {
+    heading("Details");
+    sh.lists.forEach((l) => entry(l.name, l.texts.join(" ")));
+    info.forEach(([k, v]) => entry(k, v));
   }
 }
 
@@ -266,38 +285,32 @@ interface CardData {
   kind: string;
 }
 
-function spellCard(e: Element): CardData {
-  const m = e.meta ?? {};
-  const level = Number(m.level ?? 0);
-  const comps = [m.hasVerbalComponent && "V", m.hasSomaticComponent && "S", m.hasMaterialComponent && "M"].filter(Boolean).join(", ");
-  const tags = [m.isConcentration && "Concentration", m.isRitual && "Ritual"].filter(Boolean).join(", ");
-  const subtitle = [level === 0 ? `${m.school ?? ""} Cantrip`.trim() : `Level ${level} ${m.school ?? ""}`.trim(), tags].filter(Boolean).join(" - ");
+function spellCard(e: AElement): CardData {
+  const m = (k: string) => e.setters[k]?.value;
+  const level = Number(m("level") ?? 0);
+  const comps = [m("hasVerbalComponent") === "true" && "V", m("hasSomaticComponent") === "true" && "S", m("hasMaterialComponent") === "true" && "M"].filter(Boolean).join(", ");
+  const tags = [m("isConcentration") === "true" && "Concentration", m("isRitual") === "true" && "Ritual"].filter(Boolean).join(", ");
+  const subtitle = [level === 0 ? `${m("school") ?? ""} Cantrip`.trim() : `Level ${level} ${m("school") ?? ""}`.trim(), tags].filter(Boolean).join(" - ");
   const stats: [string, string][] = [];
-  if (m.time) stats.push(["Casting Time", m.time]);
-  if (m.range) stats.push(["Range", m.range]);
-  if (comps) stats.push(["Components", m.materialComponent ? `${comps} (${m.materialComponent})` : comps]);
-  if (m.duration) stats.push(["Duration", m.duration]);
-  return { title: e.name, subtitle, stats, body: e.description ?? "", kind: "SPELL" };
+  if (m("time")) stats.push(["Casting Time", m("time")!]);
+  if (m("range")) stats.push(["Range", m("range")!]);
+  if (comps) stats.push(["Components", m("materialComponent") ? `${comps} (${m("materialComponent")})` : comps]);
+  if (m("duration")) stats.push(["Duration", m("duration")!]);
+  return { title: e.name, subtitle, stats, body: stripHtml(e.description), kind: "SPELL" };
 }
 
-const ITEM_KEYS: [string, string][] = [
-  ["damage", "Damage"],
-  ["armor", "Armor"],
-  ["category", "Category"],
-  ["cost", "Cost"],
-  ["weight", "Weight"],
-  ["quantity", "Quantity"],
-  ["rarity", "Rarity"],
-];
-
-function itemCard(e: Element): CardData {
-  const m = e.meta ?? {};
-  const stats = ITEM_KEYS.filter(([k]) => m[k]).map(([k, l]) => [l, m[k]] as [string, string]);
-  return { title: e.name, subtitle: m.category ?? "Item", stats, body: e.description ?? "", kind: "ITEM" };
-}
-
-function featureCard(e: Element): CardData {
-  return { title: e.name, subtitle: label(e.type), stats: [], body: e.description ?? "", kind: "" };
+function itemCard(e: AElement, qty: number): CardData {
+  const s = e.setters;
+  const stats: [string, string][] = [];
+  if (s.damage) stats.push(["Damage", `${s.damage.value} ${s.damage.attrs.type ?? ""}`.trim()]);
+  if (s.versatile) stats.push(["Versatile", s.versatile.value]);
+  if (s.armorClass) stats.push(["Armor Class", s.armorClass.value]);
+  if (s.armor) stats.push(["Armor", s.armor.value]);
+  if (s.category) stats.push(["Category", s.category.value]);
+  if (s.cost) stats.push(["Cost", `${s.cost.value} ${s.cost.attrs.currency ?? ""}`.trim()]);
+  if (s.weight) stats.push(["Weight", s.weight.value]);
+  if (qty > 1) stats.push(["Quantity", String(qty)]);
+  return { title: e.name, subtitle: s.category?.value ?? e.type, stats, body: stripHtml(e.description), kind: "ITEM" };
 }
 
 function drawCard(page: PDFPage, f: Fonts, c: CardData, x: number, y: number): void {
@@ -356,34 +369,40 @@ function drawCards(pdf: PDFDocument, f: Fonts, cards: CardData[], size: readonly
 
 // ---------------------------------------------------------------- entry
 
-export async function buildPdf(ch: Character, sh: Sheet, opts: PdfOptions, fonts: FontData): Promise<Uint8Array> {
+function cardSources(r: Resolved, sh: SheetData) {
+  const spellIds = new Set<string>();
+  for (const c of sh.casting) for (const p of [...c.cantripsKnown, ...c.spells.filter((s) => s.prepared || !c.prepare), ...c.granted]) spellIds.add(p.id);
+  const spells = [...spellIds].map((id) => r.reg.get(id)).filter((e): e is AElement => !!e)
+    .sort((a, b) => Number(a.setters.level?.value ?? 0) - Number(b.setters.level?.value ?? 0) || a.name.localeCompare(b.name));
+  const items = r.character.inventory.map((i) => ({ el: i.id ? r.reg.get(i.id) : undefined, qty: i.qty })).filter((x): x is { el: AElement; qty: number } => !!x.el);
+  const features = sh.features.filter((x) => ["Feat", "Feat Feature", "Archetype Feature", "Class Feature", "Racial Trait"].includes(x.type));
+  return { spells, items, features };
+}
+
+export async function buildPdf(r: Resolved, sh: SheetData, opts: PdfOptions, fonts: FontData): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
-  pdf.setTitle(ch.name || "Character");
+  pdf.setTitle(r.character.name || "Character");
   pdf.setCreator("CharForge");
   const f: Fonts = {
     r: await pdf.embedFont(fonts.regular, { subset: true }),
     b: await pdf.embedFont(fonts.bold, { subset: true }),
   };
   const size = PAPER[opts.paper];
-  const by = (t: Element["type"]) => sh.elements.filter((e) => e.type === t && e.meta?.hidden !== "true");
+  if (opts.sheet) await drawSheet(pdf, f, r, sh, size);
 
-  if (opts.sheet) drawSheet(pdf, f, ch, sh, size);
-
-  const spells = by("spell")
-    .slice()
-    .sort((a, b) => Number(a.meta?.level ?? 0) - Number(b.meta?.level ?? 0) || a.name.localeCompare(b.name));
+  const src = cardSources(r, sh);
   const cards: CardData[] = [];
-  if (opts.spellCards) cards.push(...spells.map(spellCard));
-  if (opts.itemCards) cards.push(...by("item").map(itemCard));
-  if (opts.featureCards) cards.push(...[...by("feat"), ...by("feature"), ...by("subclass")].map(featureCard));
+  if (opts.spellCards) cards.push(...src.spells.map(spellCard));
+  if (opts.itemCards) cards.push(...src.items.map((x) => itemCard(x.el, x.qty)));
+  if (opts.featureCards) cards.push(...src.features.map((x) => ({ title: x.name, subtitle: x.type, stats: x.usage ? ([["Uses", x.usage]] as [string, string][]) : [], body: x.text, kind: "" })));
   if (cards.length) drawCards(pdf, f, cards, size);
 
   if (pdf.getPageCount() === 0) pdf.addPage([...size]);
   return pdf.save();
 }
 
-export function cardCounts(sh: Sheet): { spells: number; items: number; features: number } {
-  const n = (...t: Element["type"][]) => sh.elements.filter((e) => t.includes(e.type)).length;
-  return { spells: n("spell"), items: n("item"), features: n("feat", "feature", "subclass") };
+export function cardCounts(r: Resolved, sh: SheetData): { spells: number; items: number; features: number } {
+  const s = cardSources(r, sh);
+  return { spells: s.spells.length, items: s.items.length, features: s.features.length };
 }

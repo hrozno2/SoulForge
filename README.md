@@ -1,6 +1,6 @@
 # CharForge
 
-Desktop D&D 5e (2024 rules) character builder with a data-driven rules engine.
+Desktop D&D 5e (2024 rules) character builder on the Aurora element format, with content links that update themselves and 5etools/Plutonium data import.
 Runs on Windows, macOS and Linux through Tauri. Original code, not affiliated with Aurora Builder or Wizards of the Coast.
 
 ## Install
@@ -81,42 +81,72 @@ Back up `~/.charforge-signing`. If the key is lost, installed copies can never u
 
 Tauri prerequisites: https://v2.tauri.app/start/prerequisites/
 
+## What it does
+
+A character builder for D&D 5e (2024 rules, and older editions through content files), built around the same element format as Aurora Builder, so existing Aurora content works.
+
+- **Build**: species and subspecies, class with multiclassing and level up, background, ability scores (point buy, standard array, manual), languages, proficiencies, feats and ability score improvements. Every choice comes from rules in the content files, so what you can pick follows the books you load.
+- **Magic**: spellcasting per class with save DC, attack, slots (shared multiclass table and Warlock pact slots), cantrips and spells to learn, prepared spells, always-prepared spells, slot tracking.
+- **Equipment**: search items, weapons, armor and magic items, equip, attune, containers, quantities, weight and carrying capacity, coins, equipment packs, custom items. Armor class and attacks follow from what you wear and wield.
+- **Manage**: level, XP and hit points (average or rolled), character details and backstory, options, manual additions (extra languages, feats and spells your table allows), custom attacks, companions with stat blocks, conditions, source restrictions.
+- **Character sheet**: the 2024 layout with live hit points, death saves, hit dice and spell slot tracking, plus PDF export of the sheet and printable spell, item and feature cards (A4 or Letter).
+- **Content**: add Aurora content by link and it keeps itself up to date, import the 5etools data that Plutonium uses, import files, or write your own content.
+
 ## Content
 
-- Ships with a small starter sample only.
-- Content tab: open aurorabuilder.com or the AuroraLegacy elements repo, download the ZIP, import it. Pick the book folders you want (the 2024 Player's Handbook is preselected).
-- Custom modifiers: build them in the Content tab or load a JSON pack.
+CharForge ships without rules content. Add it on the Content tab.
 
-## PDF export and character import
+### Aurora content by link
 
-- Sheet tab, Export PDF: choose the 2024-style sheet, spell cards, item cards and feat/feature cards, on A4 or Letter. Cards are 2.5 x 3.5 in, nine per page.
-- Content tab, Import a character: Foundry VTT (dnd5e actor JSON), Roll20 (D&D 5e OGL sheet attributes as JSON) or a CharForge export.
-  Names are matched against loaded content. Anything not found is kept as a plain entry so the printed sheet and cards stay complete.
-- The Foundry and Roll20 readers were written from the documented sheet structure, not from real exports. If a file imports badly, keep it and adjust `src/engine/importers.ts`.
+Paste the address of an Aurora index file, for example the AuroraLegacy elements:
 
-## Modifier format
+    https://raw.githubusercontent.com/AuroraLegacy/elements/master/AuroraLegacy.index
 
-Every element changes a character only through rules:
+CharForge reads the index and every index it lists, downloads the files, and keeps a copy for offline use. On each launch (at most once an hour) it fetches the small index files again and downloads only the parts whose version changed. You can switch whole books on or off in the tree, force a full re-download, or remove a link.
 
-    { "kind": "stat", "stat": "ac", "op": "add", "value": 2 }
-    { "kind": "stat", "stat": "hp", "value": "level * 2" }
-    { "kind": "proficiency", "target": "skill:stealth", "level": "expertise" }
-    { "kind": "grant", "ids": ["other-element-id"], "minLevel": 5 }
-    { "kind": "choose", "id": "x", "label": "Pick skills", "as": "skill", "count": 2, "options": ["arcana", "history"] }
-    { "kind": "asi", "options": ["str", "dex", "con"] }
-    { "kind": "spellcasting", "ability": "int", "caster": "full" }
+### 5etools data and Plutonium
 
-Any rule can carry `minLevel`. Stat ops apply in the order set, max, min, add. Formula variables: level, prof, str..cha, strMod..chaMod.
-Functions: floor, ceil, round, min, max, abs.
+The Content tab also reads the JSON data format used by 5e.tools and by the Plutonium module for Foundry VTT: species and subraces, classes with subclasses and features, backgrounds, feats, spells, items and magic items, languages and creatures. Structured parts (proficiencies, saves, speeds, ability bonuses, hit dice, spell slot and prepared tables, weapon and armor statistics, magic bonuses) become rules. Prose stays as description text.
 
-`caster` is `full`, `half`, `third` or `pact` and picks the slot table. The sheet shows spell save DC, spell attack and slots.
-Tune them with the custom stats `spell.dc` and `spell.attack`.
+5e.tools itself is behind a bot check, so an app cannot fetch from it. Use the `data` folder of a copy you are entitled to use: pick the folder or a ZIP of it, or give an address that serves it. Homebrew JSON exported from 5etools or Plutonium imports the same way.
+
+Characters made with Plutonium in Foundry export as normal dnd5e actors, so Foundry import on the Start tab reads them.
+
+### Other ways in
+
+- Import a ZIP or loose `.xml` element files.
+- Write your own elements in the editor on the Content tab. The format is documented at https://aurorabuilder.com/documentation/
+
+### Not included
+
+No book content ships with CharForge and none is bundled by the importers. Content comes from files and addresses you supply. Aurora, the Aurora Legacy team, 5e.tools and Wizards of the Coast are not affiliated with CharForge.
+
+## Importing characters
+
+- Start tab, Import: Foundry VTT (dnd5e actor JSON, including actors made with Plutonium) or Roll20 (D&D 5e OGL sheet attributes as JSON). Names are matched against loaded content. Anything not found is reported, and items not found become custom items.
+- The Foundry and Roll20 readers were written from the documented sheet structure, not from real exports. If a file imports badly, keep it and adjust `src/aurora/foreign.ts`.
+- Characters made in earlier CharForge versions (0.2.x) are not carried over: the engine changed in 0.3.
+
+## Usability test
+
+`src/aurora/pregen.test.ts` rebuilds four free official pregenerated characters (the D&D Starter Set characters: Hill Dwarf Cleric, Wood Elf Fighter, High Elf Wizard, Human Paladin) in the builder from real content, then compares every figure on the printed sheet: ability scores, saves, all 18 skills and which are proficient, armor class, initiative, speed, hit points, hit dice, passive Perception, languages, coins, spell save DC, attack bonus, slots, cantrips, spells and prepared count, attack bonuses, features and proficiencies. It needs real content, which is not in this repository:
+
+    AURORA_FIXTURES_2014=/path/to/folder npm test
+
+where the folder holds the AuroraLegacy `core/internal.xml`, `core/ALE.xml` and the 2014 `players-handbook` files. `src/aurora/fivetools.test.ts` does the same for 5etools data with `FIVETOOLS_FIXTURES=/path/to/data`. Both skip when the variable is not set.
+
+What the pregens showed: things the sheet lists that no rule gives (bonus languages, items the content lacks) need manual additions and custom items, which the app provides.
+
+## Element format
+
+Content is a set of elements. An element has an id, name, type and source, setters (type specific values), and rules. Rules are `grant` (give another element), `select` (the player picks elements by type and filter) and `stat` (change a statistic). Requirements, level gating, bonus types and the `$(spellcasting:list)` and `{{stat}}` placeholders work as documented by Aurora.
 
 ## Known gaps
 
-- Aurora level-dependent text (for example Second Wind at higher levels) uses the base level text.
-- Aurora `select` rules and `requirements` with positive conditions are skipped on import.
-- No spells known or prepared tracking, inventory weight or multiclassing yet.
+- Aurora character files (`.dnd5e`) cannot be opened. CharForge saves its own `.json` characters.
+- Spell replacement on level up, level-dependent text variants beyond the highest level reached, and spell lists that depend on other spell sources are not modelled.
+- Aurora's companion gallery, symbol and portrait galleries, theme manager and quick bar are not here yet.
+- 5etools conversion covers the structured fields listed above. Spells granted by species and feats in 5etools (`additionalSpells`) are not turned into rules, apart from Magic Initiate style feats.
 
 ## License
 

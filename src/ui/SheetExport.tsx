@@ -17,6 +17,7 @@ import type { Translation } from "./TranslateOptions";
 /** Fill the player's own copy of a fillable character sheet PDF. The PDF is stored on this computer only. */
 const SHEET_LINKS: { label: string; url: string }[] = [
   { label: "Official 2024 character sheet, print version (Wizards of the Coast)", url: "https://media.dndbeyond.com/compendium-images/phb/downloads/DnD_2024_Character-Sheet.pdf" },
+  { label: "DLDM 5E24 sheets and companion sheets, by DLtheDM (shared folder)", url: "https://drive.google.com/drive/folders/1Og-Nd_GTqu_JnQBeUMkK-A1tY1IjZ0Wc" },
 ];
 
 export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData; tr: Translation }) {

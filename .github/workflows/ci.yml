@@ -51,9 +51,7 @@ jobs:
         with:
           workspaces: src-tauri
       - run: npm ci
-      - run: npx tauri build --debug --bundles app
-        env:
-          CI: "false"
+      - run: npx tauri build --debug --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
       - name: Run the app's self-check
         run: |
           SOULFORGE_SELFTEST="$RUNNER_TEMP/report.json" src-tauri/target/debug/bundle/macos/SoulForge.app/Contents/MacOS/charforge &

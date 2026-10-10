@@ -22,5 +22,5 @@ export default defineConfig({
   clearScreen: false,
   server: { port: 1420, strictPort: true },
   preview: { port: 4173, strictPort: true, headers: { "Content-Security-Policy": csp } },
-  test: { environment: "node" },
+  test: { environment: "node", exclude: ["e2e/**", "node_modules/**", "dist/**", "src-tauri/**"] },
 });

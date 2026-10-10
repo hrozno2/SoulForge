@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 
-const ACCENTS: Record<string, [string, string]> = {
-  Red: ["#c53131", "#9b2020"],
-  Gold: ["#b8902f", "#8a6a24"],
-  Blue: ["#3f78b8", "#2c5d93"],
-  Green: ["#3f8f5c", "#2f7d4f"],
-  Purple: ["#7d5cc0", "#5b3f99"],
+/** Each theme is a base (dark or light, which the older rules key off) plus a palette skin. */
+export const THEMES: Record<string, { label: string; base: "dark" | "light"; note: string }> = {
+  obsidian: { label: "Obsidian", base: "dark", note: "Black and red, like D&D Beyond's dark mode" },
+  leather: { label: "Leather", base: "dark", note: "Dark brown with gold" },
+  tools: { label: "Tools blue", base: "dark", note: "Slate blue, in the spirit of 5e.tools" },
+  daylight: { label: "Daylight", base: "light", note: "Clean light mode" },
+  parchment: { label: "Printed book", base: "light", note: "Cream paper and crimson, like the printed books" },
 };
 
 const read = (k: string, d: string) => {
@@ -16,31 +17,30 @@ const read = (k: string, d: string) => {
   }
 };
 
-/** Light or dark, plus an accent colour. Remembered between launches. */
+const migrate = (v: string) => (THEMES[v] ? v : v === "light" ? "parchment" : "obsidian");
+
+export function applyTheme(id: string): void {
+  const t = THEMES[id] ?? THEMES.obsidian;
+  const root = document.documentElement;
+  root.setAttribute("data-theme", t.base);
+  root.setAttribute("data-skin", id);
+}
+
+/** Palette switch in the top bar. Remembered between launches. */
 export function ThemePicker() {
-  const [mode, setMode] = useState(() => read("charforge.theme", "auto"));
-  const [accent, setAccent] = useState(() => read("charforge.accent", "Red"));
+  const [id, setId] = useState(() => migrate(read("charforge.theme", "obsidian")));
   useEffect(() => {
-    const root = document.documentElement;
-    if (mode === "auto") root.removeAttribute("data-theme");
-    else root.setAttribute("data-theme", mode);
-    const dark = mode === "dark" || (mode === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    const [d, l] = ACCENTS[accent] ?? ACCENTS.Red;
-    root.style.setProperty("--accent", dark ? d : l);
+    applyTheme(id);
     try {
-      localStorage.setItem("charforge.theme", mode);
-      localStorage.setItem("charforge.accent", accent);
+      localStorage.setItem("charforge.theme", id);
     } catch {
       /* storage can be unavailable */
     }
-  }, [mode, accent]);
+  }, [id]);
   return (
     <span className="theme noprint">
-      <select value={mode} onChange={(e) => setMode(e.target.value)} title="Theme">
-        <option value="auto">Auto</option><option value="dark">Dark</option><option value="light">Light</option>
-      </select>
-      <select value={accent} onChange={(e) => setAccent(e.target.value)} title="Accent colour">
-        {Object.keys(ACCENTS).map((a) => <option key={a}>{a}</option>)}
+      <select value={id} onChange={(e) => setId(e.target.value)} title={THEMES[id]?.note ?? "Theme"} aria-label="Theme">
+        {Object.entries(THEMES).map(([k, t]) => <option key={k} value={k}>{t.label}</option>)}
       </select>
     </span>
   );

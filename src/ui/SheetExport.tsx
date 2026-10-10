@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import type { SheetData } from "../aurora/sheet";
-import { deleteTemplate, listTemplates, saveTemplate, type TemplateRecord } from "../aurora/storage";
+import { deleteTemplate, listTemplates, saveTemplate, templateBytes, type TemplateRecord } from "../aurora/storage";
+import { buildPdf, cardCounts } from "../pdf/exportPdf";
+import { WOTC_PAGES, looksLikeWotc2024, fillWotc, type WotcPage } from "../sheets/wotc";
 import { uid } from "../aurora/character";
 import { buildFillData, companionFill } from "../sheets/data";
 import { DLDM_PAGES, detectPages, fillDldm, type DldmPage } from "../sheets/dldm";
@@ -15,13 +17,16 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
   const [pick, setPick] = useState("");
   const [pages, setPages] = useState<DldmPage[]>([]);
   const [companion, setCompanion] = useState("");
+  const [wotcPages, setWotcPages] = useState<WotcPage[]>(["page1", "page2"]);
+  const [cards, setCards] = useState({ spells: false, items: false, features: false, tips: false });
+  const counts = cardCounts(r, sheet);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => listTemplates().then(setTemplates);
   useEffect(() => { refresh(); }, []);
-  const current = templates.find((t) => t.id === pick) ?? templates.find((t) => t.kind === "dldm5e24") ?? templates[0];
+  const current = templates.find((t) => t.id === pick) ?? templates.find((t) => t.kind === "wotc2024") ?? templates.find((t) => t.kind === "dldm5e24") ?? templates[0];
   useEffect(() => {
     if (current?.kind === "dldm5e24") setPages(current.pages as DldmPage[]);
   }, [current?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -41,17 +46,24 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
         const bytes = await file.arrayBuffer();
         const { PDFDocument } = await import("pdf-lib");
         const doc = await PDFDocument.load(bytes);
-        const found = [...detectPages(readWidgets(doc)).values()];
+        const widgets = readWidgets(doc);
+        const found = [...detectPages(widgets).values()];
+        const first = doc.getPage(0).getSize();
+        if (!found.length && looksLikeWotc2024(first.width, first.height, doc.getPageCount(), doc.getForm().getFields().length, file.name)) {
+          await saveTemplate({ id: uid(), name: "Official 2024 sheet", kind: "wotc2024", pages: ["page1", "page2"], size: bytes.byteLength, added: Date.now() }, bytes);
+          notes.push(`${file.name}: official 2024 character sheet`);
+          continue;
+        }
         if (found.length) {
-          await saveTemplate({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "dldm5e24", pages: found, bytes, added: Date.now() });
+          await saveTemplate({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "dldm5e24", pages: found, size: bytes.byteLength, added: Date.now() }, bytes);
           notes.push(`${file.name}: ${found.map((p) => DLDM_PAGES[p].label).join(", ")}`);
           continue;
         }
         const layout = await companionLayoutOfPdf(bytes, file.name);
         if (layout) {
-          await saveTemplate({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "companion", pages: [layout], bytes, added: Date.now() });
+          await saveTemplate({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "companion", pages: [layout], size: bytes.byteLength, added: Date.now() }, bytes);
           notes.push(`${file.name}: companion sheet`);
-        } else notes.push(`${file.name}: not a sheet CharForge can fill (it fills the DLDM 5E24 character sheets and the DLDM companion sheets)`);
+        } else notes.push(`${file.name}: not a sheet CharForge can fill (it fills the official 2024 sheet, the DLDM 5E24 sheets and the DLDM companion sheets)`);
       } catch (e) {
         notes.push(`${file.name}: ${(e as Error).message}`);
       }
@@ -70,8 +82,13 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
       const base = (r.character.name || "character").replace(/[^\p{L}\p{N}]+/gu, "-");
       let bytes: Uint8Array;
       let notes: string[] = [];
-      if (current.kind === "dldm5e24") {
-        const res = await fillDldm(current.bytes, buildFillData(r, sheet), { pages, font: fonts });
+      const tpl = await templateBytes(current.id);
+      if (current.kind === "wotc2024") {
+        const res = await fillWotc(tpl, buildFillData(r, sheet), { pages: wotcPages, font: fonts });
+        bytes = res.bytes;
+        notes = res.notes;
+      } else if (current.kind === "dldm5e24") {
+        const res = await fillDldm(tpl, buildFillData(r, sheet), { pages, font: fonts });
         bytes = res.bytes;
         notes = res.notes;
       } else {
@@ -79,7 +96,15 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
         const el = id ? r.reg.get(id) : undefined;
         if (!el) throw new Error("This character has no companion yet. Add one on the Manage tab.");
         const name = r.character.companions.find((c) => c.id === id)?.name ?? el.name;
-        bytes = await fillCompanion(current.bytes, companionFill(el, name), { font: fonts, profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency), layout: current.pages[0] as "mount" | "ranger" });
+        bytes = await fillCompanion(tpl, companionFill(el, name), { font: fonts, profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency), layout: current.pages[0] as "mount" | "ranger" });
+      }
+      if (cards.spells || cards.items || cards.features || cards.tips) {
+        const extra = await buildPdf(r, sheet, { paper: "letter", sheet: false, spellCards: cards.spells, itemCards: cards.items, featureCards: cards.features, tips: cards.tips }, fonts);
+        const { PDFDocument } = await import("pdf-lib");
+        const main = await PDFDocument.load(bytes);
+        const add = await PDFDocument.load(extra);
+        for (const pg of await main.copyPages(add, add.getPageIndices())) main.addPage(pg);
+        bytes = await main.save();
       }
       const ok = await saveFile(`${base} - ${current.name}.pdf`, bytes, "application/pdf");
       setMsg([ok ? "Saved." : "Cancelled.", ...notes].join(" "));
@@ -92,8 +117,8 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
 
   return (
     <div className="subcard">
-      <h3>Fillable sheets</h3>
-      <p className="muted">Load your own copy of a fillable character sheet. CharForge fills it in and keeps it editable. Supported: the DLDM 5E24 sheets (the five-page file or single pages) and the DLDM companion sheets.</p>
+      <h3>Your own sheet PDFs</h3>
+      <p className="muted">Load your own copy of a sheet. Supported: the official 2024 character sheet (free from Wizards of the Coast at dndbeyond.com, search "2024 character sheet"; filled as printed text), the DLDM 5E24 sheets (stay editable) and the DLDM companion sheets. CharForge keeps the file on this computer only.</p>
       <div className="row">
         <button onClick={() => fileRef.current?.click()}>Add sheet PDF...</button>
         <input ref={fileRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = ""; }} />
@@ -116,6 +141,25 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
               ))}
             </div>
           )}
+          {current?.kind === "wotc2024" && (
+            <div>
+              {(Object.keys(WOTC_PAGES) as WotcPage[]).map((p) => (
+                <label key={p} className="check">
+                  <input type="checkbox" checked={wotcPages.includes(p)} onChange={() => setWotcPages((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]))} />
+                  {WOTC_PAGES[p].label} <small className="muted">{WOTC_PAGES[p].note}</small>
+                </label>
+              ))}
+            </div>
+          )}
+          {current && current.kind !== "companion" && (
+            <div>
+              <small className="muted">Add to the end of the PDF</small>
+              <label className="check"><input type="checkbox" checked={cards.tips} onChange={(e) => setCards({ ...cards, tips: e.target.checked })} />Tips and tricks for play</label>
+              {counts.spells > 0 && <label className="check"><input type="checkbox" checked={cards.spells} onChange={(e) => setCards({ ...cards, spells: e.target.checked })} />Spell cards <small className="muted">{counts.spells}</small></label>}
+              {counts.items > 0 && <label className="check"><input type="checkbox" checked={cards.items} onChange={(e) => setCards({ ...cards, items: e.target.checked })} />Item cards <small className="muted">{counts.items}</small></label>}
+              {counts.features > 0 && <label className="check"><input type="checkbox" checked={cards.features} onChange={(e) => setCards({ ...cards, features: e.target.checked })} />Feature cards <small className="muted">{counts.features}</small></label>}
+            </div>
+          )}
           {current?.kind === "companion" && (
             <div className="row">
               <span className="muted">Companion</span>
@@ -125,7 +169,7 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
               </select>
             </div>
           )}
-          <button className="primary" disabled={busy || !current || (current.kind === "dldm5e24" && pages.length === 0)} onClick={run}>{busy ? "Filling..." : "Fill and save"}</button>
+          <button className="primary" disabled={busy || !current || (current.kind === "dldm5e24" && pages.length === 0) || (current.kind === "wotc2024" && wotcPages.length === 0)} onClick={run}>{busy ? "Filling..." : "Fill and save"}</button>
         </>
       )}
       {msg && <p className="notice">{msg}</p>}

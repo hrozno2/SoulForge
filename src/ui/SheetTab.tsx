@@ -40,18 +40,21 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
       <button className="primary" onClick={() => setOpen(!open)}>Export PDF...</button>
       {open && (
         <div className="subcard">
+          <TemplateExport r={r} sheet={sheet} />
+          <h3>CharForge style PDF</h3>
+          <p className="muted">A sheet in CharForge's own layout, with optional cards and play tips. Use this if you have no official sheet loaded.</p>
           <label className="check"><input type="checkbox" checked={opts.sheet} onChange={() => toggle("sheet")} /> Character sheet</label>
           <label className="check"><input type="checkbox" checked={opts.spellCards} onChange={() => toggle("spellCards")} /> Spell cards <small>{counts.spells}</small></label>
           <label className="check"><input type="checkbox" checked={opts.itemCards} onChange={() => toggle("itemCards")} /> Item cards <small>{counts.items}</small></label>
           <label className="check"><input type="checkbox" checked={opts.featureCards} onChange={() => toggle("featureCards")} /> Feat and feature cards <small>{counts.features}</small></label>
+          <label className="check"><input type="checkbox" checked={!!opts.tips} onChange={() => setOpts((o) => ({ ...o, tips: !o.tips }))} /> Tips and tricks for play <small>1-2 pages</small></label>
           <div className="row">
             <span className="muted">Paper</span>
             {(["a4", "letter"] as const).map((p) => <button key={p} className={opts.paper === p ? "pill active" : "pill"} onClick={() => setOpts((o) => ({ ...o, paper: p }))}>{p === "a4" ? "A4" : "Letter"}</button>)}
           </div>
           <p className="muted">Cards are 2.5 x 3.5 in (poker size), nine to a page, ready to cut.</p>
-          <button className="primary" disabled={busy || !(opts.sheet || opts.spellCards || opts.itemCards || opts.featureCards)} onClick={run}>{busy ? "Creating..." : "Create PDF"}</button>
+          <button className="primary" disabled={busy || !(opts.sheet || opts.spellCards || opts.itemCards || opts.featureCards || opts.tips)} onClick={run}>{busy ? "Creating..." : "Create PDF"}</button>
           {msg && <p className="notice">{msg}</p>}
-          <TemplateExport r={r} sheet={sheet} />
         </div>
       )}
     </div>

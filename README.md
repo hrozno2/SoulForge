@@ -81,6 +81,12 @@ Back up `~/.charforge-signing`. If the key is lost, installed copies can never u
 
 Tauri prerequisites: https://v2.tauri.app/start/prerequisites/
 
+## Documentation
+
+- [User guide](docs/guide.md): every tab, filters, rolling, PDF export, 5etools and Plutonium import, themes.
+- [Aurora parity](docs/aurora-parity.md): what the engine supports from the Aurora element format.
+- [Usability test](docs/usability-test.md): rebuilding published pregens in the app.
+
 ## What it does
 
 A character builder for D&D 5e (2024 rules, and older editions through content files), built around the same element format as Aurora Builder, so existing Aurora content works.
@@ -136,6 +142,8 @@ Every list of choices (species, class, background, feats, subclasses, spells, la
 
 ## Fillable character sheets
 
+The official 2024 sheet from Wizards of the Coast is the default export. It has no form fields, so CharForge prints onto it; load your own copy once in the Sheet tab (it is not bundled).
+
 Sheet tab, Export PDF, "Fillable sheets": load your own copy of a sheet PDF once, and CharForge fills it in from the character and keeps the fields editable. The PDFs stay on your computer (CharForge does not include any sheet).
 
 Supported:
@@ -184,3 +192,5 @@ Content is a set of elements. An element has an id, name, type and source, sette
 
 MIT, see `LICENSE`. This covers CharForge's code only. It does not include or grant rights to any Dungeons & Dragons
 content; import your own copies from the Content tab.
+
+CharForge is free and open source. Fork it, change it, redistribute it, no permission needed. Contributions are welcome through issues and pull requests. Third-party material is listed in `NOTICE.md`.

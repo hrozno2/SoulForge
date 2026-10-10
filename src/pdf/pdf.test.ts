@@ -57,7 +57,7 @@ describe("pdf export", () => {
 
   it("respects the options and paper size", async () => {
     const { r, sheet } = setup();
-    const bytes = await buildPdf(r, sheet, { ...DEFAULT_PDF_OPTIONS, paper: "letter", spellCards: false, itemCards: false, featureCards: false }, fonts);
+    const bytes = await buildPdf(r, sheet, { ...DEFAULT_PDF_OPTIONS, paper: "letter", spellCards: false, itemCards: false, featureCards: false, tips: false }, fonts);
     const doc = await PDFDocument.load(bytes);
     expect(doc.getPageCount()).toBe(1);
     expect(doc.getPage(0).getSize()).toEqual({ width: 612, height: 792 });

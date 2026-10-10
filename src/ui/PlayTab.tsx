@@ -4,7 +4,8 @@ import { buildSheet, headerInfo, type CastingLine, type FeatureLine, type SheetD
 import { ABILITY_LABEL, ABILITY_SHORT, XP_TABLE, type AbilityId, type Character } from "../aurora/character";
 import type { AElement } from "../aurora/types";
 import { Html } from "./Html";
-import { requestRoll } from "./Dice";
+import { requestRoll, RollModeSwitch } from "./Dice";
+import { Hint } from "./Help";
 import { CompanionCard } from "./ManageTab";
 import type { SetCharacter } from "./Slots";
 
@@ -82,10 +83,14 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
 
 function Shield({ value }: { value: number }) {
   return (
-    <div className="stat-shield">
-      <svg viewBox="0 0 60 70" aria-hidden="true"><path d="M30 2 56 12v22c0 18-12 29-26 34C16 63 4 52 4 34V12z" fill="none" stroke="var(--gold)" strokeWidth="2" /></svg>
-      <b>{value}</b>
-      <small>Armor Class</small>
+    <div className="stat-shield" role="img" aria-label={`Armor class ${value}`}>
+      <svg viewBox="0 0 100 116">
+        <path d="M50 3 94 18v36c0 30-20 49-44 59C26 103 6 84 6 54V18z" fill="var(--panel2)" stroke="var(--accent)" strokeWidth="3" />
+        <path d="M50 11 86 23v31c0 25-16 41-36 50C30 95 14 79 14 54V23z" fill="none" stroke="var(--gold)" strokeWidth="1" opacity=".6" />
+        <text x="50" y="62" textAnchor="middle" className="ac-num">{value}</text>
+        <text x="50" y="82" textAnchor="middle" className="ac-label">ARMOR</text>
+        <text x="50" y="93" textAnchor="middle" className="ac-label">CLASS</text>
+      </svg>
     </div>
   );
 }
@@ -169,17 +174,25 @@ function Actions({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: She
   );
 }
 
+const RESET: Record<string, string> = { "long rest": "long rest", "short rest": "short rest", "short or long rest": "short or long rest", "dawn": "dawn", "day": "day" };
+
+/** Pips show uses left (filled = available). The text says how many are left and when they come back. */
 function Uses({ f, ch, set }: { f: FeatureLine; ch: Character; set: SetCharacter }) {
-  const m = f.usage?.match(/^(\d+)\s*\//);
+  const m = f.usage?.match(/^(\d+)\s*\/\s*(.*)$/);
   const n = m ? parseInt(m[1], 10) : 0;
   if (!n || n > 12) return f.usage ? <small className="muted">{f.usage}</small> : null;
-  const used = ch.play.featureUses[f.id] ?? 0;
+  const used = Math.min(n, ch.play.featureUses[f.id] ?? 0);
+  const left = n - used;
+  const when = (m?.[2] ?? "").trim().toLowerCase();
+  const toggle = (i: number) => set((c) => ({ ...c, play: { ...c.play, featureUses: { ...c.play.featureUses, [f.id]: i < left ? n - i : n - i - 1 } } }));
   return (
-    <span className="uses">
-      {Array.from({ length: n }, (_, i) => (
-        <button key={i} className={i < used ? "pip spent small" : "pip small"} onClick={() => set((c) => ({ ...c, play: { ...c.play, featureUses: { ...c.play.featureUses, [f.id]: used === i + 1 ? i : i + 1 } } }))} />
-      ))}
-      <small className="muted"> {f.usage?.replace(/^\d+\s*\//, "per ")}</small>
+    <span className="uses" title="Click a pip to spend or restore a use">
+      <span className="uses-pips">
+        {Array.from({ length: n }, (_, i) => (
+          <button key={i} aria-label={`Use ${i + 1}`} className={i < left ? "pip small" : "pip spent small"} onClick={() => toggle(i)} />
+        ))}
+      </span>
+      <small className={left === 0 ? "uses-text out" : "uses-text"}>{left} of {n} left{when ? ` · back after ${RESET[when] ?? when}` : ""}</small>
     </span>
   );
 }
@@ -371,6 +384,8 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
           <button className="tile" onClick={() => roll("Initiative", sheet.initiative)}><small>Initiative</small><b>{sign(sheet.initiative)}</b></button>
           <Shield value={sheet.ac.value} />
         </div>
+        <Hint id="play-1">Click any modifier to roll it. Click a pip on a feature to spend a use.</Hint>
+        <div className="rollmode-row"><small>d20 rolls</small><RollModeSwitch /></div>
         <Vitals ch={ch} sheet={sheet} set={set} />
       </div>
 

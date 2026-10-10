@@ -4,6 +4,7 @@ import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { ABILITY_LABEL, type Character } from "../aurora/character";
 import { headerInfo, stripHtml, type SheetData } from "../aurora/sheet";
+import { playTips } from "./tips";
 
 export interface PdfOptions {
   paper: "a4" | "letter";
@@ -11,6 +12,7 @@ export interface PdfOptions {
   spellCards: boolean;
   itemCards: boolean;
   featureCards: boolean;
+  tips?: boolean;
 }
 
 export interface FontData {
@@ -24,6 +26,7 @@ export const DEFAULT_PDF_OPTIONS: PdfOptions = {
   spellCards: true,
   itemCards: true,
   featureCards: true,
+  tips: true,
 };
 
 const PAPER = { a4: [595.28, 841.89], letter: [612, 792] } as const;
@@ -367,6 +370,33 @@ function drawCards(pdf: PDFDocument, f: Fonts, cards: CardData[], size: readonly
   }
 }
 
+function drawTips(pdf: PDFDocument, f: Fonts, r: Resolved, sh: SheetData, size: readonly [number, number]): void {
+  const [W, H] = size;
+  const M = 44;
+  const colW = W - 2 * M;
+  let page = pdf.addPage([W, H]);
+  let y = H - M;
+  const head = (t: string, big = false) => {
+    if (y < M + 40) { page = pdf.addPage([W, H]); y = H - M; }
+    page.drawText(clean(t), { x: M, y: y - (big ? 18 : 12), font: f.b, size: big ? 20 : 12, color: ACCENT });
+    y -= big ? 26 : 20;
+    page.drawLine({ start: { x: M, y: y + 2 }, end: { x: W - M, y: y + 2 }, thickness: big ? 1.4 : 0.6, color: LINE });
+    y -= 6;
+  };
+  head("Tips and tricks for play", true);
+  for (const g of playTips(r, sh)) {
+    head(g.title);
+    for (const it of g.items) {
+      const lines = wrap(it, f.r, 9.5, colW - 14);
+      if (y - lines.length * 12.5 < M) { page = pdf.addPage([W, H]); y = H - M; }
+      page.drawText("\u2022", { x: M + 2, y: y - 9.5, font: f.b, size: 10, color: ACCENT });
+      lines.forEach((l, i) => page.drawText(l, { x: M + 14, y: y - 9.5 - i * 12.5, font: f.r, size: 9.5, color: INK }));
+      y -= lines.length * 12.5 + 4;
+    }
+    y -= 6;
+  }
+}
+
 // ---------------------------------------------------------------- entry
 
 function cardSources(r: Resolved, sh: SheetData) {
@@ -397,6 +427,7 @@ export async function buildPdf(r: Resolved, sh: SheetData, opts: PdfOptions, fon
   if (opts.itemCards) cards.push(...src.items.map((x) => itemCard(x.el, x.qty)));
   if (opts.featureCards) cards.push(...src.features.map((x) => ({ title: x.name, subtitle: x.type, stats: x.usage ? ([["Uses", x.usage]] as [string, string][]) : [], body: x.text, kind: "" })));
   if (cards.length) drawCards(pdf, f, cards, size);
+  if (opts.tips) drawTips(pdf, f, r, sh, size);
 
   if (pdf.getPageCount() === 0) pdf.addPage([...size]);
   return pdf.save();

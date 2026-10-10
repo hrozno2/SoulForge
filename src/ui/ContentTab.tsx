@@ -5,6 +5,7 @@ import type { IndexNode, SourceConfig } from "../aurora/sources";
 import { idbFileCache } from "../aurora/storage";
 import { readAuroraUpload, readFiveToolsUpload } from "../aurora/uploads";
 import { fetchFiveTools, storeFiveTools } from "../aurora/content";
+import { FiveToolsImport } from "./FiveToolsImport";
 import { openExternal } from "../store";
 import type { AElement } from "../aurora/types";
 
@@ -78,7 +79,21 @@ export function ContentTab({ content, onDetail }: { content: ContentState; onDet
   const [xml, setXml] = useState(TEMPLATE);
   const [msg, setMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const [ftUrl, setFtUrl] = useState("");
+  const [ftUrl, setFtUrlRaw] = useState(() => {
+    try {
+      return localStorage.getItem("charforge.5etools.base") ?? "";
+    } catch {
+      return "";
+    }
+  });
+  const setFtUrl = (u: string) => {
+    setFtUrlRaw(u);
+    try {
+      localStorage.setItem("charforge.5etools.base", u);
+    } catch {
+      /* storage can be unavailable */
+    }
+  };
   const [ftMsg, setFtMsg] = useState("");
   const [ftBusy, setFtBusy] = useState(false);
   const pct = content.progress && content.progress.total ? Math.round((content.progress.done / content.progress.total) * 100) : 0;
@@ -198,6 +213,8 @@ export function ContentTab({ content, onDetail }: { content: ContentState; onDet
           5e.tools itself sits behind a bot check, so an app cannot fetch from it. Use the data folder of a copy you are entitled to use: a folder on this computer, a ZIP of it, or
           an address that serves the folder (for example your own 5etools install).
         </p>
+        <FiveToolsImport content={content} baseUrl={ftUrl} setBaseUrl={setFtUrl} />
+        <h3>Or fetch the whole data folder</h3>
         <div className="row">
           <input style={{ flex: 1 }} value={ftUrl} onChange={(e) => setFtUrl(e.target.value)} placeholder="https://your-server/data" />
           <button className="primary" disabled={ftBusy || !ftUrl.trim()} onClick={() => ftFetch(ftUrl)}>Fetch from address</button>

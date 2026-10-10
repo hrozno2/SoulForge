@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { deleteCharacterRecord, listCharacters, type CharacterRecord } from "../aurora/storage";
 import { newCharacter, uid, type Character } from "../aurora/character";
 import { downloadText } from "../store";
+import { Hint } from "./Help";
 
 function ago(ms: number): string {
   const m = Math.round((Date.now() - ms) / 60000);
@@ -57,6 +58,7 @@ export function StartTab({
       )}
       <section className="card">
         <h2>Characters</h2>
+        <Hint id="home-1">Characters save on this computer as you work. Export gives you a file to back up or share.</Hint>
         <div className="row">
           <button className="primary" onClick={onNew}>New character</button>
           <button onClick={onRandom} disabled={sourceCount === 0}>Random character</button>
@@ -70,6 +72,7 @@ export function StartTab({
           {list.map((c) => (
             <li key={c.id} className={c.id === currentId ? "current" : ""}>
               <button className="char-open" onClick={() => onOpen(c.id, c.data)}>
+                {c.data.portrait ? <img className="portrait-chip" src={c.data.portrait} alt="" /> : <span className="portrait-chip ph">{(c.name || "?").charAt(0)}</span>}
                 <b>{c.name || "Unnamed character"}</b>
                 <span className="muted">{c.summary || "empty"}</span>
                 <small className="muted">{ago(c.updated)}</small>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { PortraitPicker, toPortrait } from "./Portrait";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { hitDieOf } from "../aurora/engine";
@@ -66,25 +67,6 @@ const FIELDS: [keyof Character["info"], string][] = [
 const AREAS: [keyof Character["info"], string][] = [["traits", "Personality traits"], ["ideals", "Ideals"], ["bonds", "Bonds"], ["flaws", "Flaws"], ["allies", "Allies and organizations"], ["backstory", "Backstory"]];
 
 /** Shrinks an image to a small JPEG so it stays cheap to save. */
-function toPortrait(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const size = 256;
-      const scale = Math.min(1, size / Math.max(img.width, img.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL("image/jpeg", 0.85));
-    };
-    img.onerror = () => reject(new Error("Not an image"));
-    img.src = url;
-  });
-}
-
 function PickOrType({ label, items, value, onChange }: { label: string; items: AElement[]; value: string; onChange: (v: string) => void }) {
   const listId = `dl-${label}`;
   return (
@@ -104,6 +86,7 @@ function Info({ ch, set, r }: { ch: Character; set: SetCharacter; r: Resolved })
         <label>Portrait: <input type="file" accept="image/*" onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) { try { const url = await toPortrait(f); set((c) => ({ ...c, portrait: url })); } catch { /* ignore non-images */ } } }} /></label>
         {ch.portrait && <button onClick={() => set((c) => ({ ...c, portrait: undefined }))}>Remove</button>}
       </div>
+      <PortraitPicker onPick={(url) => set((c) => ({ ...c, portrait: url }))} />
       <div className="row">
         <label className="field"><span>Character name</span><input value={ch.name} onChange={(e) => set((c) => ({ ...c, name: e.target.value }))} /></label>
         <label className="field"><span>Player</span><input value={ch.playerName} onChange={(e) => set((c) => ({ ...c, playerName: e.target.value }))} /></label>

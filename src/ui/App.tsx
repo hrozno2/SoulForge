@@ -18,11 +18,12 @@ import { UpdateBanner } from "./UpdateBanner";
 import { DicePanel } from "./Dice";
 import { UiProvider } from "./Learn";
 import { ThemePicker } from "./Theme";
+import { HelpButton } from "./Help";
 import { useUpdater } from "../updater";
 import { importForeignCharacter } from "../aurora/foreign";
 
 type Tab = "start" | "build" | "magic" | "equipment" | "manage" | "play" | "sheet" | "content";
-const TABS: [Tab, string][] = [["start", "Start"], ["build", "Build"], ["magic", "Magic"], ["equipment", "Equipment"], ["manage", "Manage"], ["play", "Play"], ["sheet", "Sheet"], ["content", "Content"]];
+const TABS: [Tab, string][] = [["start", "Home"], ["build", "Build"], ["magic", "Magic"], ["equipment", "Equipment"], ["manage", "Manage"], ["play", "Play"], ["sheet", "Sheet"], ["content", "Content"]];
 const CUR_KEY = "charforge.current.v2";
 
 function loadCurrent(): { id: string; ch: Character } {
@@ -115,6 +116,7 @@ export function App() {
         <span className="who">{character.name || "Unnamed"} · {r.totalLevel ? `Level ${r.totalLevel}` : "no class yet"}</span>
         {content.busy && <span className="muted busy">{content.status || "Working..."}</span>}
         <ThemePicker />
+        <HelpButton tab={tab} />
         <button className="tab noprint" onClick={() => updater.check(true)}>Check for updates</button>
       </header>
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} />

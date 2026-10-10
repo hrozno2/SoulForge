@@ -2,13 +2,14 @@ import type { Character } from "./character";
 import type { FileCache, SourceConfig } from "./sources";
 
 const DB_NAME = "charforge";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
+      const tx = req.transaction!;
       if (!db.objectStoreNames.contains("packs")) db.createObjectStore("packs", { keyPath: "id" });
       if (!db.objectStoreNames.contains("sources")) db.createObjectStore("sources", { keyPath: "url" });
       if (!db.objectStoreNames.contains("files")) {
@@ -17,6 +18,24 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains("characters")) db.createObjectStore("characters", { keyPath: "id" });
       if (!db.objectStoreNames.contains("templates")) db.createObjectStore("templates", { keyPath: "id" });
+      // PDF bytes live in their own store so listing templates stays light.
+      if (!db.objectStoreNames.contains("templateBytes")) {
+        db.createObjectStore("templateBytes");
+        const meta = tx.objectStore("templates");
+        const bytes = tx.objectStore("templateBytes");
+        meta.openCursor().onsuccess = (ev) => {
+          const cur = (ev.target as IDBRequest<IDBCursorWithValue | null>).result;
+          if (!cur) return;
+          const rec = cur.value as TemplateRecord & { bytes?: ArrayBuffer };
+          if (rec.bytes) {
+            bytes.put(rec.bytes, rec.id);
+            const { bytes: _drop, ...light } = rec;
+            void _drop;
+            cur.update(light);
+          }
+          cur.continue();
+        };
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -135,14 +154,14 @@ export async function deleteCharacterRecord(id: string): Promise<void> {
   await done(tx);
 }
 
-/** A fillable sheet PDF the player loaded. The file itself is kept on this computer only. */
+/** A sheet PDF the player loaded. The file itself is kept on this computer only. */
 export interface TemplateRecord {
   id: string;
   name: string;
-  kind: "dldm5e24" | "companion";
+  kind: "dldm5e24" | "companion" | "wotc2024";
   /** For DLDM sheets, the page styles it contains. For companion sheets, the layout. */
   pages: string[];
-  bytes: ArrayBuffer;
+  size: number;
   added: number;
 }
 
@@ -156,16 +175,23 @@ export async function listTemplates(): Promise<TemplateRecord[]> {
   }
 }
 
-export async function saveTemplate(rec: TemplateRecord): Promise<void> {
+export async function templateBytes(id: string): Promise<ArrayBuffer> {
   const db = await openDb();
-  const tx = db.transaction("templates", "readwrite");
+  return (await wrap(db.transaction("templateBytes").objectStore("templateBytes").get(id))) as ArrayBuffer;
+}
+
+export async function saveTemplate(rec: TemplateRecord, bytes: ArrayBuffer): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction(["templates", "templateBytes"], "readwrite");
   tx.objectStore("templates").put(rec);
+  tx.objectStore("templateBytes").put(bytes, rec.id);
   await done(tx);
 }
 
 export async function deleteTemplate(id: string): Promise<void> {
   const db = await openDb();
-  const tx = db.transaction("templates", "readwrite");
+  const tx = db.transaction(["templates", "templateBytes"], "readwrite");
   tx.objectStore("templates").delete(id);
+  tx.objectStore("templateBytes").delete(id);
   await done(tx);
 }

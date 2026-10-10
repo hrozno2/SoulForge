@@ -52,7 +52,7 @@
 :root[data-theme="light"] { --bg: #efe6d2; --bg2: #f4ecda; --panel: #fbf5e6; --panel2: #f1e7cf; --line: #cdb98a; --gold: #8a6a24; --gold2: #6f5318; --text: #2a2016; --muted: #6d6149; --warn: #b03a1f; --ok: #3c7a48; --shadow: 0 4px 16px rgba(80, 60, 20, 0.2); color-scheme: light; }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 var(--body); background-image: radial-gradient(1200px 500px at 50% -120px, rgba(197, 49, 49, 0.10), transparent 70%); background-attachment: fixed; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 var(--body); background-image: radial-gradient(1200px 500px at 50% -120px, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%); background-attachment: fixed; }
 a { color: var(--gold2); }
 h1, h2, h3, h4, h5 { font-family: var(--display); font-weight: 600; margin: 0 0 8px; letter-spacing: 0.02em; }
 h1 { font-size: 28px; } h2 { font-size: 17px; color: var(--gold2); } h3 { font-size: 13px; margin-top: 16px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.09em; }
@@ -503,7 +503,13 @@ button.tiny { padding: 0 6px; }
 :root[data-skin="obsidian"] .topbar { background: #050506; }
 :root[data-skin="obsidian"] h2 { color: #f1e6d2; }
 :root[data-skin="obsidian"] h3 { color: #d96168; }
+/* Leather: brown and gold only, no red. */
+:root[data-skin="leather"] {
+  --accent: #9c6a25; --crimson: #6b3f14; --gilt: #b99a5e; --stat-rule: #a8742a;
+}
 :root[data-skin="leather"] .topbar { background: #0b0908; }
+:root[data-skin="leather"] .statblock h4 { color: #5a3510; background: linear-gradient(90deg, #7a4d1a, #c6a063 50%, transparent) bottom / 100% 2px no-repeat; }
+:root[data-skin="leather"] .hp-bar div.low, :root[data-skin="leather"] .xp div { background: linear-gradient(90deg, #6e4a1c, var(--accent)); }
 :root[data-skin="tools"] {
   --bg: #0e141b; --bg2: #121a23; --panel: #17212c; --panel2: #1e2b39; --line: #2f4358;
   --gold: #7fb4e6; --gold2: #b9d9f5; --text: #e4ecf4; --muted: #94a7ba;

@@ -189,7 +189,7 @@ test.describe("Soul Forge smoke tests", () => {
     // Doing it again and finishing keeps the level.
     await page.locator(".play-buttons").getByRole("button", { name: "Level up" }).click();
     await dialog.getByRole("button", { name: "Level up" }).first().click();
-    await dialog.getByRole("button", { name: "Done" }).click();
+    await dialog.locator("button.primary", { hasText: "Done" }).click();
     expect(await level()).toBe(start + 1);
   });
 });

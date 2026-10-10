@@ -17,7 +17,6 @@ cask "charforge" do
 
   # The app updates itself, so Homebrew should not reinstall it on every `brew upgrade`.
   auto_updates true
-  depends_on macos: ">= :catalina"
 
   app "CharForge.app"
 

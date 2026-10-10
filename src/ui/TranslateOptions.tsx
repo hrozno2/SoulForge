@@ -64,7 +64,7 @@ export function TranslateOptions({ tr }: { tr: Translation }) {
           {cfg.provider !== "gfree" && <div className="row"><input style={{ flex: 1 }} type="password" value={cfg.key} onChange={(e) => set({ lang, cfg: { ...cfg, key: e.target.value } })} placeholder={cfg.provider === "google" ? "API key (required)" : "API key (if the server needs one)"} aria-label="API key" autoComplete="off" /></div>}
           <p className="muted">
             Only the text that will be printed is sent to the service you choose, never your character file. Results are cached on this computer, so a second export of the same text costs nothing.
-            The key is stored on this computer in plain text. Translates the Soul Forge style PDF, cards and play tips; the official and fillable sheets keep their printed English labels.
+            The key is stored on this computer in plain text. It translates the Soul Forge style PDF, the cards, the play tips and the values written into your own sheet PDFs. The printed labels of a sheet you loaded stay as that PDF has them.
           </p>
         </details>
       )}

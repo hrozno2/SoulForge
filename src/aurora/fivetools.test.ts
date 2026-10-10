@@ -45,6 +45,32 @@ describe("text conversion", () => {
   });
 });
 
+describe("ability scores are not counted twice", () => {
+  const files = {
+    "races.json": { race: [{ name: "Dwarf", source: "PHB", ability: [{ con: 2 }], entries: ["Tough."] }, { name: "Elf", source: "XPHB", entries: ["Graceful."] }] },
+    "backgrounds.json": { background: [{ name: "Sage", source: "XPHB", ability: [{ choose: { weighted: { from: ["con", "int", "wis"], weights: [2, 1] } } }], feats: [{ "magic initiate|xphb": true }], entries: ["Study."] }] },
+  };
+  const make = (race: string) => {
+    const reg = new ARegistry();
+    reg.addElements(convertFiveTools({ files }));
+    reg.build();
+    const ch = newCharacter();
+    ch.race = reg.ofType("Race").find((e) => e.name === race)!.id;
+    ch.background = reg.ofType("Background")[0].id;
+    return resolve(ch, reg);
+  };
+  const asiSlots = (r: ReturnType<typeof make>) => r.slots.filter((s) => s.rule.type === "Ability Score Improvement").length;
+  it("keeps the background's increase with a 2024 species", () => {
+    expect(asiSlots(make("Elf"))).toBeGreaterThan(0);
+  });
+  it("drops the background's increase when an older species already raises scores", () => {
+    const r = make("Dwarf");
+    expect(asiSlots(r)).toBe(0);
+    // base 8 plus the species' +2, and nothing from the background
+    expect(r.stats.get("constitution")).toBe(10);
+  });
+});
+
 describe("inline samples", () => {
   it("converts a spell, an item and a feat", () => {
     const els = convertFiveTools({

@@ -6,6 +6,7 @@ import { buildPdf, cardCounts } from "../pdf/exportPdf";
 import { WOTC_PAGES, looksLikeWotc2024, fillWotc, type WotcPage } from "../sheets/wotc";
 import { uid } from "../aurora/character";
 import { buildFillData, companionFill } from "../sheets/data";
+import { translateCompanion, translateFill } from "../sheets/translateFill";
 import { DLDM_PAGES, detectPages, fillDldm, type DldmPage } from "../sheets/dldm";
 import { companionLayoutOfPdf, fillCompanion } from "../sheets/companion";
 import { readWidgets } from "../sheets/widgets";
@@ -85,6 +86,13 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
     refresh();
   };
 
+  /** The values for the sheet, translated when a language is chosen. */
+  const fillData = async () => {
+    const data = buildFillData(r, sheet);
+    const t = tr.option((d, n) => setMsg(`Translating ${d} of ${n}...`));
+    return t ? translateFill(data, t) : data;
+  };
+
   const run = async () => {
     if (!current) return;
     setBusy(true);
@@ -97,11 +105,11 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
       let notes: string[] = [];
       const tpl = await templateBytes(current.id);
       if (current.kind === "wotc2024") {
-        const res = await fillWotc(tpl, buildFillData(r, sheet), { pages: wotcPages, font: fonts });
+        const res = await fillWotc(tpl, await fillData(), { pages: wotcPages, font: fonts });
         bytes = res.bytes;
         notes = res.notes;
       } else if (current.kind === "dldm5e24") {
-        const res = await fillDldm(tpl, buildFillData(r, sheet), { pages, font: fonts });
+        const res = await fillDldm(tpl, await fillData(), { pages, font: fonts });
         bytes = res.bytes;
         notes = res.notes;
       } else {
@@ -109,7 +117,7 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
         const el = id ? r.reg.get(id) : undefined;
         if (!el) throw new Error("This character has no companion yet. Add one on the Manage tab.");
         const name = r.character.companions.find((c) => c.id === id)?.name ?? el.name;
-        bytes = await fillCompanion(tpl, companionFill(el, name, r.reg), { font: fonts, profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency), layout: current.pages[0] as "mount" | "ranger" });
+        bytes = await fillCompanion(tpl, await (async () => { const cf = companionFill(el, name, r.reg); const t = tr.option((d, n) => setMsg(`Translating ${d} of ${n}...`)); return t ? translateCompanion(cf, t) : cf; })(), { font: fonts, profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency), layout: current.pages[0] as "mount" | "ranger" });
       }
       if (cards.spells || cards.items || cards.features || cards.tips) {
         const extra = await buildPdf(r, sheet, { paper: "letter", sheet: false, spellCards: cards.spells, itemCards: cards.items, featureCards: cards.features, tips: cards.tips, translate: tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`)) }, fonts);

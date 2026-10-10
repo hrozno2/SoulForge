@@ -2,9 +2,10 @@ import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
-import { ABILITY_LABEL, type Character } from "../aurora/character";
-import { headerInfo, stripHtml, type SheetData } from "../aurora/sheet";
+import { stripHtml, type SheetData } from "../aurora/sheet";
 import { playTips } from "./tips";
+import { drawOfficialStyle } from "./sheet2024";
+import { buildFillData } from "../sheets/data";
 import { translatable, translateAll, type BatchTranslator } from "./translate";
 
 export interface PdfOptions {
@@ -45,8 +46,6 @@ const LINE = rgb(0.788, 0.678, 0.416); // #C9AD6A gilt
 const ACCENT = rgb(0.345, 0.094, 0.051); // #58180D, the heading red of the printed books
 const FILL = rgb(0.933, 0.898, 0.808); // #EEE5CE parchment
 
-const sign = (n: number) => (n >= 0 ? `+${n}` : String(n));
-const label = (id: string) => id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 // Strip control and zero-width characters the embedded font cannot draw.
 // While a translated PDF is built, every string that gets drawn passes through here.
 let TR: ((s: string) => string) | null = null;
@@ -107,184 +106,6 @@ function fit(s: string, font: PDFFont, size: number, maxWidth: number): string {
   if (font.widthOfTextAtSize(t, size) <= maxWidth) return t;
   while (t.length > 1 && font.widthOfTextAtSize(`${t}...`, size) > maxWidth) t = t.slice(0, -1);
   return `${t}...`;
-}
-
-// ---------------------------------------------------------------- sheet
-
-async function drawSheet(pdf: PDFDocument, f: Fonts, r: Resolved, sh: SheetData, size: readonly [number, number]): Promise<void> {
-  const ch: Character = r.character;
-  const [W, H] = size;
-  const M = 30;
-  let page = pdf.addPage([W, H]);
-  const innerW = W - 2 * M;
-  const head = headerInfo(r);
-
-  text(page, ch.name || "Unnamed character", M, H - M - 18, f.b, 20);
-  if (ch.portrait) {
-    try {
-      const bytes = Uint8Array.from(atob(ch.portrait.split(",")[1] ?? ""), (c) => c.charCodeAt(0));
-      const img = await pdf.embedJpg(bytes);
-      const h = 40;
-      const w = (img.width / img.height) * h;
-      page.drawImage(img, { x: W - M - w, y: H - M - 38, width: w, height: h });
-    } catch {
-      /* skip a portrait that cannot be embedded */
-    }
-  }
-  const meta: [string, string][] = [
-    ["SPECIES", head.species],
-    ["CLASS", head.classLine],
-    ["SUBCLASS", head.subclass],
-    ["BACKGROUND", head.background],
-    ["ALIGNMENT", head.alignment],
-  ];
-  const gap = 6;
-  const mw = (innerW - gap * (meta.length - 1)) / meta.length;
-  let top = H - M - 30;
-  meta.forEach(([k, v], i) => {
-    const x = M + i * (mw + gap);
-    page.drawRectangle({ x, y: top - 30, width: mw, height: 30, color: FILL });
-    text(page, k, x + 5, top - 10, f.r, 6, MUTED);
-    text(page, fit(v, f.b, 9.5, mw - 10), x + 5, top - 23, f.b, 9.5);
-  });
-
-  top -= 40;
-  const hd = sh.hitDice.map((h) => `${h.count}d${h.die}`).join("+") || "-";
-  const combat: [string, string][] = [
-    ["ARMOR CLASS", String(sh.ac.value)],
-    ["INITIATIVE", sign(sh.initiative)],
-    ["HIT POINTS", String(sh.hp)],
-    ["HIT DICE", hd],
-    ["PROFICIENCY", sign(sh.proficiency)],
-    ["SPEED", `${sh.speed} ft`],
-    ["PASSIVE PERC.", String(sh.passivePerception)],
-    ["INSPIRATION", ""],
-  ];
-  const cw = (innerW - gap * 7) / 8;
-  combat.forEach(([k, v], i) => {
-    const x = M + i * (cw + gap);
-    page.drawRectangle({ x, y: top - 42, width: cw, height: 42, borderColor: LINE, borderWidth: 0.8 });
-    text(page, k, x + 4, top - 10, f.r, 5.8, MUTED);
-    if (k === "INSPIRATION") page.drawRectangle({ x: x + cw / 2 - 6, y: top - 36, width: 12, height: 12, borderColor: INK, borderWidth: 0.8 });
-    else text(page, fit(v, f.b, 16, cw - 8), x + 4, top - 32, f.b, 16);
-  });
-
-  top -= 54;
-  const aw = (innerW - gap * 2) / 3;
-  const rowH = 124;
-  sh.abilities.forEach((a, i) => {
-    const col = i % 3;
-    const row = Math.floor(i / 3);
-    const x = M + col * (aw + gap);
-    const y = top - row * (rowH + gap);
-    page.drawRectangle({ x, y: y - rowH, width: aw, height: rowH, borderColor: LINE, borderWidth: 0.8 });
-    text(page, ABILITY_LABEL[a.id].toUpperCase(), x + 6, y - 12, f.b, 8);
-    text(page, sign(a.mod), x + aw - 56, y - 16, f.b, 16);
-    text(page, String(a.score), x + aw - 22, y - 12, f.r, 8, MUTED);
-    page.drawLine({ start: { x: x + 4, y: y - 22 }, end: { x: x + aw - 4, y: y - 22 }, color: LINE, thickness: 0.6 });
-    const rows: { name: string; bonus: number; level: "none" | "proficient" | "expertise" }[] = [
-      { name: "Saving Throw", bonus: a.save, level: a.saveProficient ? "proficient" : "none" },
-      ...sh.skills.filter((s) => s.ability === a.id).map((s) => ({ name: label(s.name), bonus: s.bonus, level: s.level })),
-    ];
-    rows.forEach((rw, j) => {
-      const ly = y - 34 - j * 14;
-      page.drawCircle({ x: x + 11, y: ly + 3, size: 3.2, borderColor: INK, borderWidth: 0.7, color: rw.level === "none" ? undefined : INK });
-      if (rw.level === "expertise") page.drawCircle({ x: x + 11, y: ly + 3, size: 5, borderColor: INK, borderWidth: 0.5 });
-      text(page, rw.name, x + 22, ly, f.r, 8.5);
-      text(page, sign(rw.bonus), x + aw - 26, ly, f.b, 8.5);
-    });
-  });
-  top -= 2 * rowH + gap + 12;
-
-  const colW = (innerW - 14) / 2;
-  const bottom = M + 10;
-  let col = 0;
-  let y = top;
-  const nextSlot = () => {
-    if (col === 0) {
-      col = 1;
-      y = top;
-    } else {
-      page = pdf.addPage([W, H]);
-      col = 0;
-      top = H - M;
-      y = top;
-    }
-  };
-  const colX = () => M + col * (colW + 14);
-  const heading = (t: string) => {
-    if (y < bottom + 40) nextSlot();
-    text(page, t.toUpperCase(), colX(), y - 8, f.b, 8.5, ACCENT);
-    page.drawLine({ start: { x: colX(), y: y - 11 }, end: { x: colX() + colW, y: y - 11 }, color: ACCENT, thickness: 0.8 });
-    y -= 20;
-  };
-  const entry = (name: string, desc?: string, extra?: string) => {
-    if (y < bottom + 22) nextSlot();
-    text(page, fit(extra ? `${name}  (${extra})` : name, f.b, 8.6, colW), colX(), y - 8, f.b, 8.6);
-    y -= 11;
-    for (const para of (desc ?? "").split("\n").filter(Boolean)) {
-      for (const line of wrap(para, f.r, 7.8, colW)) {
-        if (y < bottom + 9) {
-          nextSlot();
-          text(page, `${name} (cont.)`, colX(), y - 8, f.b, 8.6, MUTED);
-          y -= 11;
-        }
-        text(page, line, colX(), y - 7, f.r, 7.8);
-        y -= 9.6;
-      }
-      y -= 2.4;
-    }
-    y -= 3;
-  };
-
-  const pr = sh.proficiencies;
-  const profLines = ([["Armor", pr.armor], ["Weapons", pr.weapons], ["Tools", pr.tools], ["Languages", pr.languages], ["Other", pr.other], ["Senses", sh.vision]] as [string, string[]][]).filter(([, v]) => v.length);
-  if (profLines.length) {
-    heading("Training and proficiencies");
-    profLines.forEach(([k, v]) => entry(k, v.map((x) => x.replace(/^(Armor|Weapon|Tool) Proficiency \((.*)\)$/, "$2")).join(", ")));
-  }
-  if (sh.attacks.length) {
-    heading("Attacks");
-    sh.attacks.forEach((a) => entry(a.name, `Attack ${sign(a.bonus)}. ${a.damage} ${a.damageType}. ${[a.properties, a.notes].filter(Boolean).join("; ")}`.trim()));
-  }
-  for (const c of sh.casting) {
-    heading(`Spellcasting: ${c.name}`);
-    entry("Spell save DC / attack", `DC ${c.dc}, attack ${sign(c.attack)}${c.prepare ? `, prepare ${c.prepareMax}` : ""}`);
-    if (c.slots.length) entry("Spell slots", c.slots.map((s) => `Level ${s.level}: ${s.total}`).join(", "));
-    const name = (id: string) => r.reg.get(id)?.name ?? id;
-    if (c.cantripsKnown.length) entry("Cantrips", c.cantripsKnown.map((p) => name(p.id)).join(", "));
-    const lvl = (id: string) => Number(r.reg.get(id)?.setters.level?.value ?? 0);
-    const list = (c.prepare ? [...c.granted, ...c.spells.filter((s) => s.prepared)] : [...c.spells, ...c.granted]).filter((p) => lvl(p.id) > 0);
-    const levels = [...new Set(list.map((p) => lvl(p.id)))].sort((a, b) => a - b);
-    for (const l of levels) entry(`Level ${l}`, [...new Set(list.filter((p) => lvl(p.id) === l).map((p) => name(p.id)))].join(", "));
-  }
-  const groups: [string, string[]][] = [
-    ["Species traits", ["Racial Trait"]],
-    ["Class features", ["Class Feature"]],
-    ["Subclass features", ["Archetype Feature"]],
-    ["Feats", ["Feat", "Feat Feature"]],
-    ["Background", ["Background Feature"]],
-  ];
-  for (const [title, types] of groups) {
-    const list = sh.features.filter((x) => types.includes(x.type));
-    if (!list.length) continue;
-    heading(title);
-    list.forEach((x) => entry(x.name, x.text, x.usage));
-  }
-  if (ch.inventory.length) {
-    heading("Equipment");
-    ch.inventory.forEach((i) => {
-      const el = i.id ? r.reg.get(i.id) : undefined;
-      entry(`${i.qty > 1 ? `${i.qty} x ` : ""}${el?.name ?? i.custom?.name ?? i.id}`, undefined, [i.equipped ? "equipped" : "", i.attuned ? "attuned" : ""].filter(Boolean).join(", "));
-    });
-    entry("Coins", (["pp", "gp", "ep", "sp", "cp"] as const).map((k) => `${ch.coins[k]} ${k.toUpperCase()}`).join(", "), `${sh.weight.carried}/${sh.weight.capacity} lb`);
-  }
-  const info = ([["Alignment", ch.info.alignment], ["Deity", ch.info.deity], ["Traits", ch.info.traits], ["Ideals", ch.info.ideals], ["Bonds", ch.info.bonds], ["Flaws", ch.info.flaws], ["Backstory", ch.info.backstory], ["Notes", ch.notes]] as [string, string][]).filter(([, v]) => v);
-  if (info.length || sh.lists.length) {
-    heading("Details");
-    sh.lists.forEach((l) => entry(l.name, l.texts.join(" ")));
-    info.forEach(([k, v]) => entry(k, v));
-  }
 }
 
 // ---------------------------------------------------------------- cards
@@ -452,7 +273,7 @@ async function buildPdfOnce(r: Resolved, sh: SheetData, opts: PdfOptions, fonts:
     b: await pdf.embedFont(fonts.bold, { subset: true }),
   };
   const size = PAPER[opts.paper];
-  if (opts.sheet) await drawSheet(pdf, f, r, sh, size);
+  if (opts.sheet) drawOfficialStyle(pdf, f, buildFillData(r, sh), size);
 
   const src = cardSources(r, sh);
   const cards: CardData[] = [];

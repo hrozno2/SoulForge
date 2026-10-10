@@ -21,7 +21,7 @@ export function looksLikeWotc2024(width: number, height: number, pages: number, 
 
 const INK = rgb(0.1, 0.09, 0.1);
 
-interface Pen {
+export interface Pen {
   page: PDFPage;
   r: PDFFont;
   b: PDFFont;
@@ -81,7 +81,7 @@ const diamond = (p: Pen, x: number, y: number, r = 4) =>
 
 // ---------------------------------------------------------------- page 1
 
-const ABIL: Record<string, { mod: [number, number]; score: [number, number]; save: [number, number]; saveDot: [number, number] }> = {
+export const ABIL: Record<string, { mod: [number, number]; score: [number, number]; save: [number, number]; saveDot: [number, number] }> = {
   strength: { mod: [44, 550], score: [75, 545], save: [34, 509], saveDot: [21.5, 509.5] },
   dexterity: { mod: [44, 423], score: [75, 427], save: [34, 391], saveDot: [21.5, 391.5] },
   constitution: { mod: [44, 283], score: [75, 282], save: [34, 245], saveDot: [21.5, 245.5] },
@@ -98,7 +98,7 @@ const SKILLS: Record<string, [number, number]> = {
   deception: [141, 218], intimidation: [141, 204], performance: [141, 190], persuasion: [141, 176],
 };
 
-function page1(p: Pen, d: FillData): number {
+export function fillPage1(p: Pen, d: FillData): number {
   text(p, d.name, 96, 736, { size: 12, bold: true, width: 190 });
   text(p, d.background, 82, 714, { size: 9, width: 62 });
   text(p, d.className, 175, 714, { size: 9, width: 70 });
@@ -167,17 +167,17 @@ function page1(p: Pen, d: FillData): number {
 // ---------------------------------------------------------------- page 2
 
 const SLOT_ROW_Y = [683, 669, 655];
-const SLOT_TOTAL_X = [189, 276, 356];
-const SLOT_PIP_X: number[][] = [[203, 212, 222, 231.5], [290, 300, 310], [369, 378.5]];
+export const SLOT_TOTAL_X = [189, 276, 356];
+export const SLOT_PIP_X: number[][] = [[203, 212, 222, 231.5], [290, 300, 310], [369, 378.5]];
 
 function flag(p: Pen, x: number, y: number): void {
   diamond(p, x, y, 4);
 }
 
-function page2(p: Pen, d: FillData): number {
+export function fillPage2(p: Pen, d: FillData): number {
   let hidden = 0;
   if (d.casting) {
-    text(p, d.casting.ability, 128, 745, { size: 9, bold: true, width: 100 });
+    text(p, d.casting.ability, 26, 745, { size: 9, bold: true, width: 100 });
     text(p, d.casting.mod, 30, 709, { size: 15, bold: true, center: true });
     text(p, d.casting.dc, 30, 686, { size: 15, bold: true, center: true });
     text(p, d.casting.attack, 30, 662, { size: 15, bold: true, center: true });
@@ -238,11 +238,11 @@ export async function fillWotc(template: Uint8Array | ArrayBuffer, d: FillData, 
   const notes: string[] = [];
   const want = new Set(opts.pages);
   if (want.has("page1") && pages[0]) {
-    const hidden = page1({ page: pages[0], r, b }, d);
+    const hidden = fillPage1({ page: pages[0], r, b }, d);
     if (hidden > 0) notes.push("Some feature text did not fit page 1 and was cut.");
   }
   if (want.has("page2") && pages[1]) {
-    const hidden = page2({ page: pages[1], r, b }, d);
+    const hidden = fillPage2({ page: pages[1], r, b }, d);
     if (hidden > 0) notes.push(`${hidden} spells or lines did not fit on page 2.`);
   }
   // Drop pages that were not asked for, last first.

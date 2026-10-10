@@ -51,4 +51,11 @@ describe.skipIf(!OFFICIAL || !CONTENT)("official 2024 sheet", () => {
     if (process.env.SHEET_OUT) writeFileSync(`${process.env.SHEET_OUT}/tips.pdf`, bytes);
     expect(bytes.length).toBeGreaterThan(1000);
   });
+
+  it("builds the Soul Forge sheet in the official layout", async () => {
+    const { r, sheet } = make();
+    const bytes = await buildPdf(r, sheet, { paper: "letter", sheet: true, spellCards: false, itemCards: false, featureCards: false, tips: false }, font);
+    if (process.env.SHEET_OUT) writeFileSync(`${process.env.SHEET_OUT}/sf.pdf`, bytes);
+    expect(bytes.length).toBeGreaterThan(1000);
+  });
 });

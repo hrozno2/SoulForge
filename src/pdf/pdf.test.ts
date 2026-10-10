@@ -50,8 +50,8 @@ describe("pdf export", () => {
     expect(cardCounts(r, sheet).spells).toBe(11);
     const bytes = await buildPdf(r, sheet, DEFAULT_PDF_OPTIONS, fonts);
     const doc = await PDFDocument.load(bytes);
-    // 1 sheet page, then 12 cards in two pages of nine
-    expect(doc.getPageCount()).toBeGreaterThanOrEqual(3);
+    // 2 sheet pages, then 12 cards in two pages of nine
+    expect(doc.getPageCount()).toBeGreaterThanOrEqual(4);
     expect(Buffer.from(bytes.slice(0, 5)).toString()).toBe("%PDF-");
   });
 
@@ -59,7 +59,7 @@ describe("pdf export", () => {
     const { r, sheet } = setup();
     const bytes = await buildPdf(r, sheet, { ...DEFAULT_PDF_OPTIONS, paper: "letter", spellCards: false, itemCards: false, featureCards: false, tips: false }, fonts);
     const doc = await PDFDocument.load(bytes);
-    expect(doc.getPageCount()).toBe(1);
+    expect(doc.getPageCount()).toBe(2); // the two sheet pages, laid out like the official sheet
     expect(doc.getPage(0).getSize()).toEqual({ width: 612, height: 792 });
   });
 

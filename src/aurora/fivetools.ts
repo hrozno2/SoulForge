@@ -95,8 +95,12 @@ const base = (id: string, name: string, type: string, source: string, extra: Par
 const set = (value: string, attrs: Record<string, string> = {}): SetterValue => ({ value, attrs });
 
 /** Skills, languages, armor and weapon categories, and ability increases that the converted content refers to. */
+/** Granted by a species or subrace that raises ability scores, so a background does not raise them a second time. */
+export const MARK_SPECIES_ASI = "ID_5ET_MARK_SPECIES_ASI";
+
 export function syntheticElements(): AElement[] {
   const out: AElement[] = [];
+  out.push(base(MARK_SPECIES_ASI, "Species ability score increase", "Information", "5etools", { compendiumHidden: true, description: "Marks that the species already raises ability scores." }));
   for (const s of SKILLS) {
     out.push(base(`ID_5ET_SKILL_${slug(s)}`, cap(s), "Proficiency", "5etools", {
       supports: ["5et skill"], compendiumHidden: true,
@@ -350,6 +354,8 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const rules: ARule[] = [...speedRules(r.speed), ...abilityRules(r.ability, r.name), ...skillRules(r.skillProficiencies, r.name)];
   const lang = langRules(r.languageProficiencies, r.name);
   rules.push(...lang.rules);
+  // Older (2014) species carry their own ability score increases. The 2024 background's would count a second time.
+  if (abilityRules(r.ability, r.name).length) rules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
   if (r.darkvision) {
     const vid = `${id}_DARKVISION`;
     out.push(base(vid, `Darkvision (${r.darkvision} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));
@@ -374,6 +380,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   for (const s of mine) {
     const sid = ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source);
     const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name), ...skillRules(s.skillProficiencies, s.name ?? r.name), ...langRules(s.languageProficiencies, s.name ?? r.name).rules];
+    if (abilityRules(s.ability, s.name ?? r.name).length) srules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
     if (s.speed) srules.push(...speedRules(s.speed));
     srules.push(...traitList(s.entries, sid, ctx, s.source, out, "5et trait", "Racial Trait"));
     out.push(base(sid, s.name ? `${s.name} ${r.name}` : r.name, "Sub Race", srcName(ctx, s.source), { supports: [`5et subrace of ${id}`], rules: srules, description: entriesHtml(s.entries) }));
@@ -382,7 +389,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
 
 function convertBackground(b: J, ctx: Ctx, out: AElement[]): void {
   const id = ftId("BG", b.name, b.source);
-  const rules: ARule[] = [...skillRules(b.skillProficiencies, b.name), ...abilityRules(b.ability, "Ability score increase"), ...langRules(b.languageProficiencies, b.name).rules];
+  const rules: ARule[] = [...skillRules(b.skillProficiencies, b.name), ...abilityRules(b.ability, "Ability score increase").map((x) => ({ ...x, requirements: x.requirements ?? `!${MARK_SPECIES_ASI}` })), ...langRules(b.languageProficiencies, b.name).rules];
   for (const f of (b.feats as J[]) ?? []) for (const k of Object.keys(f)) {
     const [fname, fsrc] = k.split("|");
     const [fbase, variant] = fname.split(";").map((x) => x.trim());

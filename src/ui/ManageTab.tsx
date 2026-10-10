@@ -38,6 +38,7 @@ function Level({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }
           XP says level {xpLevel}; your classes total {total}.{xpLevel > total ? " You can level up on the Build tab." : ""} Next level at {XP_TABLE[Math.min(19, total)] ?? "-"} XP.
         </span>
       </div>
+      <div className="row"><button className="primary" disabled={total >= 20 || ch.classes.length === 0} onClick={() => window.dispatchEvent(new Event("cf-levelup"))}>Level up...</button><span className="muted">A guided level up: features, hit points, spells and choices.</span></div>
       <h3>Hit points</h3>
       <div className="row">
         {(["average", "roll"] as const).map((m) => (

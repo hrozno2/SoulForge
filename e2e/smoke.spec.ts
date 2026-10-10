@@ -123,4 +123,26 @@ test.describe("Soul Forge smoke tests", () => {
     await page.getByPlaceholder("Search by name").last().fill("Test Flame");
     await expect(page.locator("ul.options.boxed").last()).toContainText("Test Flame");
   });
+
+  test("a guided level up adds the level, shows what it brings, and can be undone", async ({ page }) => {
+    await addTestContent(page);
+    await page.getByRole("button", { name: /random character/i }).click();
+    await tab(page, "Play");
+    const level = async () => Number(await page.locator(".level-medal b").innerText());
+    const start = await level();
+    await page.locator(".play-buttons").getByRole("button", { name: "Level up" }).click();
+    const dialog = page.getByRole("dialog", { name: "Level up" });
+    await dialog.getByRole("button", { name: "Level up" }).first().click();
+    await expect(dialog.getByText("Hit points", { exact: true })).toBeVisible();
+    await expect(dialog.getByText(/Maximum hit points went up/)).toBeVisible();
+    expect(await level()).toBe(start + 1);
+    await dialog.getByRole("button", { name: /undo this level/i }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(await level()).toBe(start);
+    // Doing it again and finishing keeps the level.
+    await page.locator(".play-buttons").getByRole("button", { name: "Level up" }).click();
+    await dialog.getByRole("button", { name: "Level up" }).first().click();
+    await dialog.getByRole("button", { name: "Done" }).click();
+    expect(await level()).toBe(start + 1);
+  });
 });

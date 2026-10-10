@@ -25,6 +25,7 @@ const EquipmentTab = lazy(() => import("./EquipmentTab").then((m) => ({ default:
 const ManageTab = lazy(() => import("./ManageTab").then((m) => ({ default: m.ManageTab })));
 const SheetTab = lazy(() => import("./SheetTab").then((m) => ({ default: m.SheetTab })));
 const PlayTab = lazy(() => import("./PlayTab").then((m) => ({ default: m.PlayTab })));
+const LevelUp = lazy(() => import("./LevelUp").then((m) => ({ default: m.LevelUp })));
 const ContentTab = lazy(() => import("./ContentTab").then((m) => ({ default: m.ContentTab })));
 
 type Tab = "start" | "build" | "magic" | "equipment" | "manage" | "play" | "sheet" | "content";
@@ -47,6 +48,12 @@ function loadCurrent(): { id: string; ch: Character } {
 export function App() {
   const [tab, setTab] = useState<Tab>("start");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [levelUpOpen, setLevelUpOpen] = useState(false);
+  useEffect(() => {
+    const on = () => setLevelUpOpen(true);
+    window.addEventListener("cf-levelup", on);
+    return () => window.removeEventListener("cf-levelup", on);
+  }, []);
   useScaleShortcuts();
   // One backup a day, a little after start-up so it never slows the first screen.
   useEffect(() => {
@@ -129,6 +136,7 @@ export function App() {
         </AppMenu>
       </header>
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+      {levelUpOpen && <Suspense fallback={null}><LevelUp r={r} ch={character} set={set} onDetail={setDetail} onClose={() => setLevelUpOpen(false)} /></Suspense>}
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} dismiss={updater.dismiss} />
       <main className={showDetail ? "with-detail" : ""}>
         <div className="pane">

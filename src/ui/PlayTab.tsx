@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, headerInfo, type CastingLine, type FeatureLine, type SheetData } from "../aurora/sheet";
-import { ABILITY_LABEL, ABILITY_SHORT, XP_TABLE, uid, type AbilityId, type Character, type Resource } from "../aurora/character";
+import { ABILITY_LABEL, ABILITY_SHORT, XP_TABLE, uid, xpToLevel, type AbilityId, type Character, type Resource } from "../aurora/character";
 import type { AElement } from "../aurora/types";
 import { Html } from "./Html";
 import { requestRoll, RollModeSwitch, type RollOptions } from "./Dice";
@@ -477,6 +477,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
         </div>
         <div className="play-buttons">
           <button className="inspire" onClick={() => set((c) => ({ ...c, play: { ...c.play, inspiration: !c.play.inspiration } }))}>{ch.play.inspiration ? "★ Inspired" : "☆ Inspiration"}</button>
+          {sheet.level < 20 && ch.classes.length > 0 && <button onClick={() => window.dispatchEvent(new Event("cf-levelup"))}>Level up</button>}
           <button onClick={rests.shortRest}>Short rest</button>
           <button className="primary" onClick={rests.longRest}>Long rest</button>
         </div>
@@ -484,6 +485,9 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
         <div className="xp wide"><div style={{ width: `${xpPct}%` }} /><span>{ch.xp} / {nextXp || "max"} XP</span></div>
       </header>
 
+      {xpToLevel(ch.xp) > sheet.level && sheet.level < 20 && (
+        <p className="notice levelup-banner">You have enough experience for level {xpToLevel(ch.xp)}. <button className="primary" onClick={() => window.dispatchEvent(new Event("cf-levelup"))}>Level up</button></p>
+      )}
       <div className="play-tools">
         <div className="rollmode-row"><small>d20 rolls</small><RollModeSwitch /></div>
         <Hint id="play-1">Click any modifier to roll it. Click a pip on a feature to spend a use.</Hint>

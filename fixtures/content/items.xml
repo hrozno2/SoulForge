@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<elements>
+	<element name="Warden's Blade" type="Weapon" source="Hollow Realms" id="ID_SF_WEAPON_WARDENS_BLADE">
+		<supports>ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_MELEE</supports>
+		<description><p>A straight blade of grey steel.</p></description>
+		<setters>
+			<set name="category">Weapons</set><set name="cost" currency="gp">15</set><set name="weight" lb="3">3 lb.</set><set name="slot">onehand</set>
+			<set name="damage" type="slashing">1d8</set><set name="versatile">1d10</set><set name="proficiency">ID_PROFICIENCY_WEAPON_MARTIAL</set>
+		</setters>
+	</element>
+	<element name="Dagger" type="Weapon" source="Hollow Realms" id="ID_SF_WEAPON_DAGGER">
+		<supports>ID_INTERNAL_WEAPON_CATEGORY_SIMPLE_MELEE, finesse</supports>
+		<description><p>A short knife.</p></description>
+		<setters>
+			<set name="category">Weapons</set><set name="cost" currency="gp">2</set><set name="weight" lb="1">1 lb.</set><set name="slot">onehand</set>
+			<set name="damage" type="piercing">1d4</set><set name="proficiency">ID_PROFICIENCY_WEAPON_SIMPLE</set>
+		</setters>
+	</element>
+	<element name="Hunting Bow" type="Weapon" source="Hollow Realms" id="ID_SF_WEAPON_HUNTING_BOW">
+		<supports>ID_INTERNAL_WEAPON_CATEGORY_MARTIAL_RANGED, ranged, ID_INTERNAL_WEAPON_PROPERTY_AMMUNITION</supports>
+		<description><p>A bow for hunting. Uses arrows.</p></description>
+		<setters>
+			<set name="category">Weapons</set><set name="cost" currency="gp">25</set><set name="weight" lb="2">2 lb.</set><set name="slot">twohand</set>
+			<set name="damage" type="piercing">1d8</set><set name="proficiency">ID_PROFICIENCY_WEAPON_MARTIAL</set>
+		</setters>
+	</element>
+	<element name="Chain Hauberk" type="Armor" source="Hollow Realms" id="ID_SF_ARMOR_CHAIN_HAUBERK">
+		<supports>ID_INTERNAL_ARMOR_GROUP_HEAVY</supports>
+		<description><p>Linked rings worn over padding.</p></description>
+		<setters>
+			<set name="category">Armor</set><set name="cost" currency="gp">75</set><set name="weight" lb="55">55 lb.</set><set name="slot">body</set>
+			<set name="armor">Heavy</set><set name="strength">13</set><set name="stealth">Disadvantage</set><set name="armorClass">16</set>
+			<set name="proficiency">ID_PROFICIENCY_ARMOR_HEAVY</set>
+		</setters>
+		<rules><stat name="ac:armored:armor" value="16" /></rules>
+	</element>
+	<element name="Padded Coat" type="Armor" source="Hollow Realms" id="ID_SF_ARMOR_PADDED_COAT">
+		<supports>ID_INTERNAL_ARMOR_GROUP_LIGHT</supports>
+		<description><p>A quilted coat.</p></description>
+		<setters>
+			<set name="category">Armor</set><set name="cost" currency="gp">5</set><set name="weight" lb="8">8 lb.</set><set name="slot">body</set>
+			<set name="armor">Light</set><set name="armorClass">11</set><set name="proficiency">ID_PROFICIENCY_ARMOR_LIGHT</set>
+		</setters>
+		<rules><stat name="ac:armored:armor" value="11" /></rules>
+	</element>
+	<element name="Round Shield" type="Armor" source="Hollow Realms" id="ID_SF_ARMOR_ROUND_SHIELD">
+		<description><p>A wooden shield.</p></description>
+		<setters>
+			<set name="category">Armor</set><set name="cost" currency="gp">10</set><set name="weight" lb="6">6 lb.</set><set name="slot">offhand</set>
+			<set name="armor">Shield</set><set name="armorClass">2</set><set name="proficiency">ID_PROFICIENCY_ARMOR_SHIELDS</set>
+		</setters>
+		<rules><stat name="ac:shield" value="2" bonus="shield" /></rules>
+	</element>
+	<element name="Arrows (20)" type="Item" source="Hollow Realms" id="ID_SF_ITEM_ARROWS">
+		<description><p>Twenty arrows.</p></description>
+		<setters><set name="category">Adventuring Gear</set><set name="cost" currency="gp">1</set><set name="weight" lb="1">1 lb.</set></setters>
+	</element>
+	<element name="Torch" type="Item" source="Hollow Realms" id="ID_SF_ITEM_TORCH">
+		<description><p>Burns for one hour.</p></description>
+		<setters><set name="category">Adventuring Gear</set><set name="cost" currency="cp">1</set><set name="weight" lb="1">1 lb.</set></setters>
+	</element>
+	<element name="Rope (50 feet)" type="Item" source="Hollow Realms" id="ID_SF_ITEM_ROPE">
+		<description><p>Hempen rope.</p></description>
+		<setters><set name="category">Adventuring Gear</set><set name="cost" currency="gp">1</set><set name="weight" lb="10">10 lb.</set></setters>
+	</element>
+	<element name="Lute" type="Item" source="Hollow Realms" id="ID_SF_ITEM_LUTE">
+		<description><p>A stringed instrument.</p></description>
+		<setters><set name="category">Musical Instruments</set><set name="cost" currency="gp">35</set><set name="weight" lb="2">2 lb.</set></setters>
+	</element>
+	<element name="Trail Pack" type="Item" source="Hollow Realms" id="ID_SF_ITEM_TRAIL_PACK">
+		<description><p>Includes a torch, 50 feet of rope and 10 days of rations.</p></description>
+		<setters><set name="category">Equipment Packs</set><set name="cost" currency="gp">12</set><set name="weight" lb="30">30 lb.</set></setters>
+		<extract>
+			<item amount="5">ID_SF_ITEM_TORCH</item>
+			<item>ID_SF_ITEM_ROPE</item>
+			<item amount="10">ID_SF_ITEM_RATIONS</item>
+		</extract>
+	</element>
+	<element name="Rations (1 day)" type="Item" source="Hollow Realms" id="ID_SF_ITEM_RATIONS">
+		<description><p>Dried food for one day.</p></description>
+		<setters><set name="category">Adventuring Gear</set><set name="cost" currency="sp">5</set><set name="weight" lb="2">2 lb.</set></setters>
+	</element>
+	<element name="Scholar's Pack" type="Item" source="Hollow Realms" id="ID_SF_ITEM_SCHOLARS_PACK">
+		<description><p>A satchel of books, ink and parchment.</p></description>
+		<setters><set name="category">Equipment Packs</set><set name="cost" currency="gp">40</set><set name="weight" lb="10">10 lb.</set></setters>
+	</element>
+	<element name="Sun Charm" type="Magic Item" source="Hollow Realms" id="ID_SF_MAGIC_SUN_CHARM">
+		<description><p>While you wear this charm, creatures that hit you with an attack take 1d6 radiant damage. Wisdom saving throw DC 13.</p></description>
+		<setters><set name="category">Wondrous Item</set><set name="rarity">Uncommon</set><set name="attunement">true</set><set name="weight" lb="0">-</set></setters>
+	</element>
+</elements>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<elements>
+	<!-- Older style background: skills and a feature, no ability score increase. -->
+	<element name="Wayfarer" type="Background" source="Hollow Realms" id="ID_SF_BACKGROUND_WAYFARER">
+		<description>
+			<p>You spent years on the road between the hollow towns.</p>
+			<ul class="unstyled"><li><strong>Equipment:</strong> a traveler's pack, a walking staff and 10 GP</li></ul>
+		</description>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_ATHLETICS" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_PERCEPTION" />
+			<grant type="Background Feature" id="ID_SF_BGFEATURE_ROADWISE" />
+		</rules>
+	</element>
+	<element name="Roadwise" type="Background Feature" source="Hollow Realms" id="ID_SF_BGFEATURE_ROADWISE">
+		<description><p>You always know the safest route between towns you have visited.</p></description>
+	</element>
+
+	<!-- Newer style background: its own ability score increase and an origin feat. -->
+	<element name="Scholar of the Vale" type="Background" source="Hollow Realms" id="ID_SF_BACKGROUND_SCHOLAR">
+		<description>
+			<ul class="unstyled">
+				<li><strong>Ability Scores:</strong> Intelligence, Wisdom, Charisma</li>
+				<li><strong>Feat:</strong> Quick Study</li>
+				<li><strong>Skill Proficiencies:</strong> Arcana and History</li>
+				<li><strong>Equipment:</strong> <i>Choose A or B:</i> (A) a book of lore, a quill and 20 GP; or (B) 50 GP</li>
+			</ul>
+		</description>
+		<rules>
+			<select type="Ability Score Improvement" name="Background ability scores" supports="SF Background ASI" number="2" />
+			<select type="Feat" name="Origin feat (Scholar)" supports="ID_SF_FEAT_QUICK_STUDY|ID_SF_FEAT_LUCKY_STAR" default="ID_SF_FEAT_QUICK_STUDY" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_ARCANA" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_HISTORY" />
+			<grant type="Grants" id="ID_INTERNAL_GRANTS_BACKGROUND_ASI" />
+		</rules>
+	</element>
+	<element name="Intelligence +1" type="Ability Score Improvement" source="Hollow Realms" id="ID_SF_ASI_INT"><supports>SF Background ASI</supports><rules><stat name="intelligence" value="1" /></rules></element>
+	<element name="Wisdom +1" type="Ability Score Improvement" source="Hollow Realms" id="ID_SF_ASI_WIS"><supports>SF Background ASI</supports><rules><stat name="wisdom" value="1" /></rules></element>
+	<element name="Charisma +1" type="Ability Score Improvement" source="Hollow Realms" id="ID_SF_ASI_CHA"><supports>SF Background ASI</supports><rules><stat name="charisma" value="1" /></rules></element>
+</elements>

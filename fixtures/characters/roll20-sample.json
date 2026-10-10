@@ -1,0 +1,35 @@
+{
+  "schema_version": 3,
+  "type": "character",
+  "character": {
+    "name": "Mira Ashdown",
+    "bio": "<p>Sings for her supper in the hollow towns.</p>",
+    "attribs": [
+      { "name": "class", "current": "Spellsinger", "max": "" },
+      { "name": "base_level", "current": 4, "max": "" },
+      { "name": "race", "current": "Emberkin", "max": "" },
+      { "name": "background", "current": "Wayfarer", "max": "" },
+      { "name": "strength", "current": 8, "max": "" },
+      { "name": "dexterity", "current": 12, "max": "" },
+      { "name": "constitution", "current": 13, "max": "" },
+      { "name": "intelligence", "current": 10, "max": "" },
+      { "name": "wisdom", "current": 12, "max": "" },
+      { "name": "charisma", "current": 16, "max": "" },
+      { "name": "hp", "current": 24, "max": 24 },
+      { "name": "gp", "current": 40, "max": "" },
+      { "name": "alignment", "current": "Chaotic Good", "max": "" },
+      { "name": "persuasion_prof", "current": "(@{pb})", "max": "" },
+      { "name": "arcana_prof", "current": "(@{pb})", "max": "" },
+      { "name": "charisma_save_prof", "current": "(@{pb})", "max": "" },
+      { "name": "wisdom_save_prof", "current": "(@{pb})", "max": "" },
+      { "name": "repeating_spell-cantrip_-Nabcdefghijklmnopqr1_spellname", "current": "Ember Dart", "max": "" },
+      { "name": "repeating_spell-1_-Nabcdefghijklmnopqr2_spellname", "current": "Healing Verse", "max": "" },
+      { "name": "repeating_spell-1_-Nabcdefghijklmnopqr3_spellname", "current": "Moonlit Sonata", "max": "" },
+      { "name": "repeating_inventory_-Nabcdefghijklmnopqr4_itemname", "current": "Lute", "max": "" },
+      { "name": "repeating_inventory_-Nabcdefghijklmnopqr4_itemcount", "current": 1, "max": "" },
+      { "name": "repeating_inventory_-Nabcdefghijklmnopqr5_itemname", "current": "Dagger +1", "max": "" },
+      { "name": "repeating_inventory_-Nabcdefghijklmnopqr5_itemcount", "current": 2, "max": "" }
+    ],
+    "abilities": []
+  }
+}

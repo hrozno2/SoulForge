@@ -1,0 +1,31 @@
+{
+  "name": "Brandt Kell",
+  "type": "character",
+  "system": {
+    "abilities": {
+      "str": { "value": 17, "proficient": 1 },
+      "dex": { "value": 12, "proficient": 0 },
+      "con": { "value": 16, "proficient": 1 },
+      "int": { "value": 8, "proficient": 0 },
+      "wis": { "value": 13, "proficient": 0 },
+      "cha": { "value": 10, "proficient": 0 }
+    },
+    "attributes": { "hp": { "value": 49, "max": 49 } },
+    "details": { "alignment": "Lawful Good", "xp": { "value": 6500 }, "age": "41", "hair": "grey", "biography": { "value": "<p>Walked the long road for twenty years.</p>" } },
+    "currency": { "pp": 0, "gp": 12, "ep": 0, "sp": 5, "cp": 0 },
+    "skills": { "ath": { "value": 1 }, "prc": { "value": 1 } },
+    "traits": { "size": "sm", "languages": { "value": ["common"] } },
+    "tools": {}
+  },
+  "items": [
+    { "name": "Warden", "type": "class", "system": { "levels": 5 } },
+    { "name": "Order of the Lantern", "type": "subclass", "system": {} },
+    { "name": "Hollowfolk", "type": "race", "system": {} },
+    { "name": "Wayfarer", "type": "background", "system": {} },
+    { "name": "Warden's Blade", "type": "weapon", "system": { "quantity": 1, "equipped": true } },
+    { "name": "Chain Hauberk", "type": "equipment", "system": { "quantity": 1, "equipped": true } },
+    { "name": "Torch", "type": "consumable", "system": { "quantity": 4 } },
+    { "name": "Second Wind", "type": "feat", "system": { "type": { "value": "class" } } },
+    { "name": "Brawler", "type": "feat", "system": { "type": { "value": "feat" } } }
+  ]
+}

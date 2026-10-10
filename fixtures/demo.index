@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<index>
+	<info>
+		<name>Hollow Realms Starter Set</name>
+		<description>Original test content for Soul Forge. Not from any published book.</description>
+		<author url="https://github.com/hrozno2/SoulForge">Soul Forge contributors</author>
+		<update version="1.0.0"><file name="demo.index" url="https://fixtures.soulforge.test/demo.index" /></update>
+	</info>
+	<files>
+		<file name="core.xml" url="https://fixtures.soulforge.test/content/core.xml" />
+		<file name="species.xml" url="https://fixtures.soulforge.test/content/species.xml" />
+		<file name="backgrounds.xml" url="https://fixtures.soulforge.test/content/backgrounds.xml" />
+		<file name="feats.xml" url="https://fixtures.soulforge.test/content/feats.xml" />
+		<file name="classes.xml" url="https://fixtures.soulforge.test/content/classes.xml" />
+		<file name="spells.xml" url="https://fixtures.soulforge.test/content/spells.xml" />
+		<file name="items.xml" url="https://fixtures.soulforge.test/content/items.xml" />
+	</files>
+</index>

@@ -1,4 +1,7 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { backupFileName, isBackup, makeBackup, restoreBackup } from "../aurora/backup";
+import { backupStore } from "../aurora/storage";
+import { pickFiles, saveFile } from "../store";
 
 export interface AppSettings {
   /** Interface size in percent. */
@@ -6,10 +9,11 @@ export interface AppSettings {
   compact: boolean;
   reduceMotion: boolean;
   paper: "a4" | "letter";
+  autoBackup: boolean;
 }
 
 const KEY = "charforge.settings";
-const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4" };
+const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true };
 
 function read(): AppSettings {
   try {
@@ -74,6 +78,34 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
     window.addEventListener("keydown", esc);
     return () => window.removeEventListener("keydown", esc);
   }, [onClose]);
+  const [msg, setMsg] = useState("");
+  const [dates, setDates] = useState<string[]>([]);
+  useEffect(() => { backupStore.dates().then(setDates); }, []);
+  const backUp = async () => {
+    const json = JSON.stringify(await makeBackup(), null, 2);
+    const ok = await saveFile(backupFileName(), new TextEncoder().encode(json), "application/json");
+    setMsg(ok ? "Backup saved." : "Cancelled.");
+  };
+  const restoreFrom = async (text: string) => {
+    try {
+      const v = JSON.parse(text);
+      if (!isBackup(v)) throw new Error("That is not a Soul Forge backup file.");
+      const r = await restoreBackup(v, "merge");
+      setMsg(`Restored: ${r.added} added, ${r.updated} updated, ${r.kept} already newer here.`);
+    } catch (e) {
+      setMsg(`Could not restore: ${(e as Error).message}`);
+    }
+  };
+  const restoreFile = async () => {
+    const files = await pickFiles(["json"]);
+    if (files === null) {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".json";
+      input.onchange = async () => { const f = input.files?.[0]; if (f) await restoreFrom(await f.text()); };
+      input.click();
+    } else if (files[0]) await restoreFrom(await files[0].text());
+  };
   const resetHints = () => {
     try {
       for (const k of Object.keys(localStorage)) if (k.startsWith("charforge.hint.")) localStorage.removeItem(k);
@@ -108,6 +140,27 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             {(["a4", "letter"] as const).map((p) => <button key={p} className={s.paper === p ? "pill active" : "pill"} onClick={() => updateSettings({ paper: p })}>{p === "a4" ? "A4" : "Letter"}</button>)}
           </span>
         </div>
+        <div className="set-row">
+          <span><b>Backups</b><small className="muted"> Every character in one file</small></span>
+          <span className="set-ctl">
+            <button onClick={backUp}>Back up all characters</button>
+            <button onClick={restoreFile}>Restore...</button>
+          </span>
+        </div>
+        <label className="set-row">
+          <span><b>Automatic daily backup</b><small className="muted"> Keeps the last 7 days on this computer</small></span>
+          <input type="checkbox" checked={s.autoBackup} onChange={(e) => updateSettings({ autoBackup: e.target.checked })} />
+        </label>
+        {dates.length > 0 && (
+          <div className="set-row">
+            <span><b>Restore from a day</b></span>
+            <select aria-label="Automatic backups" defaultValue="" onChange={async (e) => { const d = e.target.value; e.target.value = ""; if (d) { const t = await backupStore.get(d); if (t) await restoreFrom(t); } }}>
+              <option value="">Choose a day...</option>
+              {dates.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+        )}
+        {msg && <p className="notice" role="status">{msg}</p>}
         <div className="set-row">
           <span><b>Tips</b><small className="muted"> Bring back hints you dismissed</small></span>
           <button onClick={resetHints}>Show tips again</button>

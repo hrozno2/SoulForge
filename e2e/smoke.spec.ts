@@ -1,0 +1,95 @@
+import { expect, test } from "@playwright/test";
+import { addTestContent, tab, watchProblems } from "./helpers";
+
+test.describe("Soul Forge smoke tests", () => {
+  test("starts, switches tabs and themes without policy violations or errors", async ({ page }) => {
+    const seen = watchProblems(page);
+    await page.goto("/");
+    await expect(page.locator("header")).toContainText("Soul Forge");
+    for (const name of ["Build", "Magic", "Equipment", "Manage", "Play", "Sheet", "Content", "Home"]) {
+      await tab(page, name);
+      await expect(page.locator("main")).toBeVisible();
+    }
+    await page.getByRole("button", { name: /^menu/i }).click();
+    await page.locator(".theme select").selectOption("daylight");
+    await expect(page.locator("html")).toHaveAttribute("data-skin", "daylight");
+    expect(seen.csp).toEqual([]);
+    expect(seen.errors).toEqual([]);
+  });
+
+  test("adds content from a link, builds a random character and plays it", async ({ page }) => {
+    const seen = watchProblems(page);
+    await addTestContent(page);
+    await page.getByRole("button", { name: /random character/i }).click();
+    await tab(page, "Play");
+    await expect(page.locator(".play-id h1")).toHaveText(/random adventurer/i);
+    await expect(page.locator(".ab-box")).toHaveCount(6);
+    await expect(page.locator(".hp-bar")).toBeVisible();
+    // Roll an ability check: the dice panel opens with a result card.
+    await page.locator(".ab-box").first().click();
+    await expect(page.locator(".roll-card .roll-total")).toBeVisible();
+    expect(seen.csp).toEqual([]);
+    expect(seen.errors).toEqual([]);
+  });
+
+  test("the dice tray builds a roll from clicks", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /^dice$/i }).click();
+    const die = (n: number) => page.locator(".die-btn").nth(n);
+    await die(1).click();
+    await die(1).click();
+    await die(2).click();
+    await page.getByRole("button", { name: "+1", exact: true }).click();
+    await expect(page.getByLabel("Dice to roll")).toHaveValue("2d6+1d8+1");
+    await page.getByRole("button", { name: "Roll", exact: true }).click();
+    const total = Number(await page.locator(".roll-total").innerText());
+    expect(total).toBeGreaterThanOrEqual(4);
+    expect(total).toBeLessThanOrEqual(21);
+    await page.getByRole("button", { name: /close dice/i }).click();
+    await expect(page.locator(".dice-panel")).toHaveCount(0);
+  });
+
+  test("changes the interface size and remembers it", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /^menu/i }).click();
+    await page.getByRole("button", { name: /settings/i }).click();
+    await page.locator("input[type=range]").first().fill("120");
+    expect(await page.evaluate(() => document.documentElement.style.zoom)).toBe("1.2");
+    await page.reload();
+    expect(await page.evaluate(() => document.documentElement.style.zoom)).toBe("1.2");
+  });
+
+  test("exports a PDF sheet that opens as a real PDF", async ({ page }) => {
+    const seen = watchProblems(page);
+    await addTestContent(page);
+    await page.getByRole("button", { name: /random character/i }).click();
+    await tab(page, "Sheet");
+    await page.getByRole("button", { name: /export pdf/i }).click();
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: /create pdf/i }).click();
+    const file = await download;
+    const path = await file.path();
+    const { readFileSync } = await import("node:fs");
+    const bytes = readFileSync(path!);
+    expect(bytes.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(bytes.length).toBeGreaterThan(20_000);
+    expect(seen.csp).toEqual([]);
+    expect(seen.errors).toEqual([]);
+  });
+
+  test("backs up and restores characters", async ({ page }) => {
+    await addTestContent(page);
+    await page.getByRole("button", { name: /random character/i }).click();
+    await page.waitForTimeout(1200); // the character is saved to the library shortly after it changes
+    await page.getByRole("button", { name: /^menu/i }).click();
+    await page.getByRole("button", { name: /settings/i }).click();
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: /back up all characters/i }).click();
+    const file = await download;
+    const { readFileSync } = await import("node:fs");
+    const backup = JSON.parse(readFileSync((await file.path())!, "utf8"));
+    expect(backup.kind).toBe("backup");
+    expect(backup.characters.length).toBeGreaterThanOrEqual(1);
+    expect(backup.characters[0].data.version).toBe(2);
+  });
+});

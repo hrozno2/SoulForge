@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { newCharacter, normalizeCharacter, uid, type Character } from "../aurora/character";
 import { resolve } from "../aurora/engine";
 import { autoFill } from "../aurora/autofill";
@@ -6,12 +6,6 @@ import { saveCharacterRecord } from "../aurora/storage";
 import type { AElement } from "../aurora/types";
 import { useContent } from "./useContent";
 import { BuildTab } from "./BuildTab";
-import { MagicTab } from "./MagicTab";
-import { EquipmentTab } from "./EquipmentTab";
-import { ManageTab } from "./ManageTab";
-import { SheetTab } from "./SheetTab";
-import { PlayTab } from "./PlayTab";
-import { ContentTab } from "./ContentTab";
 import { StartTab } from "./StartTab";
 import { DetailPanel } from "./DetailPanel";
 import { UpdateBanner } from "./UpdateBanner";
@@ -20,9 +14,18 @@ import { UiProvider } from "./Learn";
 import { ThemePicker } from "./Theme";
 import { HelpButton } from "./Help";
 import { AppMenu, Tabs } from "./TopBar";
-import { SettingsDialog, useScaleShortcuts } from "./Settings";
+import { SettingsDialog, getSettings, useScaleShortcuts } from "./Settings";
+import { runAutoBackup } from "../aurora/backup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter } from "../aurora/foreign";
+
+// The tabs that are not needed at start-up load on first use, which keeps the first screen quick.
+const MagicTab = lazy(() => import("./MagicTab").then((m) => ({ default: m.MagicTab })));
+const EquipmentTab = lazy(() => import("./EquipmentTab").then((m) => ({ default: m.EquipmentTab })));
+const ManageTab = lazy(() => import("./ManageTab").then((m) => ({ default: m.ManageTab })));
+const SheetTab = lazy(() => import("./SheetTab").then((m) => ({ default: m.SheetTab })));
+const PlayTab = lazy(() => import("./PlayTab").then((m) => ({ default: m.PlayTab })));
+const ContentTab = lazy(() => import("./ContentTab").then((m) => ({ default: m.ContentTab })));
 
 type Tab = "start" | "build" | "magic" | "equipment" | "manage" | "play" | "sheet" | "content";
 const TABS: [Tab, string][] = [["start", "Home"], ["build", "Build"], ["magic", "Magic"], ["equipment", "Equipment"], ["manage", "Manage"], ["play", "Play"], ["sheet", "Sheet"], ["content", "Content"]];
@@ -45,6 +48,11 @@ export function App() {
   const [tab, setTab] = useState<Tab>("start");
   const [settingsOpen, setSettingsOpen] = useState(false);
   useScaleShortcuts();
+  // One backup a day, a little after start-up so it never slows the first screen.
+  useEffect(() => {
+    const t = window.setTimeout(() => void runAutoBackup(getSettings().autoBackup).catch(() => undefined), 8000);
+    return () => window.clearTimeout(t);
+  }, []);
   const initial = useMemo(loadCurrent, []);
   const [id, setId] = useState(initial.id);
   const [character, setCharacter] = useState<Character>(initial.ch);
@@ -123,6 +131,7 @@ export function App() {
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} dismiss={updater.dismiss} />
       <main className={showDetail ? "with-detail" : ""}>
         <div className="pane">
+          <Suspense fallback={<p className="muted">Loading...</p>}>
           {tab === "start" && <StartTab currentId={id} onOpen={open} onNew={() => open(uid(), newCharacter())} onRandom={random} contentReady={content.ready} sourceCount={content.sources.length} goContent={() => setTab("content")} onImportForeign={importForeign} />}
           {tab === "build" && (
             <>
@@ -136,6 +145,7 @@ export function App() {
           {tab === "play" && <PlayTab r={r} ch={character} set={set} />}
           {tab === "sheet" && <SheetTab r={r} ch={character} set={set} />}
           {tab === "content" && <ContentTab content={content} onDetail={setDetail} />}
+          </Suspense>
         </div>
         {showDetail && <DetailPanel el={detail} />}
       </main>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<elements>
+	<element name="Quick Study" type="Feat" source="Hollow Realms" id="ID_SF_FEAT_QUICK_STUDY">
+		<supports>Origin</supports>
+		<description><p>You learn one extra skill of your choice.</p></description>
+		<rules><select type="Proficiency" name="Quick Study skill" supports="Skill" /></rules>
+	</element>
+	<element name="Lucky Star" type="Feat" source="Hollow Realms" id="ID_SF_FEAT_LUCKY_STAR">
+		<supports>Origin</supports>
+		<description><p>Once per long rest, you can reroll a die.</p></description>
+		<sheet display="true" usage="1/Long Rest"><description>Once per long rest, you can reroll a die.</description></sheet>
+	</element>
+	<element name="Ability Score Improvement" type="Feat" source="Hollow Realms" id="ID_SF_FEAT_ASI">
+		<supports>General</supports>
+		<requirements>[level:4]</requirements>
+		<description><p>Increase one ability score by 2, or two by 1.</p></description>
+		<rules><select type="Ability Score Improvement" name="Feat ability scores" supports="SF Feat ASI" number="2" /></rules>
+	</element>
+	<element name="Strength +1 (feat)" type="Ability Score Improvement" source="Hollow Realms" id="ID_SF_FEAT_ASI_STR"><supports>SF Feat ASI</supports><rules><stat name="strength" value="1" /></rules></element>
+	<element name="Dexterity +1 (feat)" type="Ability Score Improvement" source="Hollow Realms" id="ID_SF_FEAT_ASI_DEX"><supports>SF Feat ASI</supports><rules><stat name="dexterity" value="1" /></rules></element>
+	<element name="Constitution +1 (feat)" type="Ability Score Improvement" source="Hollow Realms" id="ID_SF_FEAT_ASI_CON"><supports>SF Feat ASI</supports><rules><stat name="constitution" value="1" /></rules></element>
+	<element name="Brawler" type="Feat" source="Hollow Realms" id="ID_SF_FEAT_BRAWLER">
+		<supports>General</supports>
+		<requirements>[level:4]</requirements>
+		<description><p>Your unarmed strikes deal 1d6 damage.</p></description>
+	</element>
+</elements>

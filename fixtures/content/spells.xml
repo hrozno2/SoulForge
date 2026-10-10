@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<elements>
+	<element name="Ember Dart" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_EMBER_DART">
+		<supports>Spellsinger</supports>
+		<description><p>Make a ranged spell attack against a creature within range. On a hit, it takes 1d10 fire damage. The damage increases by 1d10 when you reach 5th level.</p></description>
+		<setters><set name="level">0</set><set name="school">Evocation</set><set name="time">1 action</set><set name="duration">Instantaneous</set><set name="range">120 feet</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">true</set><set name="hasMaterialComponent">false</set><set name="isConcentration">false</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Soft Light" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_SOFT_LIGHT">
+		<supports>Spellsinger</supports>
+		<description><p>An object you touch sheds bright light in a 20-foot radius for one hour.</p></description>
+		<setters><set name="level">0</set><set name="school">Evocation</set><set name="time">1 action</set><set name="duration">1 hour</set><set name="range">Touch</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">false</set><set name="hasMaterialComponent">false</set><set name="isConcentration">false</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Whisper" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_WHISPER">
+		<supports>Spellsinger</supports>
+		<description><p>You point at a creature within range and whisper a message that only it can hear.</p></description>
+		<setters><set name="level">0</set><set name="school">Transmutation</set><set name="time">1 action</set><set name="duration">1 round</set><set name="range">120 feet</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">true</set><set name="hasMaterialComponent">false</set><set name="isConcentration">false</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Healing Verse" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_HEALING_VERSE">
+		<supports>Spellsinger</supports>
+		<description><p>A creature you touch regains 1d8 hit points. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.</p></description>
+		<setters><set name="level">1</set><set name="school">Abjuration</set><set name="time">1 action</set><set name="duration">Instantaneous</set><set name="range">Touch</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">true</set><set name="hasMaterialComponent">false</set><set name="isConcentration">false</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Thunder Chord" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_THUNDER_CHORD">
+		<supports>Spellsinger</supports>
+		<description><p>Each creature in a 15-foot cube must make a Constitution saving throw. It takes 2d8 thunder damage on a failed save, or half as much on a success. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d8 for each slot level above 1st.</p></description>
+		<setters><set name="level">1</set><set name="school">Evocation</set><set name="time">1 action</set><set name="duration">Instantaneous</set><set name="range">Self</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">true</set><set name="hasMaterialComponent">false</set><set name="isConcentration">false</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Lullaby" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_LULLABY">
+		<supports>Spellsinger</supports>
+		<description><p>Creatures that hear your song must make a Wisdom saving throw or fall asleep for one minute.</p></description>
+		<setters><set name="level">1</set><set name="school">Enchantment</set><set name="time">1 action</set><set name="duration">Concentration, up to 1 minute</set><set name="range">30 feet</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">false</set><set name="hasMaterialComponent">false</set><set name="isConcentration">true</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Echo Ward" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_ECHO_WARD">
+		<supports>Spellsinger</supports>
+		<description><p>A shimmering ward surrounds a creature you touch, granting a +2 bonus to its armor class.</p></description>
+		<setters><set name="level">2</set><set name="school">Abjuration</set><set name="time">1 action</set><set name="duration">Concentration, up to 10 minutes</set><set name="range">Touch</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">true</set><set name="hasMaterialComponent">true</set><set name="materialComponent">a silver bell</set><set name="isConcentration">true</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Crescendo" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_CRESCENDO">
+		<supports>Spellsinger</supports>
+		<description><p>A wave of sound sweeps out in a 30-foot cone. Each creature must make a Dexterity saving throw. It takes 6d6 thunder damage on a failed save, or half as much on a success.</p></description>
+		<setters><set name="level">3</set><set name="school">Evocation</set><set name="time">1 action</set><set name="duration">Instantaneous</set><set name="range">Self (30-foot cone)</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">true</set><set name="hasMaterialComponent">false</set><set name="isConcentration">false</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Distant Chime" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_DISTANT_CHIME">
+		<supports>Spellsinger</supports>
+		<description><p>You hear a sound from a place you know within a mile. A ritual casting costs no slot.</p></description>
+		<setters><set name="level">1</set><set name="school">Divination</set><set name="time">1 action</set><set name="duration">Instantaneous</set><set name="range">1 mile</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">false</set><set name="hasMaterialComponent">false</set><set name="isConcentration">false</set><set name="isRitual">true</set></setters>
+	</element>
+</elements>

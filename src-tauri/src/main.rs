@@ -22,6 +22,21 @@ fn install_kind() -> String {
     "app".into()
 }
 
+/// Where a self-test report should go. Set only when a developer or CI starts the app with SOULFORGE_SELFTEST.
+#[tauri::command]
+fn selftest_path() -> Option<String> {
+    std::env::var("SOULFORGE_SELFTEST").ok().filter(|p| !p.is_empty())
+}
+
+/// Writes the self-test report and quits, so a script can run the real app and read the result.
+#[tauri::command]
+fn selftest_finish(report: String) {
+    if let Some(path) = selftest_path() {
+        let _ = std::fs::write(path, report);
+        std::process::exit(0);
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -29,7 +44,7 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![install_kind])
+        .invoke_handler(tauri::generate_handler![install_kind, selftest_path, selftest_finish])
         .run(tauri::generate_context!())
         .expect("error while running Soul Forge");
 }

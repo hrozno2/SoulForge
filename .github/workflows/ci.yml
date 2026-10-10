@@ -18,3 +18,45 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm test
       - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+
+  # Builds the real desktop app and runs its self-check under the production security policy.
+  desktop-selftest:
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npx tauri build --debug --bundles app
+        env:
+          CI: "false"
+      - name: Run the app's self-check
+        run: |
+          SOULFORGE_SELFTEST="$RUNNER_TEMP/report.json" src-tauri/target/debug/bundle/macos/SoulForge.app/Contents/MacOS/charforge &
+          for i in $(seq 1 40); do [ -f "$RUNNER_TEMP/report.json" ] && break; sleep 3; done
+          cat "$RUNNER_TEMP/report.json"
+          python3 -c "import json,sys; d=json.load(open('$RUNNER_TEMP/report.json')); sys.exit(0 if d['ok'] else 1)"

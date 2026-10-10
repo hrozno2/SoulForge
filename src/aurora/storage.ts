@@ -2,7 +2,7 @@ import type { Character } from "./character";
 import type { FileCache, SourceConfig } from "./sources";
 
 const DB_NAME = "charforge";
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -19,6 +19,7 @@ function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains("characters")) db.createObjectStore("characters", { keyPath: "id" });
       if (!db.objectStoreNames.contains("templates")) db.createObjectStore("templates", { keyPath: "id" });
       if (!db.objectStoreNames.contains("translations")) db.createObjectStore("translations");
+      if (!db.objectStoreNames.contains("backups")) db.createObjectStore("backups");
       // PDF bytes live in their own store so listing templates stays light.
       if (!db.objectStoreNames.contains("templateBytes")) {
         db.createObjectStore("templateBytes");
@@ -216,5 +217,33 @@ export const translationCache = {
     } catch {
       /* the cache is optional */
     }
+  },
+};
+
+/** Automatic backups, one per day, kept by date. */
+export const backupStore = {
+  async put(date: string, json: string): Promise<void> {
+    const db = await openDb();
+    const tx = db.transaction("backups", "readwrite");
+    tx.objectStore("backups").put(json, date);
+    await done(tx);
+  },
+  async get(date: string): Promise<string | undefined> {
+    const db = await openDb();
+    return (await wrap(db.transaction("backups").objectStore("backups").get(date))) as string | undefined;
+  },
+  async dates(): Promise<string[]> {
+    try {
+      const db = await openDb();
+      return ((await wrap(db.transaction("backups").objectStore("backups").getAllKeys())) as string[]).sort().reverse();
+    } catch {
+      return [];
+    }
+  },
+  async remove(date: string): Promise<void> {
+    const db = await openDb();
+    const tx = db.transaction("backups", "readwrite");
+    tx.objectStore("backups").delete(date);
+    await done(tx);
   },
 };

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Original test content for Soul Forge. Not from any published book. -->
+<elements>
+	<element name="Hollow Realms Starter Set" type="Source" source="Hollow Realms" id="ID_SF_SOURCE_HOLLOW_REALMS">
+		<setters>
+			<set name="release">20240101</set>
+			<set name="abbreviation">HRS</set>
+			<set name="official">false</set>
+		</setters>
+	</element>
+
+	<element name="Background Ability Score Improvement" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_BACKGROUND_ASI" />
+
+	<!-- Saving throws -->
+	<element name="Saving Throw (Strength)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_SAVINGTHROW_STRENGTH">
+		<supports>Saving Throw</supports>
+		<rules><stat name="strength:save:proficiency" value="proficiency" bonus="proficiency" alt="Proficiency" /></rules>
+	</element>
+	<element name="Saving Throw (Dexterity)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_SAVINGTHROW_DEXTERITY">
+		<supports>Saving Throw</supports>
+		<rules><stat name="dexterity:save:proficiency" value="proficiency" bonus="proficiency" alt="Proficiency" /></rules>
+	</element>
+	<element name="Saving Throw (Constitution)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_SAVINGTHROW_CONSTITUTION">
+		<supports>Saving Throw</supports>
+		<rules><stat name="constitution:save:proficiency" value="proficiency" bonus="proficiency" alt="Proficiency" /></rules>
+	</element>
+	<element name="Saving Throw (Intelligence)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_SAVINGTHROW_INTELLIGENCE">
+		<supports>Saving Throw</supports>
+		<rules><stat name="intelligence:save:proficiency" value="proficiency" bonus="proficiency" alt="Proficiency" /></rules>
+	</element>
+	<element name="Saving Throw (Wisdom)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_SAVINGTHROW_WISDOM">
+		<supports>Saving Throw</supports>
+		<rules><stat name="wisdom:save:proficiency" value="proficiency" bonus="proficiency" alt="Proficiency" /></rules>
+	</element>
+	<element name="Saving Throw (Charisma)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_SAVINGTHROW_CHARISMA">
+		<supports>Saving Throw</supports>
+		<rules><stat name="charisma:save:proficiency" value="proficiency" bonus="proficiency" alt="Proficiency" /></rules>
+	</element>
+
+	<!-- Skills -->
+	<element name="Athletics" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_SKILL_ATHLETICS">
+		<supports>Skill,Strength,Warden,Spellsinger</supports>
+		<rules><stat name="athletics:proficiency" value="proficiency" bonus="proficiency" /></rules>
+	</element>
+	<element name="Perception" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_SKILL_PERCEPTION">
+		<supports>Skill,Wisdom,Warden,Spellsinger</supports>
+		<rules><stat name="perception:proficiency" value="proficiency" bonus="proficiency" /></rules>
+	</element>
+	<element name="Arcana" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_SKILL_ARCANA">
+		<supports>Skill,Intelligence,Spellsinger</supports>
+		<rules><stat name="arcana:proficiency" value="proficiency" bonus="proficiency" /></rules>
+	</element>
+	<element name="Stealth" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_SKILL_STEALTH">
+		<supports>Skill,Dexterity,Warden,Spellsinger</supports>
+		<rules><stat name="stealth:proficiency" value="proficiency" bonus="proficiency" /></rules>
+	</element>
+	<element name="Persuasion" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_SKILL_PERSUASION">
+		<supports>Skill,Charisma,Spellsinger</supports>
+		<rules><stat name="persuasion:proficiency" value="proficiency" bonus="proficiency" /></rules>
+	</element>
+	<element name="History" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_SKILL_HISTORY">
+		<supports>Skill,Intelligence,Warden,Spellsinger</supports>
+		<rules><stat name="history:proficiency" value="proficiency" bonus="proficiency" /></rules>
+	</element>
+
+	<!-- Weapon and armor groups -->
+	<element name="Weapon Proficiency (Simple)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_WEAPON_SIMPLE" />
+	<element name="Weapon Proficiency (Martial)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_WEAPON_MARTIAL" />
+	<element name="Armor Proficiency (Light)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_ARMOR_LIGHT" />
+	<element name="Armor Proficiency (Heavy)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_ARMOR_HEAVY" />
+	<element name="Armor Proficiency (Shields)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_ARMOR_SHIELDS" />
+</elements>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PDFDocument } from "pdf-lib";
 import type { Resolved } from "../aurora/engine";
 import type { SheetData } from "../aurora/sheet";
 import { deleteTemplate, listTemplates, saveTemplate, templateBytes, type TemplateRecord } from "../aurora/storage";
@@ -58,7 +59,6 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
     for (const file of [...list]) {
       try {
         const bytes = await file.arrayBuffer();
-        const { PDFDocument } = await import("pdf-lib");
         const doc = await PDFDocument.load(bytes, { updateMetadata: false });
         const widgets = readWidgets(doc);
         const found = [...detectPages(widgets).values()];
@@ -121,7 +121,6 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
       }
       if (cards.spells || cards.items || cards.features || cards.tips) {
         const extra = await buildPdf(r, sheet, { paper: "letter", sheet: false, spellCards: cards.spells, itemCards: cards.items, featureCards: cards.features, tips: cards.tips, translate: tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`)) }, fonts);
-        const { PDFDocument } = await import("pdf-lib");
         const main = await PDFDocument.load(bytes);
         const add = await PDFDocument.load(extra);
         for (const pg of await main.copyPages(add, add.getPageIndices())) main.addPage(pg);

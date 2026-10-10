@@ -43,3 +43,5 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </React.StrictMode>,
 );
+
+void import("./selftest").then((m) => m.maybeRunSelfTest());

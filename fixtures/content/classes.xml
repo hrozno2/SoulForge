@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<elements>
+	<!-- A martial class -->
+	<element name="Warden" type="Class" source="Hollow Realms" id="ID_SF_CLASS_WARDEN">
+		<description>
+			<p>Wardens guard roads, borders and the people on them.</p>
+			<div class="sidebar"><table>
+				<tr><td><b>Hit Point Die</b></td><td>d10 per Warden level</td></tr>
+				<tr><td><b>Starting Equipment</b></td><td><i>Choose A or B:</i> (A) Chain Hauberk, Warden's Blade, Trail Pack and 5 GP; or (B) 120 GP</td></tr>
+			</table></div>
+		</description>
+		<setters><set name="short">Guardian of the roads</set><set name="hd">d10</set></setters>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_LIGHT" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_HEAVY" requirements="!ID_SF_MULTICLASS_WARDEN" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_SHIELDS" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_SIMPLE" requirements="!ID_SF_MULTICLASS_WARDEN" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_MARTIAL" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_STRENGTH" requirements="!ID_SF_MULTICLASS_WARDEN" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_CONSTITUTION" requirements="!ID_SF_MULTICLASS_WARDEN" />
+			<select type="Proficiency" name="Skill Proficiency (Warden)" supports="Skill,Warden" number="2" requirements="!ID_SF_MULTICLASS_WARDEN" />
+			<grant type="Class Feature" id="ID_SF_CF_WARDEN_SECOND_WIND" />
+			<grant type="Class Feature" id="ID_SF_CF_WARDEN_ORDER" level="3" />
+			<grant type="Class Feature" id="ID_SF_CF_WARDEN_ASI" level="4" />
+			<grant type="Class Feature" id="ID_SF_CF_WARDEN_ASI" level="8" />
+			<grant type="Class Feature" id="ID_SF_CF_WARDEN_EXTRA_ATTACK" level="5" />
+		</rules>
+		<multiclass id="ID_SF_MULTICLASS_WARDEN">
+			<requirements>[str:13]</requirements>
+			<setters><set name="multiclass proficiencies">Martial weapons, Light armor, Shields</set></setters>
+			<rules><grant type="Grants" id="ID_INTERNAL_GRANT_MULTICLASS" /></rules>
+		</multiclass>
+	</element>
+	<element name="Second Wind" type="Class Feature" source="Hollow Realms" id="ID_SF_CF_WARDEN_SECOND_WIND">
+		<description><p>As a bonus action, regain hit points equal to 1d10 plus your Warden level.</p></description>
+		<sheet display="true" action="Bonus Action" usage="2/Short Rest"><description>As a bonus action, regain 1d10 + your Warden level hit points.</description></sheet>
+	</element>
+	<element name="Warden Order" type="Class Feature" source="Hollow Realms" id="ID_SF_CF_WARDEN_ORDER">
+		<description><p>Choose an order that shapes how you guard.</p></description>
+		<rules><select type="Archetype" name="Warden Order" supports="Warden Order" /></rules>
+	</element>
+	<element name="Ability Score Improvement" type="Class Feature" source="Hollow Realms" id="ID_SF_CF_WARDEN_ASI">
+		<description><p>Take a feat, including an ability score improvement.</p></description>
+		<rules><select type="Feat" name="Feat (Warden)" supports="General" /></rules>
+	</element>
+	<element name="Extra Attack" type="Class Feature" source="Hollow Realms" id="ID_SF_CF_WARDEN_EXTRA_ATTACK">
+		<description><p>You can attack twice when you take the Attack action.</p></description>
+		<sheet display="true" action="Action"><description>You can attack twice when you take the Attack action.</description></sheet>
+	</element>
+	<element name="Order of the Lantern" type="Archetype" source="Hollow Realms" id="ID_SF_ORDER_LANTERN">
+		<supports>Warden Order</supports>
+		<description><p>You carry light into dark places.</p></description>
+		<rules><grant type="Archetype Feature" id="ID_SF_ORDER_LANTERN_LIGHT" /></rules>
+	</element>
+	<element name="Lantern Light" type="Archetype Feature" source="Hollow Realms" id="ID_SF_ORDER_LANTERN_LIGHT">
+		<description><p>You can create a 20-foot light for one hour. Creatures in it must make a Wisdom saving throw or take 2d6 radiant damage.</p></description>
+		<sheet display="true" usage="1/Long Rest"><description>Create a 20-foot light for one hour. DC 8 + proficiency + Wisdom, 2d6 radiant damage.</description></sheet>
+	</element>
+	<element name="Order of the Wall" type="Archetype" source="Hollow Realms" id="ID_SF_ORDER_WALL">
+		<supports>Warden Order</supports>
+		<description><p>You hold the line.</p></description>
+		<rules><stat name="ac" value="1" /></rules>
+	</element>
+
+	<!-- A spellcasting class -->
+	<element name="Spellsinger" type="Class" source="Hollow Realms" id="ID_SF_CLASS_SPELLSINGER">
+		<description>
+			<p>Spellsingers weave magic out of verse.</p>
+			<div class="sidebar"><table>
+				<tr><td><b>Hit Point Die</b></td><td>d6 per Spellsinger level</td></tr>
+				<tr><td><b>Starting Equipment</b></td><td><i>Choose A or B:</i> (A) 2 Daggers, Lute, Scholar's Pack and 10 GP; or (B) 80 GP</td></tr>
+			</table></div>
+		</description>
+		<setters><set name="short">Casts by song</set><set name="hd">d6</set></setters>
+		<spellcasting name="Spellsinger" ability="Charisma" prepare="true"><list>Spellsinger</list></spellcasting>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_SIMPLE" requirements="!ID_SF_MULTICLASS_SPELLSINGER" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_WISDOM" requirements="!ID_SF_MULTICLASS_SPELLSINGER" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_CHARISMA" requirements="!ID_SF_MULTICLASS_SPELLSINGER" />
+			<select type="Proficiency" name="Skill Proficiency (Spellsinger)" supports="Skill,Spellsinger" number="2" requirements="!ID_SF_MULTICLASS_SPELLSINGER" />
+			<grant type="Grants" id="ID_INTERNAL_GRANT_MULTICLASS_SPELLCASTING_SLOTS_FULL" requirements="ID_INTERNAL_GRANT_MULTICLASS" />
+			<grant type="Class Feature" id="ID_SF_CF_SINGER_SPELLCASTING" />
+			<grant type="Class Feature" id="ID_SF_CF_SINGER_MUSE" />
+			<grant type="Class Feature" id="ID_SF_CF_SINGER_ASI" level="4" />
+			<stat name="spellsinger:spellcasting:slots:1" value="2" level="1" />
+			<stat name="spellsinger:spellcasting:slots:1" value="1" level="2" />
+			<stat name="spellsinger:spellcasting:slots:1" value="1" level="3" />
+			<stat name="spellsinger:spellcasting:slots:2" value="2" level="3" />
+			<stat name="spellsinger:spellcasting:slots:2" value="1" level="4" />
+			<stat name="spellsinger:spellcasting:slots:3" value="2" level="5" />
+			<stat name="spellsinger:spellcasting:prepare" value="charisma:modifier" />
+			<stat name="spellsinger:spellcasting:prepare" value="level:spellsinger" />
+			<select type="Spell" name="Cantrip (Spellsinger)" supports="$(spellcasting:list), 0" level="1" number="2" spellcasting="Spellsinger" />
+			<select type="Spell" name="Cantrip (Spellsinger)" supports="$(spellcasting:list), 0" level="4" number="1" spellcasting="Spellsinger" />
+			<select type="Spell" name="Songbook (Spellsinger)" supports="$(spellcasting:list), 1" level="1" number="4" spellcasting="Spellsinger" />
+			<select type="Spell" name="Songbook (Spellsinger)" supports="$(spellcasting:list), $(spellcasting:slots)" level="2" number="2" spellcasting="Spellsinger" />
+			<select type="Spell" name="Songbook (Spellsinger)" supports="$(spellcasting:list), $(spellcasting:slots)" level="3" number="2" spellcasting="Spellsinger" />
+			<select type="Spell" name="Songbook (Spellsinger)" supports="$(spellcasting:list), $(spellcasting:slots)" level="4" number="2" spellcasting="Spellsinger" />
+			<select type="Spell" name="Songbook (Spellsinger)" supports="$(spellcasting:list), $(spellcasting:slots)" level="5" number="2" spellcasting="Spellsinger" />
+		</rules>
+		<multiclass id="ID_SF_MULTICLASS_SPELLSINGER">
+			<requirements>[cha:13]</requirements>
+			<setters><set name="multiclass proficiencies">Simple weapons</set></setters>
+			<rules><grant type="Grants" id="ID_INTERNAL_GRANT_MULTICLASS" /></rules>
+		</multiclass>
+	</element>
+	<element name="Spellcasting (Spellsinger)" type="Class Feature" source="Hollow Realms" id="ID_SF_CF_SINGER_SPELLCASTING">
+		<description><p>You prepare {{spellsinger:spellcasting:prepare}} songs. Charisma is your spellcasting ability.</p></description>
+		<sheet display="true"><description>You prepare {{spellsinger:spellcasting:prepare}} songs. Charisma is your spellcasting ability.</description></sheet>
+	</element>
+	<element name="Muse" type="Class Feature" source="Hollow Realms" id="ID_SF_CF_SINGER_MUSE">
+		<description><p>You can inspire an ally with a rousing verse. They add 1d6 to one roll.</p></description>
+		<sheet display="true" action="Bonus Action" usage="{{charisma:modifier}}/Long Rest"><description>Inspire an ally. They add 1d6 to one roll.</description></sheet>
+	</element>
+	<element name="Ability Score Improvement" type="Class Feature" source="Hollow Realms" id="ID_SF_CF_SINGER_ASI">
+		<description><p>Take a feat, including an ability score improvement.</p></description>
+		<rules><select type="Feat" name="Feat (Spellsinger)" supports="General" /></rules>
+	</element>
+</elements>

@@ -43,6 +43,12 @@ Press the **?** in the top bar for a short list of tips on the tab you are in. S
 - Features with limited uses show pips. A filled pip is a use left. The text beside it says how many are left and when they return, for example `1 of 2 left · back after long rest`.
 - **Short rest** spends hit dice and refreshes short-rest features. **Long rest** restores hit points, slots, features and half your hit dice.
 
+- **Conditions** (Play → Extras) change d20 rolls and say why in the roll. Exhaustion takes 2 off each d20 test and 5 feet off speed per level. Taking damage while concentrating asks for the Constitution save.
+- **Wild Shape** (Play → Extras): enter the form and its hit points. Damage hits the form first and the rest carries over to you. Companions track their own hit points there too.
+- **Notes** keeps general notes and a session log with dates you can search.
+- **Level up** (Play or Manage) walks through the hit point roll, new features and spell choices, and can be undone.
+- **Party** on the Home tab shows the characters you tick side by side, with a button to roll initiative for all of them.
+
 ## 5. PDF export
 
 Open **Sheet** and press **Export PDF**.
@@ -113,11 +119,17 @@ Manage → Details has **Choose a stock portrait** (public domain and CC0 art, c
 
 ## 9. Writing your own content
 
-Content → **Write your own content** takes Aurora element XML. See `docs/aurora-parity.md` for what the engine supports.
+Content → the **Homebrew builder** makes a spell, item, feat, species, background or class feature from a form and saves it as a content source. **Write your own content** takes Aurora element XML directly. See `docs/aurora-parity.md` for what the engine supports.
 
-## 10. Updating and removing
+## 10. Updating, backups and removing
 
-The app checks for updates and offers to install them. Content sources can be removed on the Content tab. All data lives in your browser storage inside the app; export characters to keep copies.
+The app checks for updates and offers to install them. Content sources can be removed on the Content tab. All data lives in storage inside the app. Settings → **Back up everything** saves characters, sources and templates to one file, and **Restore** puts them back. A rolling set of automatic copies is kept inside the app too, but a file you keep elsewhere is the real backup.
+
+## Settings
+
+Interface size (also Ctrl or Cmd with + and −), compact mode, reduced motion, paper size for PDFs, automatic backups, and the interface language.
+
+Foundry and Roll20: **Export for Foundry** and **Export for Roll20** on the Sheet tab write files in those tools' character formats. They come across by name without compendium links, and were checked by reading them back into Soul Forge, not inside Foundry or Roll20 themselves.
 
 ## 11. Help and contributing
 

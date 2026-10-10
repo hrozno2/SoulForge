@@ -36,13 +36,20 @@ Aurora Builder's installer was inspected for its screens, controls and rule type
 
 ## Not done
 
-- Opening Aurora `.dnd5e` character files.
-- Campaigns (sets of sources shared between characters), character groups.
+- Opening Aurora `.dnd5e` character files. No sample file was available to check the format against, so a reader was not written rather than guessed.
+- Campaigns (sets of sources shared between characters). A party overview on the Home tab covers the table view, not shared sources.
 - Symbol and companion image galleries; sheet layout customisation.
-- Spell replacement rules (`allowReplace`) when levelling up.
 
 ## Added after the first release
 
 - Starting equipment buttons for class and background, adventuring packs and common gear.
 - Fillable character sheet PDFs (DLDM 5E24 and companion sheets), filled from your own copy of the file.
-- A play screen modelled on D&D Beyond, and a restyle toward D&D Beyond and the WotC books.
+- A play screen modelled on D&D Beyond, restyled toward the Foundry sheet and the WotC books.
+- Guided level up: undo, hit point roll or average, new features, spell choices and swaps.
+- Conditions with their effect on rolls, exhaustion, concentration checks and ammunition counts.
+- Homebrew builder: forms for spells, items, feats, species, backgrounds and class features that write element XML.
+- Backups: a file you keep, and automatic copies inside the app.
+- Wild shape and companion hit points, a session log, and a party overview.
+- Export to Foundry VTT and Roll20 files.
+- Interface language for the app shell (English, German, Spanish, French, Portuguese).
+- 5etools: optional features (fighting styles, invocations, maneuvers) and spells granted by species, feats and subclasses.

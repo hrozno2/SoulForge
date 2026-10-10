@@ -19,16 +19,21 @@ Original code, not affiliated with Aurora Builder or Wizards of the Coast.
 **Magic and equipment**
 - Spell lists with level, school, class, component, concentration and ritual filters; slots, prepared and always-prepared spells.
 - Starting equipment from class, background and gear packs in one click; equip, attune, coins, armor class that follows what you wear.
-- Companions, mounts and familiars.
+- Companions, mounts and familiars, with hit point tracking and a wild shape tracker.
+- A guided level up with undo, hit point roll, new features and spell choices.
 
 **Play**
 - A Play tab laid out like a table sheet: abilities, saves, skills, vitals, rests, hit dice, attacks, spells, inventory, features with clear uses per rest.
+- Conditions that change your rolls and say why, exhaustion, concentration checks and ammunition counts.
+- A session log for notes, and a party overview on the Home tab.
 - Click any modifier to roll. A dice panel with shaped dice, big results, an optional roll log, and an Advantage / Disadvantage switch.
 
 **Content**
 - Content links update by themselves. Add the AuroraLegacy link or any `.index`.
 - 5etools and Plutonium data: paste 5e.tools links or search a data folder and import only what you pick.
-- Import characters from Foundry VTT and Roll20; write your own homebrew in element XML.
+- Import characters from Foundry VTT and Roll20, and export to both.
+- Write your own homebrew with forms (spells, items, feats, species, backgrounds) or in element XML.
+- Back up everything to a file; automatic copies are kept inside the app.
 
 **Sheets and PDFs**
 - Fills the official 2024 character sheet, the DLDM 5E24 sheets and the DLDM companion sheets from your own copies.
@@ -38,6 +43,7 @@ Original code, not affiliated with Aurora Builder or Wizards of the Coast.
 
 **Look**
 - Five themes: Obsidian, Leather, Tools blue, Daylight and Printed book. Stock portraits, or your own.
+- Interface size, compact mode, reduced motion, paper size, and an interface language (English, German, Spanish, French, Portuguese).
 - Quiet help: a **?** button and hints you can dismiss.
 
 ## Screenshots
@@ -162,7 +168,7 @@ Soul Forge reads the index and every index it lists, downloads the files, and ke
 
 ### 5etools data and Plutonium
 
-The Content tab also reads the JSON data format used by 5e.tools and by the Plutonium module for Foundry VTT: species and subraces, classes with subclasses and features, backgrounds, feats, spells, items and magic items, languages and creatures. Structured parts (proficiencies, saves, speeds, ability bonuses, hit dice, spell slot and prepared tables, weapon and armor statistics, magic bonuses) become rules. Prose stays as description text.
+The Content tab also reads the JSON data format used by 5e.tools and by the Plutonium module for Foundry VTT: species and subraces, classes with subclasses and features, optional features (fighting styles, invocations, maneuvers), backgrounds, feats, spells, items and magic items, languages and creatures. Spells granted by species, feats and subclasses become spell grants with their level gates. Structured parts (proficiencies, saves, speeds, ability bonuses, hit dice, spell slot and prepared tables, weapon and armor statistics, magic bonuses) become rules. Prose stays as description text.
 
 5e.tools itself is behind a bot check, so an app cannot fetch from it. Use the `data` folder of a copy you are entitled to use: pick the folder or a ZIP of it, or give an address that serves it. Homebrew JSON exported from 5etools or Plutonium imports the same way.
 
@@ -231,11 +237,12 @@ Content is a set of elements. An element has an id, name, type and source, sette
 ## Known gaps
 
 - Aurora character files (`.dnd5e`) cannot be opened. Soul Forge saves its own `.json` characters.
-- Spell replacement on level up, level-dependent text variants beyond the highest level reached, and spell lists that depend on other spell sources are not modelled.
+- Level-dependent text variants beyond the highest level reached, and spell lists that depend on other spell sources are not modelled.
 - Aurora's companion gallery and symbol galleries are not here. There is one portrait per character.
 - The sheet filler only knows the DLDM sheets. Other sheets need their own field mapping.
 - Species and backgrounds give no starting equipment in the 2024 and 2014 rules, so there is no species equipment button; background and class equipment are covered.
-- 5etools conversion covers the structured fields listed above. Spells granted by species and feats in 5etools (`additionalSpells`) are not turned into rules, apart from Magic Initiate style feats.
+- 5etools conversion covers the structured fields listed above. Spell choices written as free criteria beyond class and level (for example by school) are offered by class and level only.
+- The app shell is translated, not the rules text or every label. Anything without a translation shows in English.
 
 ## License
 

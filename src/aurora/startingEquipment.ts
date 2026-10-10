@@ -6,6 +6,7 @@
 import type { AElement } from "./types";
 import type { ARegistry } from "./registry";
 import { uid, type Character, type InvItem } from "./character";
+import { HANDS, handsFor, handsUsed } from "./hands";
 
 export interface ItemRef {
   text: string;
@@ -361,7 +362,9 @@ export function variantItems(v: EquipVariant, picks: number[], idx: ItemIndex, p
 export function addToInventory(ch: Character, items: ResolvedItem[], gp = 0): Character {
   const inv: InvItem[] = [...ch.inventory];
   for (const it of items) {
-    const stack = it.el ? inv.find((i) => i.id === it.el!.id && !i.equipped && !i.custom) : inv.find((i) => !i.id && i.custom?.name === it.name);
+    // Same item again adds to the quantity, worn or not, and in the open before a container.
+    const same = (i: InvItem) => (it.el ? i.id === it.el.id && !i.custom : !i.id && i.custom?.name === it.name);
+    const stack = inv.find((i) => same(i) && !i.container) ?? inv.find(same);
     if (stack) {
       stack.qty += it.qty;
       continue;
@@ -371,25 +374,57 @@ export function addToInventory(ch: Character, items: ResolvedItem[], gp = 0): Ch
   return { ...ch, inventory: inv, coins: { ...ch.coins, gp: ch.coins.gp + gp } };
 }
 
-/** Wear the first armor and shield, and wield the first two weapons, when nothing is equipped yet. */
+/** What an add put in, so it can be taken back out when another option replaces it. */
+export function ledgerOf(items: ResolvedItem[], gp: number): { items: { id: string; name: string; qty: number }[]; gp: number } {
+  return { items: items.map((i) => ({ id: i.el?.id ?? "", name: i.name, qty: i.qty })), gp };
+}
+
+/** Takes back what the given labels added: the item counts and the gold. Items that were used up or sold are left alone. */
+export function removeAdded(ch: Character, labels: string[]): Character {
+  let inv: InvItem[] = ch.inventory.map((i) => ({ ...i }));
+  let gp = ch.coins.gp;
+  for (const l of labels) {
+    const entry = ch.equipmentLedger?.[l];
+    if (!entry) continue;
+    gp -= entry.gp;
+    for (const it of entry.items) {
+      let left = it.qty;
+      for (const i of inv) {
+        if (left <= 0) break;
+        const match = it.id ? i.id === it.id : !i.id && i.custom?.name === it.name;
+        if (!match) continue;
+        const take = Math.min(i.qty, left);
+        i.qty -= take;
+        left -= take;
+      }
+      inv = inv.filter((i) => i.qty > 0);
+    }
+  }
+  const ledger = { ...(ch.equipmentLedger ?? {}) };
+  for (const l of labels) delete ledger[l];
+  return { ...ch, inventory: inv, coins: { ...ch.coins, gp: Math.max(0, gp) }, equipmentLedger: ledger, equipmentAdded: (ch.equipmentAdded ?? []).filter((x) => !labels.includes(x)) };
+}
+
+/** Wear the first armor and shield, and wield weapons while there are hands free, when nothing is equipped yet. */
 export function autoEquip(ch: Character, reg: ARegistry): Character {
   const inv = ch.inventory.map((i) => ({ ...i }));
   const isShield = (e: AElement) => e.setters.armor?.value.toLowerCase() === "shield" || /shield/i.test(e.name);
   let armor = inv.some((i) => i.equipped && i.id && reg.get(i.id)?.type === "Armor" && !isShield(reg.get(i.id)!));
   let shield = inv.some((i) => i.equipped && i.id && reg.get(i.id)?.type === "Armor" && isShield(reg.get(i.id)!));
-  let weapons = inv.filter((i) => i.equipped && i.id && reg.get(i.id)?.type === "Weapon").length;
+  let hands = handsUsed(inv, reg);
   for (const i of inv) {
     const e = i.id ? reg.get(i.id) : undefined;
     if (!e || i.equipped) continue;
-    if (e.type === "Armor" && isShield(e) && !shield) {
+    if (e.type === "Armor" && isShield(e) && !shield && hands + 1 <= HANDS) {
       i.equipped = true;
       shield = true;
+      hands++;
     } else if (e.type === "Armor" && !isShield(e) && !armor) {
       i.equipped = true;
       armor = true;
-    } else if (e.type === "Weapon" && weapons < 2 && e.setters.damage) {
+    } else if (e.type === "Weapon" && e.setters.damage && hands + handsFor(i, e) <= HANDS) {
       i.equipped = true;
-      weapons++;
+      hands += handsFor(i, e);
     }
   }
   return { ...ch, inventory: inv };
@@ -428,4 +463,14 @@ export function commonGear(reg: ARegistry, prefer: string): AElement[] {
     }
   }
   return out;
+}
+
+/** What a spellcasting focus item is for, so "Crystal" or "Amulet" reads as gear and not a mystery. Only the specific kinds, not the group name itself. */
+export function focusNote(name: string): string | undefined {
+  const n = name.trim().toLowerCase();
+  for (const [group, kinds] of Object.entries(SYNONYMS)) {
+    if (!/focus|symbol/.test(group)) continue;
+    if (kinds.slice(1).some((k) => k.toLowerCase() === n)) return group;
+  }
+  return undefined;
 }

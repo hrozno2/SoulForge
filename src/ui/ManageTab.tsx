@@ -1,3 +1,4 @@
+import { requestRoll } from "./Dice";
 import { useMemo, useState } from "react";
 import { PortraitCropper, PortraitPicker } from "./Portrait";
 import { ConditionsPanel } from "./ConditionsPanel";
@@ -55,10 +56,14 @@ function Level({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }
             return (
               <label key={n} className="field coin">
                 <span>Lv {n} (d{die})</span>
+                <button type="button" className="roll-hp" title={`Roll a d${die} for level ${n}`} onClick={() => requestRoll(`Hit points, level ${n}`, `1d${die}`, (res) => set((c) => ({ ...c, hpRolls: { ...c.hpRolls, [String(n)]: Math.min(die, Math.max(1, res.total)) } })))}>Roll</button>
                 <input type="number" min={1} max={die} placeholder={String(Math.floor(die / 2) + 1)} value={ch.hpRolls[String(n)] ?? ""} onChange={(e) => set((c) => { const v = Number(e.target.value); const rolls = { ...c.hpRolls }; if (!v) delete rolls[String(n)]; else rolls[String(n)] = Math.min(die, Math.max(1, v)); return { ...c, hpRolls: rolls }; })} />
               </label>
             );
           })}
+          {rollLevels.some((n) => !ch.hpRolls[String(n)]) && (
+            <button type="button" className="primary" onClick={() => rollLevels.filter((n) => !ch.hpRolls[String(n)]).forEach((n) => { const die = dieForLevel(n); requestRoll(`Hit points, level ${n}`, `1d${die}`, (res) => set((c) => ({ ...c, hpRolls: { ...c.hpRolls, [String(n)]: Math.min(die, Math.max(1, res.total)) } }))); })}>Roll the rest</button>
+          )}
           {rollLevels.length === 0 && <p className="muted">Level 1 always takes the maximum of the hit die.</p>}
         </div>
       )}

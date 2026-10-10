@@ -753,3 +753,26 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .slot-done { margin-top: 8px; }
 .set-group { border: 1px solid var(--line); margin: 10px 0; padding: 4px 10px 8px; }
 .set-group legend { font: 700 11px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 6px; }
+.equip-card.chosen { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 14%, transparent); }
+.equip-origin-done { border-left: 3px solid var(--gold); padding-left: 10px; }
+.equip-origin-done .row, .equip-origin-done button { margin-right: 6px; }
+.pack-btn.added > button:first-child { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 18%, transparent); }
+
+/* ================= helper (detail) window and rules text follow the theme ================= */
+/* Dark themes get a dark helper window. Light themes keep the paper look with a title that is always readable. */
+:root[data-theme="dark"] .detail,
+:root[data-theme="dark"] .rich,
+:root[data-theme="dark"] .feature-text,
+:root[data-theme="dark"] .statblock .rich {
+  background-color: var(--panel2); background-image: none; color: var(--text); border-color: var(--line);
+}
+:root[data-theme="dark"] .detail { border-top: 3px solid var(--gold); }
+:root[data-theme="dark"] .detail h2 { color: var(--gold2); border-bottom: 1px solid var(--line); }
+:root[data-theme="dark"] .detail .muted, :root[data-theme="dark"] .detail small { color: var(--muted); }
+:root[data-theme="dark"] .detail .facts dt { color: var(--gold2); }
+:root[data-theme="dark"] .detail a, :root[data-theme="dark"] .rich a { color: var(--gold2); }
+:root[data-theme="dark"] .rich .sidebar { background: var(--panel); border-color: var(--line); outline-color: var(--line); color: var(--text); }
+:root[data-theme="dark"] .rich .sidebar h4, :root[data-theme="dark"] .rich .sidebar h5, :root[data-theme="dark"] .rich h3, :root[data-theme="dark"] .rich h4 { color: var(--gold2); }
+:root[data-theme="dark"] .rich table th { background: var(--panel); color: var(--gold2); }
+:root[data-theme="dark"] .rich table td { border-color: var(--line); }
+:root[data-theme="light"] .detail h2, :root:not([data-theme="dark"]) .detail h2 { color: #8b1e1e; }

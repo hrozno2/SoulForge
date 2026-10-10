@@ -253,7 +253,7 @@ export function DicePanel() {
               );
             })}
           </div>
-          <form className="row dice-form" onSubmit={(e) => { e.preventDefault(); if (expr.trim()) roll(expr); }}>
+          <form className="row dice-form" onSubmit={(e) => { e.preventDefault(); if (expr.trim()) { roll(expr); setExpr(""); } }}>
             <button type="button" title="Subtract 1" onClick={() => setExpr((x) => changePool(x, 0, -1))}>−1</button>
             <button type="button" title="Add 1" onClick={() => setExpr((x) => changePool(x, 0, 1))}>+1</button>
             <input value={expr} onChange={(e) => setExpr(e.target.value)} placeholder="Click dice, or type 2d6+3" aria-label="Dice to roll" />

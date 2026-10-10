@@ -45,6 +45,9 @@ test.describe("Soul Forge smoke tests", () => {
     const total = Number(await page.locator(".roll-total").innerText());
     expect(total).toBeGreaterThanOrEqual(4);
     expect(total).toBeLessThanOrEqual(21);
+    // Rolling empties the tray: no dice counters left.
+    await expect(page.getByLabel("Dice to roll")).toHaveValue("");
+    await expect(page.locator(".die-count")).toHaveCount(0);
     await page.getByRole("button", { name: /close dice/i }).click();
     await expect(page.locator(".dice-panel")).toHaveCount(0);
   });
@@ -189,6 +192,24 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(page.locator(".equip-origin:not(.equip-origin-done)")).toHaveCount(1);
     await page.locator(".equip-origin:not(.equip-origin-done)").getByRole("button", { name: "Add", exact: true }).first().click();
     await expect(page.locator(".equip-done")).toBeVisible();
+    // Change the class option: the earlier one is marked as added, and choosing the other replaces it.
+    await page.getByRole("button", { name: "Add more..." }).click();
+    await page.locator(".equip-origin-done").first().getByRole("button", { name: "Change" }).click();
+    await expect(page.locator(".equip-card.chosen")).toHaveCount(1);
+    await page.locator(".equip-card:not(.chosen)").first().getByRole("button", { name: /instead/ }).click();
+    await expect(page.locator(".equip-done")).toBeVisible();
+    // Gear you add is marked, counted, and the panel stays open.
+    await page.getByRole("button", { name: "Add more..." }).click();
+    const gear = page.locator(".equip-card ~ *, section.card").getByRole("button", { name: /^\+ / }).first();
+    const gearName = ((await gear.innerText()).replace(/^\+ /, "")).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    await gear.click();
+    await page.getByRole("button", { name: new RegExp(`✓ ${gearName}`) }).click();
+    await expect(page.getByRole("button", { name: new RegExp(`✓ ${gearName} ×2`) })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: /^Added/ })).toBeVisible();
+    // The same gear twice is one line with a bigger quantity.
+    await tab(page, "Equipment");
+    const names = await page.locator("table tbody tr td:first-child").allInnerTexts();
+    expect(new Set(names.map((n) => n.trim())).size).toBe(names.length);
   });
 
   test("the homebrew builder makes a spell that shows up in the content browser", async ({ page }) => {

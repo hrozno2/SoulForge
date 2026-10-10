@@ -9,6 +9,7 @@ import { ConditionsPanel } from "./ConditionsPanel";
 import { applyDamage, applyHealing } from "./hpModel";
 import { FormsPanel } from "./FormsPanel";
 import { Journal } from "./Journal";
+import { toggleEquip } from "../aurora/hands";
 import { t } from "../i18n";
 import { CONDITION_TEXT, speedAfterExhaustion } from "./conditions";
 import { Hint } from "./Help";
@@ -375,7 +376,7 @@ function Spells({ r, sheet, set }: { r: Resolved; sheet: SheetData; set: SetChar
 }
 
 function Inventory({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: SheetData; set: SetCharacter }) {
-  const toggle = (uid: string) => set((c) => ({ ...c, inventory: c.inventory.map((i) => (i.uid === uid ? { ...i, equipped: !i.equipped } : i)) }));
+  const toggle = (uid: string) => set((c) => ({ ...c, inventory: toggleEquip(c.inventory, uid, r.reg).inventory }));
   const equipped = ch.inventory.filter((i) => i.equipped);
   const rest = ch.inventory.filter((i) => !i.equipped);
   const row = (i: Character["inventory"][number]) => {

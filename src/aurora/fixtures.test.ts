@@ -8,8 +8,9 @@ import { newCharacter } from "./character";
 import { resolve } from "./engine";
 import { autoFill } from "./autofill";
 import { buildSheet } from "./sheet";
-import { ItemIndex, addToInventory, adventuringPacks, autoEquip, expandPack, startingPlans } from "./startingEquipment";
+import { ItemIndex, addToInventory, adventuringPacks, autoEquip, expandPack, ledgerOf, removeAdded, startingPlans, variantItems } from "./startingEquipment";
 import { importForeignCharacter } from "./foreign";
+import { HANDS, handsUsed, setTwoHanded, toggleEquip } from "../aurora/hands";
 import { mergeSlots, ownership } from "../ui/Slots";
 import { exportFoundry, exportRoll20 } from "./exportForeign";
 
@@ -189,5 +190,55 @@ describe("spell school as a filter word", () => {
     expect(evo.length).toBeGreaterThan(0);
     for (const e of evo) expect(e.setters.school?.value).toBe("Evocation");
     expect(reg.find("Spell", "Evocation, 0").every((e) => e.setters.level?.value === "0")).toBe(true);
+  });
+});
+
+describe("replacing a starting equipment option", () => {
+  it("takes back what it added, gold included", () => {
+    const ch0 = build(reg.ofType("Race")[0].id, reg.ofType("Background")[0].id, reg.ofType("Class")[0].id, 1);
+    const idx = new ItemIndex(reg);
+    const plan = startingPlans(ch0, reg)[0];
+    const v = plan.variants[0];
+    const items = variantItems(v, [], idx, plan.source, true, {});
+    const label = `${plan.title}, ${v.label.toLowerCase()}`;
+    let ch = addToInventory(ch0, items, v.gp);
+    ch = { ...ch, equipmentAdded: [label], equipmentLedger: { [label]: ledgerOf(items, v.gp) } };
+    expect(ch.inventory.length).toBeGreaterThanOrEqual(ch0.inventory.length);
+    const back = removeAdded(ch, [label]);
+    expect(back.coins.gp).toBe(ch0.coins.gp);
+    expect(back.inventory.map((i) => `${i.id}:${i.qty}`).sort()).toEqual(ch0.inventory.map((i) => `${i.id}:${i.qty}`).sort());
+    expect(back.equipmentAdded).toEqual([]);
+  });
+});
+
+describe("two hands", () => {
+  const find = (name: RegExp) => reg.all().find((e) => name.test(e.name) && (e.type === "Weapon" || e.type === "Armor"))!;
+  const sword = find(/sword|blade/i), bow = find(/bow/i), shield = find(/shield/i);
+  const item = (e: { id: string }, uidv: string) => ({ uid: uidv, id: e.id, qty: 1, equipped: false, attuned: false });
+  it("puts earlier items away when the hands are full", () => {
+    let inv = [item(sword, "a"), item(shield, "b"), item(bow, "c")];
+    inv = toggleEquip(inv, "a", reg).inventory;
+    inv = toggleEquip(inv, "b", reg).inventory;
+    expect(handsUsed(inv, reg)).toBe(2);
+    const res = toggleEquip(inv, "c", reg);
+    expect(res.dropped.length).toBe(2);
+    expect(res.inventory.filter((i) => i.equipped).map((i) => i.uid)).toEqual(["c"]);
+    expect(handsUsed(res.inventory, reg)).toBeLessThanOrEqual(HANDS);
+  });
+  it("a two-handed grip takes both hands and lets go of the shield", () => {
+    let inv = [item(sword, "a"), item(shield, "b")];
+    inv = toggleEquip(toggleEquip(inv, "a", reg).inventory, "b", reg).inventory;
+    const res = setTwoHanded(inv, "a", true, reg);
+    expect(res.dropped).toEqual([shield.name]);
+    expect(res.inventory.find((i) => i.uid === "a")!.twoHanded).toBe(true);
+    expect(handsUsed(res.inventory, reg)).toBe(2);
+  });
+  it("two weapons with a two-handed grip: the second takes the grip", () => {
+    let inv = [item(sword, "a"), { ...item(sword, "b") }];
+    inv = toggleEquip(inv, "a", reg).inventory;
+    inv = setTwoHanded(inv, "a", true, reg).inventory;
+    const res = toggleEquip(inv, "b", reg);
+    expect(res.inventory.find((i) => i.uid === "a")!.twoHanded).toBe(false);
+    expect(res.inventory.find((i) => i.uid === "a")!.equipped).toBe(false);
   });
 });

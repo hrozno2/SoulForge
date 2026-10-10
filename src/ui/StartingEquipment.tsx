@@ -3,27 +3,28 @@ import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import type { Character } from "../aurora/character";
 import {
-  ItemIndex, addToInventory, adventuringPacks, anyWeaponKind, autoEquip, commonGear, expandPack, startingPlans, variantItems, weaponChoices, type EquipPlan, type EquipVariant, type ResolvedItem,
+  ItemIndex, addToInventory, adventuringPacks, anyWeaponKind, autoEquip, commonGear, expandPack, ledgerOf, removeAdded, focusNote, startingPlans, variantItems, weaponChoices, type EquipPlan, type EquipVariant, type ResolvedItem,
 } from "../aurora/startingEquipment";
 import type { SetCharacter } from "./Slots";
 
 const gpText = (n: number) => (n ? `${Number.isInteger(n) ? n : n.toFixed(1)} GP` : "");
 
 function Preview({ items, gp }: { items: ResolvedItem[]; gp: number }) {
-  const lines = items.map((i) => `${i.qty > 1 ? `${i.qty} ` : ""}${i.name}${i.el ? "" : " (custom)"}`);
+  const lines = items.map((i) => `${i.qty > 1 ? `${i.qty} ` : ""}${i.name}${focusNote(i.name) ? ` (${focusNote(i.name)})` : ""}${i.el ? "" : " (custom)"}`);
   return <p className="muted small-text">{[...lines, gpText(gp)].filter(Boolean).join(", ") || "Nothing"}</p>;
 }
 
-function VariantCard({ plan, v, idx, prefer, onAdd }: { plan: EquipPlan; v: EquipVariant; idx: ItemIndex; prefer: string; onAdd: (items: ResolvedItem[], gp: number) => void }) {
+function VariantCard({ plan, v, idx, prefer, onAdd, added, replaces }: { plan: EquipPlan; v: EquipVariant; idx: ItemIndex; prefer: string; onAdd: (items: ResolvedItem[], gp: number) => void; added: boolean; replaces: boolean }) {
   const [picks, setPicks] = useState<number[]>([]);
   const [weapons, setWeapons] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(true);
   const items = useMemo(() => variantItems(v, picks, idx, prefer, open, weapons), [v, picks, idx, prefer, open, weapons]);
   return (
-    <div className="equip-card">
+    <div className={added ? "equip-card chosen" : "equip-card"}>
       <div className="row">
         <b>{v.label}</b>
-        {v.choices.length === 0 && <button className="primary" onClick={() => onAdd(items, v.gp)}>Add</button>}
+        {added && <span className="done-mark">✓ Added</span>}
+        {v.choices.length === 0 && !added && <button className="primary" onClick={() => onAdd(items, v.gp)}>{replaces ? "Use this instead" : "Add"}</button>}
       </div>
       {v.choices.map((g, gi) => (
         <div key={gi} className="choice-group">
@@ -45,7 +46,7 @@ function VariantCard({ plan, v, idx, prefer, onAdd }: { plan: EquipPlan; v: Equi
         </div>
       ))}
       <Preview items={items} gp={v.gp} />
-      {v.choices.length > 0 && <button className="primary" onClick={() => onAdd(items, v.gp)}>Add these</button>}
+      {v.choices.length > 0 && !added && <button className="primary" onClick={() => onAdd(items, v.gp)}>{replaces ? "Use these instead" : "Add these"}</button>}
       <label className="check small"><input type="checkbox" checked={open} onChange={() => setOpen(!open)} /> open packs into separate items</label>
     </div>
   );
@@ -67,16 +68,22 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
   const [reopened, setReopened] = useState<string[]>([]);
   const addedFor = (title: string, list: string[]) => list.filter((l) => l.startsWith(`${title}, `));
   const allDone = (list: string[]) => plans.length > 0 && plans.every((p) => addedFor(p.title, list).length > 0);
-  const add = (items: ResolvedItem[], gp: number, label: string) => {
+  const add = (items: ResolvedItem[], gp: number, label: string, plan?: EquipPlan) => {
     set((c) => {
-      let next = addToInventory(c, items, gp);
+      // Choosing another option for the same class or background takes the earlier one back out first.
+      const earlier = plan ? addedFor(plan.title, c.equipmentAdded ?? []) : [];
+      let next = earlier.length ? removeAdded(c, earlier) : c;
+      next = addToInventory(next, items, gp);
       if (equip) next = autoEquip(next, r.reg);
-      return { ...next, equipmentAdded: [...(c.equipmentAdded ?? []), label] };
+      return { ...next, equipmentAdded: [...(next.equipmentAdded ?? []), label], equipmentLedger: { ...(next.equipmentLedger ?? {}), [label]: ledgerOf(items, gp) } };
     });
-    setNote("");
-    setReopened((o) => o.filter((k) => !label.startsWith(`${plans.find((p) => p.kind === k)?.title ?? "\u0000"}, `)));
-    if (allDone([...added, label])) setShow(false);
+    setNote(`Added ${label.replace(/^.*, /, "")}`);
+    if (plan) setReopened((o) => o.filter((k) => k !== plan.kind));
+    const after = plan ? [...added.filter((l) => !l.startsWith(`${plan.title}, `)), label] : [...added, label];
+    // Adding a pack or a piece of gear leaves the panel open so you can add more and see what went in.
+    if (plan && allDone(after)) setShow(false);
   };
+  const count = (name: string) => added.filter((l) => l === name).length;
   const addOne = (el: AElement, open: boolean) => add(open && el.extract?.length ? expandPack(el, r.reg) : [{ el, name: el.name, qty: 1 }], 0, el.name);
 
   if (added.length > 0 && !show && (allDone(added) || plans.length === 0)) {
@@ -106,6 +113,7 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
               <h3>{p.kind === "class" ? "Class" : "Background"}: {p.title} <span className="done-mark">✓ Added</span></h3>
               <p className="muted small-text">{mine.map((l) => l.slice(p.title.length + 2)).join(" · ")}</p>
               <button onClick={() => setReopened((o) => [...o, p.kind])}>Change</button>
+              <button title="Take these items and gold back out" onClick={() => set((c) => removeAdded(c, addedFor(p.title, c.equipmentAdded ?? [])))}>Remove</button>
             </div>
           );
         }
@@ -113,7 +121,7 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
         <div key={p.kind} className="equip-origin">
           <h3>{p.kind === "class" ? "Class" : "Background"}: {p.title}</h3>
           <div className="equip-grid">
-            {p.variants.map((v) => <VariantCard key={v.label} plan={p} v={v} idx={idx} prefer={p.source} onAdd={(items, gp) => add(items, gp, `${p.title}, ${v.label.toLowerCase()}`)} />)}
+            {p.variants.map((v) => <VariantCard key={v.label} plan={p} v={v} idx={idx} prefer={p.source} onAdd={(items, gp) => add(items, gp, `${p.title}, ${v.label.toLowerCase()}`, p)} added={mine.includes(`${p.title}, ${v.label.toLowerCase()}`)} replaces={mine.length > 0} />)}
           </div>
         </div>
         );
@@ -125,8 +133,8 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
           <h3>Adventuring packs</h3>
           <div className="chips">
             {packs.map((p) => (
-              <span key={p.id} className="pack-btn">
-                <button onClick={() => addOne(p, true)} onMouseEnter={() => onDetail(p)} title="Add the contents of the pack">{p.name}</button>
+              <span key={p.id} className={count(p.name) ? "pack-btn added" : "pack-btn"}>
+                <button onClick={() => addOne(p, true)} onMouseEnter={() => onDetail(p)} title="Add the contents of the pack">{count(p.name) > 0 && "✓ "}{p.name}{count(p.name) > 1 ? ` ×${count(p.name)}` : ""}</button>
                 <button className="more tiny" onClick={() => addOne(p, false)} title="Add as one item">1×</button>
               </span>
             ))}
@@ -138,11 +146,11 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
         <>
           <h3>Common gear</h3>
           <div className="chips">
-            {gear.map((g) => <button key={g.id} className="pill" onClick={() => addOne(g, false)} onMouseEnter={() => onDetail(g)}>+ {g.name}</button>)}
+            {gear.map((g) => <button key={g.id} className={count(g.name) ? "pill active" : "pill"} onClick={() => addOne(g, false)} onMouseEnter={() => onDetail(g)}>{count(g.name) ? "✓" : "+"} {g.name}{count(g.name) > 1 ? ` ×${count(g.name)}` : ""}</button>)}
           </div>
         </>
       )}
-      {note && <p className="notice">{note}</p>}
+      {note && <p className="notice" role="status">{note}</p>}
     </section>
   );
 }

@@ -193,6 +193,8 @@ export interface Character {
   resources: Resource[];
   /** What the starting equipment dialog has already added, so it can fold away. */
   equipmentAdded?: string[];
+  /** What each starting equipment label added, so choosing another option can take it back out. */
+  equipmentLedger?: Record<string, { items: { id: string; name: string; qty: number }[]; gp: number }>;
   /** Edits to attacks that come from equipped weapons, by inventory item uid. */
   attackEdits?: Record<string, AttackEdit>;
   info: CharacterInfo;

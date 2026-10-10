@@ -28,7 +28,7 @@
     "active": true,
     "targets": "all",
     "createUpdaterArtifacts": true,
-    "category": "Game",
+    "category": "Utility",
     "shortDescription": "D&D 5e character builder",
     "longDescription": "A cross-platform D&D 5e (2024 rules) character builder with a data-driven rules engine, custom modifiers, content import and printable sheets and cards.",
     "icon": [

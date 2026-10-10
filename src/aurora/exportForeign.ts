@@ -1,0 +1,111 @@
+/**
+ * Exporters for other tools: a Foundry VTT dnd5e actor and a Roll20 character in the shape its 5e sheet reads.
+ * Both are best effort and name-based. Items come across with their descriptions but without links to any compendium,
+ * so the target tool shows them as plain items and features.
+ */
+import { ABILITY_IDS, type AbilityId } from "./character";
+import type { Resolved } from "./engine";
+import { buildSheet } from "./sheet";
+
+const ABBR: Record<AbilityId, string> = { strength: "str", dexterity: "dex", constitution: "con", intelligence: "int", wisdom: "wis", charisma: "cha" };
+const FSKILL: Record<string, string> = { acrobatics: "acr", "animal handling": "ani", arcana: "arc", athletics: "ath", deception: "dec", history: "his", insight: "ins", intimidation: "itm", investigation: "inv", medicine: "med", nature: "nat", perception: "prc", performance: "prf", persuasion: "per", religion: "rel", "sleight of hand": "slt", stealth: "ste", survival: "sur" };
+const R20SKILL = (n: string) => n.replace(/ /g, "_");
+const html = (t: string) => (t ? `<p>${t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n+/g, "</p><p>")}</p>` : "");
+const stripTags = (t: string) => t.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+const rid = (n: number) => Array.from({ length: n }, () => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[Math.floor(Math.random() * 62)]).join("");
+
+function details(r: Resolved) {
+  const c = r.character;
+  const nameOf = (id?: string) => (id ? r.reg.get(id)?.name ?? "" : "");
+  const sub = r.active.find((a) => a.el.type === "Archetype")?.el.name ?? "";
+  return { c, race: nameOf(c.race), background: nameOf(c.background), subclass: sub, classes: c.classes.map((x) => ({ name: nameOf(x.classId), level: x.level })) };
+}
+
+export function exportFoundry(r: Resolved): Record<string, unknown> {
+  const sheet = buildSheet(r);
+  const { c, race, background, subclass, classes } = details(r);
+  const items: Record<string, unknown>[] = [];
+  const add = (type: string, name: string, system: Record<string, unknown>) => items.push({ _id: rid(16), name, type, img: "icons/svg/item-bag.svg", system, effects: [], flags: {} });
+  for (const k of classes) add("class", k.name, { levels: k.level, description: { value: "" } });
+  if (subclass) add("subclass", subclass, { description: { value: "" } });
+  if (race) add("race", race, { description: { value: "" } });
+  if (background) add("background", background, { description: { value: "" } });
+  for (const f of sheet.features.filter((x) => x.type === "Feat")) add("feat", f.name, { description: { value: html(stripTags(f.text)) }, type: { value: "feat" } });
+  const spellIds = new Set<string>();
+  for (const line of sheet.casting) for (const p of [...line.cantripsKnown, ...line.spells, ...line.granted]) spellIds.add(p.id);
+  for (const id of spellIds) {
+    const el = r.reg.get(id);
+    if (el) add("spell", el.name, { level: Number(el.setters.level?.value) || 0, school: (el.setters.school?.value ?? "").slice(0, 3).toLowerCase(), description: { value: el.description } });
+  }
+  for (const it of c.inventory) {
+    const el = it.id ? r.reg.get(it.id) : undefined;
+    const name = el?.name ?? it.custom?.name ?? "Item";
+    const type = el?.type === "Weapon" ? "weapon" : el?.type === "Armor" ? "equipment" : "loot";
+    add(type, name, { quantity: it.qty, equipped: it.equipped, attunement: it.attuned ? 2 : 0, description: { value: el?.description ?? html(it.custom?.description ?? "") } });
+  }
+  const abilities = Object.fromEntries(ABILITY_IDS.map((a) => {
+    const line = sheet.abilities.find((x) => x.id === a)!;
+    return [ABBR[a], { value: line.score, proficient: line.saveProficient ? 1 : 0, bonuses: { check: "", save: "" } }];
+  }));
+  const skills = Object.fromEntries(sheet.skills.map((s) => [FSKILL[s.name.toLowerCase()] ?? s.name.slice(0, 3).toLowerCase(), { value: s.level === "expertise" ? 2 : s.level === "proficient" ? 1 : 0, ability: ABBR[s.ability] }]));
+  const hp = c.play.hp ?? sheet.hp;
+  return {
+    name: c.name || "Character",
+    type: "character",
+    img: c.portrait && c.portrait.startsWith("data:") ? "icons/svg/mystery-man.svg" : "icons/svg/mystery-man.svg",
+    system: {
+      abilities, skills,
+      attributes: { hp: { value: hp, max: sheet.hp, temp: c.play.tempHp }, ac: { flat: sheet.ac.value, calc: "flat" }, movement: { walk: sheet.speed, units: "ft" }, exhaustion: c.play.exhaustion ?? 0 },
+      currency: { ...c.coins },
+      details: {
+        alignment: c.info.alignment, gender: c.info.gender, age: c.info.age, height: c.info.height, weight: c.info.weight, eyes: c.info.eyes, hair: c.info.hair, skin: c.info.skin,
+        faith: c.info.deity, trait: c.info.traits, ideal: c.info.ideals, bond: c.info.bonds, flaw: c.info.flaws, xp: { value: c.xp },
+        biography: { value: html(c.info.backstory ?? ""), public: "" },
+      },
+    },
+    items, effects: [], flags: {}, prototypeToken: { name: c.name || "Character" },
+    _stats: { systemId: "dnd5e", systemVersion: "3.2.0", coreVersion: "11.315" },
+  };
+}
+
+export function exportRoll20(r: Resolved): Record<string, unknown> {
+  const sheet = buildSheet(r);
+  const { c, race, background, subclass, classes } = details(r);
+  const attribs: { name: string; current: string | number; max: string; id: string }[] = [];
+  const set = (name: string, current: string | number) => attribs.push({ name, current, max: "", id: `-${rid(19)}` });
+  set("character_name", c.name || "Character");
+  const main = classes[0];
+  set("class", main?.name ?? "");
+  set("base_level", sheet.level);
+  set("level", sheet.level);
+  set("subclass", subclass);
+  classes.slice(1, 4).forEach((k, i) => { set(`multiclass${i + 1}`, k.name); set(`multiclass${i + 1}_lvl`, k.level); });
+  set("race", race);
+  set("background", background);
+  for (const a of ABILITY_IDS) { set(a, sheet.abilities.find((x) => x.id === a)!.score); if (sheet.abilities.find((x) => x.id === a)!.saveProficient) set(`${a}_save_prof`, `(@{pb})`); }
+  for (const s of sheet.skills) if (s.level !== "none") { set(`${R20SKILL(s.name.toLowerCase())}_prof`, "(@{pb}*@{ability_flag})"); if (s.level === "expertise") set(`${R20SKILL(s.name.toLowerCase())}_type`, 2); }
+  set("hp", c.play.hp ?? sheet.hp);
+  attribs[attribs.length - 1].max = String(sheet.hp);
+  for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) set(k, c.coins[k]);
+  set("alignment", c.info.alignment ?? "");
+  for (const [k, v] of Object.entries({ age: c.info.age, height: c.info.height, weight: c.info.weight, eyes: c.info.eyes, hair: c.info.hair, skin: c.info.skin, gender: c.info.gender, personality_traits: c.info.traits, ideals: c.info.ideals, bonds: c.info.bonds, flaws: c.info.flaws })) set(k, v ?? "");
+  set("xp", c.xp);
+  const row = (section: string, fields: Record<string, string | number>) => {
+    const id = `-${rid(19)}`;
+    for (const [k, v] of Object.entries(fields)) set(`repeating_${section}_${id}_${k}`, v);
+  };
+  for (const it of c.inventory) {
+    const el = it.id ? r.reg.get(it.id) : undefined;
+    row("inventory", { itemname: el?.name ?? it.custom?.name ?? "Item", itemcount: it.qty, equipped: it.equipped ? 1 : 0 });
+  }
+  const seen = new Set<string>();
+  for (const line of sheet.casting) for (const p of [...line.cantripsKnown, ...line.spells, ...line.granted]) {
+    const el = r.reg.get(p.id);
+    if (!el || seen.has(el.id)) continue;
+    seen.add(el.id);
+    const lvl = Number(el.setters.level?.value) || 0;
+    row(lvl === 0 ? "spell-cantrip" : `spell-${lvl}`, { spellname: el.name, spelllevel: lvl === 0 ? "cantrip" : lvl });
+  }
+  for (const f of sheet.features.filter((x) => x.type === "Feat")) row("traits", { name: f.name, source: "Feat", description: stripTags(f.text) });
+  return { schema_version: 3, type: "character", character: { oldId: rid(19), name: c.name || "Character", avatar: "", bio: html(c.info.backstory ?? ""), gmnotes: "", defaulttoken: "", tags: "", controlledby: "", inplayerjournals: "", attribs, abilities: [] } };
+}

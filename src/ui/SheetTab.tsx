@@ -3,6 +3,7 @@ import type { Resolved } from "../aurora/engine";
 import { buildSheet, headerInfo, type SheetData } from "../aurora/sheet";
 import { ABILITY_LABEL, ABILITY_SHORT, type Character } from "../aurora/character";
 import { downloadText, saveFile } from "../store";
+import { exportFoundry, exportRoll20 } from "../aurora/exportForeign";
 import { DEFAULT_PDF_OPTIONS, buildPdf, cardCounts, type PdfOptions } from "../pdf/exportPdf";
 import type { SetCharacter } from "./Slots";
 import { CompanionCard, CONDITIONS } from "./ManageTab";
@@ -136,6 +137,8 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
         <ExportPanel r={r} sheet={sheet} />
         <button onClick={() => window.print()}>Quick print</button>
         <button onClick={() => downloadText(`${ch.name || "character"}.json`, JSON.stringify(ch, null, 2))}>Export character</button>
+        <button title="A Foundry VTT dnd5e actor. Import it with Import Data on the actor sheet." onClick={() => downloadText(`${ch.name || "character"}-foundry.json`, JSON.stringify(exportFoundry(r), null, 2))}>Export for Foundry</button>
+        <button title="A Roll20 D&D 5e sheet character file." onClick={() => downloadText(`${ch.name || "character"}-roll20.json`, JSON.stringify(exportRoll20(r), null, 2))}>Export for Roll20</button>
       </div>
       <PlayBar ch={ch} sheet={sheet} set={set} />
       <div className="sheet">

@@ -10,6 +10,7 @@ import { autoFill } from "./autofill";
 import { buildSheet } from "./sheet";
 import { ItemIndex, addToInventory, adventuringPacks, autoEquip, expandPack, startingPlans } from "./startingEquipment";
 import { importForeignCharacter } from "./foreign";
+import { exportFoundry, exportRoll20 } from "./exportForeign";
 
 const reg = loadRegistry("fixtures/content");
 
@@ -126,4 +127,22 @@ describe("test ruleset", () => {
     const open = resolve(b.character, reg).slots.filter((s) => !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length);
     expect(open.map((s) => s.rule.name)).toEqual([]);
   });
+});
+
+describe("export to other tools", () => {
+  const ch = build(reg.ofType("Race")[0].id, reg.ofType("Background")[0].id, reg.ofType("Class")[0].id, 5);
+  ch.name = "Round Trip";
+  const r = resolve(ch, reg);
+  const sheet = buildSheet(r);
+  for (const [label, exp] of [["Foundry", exportFoundry], ["Roll20", exportRoll20]] as const) {
+    it(`${label}: Soul Forge can read its own export`, () => {
+      const back = importForeignCharacter(JSON.parse(JSON.stringify(exp(r))), reg);
+      expect(back.character.name).toBe("Round Trip");
+      expect(back.character.race).toBe(ch.race);
+      expect(back.character.background).toBe(ch.background);
+      expect(back.character.classes).toEqual(ch.classes);
+      expect(sheet.hp).toBeGreaterThan(0);
+      for (const a of sheet.abilities) expect(buildSheet(resolve(back.character, reg)).abilities.find((x) => x.id === a.id)!.score, `${label} ${a.id}`).toBe(a.score);
+    });
+  }
 });

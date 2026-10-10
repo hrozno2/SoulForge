@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-NAME="${1:-charforge}"
+NAME="${1:-SoulForge}"
 VISIBILITY="${2:-public}"
 
 for tool in git node npm gh; do
@@ -17,7 +17,7 @@ gh auth status >/dev/null 2>&1 || { echo "Run 'gh auth login' first." >&2; exit 
 
 OWNER="$(gh api user --jq .login)"
 REPO="$OWNER/$NAME"
-TAP="$OWNER/homebrew-$NAME"
+TAP="$OWNER/homebrew-$(echo "$NAME" | tr A-Z a-z)"
 echo "Creating $VISIBILITY repository $REPO and tap $TAP"
 read -r -p "Continue? [y/N] " ok
 [[ "$ok" =~ ^[Yy]$ ]] || exit 1

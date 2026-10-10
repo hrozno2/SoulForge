@@ -7,22 +7,22 @@ Runs on Windows, macOS and Linux through Tauri. Original code, not affiliated wi
 
 | Platform | How |
 | --- | --- |
-| macOS | `brew install --cask hrozno2/charforge/charforge` |
-| Arch, CachyOS, Manjaro | Add the pacman repo once (below), then `sudo pacman -S charforge-bin` |
-| Windows | Download the `.exe` or `.msi` from the [latest release](https://github.com/hrozno2/charforge/releases/latest) |
+| macOS | `brew install --cask hrozno2/soulforge/soulforge` |
+| Arch, CachyOS, Manjaro | Add the pacman repo once (below), then `sudo pacman -S soulforge-bin` |
+| Windows | Download the `.exe` or `.msi` from the [latest release](https://github.com/hrozno2/SoulForge/releases/latest) |
 | Other Linux | The AppImage (updates itself), or the `.deb` / `.rpm` from the latest release |
 
 ### Arch, CachyOS, Manjaro (pacman repository, no AUR)
 
 Each release publishes a small pacman repository. Add it once to `/etc/pacman.conf`:
 
-    [charforge]
+    [soulforge]
     SigLevel = Optional TrustAll
-    Server = https://github.com/hrozno2/charforge/releases/download/arch
+    Server = https://github.com/hrozno2/SoulForge/releases/download/arch
 
 Then:
 
-    sudo pacman -Syu charforge-bin
+    sudo pacman -Syu soulforge-bin
 
 After that, `sudo pacman -Syu` updates Soul Forge together with the rest of the system. Packages are not GPG signed,
 so the repo is trusted only over HTTPS from your GitHub account. x86_64 only. To build it yourself instead, copy
@@ -62,7 +62,7 @@ update manifest (`latest.json`), then refreshes the Homebrew cask and the pacman
 | Secret | Set by | Purpose |
 | --- | --- | --- |
 | `TAURI_SIGNING_PRIVATE_KEY` and `..._PASSWORD` | `scripts/publish.sh` | Signs update files |
-| `HOMEBREW_TAP_TOKEN` | you | Fine-grained token with Contents read and write on `homebrew-charforge`. Without it the cask is not refreshed |
+| `HOMEBREW_TAP_TOKEN` | you | Fine-grained token with Contents read and write on `homebrew-soulforge`. Without it the cask is not refreshed |
 
 Back up `~/.charforge-signing`. If the key is lost, installed copies can never update again and people must reinstall.
 

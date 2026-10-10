@@ -43,7 +43,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMzQTE4RkM0OTIxM0M4QTUKUldTbHlCT1N4SStoTTh5dUdzVUNESUdoaktKTWtEVktvdGcxbDBheWFaT0p1ekhIWVlBZFVKL2UK",
       "endpoints": [
-        "https://github.com/hrozno2/charforge/releases/latest/download/latest.json"
+        "https://github.com/hrozno2/SoulForge/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"

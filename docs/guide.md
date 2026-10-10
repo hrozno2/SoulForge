@@ -102,4 +102,4 @@ The app checks for updates and offers to install them. Content sources can be re
 
 ## 11. Help and contributing
 
-Soul Forge is free and open source under the MIT license. Report problems or send changes at https://github.com/hrozno2/charforge. Third-party material is listed in `NOTICE.md`.
+Soul Forge is free and open source under the MIT license. Report problems or send changes at https://github.com/hrozno2/SoulForge. Third-party material is listed in `NOTICE.md`.

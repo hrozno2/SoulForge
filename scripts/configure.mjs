@@ -12,7 +12,7 @@ const files = [
   "src-tauri/tauri.conf.json",
   "src/config.ts",
   "packaging/arch/PKGBUILD",
-  "packaging/homebrew/charforge.rb",
+  "packaging/homebrew/soulforge.rb",
   "README.md",
 ];
 

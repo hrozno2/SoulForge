@@ -1,14 +1,14 @@
-cask "charforge" do
+cask "soulforge" do
   arch arm: "aarch64", intel: "x64"
 
   version "__VERSION__"
   sha256 arm:   "__SHA_ARM__",
          intel: "__SHA_INTEL__"
 
-  url "https://github.com/hrozno2/charforge/releases/download/v#{version}/SoulForge_#{version}_#{arch}.dmg"
+  url "https://github.com/hrozno2/SoulForge/releases/download/v#{version}/SoulForge_#{version}_#{arch}.dmg"
   name "Soul Forge"
   desc "D&D 5e (2024) character builder with custom modifiers and PDF export"
-  homepage "https://github.com/hrozno2/charforge"
+  homepage "https://github.com/hrozno2/SoulForge"
 
   livecheck do
     url :url

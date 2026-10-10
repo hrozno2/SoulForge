@@ -106,8 +106,8 @@ jobs:
           releaseId: ${{ needs.release.outputs.id }}
           releaseBody: |
             Install options:
-            - macOS: `brew install --cask ${{ github.repository_owner }}/charforge/charforge`
-            - Arch and CachyOS: add the Soul Forge pacman repo (see the README), then `sudo pacman -S charforge-bin`
+            - macOS: `brew install --cask ${{ github.repository_owner }}/soulforge/soulforge`
+            - Arch and CachyOS: add the Soul Forge pacman repo (see the README), then `sudo pacman -S soulforge-bin`
             - Windows: the .exe or .msi installer below
             - Linux: the AppImage (self-updating), .deb or .rpm
             The app checks for updates on launch.
@@ -146,15 +146,16 @@ jobs:
           done
           SHA_ARM="$(sha256sum "dl/SoulForge_${VERSION}_aarch64.dmg" | cut -d' ' -f1)"
           SHA_INTEL="$(sha256sum "dl/SoulForge_${VERSION}_x64.dmg" | cut -d' ' -f1)"
-          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${GITHUB_REPOSITORY_OWNER}/homebrew-charforge.git" tap
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${GITHUB_REPOSITORY_OWNER}/homebrew-soulforge.git" tap
           mkdir -p tap/Casks
           sed -e "s/__VERSION__/${VERSION}/g" -e "s/__SHA_ARM__/${SHA_ARM}/g" -e "s/__SHA_INTEL__/${SHA_INTEL}/g" \
-            packaging/homebrew/charforge.rb > tap/Casks/charforge.rb
+            packaging/homebrew/soulforge.rb > tap/Casks/soulforge.rb
+          git -C tap rm -q --ignore-unmatch Casks/charforge.rb
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Casks/charforge.rb
-          git diff --cached --quiet || git commit -m "charforge ${VERSION}"
+          git add -A Casks
+          git diff --cached --quiet || git commit -m "soulforge ${VERSION}"
           git push
 
   arch:
@@ -183,10 +184,10 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           mkdir repo && cd repo
           cp /home/builder/pkg/*.pkg.tar.zst .
-          repo-add charforge.db.tar.zst ./*.pkg.tar.zst
-          # Release assets cannot be symlinks, and pacman asks for plain charforge.db.
-          cp --remove-destination charforge.db.tar.zst charforge.db
-          cp --remove-destination charforge.files.tar.zst charforge.files
+          repo-add soulforge.db.tar.zst ./*.pkg.tar.zst
+          # Release assets cannot be symlinks, and pacman asks for plain soulforge.db.
+          cp --remove-destination soulforge.db.tar.zst soulforge.db
+          cp --remove-destination soulforge.files.tar.zst soulforge.files
           if ! gh release view arch --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release create arch --repo "$GITHUB_REPOSITORY" --prerelease --latest=false \
               --title "Arch package repository" \
@@ -197,4 +198,4 @@ jobs:
             gh release delete-asset arch "$old" --repo "$GITHUB_REPOSITORY" -y
           done
           gh release upload arch --repo "$GITHUB_REPOSITORY" --clobber \
-            ./*.pkg.tar.zst charforge.db charforge.db.tar.zst charforge.files charforge.files.tar.zst
+            ./*.pkg.tar.zst soulforge.db soulforge.db.tar.zst soulforge.files soulforge.files.tar.zst

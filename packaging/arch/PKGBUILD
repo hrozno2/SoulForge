@@ -1,15 +1,15 @@
-# Maintainer: hrozno2/charforge <https://github.com/hrozno2/charforge>
-pkgname=charforge-bin
+# Maintainer: hrozno2/SoulForge <https://github.com/hrozno2/SoulForge>
+pkgname=soulforge-bin
 _name=SoulForge
 pkgver=0.2.0
 pkgrel=1
 pkgdesc="D&D 5e (2024) character builder with custom modifiers, content import and PDF export"
 arch=('x86_64' 'aarch64')
-url="https://github.com/hrozno2/charforge"
+url="https://github.com/hrozno2/SoulForge"
 license=('MIT')
 depends=('webkit2gtk-4.1' 'gtk3')
-provides=('charforge')
-conflicts=('charforge')
+provides=('soulforge' 'charforge')
+conflicts=('soulforge' 'charforge' 'charforge-bin')
 options=('!strip' '!debug')
 noextract=("${pkgname}-${pkgver}-x86_64.deb" "${pkgname}-${pkgver}-aarch64.deb")
 source_x86_64=("${pkgname}-${pkgver}-x86_64.deb::${url}/releases/download/v${pkgver}/${_name}_${pkgver}_amd64.deb")

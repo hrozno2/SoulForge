@@ -84,15 +84,19 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
     refresh();
   };
 
+    /** How many pieces of text the translation service could not do during this export. */
+  const failedRef = useRef(0);
+  const onFailed = (f: number) => { failedRef.current += f; };
   /** The values for the sheet, translated when a language is chosen. */
   const fillData = async () => {
     const data = buildFillData(r, sheet);
-    const t = tr.option((d, n) => setMsg(`Translating ${d} of ${n}...`));
+    const t = tr.option((d, n) => setMsg(`Translating ${d} of ${n}...`), (f) => onFailed(f));
     return t ? translateFill(data, t) : data;
   };
 
   const run = async () => {
     if (!current) return;
+    failedRef.current = 0;
     setBusy(true);
     setMsg("");
     try {
@@ -115,17 +119,17 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
         const el = id ? r.reg.get(id) : undefined;
         if (!el) throw new Error("This character has no companion yet. Add one on the Manage tab.");
         const name = r.character.companions.find((c) => c.id === id)?.name ?? el.name;
-        bytes = await fillCompanion(tpl, await (async () => { const cf = companionFill(el, name, r.reg); const t = tr.option((d, n) => setMsg(`Translating ${d} of ${n}...`)); return t ? translateCompanion(cf, t) : cf; })(), { font: fonts, profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency), layout: current.pages[0] as "mount" | "ranger" });
+        bytes = await fillCompanion(tpl, await (async () => { const cf = companionFill(el, name, r.reg); const t = tr.option((d, n) => setMsg(`Translating ${d} of ${n}...`), onFailed); return t ? translateCompanion(cf, t) : cf; })(), { font: fonts, profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency), layout: current.pages[0] as "mount" | "ranger" });
       }
       if (cards.spells || cards.items || cards.features || cards.tips) {
-        const extra = await buildPdf(r, sheet, { paper: "letter", sheet: false, spellCards: cards.spells, itemCards: cards.items, featureCards: cards.features, tips: cards.tips, translate: tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`)) }, fonts);
+        const extra = await buildPdf(r, sheet, { paper: "letter", sheet: false, spellCards: cards.spells, itemCards: cards.items, featureCards: cards.features, tips: cards.tips, translate: tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`), onFailed) }, fonts);
         const main = await PDFDocument.load(bytes);
         const add = await PDFDocument.load(extra);
         for (const pg of await main.copyPages(add, add.getPageIndices())) main.addPage(pg);
         bytes = await main.save();
       }
       const ok = await saveFile(`${base} - ${current.name}.pdf`, bytes, "application/pdf");
-      setMsg([ok ? "Saved." : "Cancelled.", ...notes].join(" "));
+      setMsg([ok ? "Saved." : "Cancelled.", ...notes, failedRef.current ? `${failedRef.current} pieces of text could not be translated and stayed in English. Try again in a minute, or pick another translation service.` : ""].filter(Boolean).join(" "));
     } catch (e) {
       setMsg(`Could not fill the sheet: ${(e as Error).message}`);
     } finally {

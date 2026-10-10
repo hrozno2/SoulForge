@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { makeTranslator, translatable } from "./translate";
+import { makeTranslator, translatable, translateAll } from "./translate";
 
 describe("translation services", () => {
   it("uses the free Google endpoint, joins sentence segments, and keeps the order", async () => {
@@ -47,5 +47,19 @@ describe("translation services", () => {
     expect(translatable("+3", keep)).toBe(false);
     expect(translatable("Čeněk", keep)).toBe(false);
     expect(translatable("Armor Class", keep)).toBe(true);
+  });
+
+  it("retries the strings of a failed batch one at a time", async () => {
+    const strings = Array.from({ length: 45 }, (_, i) => `word number ${i}`);
+    let batch = 0;
+    const translator = async (texts: string[]) => {
+      batch++;
+      if (batch === 2) throw new Error("busy"); // the second whole batch fails, single strings work
+      return texts.map((t) => `<${t}>`);
+    };
+    const cache = { get: async () => undefined, put: async () => undefined };
+    const { map, failed } = await translateAll(strings, "fr", translator, cache);
+    expect(failed).toBe(0);
+    expect(map.size).toBe(45);
   });
 });

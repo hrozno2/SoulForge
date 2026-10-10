@@ -146,7 +146,18 @@ export async function translateAll(
       });
     } catch (e) {
       if (done === 0 && !map.size) throw e;
-      failed += b.length;
+      // One bad batch should not lose its neighbours: try each string on its own, once.
+      for (const s of b) {
+        try {
+          const t = (await translate([s], target))[0];
+          if (typeof t === "string" && t.trim()) {
+            map.set(s, t);
+            void cache.put(`${target}\u0000${s}`, t);
+          } else failed++;
+        } catch {
+          failed++;
+        }
+      }
     }
     done += b.length;
     onProgress?.(done, total);

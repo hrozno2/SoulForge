@@ -138,6 +138,26 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(page.locator("header nav")).toContainText("Spielen");
   });
 
+  test("point buy follows the standard table and custom house rules", async ({ page }) => {
+    await addTestContent(page);
+    await tab(page, "Build");
+    await page.getByRole("button", { name: /^Ability/ }).first().click();
+    await page.getByRole("button", { name: "Point buy" }).click();
+    await expect(page.getByText("0 / 27 points")).toBeVisible();
+    // Three 15s are 27 points, so nothing else can go up.
+    const plus = page.locator(".abilities .stepper button", { hasText: "+" });
+    for (let i = 0; i < 7; i++) { await plus.nth(0).click(); await plus.nth(1).click(); await plus.nth(2).click(); }
+    await expect(page.getByText("27 / 27 points")).toBeVisible();
+    await expect(plus.nth(3)).toBeDisabled();
+    await page.locator(".pb-rules summary").click();
+    await page.getByLabel("Points to spend").fill("40");
+    await page.getByLabel("Highest score").fill("17");
+    await expect(plus.nth(3)).toBeEnabled();
+    await expect(page.getByLabel("Cost of 17")).toBeVisible();
+    await page.getByRole("button", { name: "Standard rules" }).click();
+    await expect(page.getByText("/ 27 points")).toBeVisible();
+  });
+
   test("the homebrew builder makes a spell that shows up in the content browser", async ({ page }) => {
     await addTestContent(page);
     await tab(page, "Content");

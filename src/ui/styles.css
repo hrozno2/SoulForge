@@ -740,3 +740,10 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .party-slots b { min-width: 1.2em; text-align: right; color: var(--muted, #aaa); font-weight: 600; }
 .party-slots .pips { margin: 0; gap: 3px; flex-wrap: wrap; }
 .party-slots .pip { display: inline-block; }
+.pb-rules { margin: 8px 0; }
+.pb-rules .row { gap: 12px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+.pb-rules input[type="number"] { width: 72px; }
+.pb-costs { border-collapse: collapse; }
+.pb-costs th, .pb-costs td { padding: 3px 6px; text-align: center; }
+.pb-costs input { width: 56px; }
+.pb-costs { display: block; overflow-x: auto; max-width: 100%; }

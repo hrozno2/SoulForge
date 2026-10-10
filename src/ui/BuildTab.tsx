@@ -1,10 +1,11 @@
+import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as pbSpent } from "../aurora/pointBuy";
 import { useMemo, useState } from "react";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { reqCtx } from "../aurora/engine";
 import { meets } from "../aurora/requirements";
 import {
-  ABILITY_IDS, ABILITY_LABEL, POINT_BUY_BUDGET, POINT_BUY_COST, STANDARD_ARRAY, pointBuySpent, totalLevel, type AbilityId, type Character,
+  ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, totalLevel, type AbilityId, type Character,
 } from "../aurora/character";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { buildSheet } from "../aurora/sheet";
@@ -102,14 +103,19 @@ function ClassPanel({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
 }
 
 function Abilities({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
-  const spent = pointBuySpent(ch.abilityBase);
+  const rules = normalizeRules(ch.pointBuy);
+  const spent = pbSpent(rules, ch.abilityBase);
+  const setRules = (p: Partial<typeof rules>, resetCosts = false) => set((c) => {
+    const next = normalizeRules({ ...normalizeRules(c.pointBuy), ...p, costs: resetCosts ? undefined : { ...normalizeRules(c.pointBuy).costs, ...(p.costs ?? {}) } });
+    return { ...c, pointBuy: next, abilityBase: c.abilityMethod === "pointbuy" ? clampBase(next, c.abilityBase) : c.abilityBase };
+  });
   const sheet = buildSheet(r);
   const setBase = (a: AbilityId, v: number) => set((c) => ({ ...c, abilityBase: { ...c.abilityBase, [a]: v } }));
   const setMethod = (m: Character["abilityMethod"]) =>
     set((c) => ({
       ...c,
       abilityMethod: m,
-      abilityBase: m === "pointbuy" ? { strength: 8, dexterity: 8, constitution: 8, intelligence: 8, wisdom: 8, charisma: 8 } : m === "standard" ? { strength: 15, dexterity: 14, constitution: 13, intelligence: 12, wisdom: 10, charisma: 8 } : c.abilityBase,
+      abilityBase: m === "pointbuy" ? (() => { const lo = normalizeRules(c.pointBuy).min; return { strength: lo, dexterity: lo, constitution: lo, intelligence: lo, wisdom: lo, charisma: lo }; })() : m === "standard" ? { strength: 15, dexterity: 14, constitution: 13, intelligence: 12, wisdom: 10, charisma: 8 } : c.abilityBase,
     }));
   const bonusOf = (a: AbilityId) => r.stats.contributions(a).filter((x) => !x.inline);
   return (
@@ -120,8 +126,24 @@ function Abilities({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: 
             {m === "pointbuy" ? "Point buy" : m === "standard" ? "Standard array" : "Manual / rolled"}
           </button>
         ))}
-        {ch.abilityMethod === "pointbuy" && <span className={spent > POINT_BUY_BUDGET ? "warn" : "muted"}>{spent} / {POINT_BUY_BUDGET} points</span>}
+        {ch.abilityMethod === "pointbuy" && <span className={spent > rules.budget ? "warn" : "muted"}>{spent} / {rules.budget} points</span>}
       </div>
+      {ch.abilityMethod === "pointbuy" && (
+        <details className="pb-rules">
+          <summary>Point buy rules{JSON.stringify(rules) === JSON.stringify(STANDARD_RULES) ? " (standard)" : " (custom)"}</summary>
+          <div className="row">
+            <label>Points to spend <input type="number" min={0} max={999} value={rules.budget} onChange={(e) => setRules({ budget: Number(e.target.value) })} /></label>
+            <label>Lowest score <input type="number" min={1} max={30} value={rules.min} onChange={(e) => setRules({ min: Number(e.target.value) })} /></label>
+            <label>Highest score <input type="number" min={1} max={30} value={rules.max} onChange={(e) => setRules({ max: Number(e.target.value) })} /></label>
+            <button onClick={() => set((c) => ({ ...c, pointBuy: undefined, abilityBase: clampBase(STANDARD_RULES, c.abilityBase) }))}>Standard rules</button>
+          </div>
+          <table className="pb-costs">
+            <thead><tr><th>Score</th>{Array.from({ length: rules.max - rules.min + 1 }, (_, i) => <th key={i}>{rules.min + i}</th>)}</tr></thead>
+            <tbody><tr><td>Total cost</td>{Array.from({ length: rules.max - rules.min + 1 }, (_, i) => { const sc = rules.min + i; return <td key={sc}><input type="number" aria-label={`Cost of ${sc}`} value={rules.costs[sc]} onChange={(e) => setRules({ costs: { [sc]: Number(e.target.value) } })} /></td>; })}</tr></tbody>
+          </table>
+          <p className="muted">The cost is the total points a score costs from nothing, so the step up from 13 to 14 costs the difference between the two. The standard table is 27 points over 8 to 15.</p>
+        </details>
+      )}
       <table className="abilities">
         <thead><tr><th>Ability</th><th>Base</th><th>Bonuses</th><th title="Your own modifier, for table rulings or items the content lacks">Custom</th><th className="final">Score</th><th className="final">Mod</th></tr></thead>
         <tbody>
@@ -139,9 +161,9 @@ function Abilities({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: 
                 <td>
                   {ch.abilityMethod === "pointbuy" ? (
                     <span className="stepper">
-                      <button onClick={() => setBase(a, ch.abilityBase[a] - 1)} disabled={ch.abilityBase[a] <= 8}>−</button>
+                      <button onClick={() => setBase(a, ch.abilityBase[a] - 1)} disabled={!canLower(rules, ch.abilityBase, a)}>−</button>
                       <span>{ch.abilityBase[a]}</span>
-                      <button onClick={() => setBase(a, ch.abilityBase[a] + 1)} disabled={ch.abilityBase[a] >= 15 || spent - (POINT_BUY_COST[ch.abilityBase[a]] ?? 0) + (POINT_BUY_COST[ch.abilityBase[a] + 1] ?? 99) > POINT_BUY_BUDGET}>+</button>
+                      <button onClick={() => setBase(a, ch.abilityBase[a] + 1)} disabled={!canRaise(rules, ch.abilityBase, a)}>+</button>
                     </span>
                   ) : ch.abilityMethod === "standard" ? (
                     <select value={ch.abilityBase[a]} onChange={(e) => setBase(a, Number(e.target.value))}>

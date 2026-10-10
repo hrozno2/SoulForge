@@ -170,6 +170,8 @@ export interface Character {
   classes: ClassLevel[];
   abilityBase: Record<AbilityId, number>;
   abilityMethod: "pointbuy" | "standard" | "manual";
+  /** House rules for point buy. Missing means the standard 27 points, 8 to 15. */
+  pointBuy?: { budget: number; min: number; max: number; costs: Record<number, number> };
   /** Slot key (`ownerId|ruleIndex`) to chosen element ids. */
   selections: Record<string, string[]>;
   /** Option elements the player enabled (type Option). */
@@ -273,13 +275,8 @@ export const xpToLevel = (xp: number): number => {
   return lvl;
 };
 
-export const POINT_BUY_COST: Record<number, number> = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
-export const POINT_BUY_BUDGET = 27;
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 
-export function pointBuySpent(base: Record<AbilityId, number>): number {
-  return ABILITY_IDS.reduce((n, a) => n + (POINT_BUY_COST[base[a]] ?? 99), 0);
-}
 
 /** Fills in anything a saved or imported character is missing, so older files keep working as fields are added. */
 export function normalizeCharacter(raw: Partial<Character>): Character {

@@ -10,7 +10,7 @@ import { autoFill } from "./autofill";
 import { buildSheet } from "./sheet";
 import { ItemIndex, addToInventory, adventuringPacks, autoEquip, expandPack, startingPlans } from "./startingEquipment";
 import { importForeignCharacter } from "./foreign";
-import { ownership } from "../ui/Slots";
+import { mergeSlots, ownership } from "../ui/Slots";
 import { exportFoundry, exportRoll20 } from "./exportForeign";
 
 const reg = loadRegistry("fixtures/content");
@@ -166,5 +166,28 @@ describe("what already gives an option", () => {
     const r = resolve(build(reg.ofType("Race")[0].id, reg.ofType("Background")[0].id, reg.ofType("Class")[0].id, 1), reg);
     const missing = reg.ofType("Spell").find((e) => !r.ids.has(e.id))!;
     expect(ownership(r, missing, "x")).toBeUndefined();
+  });
+});
+
+describe("identical choices from several levels are one choice", () => {
+  it("merges repeats without changing how many picks are needed", () => {
+    let merged = 0;
+    for (const cls of reg.ofType("Class")) {
+      const r = resolve(build(reg.ofType("Race")[0].id, reg.ofType("Background")[0].id, cls.id, 8), reg);
+      const out = mergeSlots(r.slots);
+      expect(out.reduce((n, s) => n + s.rule.number, 0)).toBe(r.slots.reduce((n, s) => n + s.rule.number, 0));
+      expect(out.reduce((n, s) => n + s.chosen.length, 0)).toBe(r.slots.reduce((n, s) => n + s.chosen.length, 0));
+      for (const m of out) if (m.members) { merged++; expect(m.members.length).toBeGreaterThan(1); expect(m.chosen).toEqual(m.members.flatMap((x) => x.chosen)); }
+    }
+    expect(merged).toBeGreaterThan(0);
+  });
+});
+
+describe("spell school as a filter word", () => {
+  it("finds spells of a school by the school's name", () => {
+    const evo = reg.find("Spell", "Evocation");
+    expect(evo.length).toBeGreaterThan(0);
+    for (const e of evo) expect(e.setters.school?.value).toBe("Evocation");
+    expect(reg.find("Spell", "Evocation, 0").every((e) => e.setters.level?.value === "0")).toBe(true);
   });
 });

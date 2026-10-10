@@ -751,3 +751,5 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .opt-row.owned .opt-main { cursor: default; }
 .opt-row.owned .tick { color: var(--muted); }
 .slot-done { margin-top: 8px; }
+.set-group { border: 1px solid var(--line); margin: 10px 0; padding: 4px 10px 8px; }
+.set-group legend { font: 700 11px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 6px; }

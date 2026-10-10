@@ -16,9 +16,9 @@ export function metaLine(el: AElement): string {
 }
 
 /** What already gives the character this option, in words, or nothing when they do not have it. */
-export function ownership(r: Resolved, el: AElement, thisSlot: string): string | undefined {
+export function ownership(r: Resolved, el: AElement, thisSlot: string | string[]): string | undefined {
   if (!r.ids.has(el.id)) return undefined;
-  const other = r.slots.find((s) => s.key !== thisSlot && s.chosen.includes(el.id));
+  const other = r.slots.find((s) => ![thisSlot].flat().includes(s.key) && s.chosen.includes(el.id));
   if (other) return `You chose this for ${other.rule.name} (${other.owner.name}).`;
   const a = r.active.find((x) => x.el.id === el.id);
   const from = a?.from ? r.reg.get(a.from)?.name : undefined;
@@ -34,7 +34,30 @@ export function setSelection(set: SetCharacter, key: string, ids: string[]): voi
   set((c) => ({ ...c, selections: { ...c.selections, [key]: ids } }));
 }
 
-export function Slot({ slot, r, set, onDetail }: { slot: SelectSlot; r: Resolved; set: SetCharacter; onDetail: (e: AElement) => void }) {
+/** Several identical choices (two spells at level 1, two more at 3, and so on) shown as one. */
+export type MergedSlot = SelectSlot & { members?: SelectSlot[] };
+
+const signature = (s: SelectSlot) => [s.owner.id, s.rule.type, s.rule.name, s.rule.supports ?? "", s.rule.spellcasting ?? "", s.rule.optional ? 1 : 0, s.listItems ? "list" : ""].join("|");
+
+export function mergeSlots(slots: SelectSlot[]): MergedSlot[] {
+  const groups = new Map<string, SelectSlot[]>();
+  for (const s of slots) (groups.get(signature(s)) ?? groups.set(signature(s), []).get(signature(s))!).push(s);
+  return [...groups.values()].map((g) => {
+    if (g.length < 2 || g[0].listItems) return g[0];
+    const options = [...new Map(g.flatMap((x) => x.options).map((o) => [o.id, o])).values()];
+    return {
+      ...g[0],
+      rule: { ...g[0].rule, number: g.reduce((n, x) => n + x.rule.number, 0) },
+      chosen: g.flatMap((x) => x.chosen),
+      defaulted: g.every((x) => x.defaulted),
+      options,
+      blocked: new Set(g.flatMap((x) => [...x.blocked])),
+      members: g,
+    };
+  });
+}
+
+export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved; set: SetCharacter; onDetail: (e: AElement) => void }) {
   const { rule, chosen } = slot;
   const [open, setOpen] = useState(chosen.length < rule.number);
   const full = chosen.length >= rule.number;
@@ -45,28 +68,39 @@ export function Slot({ slot, r, set, onDetail }: { slot: SelectSlot; r: Resolved
     wasFull.current = full;
   }, [full]);
 
+  // A merged choice hands its picks back to the underlying choices, filling the earlier ones first.
+  const commit = (next: string[]) => {
+    if (!slot.members) return setSelection(set, slot.key, next);
+    let at = 0;
+    const entries = slot.members.map((m) => {
+      const part = next.slice(at, at + m.rule.number);
+      at += m.rule.number;
+      return [m.key, part] as const;
+    });
+    set((c) => ({ ...c, selections: { ...c.selections, ...Object.fromEntries(entries) } }));
+  };
   const toggle = (el: AElement) => {
     let next: string[];
     if (chosen.includes(el.id) && !slot.defaulted) next = chosen.filter((c) => c !== el.id);
     else if (rule.number === 1) next = [el.id];
     else if (chosen.length < rule.number) next = [...(slot.defaulted ? [] : chosen), el.id];
     else return;
-    setSelection(set, slot.key, next);
+    commit(next);
     if (rule.number === 1) setOpen(false);
   };
   const swap = (from: AElement, to: AElement) => {
     if (slot.blocked.has(to.id)) return;
-    setSelection(set, slot.key, chosen.map((c) => (c === from.id ? to.id : c)));
+    commit(chosen.map((c) => (c === from.id ? to.id : c)));
   };
   const toggleItem = (id: string) => {
     const next = chosen.includes(id) ? chosen.filter((c) => c !== id) : rule.number === 1 ? [id] : chosen.length < rule.number ? [...chosen, id] : chosen;
-    setSelection(set, slot.key, next);
+    commit(next);
   };
   const chosenNames = slot.listItems ? chosen.map((id) => slot.listItems!.find((i) => i.id === id)?.text ?? id) : chosen.map((id) => r.reg.get(id)?.name ?? id);
   const need = rule.number;
   const type = rule.type;
   const reason = (el: AElement): string | undefined => (slot.blocked.has(el.id) ? "requirements not met" : undefined);
-  const owned = (el: AElement): string | undefined => (chosen.includes(el.id) ? undefined : ownership(r, el, slot.key));
+  const owned = (el: AElement): string | undefined => (chosen.includes(el.id) ? undefined : ownership(r, el, slot.members ? slot.members.map((m) => m.key) : slot.key));
 
   return (
     <div className={`slot ${full ? "done" : "todo"}`}>
@@ -109,7 +143,8 @@ export function Slot({ slot, r, set, onDetail }: { slot: SelectSlot; r: Resolved
   );
 }
 
-export function SlotList({ slots, r, set, onDetail, empty }: { slots: SelectSlot[]; r: Resolved; set: SetCharacter; onDetail: (e: AElement) => void; empty?: string }) {
+export function SlotList({ slots: given, r, set, onDetail, empty, merge = true }: { slots: SelectSlot[]; r: Resolved; set: SetCharacter; onDetail: (e: AElement) => void; empty?: string; merge?: boolean }) {
+  const slots: MergedSlot[] = merge ? mergeSlots(given) : given;
   if (!slots.length) return empty ? <p className="muted">{empty}</p> : null;
   return (
     <>

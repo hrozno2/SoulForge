@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Original test content for Soul Forge. Not from any published book. -->
 <elements>
-	<element name="Hollow Realms Starter Set" type="Source" source="Hollow Realms" id="ID_SF_SOURCE_HOLLOW_REALMS">
+	<element name="Hollow Realms" type="Source" source="Hollow Realms" id="ID_SF_SOURCE_HOLLOW_REALMS">
 		<setters>
 			<set name="release">20240101</set>
 			<set name="abbreviation">HRS</set>

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AElement } from "../aurora/types";
-import { formatRelease, groupVariants, hasRecommendation, sortGroups, type Group, type SortMode, type Variant } from "../aurora/books";
+import { formatRelease, groupVariants, hasRecommendation, hiddenBy, sortGroups, type Group, type SortMode, type Variant } from "../aurora/books";
 import { applyFacets, facetCounts, facetsFor, type Selected } from "../aurora/facets";
 import { stripHtml } from "../aurora/sheet";
 import { shortRange, shortTime } from "../sheets/data";
 import { hueOf } from "./PickCards";
 import { useUi } from "./Learn";
+import { useSettings } from "./Settings";
 
 function useStored<T extends string>(key: string, initial: T): [T, (v: T) => void] {
   const full = `charforge.browse.${key}`;
@@ -99,7 +100,7 @@ export interface BrowseProps {
   defaultSort?: SortMode;
 }
 
-export function Browse({ items, type, chosen, onPick, onSwap, disabledReason, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort }: BrowseProps) {
+export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabledReason, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort }: BrowseProps) {
   const { books, learn } = useUi();
   const [view, setView] = useStored<"cards" | "list">(`view.${type}`, defaultView);
   const [sort, setSort] = useStored<SortMode>(`sort.${type}`, defaultSort ?? (type === "Spell" ? "level" : "recommended"));
@@ -109,6 +110,10 @@ export function Browse({ items, type, chosen, onPick, onSwap, disabledReason, ow
   const [shown, setShown] = useState(perPage);
   const [active, setActive] = useState<Record<string, string>>({});
   const chosenSet = useMemo(() => new Set(chosen), [chosen]);
+  const prefs = useSettings();
+  // The global content filters. Whatever is already picked stays visible.
+  const items = useMemo(() => allItems.filter((e) => chosenSet.has(e.id) || !hiddenBy(books.info(e.source), e.source, { legacy: prefs.showLegacy, playtest: prefs.showPlaytest, unusual: prefs.showUnusual })), [allItems, books, chosenSet, prefs.showLegacy, prefs.showPlaytest, prefs.showUnusual]);
+  const hidden = allItems.length - items.length;
 
   const defs = useMemo(() => facetsFor(type), [type]);
   const counts = useMemo(() => defs.map((d) => ({ def: d, values: facetCounts(items, d, books) })).filter((x) => x.values.length > 1), [defs, items, books]);
@@ -155,7 +160,7 @@ export function Browse({ items, type, chosen, onPick, onSwap, disabledReason, ow
             <button className={view === "list" ? "pill active" : "pill"} onClick={() => setView("list")}>List</button>
           </span>
         )}
-        <span className="muted count">{groups.length} shown{filtered.length !== groups.length ? `, ${filtered.length} versions` : ""}</span>
+        <span className="muted count">{groups.length} shown{filtered.length !== groups.length ? `, ${filtered.length} versions` : ""}{hidden > 0 ? `, ${hidden} hidden by your content filters (Menu, Settings)` : ""}</span>
       </div>
       {open && (
         <div className="filters">

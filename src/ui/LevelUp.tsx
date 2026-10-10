@@ -122,7 +122,7 @@ export function LevelUp({ r, ch, set, onDetail, onClose }: { r: Resolved; ch: Ch
               <details className="tip">
                 <summary>Swap a spell you know (optional)</summary>
                 <p className="muted">When you gain a level you can replace one spell you know with another from your class list.</p>
-                <SlotList slots={swappable} r={r} set={set} onDetail={onDetail} />
+                <SlotList merge={false} slots={swappable} r={r} set={set} onDetail={onDetail} />
               </details>
             )}
 

@@ -73,6 +73,8 @@ function offered(el: AElement): Set<string> {
   s.add(el.id.toLowerCase());
   const lvl = el.setters.level?.value;
   if (el.type === "Spell" && lvl !== undefined) s.add(lvl.trim());
+  // A spell's school works as a tag too, so "Evocation" in a filter finds evocation spells.
+  if (el.type === "Spell" && el.setters.school?.value) s.add(el.setters.school.value.trim().toLowerCase());
   return s;
 }
 

@@ -13,6 +13,8 @@ export interface BookInfo {
   /** Unearthed Arcana and other playtest material. */
   playtest: boolean;
   abbr?: string;
+  /** True when the content has a Source element for this book, so "official" is a fact and not a guess. */
+  known?: boolean;
 }
 
 const key = (s: string) => s.toLowerCase().replace(/[’`]/g, "'").replace(/\s+/g, " ").trim();
@@ -28,6 +30,7 @@ export class BookIndex {
         official: (e.setters.official?.value ?? "").toLowerCase() === "true",
         playtest: /unearthed arcana|playtest/i.test(e.name),
         abbr: e.setters.abbreviation?.value,
+        known: true,
       });
     }
   }
@@ -139,4 +142,19 @@ export function sortGroups(groups: Group[], mode: SortMode): Group[] {
     return arr.sort((a, b) => lv(a) - lv(b) || a.name.localeCompare(b.name));
   }
   return arr.sort((a, b) => popularity(a.type, a.name) - popularity(b.type, b.name) || tier(a) - tier(b) || rel(b) - rel(a) || a.name.localeCompare(b.name));
+}
+
+/** Campaign setting and adventure books, whose options suit one world. */
+const SETTING_BOOKS = /eberron|ravnica|theros|strixhaven|spelljammer|wildemount|explorer.s guide to|planescape|dragonlance|ravenloft|van richten|forgotten realms|sword coast|avernus|baldur|icewind|candlekeep|acquisitions inc|mythic odysseys|plane shift|critical role|radiant citadel|netherdeep|witchlight|journeys through|golden vault|infinite staircase|dragonlance|dark sun|greyhawk|midnight|kobold press|tal.dorei|lost laboratory|call of the/i;
+
+export type ContentFilters = { legacy: boolean; playtest: boolean; unusual: boolean };
+
+export const ALL_CONTENT: ContentFilters = { legacy: true, playtest: true, unusual: true };
+
+/** Which of the global content filters would hide something from this book. */
+export function hiddenBy(book: BookInfo, source: string, f: ContentFilters): boolean {
+  if (!f.playtest && book.playtest) return true;
+  if (!f.legacy && ruleSetOf(book, source) === "Legacy" && !book.playtest) return true;
+  if (!f.unusual && (SETTING_BOOKS.test(source) || (book.known && !book.official && !book.playtest))) return true;
+  return false;
 }

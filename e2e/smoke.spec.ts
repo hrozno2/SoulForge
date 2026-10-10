@@ -158,6 +158,25 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(page.getByText("/ 27 points")).toBeVisible();
   });
 
+  test("global content filters hide books from lists and keep what is picked", async ({ page }) => {
+    await addTestContent(page);
+    await randomCharacter(page);
+    await tab(page, "Build");
+    await page.getByRole("button", { name: /^Species/ }).first().click();
+    await page.getByRole("button", { name: "Change" }).click();
+    await expect(page.getByText(/hidden by your content filters/)).toHaveCount(0);
+    await page.getByRole("button", { name: /^menu/i }).click();
+    await page.getByRole("button", { name: /settings/i }).click();
+    await page.getByLabel(/Settings and other sources/).uncheck();
+    await page.getByRole("button", { name: "Close" }).click();
+    await expect(page.getByText(/hidden by your content filters/).first()).toBeVisible();
+    await page.getByRole("button", { name: /^menu/i }).click();
+    await page.getByRole("button", { name: /settings/i }).click();
+    await page.getByLabel(/Settings and other sources/).check();
+    await page.getByRole("button", { name: "Close" }).click();
+    await expect(page.getByText(/hidden by your content filters/)).toHaveCount(0);
+  });
+
   test("the homebrew builder makes a spell that shows up in the content browser", async ({ page }) => {
     await addTestContent(page);
     await tab(page, "Content");

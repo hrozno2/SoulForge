@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { nodeXml } from "./fixture";
 import { parseElementsXml } from "./parse";
 import { ARegistry } from "./registry";
-import { BookIndex, formatRelease, groupVariants, popularity, sortGroups } from "./books";
+import { ALL_CONTENT, BookIndex, formatRelease, hiddenBy, groupVariants, popularity, sortGroups } from "./books";
 import { applyFacets, facetCounts, facetsFor } from "./facets";
 
 const XML = `<elements>
@@ -86,5 +86,34 @@ describe("filters", () => {
     const { reg, books } = setup();
     const level = facetsFor("Spell").find((d) => d.id === "level")!;
     expect(facetCounts(reg.ofType("Spell"), level, books).map(([v]) => v)).toEqual(["C", "1", "3"]);
+  });
+});
+
+describe("global content filters", () => {
+  const reg = new ARegistry();
+  reg.addFile(parseElementsXml(`<elements>
+    <element name="Player's Handbook (2024)" type="Source" source="Core" id="A"><setters><set name="release">20240917</set><set name="official">true</set></setters></element>
+    <element name="Player's Handbook" type="Source" source="Core" id="B"><setters><set name="release">20140819</set><set name="official">true</set></setters></element>
+    <element name="Unearthed Arcana: Fresh" type="Source" source="Core" id="C"><setters><set name="release">20230101</set><set name="official">true</set></setters></element>
+    <element name="Eberron: Rising from the Last War" type="Source" source="Core" id="D"><setters><set name="release">20190119</set><set name="official">true</set></setters></element>
+    <element name="Some Friend's Book" type="Source" source="Core" id="E"><setters><set name="release">20240101</set><set name="official">false</set></setters></element>
+  </elements>`, nodeXml));
+  reg.build();
+  const books = new BookIndex(reg);
+  const hide = (src: string, f: Partial<typeof ALL_CONTENT>) => hiddenBy(books.info(src), src, { ...ALL_CONTENT, ...f });
+  it("shows everything by default", () => {
+    for (const s of ["Player's Handbook (2024)", "Player's Handbook", "Unearthed Arcana: Fresh", "Eberron: Rising from the Last War", "Some Friend's Book"]) expect(hide(s, {}), s).toBe(false);
+  });
+  it("hides 2014 rules, playtest, and settings or unofficial books independently", () => {
+    expect(hide("Player's Handbook", { legacy: false })).toBe(true);
+    expect(hide("Player's Handbook (2024)", { legacy: false })).toBe(false);
+    expect(hide("Unearthed Arcana: Fresh", { playtest: false })).toBe(true);
+    expect(hide("Unearthed Arcana: Fresh", { legacy: false })).toBe(false);
+    expect(hide("Eberron: Rising from the Last War", { unusual: false })).toBe(true);
+    expect(hide("Some Friend's Book", { unusual: false })).toBe(true);
+    expect(hide("Player's Handbook", { unusual: false })).toBe(false);
+  });
+  it("does not hide books it knows nothing about as unofficial", () => {
+    expect(hiddenBy(books.info("Mystery Book"), "Mystery Book", { ...ALL_CONTENT, unusual: false })).toBe(false);
   });
 });

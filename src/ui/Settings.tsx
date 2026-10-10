@@ -12,10 +12,14 @@ export interface AppSettings {
   paper: "a4" | "letter";
   autoBackup: boolean;
   language: Lang;
+  /** Which kinds of content lists show. Anything you already picked always stays visible. */
+  showLegacy: boolean;
+  showPlaytest: boolean;
+  showUnusual: boolean;
 }
 
 const KEY = "charforge.settings";
-const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en" };
+const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true };
 
 function read(): AppSettings {
   try {
@@ -147,6 +151,22 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             {(["a4", "letter"] as const).map((p) => <button key={p} className={s.paper === p ? "pill active" : "pill"} onClick={() => updateSettings({ paper: p })}>{p === "a4" ? "A4" : "Letter"}</button>)}
           </span>
         </div>
+        <fieldset className="set-group">
+          <legend>Content shown in lists</legend>
+          <label className="set-row">
+            <span><b>2014 rules</b><small className="muted"> Species, classes, spells and items from before the 2024 books</small></span>
+            <input type="checkbox" checked={s.showLegacy} onChange={(e) => updateSettings({ showLegacy: e.target.checked })} />
+          </label>
+          <label className="set-row">
+            <span><b>Unearthed Arcana and playtest</b><small className="muted"> Draft material that may change</small></span>
+            <input type="checkbox" checked={s.showPlaytest} onChange={(e) => updateSettings({ showPlaytest: e.target.checked })} />
+          </label>
+          <label className="set-row">
+            <span><b>Settings and other sources</b><small className="muted"> Eberron, Ravnica, Theros and other worlds, plus third party and homebrew books</small></span>
+            <input type="checkbox" checked={s.showUnusual} onChange={(e) => updateSettings({ showUnusual: e.target.checked })} />
+          </label>
+          <p className="muted">What you already picked stays visible even when its book is hidden here.</p>
+        </fieldset>
         <div className="set-row">
           <span><b>Backups</b><small className="muted"> Every character in one file</small></span>
           <span className="set-ctl">

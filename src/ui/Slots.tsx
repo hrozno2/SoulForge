@@ -33,6 +33,10 @@ export function Slot({ slot, r, set, onDetail }: { slot: SelectSlot; r: Resolved
     setSelection(set, slot.key, next);
     if (rule.number === 1) setOpen(false);
   };
+  const swap = (from: AElement, to: AElement) => {
+    if (slot.blocked.has(to.id)) return;
+    setSelection(set, slot.key, chosen.map((c) => (c === from.id ? to.id : c)));
+  };
   const toggleItem = (id: string) => {
     const next = chosen.includes(id) ? chosen.filter((c) => c !== id) : rule.number === 1 ? [id] : chosen.length < rule.number ? [...chosen, id] : chosen;
     setSelection(set, slot.key, next);
@@ -74,7 +78,7 @@ export function Slot({ slot, r, set, onDetail }: { slot: SelectSlot; r: Resolved
           ) : slot.options.length === 0 ? (
             <p className="muted">Nothing matches this choice in the loaded content.</p>
           ) : (
-            <Browse items={slot.options} type={type} chosen={chosen} onPick={toggle} onHover={onDetail} disabledReason={reason} defaultView="list" allowCards={!["Spell", "Language", "Proficiency", "Ability Score Improvement", "Companion"].includes(type)} perPage={60} />
+            <Browse items={slot.options} type={type} chosen={chosen} onPick={toggle} onSwap={swap} onHover={onDetail} disabledReason={reason} defaultView="list" allowCards={!["Spell", "Language", "Proficiency", "Ability Score Improvement", "Companion"].includes(type)} perPage={60} />
           )}
         </div>
       )}

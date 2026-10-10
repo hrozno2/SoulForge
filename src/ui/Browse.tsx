@@ -35,7 +35,7 @@ const blurb = (html: string, max = 170) => {
 
 const SORTS: [SortMode, string][] = [["az", "A to Z"], ["recommended", "Recommended"], ["newest", "Newest"]];
 
-function VariantChips({ g, activeId, chosen, onActive, short }: { g: Group; activeId: string; chosen: Set<string>; onActive: (id: string) => void; short?: boolean }) {
+function VariantChips({ g, activeId, chosen, onActive, short, onSwitch }: { g: Group; activeId: string; chosen: Set<string>; onActive: (id: string) => void; short?: boolean; onSwitch?: (from: AElement, to: AElement) => void }) {
   const when = (r?: number) => (short ? (r ? String(Math.floor(r / 10000)) : "") : formatRelease(r));
   if (g.variants.length < 2) {
     const v = g.variants[0];
@@ -44,7 +44,13 @@ function VariantChips({ g, activeId, chosen, onActive, short }: { g: Group; acti
   return (
     <span className="vchips" role="group" aria-label="Versions from different books">
       {g.variants.map((v) => (
-        <button key={v.el.id} className={`vchip ${v.el.id === activeId ? "on" : ""} ${chosen.has(v.el.id) ? "chosen" : ""}`} title={`${v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`} onClick={(e) => { e.stopPropagation(); onActive(v.el.id); }}>
+        <button key={v.el.id} className={`vchip ${v.el.id === activeId ? "on" : ""} ${chosen.has(v.el.id) ? "chosen" : ""}`} title={`${v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`} onClick={(e) => {
+          e.stopPropagation();
+          onActive(v.el.id);
+          // In the list a version you click replaces the one you already picked from this group.
+          const have = g.variants.find((x) => chosen.has(x.el.id));
+          if (onSwitch && have && have.el.id !== v.el.id) onSwitch(have.el, v.el);
+        }}>
           {v.book.abbr ?? v.el.source}
           {v.book.release ? <small> {when(v.book.release)}</small> : null}
           {v === g.newest && g.variants.length > 1 && v.book.release ? <em className="newest">newest</em> : null}
@@ -77,6 +83,8 @@ export interface BrowseProps {
   type: string;
   chosen: string[];
   onPick: (el: AElement) => void;
+  /** Called when a version chip in the list is clicked while another version of the same option is picked. */
+  onSwap?: (from: AElement, to: AElement) => void;
   disabledReason?: (el: AElement) => string | undefined;
   defaultView?: "cards" | "list";
   /** Cards need a bit of room, so small pickers only offer the list. */
@@ -89,7 +97,7 @@ export interface BrowseProps {
   defaultSort?: SortMode;
 }
 
-export function Browse({ items, type, chosen, onPick, disabledReason, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort }: BrowseProps) {
+export function Browse({ items, type, chosen, onPick, onSwap, disabledReason, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort }: BrowseProps) {
   const { books, learn } = useUi();
   const [view, setView] = useStored<"cards" | "list">(`view.${type}`, defaultView);
   const [sort, setSort] = useStored<SortMode>(`sort.${type}`, defaultSort ?? (type === "Spell" ? "level" : "recommended"));
@@ -202,7 +210,7 @@ export function Browse({ items, type, chosen, onPick, disabledReason, defaultVie
                 </button>
                 {type === "Spell" ? <SpellCells el={e} /> : <span className="opt-blurb">{blurb(e.description, 110)}</span>}
                 {why && <small className="why">{why}</small>}
-                <VariantChips short g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} />
+                <VariantChips short g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} onSwitch={onSwap} />
                 <button className="learn" onClick={() => learn(e)} title="Read the full description">i</button>
               </div>
             );

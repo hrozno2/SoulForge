@@ -90,14 +90,14 @@ export function App() {
 
   const set = useCallback((fn: (c: Character) => Character) => setCharacter((c) => fn(c)), []);
   const open = (nid: string, ch: Character) => { setId(nid); setCharacter(normalizeCharacter(ch)); setTab("build"); };
-  const random = () => {
+  const random = (level: number) => {
     const reg = content.reg;
     const pick = <T,>(a: T[]): T | undefined => a[Math.floor(Math.random() * a.length)];
     let c = newCharacter();
     c.race = pick(reg.ofType("Race"))?.id;
     c.background = pick(reg.ofType("Background"))?.id;
     const cls = pick(reg.ofType("Class"));
-    if (cls) c.classes = [{ classId: cls.id, level: 1 + Math.floor(Math.random() * 5) }];
+    if (cls) c.classes = [{ classId: cls.id, level: Math.max(1, Math.min(20, Math.floor(level) || 1)) }];
     c.abilityMethod = "standard";
     const order = [...["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"]].sort(() => Math.random() - 0.5);
     [15, 14, 13, 12, 10, 8].forEach((v, i) => ((c.abilityBase as Record<string, number>)[order[i]] = v));

@@ -20,7 +20,7 @@ export function PickCards({
   return (
     <div>
       {items.length === 0 && <p className="muted">Nothing is loaded for this yet. Add content on the Content tab.</p>}
-      <Browse items={items} type={type} chosen={value ? [value] : []} onPick={(e) => onPick(e.id)} onHover={onDetail} defaultView="cards" hero={{ kicker, title }} />
+      <Browse items={items} type={type} chosen={value ? [value] : []} onPick={(e) => onPick(e.id)} onSwap={(_, to) => onPick(to.id)} onHover={onDetail} defaultView="cards" hero={{ kicker, title }} />
     </div>
   );
 }

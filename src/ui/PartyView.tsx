@@ -26,7 +26,7 @@ interface Row {
   perception: number;
   speed: number;
   conditions: string[];
-  slots: string;
+  slots: { level: number; total: number; used: number }[];
   concentration?: string;
 }
 
@@ -49,7 +49,7 @@ export function PartyView({ list, reg, onOpen }: { list: CharacterRecord[]; reg:
       const sheet = buildSheet(resolve(c.data, reg));
       const play = c.data.play;
       const casting = sheet.casting.flatMap((x) => x.slots);
-      const slots = casting.filter((s) => s.total > 0).map((s) => `${s.level}: ${s.total - s.used}/${s.total}`).join("  ");
+      const slots = casting.filter((s) => s.total > 0);
       return {
         id: c.id, name: c.name || "Unnamed", summary: c.summary, hp: play.hp ?? sheet.hp, max: sheet.hp, temp: play.tempHp, ac: sheet.ac.value,
         initiative: sheet.initiative, perception: sheet.passivePerception, speed: sheet.speed, conditions: play.conditions, slots, concentration: play.concentration,
@@ -82,7 +82,16 @@ export function PartyView({ list, reg, onOpen }: { list: CharacterRecord[]; reg:
                     <td>{sign(r.initiative)}</td>
                     <td>{r.perception}</td>
                     <td>{r.speed} ft.</td>
-                    <td>{r.slots || "none"}</td>
+                    <td>{r.slots.length ? (
+                      <ul className="party-slots">
+                        {r.slots.map((x) => (
+                          <li key={x.level} aria-label={`Level ${x.level}: ${x.total - x.used} of ${x.total} left`}>
+                            <b>{x.level}</b>
+                            <span className="pips" aria-hidden="true">{Array.from({ length: x.total }, (_, i) => <span key={i} className={i < x.total - x.used ? "pip small" : "pip small spent"} />)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : <span className="muted">none</span>}</td>
                     <td>{[...r.conditions, r.concentration ? `Concentrating: ${r.concentration}` : ""].filter(Boolean).join(", ") || "fine"}</td>
                   </tr>
                 ))}

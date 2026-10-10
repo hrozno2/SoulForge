@@ -58,3 +58,10 @@ export async function addTestContent(page: Page): Promise<void> {
   // The registry builds after the files arrive.
   await page.waitForFunction(() => !document.querySelector(".busy"), null, { timeout: 30_000 });
 }
+
+/** Makes a random character at the given level through the Home tab's level prompt. */
+export async function randomCharacter(page: Page, level = 3): Promise<void> {
+  await page.getByRole("button", { name: /random character/i }).click();
+  await page.getByLabel("Character level").fill(String(level));
+  await page.getByRole("button", { name: "Create", exact: true }).click();
+}

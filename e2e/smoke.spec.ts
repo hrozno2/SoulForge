@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { addTestContent, tab, watchProblems } from "./helpers";
+import { addTestContent, tab, watchProblems, randomCharacter } from "./helpers";
 
 test.describe("Soul Forge smoke tests", () => {
   test("starts, switches tabs and themes without policy violations or errors", async ({ page }) => {
@@ -20,7 +20,7 @@ test.describe("Soul Forge smoke tests", () => {
   test("adds content from a link, builds a random character and plays it", async ({ page }) => {
     const seen = watchProblems(page);
     await addTestContent(page);
-    await page.getByRole("button", { name: /random character/i }).click();
+    await randomCharacter(page);
     await tab(page, "Play");
     await expect(page.locator(".play-id h1")).toHaveText(/random adventurer/i);
     await expect(page.locator(".ab-box")).toHaveCount(6);
@@ -62,7 +62,7 @@ test.describe("Soul Forge smoke tests", () => {
   test("exports a PDF sheet that opens as a real PDF", async ({ page }) => {
     const seen = watchProblems(page);
     await addTestContent(page);
-    await page.getByRole("button", { name: /random character/i }).click();
+    await randomCharacter(page);
     await tab(page, "Sheet");
     await page.getByRole("button", { name: /export pdf/i }).click();
     const download = page.waitForEvent("download");
@@ -79,7 +79,7 @@ test.describe("Soul Forge smoke tests", () => {
 
   test("backs up and restores characters", async ({ page }) => {
     await addTestContent(page);
-    await page.getByRole("button", { name: /random character/i }).click();
+    await randomCharacter(page);
     await page.waitForTimeout(1200); // the character is saved to the library shortly after it changes
     await page.getByRole("button", { name: /^menu/i }).click();
     await page.getByRole("button", { name: /settings/i }).click();
@@ -95,7 +95,7 @@ test.describe("Soul Forge smoke tests", () => {
 
   test("conditions change rolls and say why", async ({ page }) => {
     await addTestContent(page);
-    await page.getByRole("button", { name: /random character/i }).click();
+    await randomCharacter(page);
     await tab(page, "Play");
     await page.locator(".play-tabs").getByRole("button", { name: "Extras" }).click();
     await page.getByRole("button", { name: "Poisoned" }).click();
@@ -113,7 +113,7 @@ test.describe("Soul Forge smoke tests", () => {
 
   test("wild shape takes damage first, the journal keeps entries, the language switches", async ({ page }) => {
     await addTestContent(page);
-    await page.getByRole("button", { name: /random character/i }).click();
+    await randomCharacter(page);
     await tab(page, "Play");
     await page.locator(".play-tabs").getByRole("button", { name: "Extras" }).click();
     await page.getByPlaceholder("Form, for example Brown Bear").fill("Wolf");
@@ -153,7 +153,7 @@ test.describe("Soul Forge smoke tests", () => {
 
   test("a guided level up adds the level, shows what it brings, and can be undone", async ({ page }) => {
     await addTestContent(page);
-    await page.getByRole("button", { name: /random character/i }).click();
+    await randomCharacter(page);
     await tab(page, "Play");
     const level = async () => Number(await page.locator(".level-medal b").innerText());
     const start = await level();

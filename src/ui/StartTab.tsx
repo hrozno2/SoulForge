@@ -22,7 +22,7 @@ export function StartTab({
   currentId: string;
   onOpen: (id: string, ch: Character) => void;
   onNew: () => void;
-  onRandom: () => void;
+  onRandom: (level: number) => void;
   contentReady: boolean;
   sourceCount: number;
   goContent: () => void;
@@ -30,6 +30,8 @@ export function StartTab({
 }) {
   const [list, setList] = useState<CharacterRecord[]>([]);
   const [msg, setMsg] = useState("");
+  const [askLevel, setAskLevel] = useState(false);
+  const [level, setLevel] = useState(1);
   const fileRef = useRef<HTMLInputElement>(null);
   const foreignRef = useRef<HTMLInputElement>(null);
   const refresh = () => listCharacters().then(setList);
@@ -65,12 +67,18 @@ export function StartTab({
         <Hint id="home-1">Characters save on this computer as you work. Export gives you a file to back up or share.</Hint>
         <div className="row">
           <button className="primary" onClick={onNew}>{t("New character")}</button>
-          <button onClick={onRandom} disabled={sourceCount === 0}>{t("Random character")}</button>
+          <button onClick={() => setAskLevel((v) => !v)} disabled={sourceCount === 0} aria-expanded={askLevel}>{t("Random character")}</button>
           <button onClick={async () => { const f = await pickFiles(["json"]); if (f === null) fileRef.current?.click(); else if (f[0]) importJson(f[0]); }}>Open file (.json)</button>
           <button onClick={async () => { const f = await pickFiles(["json"]); if (f === null) foreignRef.current?.click(); else if (f[0]) setMsg(await onImportForeign(f[0])); }}>Import Foundry / Roll20 / Plutonium</button>
           <input ref={fileRef} type="file" accept=".json" hidden onChange={(e) => { importJson(e.target.files?.[0]); e.target.value = ""; }} />
           <input ref={foreignRef} type="file" accept=".json" hidden onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) setMsg(await onImportForeign(f)); }} />
         </div>
+        {askLevel && (
+          <div className="row random-level">
+            <label>Character level <input type="number" min={1} max={20} value={level} onChange={(e) => setLevel(Math.max(1, Math.min(20, Number(e.target.value) || 1)))} /></label>
+            <button className="primary" onClick={() => { setAskLevel(false); onRandom(level); }}>Create</button>
+          </div>
+        )}
         {msg && <p className="notice">{msg}</p>}
         <ul className="char-list">
           {list.map((c) => (

@@ -735,3 +735,8 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .party-table tr.low td:nth-child(2) { color: var(--danger, #c0392b); font-weight: 600; }
 .initiative-order { margin: 0 0 0 12px; }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.party-slots { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 4px 14px; }
+.party-slots li { display: flex; align-items: center; gap: 6px; }
+.party-slots b { min-width: 1.2em; text-align: right; color: var(--muted, #aaa); font-weight: 600; }
+.party-slots .pips { margin: 0; gap: 3px; flex-wrap: wrap; }
+.party-slots .pip { display: inline-block; }

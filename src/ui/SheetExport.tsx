@@ -109,7 +109,7 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
         const el = id ? r.reg.get(id) : undefined;
         if (!el) throw new Error("This character has no companion yet. Add one on the Manage tab.");
         const name = r.character.companions.find((c) => c.id === id)?.name ?? el.name;
-        bytes = await fillCompanion(tpl, companionFill(el, name), { font: fonts, profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency), layout: current.pages[0] as "mount" | "ranger" });
+        bytes = await fillCompanion(tpl, companionFill(el, name, r.reg), { font: fonts, profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency), layout: current.pages[0] as "mount" | "ranger" });
       }
       if (cards.spells || cards.items || cards.features || cards.tips) {
         const extra = await buildPdf(r, sheet, { paper: "letter", sheet: false, spellCards: cards.spells, itemCards: cards.items, featureCards: cards.features, tips: cards.tips, translate: tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`)) }, fonts);

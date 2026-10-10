@@ -55,6 +55,8 @@ function VariantCard({ plan, v, idx, prefer, onAdd }: { plan: EquipPlan; v: Equi
 export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
   const [equip, setEquip] = useState(true);
   const [note, setNote] = useState("");
+  const [show, setShow] = useState(false);
+  const added = ch.equipmentAdded ?? [];
   const idx = useMemo(() => new ItemIndex(r.reg), [r.reg]);
   const plans = useMemo(() => startingPlans(ch, r.reg), [ch.classes, ch.background, r.reg]); // eslint-disable-line react-hooks/exhaustive-deps
   const prefer = ch.classes[0] ? r.reg.get(ch.classes[0].classId)?.source ?? "" : "";
@@ -65,15 +67,29 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
     set((c) => {
       let next = addToInventory(c, items, gp);
       if (equip) next = autoEquip(next, r.reg);
-      return next;
+      return { ...next, equipmentAdded: [...(c.equipmentAdded ?? []), label] };
     });
-    setNote(`Added ${label}.`);
+    setNote("");
+    setShow(false);
   };
   const addOne = (el: AElement, open: boolean) => add(open && el.extract?.length ? expandPack(el, r.reg) : [{ el, name: el.name, qty: 1 }], 0, el.name);
 
+  if (added.length > 0 && !show) {
+    return (
+      <section className="card equip-done">
+        <div className="row">
+          <h2>Starting equipment</h2>
+          <span className="done-mark">✓ Added</span>
+          <button onClick={() => setShow(true)}>Add more...</button>
+          <button className="more" title="Forget what was added so the dialog starts fresh" onClick={() => set((c) => ({ ...c, equipmentAdded: [] }))}>Reset</button>
+        </div>
+        <p className="muted small-text">{added.join(" · ")}. Edit or remove items in the list below; open "Add more" for other packs, gear or the starting options again.</p>
+      </section>
+    );
+  }
   return (
     <section className="card">
-      <h2>Starting equipment</h2>
+      <div className="row"><h2>Starting equipment</h2>{added.length > 0 && <button onClick={() => setShow(false)}>Hide</button>}</div>
       <p className="muted">One click adds what your class and background offer. Choose an option, or take the gold instead. Armor, shield and the first weapons are equipped for you unless you turn that off.</p>
       <label className="check"><input type="checkbox" checked={equip} onChange={() => setEquip(!equip)} /> Equip armor, shield and weapons automatically</label>
       {ch.classes.length === 0 && !ch.background && <p className="notice">Pick a class and a background on the Build tab to see their starting equipment.</p>}

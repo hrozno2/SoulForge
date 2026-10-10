@@ -3,9 +3,12 @@ import { PortraitPicker, toPortrait } from "./Portrait";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { hitDieOf } from "../aurora/engine";
-import { ABILITY_IDS, ABILITY_LABEL, XP_TABLE, uid, xpToLevel, type AbilityId, type Character } from "../aurora/character";
+import { ABILITY_IDS, ABILITY_LABEL, XP_TABLE, uid, xpToLevel, type AbilityId, type AttackEdit, type Character } from "../aurora/character";
+import { buildSheet } from "../aurora/sheet";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { Html } from "./Html";
+import { useUi } from "./Learn";
+import { companionHtml } from "../aurora/companion";
 
 type Sub = "level" | "options" | "bonuses" | "additions" | "attacks" | "companions" | "conditions" | "info" | "sources";
 const SUBS: [Sub, string][] = [["level", "Level and hit points"], ["info", "Character details"], ["options", "Options"], ["bonuses", "Custom bonuses"], ["additions", "Manual additions"], ["attacks", "Attacks"], ["companions", "Companions"], ["conditions", "Conditions"], ["sources", "Sources"]];
@@ -188,11 +191,51 @@ function Additions({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: 
   );
 }
 
-function Attacks({ ch, set }: { ch: Character; set: SetCharacter }) {
+function AutoAttacks({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
+  const lines = useMemo(() => buildSheet(r).attacksAll.filter((a) => a.auto), [r]);
+  const [open, setOpen] = useState<string | null>(null);
+  const edit = (id: string, p: Partial<AttackEdit>) => set((c) => ({ ...c, attackEdits: { ...(c.attackEdits ?? {}), [id]: { ...(c.attackEdits?.[id] ?? {}), ...p } } }));
+  if (!lines.length) return <p className="muted">Equip a weapon on the Equipment tab and its attack shows up here, ready to edit.</p>;
+  return (
+    <ul className="added auto-attacks">
+      {lines.map((a) => {
+        const id = a.id!;
+        const e = ch.attackEdits?.[id] ?? {};
+        const edited = Object.keys(e).length > 0;
+        return (
+          <li key={id} className={a.hiddenByEdit ? "muted" : ""}>
+            <span>
+              <b>{a.name}</b> · {a.bonus >= 0 ? "+" : ""}{a.bonus} to hit · {a.damage} {a.damageType}{a.hiddenByEdit ? " · hidden" : ""}{edited ? " · edited" : ""}
+              <small className="muted"> (from your equipped weapon)</small>
+            </span>
+            <button onClick={() => setOpen(open === id ? null : id)}>{open === id ? "Done" : "Edit"}</button>
+            {open === id && (
+              <div className="attack-edit">
+                <label>Name <input value={e.name ?? ""} placeholder={a.name} onChange={(ev) => edit(id, { name: ev.target.value })} /></label>
+                <label>Bonus adjustment <input type="number" value={e.bonusAdjust ?? 0} onChange={(ev) => edit(id, { bonusAdjust: Number(ev.target.value) || 0 })} style={{ width: 70 }} /></label>
+                <label>Damage <input value={e.damage ?? ""} placeholder={a.damage} onChange={(ev) => edit(id, { damage: ev.target.value })} style={{ width: 120 }} /></label>
+                <label>Type <input value={e.damageType ?? ""} placeholder={a.damageType} onChange={(ev) => edit(id, { damageType: ev.target.value })} style={{ width: 110 }} /></label>
+                <label>Notes <input value={e.notes ?? ""} placeholder={a.notes} onChange={(ev) => edit(id, { notes: ev.target.value })} /></label>
+                <label className="check"><input type="checkbox" checked={!!e.hidden} onChange={(ev) => edit(id, { hidden: ev.target.checked })} /> Hide this attack</label>
+                {edited && <button onClick={() => set((c) => { const next = { ...(c.attackEdits ?? {}) }; delete next[id]; return { ...c, attackEdits: next }; })}>Reset to calculated</button>}
+                <small className="muted">Leave a box empty to keep the calculated value. The bonus adjustment is added on top of it.</small>
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function Attacks({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
   const [form, setForm] = useState({ name: "", ability: "strength" as AbilityId, damage: "1d6", damageType: "", proficient: true, bonus: 0 });
   return (
     <>
-      <p className="muted">Equipped weapons appear on the sheet automatically. Use this for attacks that are not items, such as natural weapons or spell-like effects.</p>
+      <h3>From equipped weapons</h3>
+      <AutoAttacks r={r} ch={ch} set={set} />
+      <h3>Other attacks</h3>
+      <p className="muted">Use this for attacks that are not items, such as natural weapons or spell-like effects.</p>
       <div className="row">
         <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         <select value={form.ability} onChange={(e) => setForm({ ...form, ability: e.target.value as AbilityId })}>{ABILITY_IDS.map((a) => <option key={a} value={a}>{ABILITY_LABEL[a]}</option>)}</select>
@@ -213,7 +256,17 @@ function Attacks({ ch, set }: { ch: Character; set: SetCharacter }) {
 
 function Companions({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
   const [q, setQ] = useState("");
-  const found = useMemo(() => (q.trim() ? r.reg.ofType("Companion").filter((c) => c.name.toLowerCase().includes(q.toLowerCase())).slice(0, 40) : []), [q, r.reg]);
+  const [kind, setKind] = useState<"all" | "companion" | "mount">("all");
+  const pool = useMemo(() => {
+    const companions = r.reg.ofType("Companion");
+    const mounts = r.reg.ofType("Item").filter((i) => /mount/i.test(i.setters.category?.value ?? ""));
+    return { companions, mounts };
+  }, [r.reg]);
+  const found = useMemo(() => {
+    const list = kind === "companion" ? pool.companions : kind === "mount" ? pool.mounts : [...pool.companions, ...pool.mounts];
+    const n = q.trim().toLowerCase();
+    return list.filter((c) => !n || c.name.toLowerCase().includes(n)).sort((a, b) => a.name.localeCompare(b.name));
+  }, [pool, kind, q]);
   const granted = r.active.filter((a) => a.el.type === "Companion");
   const slots = r.slots.filter((s) => s.rule.type === "Companion");
   return (
@@ -221,8 +274,12 @@ function Companions({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
       <SlotList slots={slots} r={r} set={set} onDetail={onDetail} />
       {granted.map((a) => <CompanionCard key={a.el.id} el={a.el} />)}
       <h3>Add a companion by hand</h3>
-      <input className="slot-search" placeholder="Search creatures, familiars, mounts" value={q} onChange={(e) => setQ(e.target.value)} />
-      <ul className="options boxed">
+      <div className="row">
+        {([["all", "All"], ["companion", "Familiars and creatures"], ["mount", "Mounts"]] as const).map(([k, label]) => <button key={k} className={kind === k ? "pill active" : "pill"} onClick={() => setKind(k)}>{label}</button>)}
+        <input className="slot-search" placeholder="Search by name" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1 }} />
+      </div>
+      <small className="muted">{found.length} listed</small>
+      <ul className="options boxed companion-list">
         {found.map((c) => (
           <li key={c.id}><button onMouseEnter={() => onDetail(c)} onClick={() => set((x) => ({ ...x, companions: [...x.companions, { uid: uid(), id: c.id, name: c.name }] }))}><span className="tick">+</span><span className="opt-name">{c.name}</span><span className="opt-meta" /><span className="opt-src">{c.source}</span></button></li>
         ))}
@@ -240,9 +297,22 @@ function Companions({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
   );
 }
 
+const COMPANION_LABEL: Record<string, string> = { skills: "Skills", senses: "Senses", languages: "Languages", challenge: "Challenge", resistances: "Damage Resistances", immunities: "Damage Immunities", conditionImmunities: "Condition Immunities" };
+
 export function CompanionCard({ el }: { el: AElement }) {
+  const { reg } = useUi();
   const s = el.setters;
   const val = (k: string) => s[k]?.value;
+  // Mounts come from the equipment list: they have a price, speed and carrying capacity instead of a stat block.
+  if (el.type === "Item") {
+    return (
+      <div className="statblock">
+        <h4>{el.name}</h4>
+        <p className="muted">{[val("category"), val("cost") && `${val("cost")}`, val("weight") && `${val("weight")}`].filter(Boolean).join(" · ")}</p>
+        <Html html={el.description} />
+      </div>
+    );
+  }
   const stats = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"].filter((k) => val(k));
   return (
     <div className="statblock">
@@ -250,9 +320,10 @@ export function CompanionCard({ el }: { el: AElement }) {
       <p className="muted">{[val("size"), val("type"), val("alignment")].filter(Boolean).join(", ")}</p>
       <p><b>AC</b> {val("ac")} · <b>HP</b> {val("hp")} · <b>Speed</b> {val("speed")}</p>
       {stats.length > 0 && <p className="abil-line">{stats.map((k) => `${k.slice(0, 3).toUpperCase()} ${val(k)}`).join("  ")}</p>}
-      {["skills", "senses", "languages", "challenge", "resistances", "immunities", "conditionImmunities"].filter(val).map((k) => <p key={k}><b>{k}</b> {val(k)}</p>)}
-      {val("traits") && <Html html={val("traits")!} />}
-      {val("actions") && <Html html={val("actions")!} />}
+      {["skills", "senses", "languages", "challenge", "resistances", "immunities", "conditionImmunities"].filter(val).map((k) => <p key={k}><b>{COMPANION_LABEL[k] ?? k}</b> {val(k)}</p>)}
+      {val("traits") && <Html html={companionHtml(val("traits"), reg)} />}
+      {val("actions") && <><h5>Actions</h5><Html html={companionHtml(val("actions"), reg)} /></>}
+      {val("reactions") && <><h5>Reactions</h5><Html html={companionHtml(val("reactions"), reg)} /></>}
       {el.description && <Html html={el.description} />}
     </div>
   );
@@ -303,7 +374,7 @@ export function ManageTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character
       {sub === "options" && (<><Options r={r} ch={ch} set={set} onDetail={onDetail} />{other.length > 0 && (<><h3>Other choices</h3><SlotList slots={other} r={r} set={set} onDetail={onDetail} /></>)}</>)}
       {sub === "bonuses" && <Bonuses ch={ch} set={set} />}
       {sub === "additions" && <Additions r={r} ch={ch} set={set} onDetail={onDetail} />}
-      {sub === "attacks" && <Attacks ch={ch} set={set} />}
+      {sub === "attacks" && <Attacks r={r} ch={ch} set={set} />}
       {sub === "companions" && <Companions r={r} ch={ch} set={set} onDetail={onDetail} />}
       {sub === "conditions" && <Conditions ch={ch} set={set} />}
       {sub === "sources" && <Sources r={r} ch={ch} set={set} />}

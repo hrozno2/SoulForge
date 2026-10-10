@@ -81,6 +81,18 @@ export interface CustomAttack {
   notes?: string;
 }
 
+/** Changes the player made to an attack that comes from an equipped weapon. */
+export interface AttackEdit {
+  name?: string;
+  /** Added to the calculated attack bonus. */
+  bonusAdjust?: number;
+  /** Replaces the calculated damage text. */
+  damage?: string;
+  damageType?: string;
+  notes?: string;
+  hidden?: boolean;
+}
+
 export interface CompanionEntry {
   uid: string;
   /** Companion element id, or custom stat block. */
@@ -88,6 +100,15 @@ export interface CompanionEntry {
   name: string;
   hp?: number;
   notes?: string;
+}
+
+export interface Resource {
+  id: string;
+  name: string;
+  current: number;
+  max: number;
+  /** When it comes back: after a short rest, a long rest, or never on its own. */
+  refresh: "short" | "long" | "none";
 }
 
 export interface CharacterInfo {
@@ -148,6 +169,12 @@ export interface Character {
   coins: Coinage;
   attacks: CustomAttack[];
   companions: CompanionEntry[];
+  /** Counters the player tracks by hand, such as ki points, a pet's charges or a magic item's uses. */
+  resources: Resource[];
+  /** What the starting equipment dialog has already added, so it can fold away. */
+  equipmentAdded?: string[];
+  /** Edits to attacks that come from equipped weapons, by inventory item uid. */
+  attackEdits?: Record<string, AttackEdit>;
   info: CharacterInfo;
   notes: string;
   /** Small portrait as a data URL, set on the Manage tab. */
@@ -177,6 +204,7 @@ export function newCharacter(): Character {
     coins: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
     attacks: [],
     companions: [],
+    resources: [],
     info: {
       alignment: "",
       gender: "",

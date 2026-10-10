@@ -1,3 +1,4 @@
+import { companionHtml } from "../aurora/companion";
 import type { Resolved } from "../aurora/engine";
 import { headerInfo, type SheetData } from "../aurora/sheet";
 import { ABILITY_IDS, ABILITY_LABEL, SKILL_ABILITY, type AbilityId } from "../aurora/character";
@@ -124,7 +125,7 @@ const sentence = (text: string, max: number) => {
 const has = (r: Resolved, id: string) => r.ids.has(id);
 
 /** A companion's stat block in the shape the sheets use. */
-export function companionFill(el: import("../aurora/types").AElement, name: string): CompanionFill {
+export function companionFill(el: import("../aurora/types").AElement, name: string, reg?: import("../aurora/registry").ARegistry): CompanionFill {
   const s = el.setters;
   const v = (k: string) => s[k]?.value ?? "";
   const strip = (h: string) => h.replace(/<\/p>/g, "\n").replace(/<[^>]+>/g, "").trim();
@@ -132,7 +133,7 @@ export function companionFill(el: import("../aurora/types").AElement, name: stri
   return {
     name, type: el.name, creature: v("type"), size: v("size"), alignment: v("alignment"), cr: v("challenge"), ac: v("ac"), speed: v("speed"),
     hp: v("hp"), hitDice: dice, skills: v("skills"), senses: v("senses"), languages: v("languages"),
-    abilities: Object.fromEntries(ABILITY_IDS.map((a) => [a, v(a)])), traits: strip(v("traits") + v("actions")), actions: parseActions(v("actions")),
+    abilities: Object.fromEntries(ABILITY_IDS.map((a) => [a, v(a)])), traits: strip(companionHtml(v("traits"), reg) + companionHtml(v("actions"), reg)), actions: parseActions(companionHtml(v("actions"), reg)),
   };
 }
 
@@ -199,7 +200,7 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
   const magic = inv.filter((x) => x.el?.type === "Magic Item" || /requires attunement/i.test(x.el?.setters.rarity?.value ?? "")).map((x) => ({ name: nm(x), attuned: x.i.attuned }));
 
   const firstComp = r.active.find((a) => a.el.type === "Companion")?.el ?? (ch.companions[0] ? r.reg.get(ch.companions[0].id) : undefined);
-  const comp = firstComp ? companionFill(firstComp, ch.companions.find((c) => c.id === firstComp.id)?.name ?? firstComp.name) : undefined;
+  const comp = firstComp ? companionFill(firstComp, ch.companions.find((c) => c.id === firstComp.id)?.name ?? firstComp.name, r.reg) : undefined;
 
   return {
     name: ch.name, background: head.background, className: ch.classes.map((c) => r.reg.get(c.classId)?.name ?? "").join(" / "),

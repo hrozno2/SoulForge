@@ -45,6 +45,11 @@ export interface CastingLine {
 }
 
 export interface AttackLine {
+  /** Inventory uid for weapons, custom attack uid otherwise. */
+  id?: string;
+  /** True when the line is worked out from an equipped weapon. */
+  auto?: boolean;
+  hiddenByEdit?: boolean;
   name: string;
   bonus: number;
   damage: string;
@@ -82,6 +87,8 @@ export interface SheetData {
   proficiencies: { armor: string[]; weapons: string[]; tools: string[]; languages: string[]; other: string[] };
   features: FeatureLine[];
   attacks: AttackLine[];
+  /** Every attack including ones the player hid, for the editing list. */
+  attacksAll: AttackLine[];
   weight: { carried: number; capacity: number };
   attunement: { current: number; max: number };
   size?: string;
@@ -267,18 +274,24 @@ function buildAttacks(r: Resolved): AttackLine[] {
       .filter((t) => /WEAPON_PROPERTY/.test(t))
       .map((t) => t.replace(/^ID_(INTERNAL|WOTC_PHB24|WOTC_PHB)_WEAPON_PROPERTY_/, "").replace(/_/g, " ").toLowerCase());
     const versatile = el.setters.versatile?.value;
-    out.push({
-      name: el.name,
-      bonus: mods(ability) + (proficient ? prof : 0) + atkExtra,
-      damage: dmg ? `${dmg.value}${mods(ability) + dmgExtra ? signed(mods(ability) + dmgExtra) : ""}` : "",
-      damageType: dmg?.attrs.type ?? "",
+    const edit = r.character.attackEdits?.[it.uid];
+    const line: AttackLine = {
+      id: it.uid,
+      auto: true,
+      name: edit?.name?.trim() || el.name,
+      bonus: mods(ability) + (proficient ? prof : 0) + atkExtra + (edit?.bonusAdjust ?? 0),
+      damage: edit?.damage?.trim() || (dmg ? `${dmg.value}${mods(ability) + dmgExtra ? signed(mods(ability) + dmgExtra) : ""}` : ""),
+      damageType: edit?.damageType ?? dmg?.attrs.type ?? "",
       properties: [...props, versatile && !it.twoHanded ? `versatile (${versatile})` : "", it.twoHanded ? "two-handed" : ""].filter(Boolean).join(", "),
-      notes: proficient ? "" : "not proficient",
-    });
+      notes: edit?.notes ?? (proficient ? "" : "not proficient"),
+    };
+    if (edit?.hidden) line.hiddenByEdit = true;
+    out.push(line);
   }
   for (const c of r.character.attacks) {
     const m = mods(c.ability);
     out.push({
+      id: c.uid,
       name: c.name,
       bonus: m + (c.proficient ? prof : 0) + c.bonus,
       damage: `${c.damage}${m ? signed(m) : ""}`,
@@ -362,7 +375,8 @@ export function buildSheet(r: Resolved): SheetData {
     casting: buildCasting(r),
     proficiencies: proficiencyGroups(r),
     features,
-    attacks: buildAttacks(r),
+    attacks: buildAttacks(r).filter((a) => !a.hiddenByEdit),
+    attacksAll: buildAttacks(r),
     weight: { carried: Math.round(carried * 10) / 10, capacity: s.get("strength") * 15 },
     attunement: { current: s.get("attunement:current"), max: s.get("attunement:max") },
     size: sizeEl?.el.name,

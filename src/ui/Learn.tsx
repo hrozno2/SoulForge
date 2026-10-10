@@ -6,6 +6,7 @@ import { Html } from "./Html";
 
 interface Ui {
   books: BookIndex;
+  reg: ARegistry;
   learn: (el: AElement) => void;
 }
 
@@ -14,7 +15,7 @@ const Ctx = createContext<Ui | null>(null);
 export function UiProvider({ reg, children }: { reg: ARegistry; children: ReactNode }) {
   const books = useMemo(() => new BookIndex(reg), [reg]);
   const [el, setEl] = useState<AElement | null>(null);
-  const value = useMemo(() => ({ books, learn: setEl }), [books]);
+  const value = useMemo(() => ({ books, reg, learn: setEl }), [books, reg]);
   return (
     <Ctx.Provider value={value}>
       {children}

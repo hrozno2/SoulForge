@@ -1,17 +1,25 @@
 import { useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, headerInfo, type CastingLine, type FeatureLine, type SheetData } from "../aurora/sheet";
-import { ABILITY_LABEL, ABILITY_SHORT, XP_TABLE, type AbilityId, type Character } from "../aurora/character";
+import { ABILITY_LABEL, ABILITY_SHORT, XP_TABLE, uid, type AbilityId, type Character, type Resource } from "../aurora/character";
 import type { AElement } from "../aurora/types";
 import { Html } from "./Html";
 import { requestRoll, RollModeSwitch } from "./Dice";
 import { Hint } from "./Help";
+import { RollChips } from "./RollChips";
+import type { DcContext } from "./rollInfo";
 import { isAvailable, usedAfterClick } from "./pips";
 import { CompanionCard } from "./ManageTab";
 import type { SetCharacter } from "./Slots";
 
 const sign = (n: number) => (n >= 0 ? `+${n}` : String(n));
 const skillLabel = (id: string) => id.replace(/\b\w/g, (c) => c.toUpperCase());
+/** Numbers a description can refer to when it names a DC. */
+const dcContext = (sheet: SheetData, spellDc?: number): DcContext => ({
+  spellDc: spellDc ?? sheet.casting[0]?.dc,
+  proficiency: sheet.proficiency,
+  mods: Object.fromEntries(sheet.abilities.map((a) => [ABILITY_LABEL[a.id].toLowerCase(), a.mod])),
+});
 const roll = (label: string, bonus: number) => requestRoll(label, `1d20${bonus >= 0 ? "+" : ""}${bonus}`);
 
 function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
@@ -61,8 +69,7 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
     <div className="vitals">
       <div className="hp-main">
         <small>Hit Points</small>
-        <div className="hp-num"><b>{hp}</b><span>/ {sheet.hp}</span>{ch.play.tempHp > 0 && <em>+{ch.play.tempHp} temp</em>}</div>
-        <div className="hp-bar"><div style={{ width: `${pct}%` }} className={pct < 25 ? "low" : ""} /></div>
+        <div className={pct < 25 ? "hp-bar big low" : "hp-bar big"}><div style={{ width: `${pct}%` }} /><span>{hp} / {sheet.hp}</span><i className="hp-temp" title="Temporary hit points">{ch.play.tempHp}</i></div>
       </div>
       <div className="hp-manage">
         <input type="number" min={0} placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => e.key === "Enter" && damage()} />
@@ -117,11 +124,12 @@ function useRests(r: Resolved, ch: Character, sheet: SheetData, set: SetCharacte
     set((c) => {
       const uses = { ...c.play.featureUses };
       for (const f of features) if (/short rest/i.test(f.usage ?? "")) delete uses[f.id];
-      return { ...c, play: { ...c.play, featureUses: uses } };
+      return { ...c, resources: (c.resources ?? []).map((x) => (x.refresh === "short" ? { ...x, current: x.max } : x)), play: { ...c.play, featureUses: uses } };
     });
   const longRest = () =>
     set((c) => ({
       ...c,
+      resources: (c.resources ?? []).map((x) => (x.refresh === "none" ? x : { ...x, current: x.max })),
       play: {
         ...c.play, hp: sheet.hp, tempHp: 0, slotsUsed: {}, featureUses: {}, hitDiceUsed: Math.max(0, c.play.hitDiceUsed - Math.max(1, Math.floor(total / 2))),
         deathSaves: { success: 0, fail: 0 }, conditions: c.play.conditions.filter((x) => !/exhaustion/i.test(x) || false),
@@ -167,7 +175,7 @@ function Actions({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: She
         if (!list.length) return null;
         return (
           <Panel key={title} title={title}>
-            {list.map((f) => <FeatureRow key={f.id} f={f} ch={ch} set={set} />)}
+            {list.map((f) => <FeatureRow key={f.id} f={f} ch={ch} set={set} sheet={sheet} />)}
           </Panel>
         );
       })}
@@ -198,7 +206,7 @@ function Uses({ f, ch, set }: { f: FeatureLine; ch: Character; set: SetCharacter
   );
 }
 
-function FeatureRow({ f, ch, set }: { f: FeatureLine; ch: Character; set: SetCharacter }) {
+function FeatureRow({ f, ch, set, sheet }: { f: FeatureLine; ch: Character; set: SetCharacter; sheet: SheetData }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="feature-row">
@@ -208,6 +216,7 @@ function FeatureRow({ f, ch, set }: { f: FeatureLine; ch: Character; set: SetCha
         <span className="chev">{open ? "▾" : "▸"}</span>
       </button>
       <Uses f={f} ch={ch} set={set} />
+      <RollChips name={f.name} html={f.text} ctx={dcContext(sheet)} attackBonus={sheet.casting[0]?.attack} />
       {open && <p className="feature-text">{f.text || "No description."}</p>}
     </div>
   );
@@ -222,13 +231,13 @@ function Features({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: Se
       {groups.map(([title, types]) => {
         const list = sheet.features.filter((f) => types.includes(f.type));
         if (!list.length) return null;
-        return <Panel key={title} title={title}>{list.map((f) => <FeatureRow key={f.id} f={f} ch={ch} set={set} />)}</Panel>;
+        return <Panel key={title} title={title}>{list.map((f) => <FeatureRow key={f.id} f={f} ch={ch} set={set} sheet={sheet} />)}</Panel>;
       })}
     </>
   );
 }
 
-function SpellRow({ id, r, casting, set, level }: { id: string; r: Resolved; casting: CastingLine; set: SetCharacter; level: number }) {
+function SpellRow({ id, r, casting, set, level, sheet }: { id: string; r: Resolved; casting: CastingLine; set: SetCharacter; level: number; sheet: SheetData }) {
   const el = r.reg.get(id);
   const [open, setOpen] = useState(false);
   const [slot, setSlot] = useState(0);
@@ -254,6 +263,7 @@ function SpellRow({ id, r, casting, set, level }: { id: string; r: Resolved; cas
           <button disabled={!chosen} onClick={cast}>{chosen ? "Cast" : "No slots"}</button>
         </span>
       ) : null}
+      <RollChips name={el.name} html={el.description} ctx={dcContext(sheet, casting.dc)} attackBonus={casting.attack} spell={{ level, castLevel: chosen?.level ?? level, characterLevel: sheet.level }} />
       {open && <Html html={el.description} />}
     </div>
   );
@@ -289,7 +299,7 @@ function Spells({ r, sheet, set }: { r: Resolved; sheet: SheetData; set: SetChar
             </div>
             {levels.map((lv) => (
               <Panel key={lv} title={lv === 0 ? "Cantrips" : `Level ${lv}`}>
-                {list.filter((p) => levelOf(p.id) === lv).map((p) => <SpellRow key={p.id} id={p.id} r={r} casting={c} set={set} level={lv} />)}
+                {list.filter((p) => levelOf(p.id) === lv).map((p) => <SpellRow key={p.id} id={p.id} r={r} casting={c} set={set} level={lv} sheet={sheet} />)}
               </Panel>
             ))}
           </div>
@@ -309,6 +319,7 @@ function Inventory({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: S
       <div key={i.uid} className="inv-row">
         <label className="check"><input type="checkbox" checked={i.equipped} onChange={() => toggle(i.uid)} /> <b>{i.qty > 1 ? `${i.qty} × ` : ""}{el?.name ?? i.custom?.name ?? i.id}</b></label>
         <small className="muted">{el?.type}{i.attuned ? " · attuned" : ""}</small>
+        {el?.description && <RollChips name={el.name} html={el.description} ctx={dcContext(sheet)} attackBonus={sheet.casting[0]?.attack} />}
       </div>
     );
   };
@@ -343,9 +354,46 @@ function Description({ ch, sheet, set }: { ch: Character; sheet: SheetData; set:
   );
 }
 
+function Resources({ ch, set }: { ch: Character; set: SetCharacter }) {
+  const list = ch.resources ?? [];
+  const patch = (id: string, p: Partial<Resource>) => set((c) => ({ ...c, resources: (c.resources ?? []).map((x) => (x.id === id ? { ...x, ...p } : x)) }));
+  const add = () => set((c) => ({ ...c, resources: [...(c.resources ?? []), { id: uid(), name: "", current: 1, max: 1, refresh: "long" as const }] }));
+  return (
+    <>
+      <p className="muted">Track anything that has a number: ki points, rage uses, a wand's charges, a pet's hit points. Short and long rests refill them for you.</p>
+      {list.map((x) => (
+        <div key={x.id} className="resource-row">
+          <input className="res-name" value={x.name} placeholder="Name" aria-label="Resource name" onChange={(e) => patch(x.id, { name: e.target.value })} />
+          <span className="res-pips">
+            {x.max <= 12
+              ? Array.from({ length: x.max }, (_, i) => (
+                  <button key={i} aria-label={`Use ${i + 1}`} className={i < x.current ? "pip" : "pip spent"} onClick={() => patch(x.id, { current: i < x.current ? i : i + 1 })} />
+                ))
+              : null}
+          </span>
+          <span className="stepper">
+            <button aria-label="Spend one" onClick={() => patch(x.id, { current: Math.max(0, x.current - 1) })}>−</button>
+            <input type="number" min={0} value={x.current} aria-label="Current" onChange={(e) => patch(x.id, { current: Math.max(0, Math.min(x.max, Number(e.target.value) || 0)) })} />
+            <span className="muted">/</span>
+            <input type="number" min={1} value={x.max} aria-label="Maximum" onChange={(e) => { const max = Math.max(1, Number(e.target.value) || 1); patch(x.id, { max, current: Math.min(x.current, max) }); }} />
+            <button aria-label="Restore one" onClick={() => patch(x.id, { current: Math.min(x.max, x.current + 1) })}>+</button>
+          </span>
+          <select value={x.refresh} aria-label="Refreshes" onChange={(e) => patch(x.id, { refresh: e.target.value as Resource["refresh"] })}>
+            <option value="short">Short rest</option>
+            <option value="long">Long rest</option>
+            <option value="none">Does not refresh</option>
+          </select>
+          <button aria-label="Delete" title="Delete" onClick={() => set((c) => ({ ...c, resources: (c.resources ?? []).filter((y) => y.id !== x.id) }))}>×</button>
+        </div>
+      ))}
+      <button className="primary" onClick={add}>Add resource</button>
+    </>
+  );
+}
+
 // ---------------------------------------------------------------- page
 
-type Tab = "actions" | "spells" | "inventory" | "features" | "description" | "notes" | "extras";
+type Tab = "actions" | "spells" | "inventory" | "resources" | "features" | "description" | "notes" | "extras";
 
 export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
   const sheet = useMemo(() => buildSheet(r), [r]);
@@ -356,7 +404,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
   const nextXp = XP_TABLE[Math.min(19, sheet.level)] ?? 0;
   const prevXp = XP_TABLE[Math.max(0, sheet.level - 1)] ?? 0;
   const xpPct = nextXp > prevXp ? Math.max(0, Math.min(100, ((ch.xp - prevXp) / (nextXp - prevXp)) * 100)) : 100;
-  const tabs: [Tab, string, boolean][] = [["actions", "Actions", true], ["spells", "Spells", hasSpells], ["inventory", "Inventory", true], ["features", "Features & Traits", true], ["description", "Description", true], ["notes", "Notes", true], ["extras", "Extras", sheet.features.length >= 0]];
+  const tabs: [Tab, string, boolean][] = [["actions", "Actions", true], ["spells", "Spells", hasSpells], ["inventory", "Inventory", true], ["resources", "Resources", true], ["features", "Features & Traits", true], ["description", "Description", true], ["notes", "Notes", true], ["extras", "Extras", sheet.features.length >= 0]];
   const companions = [...r.active.filter((a) => a.el.type === "Companion").map((a) => ({ el: a.el, name: a.el.name })), ...ch.companions.map((c) => ({ el: r.reg.get(c.id), name: c.name }))];
 
   return (
@@ -367,7 +415,6 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
           <div>
             <h1>{ch.name || "Unnamed character"}</h1>
             <p className="muted">{head.species} · {head.classLine}{head.subclass !== "-" ? ` (${head.subclass})` : ""} · {head.background}</p>
-            <div className="xp"><div style={{ width: `${xpPct}%` }} /><span>Level {sheet.level} · {ch.xp} / {nextXp || "max"} XP</span></div>
           </div>
         </div>
         <div className="play-buttons">
@@ -375,6 +422,8 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
           <button onClick={rests.shortRest}>Short rest</button>
           <button className="primary" onClick={rests.longRest}>Long rest</button>
         </div>
+        <div className="level-medal" title={`Level ${sheet.level}`}><b>{sheet.level}</b><small>Level</small></div>
+        <div className="xp wide"><div style={{ width: `${xpPct}%` }} /><span>{ch.xp} / {nextXp || "max"} XP</span></div>
       </header>
 
       <div className="play-tools">
@@ -394,7 +443,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
 
       {ch.play.conditions.length > 0 && <p className="warn">Conditions: {ch.play.conditions.join(", ")}</p>}
       <div className="hd-row">
-        <span>Hit dice {rests.left} / {sheet.level} left ({sheet.hitDice.map((h) => `${h.count}d${h.die}`).join(" + ")})</span>
+        <div className="hd-bar" title={`Hit dice: ${sheet.hitDice.map((h) => `${h.count}d${h.die}`).join(" + ")}`}><div style={{ width: `${sheet.level ? (rests.left / sheet.level) * 100 : 0}%` }} /><span>Hit dice {rests.left} / {sheet.level} · {sheet.hitDice.map((h) => `${h.count}d${h.die}`).join(" + ")}</span></div>
         <button disabled={!rests.left || rests.hp >= sheet.hp} onClick={rests.spendHitDie}>Spend a hit die</button>
       </div>
 
@@ -440,6 +489,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
             {tab === "actions" && <Actions r={r} ch={ch} sheet={sheet} set={set} />}
             {tab === "spells" && <Spells r={r} sheet={sheet} set={set} />}
             {tab === "inventory" && <Inventory r={r} ch={ch} sheet={sheet} set={set} />}
+            {tab === "resources" && <Resources ch={ch} set={set} />}
             {tab === "features" && <Features ch={ch} sheet={sheet} set={set} />}
             {tab === "description" && <Description ch={ch} sheet={sheet} set={set} />}
             {tab === "notes" && <label className="field"><span>Notes</span><textarea rows={16} value={ch.notes} onChange={(e) => set((c) => ({ ...c, notes: e.target.value }))} /></label>}

@@ -374,6 +374,8 @@ export function resolve(ch: Character, reg: ARegistry): Resolved {
     const ctx = makeCtx(pass, s.ownerLevel, ch, reg, pass.stats);
     const blocked = new Set<string>();
     for (const e of options) if (!meets(e.requirements, ctx)) blocked.add(e.id);
+    // A feat the character already has from another choice or grant (a species feat and an origin feat, say) is not offered again.
+    if (s.rule.type === "Feat") for (const e of options) if (pass.ids.has(e.id) && !s.chosen.includes(e.id)) blocked.add(e.id);
     return { ...s, options, blocked, filter };
   });
 

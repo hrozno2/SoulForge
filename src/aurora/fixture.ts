@@ -20,6 +20,15 @@ function walkDir(dir: string, out: string[]): string[] {
   return out;
 }
 
+/** Loads several content folders into one registry, as a player would with 2014 and 2024 content together. */
+export function loadRegistries(dirs: string[]): ARegistry {
+  const reg = new ARegistry();
+  const files = dirs.flatMap((d) => walkDir(d, [])).sort((a, b) => Number(/internal|ALE/.test(b)) - Number(/internal|ALE/.test(a)));
+  for (const f of files) reg.addFile(parseElementsXml(readFileSync(f, "utf8"), nodeXml, f));
+  reg.build();
+  return reg;
+}
+
 export function loadRegistry(dir: string): ARegistry {
   const reg = new ARegistry();
   // Internal files first so content can override them.

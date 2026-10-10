@@ -119,7 +119,10 @@ export function EquipmentTab({ r, ch, set, onDetail }: { r: Resolved; ch: Charac
                     </span>
                   </td>
                   <td>{weight ? `${Math.round(weight * 10) / 10} lb` : ""}</td>
-                  <td>{canEquip(el) ? <input type="checkbox" checked={it.equipped} onChange={() => equip(it, el)} /> : ""}</td>
+                  <td>
+                    {canEquip(el) ? <input type="checkbox" checked={it.equipped} onChange={() => equip(it, el)} /> : ""}
+                    {el?.setters.versatile && it.equipped && <label className="check small"><input type="checkbox" checked={!!it.twoHanded} onChange={() => update(it.uid, (i) => ({ ...i, twoHanded: !i.twoHanded }))} /> two-handed</label>}
+                  </td>
                   <td>{needsAttune(el) ? <input type="checkbox" checked={it.attuned} onChange={() => update(it.uid, (i) => ({ ...i, attuned: !i.attuned }))} /> : ""}</td>
                   <td>
                     {containers.length > 0 && it.id !== "" && !el?.setters.container && (

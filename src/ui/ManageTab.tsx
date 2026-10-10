@@ -85,7 +85,17 @@ function toPortrait(file: File): Promise<string> {
   });
 }
 
-function Info({ ch, set }: { ch: Character; set: SetCharacter }) {
+function PickOrType({ label, items, value, onChange }: { label: string; items: AElement[]; value: string; onChange: (v: string) => void }) {
+  const listId = `dl-${label}`;
+  return (
+    <label className="field"><span>{label}</span>
+      <input list={listId} value={value} onChange={(e) => onChange(e.target.value)} />
+      <datalist id={listId}>{items.map((i) => <option key={i.id} value={i.name} />)}</datalist>
+    </label>
+  );
+}
+
+function Info({ ch, set, r }: { ch: Character; set: SetCharacter; r: Resolved }) {
   const put = (k: keyof Character["info"], v: string) => set((c) => ({ ...c, info: { ...c.info, [k]: v } }));
   return (
     <>
@@ -99,7 +109,9 @@ function Info({ ch, set }: { ch: Character; set: SetCharacter }) {
         <label className="field"><span>Player</span><input value={ch.playerName} onChange={(e) => set((c) => ({ ...c, playerName: e.target.value }))} /></label>
       </div>
       <div className="grid-fields">
-        {FIELDS.map(([k, label]) => <label className="field" key={k}><span>{label}</span><input value={ch.info[k]} onChange={(e) => put(k, e.target.value)} /></label>)}
+        <PickOrType label="Alignment" items={[...new Map(r.reg.ofType("Alignment").map((a) => [a.name, a])).values()]} value={ch.info.alignment} onChange={(v) => put("alignment", v)} />
+        <PickOrType label="Deity" items={[...new Map(r.reg.ofType("Deity").map((a) => [a.name, a])).values()].sort((a, b) => a.name.localeCompare(b.name))} value={ch.info.deity} onChange={(v) => put("deity", v)} />
+        {FIELDS.filter(([k]) => k !== "alignment" && k !== "deity").map(([k, label]) => <label className="field" key={k}><span>{label}</span><input value={ch.info[k]} onChange={(e) => put(k, e.target.value)} /></label>)}
       </div>
       {AREAS.map(([k, label]) => <label className="field" key={k}><span>{label}</span><textarea rows={k === "backstory" ? 6 : 3} value={ch.info[k]} onChange={(e) => put(k, e.target.value)} /></label>)}
       <label className="field"><span>Notes</span><textarea rows={6} value={ch.notes} onChange={(e) => set((c) => ({ ...c, notes: e.target.value }))} /></label>
@@ -271,7 +283,7 @@ export function ManageTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character
     <div>
       <nav className="subtabs">{SUBS.map(([k, label]) => <button key={k} className={sub === k ? "subtab active" : "subtab"} onClick={() => setSub(k)}>{label}</button>)}</nav>
       {sub === "level" && <Level r={r} ch={ch} set={set} />}
-      {sub === "info" && <Info ch={ch} set={set} />}
+      {sub === "info" && <Info ch={ch} set={set} r={r} />}
       {sub === "options" && (<><Options r={r} ch={ch} set={set} onDetail={onDetail} />{other.length > 0 && (<><h3>Other choices</h3><SlotList slots={other} r={r} set={set} onDetail={onDetail} /></>)}</>)}
       {sub === "additions" && <Additions r={r} ch={ch} set={set} onDetail={onDetail} />}
       {sub === "attacks" && <Attacks ch={ch} set={set} />}

@@ -262,7 +262,7 @@ function buildAttacks(r: Resolved): AttackLine[] {
     // Fighting styles and similar features add to every attack of a kind.
     const atkExtra = s.get(`${kind}:attack`) + s.get("attack") + magicAtk;
     const dmgExtra = s.get(`${kind}:damage`) + s.get("damage") + magicDmg;
-    const dmg = el.setters.damage;
+    const dmg = it.twoHanded && el.setters.versatile ? { value: el.setters.versatile.value, attrs: el.setters.damage?.attrs ?? {} } : el.setters.damage;
     const props = el.supports
       .filter((t) => /WEAPON_PROPERTY/.test(t))
       .map((t) => t.replace(/^ID_(INTERNAL|WOTC_PHB24|WOTC_PHB)_WEAPON_PROPERTY_/, "").replace(/_/g, " ").toLowerCase());
@@ -272,7 +272,7 @@ function buildAttacks(r: Resolved): AttackLine[] {
       bonus: mods(ability) + (proficient ? prof : 0) + atkExtra,
       damage: dmg ? `${dmg.value}${mods(ability) + dmgExtra ? signed(mods(ability) + dmgExtra) : ""}` : "",
       damageType: dmg?.attrs.type ?? "",
-      properties: [...props, versatile ? `versatile (${versatile})` : ""].filter(Boolean).join(", "),
+      properties: [...props, versatile && !it.twoHanded ? `versatile (${versatile})` : "", it.twoHanded ? "two-handed" : ""].filter(Boolean).join(", "),
       notes: proficient ? "" : "not proficient",
     });
   }

@@ -53,6 +53,8 @@ export interface InvItem {
   qty: number;
   equipped: boolean;
   attuned: boolean;
+  /** Wielded with two hands, which uses the versatile damage of a weapon that has one. */
+  twoHanded?: boolean;
   /** Uid of the container (storage) holding it. */
   container?: string;
   /** Free-form fields for custom items and per-item notes. */

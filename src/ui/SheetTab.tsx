@@ -7,6 +7,7 @@ import { DEFAULT_PDF_OPTIONS, buildPdf, cardCounts, type PdfOptions } from "../p
 import type { SetCharacter } from "./Slots";
 import { CompanionCard, CONDITIONS } from "./ManageTab";
 import { requestRoll } from "./Dice";
+import { isAvailable, usedAfterClick } from "./pips";
 import { TranslateOptions, useTranslation } from "./TranslateOptions";
 import { TemplateExport } from "./SheetExport";
 
@@ -108,7 +109,7 @@ function Uses({ id, usage, ch, set }: { id: string; usage?: string; ch: Characte
   return (
     <span className="uses noprint">
       {Array.from({ length: n }, (_, i) => (
-        <button key={i} className={i < used ? "pip spent small" : "pip small"} title={i < used ? "Used" : "Available"} onClick={() => set((c) => ({ ...c, play: { ...c.play, featureUses: { ...c.play.featureUses, [id]: used === i + 1 ? i : i + 1 } } }))} />
+        <button key={i} className={isAvailable(n, used, i) ? "pip small" : "pip spent small"} title={isAvailable(n, used, i) ? "Available" : "Used"} onClick={() => set((c) => ({ ...c, play: { ...c.play, featureUses: { ...c.play.featureUses, [id]: usedAfterClick(n, used, i) } } }))} />
       ))}{" "}
     </span>
   );

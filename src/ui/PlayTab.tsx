@@ -6,6 +6,7 @@ import type { AElement } from "../aurora/types";
 import { Html } from "./Html";
 import { requestRoll, RollModeSwitch } from "./Dice";
 import { Hint } from "./Help";
+import { isAvailable, usedAfterClick } from "./pips";
 import { CompanionCard } from "./ManageTab";
 import type { SetCharacter } from "./Slots";
 
@@ -184,7 +185,7 @@ function Uses({ f, ch, set }: { f: FeatureLine; ch: Character; set: SetCharacter
   const used = Math.min(n, ch.play.featureUses[f.id] ?? 0);
   const left = n - used;
   const when = (m?.[2] ?? "").trim().toLowerCase();
-  const toggle = (i: number) => set((c) => ({ ...c, play: { ...c.play, featureUses: { ...c.play.featureUses, [f.id]: i < left ? n - i : n - i - 1 } } }));
+  const toggle = (i: number) => set((c) => ({ ...c, play: { ...c.play, featureUses: { ...c.play.featureUses, [f.id]: usedAfterClick(n, used, i) } } }));
   return (
     <span className="uses" title="Click a pip to spend or restore a use">
       <span className="uses-pips">
@@ -280,7 +281,7 @@ function Spells({ r, sheet, set }: { r: Resolved; sheet: SheetData; set: SetChar
                   <small>{c.pactLevel ? `Pact ${s.level}` : `Level ${s.level}`}</small>
                   <div className="pips">
                     {Array.from({ length: s.total }, (_, i) => (
-                      <button key={i} className={i < s.used ? "pip spent" : "pip"} onClick={() => set((x) => { const used = x.play.slotsUsed[String(s.level)] ?? 0; return { ...x, play: { ...x.play, slotsUsed: { ...x.play.slotsUsed, [String(s.level)]: used === i + 1 ? i : i + 1 } } }; })} />
+                      <button key={i} className={isAvailable(s.total, s.used, i) ? "pip" : "pip spent"} onClick={() => set((x) => { const used = x.play.slotsUsed[String(s.level)] ?? 0; return { ...x, play: { ...x.play, slotsUsed: { ...x.play.slotsUsed, [String(s.level)]: usedAfterClick(s.total, used, i) } } }; })} />
                     ))}
                   </div>
                 </div>

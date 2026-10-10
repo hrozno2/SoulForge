@@ -1,3 +1,4 @@
+import { isAvailable, usedAfterClick } from "./pips";
 import { useMemo } from "react";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
@@ -12,9 +13,7 @@ function SlotTracker({ line, set }: { line: CastingLine; set: SetCharacter }) {
   const toggle = (level: number, index: number, total: number) =>
     set((c) => {
       const used = c.play.slotsUsed[String(level)] ?? 0;
-      // Clicking box i marks slots up to i spent, or frees them when it is already the last spent one.
-      const next = used === index + 1 ? index : index + 1;
-      return { ...c, play: { ...c.play, slotsUsed: { ...c.play.slotsUsed, [String(level)]: Math.min(next, total) } } };
+      return { ...c, play: { ...c.play, slotsUsed: { ...c.play.slotsUsed, [String(level)]: usedAfterClick(total, used, index) } } };
     });
   if (!line.slots.length) return <p className="muted">No spell slots at this level.</p>;
   return (
@@ -24,7 +23,7 @@ function SlotTracker({ line, set }: { line: CastingLine; set: SetCharacter }) {
           <small>{line.pactLevel ? `Pact (level ${s.level})` : `Level ${s.level}`}</small>
           <div className="pips">
             {Array.from({ length: s.total }, (_, i) => (
-              <button key={i} className={i < s.used ? "pip spent" : "pip"} title={i < s.used ? "Spent" : "Available"} onClick={() => toggle(s.level, i, s.total)} />
+              <button key={i} className={isAvailable(s.total, s.used, i) ? "pip" : "pip spent"} title={isAvailable(s.total, s.used, i) ? "Available" : "Spent"} onClick={() => toggle(s.level, i, s.total)} />
             ))}
           </div>
         </div>

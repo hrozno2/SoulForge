@@ -19,6 +19,7 @@ import { DicePanel } from "./Dice";
 import { UiProvider } from "./Learn";
 import { ThemePicker } from "./Theme";
 import { HelpButton } from "./Help";
+import { AppMenu, Tabs } from "./TopBar";
 import { useUpdater } from "../updater";
 import { importForeignCharacter } from "../aurora/foreign";
 
@@ -105,19 +106,14 @@ export function App() {
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width="28" height="28" />
           Soul Forge
         </strong>
-        <nav>
-          {TABS.map(([k, label]) => (
-            <button key={k} className={tab === k ? "tab active" : "tab"} onClick={() => setTab(k)}>
-              {label}
-              {k === "build" && pending > 0 && <span className="badge">{pending}</span>}
-            </button>
-          ))}
-        </nav>
+        <Tabs tabs={TABS.map(([key, label]) => ({ key, label, badge: key === "build" ? pending : undefined }))} current={tab} onPick={setTab} />
         <span className="who">{character.name || "Unnamed"} · {r.totalLevel ? `Level ${r.totalLevel}` : "no class yet"}</span>
         {content.busy && <span className="muted busy">{content.status || "Working..."}</span>}
-        <ThemePicker />
         <HelpButton tab={tab} />
-        <button className="tab noprint" onClick={() => updater.check(true)}>Check for updates</button>
+        <AppMenu>
+          <label className="menu-row">Theme <ThemePicker /></label>
+          <button className="menu-item" onClick={() => updater.check(true)}>Check for updates</button>
+        </AppMenu>
       </header>
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} />
       <main className={showDetail ? "with-detail" : ""}>

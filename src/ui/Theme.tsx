@@ -45,3 +45,6 @@ export function ThemePicker() {
     </span>
   );
 }
+
+// Apply the saved theme as soon as the file loads, so the first paint is not the wrong colour.
+if (typeof document !== "undefined") applyTheme(migrate(read("charforge.theme", "obsidian")));

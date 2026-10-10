@@ -2,6 +2,20 @@ import { describe, expect, it } from "vitest";
 import { makeTranslator, translatable } from "./translate";
 
 describe("translation services", () => {
+  it("uses the free Google endpoint, joins sentence segments, and keeps the order", async () => {
+    const fake = (async (_url: string, init: RequestInit) => {
+      const q = decodeURIComponent(String(init.body).replace(/^q=/, ""));
+      return new Response(JSON.stringify([[[`<${q.slice(0, 3)}`, q], [">", ""]]]), { status: 200 });
+    }) as unknown as typeof fetch;
+    const out = await makeTranslator({ provider: "gfree", url: "", key: "" }, fake)(["Alpha", "Bravo", "Charlie", "Delta"], "fr");
+    expect(out).toEqual(["<Alp>", "<Bra>", "<Cha>", "<Del>"]);
+  });
+
+  it("explains a rate limit", async () => {
+    const fake = (async () => new Response("", { status: 429 })) as unknown as typeof fetch;
+    await expect(makeTranslator({ provider: "gfree", url: "", key: "" }, fake)(["Hello there"], "fr")).rejects.toThrow(/limiting/);
+  });
+
   it("talks to LibreTranslate and reads the answer", async () => {
     let body: any;
     const fake = (async (url: string, init: RequestInit) => {

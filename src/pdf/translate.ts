@@ -29,7 +29,7 @@ export const LANGUAGES: Language[] = [
   { code: "el", name: "Greek" },
 ];
 
-export type Provider = "google" | "libre";
+export type Provider = "gfree" | "google" | "libre";
 
 export interface TranslatorConfig {
   provider: Provider;
@@ -38,12 +38,36 @@ export interface TranslatorConfig {
   url: string;
 }
 
-export const DEFAULT_TRANSLATOR: TranslatorConfig = { provider: "libre", key: "", url: "https://libretranslate.com" };
+export const DEFAULT_TRANSLATOR: TranslatorConfig = { provider: "gfree", key: "", url: "https://libretranslate.com" };
 
 /** Sends a batch of strings and returns the translations in the same order. */
 export type BatchTranslator = (texts: string[], target: string) => Promise<string[]>;
 
 export function makeTranslator(cfg: TranslatorConfig, fetcher: typeof fetch = fetch): BatchTranslator {
+  if (cfg.provider === "gfree") {
+    // The public endpoint behind translate.google.com. It needs no key but has no promises: it can slow down or refuse.
+    const one = async (text: string, target: string): Promise<string> => {
+      const res = await fetcher(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${encodeURIComponent(target)}&dt=t`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: `q=${encodeURIComponent(text)}`,
+      });
+      if (!res.ok) throw new Error(res.status === 429 ? "Google is limiting free requests right now. Wait a few minutes, or add an API key." : `Google Translate answered ${res.status}.`);
+      const json = (await res.json()) as [string[][]];
+      return (json[0] ?? []).map((seg) => seg[0] ?? "").join("");
+    };
+    return async (texts, target) => {
+      const out: string[] = new Array(texts.length).fill("");
+      let next = 0;
+      await Promise.all(Array.from({ length: 3 }, async () => {
+        while (next < texts.length) {
+          const i = next++;
+          out[i] = await one(texts[i], target);
+        }
+      }));
+      return out;
+    };
+  }
   if (cfg.provider === "google") {
     return async (texts, target) => {
       const res = await fetcher(`https://translation.googleapis.com/language/translate/v2?key=${encodeURIComponent(cfg.key)}`, {

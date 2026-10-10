@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Update } from "@tauri-apps/plugin-updater";
 
 export type InstallKind = "app" | "appimage" | "package" | "package-arch";
@@ -18,10 +18,17 @@ export function useUpdater() {
   const [found, setFound] = useState<UpdateState | null>(null);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  /** Shows a message that clears itself, so "you are up to date" does not stay on screen. */
+  const flash = useCallback((msg: string, ms = 5000) => {
+    setStatus(msg);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setStatus(""), ms);
+  }, []);
 
   const check = useCallback(async (manual: boolean) => {
     if (!inTauri()) {
-      if (manual) setStatus("Updates apply to the installed desktop app.");
+      if (manual) flash("Updates apply to the installed desktop app.");
       return;
     }
     try {
@@ -34,13 +41,13 @@ export function useUpdater() {
       if (update) setFound({ version: update.version, kind, update });
       else if (manual) {
         const { getVersion } = await import("@tauri-apps/api/app");
-        setStatus(`You are on the latest version (${await getVersion()}).`);
+        flash(`You are on the latest version (${await getVersion()}).`);
       }
     } catch (e) {
       // Offline or no release yet: stay quiet unless the person asked.
-      if (manual) setStatus(`Could not check for updates: ${String(e)}`);
+      if (manual) flash(`Could not check for updates: ${String(e)}`, 12000);
     }
-  }, []);
+  }, [flash]);
 
   // Check shortly after launch so startup stays fast.
   useEffect(() => {
@@ -71,5 +78,6 @@ export function useUpdater() {
     }
   }, [found]);
 
-  return { found, status, busy, check, install };
+  const dismiss = useCallback(() => { clearTimeout(timer.current); setStatus(""); }, []);
+  return { found, status, busy, check, install, dismiss };
 }

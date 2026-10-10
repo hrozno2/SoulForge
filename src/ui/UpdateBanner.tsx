@@ -7,6 +7,7 @@ interface Props {
   status: string;
   busy: boolean;
   install: () => void;
+  dismiss?: () => void;
 }
 
 const PACKAGE_HINT: Record<string, string> = {
@@ -14,7 +15,7 @@ const PACKAGE_HINT: Record<string, string> = {
   package: "Download and install the newer package from the releases page.",
 };
 
-export function UpdateBanner({ found, status, busy, install }: Props) {
+export function UpdateBanner({ found, status, busy, install, dismiss }: Props) {
   if (!found && !status) return null;
   return (
     <div className="update-banner noprint">
@@ -34,6 +35,7 @@ export function UpdateBanner({ found, status, busy, install }: Props) {
         </>
       ) : null}
       {status && <span className="muted">{status}</span>}
+      {status && !busy && dismiss && <button aria-label="Dismiss" title="Dismiss" onClick={dismiss}>×</button>}
     </div>
   );
 }

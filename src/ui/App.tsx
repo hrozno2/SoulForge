@@ -115,7 +115,7 @@ export function App() {
           <button className="menu-item" onClick={() => updater.check(true)}>Check for updates</button>
         </AppMenu>
       </header>
-      <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} />
+      <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} dismiss={updater.dismiss} />
       <main className={showDetail ? "with-detail" : ""}>
         <div className="pane">
           {tab === "start" && <StartTab currentId={id} onOpen={open} onNew={() => open(uid(), newCharacter())} onRandom={random} contentReady={content.ready} sourceCount={content.sources.length} goContent={() => setTab("content")} onImportForeign={importForeign} />}

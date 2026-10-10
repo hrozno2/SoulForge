@@ -53,13 +53,13 @@ export function PortraitPicker({ onPick }: { onPick: (dataUrl: string) => void }
       <summary>Choose a stock portrait ({list.length})</summary>
       <div className="portrait-grid">
         {list.map((p) => (
-          <button key={p.file} title={p.title} onClick={() => pick(p)} onMouseEnter={() => setHover(p)} onMouseLeave={() => setHover(null)} onFocus={() => setHover(p)}>
+          <button key={p.file} title={p.title} onClick={() => pick(p)} onMouseEnter={() => setHover(p)} onFocus={() => setHover(p)}>
             <img src={base() + p.file} alt={p.title} loading="lazy" />
           </button>
         ))}
       </div>
       <small className="muted">
-        {hover ? <>{hover.title} · {hover.license} · <a href={hover.source} target="_blank" rel="noreferrer">source</a></> : "Public domain or CC0 art from Wikimedia Commons and OpenGameArt. Hover for the source."}
+        {hover ? <>{hover.title} · {hover.license} · <a href={hover.source} target="_blank" rel="noreferrer">source</a></> : "Public domain or CC0 art from Wikimedia Commons and OpenGameArt. Hover a portrait for its source; the link stays here until you hover another."}
       </small>
     </details>
   );

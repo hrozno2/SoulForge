@@ -14,5 +14,6 @@
 		<file name="classes.xml" url="https://fixtures.soulforge.test/content/classes.xml" />
 		<file name="spells.xml" url="https://fixtures.soulforge.test/content/spells.xml" />
 		<file name="items.xml" url="https://fixtures.soulforge.test/content/items.xml" />
+		<file name="creatures.xml" url="https://fixtures.soulforge.test/content/creatures.xml" />
 	</files>
 </index>

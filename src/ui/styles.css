@@ -699,8 +699,6 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .roll-dc.bad { color: var(--warn); }
 .roll-note { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
 
-.condition-strip { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
-.condition-strip span { background: var(--warn); color: #fff; border-radius: 10px; padding: 1px 10px; font-weight: 700; font-size: 12px; }
 .concentration-strip { margin: 0 0 8px; padding: 4px 10px; border-left: 3px solid var(--accent); background: var(--panel2); }
 .conc-check { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 10px; border: 1px solid var(--warn); background: var(--panel2); }
 .condition-notes { margin: 8px 0 0; padding-left: 18px; font-size: 13px; }
@@ -871,3 +869,21 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .vital-row { grid-template-columns: auto auto minmax(300px, 1fr); }
 .vitals { max-width: 480px; min-width: 0; }
 .hp-manage input[type="number"] { width: 64px; }
+.form-block { margin: 6px 0; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; background: var(--panel2); }
+.form-block summary { cursor: pointer; font-weight: 600; }
+.form-matches { max-height: 220px; overflow: auto; }
+
+/* ================= conditions: icon tokens, rules on hover ================= */
+.condition-strip { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 10px; }
+.cond-chip { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 3px 12px 3px 4px; border-radius: 20px; background: var(--panel2); border: 1px solid var(--accent); color: var(--text); font: 600 13px var(--body); cursor: help; }
+.cond-chip .cond-icon { box-sizing: content-box; padding: 4px; border-radius: 50%; background: var(--accent); color: #fff; }
+.cond-tip { position: absolute; z-index: 30; left: 0; top: calc(100% + 6px); width: 260px; padding: 8px 12px; border-radius: 6px; background: var(--panel); border: 1px solid var(--gold); box-shadow: var(--shadow, 0 6px 20px #0008); color: var(--text); font: 400 13px/1.35 var(--body); text-align: left; letter-spacing: 0; text-transform: none; display: none; pointer-events: none; }
+.cond-tip b { display: block; margin-bottom: 2px; color: var(--gold2); font: 700 13px var(--body); letter-spacing: .06em; text-transform: uppercase; }
+.cond-chip:hover .cond-tip, .cond-chip:focus .cond-tip, .cond-tile:hover .cond-tip, .cond-tile:focus-visible .cond-tip { display: block; }
+.cond-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; margin: 8px 0; }
+.cond-tile { position: relative; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); color: var(--muted); font: 600 13px var(--body); text-align: left; letter-spacing: 0; text-transform: none; }
+.cond-tile .cond-icon { flex: none; opacity: .75; }
+.cond-tile:hover { border-color: var(--gold); color: var(--text); }
+.cond-tile.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--panel2)); color: var(--text); }
+.cond-tile.on .cond-icon { opacity: 1; color: var(--accent-ink, #fff); }
+.exhaustion-row .cond-icon { color: var(--gold2); }

@@ -17,6 +17,7 @@ describe("translating sheet values", () => {
     const store = new Map<string, string>();
     const out = await translateFill(base, {
       target: "fr",
+      keepNames: false,
       translator: async (texts) => { sent.push(...texts); return texts.map((t) => `<${t}>`); },
       cache: { get: async (k) => store.get(k), put: async (k, v) => void store.set(k, v) },
     });
@@ -32,5 +33,23 @@ describe("translating sheet values", () => {
     expect(out.ac).toBe(13);
     expect(sent).not.toContain("Wizard"); // the class name is kept, as the sheet header shows it
     expect(sent).not.toContain("+6");
+  });
+
+  it("keeps the names of spells, weapons, items and features when asked, and translates what they say", async () => {
+    const withGear = { ...base, weaponsText: "2 Quarterstaff", otherGear: "Robe\nBackpack", classFeatures: ["Potent Cantrip: When you cast a cantrip, half damage on a save."] } as unknown as FillData;
+    const out = await translateFill(withGear, {
+      target: "sk",
+      keepNames: true,
+      translator: async (texts) => texts.map((t) => `<${t}>`),
+      cache: { get: async () => undefined, put: async () => undefined },
+    });
+    expect(out.weaponsText).toBe("2 Quarterstaff");
+    expect(out.otherGear).toBe("Robe\nBackpack");
+    expect(out.spells[0].name).toBe("Fire Bolt");
+    expect(out.spells[0].range).toBe("<120 feet>");
+    expect(out.weapons[0].name).toBe("Dagger");
+    expect(out.weapons[0].notes).toBe("<finesse, light>");
+    expect(out.classFeatures[0]).toBe("Potent Cantrip: <When you cast a cantrip, half damage on a save.>");
+    expect(out.traits[0]).toBe("Fey Ancestry: <Advantage on saving throws against being charmed.>");
   });
 });

@@ -10,6 +10,7 @@ import { applyDamage, applyHealing } from "./hpModel";
 import { FormsPanel } from "./FormsPanel";
 import { Journal } from "./Journal";
 import { SchoolIcon } from "./schoolIcons";
+import { ConditionIcon } from "./conditionIcons";
 import { toggleEquip } from "../aurora/hands";
 import { t } from "../i18n";
 import { CONDITION_TEXT, speedAfterExhaustion } from "./conditions";
@@ -95,7 +96,8 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
     const next = applyDamage({ hp, tempHp: ch.play.tempHp, wildShape: ch.play.wildShape }, n);
     const real = hp - next.hp + (ch.play.tempHp - next.tempHp);
     // Dropping to 0 ends concentration. Any other hit asks for a Constitution save.
-    patch({ tempHp: next.tempHp, hp: next.hp, wildShape: next.wildShape, ...(next.hp === 0 ? { concentration: undefined } : {}) });
+    const endedPoly = ch.play.wildShape && !next.wildShape && (ch.play.wildShape.kind === "polymorph" || ch.play.wildShape.kind === "truepoly");
+    patch({ tempHp: next.tempHp, hp: next.hp, wildShape: next.wildShape, ...(next.hp === 0 || endedPoly ? { concentration: undefined } : {}) });
     if (ch.play.concentration && next.hp > 0 && (real > 0 || next.wildShape?.hp !== ch.play.wildShape?.hp)) setConc({ dc: Math.max(10, Math.floor(n / 2)) });
     else setConc(null);
     setAmount("");
@@ -645,10 +647,22 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
       </div>
 
       {(ch.play.conditions.length > 0 || (ch.play.exhaustion ?? 0) > 0) && (
-        <p className="warn condition-strip">
-          {ch.play.conditions.map((c) => <span key={c} title={CONDITION_TEXT[c]}>{c}</span>)}
-          {(ch.play.exhaustion ?? 0) > 0 && <span title="Each level takes 2 off d20 tests and 5 feet off speed">Exhaustion {ch.play.exhaustion}</span>}
-        </p>
+        <div className="condition-strip" aria-label="Active conditions">
+          {ch.play.conditions.map((c) => (
+            <span key={c} className="cond-chip" tabIndex={0} aria-describedby={`strip-${c}`}>
+              <ConditionIcon name={c} size={20} />
+              <span>{c}</span>
+              <span id={`strip-${c}`} role="tooltip" className="cond-tip"><b>{c}</b>{CONDITION_TEXT[c]}</span>
+            </span>
+          ))}
+          {(ch.play.exhaustion ?? 0) > 0 && (
+            <span className="cond-chip" tabIndex={0} aria-describedby="strip-exh">
+              <ConditionIcon name="Exhaustion" size={20} />
+              <span>Exhaustion {ch.play.exhaustion}</span>
+              <span id="strip-exh" role="tooltip" className="cond-tip"><b>Exhaustion {ch.play.exhaustion}</b>Each level takes 2 off d20 tests and 5 feet off speed. This level: −{2 * (ch.play.exhaustion ?? 0)} on d20 tests, −{5 * (ch.play.exhaustion ?? 0)} feet of speed.</span>
+            </span>
+          )}
+        </div>
       )}
       {ch.play.concentration && (
         <p className="concentration-strip">Concentrating on <b>{ch.play.concentration}</b> <button onClick={() => set((c) => ({ ...c, play: { ...c.play, concentration: undefined } }))}>End</button></p>
@@ -708,7 +722,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
             {tab === "extras" && (
               <>
                 {companions.length === 0 && <p className="muted">No companions. Add them on the Manage tab.</p>}
-                <FormsPanel ch={ch} set={set} companions={companions.map((c, i) => ({ key: ch.companions[i - (companions.length - ch.companions.length)]?.uid ?? c.el?.id ?? String(i), name: c.name, el: c.el }))} />
+                <FormsPanel reg={r.reg} ch={ch} set={set} companions={companions.map((c, i) => ({ key: ch.companions[i - (companions.length - ch.companions.length)]?.uid ?? c.el?.id ?? String(i), name: c.name, el: c.el }))} />
                 {companions.map((c, i) => (c.el ? <div key={i}><h3>{c.name}</h3><CompanionCard el={c.el} /></div> : null))}
                 <Panel title="Conditions"><ConditionsPanel ch={ch} set={set} /></Panel>
               </>

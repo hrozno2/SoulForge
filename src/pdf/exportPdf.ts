@@ -22,6 +22,8 @@ export interface PdfOptions {
     cache: { get(k: string): Promise<string | undefined>; put(k: string, v: string): Promise<void> };
     onProgress?: (done: number, total: number) => void;
     onResult?: (failed: number) => void;
+    /** Keep names of spells, items and features in English. */
+    keepNames?: boolean;
   };
 }
 
@@ -248,6 +250,13 @@ export async function buildPdf(r: Resolved, sh: SheetData, opts: PdfOptions, fon
   // First pass only collects the strings that would be printed. Then they are translated, then the real pass runs.
   const seen = new Set<string>();
   const keep = new Set<string>([r.character.name, ...Object.values(r.character.info)].map((x) => String(x ?? "").trim()).filter(Boolean));
+  if (t.keepNames !== false) {
+    // Names of what is printed stay as they are; the descriptions around them are translated.
+    const src = cardSources(r, sh);
+    for (const e of [...src.spells, ...src.items.map((i) => i.el)]) keep.add(e.name);
+    for (const f of src.features) keep.add(f.name);
+    for (const i of r.character.inventory) { const n = i.id ? r.reg.get(i.id)?.name : i.custom?.name; if (n) keep.add(n); }
+  }
   TR = (x) => {
     if (translatable(x, keep)) seen.add(x);
     return x;

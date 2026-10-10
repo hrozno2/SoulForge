@@ -7,10 +7,22 @@ export interface FillTranslation {
   cache: { get(k: string): Promise<string | undefined>; put(k: string, v: string): Promise<void> };
   onProgress?: (done: number, total: number) => void;
   onResult?: (failed: number) => void;
+  /** Keep names of spells, items and features as they are. Machine translation turns "Quarterstaff" into "quarterly staff". */
+  keepNames?: boolean;
 }
 
 /** Fields the player wrote or that are numbers and names; they are printed as they are. */
 const KEEP = new Set(["name", "portrait", "backstory", "personality", "appearance", "alignment", "notes", "coins", "carryCapacity", "pushDrag", "hdMax", "profBonus", "initiative", "speed", "languages"]);
+
+/** Fields that hold names, one per line or one per entry. */
+const NAME_KEYS = new Set(["weaponsText", "otherGear", "armorWorn"]);
+/** Lists of "Name: text" lines. The part before the colon is a feature name. */
+const FEATURE_KEYS = new Set(["traits", "feats", "classFeatures"]);
+
+const splitFeature = (s: string): [string, string] => {
+  const m = s.match(/^([^:\n]{2,70}): ([\s\S]+)$/);
+  return m ? [`${m[1]}: `, m[2]] : ["", s];
+};
 
 function walk(v: unknown, f: (s: string) => string, keep: boolean): unknown {
   if (typeof v === "string") return keep ? v : f(v);
@@ -26,8 +38,20 @@ function walk(v: unknown, f: (s: string) => string, keep: boolean): unknown {
 export async function translateFill(d: FillData, t: FillTranslation): Promise<FillData> {
   const keepText = new Set<string>([d.name, d.background, d.className, d.species, d.subclass].map((x) => String(x ?? "").trim()).filter(Boolean));
   const seen = new Set<string>();
-  const each = (f: (s: string) => string): FillData =>
-    Object.fromEntries(Object.entries(d).map(([k, v]) => [k, walk(v, f, KEEP.has(k))])) as unknown as FillData;
+  const names = t.keepNames !== false;
+  const each = (f: (s: string) => string): FillData => {
+    const out = Object.fromEntries(Object.entries(d).map(([k, v]) => {
+      if (names && NAME_KEYS.has(k)) return [k, v];
+      if (names && FEATURE_KEYS.has(k) && Array.isArray(v)) return [k, (v as string[]).map((line) => { const [head, body] = splitFeature(line); return head + f(body); })];
+      return [k, walk(v, f, KEEP.has(k))];
+    })) as unknown as FillData;
+    if (names) {
+      out.spells = d.spells.map((sp) => ({ ...(walk(sp, f, false) as typeof sp), name: sp.name }));
+      out.weapons = d.weapons.map((w) => ({ ...(walk(w, f, false) as typeof w), name: w.name }));
+      out.magicItems = d.magicItems;
+    }
+    return out;
+  };
   each((s) => {
     if (translatable(s, keepText)) seen.add(s);
     return s;

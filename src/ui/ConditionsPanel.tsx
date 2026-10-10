@@ -1,5 +1,6 @@
 import type { Character } from "../aurora/character";
 import type { SetCharacter } from "./Slots";
+import { ConditionIcon } from "./conditionIcons";
 import { CONDITIONS, CONDITION_TEXT, MAX_EXHAUSTION } from "./conditions";
 
 /** Conditions with what each does, and the exhaustion level. Rolls read these automatically. */
@@ -10,13 +11,20 @@ export function ConditionsPanel({ ch, set }: { ch: Character; set: SetCharacter 
   return (
     <>
       <p className="muted">Rolls on the Play tab apply these: advantage and disadvantage, automatic failures and the exhaustion penalty. The roll card says why.</p>
-      <div className="chips">
-        {CONDITIONS.map((c) => (
-          <button key={c} className={ch.play.conditions.includes(c) ? "pill active" : "pill"} title={CONDITION_TEXT[c]} aria-pressed={ch.play.conditions.includes(c)} onClick={() => toggle(c)}>{c}</button>
-        ))}
+      <div className="cond-grid">
+        {CONDITIONS.map((c) => {
+          const on = ch.play.conditions.includes(c);
+          return (
+            <button key={c} className={on ? "cond-tile on" : "cond-tile"} aria-pressed={on} aria-describedby={`tip-${c}`} onClick={() => toggle(c)}>
+              <ConditionIcon name={c} size={26} />
+              <span>{c}</span>
+              <span id={`tip-${c}`} role="tooltip" className="cond-tip"><b>{c}</b>{CONDITION_TEXT[c]}</span>
+            </button>
+          );
+        })}
       </div>
       <div className="row exhaustion-row">
-        <b>Exhaustion</b>
+        <ConditionIcon name="Exhaustion" size={22} /><b>Exhaustion</b>
         <span className="stepper">
           <button aria-label="Lower exhaustion" onClick={() => setEx(ex - 1)} disabled={ex === 0}>−</button>
           <output aria-live="polite">{ex}</output>

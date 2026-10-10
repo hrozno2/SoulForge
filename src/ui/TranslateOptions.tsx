@@ -5,20 +5,21 @@ import type { PdfOptions } from "../pdf/exportPdf";
 
 const KEY = "charforge.translate";
 
-function load(): { lang: string; cfg: TranslatorConfig } {
+function load(): { lang: string; cfg: TranslatorConfig; keepNames: boolean } {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) ?? "{}");
-    return { lang: raw.lang ?? "", cfg: { ...DEFAULT_TRANSLATOR, ...(raw.cfg ?? {}) } };
+    return { lang: raw.lang ?? "", cfg: { ...DEFAULT_TRANSLATOR, ...(raw.cfg ?? {}) }, keepNames: raw.keepNames !== false };
   } catch {
-    return { lang: "", cfg: DEFAULT_TRANSLATOR };
+    return { lang: "", cfg: DEFAULT_TRANSLATOR, keepNames: true };
   }
 }
 
 /** Language choice and translation service settings, remembered between launches. */
 export function useTranslation() {
   const [state, setState] = useState(load);
-  const save = (next: { lang: string; cfg: TranslatorConfig }) => {
-    setState(next);
+  const save = (next: { lang: string; cfg: TranslatorConfig; keepNames?: boolean }) => {
+    next = { keepNames: state.keepNames, ...next } as typeof next & { keepNames: boolean };
+    setState(next as ReturnType<typeof load>);
     try {
       localStorage.setItem(KEY, JSON.stringify(next));
     } catch {
@@ -28,14 +29,14 @@ export function useTranslation() {
   const ready = !state.lang || state.cfg.provider === "gfree" || (state.cfg.provider === "libre" ? !!state.cfg.url.trim() : !!state.cfg.key.trim());
   /** The option to hand to buildPdf, or undefined when no translation is wanted. */
   const option = (onProgress?: (d: number, t: number) => void, onResult?: (failed: number) => void): PdfOptions["translate"] =>
-    state.lang ? { target: state.lang, translator: makeTranslator(state.cfg), cache: translationCache, onProgress, onResult } : undefined;
+    state.lang ? { target: state.lang, translator: makeTranslator(state.cfg), cache: translationCache, onProgress, onResult, keepNames: state.keepNames } : undefined;
   return { ...state, ready, option, set: save };
 }
 
 export type Translation = ReturnType<typeof useTranslation>;
 
 export function TranslateOptions({ tr }: { tr: Translation }) {
-  const { lang, cfg, set } = tr;
+  const { lang, cfg, set, keepNames } = tr;
   return (
     <div className="translate-opts">
       <div className="row">
@@ -47,6 +48,9 @@ export function TranslateOptions({ tr }: { tr: Translation }) {
           </select>
         </label>
       </div>
+      {lang && (
+        <label className="check small"><input type="checkbox" checked={keepNames} onChange={() => set({ lang, cfg, keepNames: !keepNames })} /> Keep names of spells, items and features in English (machine translation often turns names into odd phrases)</label>
+      )}
       {lang && (
         <details className="tip" open={!tr.ready}>
           <summary>Translation service{tr.ready ? "" : " (needs setup)"}</summary>

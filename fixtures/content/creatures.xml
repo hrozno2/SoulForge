@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<elements>
+	<element name="Cave Hound" type="Companion" source="Hollow Realms" id="ID_SF_CREATURE_CAVE_HOUND">
+		<description><p>A lean, pale hunting beast of the hollow hills.</p></description>
+		<setters>
+			<set name="size">Medium</set><set name="type">beast</set><set name="alignment">unaligned</set>
+			<set name="ac">12</set><set name="hp">13 (2d8 + 4)</set><set name="speed">40 ft.</set>
+			<set name="strength">+1</set><set name="dexterity">+2</set><set name="constitution">+1</set><set name="intelligence">-4</set><set name="wisdom">+1</set><set name="charisma">-2</set>
+			<set name="senses">darkvision 60 ft., passive Perception 13</set><set name="challenge">1/4</set>
+			<set name="actions"><![CDATA[<p><b>Bite.</b> Melee Weapon Attack: +3 to hit, reach 5 ft. Hit: 6 (1d8 + 2) piercing damage.</p>]]></set>
+		</setters>
+	</element>
+	<element name="Stone Sentry" type="Companion" source="Hollow Realms" id="ID_SF_CREATURE_STONE_SENTRY">
+		<description><p>A carved guardian that wakes when its ground is disturbed.</p></description>
+		<setters>
+			<set name="size">Large</set><set name="type">construct</set><set name="alignment">unaligned</set>
+			<set name="ac">15</set><set name="hp">45 (6d10 + 12)</set><set name="speed">30 ft.</set>
+			<set name="strength">+3</set><set name="dexterity">-1</set><set name="constitution">+2</set><set name="intelligence">-4</set><set name="wisdom">+0</set><set name="charisma">-5</set>
+			<set name="challenge">2</set>
+			<set name="actions"><![CDATA[<p><b>Slam.</b> Melee Weapon Attack: +5 to hit, reach 5 ft. Hit: 11 (2d6 + 4) bludgeoning damage.</p>]]></set>
+		</setters>
+	</element>
+</elements>

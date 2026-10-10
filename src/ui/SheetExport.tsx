@@ -16,8 +16,7 @@ import type { Translation } from "./TranslateOptions";
 
 /** Fill the player's own copy of a fillable character sheet PDF. The PDF is stored on this computer only. */
 const SHEET_LINKS: { label: string; url: string }[] = [
-  { label: "Official 2024 character sheet (Wizards of the Coast)", url: "https://media.dndbeyond.com/compendium-images/phb/downloads/DnD_2024_Character-Sheet.pdf" },
-  { label: "Fillable 5th edition sheet (Wizards of the Coast)", url: "https://media.dndbeyond.com/compendium-images/marketing/dnd_5e_charactersheet_formfillable.pdf" },
+  { label: "Official 2024 character sheet, print version (Wizards of the Coast)", url: "https://media.dndbeyond.com/compendium-images/phb/downloads/DnD_2024_Character-Sheet.pdf" },
 ];
 
 export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData; tr: Translation }) {
@@ -138,7 +137,7 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   return (
     <div className="subcard">
       <h3>Your own sheet PDFs</h3>
-      <p className="muted">Load your own copy of a sheet. Supported: the official 2024 character sheet (free from Wizards of the Coast at dndbeyond.com, search "2024 character sheet"; filled as printed text), the DLDM 5E24 sheets (stay editable) and the DLDM companion sheets. Soul Forge keeps the file on this computer only.</p>
+      <p className="muted">Load your own copy of a sheet. Supported: the official 2024 character sheet (free from Wizards of the Coast at dndbeyond.com, search "2024 character sheet". The print version has no form fields, so Soul Forge writes the text onto it. Keep "2024" in the file name), the DLDM 5E24 sheets (stay editable) and the DLDM companion sheets. Soul Forge keeps the file on this computer only.</p>
       <div className="row">
         <button onClick={choose}>Add sheet PDF...</button>
         <span className="muted">Need one?</span>

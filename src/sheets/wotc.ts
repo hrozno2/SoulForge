@@ -14,9 +14,13 @@ export const WOTC_PAGES: Record<WotcPage, { label: string; note: string }> = {
   page2: { label: "Page 2", note: "Spellcasting, spells, backstory, equipment, coins" },
 };
 
-/** The official sheet is two Letter-ish pages with no form fields. */
+/**
+ * The official sheet is two Letter-ish pages. The plain printing version has no form fields. A fillable copy has the same
+ * layout, so it is accepted too when its name says 2024: text is placed at the same fixed positions either way.
+ */
 export function looksLikeWotc2024(width: number, height: number, pages: number, fields: number, nameHint: string): boolean {
-  return fields === 0 && pages === 2 && Math.abs(width - 603) < 6 && Math.abs(height - 774) < 6 && /character|sheet|2024/i.test(nameHint);
+  const size = pages === 2 && Math.abs(width - 603) < 6 && Math.abs(height - 774) < 6;
+  return size && (fields === 0 ? /character|sheet|2024/i.test(nameHint) : /2024/i.test(nameHint));
 }
 
 const INK = rgb(0.1, 0.09, 0.1);

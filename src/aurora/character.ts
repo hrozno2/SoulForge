@@ -159,7 +159,7 @@ export interface PlayState {
   /** What the character is concentrating on, if anything. */
   concentration?: string;
   /** Active wild shape form, if any. Damage lands here first. */
-  wildShape?: { name: string; hp: number; maxHp: number };
+  wildShape?: { name: string; hp: number; maxHp: number; kind?: "wildshape" | "polymorph" | "truepoly" | "other"; creatureId?: string };
   /** Current hit points of companions and mounts, keyed by their uid or element id. */
   companionHp?: Record<string, number>;
   deathSaves: { success: number; fail: number };

@@ -248,6 +248,25 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(page.getByRole("button", { name: /Show favorites/ })).toBeVisible();
   });
 
+  test("a form can come from a creature, shows its stat block, and polymorph ties to concentration", async ({ page }) => {
+    await addTestContent(page);
+    await randomCharacter(page);
+    await tab(page, "Play");
+    await page.locator(".play-tabs").getByRole("button", { name: "Extras" }).click();
+    await page.getByLabel("Kind of form").selectOption("polymorph");
+    await page.getByLabel("Find a creature").fill("cave");
+    await page.getByRole("button", { name: /Cave Hound/ }).click();
+    await expect(page.getByLabel("Form hit points")).toHaveValue("13");
+    await page.getByRole("button", { name: "Assume form" }).click();
+    await expect(page.locator(".hp-bar.wild")).toContainText("Cave Hound: 13 / 13");
+    await page.getByText("Stat block", { exact: true }).click();
+    await expect(page.locator(".forms-panel .statblock")).toContainText("Bite");
+    // Polymorph is a concentration spell.
+    await expect(page.getByText(/Concentrating|concentrat/i).first()).toBeVisible();
+    await page.getByRole("button", { name: "Revert" }).click();
+    await expect(page.locator(".hp-bar.wild")).toHaveCount(0);
+  });
+
   test("the homebrew builder makes a spell that shows up in the content browser", async ({ page }) => {
     await addTestContent(page);
     await tab(page, "Content");

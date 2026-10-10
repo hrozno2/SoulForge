@@ -4,7 +4,16 @@ export interface WildShape {
   name: string;
   hp: number;
   maxHp: number;
+  kind?: "wildshape" | "polymorph" | "truepoly" | "other";
+  creatureId?: string;
 }
+
+export const FORM_KINDS: { kind: NonNullable<WildShape["kind"]>; label: string; hint: string; concentration?: string }[] = [
+  { kind: "wildshape", label: "Wild Shape", hint: "A beast form. When its hit points run out you return to your own and keep the damage left over." },
+  { kind: "polymorph", label: "Polymorph", hint: "The spell: the form has its own hit points, and you keep your mind. It lasts while you concentrate.", concentration: "Polymorph" },
+  { kind: "truepoly", label: "True Polymorph", hint: "The spell, with a longer duration. Concentration for up to an hour.", concentration: "True Polymorph" },
+  { kind: "other", label: "Other form", hint: "Anything else that swaps your hit points for a creature's." },
+];
 
 export interface HpState {
   hp: number;

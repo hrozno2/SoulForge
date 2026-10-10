@@ -63,6 +63,10 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
   const packs = useMemo(() => adventuringPacks(r.reg, prefer), [r.reg, prefer]);
   const gear = useMemo(() => commonGear(r.reg, prefer), [r.reg, prefer]);
 
+  // Class and background fold away one by one as each is added; the whole panel folds only when both are.
+  const [reopened, setReopened] = useState<string[]>([]);
+  const addedFor = (title: string, list: string[]) => list.filter((l) => l.startsWith(`${title}, `));
+  const allDone = (list: string[]) => plans.length > 0 && plans.every((p) => addedFor(p.title, list).length > 0);
   const add = (items: ResolvedItem[], gp: number, label: string) => {
     set((c) => {
       let next = addToInventory(c, items, gp);
@@ -70,11 +74,12 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
       return { ...next, equipmentAdded: [...(c.equipmentAdded ?? []), label] };
     });
     setNote("");
-    setShow(false);
+    setReopened((o) => o.filter((k) => !label.startsWith(`${plans.find((p) => p.kind === k)?.title ?? "\u0000"}, `)));
+    if (allDone([...added, label])) setShow(false);
   };
   const addOne = (el: AElement, open: boolean) => add(open && el.extract?.length ? expandPack(el, r.reg) : [{ el, name: el.name, qty: 1 }], 0, el.name);
 
-  if (added.length > 0 && !show) {
+  if (added.length > 0 && !show && (allDone(added) || plans.length === 0)) {
     return (
       <section className="card equip-done">
         <div className="row">
@@ -89,18 +94,30 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
   }
   return (
     <section className="card">
-      <div className="row"><h2>Starting equipment</h2>{added.length > 0 && <button onClick={() => setShow(false)}>Hide</button>}</div>
+      <div className="row"><h2>Starting equipment</h2>{added.length > 0 && (allDone(added) || plans.length === 0) && <button onClick={() => setShow(false)}>Hide</button>}</div>
       <p className="muted">One click adds what your class and background offer. Choose an option, or take the gold instead. Armor, shield and the first weapons are equipped for you unless you turn that off.</p>
       <label className="check"><input type="checkbox" checked={equip} onChange={() => setEquip(!equip)} /> Equip armor, shield and weapons automatically</label>
       {ch.classes.length === 0 && !ch.background && <p className="notice">Pick a class and a background on the Build tab to see their starting equipment.</p>}
-      {plans.map((p) => (
+      {plans.map((p) => {
+        const mine = addedFor(p.title, added);
+        if (mine.length > 0 && !reopened.includes(p.kind)) {
+          return (
+            <div key={p.kind} className="equip-origin equip-origin-done">
+              <h3>{p.kind === "class" ? "Class" : "Background"}: {p.title} <span className="done-mark">✓ Added</span></h3>
+              <p className="muted small-text">{mine.map((l) => l.slice(p.title.length + 2)).join(" · ")}</p>
+              <button onClick={() => setReopened((o) => [...o, p.kind])}>Change</button>
+            </div>
+          );
+        }
+        return (
         <div key={p.kind} className="equip-origin">
           <h3>{p.kind === "class" ? "Class" : "Background"}: {p.title}</h3>
           <div className="equip-grid">
             {p.variants.map((v) => <VariantCard key={v.label} plan={p} v={v} idx={idx} prefer={p.source} onAdd={(items, gp) => add(items, gp, `${p.title}, ${v.label.toLowerCase()}`)} />)}
           </div>
         </div>
-      ))}
+        );
+      })}
       {(ch.classes.length > 0 || ch.background) && plans.length === 0 && <p className="muted">The loaded content does not list starting equipment for your class or background.</p>}
 
       {packs.length > 0 && (

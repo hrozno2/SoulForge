@@ -177,6 +177,20 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(page.getByText(/hidden by your content filters/)).toHaveCount(0);
   });
 
+  test("starting equipment folds class and background one at a time", async ({ page }) => {
+    await addTestContent(page);
+    await randomCharacter(page);
+    await tab(page, "Equipment");
+    const origins = page.locator(".equip-origin");
+    await expect(origins).toHaveCount(2);
+    await origins.first().getByRole("button", { name: "Add", exact: true }).first().click();
+    // The class folds, the background is still open, and the panel is still there.
+    await expect(page.locator(".equip-origin-done")).toHaveCount(1);
+    await expect(page.locator(".equip-origin:not(.equip-origin-done)")).toHaveCount(1);
+    await page.locator(".equip-origin:not(.equip-origin-done)").getByRole("button", { name: "Add", exact: true }).first().click();
+    await expect(page.locator(".equip-done")).toBeVisible();
+  });
+
   test("the homebrew builder makes a spell that shows up in the content browser", async ({ page }) => {
     await addTestContent(page);
     await tab(page, "Content");

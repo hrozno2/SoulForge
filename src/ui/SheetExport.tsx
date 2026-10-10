@@ -11,14 +11,12 @@ import { translateCompanion, translateFill } from "../sheets/translateFill";
 import { DLDM_PAGES, detectPages, fillDldm, type DldmPage } from "../sheets/dldm";
 import { companionLayoutOfPdf, fillCompanion } from "../sheets/companion";
 import { readWidgets } from "../sheets/widgets";
+import { SHEET_LINKS, SHEET_SEARCH } from "../sheets/links";
 import { nextFrame, openExternal, pickFiles, saveFile } from "../store";
 import type { Translation } from "./TranslateOptions";
 
 /** Fill the player's own copy of a fillable character sheet PDF. The PDF is stored on this computer only. */
-const SHEET_LINKS: { label: string; url: string }[] = [
-  { label: "Official 2024 character sheet, print version (Wizards of the Coast)", url: "https://media.dndbeyond.com/compendium-images/phb/downloads/DnD_2024_Character-Sheet.pdf" },
-  { label: "DLDM 5E24 sheets and companion sheets, by DLtheDM (shared folder)", url: "https://drive.google.com/drive/folders/1Og-Nd_GTqu_JnQBeUMkK-A1tY1IjZ0Wc" },
-];
+
 
 export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData; tr: Translation }) {
   const [templates, setTemplates] = useState<TemplateRecord[]>([]);
@@ -143,6 +141,7 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
         <button onClick={choose}>Add sheet PDF...</button>
         <span className="muted">Need one?</span>
         {SHEET_LINKS.map((l) => <a key={l.url} href={l.url} onClick={(e) => { e.preventDefault(); openExternal(l.url); }}>{l.label}</a>)}
+        <small className="muted">A link not working? <a href={SHEET_SEARCH} onClick={(e) => { e.preventDefault(); openExternal(SHEET_SEARCH); }}>Search for the sheet</a>; any copy of the same sheet works.</small>
         <input ref={fileRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = ""; }} />
       </div>
       {templates.length > 0 && (

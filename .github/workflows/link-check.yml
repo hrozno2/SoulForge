@@ -1,0 +1,17 @@
+name: Link check
+
+# Sheet links point at other people's files. If one disappears this run fails and GitHub emails the maintainers.
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/check-links.mjs

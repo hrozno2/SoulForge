@@ -7,6 +7,7 @@ import { playTips } from "./tips";
 import { drawSoulForgeSheet } from "./sheetSF";
 import { buildFillData } from "../sheets/data";
 import { translatable, translateAll, type BatchTranslator } from "./translate";
+import { lookup } from "./glossary";
 
 export interface PdfOptions {
   paper: "a4" | "letter";
@@ -24,6 +25,8 @@ export interface PdfOptions {
     onResult?: (failed: number) => void;
     /** Keep names of spells, items and features in English. */
     keepNames?: boolean;
+    /** Terms with fixed translations, used before anything goes to the service. */
+    glossary?: import("./glossary").Glossary;
   };
 }
 
@@ -258,12 +261,12 @@ export async function buildPdf(r: Resolved, sh: SheetData, opts: PdfOptions, fon
     for (const i of r.character.inventory) { const n = i.id ? r.reg.get(i.id)?.name : i.custom?.name; if (n) keep.add(n); }
   }
   TR = (x) => {
-    if (translatable(x, keep)) seen.add(x);
+    if ((t.glossary && lookup(t.glossary, x)) || translatable(x, keep)) seen.add(x);
     return x;
   };
   try {
     await buildPdfOnce(r, sh, opts, fonts);
-    const { map, failed } = await translateAll(seen, t.target, t.translator, t.cache, t.onProgress);
+    const { map, failed } = await translateAll(seen, t.target, t.translator, t.cache, t.onProgress, t.glossary);
     t.onResult?.(failed);
     TR = (x) => map.get(x) ?? x;
     return await buildPdfOnce(r, sh, opts, fonts);

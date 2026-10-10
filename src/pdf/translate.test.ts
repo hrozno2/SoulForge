@@ -62,4 +62,27 @@ describe("translation services", () => {
     expect(failed).toBe(0);
     expect(map.size).toBe(45);
   });
+
+  it("DeepL: uses the free address for a :fx key, sends the terms as a glossary, and asks for the right language", async () => {
+    const calls: { url: string; init: RequestInit }[] = [];
+    const fake = (async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      if (url.endsWith("/v2/glossaries")) return new Response(JSON.stringify({ glossary_id: "g-1" }), { status: 201 });
+      const body = JSON.parse(String(init.body)) as { text: string[] };
+      return new Response(JSON.stringify({ translations: body.text.map((t) => ({ text: `<${t}>` })) }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const tr = makeTranslator({ provider: "deepl", key: "abc:fx", url: "" }, fake, { quarterstaff: "Palica" });
+    expect(await tr(["Hello there"], "sk")).toEqual(["<Hello there>"]);
+    expect(calls[0].url).toBe("https://api-free.deepl.com/v2/glossaries");
+    expect(String(calls[0].init.body)).toContain("quarterstaff\\tPalica");
+    const sent = JSON.parse(String(calls[1].init.body));
+    expect(sent).toMatchObject({ target_lang: "SK", source_lang: "EN", glossary_id: "g-1" });
+    expect((calls[1].init.headers as Record<string, string>).Authorization).toBe("DeepL-Auth-Key abc:fx");
+  });
+
+  it("DeepL: says so when the allowance is used up or the key is refused", async () => {
+    const make = (status: number) => makeTranslator({ provider: "deepl", key: "k", url: "" }, (async () => new Response("{}", { status })) as unknown as typeof fetch);
+    await expect(make(456)(["a"], "de")).rejects.toThrow(/allowance/);
+    await expect(make(403)(["a"], "de")).rejects.toThrow(/key/);
+  });
 });

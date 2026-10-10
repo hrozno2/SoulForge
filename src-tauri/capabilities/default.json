@@ -2,7 +2,9 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Default window permissions",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "opener:default",
@@ -11,6 +13,17 @@
     "fs:allow-read-file",
     "fs:allow-write-file",
     "updater:default",
-    "process:allow-restart"
+    "process:allow-restart",
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "https://api-free.deepl.com/*"
+        },
+        {
+          "url": "https://api.deepl.com/*"
+        }
+      ]
+    }
   ]
 }

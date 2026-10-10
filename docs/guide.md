@@ -80,6 +80,9 @@ Next to **Add sheet PDF** there are links to the free official 2024 sheet and th
 
 ### Translating the PDF
 
+Pick **DeepL** under Translation service for the best quality in most European languages: paste a key from deepl.com/pro-api (a key ending in `:fx` is the free plan). It works in the desktop app only. **Terms with fixed translations** holds names that machines get wrong, one `English = translation` per line; those are used as written, and with DeepL they are also sent as its glossary. German, French and Spanish have a short starter list built in.
+
+
 Choose **Translate to** in the export panel. Soul Forge sends only the text that will be printed (feature and spell text, card text, play tips, labels) to the service you pick. Your character file is never sent, and your character's own names are kept as typed. Answers are cached on your computer.
 
 Pick a service under **Translation service**:

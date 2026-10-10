@@ -52,4 +52,20 @@ describe("translating sheet values", () => {
     expect(out.classFeatures[0]).toBe("Potent Cantrip: <When you cast a cantrip, half damage on a save.>");
     expect(out.traits[0]).toBe("Fey Ancestry: <Advantage on saving throws against being charmed.>");
   });
+
+  it("translates a name that is in the glossary even when names are kept, and never sends it", async () => {
+    const withGear = { ...base, weaponsText: "2 Quarterstaff\nTorch", classFeatures: ["Arcane Recovery: Regain slots."] } as unknown as FillData;
+    const sent: string[] = [];
+    const out = await translateFill(withGear, {
+      target: "sk",
+      keepNames: true,
+      glossary: { quarterstaff: "Palica", dagger: "Dýka", "arcane recovery": "Arkánna obnova" },
+      translator: async (texts) => { sent.push(...texts); return texts.map((t) => `<${t}>`); },
+      cache: { get: async () => undefined, put: async () => undefined },
+    });
+    expect(out.weaponsText).toBe("2 Palica\nTorch");
+    expect(out.weapons[0].name).toBe("Dýka");
+    expect(out.classFeatures[0]).toBe("Arkánna obnova: <Regain slots.>");
+    expect(sent).not.toContain("Quarterstaff");
+  });
 });

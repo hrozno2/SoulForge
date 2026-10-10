@@ -6,6 +6,8 @@ import type { AElement } from "../aurora/types";
 import { Html } from "./Html";
 import { requestRoll, RollModeSwitch, type RollOptions } from "./Dice";
 import { ConditionsPanel } from "./ConditionsPanel";
+import { applyDamage, applyHealing } from "./hpModel";
+import { FormsPanel } from "./FormsPanel";
 import { CONDITION_TEXT, speedAfterExhaustion } from "./conditions";
 import { Hint } from "./Help";
 import { RollChips } from "./RollChips";
@@ -54,17 +56,18 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
   const conSave = sheet.abilities.find((a) => a.id === "constitution")?.save ?? 0;
   const damage = () => {
     if (!n) return;
-    const absorbed = Math.min(ch.play.tempHp, n);
-    const left = Math.max(0, hp - (n - absorbed));
+    const next = applyDamage({ hp, tempHp: ch.play.tempHp, wildShape: ch.play.wildShape }, n);
+    const real = hp - next.hp + (ch.play.tempHp - next.tempHp);
     // Dropping to 0 ends concentration. Any other hit asks for a Constitution save.
-    patch({ tempHp: ch.play.tempHp - absorbed, hp: left, ...(left === 0 ? { concentration: undefined } : {}) });
-    if (ch.play.concentration && left > 0 && n - absorbed > 0) setConc({ dc: Math.max(10, Math.floor((n - absorbed) / 2)) });
+    patch({ tempHp: next.tempHp, hp: next.hp, wildShape: next.wildShape, ...(next.hp === 0 ? { concentration: undefined } : {}) });
+    if (ch.play.concentration && next.hp > 0 && (real > 0 || next.wildShape?.hp !== ch.play.wildShape?.hp)) setConc({ dc: Math.max(10, Math.floor(n / 2)) });
     else setConc(null);
     setAmount("");
   };
   const heal = () => {
     if (!n) return;
-    patch({ hp: Math.min(sheet.hp, hp + n), deathSaves: { success: 0, fail: 0 } });
+    const next = applyHealing({ hp, tempHp: ch.play.tempHp, wildShape: ch.play.wildShape }, n, sheet.hp);
+    patch({ hp: next.hp, wildShape: next.wildShape, ...(ch.play.wildShape ? {} : { deathSaves: { success: 0, fail: 0 } }) });
     setAmount("");
   };
   const temp = () => {
@@ -82,6 +85,7 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
       <div className="hp-main">
         <small>Hit Points</small>
         <div className={pct < 25 ? "hp-bar big low" : "hp-bar big"}><div style={{ width: `${hpPart}%` }} />{ch.play.tempHp > 0 && <div className="temp-fill" style={{ left: `${hpPart}%`, width: `${tempPart}%` }} />}<span>{hp} / {sheet.hp}{ch.play.tempHp > 0 ? ` (+${ch.play.tempHp})` : ""}</span>{ch.play.tempHp > 0 && <i className="hp-temp" title="Temporary hit points">{ch.play.tempHp}</i>}</div>
+        {ch.play.wildShape && <div className="hp-bar wild" title={`Wild Shape: ${ch.play.wildShape.name}`}><div style={{ width: `${Math.max(0, Math.min(100, (ch.play.wildShape.hp / (ch.play.wildShape.maxHp || 1)) * 100))}%` }} /><span>{ch.play.wildShape.name}: {ch.play.wildShape.hp} / {ch.play.wildShape.maxHp}</span></div>}
       </div>
       <div className="hp-manage">
         <input type="number" min={0} placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => e.key === "Enter" && damage()} />
@@ -155,7 +159,7 @@ function useRests(r: Resolved, ch: Character, sheet: SheetData, set: SetCharacte
       ...c,
       resources: (c.resources ?? []).map((x) => (x.refresh === "none" ? x : { ...x, current: x.max })),
       play: {
-        ...c.play, hp: sheet.hp, tempHp: 0, slotsUsed: {}, featureUses: {}, hitDiceUsed: Math.max(0, c.play.hitDiceUsed - Math.max(1, Math.floor(total / 2))),
+        ...c.play, hp: sheet.hp, tempHp: 0, wildShape: undefined, companionHp: undefined, slotsUsed: {}, featureUses: {}, hitDiceUsed: Math.max(0, c.play.hitDiceUsed - Math.max(1, Math.floor(total / 2))),
         deathSaves: { success: 0, fail: 0 }, exhaustion: Math.max(0, (c.play.exhaustion ?? 0) - 1), concentration: undefined,
       },
     }));
@@ -566,6 +570,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
             {tab === "extras" && (
               <>
                 {companions.length === 0 && <p className="muted">No companions. Add them on the Manage tab.</p>}
+                <FormsPanel ch={ch} set={set} companions={companions.map((c, i) => ({ key: ch.companions[i - (companions.length - ch.companions.length)]?.uid ?? c.el?.id ?? String(i), name: c.name, el: c.el }))} />
                 {companions.map((c, i) => (c.el ? <div key={i}><h3>{c.name}</h3><CompanionCard el={c.el} /></div> : null))}
                 <Panel title="Conditions"><ConditionsPanel ch={ch} set={set} /></Panel>
               </>

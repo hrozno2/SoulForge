@@ -723,3 +723,7 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .levelup-features { padding-left: 18px; }
 .levelup-features li { margin-bottom: 8px; }
 .levelup-banner { display: flex; gap: 12px; align-items: center; }
+.hp-bar.wild { margin-top: 4px; }
+.hp-bar.wild > div:first-child { background: var(--accent2, #2f8f5a); }
+.forms-panel .row { align-items: center; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.forms-panel .row input[type="number"] { width: 90px; }

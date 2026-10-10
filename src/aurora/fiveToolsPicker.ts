@@ -8,7 +8,7 @@ import type { SourceConfig } from "./sources";
 
 type J = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-export type Kind = "spell" | "item" | "feat" | "race" | "background" | "monster";
+export type Kind = "spell" | "item" | "feat" | "race" | "background" | "monster" | "class" | "optionalfeature";
 
 export const KINDS: { kind: Kind; label: string }[] = [
   { kind: "spell", label: "Spells" },
@@ -17,6 +17,8 @@ export const KINDS: { kind: Kind; label: string }[] = [
   { kind: "race", label: "Species" },
   { kind: "background", label: "Backgrounds" },
   { kind: "monster", label: "Creatures" },
+  { kind: "class", label: "Classes" },
+  { kind: "optionalfeature", label: "Options" },
 ];
 
 export interface Entry {
@@ -29,8 +31,8 @@ export interface Entry {
   raw: J;
 }
 
-const PAGES: Record<string, Kind> = { spells: "spell", items: "item", feats: "feat", races: "race", backgrounds: "background", bestiary: "monster" };
-const KEYS: Record<Kind, string[]> = { spell: ["spell"], item: ["item", "baseitem"], feat: ["feat"], race: ["race"], background: ["background"], monster: ["monster"] };
+const PAGES: Record<string, Kind> = { spells: "spell", items: "item", feats: "feat", races: "race", backgrounds: "background", bestiary: "monster", classes: "class", optionalfeatures: "optionalfeature" };
+const KEYS: Record<Kind, string[]> = { spell: ["spell"], item: ["item", "baseitem"], feat: ["feat"], race: ["race"], background: ["background"], monster: ["monster"], class: ["class"], optionalfeature: ["optionalfeature"] };
 
 export interface ParsedLink {
   kind: Kind;
@@ -62,7 +64,7 @@ const jget = async (base: string, path: string): Promise<J> => JSON.parse(await 
 
 function entriesOf(kind: Kind, json: J): Entry[] {
   const out: Entry[] = [];
-  for (const key of KEYS[kind]) for (const raw of json[key] ?? []) if (raw?.name && raw.source) out.push({ kind, name: raw.name, source: raw.source, level: kind === "spell" ? raw.level : undefined, key, raw });
+  for (const key of KEYS[kind]) for (const raw of json[key] ?? []) if (raw?.name && raw.source) out.push({ kind, name: raw.name, source: raw.source, level: kind === "spell" ? raw.level : undefined, key, raw: kind === "class" ? { ...json, class: [raw] } : raw });
   return out;
 }
 
@@ -73,6 +75,11 @@ async function filesFor(base: string, kind: Kind): Promise<{ path: string; sourc
     const idx = (await jget(base, `${dir}/index.json`)) as Record<string, string>;
     return Object.entries(idx).map(([source, f]) => ({ path: `${dir}/${f}`, source }));
   }
+  if (kind === "class") {
+    const idx = (await jget(base, "class/index.json")) as Record<string, string>;
+    return Object.entries(idx).map(([source, f]) => ({ path: `class/${f}`, source }));
+  }
+  if (kind === "optionalfeature") return [{ path: "optionalfeatures.json" }];
   if (kind === "item") return [{ path: "items-base.json" }, { path: "items.json" }];
   return [{ path: `${kind === "race" ? "races" : kind === "feat" ? "feats" : "backgrounds"}.json` }];
 }
@@ -80,7 +87,7 @@ async function filesFor(base: string, kind: Kind): Promise<{ path: string; sourc
 /** Loads every entry of a category. Optionally only from one book (matched case-insensitively). */
 export async function loadCategory(base: string, kind: Kind, onProgress?: (done: number, total: number) => void, onlySource?: string): Promise<Entry[]> {
   let files = await filesFor(base, kind);
-  if (onlySource) files = files.filter((f) => !f.source || f.source.toLowerCase() === onlySource.toLowerCase());
+  if (onlySource && kind !== "class") files = files.filter((f) => !f.source || f.source.toLowerCase() === onlySource.toLowerCase());
   const out: Entry[] = [];
   let done = 0;
   const queue = [...files];
@@ -141,6 +148,15 @@ export async function savePicks(base: string, entries: Entry[]): Promise<{ cfg: 
     const stored: J = prev ? JSON.parse(prev) : {};
     const mine = entries.filter((e) => e.kind === kind);
     for (const e of mine) {
+      if (kind === "class") {
+        // The whole class file: the class, its subclasses and every feature.
+        for (const k of ["class", "subclass", "classFeature", "subclassFeature"]) {
+          const b = (stored[k] ??= []) as J[];
+          for (const x of (e.raw[k] ?? []) as J[]) if (!b.some((y) => y.name === x.name && y.source === x.source && y.level === x.level && y.className === x.className && y.subclassShortName === x.subclassShortName)) b.push(x);
+        }
+        added++;
+        continue;
+      }
       const key = e.key;
       const bucket = (stored[key] ??= []) as J[];
       if (!bucket.some((x) => x.name === e.name && x.source === e.source)) {
@@ -168,7 +184,7 @@ export async function savePicks(base: string, entries: Entry[]): Promise<{ cfg: 
       return undefined;
     }
   };
-  for (const path of ["books.json", ...(wanted.has("spell") || files.has(PICK_FILE("spell")) ? ["spells/sources.json"] : []), ...(files.has(PICK_FILE("item")) ? ["items-base.json"] : [])]) {
+  for (const path of ["books.json", ...(wanted.has("spell") || files.has(PICK_FILE("spell")) ? ["spells/sources.json"] : []), ...(files.has(PICK_FILE("item")) ? ["items-base.json"] : []), ...(files.has(PICK_FILE("class")) ? ["spells/sources.json", "optionalfeatures.json"] : [])]) {
     const t = await support(path);
     if (t) files.set(path, t);
   }

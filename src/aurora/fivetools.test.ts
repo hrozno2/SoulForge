@@ -71,6 +71,30 @@ describe("ability scores are not counted twice", () => {
   });
 });
 
+describe("optional features and additional spells", () => {
+  const sample = JSON.parse(readFileSync("fixtures/fivetools/sample.json", "utf8"));
+  const els = convertFiveTools({ files: { "sample.json": sample } });
+  it("turns optional features into selectable elements", () => {
+    const two = els.find((e) => e.name === "Test Style Two")!;
+    expect(two.type).toBe("Optional Feature");
+    expect(two.supports).toEqual(expect.arrayContaining(["opt-FS:F", "opt-FS:P"]));
+    expect(els.find((e) => e.name === "Test Invocation")!.setters.level?.value).toBe("5");
+  });
+  it("gives a class its optional feature choices by level", () => {
+    const c = els.find((e) => e.name === "Tester")!;
+    const picks = c.rules.filter((r) => r.kind === "select" && r.type === "Optional Feature") as Extract<typeof c.rules[number], { kind: "select" }>[];
+    expect(picks.filter((r) => r.supports === "opt-FS:F").map((r) => [r.level, r.number])).toEqual([[1, 1]]);
+    expect(picks.filter((r) => r.supports === "opt-EI").map((r) => [r.level, r.number])).toEqual([[2, 2], [5, 1], [9, 1]]);
+  });
+  it("grants a species its innate spell at the right level", () => {
+    const r = els.find((e) => e.name === "Windkin")!;
+    const g = r.rules.find((x) => x.kind === "grant" && x.type === "Spell") as Extract<typeof r.rules[number], { kind: "grant" }>;
+    expect(g.level).toBe(3);
+    expect(g.id).toBe(els.find((e) => e.name === "Gust Sample")!.id);
+    expect(r.spellcasting?.ability).toBe("Intelligence");
+  });
+});
+
 describe("inline samples", () => {
   it("converts a spell, an item and a feat", () => {
     const els = convertFiveTools({

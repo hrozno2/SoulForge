@@ -306,8 +306,11 @@ function convertFeat(f: J, ctx: Ctx): AElement {
     if (p.level) reqs.push(`[level:${typeof p.level === "object" ? p.level.level : p.level}]`);
   }
   const rules = abilityRules(f.ability, f.name);
+  const spells = additionalSpellRules(f.additionalSpells, f.name, f.source);
+  rules.push(...spells.rules);
   const html = entriesHtml(f.entries);
   return base(ftId("FEAT", f.name, f.source), f.name, "Feat", srcName(ctx, f.source), {
+    spellcasting: spells.rules.length ? castingFor(f.name, spells.ability) : undefined,
     supports: ["5et feat", ...(f.category ? [`category ${f.category}`] : [])], rules,
     requirements: reqs.length ? reqs.join(",") : undefined, description: html,
     sheet: { display: true, descriptions: [{ text: html }] },
@@ -366,6 +369,8 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     if (!out.some((o) => o.id === wid)) out.push(base(wid, `Weapon Proficiency (${cap(k.split("|")[0])})`, "Proficiency", "5etools", { compendiumHidden: true }));
     rules.push({ kind: "grant", type: "Proficiency", id: wid });
   }
+  const racialSpells = additionalSpellRules(r.additionalSpells, r.name, r.source);
+  rules.push(...racialSpells.rules);
   const size = Array.isArray(r.size) ? r.size[0] : r.size;
   const sizeName = ({ T: "Tiny", S: "Small", M: "Medium", L: "Large" } as Record<string, string>)[size] ?? "";
   if (sizeName) {
@@ -376,14 +381,16 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   rules.push(...traitList(r.entries, id, ctx, r.source, out, "5et trait", "Racial Trait"));
   const mine = subs.filter((s) => s.raceName === r.name && (s.raceSource ?? r.source) === r.source);
   if (mine.length) rules.push({ kind: "select", type: "Sub Race", name: "Subrace", supports: `5et subrace of ${id}`, number: 1, optional: true });
-  out.push(base(id, r.name, "Race", srcName(ctx, r.source), { rules, description: entriesHtml(r.entries), supports: [] }));
+  out.push(base(id, r.name, "Race", srcName(ctx, r.source), { rules, spellcasting: racialSpells.rules.length ? castingFor(r.name, racialSpells.ability) : undefined, description: entriesHtml(r.entries), supports: [] }));
   for (const s of mine) {
     const sid = ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source);
     const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name), ...skillRules(s.skillProficiencies, s.name ?? r.name), ...langRules(s.languageProficiencies, s.name ?? r.name).rules];
     if (abilityRules(s.ability, s.name ?? r.name).length) srules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
     if (s.speed) srules.push(...speedRules(s.speed));
     srules.push(...traitList(s.entries, sid, ctx, s.source, out, "5et trait", "Racial Trait"));
-    out.push(base(sid, s.name ? `${s.name} ${r.name}` : r.name, "Sub Race", srcName(ctx, s.source), { supports: [`5et subrace of ${id}`], rules: srules, description: entriesHtml(s.entries) }));
+    const subSpells = additionalSpellRules(s.additionalSpells, s.name ?? r.name, s.source);
+    srules.push(...subSpells.rules);
+    out.push(base(sid, s.name ? `${s.name} ${r.name}` : r.name, "Sub Race", srcName(ctx, s.source), { spellcasting: subSpells.rules.length ? castingFor(s.name ?? r.name, subSpells.ability) : undefined, supports: [`5et subrace of ${id}`], rules: srules, description: entriesHtml(s.entries) }));
   }
 }
 
@@ -491,6 +498,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     rules.push({ kind: "select", type: "Ability Score Improvement", name: `Ability Score Improvement (level ${level})`, supports: "5et asi", number: 1, level, optional: true });
     rules.push({ kind: "select", type: "Feat", name: `Feat instead of ability increase (level ${level})`, supports: "5et feat", number: 1, level, optional: true });
   }
+  rules.push(...optionalFeatureRules(c));
   if (subLevel !== undefined) rules.push({ kind: "select", type: "Archetype", name: c.subclassTitle ?? `${c.name} Subclass`, supports: subTag, number: 1, level: subLevel });
 
   // Spellcasting: tables become per-level stat steps so everything flows through the same rules.
@@ -567,8 +575,93 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       out.push(featureElement(f, "5et subclass feature", "Archetype Feature", fid, ctx, f.name === (s.name)));
       srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
     }
+    srules.push(...additionalSpellRules(s.additionalSpells, s.name, s.source).rules);
     out.push(base(sid, s.name, "Archetype", srcName(ctx, s.source), { supports: [subTag], rules: srules, description: entriesHtml(s.entries ?? []) }));
   }
+}
+
+
+// ---------------------------------------------------------------- additional spells and optional features
+
+/** Collects the spell references under one additionalSpells section (innate/known/prepared), keyed by character level. */
+function spellRefs(section: J | undefined): { level?: number; refs: unknown[] }[] {
+  const out: { level?: number; refs: unknown[] }[] = [];
+  for (const [k, v] of Object.entries(section ?? {})) {
+    const level = k === "_" ? undefined : parseInt(k, 10);
+    const refs: unknown[] = [];
+    const walk = (x: unknown): void => {
+      if (Array.isArray(x)) refs.push(...x);
+      else if (x && typeof x === "object") for (const y of Object.values(x as J)) walk(y);
+    };
+    walk(v);
+    if (refs.length) out.push({ level: Number.isNaN(level) ? undefined : level, refs });
+  }
+  return out;
+}
+
+/** Rules for the spells a race, feat or feature adds. Fixed spells are resolved to element ids after conversion. */
+export function additionalSpellRules(adds: J[] | undefined, owner: string, ownerSource: string): { rules: ARule[]; ability?: string } {
+  const rules: ARule[] = [];
+  let ability: string | undefined;
+  for (const a of adds ?? []) {
+    const ab = a.ability;
+    if (!ability && ab) ability = typeof ab === "string" ? ab : Array.isArray(ab?.choose) ? ab.choose[0] : undefined;
+    for (const kind of ["innate", "known", "prepared"] as const) {
+      for (const { level, refs } of spellRefs(a[kind])) {
+        for (const r of refs) {
+          if (typeof r === "string") {
+            const [name, src] = r.split("#")[0].split("|");
+            rules.push({ kind: "grant", type: "Spell", id: `SPELLREF:${name.trim().toLowerCase()}|${(src ?? "").toLowerCase()}|${ownerSource.toLowerCase()}`, level, spellcasting: owner } as ARule);
+          } else if (r && typeof (r as J).choose === "string") {
+            const crit = Object.fromEntries(String((r as J).choose).split("|").map((p) => p.split("=")).filter((p) => p.length === 2)) as Record<string, string>;
+            const parts = [crit.class, crit.level].filter(Boolean) as string[];
+            rules.push({ kind: "select", type: "Spell", name: `${owner} spell`, supports: parts.join(", ") || "0", number: (r as J).count ?? 1, level, spellcasting: owner } as ARule);
+          }
+        }
+      }
+    }
+  }
+  return { rules, ability };
+}
+
+/** Innate casting for a species or feat: no spell list of its own, just the ability that sets the save DC. */
+function castingFor(name: string, ability?: string): AElement["spellcasting"] {
+  return { name, ability: cap(abilFull(ability ?? "int")), prepare: false, list: [], extendLists: [] };
+}
+
+/** Tag an optional feature offers for one feature type such as "FS:F" or "EI". */
+const optTag = (t: string) => `opt-${t}`;
+
+function convertOptionalFeature(o: J, ctx: Ctx): AElement {
+  const types = ((o.featureType as string[]) ?? []).map(optTag);
+  const html = entriesHtml(o.entries);
+  const pre = (o.prerequisite as J[] | undefined) ?? [];
+  const lv = pre.map((p) => p.level?.level).find((n) => typeof n === "number") as number | undefined;
+  const rules = additionalSpellRules(o.additionalSpells, o.name, o.source).rules;
+  return base(ftId("OPT", o.name, o.source), o.name, "Optional Feature", srcName(ctx, o.source), {
+    supports: ["5et optional feature", ...types], rules, description: html,
+    sheet: { display: true, descriptions: [{ text: html }] },
+    setters: lv ? { level: set(String(lv)) } : undefined,
+  });
+}
+
+/** Select rules for the optional features a class gains (fighting styles, invocations, maneuvers and so on). */
+function optionalFeatureRules(c: J): ARule[] {
+  const rules: ARule[] = [];
+  for (const p of (c.optionalfeatureProgression as J[]) ?? []) {
+    const types: string[] = p.featureType ?? [];
+    if (!types.length) continue;
+    const prog = p.progression;
+    const counts: number[] = Array.isArray(prog) ? prog : Array.from({ length: 20 }, (_, i) => {
+      const keys = Object.keys(prog ?? {}).map(Number).sort((x, y) => x - y);
+      const k = keys.filter((n) => n <= i + 1).pop();
+      return k === undefined ? 0 : Number(prog[String(k)]);
+    });
+    deltas(counts).forEach((n, i) => {
+      if (n > 0) rules.push({ kind: "select", type: "Optional Feature", name: String(p.name ?? "Optional feature"), supports: types.map(optTag).join("|"), number: n, level: i + 1 });
+    });
+  }
+  return rules;
 }
 
 // ---------------------------------------------------------------- entry points
@@ -594,6 +687,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
     for (const b of json?.baseitem ?? []) ctx.baseItems.set(`${b.name}|${b.source}`.toLowerCase(), b);
   }
   const out: AElement[] = syntheticElements();
+  const spellIds: Record<string, { id: string; source: string }[]> = {};
   // One Source element per book, so lists can show release dates the way the Aurora content does.
   for (const [, json] of all) {
     for (const b of json?.book ?? []) {
@@ -619,18 +713,34 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   }
   for (const [, json] of all) {
     if (!json || typeof json !== "object") continue;
-    for (const s of json.spell ?? []) out.push(convertSpell(s, ctx));
+    for (const s of json.spell ?? []) { out.push(convertSpell(s, ctx)); (spellIds[String(s.name).toLowerCase()] ??= []).push({ id: ftId("SPELL", s.name, s.source), source: String(s.source).toLowerCase() }); }
     for (const i of json.baseitem ?? []) { const e = convertItem(i, ctx); if (e) out.push(e); }
     for (const i of json.item ?? []) { const e = convertItem(i, ctx); if (e) out.push(e); }
     for (const f of json.feat ?? []) if (!featVariants(f, ctx, out)) out.push(convertFeat(f, ctx));
+    for (const o of json.optionalfeature ?? []) out.push(convertOptionalFeature(o, ctx));
     for (const l of json.language ?? []) out.push(languageElement(l, ctx));
     for (const r of json.race ?? []) convertRace(r, ctx, subraces, out);
     for (const b of json.background ?? []) convertBackground(b, ctx, out);
     for (const m of json.monster ?? []) out.push(convertMonster(m, ctx));
   }
   for (const c of classes) convertClass(c, { cf, sc, sf }, ctx, out);
+  resolveSpellRefs(out, spellIds);
   return out;
 }
 
+/** Turns SPELLREF placeholders into spell element ids; a spell that was not imported is dropped quietly. */
+function resolveSpellRefs(out: AElement[], spellIds: Record<string, { id: string; source: string }[]>): void {
+  for (const el of out) {
+    if (!el.rules.some((r) => r.kind === "grant" && String(r.id).startsWith("SPELLREF:"))) continue;
+    el.rules = el.rules.flatMap((r) => {
+      if (r.kind !== "grant" || !String(r.id).startsWith("SPELLREF:")) return [r];
+      const [name, src, owner] = String(r.id).slice(9).split("|");
+      const list = spellIds[name] ?? [];
+      const hit = list.find((x) => src && x.source === src) ?? list.find((x) => x.source === owner) ?? list.find((x) => x.source === "xphb") ?? list.find((x) => x.source === "phb") ?? list[0];
+      return hit ? [{ ...r, id: hit.id }] : [];
+    });
+  }
+}
+
 /** Files a 5etools data folder offers, for a base address. Index files list the book-specific parts. */
-export const FIVETOOLS_CORE_FILES = ["books.json", "races.json", "backgrounds.json", "feats.json", "items-base.json", "items.json", "languages.json", "spells/sources.json"];
+export const FIVETOOLS_CORE_FILES = ["books.json", "races.json", "backgrounds.json", "feats.json", "items-base.json", "items.json", "languages.json", "optionalfeatures.json", "spells/sources.json"];

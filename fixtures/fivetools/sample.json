@@ -1,0 +1,21 @@
+{
+  "spell": [
+    { "name": "Gust Sample", "source": "TST", "level": 2, "school": "T", "time": [{ "number": 1, "unit": "action" }], "range": { "type": "point", "distance": { "type": "feet", "amount": 60 } }, "components": { "v": true }, "duration": [{ "type": "instant" }], "entries": ["A test gust."] },
+    { "name": "Spark Sample", "source": "TST", "level": 0, "school": "E", "time": [{ "number": 1, "unit": "action" }], "range": { "type": "point", "distance": { "type": "feet", "amount": 30 } }, "components": { "v": true }, "duration": [{ "type": "instant" }], "entries": ["A test spark."] }
+  ],
+  "race": [
+    { "name": "Windkin", "source": "TST", "size": ["M"], "speed": 30, "additionalSpells": [{ "innate": { "3": ["gust sample"] }, "ability": { "choose": ["int", "wis", "cha"] } }], "entries": [] }
+  ],
+  "optionalfeature": [
+    { "name": "Test Style One", "source": "TST", "featureType": ["FS:F"], "entries": ["First test style."] },
+    { "name": "Test Style Two", "source": "TST", "featureType": ["FS:F", "FS:P"], "entries": ["Second test style."] },
+    { "name": "Test Invocation", "source": "TST", "featureType": ["EI"], "prerequisite": [{ "level": { "level": 5 } }], "entries": ["A test invocation."] }
+  ],
+  "class": [
+    {
+      "name": "Tester", "source": "TST", "hd": { "number": 1, "faces": 8 }, "proficiency": ["con", "wis"],
+      "optionalfeatureProgression": [{ "name": "Test Style", "featureType": ["FS:F"], "progression": { "1": 1 } }, { "name": "Test Invocation", "featureType": ["EI"], "progression": [0, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4] }],
+      "classFeatures": []
+    }
+  ]
+}

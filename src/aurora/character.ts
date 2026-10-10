@@ -112,6 +112,13 @@ export interface JournalEntry {
   text: string;
 }
 
+/** Something pinned to the favorites row above the play sheet. `ref` is an attack id, spell id, feature id or inventory uid, by kind. */
+export interface Favorite {
+  uid: string;
+  kind: "weapon" | "spell" | "feature" | "item";
+  ref: string;
+}
+
 export interface Resource {
   id: string;
   name: string;
@@ -201,6 +208,10 @@ export interface Character {
   notes: string;
   /** Session log, newest first when shown. */
   journal?: JournalEntry[];
+  /** Pinned weapons, spells, features and items. Resources always show in the same row. */
+  favorites?: Favorite[];
+  /** The player hid the favorites row. */
+  favoritesHidden?: boolean;
   /** Small portrait as a data URL, set on the Manage tab. */
   portrait?: string;
   play: PlayState;

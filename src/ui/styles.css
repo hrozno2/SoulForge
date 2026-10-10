@@ -821,3 +821,53 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .ab-row { row-gap: 0; align-self: start; }
 .vital-row { grid-template-columns: auto auto minmax(330px, 440px); }
 .hp-manage input[type="number"] { width: 76px; }
+
+/* ================= compact spell rows on the play sheet ================= */
+.spell-row.compact { display: grid; grid-template-columns: 24px minmax(170px, 1.2fr) minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; padding: 3px 0; }
+.spell-row.compact .school-icon { color: var(--gold); opacity: .9; }
+.spell-row.compact .feature-head { padding: 2px 0; gap: 8px; flex-wrap: wrap; }
+.spell-row.compact .feature-head .chev { margin-left: 4px; }
+.spell-row.compact .roll-chips-row { margin: 0; width: auto; gap: 4px; }
+.spell-row.compact .roll-chips-row .roll-chip { padding: 1px 8px; font-size: 12px; }
+.spell-row.compact .cast { margin: 0; justify-content: flex-end; }
+.spell-row.compact .cast button { padding: 3px 12px; }
+.spell-row.compact .spell-desc { grid-column: 1 / -1; padding: 2px 0 6px 34px; }
+@media (max-width: 900px) { .spell-row.compact { grid-template-columns: 24px 1fr auto; } .spell-row.compact .roll-chips-row { grid-column: 2 / 3; } }
+.school-icon { flex: none; vertical-align: middle; }
+
+/* ================= favorites row ================= */
+.spell-row.compact { grid-template-columns: auto minmax(170px, 1.2fr) minmax(0, 1fr) auto; }
+.spell-lead { display: inline-flex; align-items: center; gap: 2px; }
+.fav-star { background: none; border: 0; padding: 0 3px; font-size: 16px; line-height: 1; color: var(--muted); cursor: pointer; }
+.fav-star:hover, .fav-star.on { color: var(--gold2); }
+.fav-bar { margin: 8px 0 12px; padding: 8px 12px 10px; border: 1px solid var(--line); border-top: 2px solid var(--gold); background: var(--panel); }
+.fav-bar.over { outline: 2px dashed var(--gold); outline-offset: 2px; background: color-mix(in srgb, var(--gold) 10%, var(--panel)); }
+.fav-bar.collapsed { border: 0; background: none; padding: 0; margin: 4px 0 8px; }
+.fav-bar header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.fav-bar h3 { margin: 0; font-size: 15px; }
+.fav-bar header button { margin-left: auto; }
+.fav-tiles { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.fav-tile { position: relative; flex: 1 1 230px; max-width: 460px; min-width: 200px; padding: 6px 28px 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel2); display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.fav-tile.resource { border-left: 3px solid var(--accent); }
+.fav-tile.spell, .fav-tile.feature { flex-basis: 360px; }
+.fav-remove { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; padding: 0; border: 0; background: none; color: var(--muted); font-size: 16px; line-height: 1; cursor: pointer; }
+.fav-remove:hover { color: var(--text); }
+.fav-weapon { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fav-tile .spell-row, .fav-tile .feature-row { border: 0; padding: 0; }
+.fav-tile .spell-row.compact { grid-template-columns: auto 1fr; }
+.fav-tile .spell-row.compact .roll-chips-row, .fav-tile .spell-row.compact .cast { grid-column: 2; justify-content: flex-start; }
+.fav-empty { margin: 4px 0; }
+[draggable="true"] { cursor: grab; }
+
+/* session log: one compact line each, the full note opens on click */
+.journal-entry { border-bottom: 1px solid var(--line); }
+.journal-line { width: 100%; display: flex; align-items: baseline; gap: 10px; text-align: left; background: none; border: 0; padding: 6px 2px; font-weight: 400; letter-spacing: 0; min-width: 0; }
+.journal-line time { color: var(--gold2); font: 600 12.5px var(--body); white-space: nowrap; }
+.journal-line b { font: 600 14px var(--display); white-space: nowrap; }
+.journal-preview { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.journal-line:hover { background: color-mix(in srgb, var(--gold) 9%, transparent); }
+.journal-body { padding: 4px 4px 10px 22px; }
+.journal-body textarea { width: 100%; margin-top: 6px; }
+.vital-row { grid-template-columns: auto auto minmax(300px, 1fr); }
+.vitals { max-width: 480px; min-width: 0; }
+.hp-manage input[type="number"] { width: 64px; }

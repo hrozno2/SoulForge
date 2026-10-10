@@ -6,6 +6,9 @@ import { stripHtml } from "../aurora/sheet";
 import { shortRange, shortTime } from "../sheets/data";
 import { hueOf } from "./PickCards";
 import { useUi } from "./Learn";
+import { SchoolIcon } from "./schoolIcons";
+
+const SCHOOLS = new Set(["abjuration", "conjuration", "divination", "enchantment", "evocation", "illusion", "necromancy", "transmutation"]);
 import { useSettings } from "./Settings";
 
 function useStored<T extends string>(key: string, initial: T): [T, (v: T) => void] {
@@ -67,7 +70,7 @@ function SpellCells({ el }: { el: AElement }) {
   const comps = [s.hasVerbalComponent?.value === "true" && "V", s.hasSomaticComponent?.value === "true" && "S", s.hasMaterialComponent?.value === "true" && "M"].filter(Boolean).join(" ");
   return (
     <>
-      <span className="c-school">{(s.school?.value ?? "").slice(0, 4)}</span>
+      <span className="c-school" title={s.school?.value}>{SCHOOLS.has((s.school?.value ?? "").toLowerCase()) ? <SchoolIcon school={s.school?.value} size={20} /> : (s.school?.value ?? "").slice(0, 4)}</span>
       <span className="c-time">{shortTime(s.time?.value ?? "")}</span>
       <span className="c-range">{shortRange(s.range?.value ?? "")}</span>
       <span className="c-comp" title={s.materialComponent?.value}>{comps}</span>

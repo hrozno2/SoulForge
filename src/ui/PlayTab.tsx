@@ -9,11 +9,12 @@ import { ConditionsPanel } from "./ConditionsPanel";
 import { applyDamage, applyHealing } from "./hpModel";
 import { FormsPanel } from "./FormsPanel";
 import { Journal } from "./Journal";
+import { SchoolIcon } from "./schoolIcons";
 import { toggleEquip } from "../aurora/hands";
 import { t } from "../i18n";
 import { CONDITION_TEXT, speedAfterExhaustion } from "./conditions";
 import { Hint } from "./Help";
-import { RollChips } from "./RollChips";
+import { RollChips, spellRolls } from "./RollChips";
 import type { DcContext } from "./rollInfo";
 import { isAvailable, usedAfterClick } from "./pips";
 import { CompanionCard } from "./ManageTab";
@@ -28,6 +29,38 @@ const dcContext = (sheet: SheetData, spellDc?: number): DcContext => ({
   mods: Object.fromEntries(sheet.abilities.map((a) => [ABILITY_LABEL[a.id].toLowerCase(), a.mod])),
 });
 const roll = (label: string, bonus: number, opts?: RollOptions) => requestRoll(label, `1d20${bonus >= 0 ? "+" : ""}${bonus}`, undefined, opts);
+
+
+// ---------------------------------------------------------------- favorites
+
+type FavKind = NonNullable<Character["favorites"]>[number]["kind"];
+const FAV_MIME = "application/x-soulforge-favorite";
+
+/** Props that make a row draggable into the favorites row. */
+const favDrag = (kind: FavKind, ref: string) => ({
+  draggable: true,
+  onDragStart: (e: React.DragEvent) => {
+    e.dataTransfer.setData(FAV_MIME, JSON.stringify({ kind, ref }));
+    e.dataTransfer.setData("text/plain", ref);
+    e.dataTransfer.effectAllowed = "copy";
+  },
+});
+
+const isFav = (ch: Character, kind: FavKind, ref: string) => (ch.favorites ?? []).some((f) => f.kind === kind && f.ref === ref);
+
+const toggleFav = (set: SetCharacter, kind: FavKind, ref: string) =>
+  set((c) => {
+    const list = c.favorites ?? [];
+    return { ...c, favorites: list.some((f) => f.kind === kind && f.ref === ref) ? list.filter((f) => !(f.kind === kind && f.ref === ref)) : [...list, { uid: uid(), kind, ref }] };
+  });
+
+/** A small star that pins or unpins something. Dragging works too; the star is for keyboards and touch. */
+function FavStar({ ch, set, kind, refId }: { ch: Character; set: SetCharacter; kind: FavKind; refId: string }) {
+  const on = isFav(ch, kind, refId);
+  return (
+    <button type="button" className={on ? "fav-star on" : "fav-star"} aria-pressed={on} title={on ? "Remove from favorites" : "Add to favorites"} aria-label={on ? "Remove from favorites" : "Add to favorites"} onClick={(e) => { e.stopPropagation(); toggleFav(set, kind, refId); }}>{on ? "★" : "☆"}</button>
+  );
+}
 
 function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
@@ -214,8 +247,8 @@ function Actions({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: She
             <thead><tr><th>Name</th><th>Hit / DC</th><th>Damage</th><th>Notes</th></tr></thead>
             <tbody>
               {sheet.attacks.map((a, i) => (
-                <tr key={i}>
-                  <td><b>{a.name}</b><Ammo a={a} r={r} ch={ch} set={set} /></td>
+                <tr key={i} {...favDrag("weapon", a.id ?? a.name)}>
+                  <td><FavStar ch={ch} set={set} kind="weapon" refId={a.id ?? a.name} /><b>{a.name}</b><Ammo a={a} r={r} ch={ch} set={set} /></td>
                   <td><button className="roll-btn" onClick={() => { roll(`${a.name} attack`, a.bonus, { kind: "attack" }); spendAmmo(a.id); }}>{sign(a.bonus)}</button></td>
                   <td><button className="roll-btn" onClick={() => a.damage && requestRoll(`${a.name} damage`, a.damage.replace(/\s+/g, ""))}>{a.damage}</button> <small>{a.damageType}</small></td>
                   <td><small>{[a.properties, a.notes].filter(Boolean).join("; ")}</small></td>
@@ -266,12 +299,13 @@ function Uses({ f, ch, set }: { f: FeatureLine; ch: Character; set: SetCharacter
 function FeatureRow({ f, ch, set, sheet }: { f: FeatureLine; ch: Character; set: SetCharacter; sheet: SheetData }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="feature-row">
+    <div className="feature-row" {...favDrag("feature", f.id)}>
       <button className="feature-head" onClick={() => setOpen(!open)}>
         <b>{f.name}</b>
         <small className="muted">{f.source}</small>
         <span className="chev">{open ? "▾" : "▸"}</span>
       </button>
+      <FavStar ch={ch} set={set} kind="feature" refId={f.id} />
       <Uses f={f} ch={ch} set={set} />
       <RollChips name={f.name} html={f.text} ctx={dcContext(sheet)} attackBonus={sheet.casting[0]?.attack} />
       {open && <p className="feature-text">{f.text || "No description."}</p>}
@@ -304,6 +338,10 @@ function SpellRow({ id, r, casting, set, level, sheet }: { id: string; r: Resolv
   const options = casting.slots.filter((x) => x.level >= level && x.used < x.total);
   const chosen = options.find((o) => o.level === slot) ?? options[0];
   const concentrates = s.isConcentration?.value === "true";
+  const dc = dcContext(sheet, casting.dc);
+  const spellCtx = { level, castLevel: chosen?.level ?? level, characterLevel: sheet.level };
+  const rolls = spellRolls(el.name, el.description, dc, casting.attack, spellCtx);
+  const canCast = level === 0 ? concentrates || rolls.length > 0 : true;
   const cast = () => {
     if (level > 0 && !chosen) return;
     set((c) => ({
@@ -315,22 +353,25 @@ function SpellRow({ id, r, casting, set, level, sheet }: { id: string; r: Resolv
         concentration: concentrates ? el.name : c.play.concentration,
       },
     }));
+    // Casting rolls whatever the spell asks for: the attack, then the damage or healing at the slot level used.
+    for (const x of rolls) requestRoll(x.label, x.expr, undefined, x.opts);
   };
   return (
-    <div className="spell-row">
-      <button className="feature-head" onClick={() => setOpen(!open)}>
+    <div className="spell-row compact" {...favDrag("spell", id)}>
+      <span className="spell-lead"><SchoolIcon school={s.school?.value} size={22} /><FavStar ch={r.character} set={set} kind="spell" refId={id} /></span>
+      <button className="feature-head" onClick={() => setOpen(!open)} aria-expanded={open}>
         <b>{el.name}</b>
-        <small className="muted">{s.time?.value} · {s.range?.value} · {comps}{s.isConcentration?.value === "true" ? " · C" : ""}{s.isRitual?.value === "true" ? " · R" : ""}</small>
+        <small className="muted">{[s.time?.value, s.range?.value, comps + (concentrates ? " · C" : "") + (s.isRitual?.value === "true" ? " · R" : "")].filter(Boolean).join(" · ")}</small>
         <span className="chev">{open ? "▾" : "▸"}</span>
       </button>
-      {level > 0 ? (
+      <RollChips name={el.name} html={el.description} ctx={dc} attackBonus={casting.attack} spell={spellCtx} />
+      {canCast ? (
         <span className="cast">
-          {options.length > 1 && <select value={chosen?.level ?? ""} onChange={(e) => setSlot(Number(e.target.value))}>{options.map((o) => <option key={o.level} value={o.level}>Level {o.level}</option>)}</select>}
-          <button disabled={!chosen} onClick={cast}>{chosen ? "Cast" : "No slots"}</button>
+          {level > 0 && options.length > 1 && <select aria-label="Slot level" value={chosen?.level ?? ""} onChange={(e) => setSlot(Number(e.target.value))}>{options.map((o) => <option key={o.level} value={o.level}>Lv {o.level}</option>)}</select>}
+          <button className="primary" disabled={level > 0 && !chosen} title={rolls.length ? "Spends the slot and rolls the spell's dice" : level > 0 ? "Spends the slot" : "Concentrate on this spell"} onClick={cast}>{level > 0 && !chosen ? "No slots" : "Cast"}</button>
         </span>
-      ) : concentrates ? <span className="cast"><button onClick={cast}>Concentrate</button></span> : null}
-      <RollChips name={el.name} html={el.description} ctx={dcContext(sheet, casting.dc)} attackBonus={casting.attack} spell={{ level, castLevel: chosen?.level ?? level, characterLevel: sheet.level }} />
-      {open && <Html html={el.description} />}
+      ) : <span />}
+      {open && <div className="spell-desc"><Html html={el.description} /></div>}
     </div>
   );
 }
@@ -382,7 +423,8 @@ function Inventory({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: S
   const row = (i: Character["inventory"][number]) => {
     const el = i.id ? r.reg.get(i.id) : undefined;
     return (
-      <div key={i.uid} className="inv-row">
+      <div key={i.uid} className="inv-row" {...favDrag("item", i.uid)}>
+        <FavStar ch={ch} set={set} kind="item" refId={i.uid} />
         <label className="check"><input type="checkbox" checked={i.equipped} onChange={() => toggle(i.uid)} /> <b>{i.qty > 1 ? `${i.qty} × ` : ""}{el?.name ?? i.custom?.name ?? i.id}</b></label>
         <small className="muted">{el?.type}{i.attuned ? " · attuned" : ""}</small>
         {el?.description && <RollChips name={el.name} html={el.description} ctx={dcContext(sheet)} attackBonus={sheet.casting[0]?.attack} />}
@@ -461,6 +503,97 @@ function Resources({ ch, set }: { ch: Character; set: SetCharacter }) {
 
 type Tab = "actions" | "spells" | "inventory" | "resources" | "features" | "description" | "notes" | "extras";
 
+
+/** The row above the play sheet: resources always, plus whatever was pinned or dragged in. Only the player hides it. */
+function Favorites({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: SheetData; set: SetCharacter }) {
+  const [over, setOver] = useState(false);
+  const resources = ch.resources ?? [];
+  const favs = ch.favorites ?? [];
+  const patchRes = (id: string, p: Partial<Resource>) => set((c) => ({ ...c, resources: (c.resources ?? []).map((x) => (x.id === id ? { ...x, ...p } : x)) }));
+  const setHidden = (v: boolean) => set((c) => ({ ...c, favoritesHidden: v }));
+  if (ch.favoritesHidden) {
+    return <div className="fav-bar collapsed"><button onClick={() => setHidden(false)}>☆ Show favorites{favs.length + resources.length ? ` (${favs.length + resources.length})` : ""}</button></div>;
+  }
+  const drop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setOver(false);
+    try {
+      const d = JSON.parse(e.dataTransfer.getData(FAV_MIME)) as { kind: FavKind; ref: string };
+      if (d?.kind && d.ref && !isFav(ch, d.kind, d.ref)) toggleFav(set, d.kind, d.ref);
+    } catch {
+      /* something else was dropped */
+    }
+  };
+  const castingOf = (id: string) => sheet.casting.find((c) => [...c.cantripsKnown, ...c.spells, ...c.granted].some((p) => p.id === id));
+  const remove = (uidv: string) => set((c) => ({ ...c, favorites: (c.favorites ?? []).filter((f) => f.uid !== uidv) }));
+  const tile = (f: NonNullable<Character["favorites"]>[number]) => {
+    let body: React.ReactNode = null;
+    if (f.kind === "weapon") {
+      const a = sheet.attacks.find((x) => (x.id ?? x.name) === f.ref);
+      body = a ? (
+        <div className="fav-weapon">
+          <b>{a.name}</b>
+          <button className="roll-btn" title="Roll to hit" onClick={() => roll(`${a.name} attack`, a.bonus, { kind: "attack" })}>{sign(a.bonus)}</button>
+          <button className="roll-btn" title="Roll damage" onClick={() => a.damage && requestRoll(`${a.name} damage`, a.damage.replace(/\s+/g, ""))}>{a.damage}</button>
+          <small className="muted">{a.damageType}</small>
+        </div>
+      ) : <span className="muted">A weapon that is not equipped right now</span>;
+    } else if (f.kind === "spell") {
+      const el = r.reg.get(f.ref);
+      const line = castingOf(f.ref);
+      body = el && line ? <SpellRow id={f.ref} r={r} casting={line} set={set} level={Number(el.setters.level?.value) || 0} sheet={sheet} /> : <span className="muted">A spell you no longer have</span>;
+    } else if (f.kind === "feature") {
+      const ft = sheet.features.find((x) => x.id === f.ref);
+      body = ft ? <FeatureRow f={ft} ch={ch} set={set} sheet={sheet} /> : <span className="muted">A feature you no longer have</span>;
+    } else {
+      const it = ch.inventory.find((x) => x.uid === f.ref);
+      const el = it?.id ? r.reg.get(it.id) : undefined;
+      body = it ? (
+        <div className="fav-weapon">
+          <b>{el?.name ?? it.custom?.name ?? it.id}</b>
+          <span className="stepper">
+            <button aria-label="One fewer" onClick={() => set((c) => ({ ...c, inventory: c.inventory.map((x) => (x.uid === it.uid ? { ...x, qty: Math.max(0, x.qty - 1) } : x)) }))}>−</button>
+            <span>{it.qty}</span>
+            <button aria-label="One more" onClick={() => set((c) => ({ ...c, inventory: c.inventory.map((x) => (x.uid === it.uid ? { ...x, qty: x.qty + 1 } : x)) }))}>+</button>
+          </span>
+        </div>
+      ) : <span className="muted">An item you no longer have</span>;
+    }
+    return (
+      <div key={f.uid} className={`fav-tile ${f.kind}`}>
+        <button className="fav-remove" title="Remove from favorites" aria-label="Remove from favorites" onClick={() => remove(f.uid)}>×</button>
+        {body}
+      </div>
+    );
+  };
+  return (
+    <section className={over ? "fav-bar over" : "fav-bar"} aria-label="Favorites" onDragOver={(e) => { if (e.dataTransfer.types.includes(FAV_MIME)) { e.preventDefault(); setOver(true); } }} onDragLeave={() => setOver(false)} onDrop={drop}>
+      <header>
+        <h3>Favorites</h3>
+        <small className="muted">Drag weapons, spells, features and items here, or click their ☆. Resources stay here too.</small>
+        <button onClick={() => setHidden(true)}>Hide</button>
+      </header>
+      <div className="fav-tiles">
+        {resources.map((x) => (
+          <div key={x.id} className="fav-tile resource">
+            <b>{x.name || "Resource"}</b>
+            <span className="res-pips">
+              {x.max <= 12 ? Array.from({ length: x.max }, (_, i) => <button key={i} aria-label={`Use ${i + 1}`} className={i < x.current ? "pip small" : "pip spent small"} onClick={() => patchRes(x.id, { current: i < x.current ? i : i + 1 })} />) : null}
+            </span>
+            <span className="stepper">
+              <button aria-label="Spend one" onClick={() => patchRes(x.id, { current: Math.max(0, x.current - 1) })}>−</button>
+              <span>{x.current} / {x.max}</span>
+              <button aria-label="Restore one" onClick={() => patchRes(x.id, { current: Math.min(x.max, x.current + 1) })}>+</button>
+            </span>
+          </div>
+        ))}
+        {favs.map(tile)}
+        {resources.length + favs.length === 0 && <p className="muted fav-empty">Nothing pinned yet. Drag a weapon, spell, feature or item here.</p>}
+      </div>
+    </section>
+  );
+}
+
 export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
   const sheet = useMemo(() => buildSheet(r), [r]);
   const head = headerInfo(r);
@@ -525,6 +658,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
         <button disabled={!rests.left || rests.hp >= sheet.hp} onClick={rests.spendHitDie}>Spend a hit die</button>
       </div>
 
+      <Favorites r={r} ch={ch} sheet={sheet} set={set} />
       <div className="play-grid">
         <aside className="play-side">
           <Panel title="Saving throws">

@@ -133,7 +133,13 @@ test.describe("Soul Forge smoke tests", () => {
     await page.reload();
     await tab(page, "Play");
     await page.locator(".play-tabs").getByRole("button", { name: "Notes" }).click();
+    // Entries are one compact line until opened.
+    await expect(page.getByLabel("Entry title")).toHaveCount(0);
+    await expect(page.locator(".journal-line")).toContainText("We met the innkeeper.");
+    await page.locator(".journal-line").click();
     await expect(page.getByLabel("Entry title")).toHaveValue("Session one");
+    await page.locator(".journal-line").click();
+    await expect(page.getByLabel("Entry title")).toHaveCount(0);
     await page.getByRole("button", { name: /^menu/i }).click();
     await page.getByRole("button", { name: /settings/i }).click();
     await page.getByLabel("Language", { exact: true }).selectOption("de");
@@ -210,6 +216,36 @@ test.describe("Soul Forge smoke tests", () => {
     await tab(page, "Equipment");
     const names = await page.locator("table tbody tr td:first-child").allInnerTexts();
     expect(new Set(names.map((n) => n.trim())).size).toBe(names.length);
+  });
+
+  test("favorites row: resources stay, things can be starred or dragged in, and it hides only when asked", async ({ page }) => {
+    await addTestContent(page);
+    await randomCharacter(page);
+    await tab(page, "Play");
+    const bar = page.getByRole("region", { name: "Favorites" });
+    await expect(bar).toBeVisible();
+    // A resource shows in the row on every tab.
+    await page.locator(".play-tabs").getByRole("button", { name: "Resources" }).click();
+    await page.getByRole("button", { name: "Add resource" }).click();
+    await page.getByLabel("Resource name").fill("Ki");
+    await expect(bar.getByText("Ki")).toBeVisible();
+    await page.locator(".play-tabs").getByRole("button", { name: "Notes" }).click();
+    await expect(bar.getByText("Ki")).toBeVisible();
+    // Star a feature, then drag another in.
+    await page.locator(".play-tabs").getByRole("button", { name: /^Features/ }).click();
+    const rows = page.locator(".play-body .feature-row");
+    await rows.nth(0).getByRole("button", { name: "Add to favorites" }).click();
+    await expect(bar.locator(".fav-tile.feature")).toHaveCount(1);
+    if ((await rows.count()) > 1) {
+      await rows.nth(1).dragTo(bar);
+      await expect(bar.locator(".fav-tile.feature")).toHaveCount(2);
+    }
+    // Only the player hides it, and that sticks.
+    await bar.getByRole("button", { name: "Hide" }).click();
+    await expect(page.getByRole("button", { name: /Show favorites/ })).toBeVisible();
+    await page.reload();
+    await tab(page, "Play");
+    await expect(page.getByRole("button", { name: /Show favorites/ })).toBeVisible();
   });
 
   test("the homebrew builder makes a spell that shows up in the content browser", async ({ page }) => {

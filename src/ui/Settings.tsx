@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { backupFileName, isBackup, makeBackup, restoreBackup } from "../aurora/backup";
 import { backupStore } from "../aurora/storage";
 import { pickFiles, saveFile } from "../store";
+import { SCHOOL_CREDIT } from "./schoolIcons";
 import { LANGUAGES, setLanguage, t, type Lang } from "../i18n";
 
 export interface AppSettings {
@@ -192,6 +193,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           <span><b>Tips</b><small className="muted"> Bring back hints you dismissed</small></span>
           <button onClick={resetHints}>Show tips again</button>
         </div>
+        <p className="muted small-text credits">{SCHOOL_CREDIT}. Stock portraits are credited in public/portraits/CREDITS.md.</p>
       </div>
     </div>
   );

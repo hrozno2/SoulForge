@@ -1,6 +1,6 @@
 {
   "name": "charforge",
-  "version": "0.6.5",
+  "version": "0.7.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

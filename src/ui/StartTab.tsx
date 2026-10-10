@@ -3,6 +3,8 @@ import { deleteCharacterRecord, listCharacters, type CharacterRecord } from "../
 import { normalizeCharacter, uid, type Character } from "../aurora/character";
 import { downloadText, pickFiles } from "../store";
 import { Hint } from "./Help";
+import { PartyView } from "./PartyView";
+import type { ARegistry } from "../aurora/registry";
 
 function ago(ms: number): string {
   const m = Math.round((Date.now() - ms) / 60000);
@@ -13,8 +15,9 @@ function ago(ms: number): string {
 }
 
 export function StartTab({
-  currentId, onOpen, onNew, onRandom, contentReady, sourceCount, goContent, onImportForeign,
+  currentId, onOpen, onNew, onRandom, contentReady, sourceCount, goContent, onImportForeign, reg,
 }: {
+  reg?: ARegistry;
   currentId: string;
   onOpen: (id: string, ch: Character) => void;
   onNew: () => void;
@@ -85,6 +88,7 @@ export function StartTab({
           {!list.length && <li className="muted">No saved characters yet. Your work saves automatically.</li>}
         </ul>
       </section>
+      {reg && list.length > 1 && <PartyView list={list} reg={reg} onOpen={(c) => onOpen(c.id, c.data)} />}
     </div>
   );
 }

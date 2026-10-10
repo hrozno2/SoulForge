@@ -729,3 +729,8 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .forms-panel .row input[type="number"] { width: 90px; }
 .journal .journal-entry textarea { width: 100%; margin-top: 6px; }
 .journal .row { align-items: center; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.party-pick { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 8px 0; }
+.party-table { width: 100%; border-collapse: collapse; }
+.party-table th, .party-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line, #8884); vertical-align: top; }
+.party-table tr.low td:nth-child(2) { color: var(--danger, #c0392b); font-weight: 600; }
+.initiative-order { margin: 0 0 0 12px; }

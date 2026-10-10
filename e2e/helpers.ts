@@ -30,11 +30,20 @@ export function watchProblems(page: Page): { csp: string[]; errors: string[] } {
 export async function tab(page: Page, name: string): Promise<void> {
   const nav = page.locator("header nav");
   const direct = nav.getByRole("button", { name: new RegExp(`^${name}`) });
-  if (await direct.count()) await direct.first().click();
-  else {
-    await nav.getByRole("button", { name: /more/i }).click();
-    await page.getByRole("button", { name: new RegExp(`^${name}`) }).click();
+  const more = nav.getByRole("button", { name: /more/i });
+  // The bar re-measures after layout, so the tab can sit in the row or under More. Look again until one shows.
+  await expect(direct.or(more).first()).toBeVisible();
+  for (let i = 0; i < 20; i++) {
+    if (await direct.count()) return void (await direct.first().click());
+    if (await more.count()) {
+      await more.click();
+      const item = page.getByRole("button", { name: new RegExp(`^${name}`) });
+      if (await item.count()) return void (await item.first().click());
+      await page.keyboard.press("Escape");
+    }
+    await page.waitForTimeout(100);
   }
+  throw new Error(`Tab not found: ${name}`);
 }
 
 /** Adds the test content through the Content tab and waits for it to load. */

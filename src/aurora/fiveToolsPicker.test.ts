@@ -14,7 +14,8 @@ describe("5e.tools links", () => {
     expect(parseLink("https://5e.tools/spells.html")).toBe("list");
   });
   it("flags pages it cannot import and non links", () => {
-    expect(parseLink("https://5e.tools/classes.html#wizard_phb")).toBe("unsupported");
+    expect(parseLink("https://5e.tools/variantrules.html#flanking_dmg")).toBe("unsupported");
+    expect(parseLink("https://5e.tools/classes.html#wizard_phb")).toMatchObject({ kind: "class", name: "wizard" });
     expect(parseLink("hello")).toBeNull();
   });
 });

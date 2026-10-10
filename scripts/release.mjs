@@ -9,7 +9,7 @@ if (!arg) {
   console.error("Usage: node scripts/release.mjs patch|minor|major|x.y.z [--dry]");
   process.exit(1);
 }
-const sh = (cmd, opts = {}) => execSync(cmd, { encoding: "utf8", stdio: opts.show ? "inherit" : ["ignore", "pipe", "pipe"] }).toString().trim();
+const sh = (cmd, opts = {}) => execSync(cmd, { encoding: "utf8", stdio: opts.show ? "inherit" : ["ignore", "pipe", "pipe"] })?.toString().trim() ?? "";
 
 const current = JSON.parse(readFileSync("package.json", "utf8")).version;
 const [maj, min, pat] = current.split(".").map(Number);

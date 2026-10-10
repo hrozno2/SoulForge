@@ -1,8 +1,8 @@
 # Changelog
 
-Release notes for each version are also on the GitHub Releases page.
+What changed in each release. Newest first.
 
-## Unreleased
+## Highlights since 0.6.5
 
 - Content security policy, checked in a real desktop build.
 - Original test ruleset in `fixtures/` so engine tests run in CI; Playwright smoke tests; smaller start-up bundle.

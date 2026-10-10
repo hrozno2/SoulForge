@@ -91,6 +91,8 @@ export interface AttackEdit {
   damageType?: string;
   notes?: string;
   hidden?: boolean;
+  /** Inventory uid of the ammunition this weapon uses. */
+  ammoUid?: string;
 }
 
 export interface CompanionEntry {
@@ -137,6 +139,10 @@ export interface PlayState {
   slotsUsed: Record<string, number>;
   hitDiceUsed: number;
   conditions: string[];
+  /** Exhaustion level, 0 to 6. Each level takes 2 off d20 tests and 5 feet off speed. */
+  exhaustion?: number;
+  /** What the character is concentrating on, if anything. */
+  concentration?: string;
   deathSaves: { success: number; fail: number };
   /** Uses spent per feature id. */
   featureUses: Record<string, number>;

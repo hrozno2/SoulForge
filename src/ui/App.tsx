@@ -9,7 +9,7 @@ import { BuildTab } from "./BuildTab";
 import { StartTab } from "./StartTab";
 import { DetailPanel } from "./DetailPanel";
 import { UpdateBanner } from "./UpdateBanner";
-import { DicePanel } from "./Dice";
+import { DicePanel, setRollContext } from "./Dice";
 import { UiProvider } from "./Learn";
 import { ThemePicker } from "./Theme";
 import { HelpButton } from "./Help";
@@ -61,6 +61,7 @@ export function App() {
   const updater = useUpdater();
 
   const r = useMemo(() => resolve(character, content.reg), [character, content.reg]);
+  useEffect(() => setRollContext({ conditions: character.play.conditions, exhaustion: character.play.exhaustion ?? 0 }), [character.play.conditions, character.play.exhaustion]);
 
   // Autosave the open character, and keep a copy in the library.
   const saveTimer = useRef<number | undefined>(undefined);

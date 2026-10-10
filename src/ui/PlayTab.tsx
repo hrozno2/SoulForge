@@ -4,7 +4,9 @@ import { buildSheet, headerInfo, type CastingLine, type FeatureLine, type SheetD
 import { ABILITY_LABEL, ABILITY_SHORT, XP_TABLE, uid, type AbilityId, type Character, type Resource } from "../aurora/character";
 import type { AElement } from "../aurora/types";
 import { Html } from "./Html";
-import { requestRoll, RollModeSwitch } from "./Dice";
+import { requestRoll, RollModeSwitch, type RollOptions } from "./Dice";
+import { ConditionsPanel } from "./ConditionsPanel";
+import { CONDITION_TEXT, speedAfterExhaustion } from "./conditions";
 import { Hint } from "./Help";
 import { RollChips } from "./RollChips";
 import type { DcContext } from "./rollInfo";
@@ -20,7 +22,7 @@ const dcContext = (sheet: SheetData, spellDc?: number): DcContext => ({
   proficiency: sheet.proficiency,
   mods: Object.fromEntries(sheet.abilities.map((a) => [ABILITY_LABEL[a.id].toLowerCase(), a.mod])),
 });
-const roll = (label: string, bonus: number) => requestRoll(label, `1d20${bonus >= 0 ? "+" : ""}${bonus}`);
+const roll = (label: string, bonus: number, opts?: RollOptions) => requestRoll(label, `1d20${bonus >= 0 ? "+" : ""}${bonus}`, undefined, opts);
 
 function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
@@ -35,7 +37,7 @@ function Panel({ title, children, className = "" }: { title: string; children: R
 
 function AbilityBox({ id, a }: { id: AbilityId; a: SheetData["abilities"][number] }) {
   return (
-    <button className="ab-box" title={`Roll ${ABILITY_LABEL[id]} check`} onClick={() => roll(`${ABILITY_LABEL[id]} check`, a.mod)}>
+    <button className="ab-box" title={`Roll ${ABILITY_LABEL[id]} check`} onClick={() => roll(`${ABILITY_LABEL[id]} check`, a.mod, { kind: "check", ability: id })}>
       <small>{ABILITY_LABEL[id]}</small>
       <b>{sign(a.mod)}</b>
       <span className="ab-score">{a.score}</span>
@@ -48,10 +50,16 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
   const [amount, setAmount] = useState("");
   const n = Math.max(0, Math.floor(Number(amount) || 0));
   const patch = (p: Partial<Character["play"]>) => set((c) => ({ ...c, play: { ...c.play, ...p } }));
+  const [conc, setConc] = useState<{ dc: number } | null>(null);
+  const conSave = sheet.abilities.find((a) => a.id === "constitution")?.save ?? 0;
   const damage = () => {
     if (!n) return;
     const absorbed = Math.min(ch.play.tempHp, n);
-    patch({ tempHp: ch.play.tempHp - absorbed, hp: Math.max(0, hp - (n - absorbed)) });
+    const left = Math.max(0, hp - (n - absorbed));
+    // Dropping to 0 ends concentration. Any other hit asks for a Constitution save.
+    patch({ tempHp: ch.play.tempHp - absorbed, hp: left, ...(left === 0 ? { concentration: undefined } : {}) });
+    if (ch.play.concentration && left > 0 && n - absorbed > 0) setConc({ dc: Math.max(10, Math.floor((n - absorbed) / 2)) });
+    else setConc(null);
     setAmount("");
   };
   const heal = () => {
@@ -81,6 +89,14 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
         <button onClick={damage}>Damage</button>
         <button onClick={temp}>Temp</button>
       </div>
+      {conc && ch.play.concentration && (
+        <div className="conc-check" role="alert">
+          <b>Concentration on {ch.play.concentration}:</b> Constitution save, DC {conc.dc}.
+          <button onClick={() => requestRoll("Concentration", `1d20${conSave >= 0 ? "+" : ""}${conSave}`, (res) => { if (res.dc?.success) setConc(null); }, { kind: "save", ability: "constitution", dc: conc.dc })}>Roll the save</button>
+          <button onClick={() => { patch({ concentration: undefined }); setConc(null); }}>Lose it</button>
+          <button onClick={() => setConc(null)} aria-label="Dismiss">Keep it</button>
+        </div>
+      )}
       {hp === 0 && (
         <div className="death">
           <small>Death saves</small>
@@ -140,13 +156,33 @@ function useRests(r: Resolved, ch: Character, sheet: SheetData, set: SetCharacte
       resources: (c.resources ?? []).map((x) => (x.refresh === "none" ? x : { ...x, current: x.max })),
       play: {
         ...c.play, hp: sheet.hp, tempHp: 0, slotsUsed: {}, featureUses: {}, hitDiceUsed: Math.max(0, c.play.hitDiceUsed - Math.max(1, Math.floor(total / 2))),
-        deathSaves: { success: 0, fail: 0 }, conditions: c.play.conditions.filter((x) => !/exhaustion/i.test(x) || false),
+        deathSaves: { success: 0, fail: 0 }, exhaustion: Math.max(0, (c.play.exhaustion ?? 0) - 1), concentration: undefined,
       },
     }));
   return { spendHitDie, shortRest, longRest, left, dieSize, hp };
 }
 
 // ---------------------------------------------------------------- tabs
+
+const AMMO_WORDS = /arrow|bolt|bullet|needle|dart|pellet|stone|shot|quiver/i;
+
+/** A weapon with the ammunition property: choose which stack it draws from. Each attack uses one. */
+function Ammo({ a, r, ch, set }: { a: SheetData["attacks"][number]; r: Resolved; ch: Character; set: SetCharacter }) {
+  if (!a.auto || !a.id || !/ammunition/i.test(a.properties)) return null;
+  const name = (i: Character["inventory"][number]) => (i.id ? r.reg.get(i.id)?.name : undefined) ?? i.custom?.name ?? "";
+  const options = ch.inventory.filter((i) => AMMO_WORDS.test(name(i)));
+  const pick = ch.attackEdits?.[a.id]?.ammoUid;
+  const stack = ch.inventory.find((i) => i.uid === pick);
+  return (
+    <small className="ammo">
+      <select aria-label={`Ammunition for ${a.name}`} value={pick ?? ""} onChange={(e) => set((c) => ({ ...c, attackEdits: { ...(c.attackEdits ?? {}), [a.id!]: { ...(c.attackEdits?.[a.id!] ?? {}), ammoUid: e.target.value || undefined } } }))}>
+        <option value="">Ammunition...</option>
+        {options.map((i) => <option key={i.uid} value={i.uid}>{name(i)} ({i.qty})</option>)}
+      </select>
+      {stack && <span className={stack.qty === 0 ? "out" : ""}> {stack.qty === 0 ? "out of ammunition" : `${stack.qty} left`}</span>}
+    </small>
+  );
+}
 
 function Actions({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: SheetData; set: SetCharacter }) {
   const groups: [string, (f: FeatureLine) => boolean][] = [
@@ -155,6 +191,11 @@ function Actions({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: She
     ["Reactions", (f) => /reaction/i.test(f.action ?? "")],
   ];
   const used = new Set<string>();
+  /** Taking a shot uses one piece of the ammunition chosen for that weapon. */
+  const spendAmmo = (id?: string) => {
+    const uid = id ? ch.attackEdits?.[id]?.ammoUid : undefined;
+    if (uid) set((c) => ({ ...c, inventory: c.inventory.map((i) => (i.uid === uid ? { ...i, qty: Math.max(0, i.qty - 1) } : i)) }));
+  };
   const cantrips = sheet.casting.flatMap((c) => c.cantripsKnown.map((p) => r.reg.get(p.id)).filter((e): e is AElement => !!e));
   return (
     <>
@@ -166,8 +207,8 @@ function Actions({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: She
             <tbody>
               {sheet.attacks.map((a, i) => (
                 <tr key={i}>
-                  <td><b>{a.name}</b></td>
-                  <td><button className="roll-btn" onClick={() => roll(`${a.name} attack`, a.bonus)}>{sign(a.bonus)}</button></td>
+                  <td><b>{a.name}</b><Ammo a={a} r={r} ch={ch} set={set} /></td>
+                  <td><button className="roll-btn" onClick={() => { roll(`${a.name} attack`, a.bonus, { kind: "attack" }); spendAmmo(a.id); }}>{sign(a.bonus)}</button></td>
                   <td><button className="roll-btn" onClick={() => a.damage && requestRoll(`${a.name} damage`, a.damage.replace(/\s+/g, ""))}>{a.damage}</button> <small>{a.damageType}</small></td>
                   <td><small>{[a.properties, a.notes].filter(Boolean).join("; ")}</small></td>
                 </tr>
@@ -254,9 +295,18 @@ function SpellRow({ id, r, casting, set, level, sheet }: { id: string; r: Resolv
   const comps = [s.hasVerbalComponent?.value === "true" && "V", s.hasSomaticComponent?.value === "true" && "S", s.hasMaterialComponent?.value === "true" && "M"].filter(Boolean).join("");
   const options = casting.slots.filter((x) => x.level >= level && x.used < x.total);
   const chosen = options.find((o) => o.level === slot) ?? options[0];
+  const concentrates = s.isConcentration?.value === "true";
   const cast = () => {
     if (level > 0 && !chosen) return;
-    if (level > 0) set((c) => ({ ...c, play: { ...c.play, slotsUsed: { ...c.play.slotsUsed, [String(chosen!.level)]: (c.play.slotsUsed[String(chosen!.level)] ?? 0) + 1 } } }));
+    set((c) => ({
+      ...c,
+      play: {
+        ...c.play,
+        slotsUsed: level > 0 ? { ...c.play.slotsUsed, [String(chosen!.level)]: (c.play.slotsUsed[String(chosen!.level)] ?? 0) + 1 } : c.play.slotsUsed,
+        // A new concentration spell ends the old one.
+        concentration: concentrates ? el.name : c.play.concentration,
+      },
+    }));
   };
   return (
     <div className="spell-row">
@@ -270,7 +320,7 @@ function SpellRow({ id, r, casting, set, level, sheet }: { id: string; r: Resolv
           {options.length > 1 && <select value={chosen?.level ?? ""} onChange={(e) => setSlot(Number(e.target.value))}>{options.map((o) => <option key={o.level} value={o.level}>Level {o.level}</option>)}</select>}
           <button disabled={!chosen} onClick={cast}>{chosen ? "Cast" : "No slots"}</button>
         </span>
-      ) : null}
+      ) : concentrates ? <span className="cast"><button onClick={cast}>Concentrate</button></span> : null}
       <RollChips name={el.name} html={el.description} ctx={dcContext(sheet, casting.dc)} attackBonus={casting.attack} spell={{ level, castLevel: chosen?.level ?? level, characterLevel: sheet.level }} />
       {open && <Html html={el.description} />}
     </div>
@@ -290,7 +340,7 @@ function Spells({ r, sheet, set }: { r: Resolved; sheet: SheetData; set: SetChar
             <div className="spell-head">
               <div><small>Spellcasting</small><b>{c.name}</b></div>
               <div><small>Save DC</small><b>{c.dc}</b></div>
-              <div><small>Spell attack</small><button className="roll-btn big" onClick={() => roll(`${c.name} spell attack`, c.attack)}>{sign(c.attack)}</button></div>
+              <div><small>Spell attack</small><button className="roll-btn big" onClick={() => roll(`${c.name} spell attack`, c.attack, { kind: "attack" })}>{sign(c.attack)}</button></div>
               {c.prepare && <div><small>Prepared</small><b>{c.spells.filter((s) => s.prepared).length}/{c.prepareMax}</b></div>}
             </div>
             <div className="slot-tracker">
@@ -442,14 +492,22 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
         <div className="ab-row">{sheet.abilities.map((a) => <AbilityBox key={a.id} id={a.id} a={a} />)}</div>
         <div className="stat-tiles">
           <div className="tile"><small>Proficiency</small><b>{sign(sheet.proficiency)}</b></div>
-          <div className="tile"><small>Speed</small><b>{sheet.speed}<em> ft</em></b>{sheet.otherSpeeds.length > 0 && <small>{sheet.otherSpeeds.map((s) => `${s.kind} ${s.value}`).join(", ")}</small>}</div>
-          <button className="tile" onClick={() => roll("Initiative", sheet.initiative)}><small>Initiative</small><b>{sign(sheet.initiative)}</b></button>
+          <div className="tile"><small>Speed</small><b>{speedAfterExhaustion(sheet.speed, ch.play.exhaustion ?? 0)}<em> ft</em></b>{(ch.play.exhaustion ?? 0) > 0 && <small>exhaustion {ch.play.exhaustion}</small>}{sheet.otherSpeeds.length > 0 && <small>{sheet.otherSpeeds.map((s) => `${s.kind} ${s.value}`).join(", ")}</small>}</div>
+          <button className="tile" onClick={() => roll("Initiative", sheet.initiative, { kind: "check", ability: "dexterity" })}><small>Initiative</small><b>{sign(sheet.initiative)}</b></button>
           <Shield value={sheet.ac.value} />
         </div>
         <Vitals ch={ch} sheet={sheet} set={set} />
       </div>
 
-      {ch.play.conditions.length > 0 && <p className="warn">Conditions: {ch.play.conditions.join(", ")}</p>}
+      {(ch.play.conditions.length > 0 || (ch.play.exhaustion ?? 0) > 0) && (
+        <p className="warn condition-strip">
+          {ch.play.conditions.map((c) => <span key={c} title={CONDITION_TEXT[c]}>{c}</span>)}
+          {(ch.play.exhaustion ?? 0) > 0 && <span title="Each level takes 2 off d20 tests and 5 feet off speed">Exhaustion {ch.play.exhaustion}</span>}
+        </p>
+      )}
+      {ch.play.concentration && (
+        <p className="concentration-strip">Concentrating on <b>{ch.play.concentration}</b> <button onClick={() => set((c) => ({ ...c, play: { ...c.play, concentration: undefined } }))}>End</button></p>
+      )}
       <div className="hd-row">
         <div className="hd-bar" title={`Hit dice: ${sheet.hitDice.map((h) => `${h.count}d${h.die}`).join(" + ")}`}><div style={{ width: `${sheet.level ? (rests.left / sheet.level) * 100 : 0}%` }} /><span>Hit dice {rests.left} / {sheet.level} · {sheet.hitDice.map((h) => `${h.count}d${h.die}`).join(" + ")}</span></div>
         <button disabled={!rests.left || rests.hp >= sheet.hp} onClick={rests.spendHitDie}>Spend a hit die</button>
@@ -459,7 +517,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
         <aside className="play-side">
           <Panel title="Saving throws">
             {sheet.abilities.map((a) => (
-              <button key={a.id} className="line-btn" onClick={() => roll(`${ABILITY_LABEL[a.id]} save`, a.save)}>
+              <button key={a.id} className="line-btn" onClick={() => roll(`${ABILITY_LABEL[a.id]} save`, a.save, { kind: "save", ability: a.id })}>
                 <i className={a.saveProficient ? "dot on" : "dot"} /><span>{ABILITY_SHORT[a.id]}</span><em>{ABILITY_LABEL[a.id]}</em><b>{sign(a.save)}</b>
               </button>
             ))}
@@ -481,7 +539,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
           <Panel title="Skills">
             <div className="skill-head"><span /><span>Mod</span><span>Skill</span><span>Bonus</span></div>
             {sheet.skills.map((s) => (
-              <button key={s.name} className="skill-line" onClick={() => roll(skillLabel(s.name), s.bonus)}>
+              <button key={s.name} className="skill-line" onClick={() => roll(skillLabel(s.name), s.bonus, { kind: "check", ability: s.ability })}>
                 <i className={s.level === "none" ? "dot" : s.level === "expertise" ? "dot on x2" : "dot on"} />
                 <small>{ABILITY_SHORT[s.ability]}</small><span>{skillLabel(s.name)}</span><b>{sign(s.bonus)}</b>
               </button>
@@ -505,14 +563,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
               <>
                 {companions.length === 0 && <p className="muted">No companions. Add them on the Manage tab.</p>}
                 {companions.map((c, i) => (c.el ? <div key={i}><h3>{c.name}</h3><CompanionCard el={c.el} /></div> : null))}
-                <Panel title="Conditions">
-                  <div className="chips">
-                    {["Blinded", "Charmed", "Deafened", "Frightened", "Grappled", "Incapacitated", "Invisible", "Paralyzed", "Poisoned", "Prone", "Restrained", "Stunned", "Unconscious"].map((cn) => {
-                      const on = ch.play.conditions.includes(cn);
-                      return <button key={cn} className={on ? "pill active" : "pill"} onClick={() => set((c) => ({ ...c, play: { ...c.play, conditions: on ? c.play.conditions.filter((x) => x !== cn) : [...c.play.conditions, cn] } }))}>{cn}</button>;
-                    })}
-                  </div>
-                </Panel>
+                <Panel title="Conditions"><ConditionsPanel ch={ch} set={set} /></Panel>
               </>
             )}
           </div>

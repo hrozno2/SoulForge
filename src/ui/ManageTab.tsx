@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { PortraitCropper, PortraitPicker } from "./Portrait";
+import { ConditionsPanel } from "./ConditionsPanel";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { hitDieOf } from "../aurora/engine";
@@ -13,7 +14,7 @@ import { companionHtml } from "../aurora/companion";
 type Sub = "level" | "options" | "bonuses" | "additions" | "attacks" | "companions" | "conditions" | "info" | "sources";
 const SUBS: [Sub, string][] = [["level", "Level and hit points"], ["info", "Character details"], ["options", "Options"], ["bonuses", "Custom bonuses"], ["additions", "Manual additions"], ["attacks", "Attacks"], ["companions", "Companions"], ["conditions", "Conditions"], ["sources", "Sources"]];
 
-export const CONDITIONS = ["Blinded", "Charmed", "Deafened", "Exhaustion", "Frightened", "Grappled", "Incapacitated", "Invisible", "Paralyzed", "Petrified", "Poisoned", "Prone", "Restrained", "Stunned", "Unconscious"];
+export { CONDITIONS } from "./conditions";
 
 function Level({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
   const total = r.totalLevel;
@@ -332,14 +333,7 @@ export function CompanionCard({ el }: { el: AElement }) {
 }
 
 function Conditions({ ch, set }: { ch: Character; set: SetCharacter }) {
-  return (
-    <div className="chips">
-      {CONDITIONS.map((c) => {
-        const on = ch.play.conditions.includes(c);
-        return <button key={c} className={on ? "pill active" : "pill"} onClick={() => set((x) => ({ ...x, play: { ...x.play, conditions: on ? x.play.conditions.filter((y) => y !== c) : [...x.play.conditions, c] } }))}>{c}</button>;
-      })}
-    </div>
-  );
+  return <ConditionsPanel ch={ch} set={set} />;
 }
 
 function Sources({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {

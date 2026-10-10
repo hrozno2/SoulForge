@@ -6,14 +6,14 @@ import { downloadText, saveFile } from "../store";
 import { DEFAULT_PDF_OPTIONS, buildPdf, cardCounts, type PdfOptions } from "../pdf/exportPdf";
 import type { SetCharacter } from "./Slots";
 import { CompanionCard, CONDITIONS } from "./ManageTab";
-import { requestRoll } from "./Dice";
+import { requestRoll, type RollOptions } from "./Dice";
 import { isAvailable, usedAfterClick } from "./pips";
 import { getSettings } from "./Settings";
 import { TranslateOptions, useTranslation } from "./TranslateOptions";
 import { TemplateExport } from "./SheetExport";
 
 const sign = (n: number) => (n >= 0 ? `+${n}` : String(n));
-const rollBtn = (label: string, bonus: number) => requestRoll(label, `1d20${bonus >= 0 ? "+" : ""}${bonus}`);
+const rollBtn = (label: string, bonus: number, opts?: RollOptions) => requestRoll(label, `1d20${bonus >= 0 ? "+" : ""}${bonus}`, undefined, opts);
 const skillLabel = (id: string) => id.replace(/\b\w/g, (c) => c.toUpperCase());
 
 function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
@@ -154,7 +154,7 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
 
         <div className="combat">
           <div className="box"><small>Armor Class</small><b>{sheet.ac.value}</b><small>{sheet.ac.parts.join(" ")}</small></div>
-          <div className="box"><small>Initiative</small><b className="roll" title="Roll" onClick={() => rollBtn("Initiative", sheet.initiative)}>{sign(sheet.initiative)}</b></div>
+          <div className="box"><small>Initiative</small><b className="roll" title="Roll" onClick={() => rollBtn("Initiative", sheet.initiative, { kind: "check", ability: "dexterity" })}>{sign(sheet.initiative)}</b></div>
           <div className="box"><small>Hit Points</small><b>{hp}{ch.play.tempHp ? ` +${ch.play.tempHp}` : ""} / {sheet.hp}</b></div>
           <div className="box"><small>Hit Dice</small><b>{hd}</b></div>
           <div className="box"><small>Proficiency</small><b>{sign(sheet.proficiency)}</b></div>
@@ -167,12 +167,12 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
         <div className="ability-grid">
           {sheet.abilities.map((a) => (
             <div className="ability" key={a.id}>
-              <div className="ability-head"><span>{ABILITY_LABEL[a.id]}</span><b className="roll" title="Roll check" onClick={() => rollBtn(`${ABILITY_LABEL[a.id]} check`, a.mod)}>{sign(a.mod)}</b><em>{a.score}</em></div>
-              <div className="line"><i className={a.saveProficient ? "dot on" : "dot"} /><span>Saving Throw</span><b className="roll" title="Roll save" onClick={() => rollBtn(`${ABILITY_LABEL[a.id]} save`, a.save)}>{sign(a.save)}</b></div>
+              <div className="ability-head"><span>{ABILITY_LABEL[a.id]}</span><b className="roll" title="Roll check" onClick={() => rollBtn(`${ABILITY_LABEL[a.id]} check`, a.mod, { kind: "check", ability: a.id })}>{sign(a.mod)}</b><em>{a.score}</em></div>
+              <div className="line"><i className={a.saveProficient ? "dot on" : "dot"} /><span>Saving Throw</span><b className="roll" title="Roll save" onClick={() => rollBtn(`${ABILITY_LABEL[a.id]} save`, a.save, { kind: "save", ability: a.id })}>{sign(a.save)}</b></div>
               {sheet.skills.filter((s) => s.ability === a.id).map((s) => (
                 <div className="line" key={s.name}>
                   <i className={s.level === "none" ? "dot" : s.level === "expertise" ? "dot on x2" : "dot on"} />
-                  <span>{skillLabel(s.name)}</span><b className="roll" title="Roll" onClick={() => rollBtn(skillLabel(s.name), s.bonus)}>{sign(s.bonus)}</b>
+                  <span>{skillLabel(s.name)}</span><b className="roll" title="Roll" onClick={() => rollBtn(skillLabel(s.name), s.bonus, { kind: "check", ability: s.ability })}>{sign(s.bonus)}</b>
                 </div>
               ))}
             </div>
@@ -192,7 +192,7 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
             {sheet.attacks.length > 0 && (
               <table className="attacks">
                 <thead><tr><th>Name</th><th>Atk</th><th>Damage</th><th>Notes</th></tr></thead>
-                <tbody>{sheet.attacks.map((a, i) => <tr key={i}><td>{a.name}</td><td><span className="roll" title="Roll to hit" onClick={() => rollBtn(`${a.name} attack`, a.bonus)}>{sign(a.bonus)}</span></td><td><span className="roll" title="Roll damage" onClick={() => a.damage && requestRoll(`${a.name} damage`, a.damage.replace(/\s+/g, ""))}>{a.damage}</span> {a.damageType}</td><td>{[a.properties, a.notes].filter(Boolean).join("; ")}</td></tr>)}</tbody>
+                <tbody>{sheet.attacks.map((a, i) => <tr key={i}><td>{a.name}</td><td><span className="roll" title="Roll to hit" onClick={() => rollBtn(`${a.name} attack`, a.bonus, { kind: "attack" })}>{sign(a.bonus)}</span></td><td><span className="roll" title="Roll damage" onClick={() => a.damage && requestRoll(`${a.name} damage`, a.damage.replace(/\s+/g, ""))}>{a.damage}</span> {a.damageType}</td><td>{[a.properties, a.notes].filter(Boolean).join("; ")}</td></tr>)}</tbody>
               </table>
             )}
           </section>

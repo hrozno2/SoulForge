@@ -92,4 +92,22 @@ test.describe("Soul Forge smoke tests", () => {
     expect(backup.characters.length).toBeGreaterThanOrEqual(1);
     expect(backup.characters[0].data.version).toBe(2);
   });
+
+  test("conditions change rolls and say why", async ({ page }) => {
+    await addTestContent(page);
+    await page.getByRole("button", { name: /random character/i }).click();
+    await tab(page, "Play");
+    await page.locator(".play-tabs").getByRole("button", { name: "Extras" }).click();
+    await page.getByRole("button", { name: "Poisoned" }).click();
+    await page.getByRole("button", { name: "Raise exhaustion" }).click();
+    await page.locator(".ab-box").first().click();
+    await expect(page.locator(".roll-note").filter({ hasText: "Poisoned: disadvantage" })).toBeVisible();
+    await expect(page.locator(".roll-note").filter({ hasText: "Exhaustion 1: -2" })).toBeVisible();
+    await expect(page.locator(".roll-card")).toContainText("(disadvantage)");
+    // The sheet's Advantage switch cancels the condition's disadvantage.
+    await page.getByRole("button", { name: "Advantage", exact: true }).click();
+    await page.locator(".ab-box").first().click();
+    await expect(page.locator(".roll-card")).not.toContainText("(disadvantage)");
+    await expect(page.locator(".roll-card")).not.toContainText("(advantage)");
+  });
 });

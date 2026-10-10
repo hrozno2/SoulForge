@@ -26,7 +26,7 @@ export function RollChips({ name, html, ctx, attackBonus, spell }: {
   if (attack === undefined && !dmg.length && !info.healing.length && !info.saves.length) return null;
   return (
     <div className="roll-chips-row">
-      {attack !== undefined && <button className="roll-chip atk" onClick={() => requestRoll(`${name} attack`, `1d20${attack >= 0 ? "+" : ""}${attack}`)}>Attack {sign(attack)}</button>}
+      {attack !== undefined && <button className="roll-chip atk" onClick={() => requestRoll(`${name} attack`, `1d20${attack >= 0 ? "+" : ""}${attack}`, undefined, { kind: "attack" })}>Attack {sign(attack)}</button>}
       {dmg.map((d, i) => <button key={i} className="roll-chip dmg" onClick={() => requestRoll(`${name} ${d.type || "damage"}`, d.expr)}>{d.expr}{d.type ? ` ${d.type}` : " damage"}</button>)}
       {info.healing.map((h, i) => <button key={`h${i}`} className="roll-chip heal" onClick={() => requestRoll(`${name} healing`, h)}>Heal {h}</button>)}
       {info.saves.map((s) => <span key={s.ability} className="roll-chip save" title={`${s.ability} saving throw`}>{s.dc !== undefined ? `DC ${s.dc} ` : ""}{SHORT[s.ability]} save</span>)}

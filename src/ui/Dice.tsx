@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { combine, effectsFor, type RollKind } from "./conditions";
 
 export interface RollResult {
   label: string;
@@ -6,6 +7,10 @@ export interface RollResult {
   rolls: number[];
   total: number;
   detail: string;
+  /** Reasons the roll was changed: conditions, exhaustion. */
+  notes?: string[];
+  /** A difficulty to beat, with the outcome worked out. */
+  dc?: { value: number; success: boolean };
   /** Each dice group with its individual dice, and flat bonuses (sides 0), for display. */
   terms: { sides: number; sign: 1 | -1; rolls: number[]; sum: number }[];
 }
@@ -97,8 +102,22 @@ export const setRollMode = (m: RollMode) => {
 export const useRollMode = (): RollMode => useSyncExternalStore(subscribe, () => mode);
 
 /** Ask the dice panel to roll something, for example from a bonus on the sheet. */
-export function requestRoll(label: string, expr: string, done?: (r: RollResult) => void): void {
-  window.dispatchEvent(new CustomEvent("cf-roll", { detail: { label, expr, done } }));
+export interface RollOptions {
+  /** What kind of roll this is, so conditions and exhaustion can change it. */
+  kind?: RollKind;
+  ability?: string;
+  /** A difficulty class to compare the total against. */
+  dc?: number;
+}
+
+export function requestRoll(label: string, expr: string, done?: (r: RollResult) => void, opts?: RollOptions): void {
+  window.dispatchEvent(new CustomEvent("cf-roll", { detail: { label, expr, done, opts } }));
+}
+
+/** The character's current conditions, kept here so every roll can see them. Set by the app. */
+let rollContext = { conditions: [] as string[], exhaustion: 0 };
+export function setRollContext(c: { conditions: string[]; exhaustion: number }): void {
+  rollContext = c;
 }
 
 /** Normal / Advantage / Disadvantage switch for d20 rolls. Lives on the sheet. */
@@ -154,7 +173,9 @@ function RollCard({ r }: { r: RollResult }) {
         </div>
       ))}
       <div className="roll-total">{r.total}</div>
+      {r.dc && <div className={r.dc.success ? "roll-dc ok" : "roll-dc bad"}>vs DC {r.dc.value}: {r.dc.success ? "success" : "fail"}</div>}
       {r.detail.includes("other") && <small className="muted">{r.detail.replace(/^.*, /, "")}</small>}
+      {r.notes?.map((n, i) => <small key={i} className="roll-note">{n}</small>)}
     </div>
   );
 }
@@ -166,24 +187,36 @@ export function DicePanel() {
   const [history, setHistory] = useState<RollResult[]>([]);
   const m = useRollMode();
   const push = (r: RollResult) => setHistory((h) => [r, ...h].slice(0, 30));
-  const roll = (e: string, label = "") => {
-    const r = rollExpression(e, label);
+  const roll = (e: string, label = "", opts: RollOptions = {}) => {
+    const clean = e.replace(/\s+/g, "");
+    const isD20 = /^1d20([+-]\d+)*$/i.test(clean);
+    const fx = isD20 && opts.kind ? effectsFor(opts.kind, opts.ability, rollContext.conditions, rollContext.exhaustion) : null;
+    const expression = fx && fx.penalty ? `${clean}${fx.penalty}` : e;
+    const notes = fx ? [...fx.notes] : [];
+    // The switch on the sheet and the conditions together decide advantage: any of each cancel out.
+    const finalMode = isD20 ? combine((mode === "adv" ? 1 : 0) + (fx?.mode === "adv" ? 1 : 0), (mode === "dis" ? 1 : 0) + (fx?.mode === "dis" ? 1 : 0)) : "none";
+    const r = rollExpression(expression, label);
     if (!r) return null;
-    if (mode !== "normal" && /^1d20([+-]\d+)?$/i.test(e.replace(/\s+/g, ""))) {
-      const r2 = rollExpression(e, label);
+    let out: RollResult = r;
+    if (isD20 && finalMode !== "none") {
+      const r2 = rollExpression(expression, label);
       if (r2) {
-        const keep = mode === "adv" ? (r2.total > r.total ? r2 : r) : (r2.total < r.total ? r2 : r);
-        push({ ...keep, label: `${label ? label + " " : ""}(${mode === "adv" ? "advantage" : "disadvantage"})`, detail: `${keep.detail}, other ${keep === r ? r2.total : r.total}` });
-        return keep;
+        const keep = finalMode === "adv" ? (r2.total > r.total ? r2 : r) : (r2.total < r.total ? r2 : r);
+        out = { ...keep, label: `${label ? label + " " : ""}(${finalMode === "adv" ? "advantage" : "disadvantage"})`, detail: `${keep.detail}, other ${keep === r ? r2.total : r.total}` };
       }
     }
-    push(r);
-    return r;
+    if (fx?.autoFail) {
+      notes.unshift(fx.autoFail);
+      out = { ...out, dc: opts.dc !== undefined ? { value: opts.dc, success: false } : undefined };
+    } else if (opts.dc !== undefined) out = { ...out, dc: { value: opts.dc, success: out.total >= opts.dc } };
+    if (notes.length) out = { ...out, notes };
+    push(out);
+    return out;
   };
   useEffect(() => {
     const on = (ev: Event) => {
-      const d = (ev as CustomEvent<{ label: string; expr: string; done?: (r: RollResult) => void }>).detail;
-      const res = roll(d.expr, d.label);
+      const d = (ev as CustomEvent<{ label: string; expr: string; done?: (r: RollResult) => void; opts?: RollOptions }>).detail;
+      const res = roll(d.expr, d.label, d.opts);
       if (res) d.done?.(res);
       setOpen(true);
     };

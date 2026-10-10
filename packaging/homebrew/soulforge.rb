@@ -21,7 +21,7 @@ cask "soulforge" do
   app "SoulForge.app"
 
   # The app is not notarized, so clear the quarantine flag to avoid the "damaged" warning.
-  postflight_steps do
+  postflight do
     system_command "/usr/bin/xattr",
                    args: ["-cr", "#{appdir}/SoulForge.app"]
   end

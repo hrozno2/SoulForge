@@ -1,0 +1,69 @@
+/**
+ * Imports real exported characters and checks what comes through.
+ *   AURORA_FIXTURES_2014=<content folder>  FOREIGN_FIXTURES=<folder with the .json files>
+ */
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { loadRegistry } from "./fixture";
+import { importForeignCharacter } from "./foreign";
+import { resolve } from "./engine";
+
+const CONTENT = process.env.AURORA_FIXTURES_2014;
+const DIR = process.env.FOREIGN_FIXTURES;
+
+describe.skipIf(!CONTENT || !DIR)("foreign character import", () => {
+  const reg = CONTENT ? loadRegistry(CONTENT) : undefined;
+  const load = (f: string) => JSON.parse(readFileSync(`${DIR}/${f}`, "utf8"));
+
+  it("Roll20: Talaan, a level 13 College of Whispers bard", () => {
+    const res = importForeignCharacter(load("Talaan Istodaewl(1).json"), reg!);
+    if (process.env.SHOW) console.log(JSON.stringify({ notes: res.notes, missing: res.missing, matched: res.matched.length, ch: { ...res.character, inventory: res.character.inventory.length } }, null, 1));
+    const ch = res.character;
+    expect(ch.name).toBe("Talaan Istodaewl");
+    expect(ch.classes[0].level).toBe(13);
+    expect(reg!.get(ch.classes[0].classId)?.name).toBe("Bard");
+    const r = resolve(ch, reg!);
+    expect(r.stats.get("charisma")).toBe(20);
+    expect(r.stats.get("dexterity")).toBe(18);
+    expect(ch.coins.gp).toBe(263);
+    expect(ch.info.alignment).toBe("Lawful Neutral");
+    expect(reg!.get(ch.race ?? "")?.name).toBe("Elf");
+    expect(ch.info.traits).toMatch(/larger pattern/);
+    expect(ch.info.age).toBe("215");
+    expect(ch.coins.sp).toBe(20);
+    expect(ch.play.hp).toBe(105);
+    // Rapier +1 falls back to the base Rapier.
+    expect(ch.inventory.some((i) => i.id && reg!.get(i.id)?.name === "Rapier")).toBe(true);
+    // Spells the content knows are placed; ones it does not know are reported, not lost silently.
+    const placed = [...r.ids].filter((i) => reg!.get(i)?.type === "Spell").length;
+    expect(placed).toBeGreaterThan(15);
+    expect(res.missing.join()).toMatch(/Silvery Barbs/);
+    // These come from books outside the PHB-only test content.
+    expect(res.missing.join()).toMatch(/College of Whispers/);
+  });
+
+  it("Foundry: Waldrom Brahms", () => {
+    const res = importForeignCharacter(load("fvtt-Actor-waldrom-brahms-Be4NGiw22hg7gVBb(1).json"), reg!);
+    if (process.env.SHOW) console.log(JSON.stringify({ notes: res.notes, missing: res.missing, matched: res.matched.length, ch: { ...res.character, inventory: res.character.inventory.length } }, null, 1));
+    expect(res.character.name).toMatch(/Waldrom/i);
+    const ch = res.character;
+    expect(reg!.get(ch.classes[0].classId)?.name).toBe("Fighter");
+    expect(ch.classes[0].level).toBe(14);
+    expect(reg!.get(ch.race ?? "")?.name).toBe("Human");
+    expect(ch.xp).toBe(23000);
+    expect(ch.info.alignment).toBe("Lawful Evil");
+    expect(ch.info.age).toBe("61");
+    expect(ch.info.hair).toBe("Silvery Grey");
+    expect(ch.coins.sp).toBe(2);
+    expect(ch.play.hp).toBe(117);
+    const r = resolve(ch, reg!);
+    expect(r.stats.get("strength")).toBe(20);
+    expect(r.stats.get("constitution")).toBe(18);
+    // "+1 Shield" and "Requital (+1 Longsword)" resolve to the base items.
+    const names = ch.inventory.map((i) => (i.id ? reg!.get(i.id)?.name : undefined));
+    expect(names).toContain("Shield");
+    expect(names).toContain("Longsword");
+    // Class features are not reported as missing feats.
+    expect(res.missing.join()).not.toMatch(/Second Wind|Action Surge/);
+  });
+});

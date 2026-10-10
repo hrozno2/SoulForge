@@ -54,7 +54,15 @@ class Importer {
   }
 
   addItem(name: string, qty: number, equipped: boolean, attuned: boolean): void {
-    const el = findByName(this.reg, ITEM_TYPES, name);
+    // "Rapier +1", "Goodberry (7hp)", "Requital (+1 Longsword)" and "+1 Shield" are a base item with a note.
+    const strip = (n: string) => n.replace(/^\s*[+-]\d+\s+/, "").replace(/\s*[+-]\d+\s*$/, "");
+    const inner = /\((.*?)\)/.exec(name)?.[1] ?? "";
+    const candidates = [name, strip(name), name.replace(/\s*\(.*?\)\s*/g, " "), strip(name.replace(/\s*\(.*?\)\s*/g, " ")), strip(inner)].filter((n) => n.trim());
+    let el: AElement | undefined;
+    for (const c of candidates) {
+      el = findByName(this.reg, ITEM_TYPES, c);
+      if (el) break;
+    }
     this.ch.inventory.push({ uid: uid(), id: el?.id ?? "", qty: Math.max(1, qty), equipped, attuned, custom: el ? undefined : { name } });
     (el ? this.matched : this.missing).push(el ? `${el.name} (${el.type})` : `${name} (item, kept as a custom item)`);
   }
@@ -78,7 +86,9 @@ class Importer {
         ch = { ...ch, selections: { ...ch.selections, [slot.key]: [...slot.chosen, el.id] } };
         this.matched.push(`${el.name} (${w.label})`);
       } else {
-        this.missing.push(`${w.name} (${w.label}: no open choice for it at this level)`);
+        // No open choice can hold it (a racial spell, a Magical Secrets pick): keep it as a manual addition.
+        ch = { ...ch, extras: [...ch.extras, el.id] };
+        this.matched.push(`${el.name} (${w.label}, added by hand)`);
       }
     }
     // Imported scores already include species and background bonuses, so remove them to get the base.
@@ -146,7 +156,8 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
         break;
       }
       case "feat":
-        b.want(["Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature"], name, "feat or feature");
+        // Class, species and background features come from the content itself. Only real feats are choices.
+        if (!isys.type?.value || isys.type.value === "feat") b.want(["Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature"], name, "feat");
         break;
       case "spell":
         b.want(["Spell"], name, "spell");
@@ -171,8 +182,25 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   for (const s of subclasses) b.want(["Archetype"], s, "subclass");
   const hp = Number(sys.attributes?.hp?.value);
   if (Number.isFinite(hp) && hp > 0) b.ch.play.hp = hp;
+  const det: Json = sys.details ?? {};
+  const info = b.ch.info;
+  const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+  info.gender = str(det.gender);
+  info.age = str(det.age);
+  info.height = str(det.height);
+  info.weight = str(det.weight);
+  info.eyes = str(det.eyes);
+  info.hair = str(det.hair);
+  info.skin = str(det.skin);
+  info.deity = str(det.faith) === "N/A" ? "" : str(det.faith);
+  info.traits = str(det.trait);
+  info.ideals = str(det.ideal);
+  info.bonds = str(det.bond);
+  info.flaws = str(det.flaw);
+  const xp = Number(det.xp?.value);
+  if (Number.isFinite(xp) && xp > 0) b.ch.xp = xp;
   const bio = typeof sys.details?.biography?.value === "string" ? sys.details.biography.value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
-  if (bio) b.ch.notes = bio.slice(0, 1500);
+  if (bio) info.backstory = bio.slice(0, 3000);
   const coins = sys.currency ?? {};
   for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) if (Number.isFinite(Number(coins[k]))) b.ch.coins[k] = Number(coins[k]);
   const alignment = sys.details?.alignment;
@@ -213,22 +241,66 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   const lvl = Math.min(20, Math.max(1, Number(val("base_level") || val("level")) || 1));
   const className = val("class").replace(/\d+/g, "").trim();
   const cls = className ? findByName(reg, ["Class"], className) : undefined;
+  // Multiclass levels sit in multiclass1..3 with their own level; the main class level is what is left.
+  const extraClasses: { name: string; level: number }[] = [];
+  for (const i of [1, 2, 3]) {
+    const n = val(`multiclass${i}`);
+    const l = Number(val(`multiclass${i}_lvl`)) || 0;
+    if (n && l > 0) extraClasses.push({ name: n, level: l });
+  }
+  const mainLevel = Math.max(1, lvl - extraClasses.reduce((t, c) => t + c.level, 0));
   if (cls) {
-    b.ch.classes.push({ classId: cls.id, level: lvl });
+    b.ch.classes.push({ classId: cls.id, level: mainLevel });
     b.matched.push(`${cls.name} (class)`);
   } else b.notes.push(className ? `Class "${className}" is not in your loaded content.` : "No class found in the file.");
+  for (const c of extraClasses) {
+    const el = findByName(reg, ["Class"], c.name);
+    if (el) { b.ch.classes.push({ classId: el.id, level: c.level }); b.matched.push(`${el.name} (class)`); } else b.missing.push(`${c.name} (class)`);
+  }
   const race = findByName(reg, ["Race"], val("race"));
   if (race) { b.ch.race = race.id; b.matched.push(`${race.name} (species)`); } else if (val("race")) b.missing.push(`${val("race")} (species)`);
+  // "Dark Elf (Drow)" is the Drow subrace in the older content; the match ignores the parenthesis, so try both parts.
+  const sub = val("subrace");
+  if (sub) {
+    const inner = /\((.*?)\)/.exec(sub)?.[1];
+    for (const n of [sub, inner ?? ""]) if (n) b.want(["Sub Race", "Race Variant", "Race"], n, "subrace");
+  }
   const bg = findByName(reg, ["Background"], val("background"));
   if (bg) { b.ch.background = bg.id; b.matched.push(`${bg.name} (background)`); } else if (val("background")) b.missing.push(`${val("background")} (background)`);
+  if (val("subclass")) b.want(["Archetype"], val("subclass"), "subclass");
 
+  // Only feats are choices. Class, species and background traits come from the content itself.
+  const FEATURE_TYPES = ["Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature"];
   for (const [section, byId] of rows) {
     for (const f of byId.values()) {
-      if (section.startsWith("spell-") && f.spellname) b.want(["Spell"], f.spellname, "spell");
+      if (section.startsWith("spell-") && f.spellname) b.want(["Spell"], f.spellname.replace(/\s*\(.*?\)\s*$/, ""), "spell");
       else if (section === "inventory" && f.itemname) b.addItem(f.itemname, Number(f.itemcount) || 1, false, false);
-      else if (section === "traits" && f.name) b.want(["Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature"], f.name, "feat or feature");
+      else if (section === "traits" && f.name && /^feat$/i.test(f.source ?? "")) b.want(FEATURE_TYPES, f.name, "feat");
     }
   }
+
+  // Details
+  const num = (k: string) => (Number(val(k)) > 0 ? Number(val(k)) : 0);
+  for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) b.ch.coins[k] = num(k);
+  const hp = Number(flat.get("hp")?.current);
+  if (Number.isFinite(hp) && hp > 0) b.ch.play.hp = hp;
+  const info = b.ch.info;
+  info.alignment = val("alignment");
+  info.age = val("age");
+  info.height = val("height");
+  info.weight = val("weight");
+  info.eyes = val("eyes");
+  info.hair = val("hair");
+  info.skin = val("skin");
+  info.gender = val("gender");
+  info.traits = val("personality_traits");
+  info.ideals = val("ideals");
+  info.bonds = val("bonds");
+  info.flaws = val("flaws");
+  const bio = String(data.bio ?? data.character?.bio ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  if (bio) info.backstory = bio.slice(0, 3000);
+  const xp = Number(val("xp"));
+  if (Number.isFinite(xp) && xp > 0) b.ch.xp = xp;
   return b.finish(scores);
 }
 

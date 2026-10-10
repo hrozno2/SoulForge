@@ -59,7 +59,7 @@ function Compendium({ content, onDetail }: { content: ContentState; onDetail: (e
       <p className="muted">{content.reg.size.toLocaleString()} elements loaded.</p>
       <div className="row">
         <input style={{ flex: 1 }} placeholder="Search by name" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select value={type} onChange={(e) => setType(e.target.value)}>
+        <select aria-label="Filter by type" value={type} onChange={(e) => setType(e.target.value)}>
           <option value="">All types</option>
           {types.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
@@ -232,7 +232,7 @@ export function ContentTab({ content, onDetail }: { content: ContentState; onDet
       <section className="card">
         <h2>Import files</h2>
         <p className="muted">A downloaded ZIP of an elements repository, or loose .xml element files.</p>
-        <input ref={fileRef} type="file" accept=".zip,.xml" multiple onChange={(e) => { importFiles(e.target.files); e.target.value = ""; }} />
+        <input ref={fileRef} aria-label="Choose element files or a ZIP" type="file" accept=".zip,.xml" multiple onChange={(e) => { importFiles(e.target.files); e.target.value = ""; }} />
         {msg && <p className="notice">{msg}</p>}
       </section>
 
@@ -240,7 +240,7 @@ export function ContentTab({ content, onDetail }: { content: ContentState; onDet
         <h2>Write your own content</h2>
         <p className="muted">Homebrew uses the same element format as the official content: grants, selections and stat rules. See the Aurora documentation for the format.</p>
         <div className="row"><input value={xmlName} onChange={(e) => setXmlName(e.target.value)} placeholder="Name" /><button className="primary" onClick={saveCustom}>Save content</button></div>
-        <textarea className="code" rows={14} value={xml} onChange={(e) => setXml(e.target.value)} spellCheck={false} />
+        <textarea className="code" aria-label="Element XML" rows={14} value={xml} onChange={(e) => setXml(e.target.value)} spellCheck={false} />
       </section>
 
       <Compendium content={content} onDetail={onDetail} />

@@ -37,3 +37,19 @@ describe("dice pool", () => {
     expect(changePool("3d4+2", 4, 1)).toBe("4d4+2");
   });
 });
+
+import { normalizeCharacter } from "../aurora/character";
+
+describe("older saved characters", () => {
+  it("get every field the current version expects", () => {
+    const old = { version: 2, name: "Old", info: { alignment: "LG" }, play: { hp: 5 } } as never;
+    const c = normalizeCharacter(old);
+    expect(c.resources).toEqual([]);
+    expect(c.info.alignment).toBe("LG");
+    expect(c.info.backstory).toBe("");
+    expect(c.play.hp).toBe(5);
+    expect(c.play.deathSaves).toEqual({ success: 0, fail: 0 });
+    expect(c.coins.gp).toBe(0);
+    expect(c.abilityBase.strength).toBeGreaterThan(0);
+  });
+});

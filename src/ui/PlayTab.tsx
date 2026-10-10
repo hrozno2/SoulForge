@@ -84,8 +84,8 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
       {hp === 0 && (
         <div className="death">
           <small>Death saves</small>
-          <span>Success {[0, 1, 2].map((i) => <input key={i} type="checkbox" checked={i < ch.play.deathSaves.success} onChange={() => patch({ deathSaves: { ...ch.play.deathSaves, success: ch.play.deathSaves.success === i + 1 ? i : i + 1 } })} />)}</span>
-          <span>Failure {[0, 1, 2].map((i) => <input key={i} type="checkbox" checked={i < ch.play.deathSaves.fail} onChange={() => patch({ deathSaves: { ...ch.play.deathSaves, fail: ch.play.deathSaves.fail === i + 1 ? i : i + 1 } })} />)}</span>
+          <span>Success {[0, 1, 2].map((i) => <input key={i} aria-label={`Death save success ${i + 1}`} type="checkbox" checked={i < ch.play.deathSaves.success} onChange={() => patch({ deathSaves: { ...ch.play.deathSaves, success: ch.play.deathSaves.success === i + 1 ? i : i + 1 } })} />)}</span>
+          <span>Failure {[0, 1, 2].map((i) => <input key={i} aria-label={`Death save failure ${i + 1}`} type="checkbox" checked={i < ch.play.deathSaves.fail} onChange={() => patch({ deathSaves: { ...ch.play.deathSaves, fail: ch.play.deathSaves.fail === i + 1 ? i : i + 1 } })} />)}</span>
           <button onClick={() => requestRoll("Death save", "1d20")}>Roll</button>
         </div>
       )}
@@ -119,16 +119,20 @@ function useRests(r: Resolved, ch: Character, sheet: SheetData, set: SetCharacte
   void r;
   const spendHitDie = () => {
     if (!left || !dieSize) return;
-    const rolled = 1 + Math.floor(Math.random() * dieSize);
-    const gain = Math.max(1, rolled + conMod);
-    requestRoll("Hit die", `1d${dieSize}${conMod >= 0 ? "+" : ""}${conMod}`);
-    set((c) => ({ ...c, play: { ...c.play, hp: Math.min(sheet.hp, (c.play.hp ?? sheet.hp) + gain), hitDiceUsed: c.play.hitDiceUsed + 1 } }));
+    // The tray makes the roll, and the same result is what heals, so the two always agree.
+    requestRoll("Hit die", `1d${dieSize}${conMod >= 0 ? "+" : ""}${conMod}`, (res) => {
+      const gain = Math.max(1, res.total);
+      set((c) => ({ ...c, play: { ...c.play, hp: Math.min(sheet.hp, (c.play.hp ?? sheet.hp) + gain), hitDiceUsed: c.play.hitDiceUsed + 1 } }));
+    });
   };
   const shortRest = () =>
     set((c) => {
       const uses = { ...c.play.featureUses };
       for (const f of features) if (/short rest/i.test(f.usage ?? "")) delete uses[f.id];
-      return { ...c, resources: (c.resources ?? []).map((x) => (x.refresh === "short" ? { ...x, current: x.max } : x)), play: { ...c.play, featureUses: uses } };
+      // Pact Magic slots come back on a short rest.
+      const slots = { ...c.play.slotsUsed };
+      for (const line of sheet.casting) if (line.pactLevel) for (const sl of line.slots) delete slots[String(sl.level)];
+      return { ...c, resources: (c.resources ?? []).map((x) => (x.refresh === "short" ? { ...x, current: x.max } : x)), play: { ...c.play, featureUses: uses, slotsUsed: slots } };
     });
   const longRest = () =>
     set((c) => ({

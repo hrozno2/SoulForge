@@ -65,7 +65,7 @@ export function EquipmentTab({ r, ch, set, onDetail }: { r: Resolved; ch: Charac
         <h2>Add equipment</h2>
         <div className="row">
           <input placeholder="Search items, weapons, armor" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1 }} />
-          <select value={type} onChange={(e) => setType(e.target.value)}>
+          <select aria-label="Filter by type" value={type} onChange={(e) => setType(e.target.value)}>
             <option value="all">All</option>
             {ITEM_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>

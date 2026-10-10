@@ -2,25 +2,39 @@ import { useMemo } from "react";
 
 const ALLOWED = new Set(["P", "DIV", "SPAN", "B", "I", "EM", "STRONG", "U", "UL", "OL", "LI", "H1", "H2", "H3", "H4", "H5", "BR", "TABLE", "THEAD", "TBODY", "TR", "TD", "TH", "CENTER", "SUP", "SUB", "A"]);
 
-/** Content files carry basic HTML. Keep structure and class names, drop anything that can run. */
+const DROP_WITH_CONTENT = new Set(["SCRIPT", "STYLE", "TEMPLATE", "NOSCRIPT", "IFRAME", "OBJECT", "EMBED", "SVG", "MATH", "HEAD", "TITLE"]);
+const KEEP_ATTRS = new Set(["class", "colspan", "rowspan"]);
+
+/**
+ * Content files carry basic HTML. This builds a fresh tree from the allowed tags only, so nothing that can run
+ * survives: unknown tags are replaced by their cleaned children, and risky ones are dropped with their content.
+ */
 export function sanitize(html: string): string {
-  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
-  const walk = (node: Element) => {
-    for (const child of Array.from(node.children)) {
-      if (!ALLOWED.has(child.tagName)) {
-        child.replaceWith(...Array.from(child.childNodes));
-        continue;
+  const src = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
+  const out = src.implementation.createHTMLDocument("");
+  const copy = (from: Node, into: Node) => {
+    for (const node of Array.from(from.childNodes)) {
+      if (node.nodeType === 3) {
+        into.appendChild(out.createTextNode(node.textContent ?? ""));
+      } else if (node.nodeType === 1) {
+        const el = node as Element;
+        const tag = el.tagName.toUpperCase();
+        if (DROP_WITH_CONTENT.has(tag)) continue;
+        if (ALLOWED.has(tag)) {
+          const clone = out.createElement(tag.toLowerCase());
+          for (const a of Array.from(el.attributes)) if (KEEP_ATTRS.has(a.name)) clone.setAttribute(a.name, a.value);
+          copy(el, clone);
+          into.appendChild(clone);
+        } else {
+          copy(el, into);
+        }
       }
-      for (const a of Array.from(child.attributes)) {
-        if (a.name !== "class" && a.name !== "colspan" && a.name !== "rowspan") child.removeAttribute(a.name);
-      }
-      walk(child);
     }
   };
-  walk(doc.body);
+  copy(src.body, out.body);
   // Placeholder blocks like <div element="ID_..."/> have no content of their own.
-  doc.body.querySelectorAll("div:empty").forEach((d) => d.remove());
-  return doc.body.innerHTML;
+  out.body.querySelectorAll("div:empty").forEach((d) => d.remove());
+  return out.body.innerHTML;
 }
 
 /** `cap` gives the first paragraph a drop cap, as in the books. */

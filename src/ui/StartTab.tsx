@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { deleteCharacterRecord, listCharacters, type CharacterRecord } from "../aurora/storage";
-import { newCharacter, uid, type Character } from "../aurora/character";
+import { normalizeCharacter, uid, type Character } from "../aurora/character";
 import { downloadText, pickFiles } from "../store";
 import { Hint } from "./Help";
 
@@ -39,8 +39,8 @@ export function StartTab({
     if (!f) return;
     try {
       const raw = JSON.parse(await f.text()) as Character;
-      if (raw.version !== 2) throw new Error("This is not a Soul Forge 0.3 character file. Foundry and Roll20 exports go through the Import button next to it.");
-      onOpen(uid(), { ...newCharacter(), ...raw });
+      if (raw.version !== 2) throw new Error("This is not a Soul Forge character file. Foundry and Roll20 exports go through the Import button next to it.");
+      onOpen(uid(), normalizeCharacter(raw));
       setMsg("");
     } catch (e) {
       setMsg((e as Error).message);

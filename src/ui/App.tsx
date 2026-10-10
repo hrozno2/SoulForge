@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { newCharacter, uid, type Character } from "../aurora/character";
+import { newCharacter, normalizeCharacter, uid, type Character } from "../aurora/character";
 import { resolve } from "../aurora/engine";
 import { autoFill } from "../aurora/autofill";
 import { saveCharacterRecord } from "../aurora/storage";
@@ -33,7 +33,7 @@ function loadCurrent(): { id: string; ch: Character } {
     const raw = localStorage.getItem(CUR_KEY);
     if (raw) {
       const p = JSON.parse(raw) as { id: string; ch: Character };
-      if (p.ch?.version === 2) return { id: p.id, ch: { ...newCharacter(), ...p.ch } };
+      if (p.ch?.version === 2) return { id: p.id, ch: normalizeCharacter(p.ch) };
     }
   } catch {
     /* start fresh */
@@ -72,7 +72,7 @@ export function App() {
   }, [character, id, content.reg]);
 
   const set = useCallback((fn: (c: Character) => Character) => setCharacter((c) => fn(c)), []);
-  const open = (nid: string, ch: Character) => { setId(nid); setCharacter({ ...newCharacter(), ...ch, info: { ...newCharacter().info, ...ch.info }, play: { ...newCharacter().play, ...ch.play } }); setTab("build"); };
+  const open = (nid: string, ch: Character) => { setId(nid); setCharacter(normalizeCharacter(ch)); setTab("build"); };
   const random = () => {
     const reg = content.reg;
     const pick = <T,>(a: T[]): T | undefined => a[Math.floor(Math.random() * a.length)];

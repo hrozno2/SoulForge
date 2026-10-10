@@ -77,16 +77,16 @@ function PlayBar({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: Set
         <small>Current HP</small>
         <span className="stepper">
           <button onClick={() => setPlay({ hp: Math.max(0, hp - 1) })}>−</button>
-          <input type="number" value={hp} onChange={(e) => setPlay({ hp: Math.max(0, Math.min(sheet.hp + ch.play.tempHp, Number(e.target.value) || 0)) })} style={{ width: 64 }} />
+          <input aria-label="Current hit points" type="number" value={hp} onChange={(e) => setPlay({ hp: Math.max(0, Math.min(sheet.hp + ch.play.tempHp, Number(e.target.value) || 0)) })} style={{ width: 64 }} />
           <button onClick={() => setPlay({ hp: Math.min(sheet.hp, hp + 1) })}>+</button>
         </span>
         <button className="more" onClick={() => setPlay({ hp: sheet.hp, tempHp: 0, slotsUsed: {}, hitDiceUsed: 0, deathSaves: { success: 0, fail: 0 }, featureUses: {} })}>Long rest</button>
       </div>
-      <div className="box"><small>Temp HP</small><input type="number" min={0} value={ch.play.tempHp} onChange={(e) => setPlay({ tempHp: Math.max(0, Number(e.target.value) || 0) })} style={{ width: 70 }} /></div>
+      <div className="box"><small>Temp HP</small><input aria-label="Temporary hit points" type="number" min={0} value={ch.play.tempHp} onChange={(e) => setPlay({ tempHp: Math.max(0, Number(e.target.value) || 0) })} style={{ width: 70 }} /></div>
       <div className="box">
         <small>Death saves</small>
-        <span>✓ {[0, 1, 2].map((i) => <input key={i} type="checkbox" checked={i < ch.play.deathSaves.success} onChange={() => setPlay({ deathSaves: { ...ch.play.deathSaves, success: ch.play.deathSaves.success === i + 1 ? i : i + 1 } })} />)}</span>
-        <span>✗ {[0, 1, 2].map((i) => <input key={i} type="checkbox" checked={i < ch.play.deathSaves.fail} onChange={() => setPlay({ deathSaves: { ...ch.play.deathSaves, fail: ch.play.deathSaves.fail === i + 1 ? i : i + 1 } })} />)}</span>
+        <span>✓ {[0, 1, 2].map((i) => <input key={i} aria-label={`Death save success ${i + 1}`} type="checkbox" checked={i < ch.play.deathSaves.success} onChange={() => setPlay({ deathSaves: { ...ch.play.deathSaves, success: ch.play.deathSaves.success === i + 1 ? i : i + 1 } })} />)}</span>
+        <span>✗ {[0, 1, 2].map((i) => <input key={i} aria-label={`Death save failure ${i + 1}`} type="checkbox" checked={i < ch.play.deathSaves.fail} onChange={() => setPlay({ deathSaves: { ...ch.play.deathSaves, fail: ch.play.deathSaves.fail === i + 1 ? i : i + 1 } })} />)}</span>
       </div>
       <div className="box">
         <small>Hit dice used</small>
@@ -96,7 +96,7 @@ function PlayBar({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: Set
           <button onClick={() => setPlay({ hitDiceUsed: Math.min(sheet.level, ch.play.hitDiceUsed + 1) })}>+</button>
         </span>
       </div>
-      <div className="box"><small>Experience</small><input type="number" min={0} value={ch.xp} onChange={(e) => set((c) => ({ ...c, xp: Math.max(0, Number(e.target.value) || 0) }))} style={{ width: 90 }} /></div>
+      <div className="box"><small>Experience</small><input aria-label="Experience points" type="number" min={0} value={ch.xp} onChange={(e) => set((c) => ({ ...c, xp: Math.max(0, Number(e.target.value) || 0) }))} style={{ width: 90 }} /></div>
     </div>
   );
 }

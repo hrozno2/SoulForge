@@ -260,3 +260,21 @@ export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 export function pointBuySpent(base: Record<AbilityId, number>): number {
   return ABILITY_IDS.reduce((n, a) => n + (POINT_BUY_COST[base[a]] ?? 99), 0);
 }
+
+/** Fills in anything a saved or imported character is missing, so older files keep working as fields are added. */
+export function normalizeCharacter(raw: Partial<Character>): Character {
+  const base = newCharacter();
+  return {
+    ...base,
+    ...raw,
+    info: { ...base.info, ...(raw.info ?? {}) },
+    play: { ...base.play, ...(raw.play ?? {}), deathSaves: { ...base.play.deathSaves, ...(raw.play?.deathSaves ?? {}) } },
+    coins: { ...base.coins, ...(raw.coins ?? {}) },
+    abilityBase: { ...base.abilityBase, ...(raw.abilityBase ?? {}) },
+    resources: raw.resources ?? [],
+    classes: raw.classes ?? [],
+    inventory: raw.inventory ?? [],
+    selections: raw.selections ?? {},
+    version: 2,
+  };
+}

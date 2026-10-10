@@ -97,8 +97,8 @@ export const setRollMode = (m: RollMode) => {
 export const useRollMode = (): RollMode => useSyncExternalStore(subscribe, () => mode);
 
 /** Ask the dice panel to roll something, for example from a bonus on the sheet. */
-export function requestRoll(label: string, expr: string): void {
-  window.dispatchEvent(new CustomEvent("cf-roll", { detail: { label, expr } }));
+export function requestRoll(label: string, expr: string, done?: (r: RollResult) => void): void {
+  window.dispatchEvent(new CustomEvent("cf-roll", { detail: { label, expr, done } }));
 }
 
 /** Normal / Advantage / Disadvantage switch for d20 rolls. Lives on the sheet. */
@@ -182,8 +182,9 @@ export function DicePanel() {
   };
   useEffect(() => {
     const on = (ev: Event) => {
-      const d = (ev as CustomEvent<{ label: string; expr: string }>).detail;
-      roll(d.expr, d.label);
+      const d = (ev as CustomEvent<{ label: string; expr: string; done?: (r: RollResult) => void }>).detail;
+      const res = roll(d.expr, d.label);
+      if (res) d.done?.(res);
       setOpen(true);
     };
     window.addEventListener("cf-roll", on);

@@ -513,7 +513,7 @@ button.tiny { padding: 0 6px; }
 :root[data-skin="tools"] {
   --bg: #0e141b; --bg2: #121a23; --panel: #17212c; --panel2: #1e2b39; --line: #2f4358;
   --gold: #7fb4e6; --gold2: #b9d9f5; --text: #e4ecf4; --muted: #94a7ba;
-  --accent: #1f86e0; --crimson: #1f86e0; --gilt: #3a5977; --display: "Roboto Condensed", system-ui, sans-serif; --book: "Roboto Condensed", system-ui, sans-serif;
+  --accent: #1a6fc0; --crimson: #1a6fc0; --gilt: #3a5977; --display: "Roboto Condensed", system-ui, sans-serif; --book: "Roboto Condensed", system-ui, sans-serif;
 }
 :root[data-skin="tools"] body { background-image: none; }
 :root[data-skin="tools"] .topbar { background: #0a1016; }
@@ -687,3 +687,8 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 :root .modal-page button:not(.primary):disabled { opacity: .45; }
 :root .modal-page .pill.active { background: var(--paper2); }
 :root .modal-page label { color: var(--ink); }
+
+/* contrast fixes found by an accessibility scan */
+.topbar .tab.active, .topbar .tab:hover { color: #fff !important; }
+:root[data-theme="light"] .pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+:root[data-skin="parchment"] { --gold: #6f5418; }

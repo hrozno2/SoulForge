@@ -110,4 +110,17 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(page.locator(".roll-card")).not.toContainText("(disadvantage)");
     await expect(page.locator(".roll-card")).not.toContainText("(advantage)");
   });
+
+  test("the homebrew builder makes a spell that shows up in the content browser", async ({ page }) => {
+    await addTestContent(page);
+    await tab(page, "Content");
+    await page.getByRole("button", { name: "New spell" }).click();
+    await page.getByLabel("Name", { exact: true }).fill("Test Flame");
+    await page.getByLabel("On the spell lists of").fill("Spellsinger");
+    await page.getByLabel("Description").fill("A small flame dances on your palm.");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.locator(".homebrew .notice")).toContainText("Saved Test Flame");
+    await page.getByPlaceholder("Search by name").last().fill("Test Flame");
+    await expect(page.locator("ul.options.boxed").last()).toContainText("Test Flame");
+  });
 });

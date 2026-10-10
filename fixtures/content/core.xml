@@ -64,9 +64,9 @@
 	</element>
 
 	<!-- Weapon and armor groups -->
-	<element name="Weapon Proficiency (Simple)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_WEAPON_SIMPLE" />
-	<element name="Weapon Proficiency (Martial)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_WEAPON_MARTIAL" />
-	<element name="Armor Proficiency (Light)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_ARMOR_LIGHT" />
-	<element name="Armor Proficiency (Heavy)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_ARMOR_HEAVY" />
-	<element name="Armor Proficiency (Shields)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_ARMOR_SHIELDS" />
+	<element name="Weapon Proficiency (Simple)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_WEAPONS" />
+	<element name="Weapon Proficiency (Martial)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_WEAPONS" />
+	<element name="Armor Proficiency (Light)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR" />
+	<element name="Armor Proficiency (Heavy)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_HEAVY_ARMOR" />
+	<element name="Armor Proficiency (Shields)" type="Proficiency" source="Hollow Realms" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELDS" />
 </elements>

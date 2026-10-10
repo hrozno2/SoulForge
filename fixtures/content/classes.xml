@@ -11,11 +11,11 @@
 		</description>
 		<setters><set name="short">Guardian of the roads</set><set name="hd">d10</set></setters>
 		<rules>
-			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_LIGHT" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_HEAVY" requirements="!ID_SF_MULTICLASS_WARDEN" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_SHIELDS" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_SIMPLE" requirements="!ID_SF_MULTICLASS_WARDEN" />
-			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_MARTIAL" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_HEAVY_ARMOR" requirements="!ID_SF_MULTICLASS_WARDEN" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELDS" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_WEAPONS" requirements="!ID_SF_MULTICLASS_WARDEN" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_WEAPONS" />
 			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_STRENGTH" requirements="!ID_SF_MULTICLASS_WARDEN" />
 			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_CONSTITUTION" requirements="!ID_SF_MULTICLASS_WARDEN" />
 			<select type="Proficiency" name="Skill Proficiency (Warden)" supports="Skill,Warden" number="2" requirements="!ID_SF_MULTICLASS_WARDEN" />
@@ -74,7 +74,7 @@
 		<setters><set name="short">Casts by song</set><set name="hd">d6</set></setters>
 		<spellcasting name="Spellsinger" ability="Charisma" prepare="true"><list>Spellsinger</list></spellcasting>
 		<rules>
-			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_SIMPLE" requirements="!ID_SF_MULTICLASS_SPELLSINGER" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_WEAPONS" requirements="!ID_SF_MULTICLASS_SPELLSINGER" />
 			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_WISDOM" requirements="!ID_SF_MULTICLASS_SPELLSINGER" />
 			<grant type="Proficiency" id="ID_PROFICIENCY_SAVINGTHROW_CHARISMA" requirements="!ID_SF_MULTICLASS_SPELLSINGER" />
 			<select type="Proficiency" name="Skill Proficiency (Spellsinger)" supports="Skill,Spellsinger" number="2" requirements="!ID_SF_MULTICLASS_SPELLSINGER" />

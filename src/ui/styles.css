@@ -559,7 +559,8 @@ details.tip summary { cursor: pointer; color: var(--muted); }
 /* ---- one-line top bar with overflow menus ---- */
 .topbar .tabs-nav { flex: 1; min-width: 0; display: flex; align-items: stretch; position: relative; flex-wrap: nowrap; }
 .topbar .tabs-nav .tab { white-space: nowrap; }
-.tabs-measure { position: absolute; visibility: hidden; pointer-events: none; height: 0; overflow: hidden; display: flex; white-space: nowrap; }
+.tabs-measure { position: absolute; visibility: hidden; pointer-events: none; height: 0; overflow: hidden; display: flex; white-space: nowrap; width: max-content; max-width: none; }
+.tabs-measure .tab { flex: none; }
 .popup-wrap { position: relative; display: flex; align-items: stretch; }
 .popup { position: absolute; top: 100%; left: 0; min-width: 190px; z-index: 40; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--accent); box-shadow: var(--shadow); padding: 4px; }
 .popup.right { left: auto; right: 0; }
@@ -708,3 +709,9 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .ammo { display: block; margin-top: 2px; }
 .ammo select { font-size: 12px; padding: 1px 4px; }
 .ammo .out { color: var(--warn); font-weight: 700; }
+
+.hb-form .row { gap: 12px; align-items: flex-end; margin: 8px 0; flex-wrap: wrap; }
+.hb-form .field.wide { flex: 1 1 100%; }
+.hb-form textarea { width: 100%; }
+.hb-effects { margin: 12px 0; }
+.code-view { max-height: 260px; overflow: auto; background: var(--panel2); padding: 8px; font-size: 12px; }

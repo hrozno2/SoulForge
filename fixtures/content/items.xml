@@ -5,7 +5,7 @@
 		<description><p>A straight blade of grey steel.</p></description>
 		<setters>
 			<set name="category">Weapons</set><set name="cost" currency="gp">15</set><set name="weight" lb="3">3 lb.</set><set name="slot">onehand</set>
-			<set name="damage" type="slashing">1d8</set><set name="versatile">1d10</set><set name="proficiency">ID_PROFICIENCY_WEAPON_MARTIAL</set>
+			<set name="damage" type="slashing">1d8</set><set name="versatile">1d10</set><set name="proficiency">ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_WEAPONS</set>
 		</setters>
 	</element>
 	<element name="Dagger" type="Weapon" source="Hollow Realms" id="ID_SF_WEAPON_DAGGER">
@@ -13,7 +13,7 @@
 		<description><p>A short knife.</p></description>
 		<setters>
 			<set name="category">Weapons</set><set name="cost" currency="gp">2</set><set name="weight" lb="1">1 lb.</set><set name="slot">onehand</set>
-			<set name="damage" type="piercing">1d4</set><set name="proficiency">ID_PROFICIENCY_WEAPON_SIMPLE</set>
+			<set name="damage" type="piercing">1d4</set><set name="proficiency">ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_WEAPONS</set>
 		</setters>
 	</element>
 	<element name="Hunting Bow" type="Weapon" source="Hollow Realms" id="ID_SF_WEAPON_HUNTING_BOW">
@@ -21,7 +21,7 @@
 		<description><p>A bow for hunting. Uses arrows.</p></description>
 		<setters>
 			<set name="category">Weapons</set><set name="cost" currency="gp">25</set><set name="weight" lb="2">2 lb.</set><set name="slot">twohand</set>
-			<set name="damage" type="piercing">1d8</set><set name="proficiency">ID_PROFICIENCY_WEAPON_MARTIAL</set>
+			<set name="damage" type="piercing">1d8</set><set name="proficiency">ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_WEAPONS</set>
 		</setters>
 	</element>
 	<element name="Chain Hauberk" type="Armor" source="Hollow Realms" id="ID_SF_ARMOR_CHAIN_HAUBERK">
@@ -30,7 +30,7 @@
 		<setters>
 			<set name="category">Armor</set><set name="cost" currency="gp">75</set><set name="weight" lb="55">55 lb.</set><set name="slot">body</set>
 			<set name="armor">Heavy</set><set name="strength">13</set><set name="stealth">Disadvantage</set><set name="armorClass">16</set>
-			<set name="proficiency">ID_PROFICIENCY_ARMOR_HEAVY</set>
+			<set name="proficiency">ID_PROFICIENCY_ARMOR_PROFICIENCY_HEAVY_ARMOR</set>
 		</setters>
 		<rules><stat name="ac:armored:armor" value="16" /></rules>
 	</element>
@@ -39,7 +39,7 @@
 		<description><p>A quilted coat.</p></description>
 		<setters>
 			<set name="category">Armor</set><set name="cost" currency="gp">5</set><set name="weight" lb="8">8 lb.</set><set name="slot">body</set>
-			<set name="armor">Light</set><set name="armorClass">11</set><set name="proficiency">ID_PROFICIENCY_ARMOR_LIGHT</set>
+			<set name="armor">Light</set><set name="armorClass">11</set><set name="proficiency">ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR</set>
 		</setters>
 		<rules><stat name="ac:armored:armor" value="11" /></rules>
 	</element>
@@ -47,7 +47,7 @@
 		<description><p>A wooden shield.</p></description>
 		<setters>
 			<set name="category">Armor</set><set name="cost" currency="gp">10</set><set name="weight" lb="6">6 lb.</set><set name="slot">offhand</set>
-			<set name="armor">Shield</set><set name="armorClass">2</set><set name="proficiency">ID_PROFICIENCY_ARMOR_SHIELDS</set>
+			<set name="armor">Shield</set><set name="armorClass">2</set><set name="proficiency">ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELDS</set>
 		</setters>
 		<rules><stat name="ac:shield" value="2" bonus="shield" /></rules>
 	</element>

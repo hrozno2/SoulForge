@@ -6,6 +6,7 @@ import { idbFileCache } from "../aurora/storage";
 import { readAuroraUpload, readFiveToolsUpload } from "../aurora/uploads";
 import { fetchFiveTools, storeFiveTools } from "../aurora/content";
 import { FiveToolsImport } from "./FiveToolsImport";
+import { HomebrewBuilder } from "./HomebrewBuilder";
 import { openExternal } from "../store";
 import type { AElement } from "../aurora/types";
 
@@ -235,6 +236,8 @@ export function ContentTab({ content, onDetail }: { content: ContentState; onDet
         <input ref={fileRef} aria-label="Choose element files or a ZIP" type="file" accept=".zip,.xml" multiple onChange={(e) => { importFiles(e.target.files); e.target.value = ""; }} />
         {msg && <p className="notice">{msg}</p>}
       </section>
+
+      <HomebrewBuilder content={content} classNames={content.reg.ofType("Class").map((c) => c.name).filter((n, i, a) => a.indexOf(n) === i).sort()} />
 
       <section className="card">
         <h2>Write your own content</h2>

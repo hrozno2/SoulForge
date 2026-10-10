@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "CharForge",
+  "version": "0.2.0",
+  "identifier": "app.charforge.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      { "label": "main", "title": "CharForge", "width": 1280, "height": 820, "minWidth": 900, "minHeight": 600 }
+    ],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": true,
+    "category": "Game",
+    "shortDescription": "D&D 5e character builder",
+    "longDescription": "A cross-platform D&D 5e (2024 rules) character builder with a data-driven rules engine, custom modifiers, content import and printable sheets and cards.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMzQTE4RkM0OTIxM0M4QTUKUldTbHlCT1N4SStoTTh5dUdzVUNESUdoaktKTWtEVktvdGcxbDBheWFaT0p1ekhIWVlBZFVKL2UK",
+      "endpoints": ["https://github.com/hrozno2/charforge/releases/latest/download/latest.json"],
+      "windows": { "installMode": "passive" }
+    }
+  }
+}

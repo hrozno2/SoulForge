@@ -1,0 +1,184 @@
+name: Release
+
+# Push a tag like v0.3.0 (scripts/release.sh does this) to build installers for every platform,
+# publish them with the signed update manifest, and refresh the Homebrew cask and the Arch pacman repository.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refuse an unconfigured copy
+        run: |
+          if grep -q "__REPO__\|__UPDATER_PUBKEY__" src-tauri/tauri.conf.json src/config.ts; then
+            echo "Placeholders are still in the config. Run scripts/publish.sh first." >&2
+            exit 1
+          fi
+      - name: Tag must match the app version
+        run: |
+          APP="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          if [ "v$APP" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match app version $APP" >&2
+            exit 1
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+
+  build:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+          - platform: macos-15-intel
+            args: --target x86_64-apple-darwin
+          - platform: ubuntu-22.04
+            args: ""
+          - platform: ubuntu-22.04-arm
+            args: ""
+          - platform: windows-latest
+            args: ""
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: startsWith(matrix.platform, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libxdo-dev libssl-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ startsWith(matrix.platform, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: CharForge ${{ github.ref_name }}
+          releaseBody: |
+            Install options:
+            - macOS: `brew install --cask ${{ github.repository_owner }}/charforge/charforge`
+            - Arch and CachyOS: add the CharForge pacman repo (see the README), then `sudo pacman -S charforge-bin`
+            - Windows: the .exe or .msi installer below
+            - Linux: the AppImage (self-updating), .deb or .rpm
+            The app checks for updates on launch.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --draft=false --latest
+
+  homebrew:
+    needs: publish
+    runs-on: ubuntu-latest
+    env:
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update the Homebrew cask
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "HOMEBREW_TAP_TOKEN is not set, skipping the Homebrew update."
+            exit 0
+          fi
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir dl
+          for arch in aarch64 x64; do
+            gh release download "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" -p "CharForge_${VERSION}_${arch}.dmg" -D dl
+          done
+          SHA_ARM="$(sha256sum "dl/CharForge_${VERSION}_aarch64.dmg" | cut -d' ' -f1)"
+          SHA_INTEL="$(sha256sum "dl/CharForge_${VERSION}_x64.dmg" | cut -d' ' -f1)"
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${GITHUB_REPOSITORY_OWNER}/homebrew-charforge.git" tap
+          mkdir -p tap/Casks
+          sed -e "s/__VERSION__/${VERSION}/g" -e "s/__SHA_ARM__/${SHA_ARM}/g" -e "s/__SHA_INTEL__/${SHA_INTEL}/g" \
+            packaging/homebrew/charforge.rb > tap/Casks/charforge.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/charforge.rb
+          git diff --cached --quiet || git commit -m "charforge ${VERSION}"
+          git push
+
+  arch:
+    # Builds the pacman package and publishes a pacman repository as release assets (no AUR account needed).
+    # Users add the repo once; pacman -Syu then keeps CharForge current.
+    needs: publish
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - name: Install tools
+        run: pacman -Syu --noconfirm git github-cli pacman-contrib
+      - uses: actions/checkout@v4
+      - name: Build the package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          useradd -m builder
+          cp -r packaging/arch /home/builder/pkg
+          chown -R builder /home/builder/pkg
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/; s/^pkgrel=.*/pkgrel=1/" /home/builder/pkg/PKGBUILD
+          su builder -c "cd /home/builder/pkg && updpkgsums && makepkg --noconfirm --nodeps -f"
+          ls /home/builder/pkg/*.pkg.tar.zst
+      - name: Publish the pacman repository
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          mkdir repo && cd repo
+          cp /home/builder/pkg/*.pkg.tar.zst .
+          repo-add charforge.db.tar.zst ./*.pkg.tar.zst
+          # Release assets cannot be symlinks, and pacman asks for plain charforge.db.
+          cp --remove-destination charforge.db.tar.zst charforge.db
+          cp --remove-destination charforge.files.tar.zst charforge.files
+          if ! gh release view arch --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create arch --repo "$GITHUB_REPOSITORY" --prerelease --latest=false \
+              --title "Arch package repository" \
+              --notes "Rolling pacman repository for Arch and CachyOS. See the README. Do not download from here by hand."
+          fi
+          # Drop packages from older versions so the repository only lists the newest.
+          for old in $(gh release view arch --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep '\.pkg\.tar\.zst$'); do
+            gh release delete-asset arch "$old" --repo "$GITHUB_REPOSITORY" -y
+          done
+          gh release upload arch --repo "$GITHUB_REPOSITORY" --clobber \
+            ./*.pkg.tar.zst charforge.db charforge.db.tar.zst charforge.files charforge.files.tar.zst

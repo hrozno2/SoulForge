@@ -1,0 +1,26 @@
+# Maintainer: hrozno2/charforge <https://github.com/hrozno2/charforge>
+pkgname=charforge-bin
+_name=CharForge
+pkgver=0.2.0
+pkgrel=1
+pkgdesc="D&D 5e (2024) character builder with custom modifiers, content import and PDF export"
+arch=('x86_64' 'aarch64')
+url="https://github.com/hrozno2/charforge"
+license=('custom')
+depends=('webkit2gtk-4.1' 'gtk3')
+provides=('charforge')
+conflicts=('charforge')
+options=('!strip' '!debug')
+noextract=("${pkgname}-${pkgver}-x86_64.deb" "${pkgname}-${pkgver}-aarch64.deb")
+source_x86_64=("${pkgname}-${pkgver}-x86_64.deb::${url}/releases/download/v${pkgver}/${_name}_${pkgver}_amd64.deb")
+source_aarch64=("${pkgname}-${pkgver}-aarch64.deb::${url}/releases/download/v${pkgver}/${_name}_${pkgver}_arm64.deb")
+sha256sums_x86_64=('SKIP')
+sha256sums_aarch64=('SKIP')
+
+package() {
+  local deb="${srcdir}/${pkgname}-${pkgver}-${CARCH}.deb"
+  mkdir -p "${srcdir}/deb"
+  cd "${srcdir}/deb"
+  bsdtar -xf "${deb}"
+  bsdtar -xf data.tar.* -C "${pkgdir}"
+}

@@ -14,7 +14,7 @@ The test is automated: `src/aurora/pregen.test.ts`. It chooses the same options 
 | Proficiency bonus | Sheet | Matches |
 | Six ability scores and modifiers | Build, Ability scores | Matches, including racial bonuses |
 | Six saving throws, proficient or not | Sheet | Matches |
-| 18 skills with bonuses and proficiency dots | Sheet | Matches, including Stealth with heavy armor (see below) and Alert style bonuses |
+| 18 skills with bonuses and proficiency dots | Sheet | Matches, including skills that are proficient through species, background and class |
 | Armor class | Sheet, Equipment | Matches: chain mail 16 plus shield, leather plus Dexterity, unarmored 10 plus Dexterity |
 | Initiative, speed | Sheet | Matches, including Wood Elf 35 ft and Hill Dwarf 25 ft |
 | Hit point maximum, hit dice | Sheet | Matches, including Dwarven Toughness |

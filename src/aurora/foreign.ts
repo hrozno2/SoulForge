@@ -45,6 +45,8 @@ class Importer {
   matched: string[] = [];
   missing: string[] = [];
   private wantedChoices: { types: string[]; name: string; label: string }[] = [];
+  /** What the file says the character has, used to fill open choices (skills, languages, tools, expertise, saves). */
+  hints = { skills: new Set<string>(), expertise: new Set<string>(), tools: new Set<string>(), languages: new Set<string>(), saves: new Set<string>() };
 
   constructor(private reg: ARegistry) {}
 
@@ -65,6 +67,53 @@ class Importer {
     }
     this.ch.inventory.push({ uid: uid(), id: el?.id ?? "", qty: Math.max(1, qty), equipped, attuned, custom: el ? undefined : { name } });
     (el ? this.matched : this.missing).push(el ? `${el.name} (${el.type})` : `${name} (item, kept as a custom item)`);
+  }
+
+
+  private score(slotName: string, optionName: string, scores: Partial<Record<AbilityId, number>>): number {
+    const n = optionName.toLowerCase().trim();
+    const inner = /\((.*)\)\s*$/.exec(n)?.[1]?.trim() ?? n;
+    const h = this.hints;
+    if (/^skill expertise/.test(n)) return h.expertise.has(inner) ? 100 : 0;
+    if (/^tool proficiency/.test(n)) return h.tools.has(inner) ? 100 : 0;
+    if (h.languages.has(n)) return 100;
+    const ab = ABILITY_IDS.find((a) => a === n);
+    if (ab) {
+      const total = scores[ab] ?? 0;
+      // A feat that grants a saving throw proficiency is best spent on one the class does not already give.
+      if (/resilient/i.test(slotName)) return h.saves.has(ab) ? 60 - total : -total;
+      return total;
+    }
+    if (h.skills.has(n)) return h.expertise.has(n) ? 95 : 90;
+    return 0;
+  }
+
+  /** Fills every open choice. Ones the file speaks to are matched; the rest take the first sensible option. */
+  private fillOpen(start: Character, scores: Partial<Record<AbilityId, number>>): Character {
+    let cur = start;
+    let guessed = 0;
+    const skip = new Set<string>();
+    for (let i = 0; i < 600; i++) {
+      const r = resolve(cur, this.reg);
+      const open = r.slots.find((s) => !skip.has(s.key) && !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length);
+      if (!open) break;
+      const taken = new Set(open.chosen);
+      const candidates = open.options
+        .filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !r.ids.has(o.id))
+        .map((o) => ({ o, sc: this.score(`${open.key} ${open.rule.name}`, o.name, scores) }))
+        .sort((a, b) => b.sc - a.sc);
+      const best = candidates[0] ?? { o: open.options.find((o) => !taken.has(o.id)), sc: 0 };
+      if (!best.o) break;
+      // A subclass the file names but the content lacks is better left open than guessed.
+      if (best.sc <= 0 && best.o.type === "Archetype") {
+        skip.add(open.key);
+        continue;
+      }
+      if (best.sc <= 0 && !/^\s*ability score/i.test(open.rule.name)) guessed++;
+      cur = { ...cur, selections: { ...cur.selections, [open.key]: [...open.chosen, best.o.id] } };
+    }
+    if (guessed) this.notes.push(`${guessed} choices the file did not say anything about were filled with the first option. Check the Build tab.`);
+    return cur;
   }
 
   /** Fill choices (subclass, feats, spells) with everything wanted, then derive base scores. */
@@ -91,6 +140,8 @@ class Importer {
         this.matched.push(`${el.name} (${w.label}, added by hand)`);
       }
     }
+    // Fill what is still open from the file's skills, languages, tools and scores, then with defaults.
+    ch = this.fillOpen(ch, importedScores);
     // Imported scores already include species and background bonuses, so remove them to get the base.
     const r = resolve(ch, this.reg);
     const base = { ...ch.abilityBase };
@@ -180,6 +231,16 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   if (!b.ch.classes.length) b.notes.push("No class found in the file.");
   // Subclasses are choices of the class, so place them after the classes are set.
   for (const s of subclasses) b.want(["Archetype"], s, "subclass");
+  const FSKILL: Record<string, string> = { acr: "acrobatics", ani: "animal handling", arc: "arcana", ath: "athletics", dec: "deception", his: "history", ins: "insight", itm: "intimidation", inv: "investigation", med: "medicine", nat: "nature", prc: "perception", prf: "performance", per: "persuasion", rel: "religion", slt: "sleight of hand", ste: "stealth", sur: "survival" };
+  for (const [k, name] of Object.entries(FSKILL)) {
+    const v = Number(sys.skills?.[k]?.value);
+    if (v >= 1) b.hints.skills.add(name);
+    if (v >= 2) b.hints.expertise.add(name);
+  }
+  for (const [k, a] of Object.entries(ABBR)) if (Number(sys.abilities?.[k]?.proficient) >= 1) b.hints.saves.add(a);
+  for (const l of sys.traits?.languages?.value ?? []) b.hints.languages.add(String(l).toLowerCase());
+  for (const l of sys.traits?.languages?.custom ? String(sys.traits.languages.custom).split(/[;,]/) : []) if (l.trim()) b.hints.languages.add(l.trim().toLowerCase());
+  for (const [k, t] of Object.entries<Json>(sys.tools ?? {})) if (Number(t?.value) >= 1) b.hints.tools.add(k.toLowerCase());
   const hp = Number(sys.attributes?.hp?.value);
   if (Number.isFinite(hp) && hp > 0) b.ch.play.hp = hp;
   const det: Json = sys.details ?? {};
@@ -263,7 +324,7 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   const sub = val("subrace");
   if (sub) {
     const inner = /\((.*?)\)/.exec(sub)?.[1];
-    for (const n of [sub, inner ?? ""]) if (n) b.want(["Sub Race", "Race Variant", "Race"], n, "subrace");
+    for (const n of [sub, inner ?? ""]) if (n) b.want(["Sub Race", "Race Variant", "Race", "Racial Trait"], n, "subrace or lineage");
   }
   const bg = findByName(reg, ["Background"], val("background"));
   if (bg) { b.ch.background = bg.id; b.matched.push(`${bg.name} (background)`); } else if (val("background")) b.missing.push(`${val("background")} (background)`);
@@ -278,6 +339,20 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
       else if (section === "traits" && f.name && /^feat$/i.test(f.source ?? "")) b.want(FEATURE_TYPES, f.name, "feat");
     }
   }
+
+  // What the sheet says the character is proficient in, to settle the open choices.
+  const on = (k: string) => !["", "0"].includes(val(k));
+  const SKILLS = ["acrobatics", "animal_handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight_of_hand", "stealth", "survival"];
+  for (const k of SKILLS) {
+    const name = k.replace(/_/g, " ");
+    if (on(`${k}_prof`)) b.hints.skills.add(name);
+    if (val(`${k}_type`) === "2") { b.hints.expertise.add(name); b.hints.skills.add(name); }
+  }
+  for (const a of ABILITY_IDS) if (on(`${a}_save_prof`)) b.hints.saves.add(a);
+  for (const f of rows.get("proficiencies")?.values() ?? []) {
+    if (/language/i.test(f.prof_type ?? "") && f.name) b.hints.languages.add(f.name.trim().toLowerCase());
+  }
+  for (const f of rows.get("tool")?.values() ?? []) if (f.toolname) b.hints.tools.add(f.toolname.trim().toLowerCase());
 
   // Details
   const num = (k: string) => (Number(val(k)) > 0 ? Number(val(k)) : 0);

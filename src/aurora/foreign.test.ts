@@ -10,6 +10,7 @@ import { resolve } from "./engine";
 
 const CONTENT = process.env.AURORA_FIXTURES_2014;
 const DIR = process.env.FOREIGN_FIXTURES;
+const CONTENT24 = process.env.AURORA_FIXTURES_2024;
 
 describe.skipIf(!CONTENT || !DIR)("foreign character import", () => {
   const reg = CONTENT ? loadRegistry(CONTENT) : undefined;
@@ -65,5 +66,23 @@ describe.skipIf(!CONTENT || !DIR)("foreign character import", () => {
     expect(names).toContain("Longsword");
     // Class features are not reported as missing feats.
     expect(res.missing.join()).not.toMatch(/Second Wind|Action Surge/);
+  });
+});
+
+describe.skipIf(!CONTENT24 || !DIR)("foreign import against the 2024 rules", () => {
+  it("settles species, class and feat choices from a Roll20 bard", () => {
+    const reg = loadRegistry(CONTENT24!);
+    const res = importForeignCharacter(JSON.parse(readFileSync(`${DIR}/Talaan Istodaewl(1).json`, "utf8")), reg);
+    const r = resolve(res.character, reg);
+    const open = r.slots.filter((s) => !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length);
+    // Only a subclass the content does not have may stay open.
+    expect(open.map((s) => s.options[0].type)).toEqual(["Archetype"]);
+    const names = (id: string) => r.slots.filter((s) => s.key.includes(id)).flatMap((s) => s.chosen.map((c) => reg.get(c)?.name));
+    expect(names("ELVEN_LINEAGE|")).toContain("Drow");
+    expect(names("CLASS_FEATURE_BARD_EXPERTISE")).toEqual(expect.arrayContaining(["Skill Expertise (Perception)", "Skill Expertise (Stealth)"]));
+    expect(names("CLASS_BARD|5")).toEqual(expect.arrayContaining(["Tool Proficiency (Lute)", "Tool Proficiency (Lyre)"]));
+    // Resilient goes to the one saving throw the class does not already give.
+    expect(names("FEAT_RESILIENT")).toEqual(["Constitution"]);
+    expect(r.stats.get("charisma")).toBe(20);
   });
 });

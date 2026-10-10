@@ -7,6 +7,8 @@
     "core:default",
     "opener:allow-open-url",
     "dialog:allow-save",
+    "dialog:allow-open",
+    "fs:allow-read-file",
     "fs:allow-write-file",
     "updater:default",
     "process:allow-restart"

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { deleteCharacterRecord, listCharacters, type CharacterRecord } from "../aurora/storage";
 import { newCharacter, uid, type Character } from "../aurora/character";
-import { downloadText } from "../store";
+import { downloadText, pickFiles } from "../store";
 import { Hint } from "./Help";
 
 function ago(ms: number): string {
@@ -62,8 +62,8 @@ export function StartTab({
         <div className="row">
           <button className="primary" onClick={onNew}>New character</button>
           <button onClick={onRandom} disabled={sourceCount === 0}>Random character</button>
-          <button onClick={() => fileRef.current?.click()}>Open file (.json)</button>
-          <button onClick={() => foreignRef.current?.click()}>Import Foundry / Roll20 / Plutonium</button>
+          <button onClick={async () => { const f = await pickFiles(["json"]); if (f === null) fileRef.current?.click(); else if (f[0]) importJson(f[0]); }}>Open file (.json)</button>
+          <button onClick={async () => { const f = await pickFiles(["json"]); if (f === null) foreignRef.current?.click(); else if (f[0]) setMsg(await onImportForeign(f[0])); }}>Import Foundry / Roll20 / Plutonium</button>
           <input ref={fileRef} type="file" accept=".json" hidden onChange={(e) => { importJson(e.target.files?.[0]); e.target.value = ""; }} />
           <input ref={foreignRef} type="file" accept=".json" hidden onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) setMsg(await onImportForeign(f)); }} />
         </div>

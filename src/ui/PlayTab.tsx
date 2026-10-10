@@ -376,6 +376,10 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
         </div>
       </header>
 
+      <div className="play-tools">
+        <div className="rollmode-row"><small>d20 rolls</small><RollModeSwitch /></div>
+        <Hint id="play-1">Click any modifier to roll it. Click a pip on a feature to spend a use.</Hint>
+      </div>
       <div className="vital-row">
         <div className="ab-row">{sheet.abilities.map((a) => <AbilityBox key={a.id} id={a.id} a={a} />)}</div>
         <div className="stat-tiles">
@@ -384,8 +388,6 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
           <button className="tile" onClick={() => roll("Initiative", sheet.initiative)}><small>Initiative</small><b>{sign(sheet.initiative)}</b></button>
           <Shield value={sheet.ac.value} />
         </div>
-        <Hint id="play-1">Click any modifier to roll it. Click a pip on a feature to spend a use.</Hint>
-        <div className="rollmode-row"><small>d20 rolls</small><RollModeSwitch /></div>
         <Vitals ch={ch} sheet={sheet} set={set} />
       </div>
 

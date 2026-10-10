@@ -1,7 +1,53 @@
+<p align="center"><img src="assets/logo.svg" width="120" alt="Soul Forge logo"></p>
+
 # Soul Forge
 
-Desktop D&D 5e (2024 rules) character builder on the Aurora element format, with content links that update themselves and 5etools/Plutonium data import.
-Runs on Windows, macOS and Linux through Tauri. Original code, not affiliated with Aurora Builder or Wizards of the Coast.
+A free, open source D&D 5e (2024 rules) character builder for Windows, macOS and Linux. It builds on the Aurora element format, keeps its content up to date from links, and imports 5e.tools and Plutonium data.
+Original code, not affiliated with Aurora Builder or Wizards of the Coast.
+
+![The Play tab](docs/screenshots/play.png)
+
+## Features
+
+**Build**
+- Species, class and subclass, background, ability scores, languages, proficiencies, feats and multiclassing, using the Aurora element rules (grants, selections, stat bonuses, requirements, spellcasting).
+- Filters like 5e.tools on every list, sort by name, recommended or newest, and Badges or List view.
+- The same option from several books is one card; pick the book from chips that show the release date, with the newest marked.
+- "Choose 3" counters, and a hover list of what is still unchosen on each tab.
+- Your own modifiers on any ability score or stat.
+
+**Magic and equipment**
+- Spell lists with level, school, class, component, concentration and ritual filters; slots, prepared and always-prepared spells.
+- Starting equipment from class, background and gear packs in one click; equip, attune, coins, armor class that follows what you wear.
+- Companions, mounts and familiars.
+
+**Play**
+- A Play tab laid out like a table sheet: abilities, saves, skills, vitals, rests, hit dice, attacks, spells, inventory, features with clear uses per rest.
+- Click any modifier to roll. A dice panel with shaped dice, big results, an optional roll log, and an Advantage / Disadvantage switch.
+
+**Content**
+- Content links update by themselves. Add the AuroraLegacy link or any `.index`.
+- 5etools and Plutonium data: paste 5e.tools links or search a data folder and import only what you pick.
+- Import characters from Foundry VTT and Roll20; write your own homebrew in element XML.
+
+**Sheets and PDFs**
+- Fills the official 2024 character sheet, the DLDM 5E24 sheets and the DLDM companion sheets from your own copies.
+- Spell, item and feature cards, and tips and tricks for play, can be added to any export.
+
+**Look**
+- Five themes: Obsidian, Leather, Tools blue, Daylight and Printed book. Stock portraits, or your own.
+- Quiet help: a **?** button and hints you can dismiss.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Home](docs/screenshots/home.png) Home | ![Build](docs/screenshots/build.png) Build |
+| ![Magic](docs/screenshots/magic.png) Magic | ![Equipment](docs/screenshots/equipment.png) Equipment |
+| ![Manage](docs/screenshots/manage.png) Manage | ![Sheet](docs/screenshots/sheet.png) Export |
+| ![Content](docs/screenshots/content.png) Content | ![Dice](docs/screenshots/dice.png) Dice |
+| ![Printed book theme](docs/screenshots/theme-parchment.png) Printed book | ![Tools blue theme](docs/screenshots/theme-tools.png) Tools blue |
+| ![Daylight theme](docs/screenshots/theme-daylight.png) Daylight | |
 
 ## Install
 

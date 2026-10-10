@@ -9,7 +9,7 @@ import { buildFillData, companionFill } from "../sheets/data";
 import { DLDM_PAGES, detectPages, fillDldm, type DldmPage } from "../sheets/dldm";
 import { companionLayoutOfPdf, fillCompanion } from "../sheets/companion";
 import { readWidgets } from "../sheets/widgets";
-import { saveFile } from "../store";
+import { nextFrame, pickFiles, saveFile } from "../store";
 
 /** Fill the player's own copy of a fillable character sheet PDF. The PDF is stored on this computer only. */
 export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) {
@@ -37,15 +37,22 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
   ];
   const companionList = companions.filter((c, i, a) => c.id && a.findIndex((x) => x.id === c.id && x.name === c.name) === i);
 
-  const add = async (list: FileList | null) => {
+  const choose = async () => {
+    const files = await pickFiles(["pdf"], true);
+    if (files === null) fileRef.current?.click();
+    else add(files);
+  };
+
+  const add = async (list: FileList | File[] | null) => {
     if (!list || !list.length) return;
     setMsg("Reading...");
+    await nextFrame();
     const notes: string[] = [];
     for (const file of [...list]) {
       try {
         const bytes = await file.arrayBuffer();
         const { PDFDocument } = await import("pdf-lib");
-        const doc = await PDFDocument.load(bytes);
+        const doc = await PDFDocument.load(bytes, { updateMetadata: false });
         const widgets = readWidgets(doc);
         const found = [...detectPages(widgets).values()];
         const first = doc.getPage(0).getSize();
@@ -120,7 +127,7 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
       <h3>Your own sheet PDFs</h3>
       <p className="muted">Load your own copy of a sheet. Supported: the official 2024 character sheet (free from Wizards of the Coast at dndbeyond.com, search "2024 character sheet"; filled as printed text), the DLDM 5E24 sheets (stay editable) and the DLDM companion sheets. Soul Forge keeps the file on this computer only.</p>
       <div className="row">
-        <button onClick={() => fileRef.current?.click()}>Add sheet PDF...</button>
+        <button onClick={choose}>Add sheet PDF...</button>
         <input ref={fileRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = ""; }} />
       </div>
       {templates.length > 0 && (

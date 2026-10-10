@@ -37,3 +37,26 @@ export async function saveFile(name: string, data: Uint8Array, mime: string): Pr
     return true;
   }
 }
+
+const inTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
+/**
+ * Opens the system file picker. In the desktop app this is the native dialog, which opens at once; a web
+ * file input can stall for seconds on macOS. Returns null outside the desktop app so callers fall back to an input.
+ */
+export async function pickFiles(extensions: string[], multiple = false): Promise<File[] | null> {
+  if (!inTauri()) return null;
+  try {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    const { readFile } = await import("@tauri-apps/plugin-fs");
+    const chosen = await open({ multiple, directory: false, filters: [{ name: extensions.join(", "), extensions }] });
+    if (!chosen) return [];
+    const paths = Array.isArray(chosen) ? chosen : [chosen];
+    return await Promise.all(paths.map(async (path) => new File([(await readFile(path)) as BlobPart], path.split(/[\\/]/).pop() ?? "file")));
+  } catch {
+    return null;
+  }
+}
+
+/** Lets the browser paint a message before a long synchronous job starts. */
+export const nextFrame = () => new Promise<void>((r) => setTimeout(r, 30));

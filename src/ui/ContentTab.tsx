@@ -67,7 +67,7 @@ function Compendium({ content, onDetail }: { content: ContentState; onDetail: (e
       </div>
       <ul className="options boxed">
         {results.map((e) => (
-          <li key={e.id}><button onMouseEnter={() => onDetail(e)} onClick={() => onDetail(e)}><span className="tick" /><span className="opt-name">{e.name}</span><span className="opt-meta">{e.type}</span><span className="opt-src">{e.source}</span></button></li>
+          <li key={e.id}><button onMouseEnter={() => onDetail(e)} onClick={() => onDetail(e)}><span className="tick" /><span className="opt-name">{e.name}</span><span className="opt-meta">{e.type}</span><span className="opt-src" title={e.source}>{e.source}</span></button></li>
         ))}
       </ul>
     </section>

@@ -119,7 +119,7 @@ function Options({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: Se
         return (
           <li key={o.id} className={on ? "picked" : ""}>
             <button onClick={() => set((c) => ({ ...c, options: on ? c.options.filter((x) => x !== o.id) : [...c.options, o.id] }))} onMouseEnter={() => onDetail(o)}>
-              <span className="tick">{on ? "✓" : ""}</span><span className="opt-name">{o.name}</span><span className="opt-meta" /><span className="opt-src">{o.source}</span>
+              <span className="tick">{on ? "✓" : ""}</span><span className="opt-name">{o.name}</span><span className="opt-meta" /><span className="opt-src" title={o.source}>{o.source}</span>
             </button>
           </li>
         );
@@ -180,7 +180,7 @@ function Additions({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: 
       </div>
       <ul className="options boxed">
         {results.map((o) => (
-          <li key={o.id}><button onMouseEnter={() => onDetail(o)} onClick={() => set((c) => ({ ...c, extras: [...c.extras, o.id] }))}><span className="tick">+</span><span className="opt-name">{o.name}</span><span className="opt-meta" /><span className="opt-src">{o.source}</span></button></li>
+          <li key={o.id}><button onMouseEnter={() => onDetail(o)} onClick={() => set((c) => ({ ...c, extras: [...c.extras, o.id] }))}><span className="tick">+</span><span className="opt-name">{o.name}</span><span className="opt-meta" /><span className="opt-src" title={o.source}>{o.source}</span></button></li>
         ))}
       </ul>
       <h3>Added</h3>
@@ -285,7 +285,7 @@ function Companions({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
       <small className="muted">{found.length} listed</small>
       <ul className="options boxed companion-list">
         {found.map((c) => (
-          <li key={c.id}><button onMouseEnter={() => onDetail(c)} onClick={() => set((x) => ({ ...x, companions: [...x.companions, { uid: uid(), id: c.id, name: c.name }] }))}><span className="tick">+</span><span className="opt-name">{c.name}</span><span className="opt-meta" /><span className="opt-src">{c.source}</span></button></li>
+          <li key={c.id}><button onMouseEnter={() => onDetail(c)} onClick={() => set((x) => ({ ...x, companions: [...x.companions, { uid: uid(), id: c.id, name: c.name }] }))}><span className="tick">+</span><span className="opt-name">{c.name}</span><span className="opt-meta" /><span className="opt-src" title={c.source}>{c.source}</span></button></li>
         ))}
       </ul>
       {ch.companions.map((c) => {

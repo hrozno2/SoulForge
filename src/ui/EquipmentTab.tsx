@@ -77,7 +77,7 @@ export function EquipmentTab({ r, ch, set, onDetail }: { r: Resolved; ch: Charac
                 <span className="tick">+</span>
                 <span className="opt-name">{o.name}</span>
                 <span className="opt-meta">{o.type}{o.setters.cost ? ` · ${o.setters.cost.value} ${o.setters.cost.attrs.currency ?? ""}` : ""}</span>
-                <span className="opt-src">{o.source}</span>
+                <span className="opt-src" title={o.source}>{o.source}</span>
               </button>
             </li>
           ))}

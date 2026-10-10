@@ -39,12 +39,12 @@ function VariantChips({ g, activeId, chosen, onActive, short, onSwitch }: { g: G
   const when = (r?: number) => (short ? (r ? String(Math.floor(r / 10000)) : "") : formatRelease(r));
   if (g.variants.length < 2) {
     const v = g.variants[0];
-    return <span className="vchips"><span className="vchip static">{v.book.abbr ?? v.el.source}{v.book.release ? ` · ${when(v.book.release)}` : ""}</span></span>;
+    return <span className="vchips"><span className="vchip static" tabIndex={0} title={`${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`}>{v.book.abbr ?? v.el.source}{v.book.release ? ` · ${when(v.book.release)}` : ""}</span></span>;
   }
   return (
     <span className="vchips" role="group" aria-label="Versions from different books">
       {g.variants.map((v) => (
-        <button key={v.el.id} className={`vchip ${v.el.id === activeId ? "on" : ""} ${chosen.has(v.el.id) ? "chosen" : ""}`} title={`${v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`} onClick={(e) => {
+        <button key={v.el.id} className={`vchip ${v.el.id === activeId ? "on" : ""} ${chosen.has(v.el.id) ? "chosen" : ""}`} title={`${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`} onClick={(e) => {
           e.stopPropagation();
           onActive(v.el.id);
           // In the list a version you click replaces the one you already picked from this group.

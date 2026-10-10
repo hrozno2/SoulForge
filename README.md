@@ -46,10 +46,11 @@ Original code, not affiliated with Aurora Builder or Wizards of the Coast.
 |---|---|
 | ![Home](docs/screenshots/home.png) Home | ![Build](docs/screenshots/build.png) Build |
 | ![Magic](docs/screenshots/magic.png) Magic | ![Equipment](docs/screenshots/equipment.png) Equipment |
-| ![Manage](docs/screenshots/manage.png) Manage | ![Sheet](docs/screenshots/sheet.png) Export |
-| ![Content](docs/screenshots/content.png) Content | ![Dice](docs/screenshots/dice.png) Dice |
-| ![Printed book theme](docs/screenshots/theme-parchment.png) Printed book | ![Tools blue theme](docs/screenshots/theme-tools.png) Tools blue |
-| ![Daylight theme](docs/screenshots/theme-daylight.png) Daylight | |
+| ![Play spells](docs/screenshots/play-spells.png) Play: spells | ![Resources](docs/screenshots/play-resources.png) Play: resources |
+| ![Manage](docs/screenshots/manage.png) Manage | ![Dice](docs/screenshots/dice.png) Dice tray |
+| ![Export](docs/screenshots/sheet.png) Export | ![PDF sheet](docs/screenshots/pdf-sheet.png) The PDF sheet, laid out like the official one |
+| ![Content](docs/screenshots/content.png) Content | ![Printed book theme](docs/screenshots/theme-parchment.png) Printed book theme |
+| ![Tools blue theme](docs/screenshots/theme-tools.png) Tools blue theme | ![Daylight theme](docs/screenshots/theme-daylight.png) Daylight theme |
 
 ## Install
 

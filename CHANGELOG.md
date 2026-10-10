@@ -2,6 +2,30 @@
 
 What changed in each release. Newest first.
 
+## v0.8.0 (2026-10-10)
+
+- DeepL translation service (desktop app), glossary of fixed term translations with starter lists
+- Translation: retry a failed batch one string at a time, say how many stayed in English on every export
+- Sheet links in one file, weekly link check, search fallback in the panel
+- Link the DLDM sheets folder with credit
+- New default sheet with its own layout, bold feature names on the fillable sheets, Build badge says what is left, level up text readable in dark themes
+- Condition icons with rules on hover, official sheet recognised fillable or print, translations keep names of spells, items and features
+- Spell school icons (game-icons.net, CC BY), Cast rolls the spell's dice, compact spell rows, favorites row with drag and star, collapsible session log
+- Play sheet: boxes keep their proportions, D&D Beyond style rounded ability and stat boxes
+- Dice bag button, tab icons, card dividers and a faint d20 in the corner
+- Portrait source link stays after the mouse leaves
+- Two hands limit, stacking and marked gear, plain labels for focus items and storage, dark helper window, roll for HP, dice tray resets after a roll
+- Starting equipment: class and background fold one at a time
+- Global content filters, repeated choices merged into one, spell school works as a filter word (fixes Evocation Savant)
+- Fix level-up test after the section Done button
+- Spell rows keep their columns when an option is unavailable; reasons are neutral and in hover text
+- Owned options show a locked check with what grants them; finished choices fold away
+- Only offer the Recommended sort where it means something
+- Full source name on hover
+- Point buy house rules: budget, lowest and highest score, cost of every score
+- Party slots as pips, random character asks for a level, version chips switch the pick in list view
+- Homebrew cask: use postflight_steps
+
 ## v0.7.0 (2026-10-10)
 
 - Release script: handle inherited output; changelog header

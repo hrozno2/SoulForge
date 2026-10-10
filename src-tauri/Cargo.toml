@@ -1,7 +1,7 @@
 [package]
 license = "MIT"
 name = "charforge"
-version = "0.7.0"
+version = "0.8.0"
 description = "D&D 5e (2024) character builder with a data-driven rules engine"
 edition = "2021"
 

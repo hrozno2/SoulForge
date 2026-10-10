@@ -657,3 +657,6 @@ span.roll-chip.save:hover { background: var(--panel2); color: var(--text); }
 .attack-edit { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 0 4px; }
 .attack-edit label { display: inline-flex; gap: 6px; align-items: center; }
 .companion-list { max-height: 260px; overflow: auto; }
+
+.hp-bar.big .temp-fill { position: absolute; top: 0; bottom: 0; height: auto; background: linear-gradient(90deg, #2a6fb8, #4aa0ee); }
+.hp-bar.big.low > div:first-child { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 60%, #000), var(--accent)); }

@@ -65,11 +65,15 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
     setAmount("");
   };
   const pct = sheet.hp ? Math.max(0, Math.min(100, (hp / sheet.hp) * 100)) : 0;
+  // Temporary hit points sit after the real ones in blue. If together they pass the maximum, the bar rescales.
+  const room = Math.max(sheet.hp, hp + ch.play.tempHp) || 1;
+  const hpPart = (hp / room) * 100;
+  const tempPart = Math.min(100 - hpPart, (ch.play.tempHp / room) * 100);
   return (
     <div className="vitals">
       <div className="hp-main">
         <small>Hit Points</small>
-        <div className={pct < 25 ? "hp-bar big low" : "hp-bar big"}><div style={{ width: `${pct}%` }} /><span>{hp} / {sheet.hp}</span><i className="hp-temp" title="Temporary hit points">{ch.play.tempHp}</i></div>
+        <div className={pct < 25 ? "hp-bar big low" : "hp-bar big"}><div style={{ width: `${hpPart}%` }} />{ch.play.tempHp > 0 && <div className="temp-fill" style={{ left: `${hpPart}%`, width: `${tempPart}%` }} />}<span>{hp} / {sheet.hp}{ch.play.tempHp > 0 ? ` (+${ch.play.tempHp})` : ""}</span>{ch.play.tempHp > 0 && <i className="hp-temp" title="Temporary hit points">{ch.play.tempHp}</i>}</div>
       </div>
       <div className="hp-manage">
         <input type="number" min={0} placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => e.key === "Enter" && damage()} />

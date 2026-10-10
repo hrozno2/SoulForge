@@ -727,3 +727,5 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .hp-bar.wild > div:first-child { background: var(--accent2, #2f8f5a); }
 .forms-panel .row { align-items: center; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
 .forms-panel .row input[type="number"] { width: 90px; }
+.journal .journal-entry textarea { width: 100%; margin-top: 6px; }
+.journal .row { align-items: center; flex-wrap: wrap; gap: 8px; margin: 6px 0; }

@@ -104,6 +104,14 @@ export interface CompanionEntry {
   notes?: string;
 }
 
+export interface JournalEntry {
+  uid: string;
+  /** ISO date of the session, such as 2026-10-10. */
+  date: string;
+  title: string;
+  text: string;
+}
+
 export interface Resource {
   id: string;
   name: string;
@@ -187,6 +195,8 @@ export interface Character {
   attackEdits?: Record<string, AttackEdit>;
   info: CharacterInfo;
   notes: string;
+  /** Session log, newest first when shown. */
+  journal?: JournalEntry[];
   /** Small portrait as a data URL, set on the Manage tab. */
   portrait?: string;
   play: PlayState;

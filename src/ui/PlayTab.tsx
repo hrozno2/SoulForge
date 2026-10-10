@@ -8,6 +8,7 @@ import { requestRoll, RollModeSwitch, type RollOptions } from "./Dice";
 import { ConditionsPanel } from "./ConditionsPanel";
 import { applyDamage, applyHealing } from "./hpModel";
 import { FormsPanel } from "./FormsPanel";
+import { Journal } from "./Journal";
 import { CONDITION_TEXT, speedAfterExhaustion } from "./conditions";
 import { Hint } from "./Help";
 import { RollChips } from "./RollChips";
@@ -566,7 +567,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
             {tab === "resources" && <Resources ch={ch} set={set} />}
             {tab === "features" && <Features ch={ch} sheet={sheet} set={set} />}
             {tab === "description" && <Description ch={ch} sheet={sheet} set={set} />}
-            {tab === "notes" && <label className="field"><span>Notes</span><textarea rows={16} value={ch.notes} onChange={(e) => set((c) => ({ ...c, notes: e.target.value }))} /></label>}
+            {tab === "notes" && <Journal ch={ch} set={set} />}
             {tab === "extras" && (
               <>
                 {companions.length === 0 && <p className="muted">No companions. Add them on the Manage tab.</p>}

@@ -20,6 +20,7 @@ import { UiProvider } from "./Learn";
 import { ThemePicker } from "./Theme";
 import { HelpButton } from "./Help";
 import { AppMenu, Tabs } from "./TopBar";
+import { SettingsDialog, useScaleShortcuts } from "./Settings";
 import { useUpdater } from "../updater";
 import { importForeignCharacter } from "../aurora/foreign";
 
@@ -42,6 +43,8 @@ function loadCurrent(): { id: string; ch: Character } {
 
 export function App() {
   const [tab, setTab] = useState<Tab>("start");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useScaleShortcuts();
   const initial = useMemo(loadCurrent, []);
   const [id, setId] = useState(initial.id);
   const [character, setCharacter] = useState<Character>(initial.ch);
@@ -112,9 +115,11 @@ export function App() {
         <HelpButton tab={tab} />
         <AppMenu>
           <label className="menu-row">Theme <ThemePicker /></label>
+          <button className="menu-item" onClick={() => setSettingsOpen(true)}>Settings...</button>
           <button className="menu-item" onClick={() => updater.check(true)}>Check for updates</button>
         </AppMenu>
       </header>
+      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} dismiss={updater.dismiss} />
       <main className={showDetail ? "with-detail" : ""}>
         <div className="pane">

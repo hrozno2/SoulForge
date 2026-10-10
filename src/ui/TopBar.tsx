@@ -92,7 +92,7 @@ export function AppMenu({ children }: { children: ReactNode }) {
   return (
     <div className="popup-wrap right noprint" ref={m.ref}>
       <button className="tab" aria-haspopup="menu" aria-expanded={m.open} onClick={() => m.setOpen(!m.open)}>Menu ▾</button>
-      {m.open && <div className="popup right" role="menu">{children}</div>}
+      {m.open && <div className="popup right" role="menu" onClick={(e) => (e.target as HTMLElement).closest("button.menu-item") && m.setOpen(false)}>{children}</div>}
     </div>
   );
 }

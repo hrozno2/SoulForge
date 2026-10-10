@@ -660,3 +660,30 @@ span.roll-chip.save:hover { background: var(--panel2); color: var(--text); }
 
 .hp-bar.big .temp-fill { position: absolute; top: 0; bottom: 0; height: auto; background: linear-gradient(90deg, #2a6fb8, #4aa0ee); }
 .hp-bar.big.low > div:first-child { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 60%, #000), var(--accent)); }
+
+.cropper { width: min(720px, 100%); }
+.crop-row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+.crop-stage { position: relative; flex: 1 1 320px; max-width: 420px; line-height: 0; cursor: crosshair; }
+.crop-stage img { width: 100%; height: auto; display: block; border: 1px solid var(--gilt); }
+.crop-box { position: absolute; border: 2px solid var(--accent); box-shadow: 0 0 0 9999px rgba(0,0,0,.35); pointer-events: none; }
+.crop-side { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.crop-side .portrait-lg { width: 120px; height: 120px; }
+
+.settings { width: min(560px, 100%); }
+.modal-close { position: absolute; right: 12px; top: 8px; background: none; border: 1px solid var(--crimson); color: var(--crimson); font-size: 22px; line-height: 1; padding: 0 10px; cursor: pointer; }
+.set-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px dotted var(--gilt); }
+.set-row small { display: block; }
+.set-ctl { display: inline-flex; align-items: center; gap: 10px; }
+.set-ctl output { min-width: 3.2em; text-align: right; font-weight: 700; }
+html.compact main { padding: 10px 14px 40px; }
+html.compact .card, html.compact .subcard, html.compact .play-panel { padding-top: 6px; padding-bottom: 8px; margin-bottom: 8px; }
+html.compact .skill-line, html.compact .line-btn { padding-top: 2px; padding-bottom: 2px; }
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+
+/* the dialogs are paper pages in every theme, so their text and buttons must stay dark */
+:root .modal-page h2 { color: var(--crimson); }
+:root .modal-page { --text: var(--ink); --muted: #6b5a3a; }
+:root .modal-page button:not(.primary) { color: var(--ink); background: transparent; border-color: var(--crimson); }
+:root .modal-page button:not(.primary):disabled { opacity: .45; }
+:root .modal-page .pill.active { background: var(--paper2); }
+:root .modal-page label { color: var(--ink); }

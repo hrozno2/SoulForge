@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { PortraitPicker, toPortrait } from "./Portrait";
+import { PortraitCropper, PortraitPicker } from "./Portrait";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { hitDieOf } from "../aurora/engine";
@@ -81,15 +81,17 @@ function PickOrType({ label, items, value, onChange }: { label: string; items: A
 }
 
 function Info({ ch, set, r }: { ch: Character; set: SetCharacter; r: Resolved }) {
+  const [crop, setCrop] = useState<File | null>(null);
   const put = (k: keyof Character["info"], v: string) => set((c) => ({ ...c, info: { ...c.info, [k]: v } }));
   return (
     <>
       <div className="row">
         {ch.portrait && <img className="portrait small" src={ch.portrait} alt="Portrait" />}
-        <label>Portrait: <input type="file" accept="image/*" onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) { try { const url = await toPortrait(f); set((c) => ({ ...c, portrait: url })); } catch { /* ignore non-images */ } } }} /></label>
+        <label>Portrait: <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f && f.type.startsWith("image/")) setCrop(f); }} /></label>
         {ch.portrait && <button onClick={() => set((c) => ({ ...c, portrait: undefined }))}>Remove</button>}
       </div>
       <PortraitPicker onPick={(url) => set((c) => ({ ...c, portrait: url }))} />
+      {crop && <PortraitCropper file={crop} onCancel={() => setCrop(null)} onDone={(url) => { set((c) => ({ ...c, portrait: url })); setCrop(null); }} />}
       <div className="row">
         <label className="field"><span>Character name</span><input value={ch.name} onChange={(e) => set((c) => ({ ...c, name: e.target.value }))} /></label>
         <label className="field"><span>Player</span><input value={ch.playerName} onChange={(e) => set((c) => ({ ...c, playerName: e.target.value }))} /></label>

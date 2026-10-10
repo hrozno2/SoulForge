@@ -1,278 +1,1267 @@
 [
  {
-  "file": "aliorumnas.png",
+  "file": "aliorumnas.jpg",
   "title": "Aliorumnas",
   "source": "https://commons.wikimedia.org/wiki/File:Aliorumnas.png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.3
+  ],
+  "zoom": 2.4
  },
  {
-  "file": "anguekkok.png",
+  "file": "anguekkok.jpg",
   "title": "Anguekkok",
   "source": "https://commons.wikimedia.org/wiki/File:Anguekkok.png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.28
+  ],
+  "zoom": 3
  },
  {
-  "file": "armor.png",
-  "title": "Armor",
-  "source": "https://commons.wikimedia.org/wiki/File:Armor_(PSF).png",
-  "license": "Public domain"
- },
- {
-  "file": "artemis.png",
+  "file": "artemis.jpg",
   "title": "Artemis",
   "source": "https://commons.wikimedia.org/wiki/File:Artemis_(PSF).png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.46,
+   0.075
+  ],
+  "zoom": 3.2
  },
  {
-  "file": "berber-woman.png",
+  "file": "berber-woman.jpg",
   "title": "Berber woman",
   "source": "https://commons.wikimedia.org/wiki/File:Berber_woman_(PSF).png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.3
+  ],
+  "zoom": 2
  },
  {
-  "file": "bowman.png",
-  "title": "Bowman",
-  "source": "https://commons.wikimedia.org/wiki/File:Bowman_(PSF).png",
-  "license": "Public domain"
- },
- {
-  "file": "burnoose3.png",
+  "file": "burnoose3.jpg",
   "title": "Burnoose3",
   "source": "https://commons.wikimedia.org/wiki/File:Burnoose3_(PSF).jpg",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.45,
+   0.2
+  ],
+  "zoom": 2.6
  },
  {
-  "file": "caftan-2.png",
+  "file": "caftan-2.jpg",
   "title": "Caftan 2",
   "source": "https://commons.wikimedia.org/wiki/File:Caftan_2_(PSF).png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.11
+  ],
+  "zoom": 3.2
  },
  {
-  "file": "callot-burlesque-violinist.png",
-  "title": "Callot Burlesque Violinist",
-  "source": "https://commons.wikimedia.org/wiki/File:Callot_Burlesque_Violinist.jpg",
-  "license": "Public domain"
- },
- {
-  "file": "calogero-monk-01.png",
+  "file": "calogero-monk-01.jpg",
   "title": "Calogero (monk)01",
   "source": "https://commons.wikimedia.org/wiki/File:Calogero_(monk)01.jpg",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.27
+  ],
+  "zoom": 3
  },
  {
-  "file": "cloak.png",
+  "file": "cloak.jpg",
   "title": "Cloak",
   "source": "https://commons.wikimedia.org/wiki/File:Cloak_(PSF).jpg",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.45,
+   0.2
+  ],
+  "zoom": 3
  },
  {
-  "file": "cope.png",
+  "file": "cope.jpg",
   "title": "Cope",
   "source": "https://commons.wikimedia.org/wiki/File:Cope_(PSF).png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.16
+  ],
+  "zoom": 2.6
  },
  {
-  "file": "cowl.png",
+  "file": "cowl.jpg",
   "title": "Cowl",
   "source": "https://commons.wikimedia.org/wiki/File:Cowl_(PSF).png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.4,
+   0.48
+  ],
+  "zoom": 1.6
  },
  {
-  "file": "dindarte.png",
-  "title": "Dindarte",
-  "source": "https://commons.wikimedia.org/wiki/File:Dindarte.png",
-  "license": "Public domain"
- },
- {
-  "file": "dorothy-and-the-wizard-in-oz-1908-14730071726.png",
+  "file": "dorothy-and-the-wizard-in-oz-1908-14730071726.jpg",
   "title": "Dorothy and the wizard in Oz (1908) (14730071726)",
   "source": "https://commons.wikimedia.org/wiki/File:Dorothy_and_the_wizard_in_Oz_(1908)_(14730071726).jpg",
-  "license": "No restrictions"
+  "license": "No restrictions",
+  "focus": [
+   0.4,
+   0.45
+  ],
+  "zoom": 1.7
  },
  {
-  "file": "elvenlord.png",
+  "file": "elvenlord.jpg",
   "title": "Elvenlord",
   "source": "https://commons.wikimedia.org/wiki/File:Elvenlord.jpg",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.8
  },
  {
-  "file": "fools-cap.png",
+  "file": "fools-cap.jpg",
   "title": "Fools Cap",
   "source": "https://commons.wikimedia.org/wiki/File:Fools_Cap_(PSF).png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.55
+  ],
+  "zoom": 1.3
  },
  {
-  "file": "helmet-medieval-knight.png",
-  "title": "Helmet - Medieval Knight",
-  "source": "https://commons.wikimedia.org/wiki/File:Helmet_-_Medieval_Knight_(PSF).png",
-  "license": "Public domain"
- },
- {
-  "file": "hoplite1.png",
-  "title": "Hoplite1",
-  "source": "https://commons.wikimedia.org/wiki/File:Hoplite1.PNG",
-  "license": "Public domain"
- },
- {
-  "file": "humanoid.png",
+  "file": "humanoid.jpg",
   "title": "Humanoid",
   "source": "https://commons.wikimedia.org/wiki/File:Humanoid_(PSF).png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.4
+  ],
+  "zoom": 1.2
  },
  {
-  "file": "ill-dict-infernal-p0297-281-forme-du-diable-4.png",
-  "title": "Ill dict infernal p0297-281 forme du diable 4",
-  "source": "https://commons.wikimedia.org/wiki/File:Ill_dict_infernal_p0297-281_forme_du_diable_4.jpg",
-  "license": "Public domain"
- },
- {
-  "file": "louis-rhead-robin-hood.png",
-  "title": "Louis Rhead Robin Hood",
-  "source": "https://commons.wikimedia.org/wiki/File:Louis_Rhead_Robin_Hood.jpg",
-  "license": "Public domain"
- },
- {
-  "file": "noh-mask-2.png",
+  "file": "noh-mask-2.jpg",
   "title": "Noh Mask 2",
   "source": "https://commons.wikimedia.org/wiki/File:Noh_Mask_2_(PSF).png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.5
+  ],
+  "zoom": 1.2
  },
  {
-  "file": "potter-wheel-female.png",
-  "title": "Potter Wheel Female",
-  "source": "https://commons.wikimedia.org/wiki/File:Potter_Wheel_Female_(PSF).png",
-  "license": "Public domain"
- },
- {
-  "file": "sakaian-soldiers-of-xerxes-army.png",
-  "title": "Sakaian soldiers of Xerxes army",
-  "source": "https://commons.wikimedia.org/wiki/File:Sakaian_soldiers_of_Xerxes_army.png",
-  "license": "Public domain"
- },
- {
-  "file": "sheriff-of-nottingham.png",
-  "title": "Sheriff of Nottingham",
-  "source": "https://commons.wikimedia.org/wiki/File:Sheriff_of_Nottingham.PNG",
-  "license": "Public domain"
- },
- {
-  "file": "soldiers-of-xerxes-army-2.png",
-  "title": "Soldiers of Xerxes army 2",
-  "source": "https://commons.wikimedia.org/wiki/File:Soldiers_of_Xerxes_army_2.png",
-  "license": "Public domain"
- },
- {
-  "file": "soldiers-of-xerxes-army-3.png",
-  "title": "Soldiers of Xerxes army 3",
-  "source": "https://commons.wikimedia.org/wiki/File:Soldiers_of_Xerxes_army_3.png",
-  "license": "Public domain"
- },
- {
-  "file": "spearman.png",
-  "title": "Spearman",
-  "source": "https://commons.wikimedia.org/wiki/File:Spearman_(PSF).png",
-  "license": "Public domain"
- },
- {
-  "file": "surcoat.png",
-  "title": "Surcoat",
-  "source": "https://commons.wikimedia.org/wiki/File:Surcoat_(PSF).png",
-  "license": "Public domain"
- },
- {
-  "file": "tippet-female.png",
-  "title": "Tippet - Female",
-  "source": "https://commons.wikimedia.org/wiki/File:Tippet_-_Female_(PSF).png",
-  "license": "Public domain"
- },
- {
-  "file": "toga.png",
+  "file": "toga.jpg",
   "title": "Toga",
   "source": "https://commons.wikimedia.org/wiki/File:Toga_(PSF).png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.115
+  ],
+  "zoom": 3.0
  },
  {
-  "file": "tunic.png",
+  "file": "tunic.jpg",
   "title": "Tunic",
   "source": "https://commons.wikimedia.org/wiki/File:Tunic_(PSF).png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.115
+  ],
+  "zoom": 3.0
  },
  {
-  "file": "veil-front.png",
+  "file": "veil-front.jpg",
   "title": "Veil - Front",
   "source": "https://commons.wikimedia.org/wiki/File:Veil_-_Front_(PSF).png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.38
+  ],
+  "zoom": 2
  },
  {
-  "file": "wimple.png",
+  "file": "wimple.jpg",
   "title": "Wimple",
   "source": "https://commons.wikimedia.org/wiki/File:Wimple_(PSF).png",
-  "license": "Public domain"
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.35
+  ],
+  "zoom": 2
  },
  {
-  "file": "ivanhoe-brock-076.png",
-  "title": "Ivanhoe, C. E. Brock (p.076)",
-  "source": "https://commons.wikimedia.org/wiki/File:Illustration_by_C_E_Brock_for_Ivanhoe_-_opposite_page076.jpg",
-  "license": "Public domain"
- },
- {
-  "file": "ivanhoe-brock-283.png",
-  "title": "Ivanhoe, C. E. Brock (p.283)",
-  "source": "https://commons.wikimedia.org/wiki/File:Illustration_by_C_E_Brock_for_Ivanhoe_-_opposite_page283.jpg",
-  "license": "Public domain"
- },
- {
-  "file": "ivanhoe-brock-424.png",
-  "title": "Ivanhoe, C. E. Brock (p.424)",
-  "source": "https://commons.wikimedia.org/wiki/File:Illustration_by_C_E_Brock_for_Ivanhoe_-_opposite_page424.jpg",
-  "license": "Public domain"
- },
- {
-  "file": "oga-daphne-portrait.png",
+  "file": "oga-daphne-portrait.jpg",
   "title": "Daphne",
   "source": "https://opengameart.org/content/daphne-portrait",
-  "license": "CC0"
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.38
+  ],
+  "zoom": 1.4
  },
  {
-  "file": "oga-druiddess.png",
+  "file": "oga-druiddess.jpg",
   "title": "Druiddess",
   "source": "https://opengameart.org/content/druiddess",
-  "license": "CC0"
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.45
+  ],
+  "zoom": 1.1
  },
  {
-  "file": "oga-human-male-portrait.png",
+  "file": "oga-human-male-portrait.jpg",
   "title": "Human man",
   "source": "https://opengameart.org/content/human-male-portrait",
-  "license": "CC0"
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.1
  },
  {
   "file": "oga-male-face.jpg",
   "title": "Man's face",
   "source": "https://opengameart.org/content/male-face",
-  "license": "CC0"
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.5
+  ],
+  "zoom": 1.0
  },
  {
-  "file": "oga-orc-portrait.jpg",
-  "title": "Orc",
-  "source": "https://opengameart.org/content/orc-portrait",
-  "license": "CC0"
- },
- {
-  "file": "oga-orc-portrait-0.png",
+  "file": "oga-orc-portrait-0.jpg",
   "title": "Orc (pixel)",
   "source": "https://opengameart.org/content/orc-portrait-0",
-  "license": "CC0"
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.45
+  ],
+  "zoom": 1.1
  },
  {
-  "file": "oga-demon-portrait.jpg",
-  "title": "Demon",
-  "source": "https://opengameart.org/content/demon-portrait",
-  "license": "CC0"
- },
- {
-  "file": "oga-definitely-not-models-portrait-collection.png",
+  "file": "oga-definitely-not-models-portrait-collection.jpg",
   "title": "Grinning Genny",
   "source": "https://opengameart.org/content/definitely-not-models-portrait-collection",
-  "license": "CC0"
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.5
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-adelaide-hanscom1.jpg",
+  "title": "Adelaide Hanscom",
+  "source": "https://commons.wikimedia.org/wiki/Image:033-Earth-could-not-answer-nor-the-Seas-that-mourn-q75-829x1159.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-alessandro-allori1.jpg",
+  "title": "Alessandro Allori",
+  "source": "https://commons.wikimedia.org/wiki/Image:Alessandro_Allori_-_Retrato_de_Dama_Florentina_01-1.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-alessandro-allori2.jpg",
+  "title": "Alessandro Allori",
+  "source": "https://commons.wikimedia.org/wiki/Image:Maria_de_Medici_portrait.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-alexandre-cabanel1.jpg",
+  "title": "Alexandre Cabanel",
+  "source": "https://commons.wikimedia.org/wiki/Image:Alexandre_Cabanel_-_The_Daughter_of_Jephthah_(1879,_Oil_on_canvas).JPG",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-alexei-harlamov1.jpg",
+  "title": "Alexei Harlamov",
+  "source": "https://commons.wikimedia.org/wiki/Image:A_Russian_Beauty.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-alexey-petrovich-antropov1.jpg",
+  "title": "Alexey Petrovich Antropov",
+  "source": "https://commons.wikimedia.org/wiki/Image:Antropov_Archbishop_Gavriil.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-alice-pike-barney1.jpg",
+  "title": "Alice Pike Barney",
+  "source": "https://commons.wikimedia.org/wiki/Image:Natalie_Barney_in_Fur_Cape.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-aman-theodor1.jpg",
+  "title": "Aman Theodor",
+  "source": "https://commons.wikimedia.org/wiki/Image:Theodor_Aman_-_Gipsy_Girl,_1884.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-antonello-messina1.jpg",
+  "title": "Antonello Messina",
+  "source": "https://commons.wikimedia.org/wiki/Image:Antonello_da_Messina_035.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-antonio-herrera-toro1.jpg",
+  "title": "Antonio Herrera Toro",
+  "source": "https://commons.wikimedia.org/wiki/Image:Diego_de_Losada_-_Antonio_Herrera_Toro_Concejo_Municipal_de_Caracas.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-benjamin-constant1.jpg",
+  "title": "Benjamin Constant",
+  "source": "https://commons.wikimedia.org/wiki/Image:Benjamin-Constant-Portrait_of_an_Arab_Woman.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-benoist-marie-guillemine1.jpg",
+  "title": "Benoist Marie Guillemine",
+  "source": "https://commons.wikimedia.org/wiki/Image:Marie-Guillemine_Benoist_-_portrait_d%27une_negresse.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-bouguereau-william-adolphe1.jpg",
+  "title": "Bouguereau William Adolphe",
+  "source": "https://commons.wikimedia.org/wiki/Image:William-Adolphe_Bouguereau_(1825-1905)_-_Gypsy_Girl_with_a_Basque_Drum_(1867).jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-byron1.jpg",
+  "title": "Byron",
+  "source": "https://commons.wikimedia.org/wiki/Image:Bedouin_Beauty_NGM-v31-p271.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-carl-fredric-breda1.jpg",
+  "title": "Carl Fredric Breda",
+  "source": "https://commons.wikimedia.org/wiki/Image:Martina_von_Schwerin_1804.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-carl-fredric-breda2.jpg",
+  "title": "Carl Fredric Breda",
+  "source": "https://commons.wikimedia.org/wiki/Image:Carl_Fredric_von_Breda_001.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-cramacj-lucas1.jpg",
+  "title": "Cramacj Lucas",
+  "source": "https://commons.wikimedia.org/wiki/Image:Lucas_Cranach_d._\u00c4._040.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-cranach-lucas2.jpg",
+  "title": "Cranach Lucas",
+  "source": "https://commons.wikimedia.org/wiki/Image:Lucas_Cranach_d._\u00c4._049.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-cristobal-rojas1.jpg",
+  "title": "Cristobal Rojas",
+  "source": "https://commons.wikimedia.org/wiki/Image:Cristobal_Rojas_40.JPG",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-delacroix-eugene-ferdinand-victor1.jpg",
+  "title": "Delacroix Eugene Ferdinand Victor",
+  "source": "https://commons.wikimedia.org/wiki/Image:Eug%C3%A8ne_Ferdinand_Victor_Delacroix_017.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-domenikos-theotokopoulos1.jpg",
+  "title": "Domenikos Theotokopoulos",
+  "source": "https://commons.wikimedia.org/wiki/Image:El_caballero_de_la_mano_en_el_pecho_(2008).jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-edmund-blair-leighton1.jpg",
+  "title": "Edmund Blair Leighton",
+  "source": "https://commons.wikimedia.org/wiki/Image:Edmund_blair_leighton_accolade.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-edmund-blair-leighton2.jpg",
+  "title": "Edmund Blair Leighton",
+  "source": "https://commons.wikimedia.org/wiki/Image:Leighton-God_Speed!.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-edwin-longsden-long1.jpg",
+  "title": "Edwin Longsden Long",
+  "source": "https://commons.wikimedia.org/wiki/Image:Edwin_Longsden_Long_-_The_Date_Seller.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-falero-luis-ricardo1.jpg",
+  "title": "Falero Luis Ricardo",
+  "source": "https://commons.wikimedia.org/wiki/Image:Falero_Luis_Riccardo_An_Oriental_Beauty.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-felix-bonfils1.jpg",
+  "title": "Felix Bonfils",
+  "source": "https://commons.wikimedia.org/wiki/Image:Bedouin_Chief_of_Palmyra.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-francesco-hayez1.jpg",
+  "title": "Francesco Hayez",
+  "source": "https://commons.wikimedia.org/wiki/Image:Francesco_Hayez_057.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-francisco-goya-lucientes1.jpg",
+  "title": "Francisco Goya Lucientes",
+  "source": "https://commons.wikimedia.org/wiki/Image:Francisco_de_Goya_y_Lucientes_050.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-francisco-goya-lucientes2.jpg",
+  "title": "Francisco Goya Lucientes",
+  "source": "https://commons.wikimedia.org/wiki/Image:Francisco_de_Goya_y_Lucientes_057.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-francisco-zurbaran1.jpg",
+  "title": "Francisco Zurbaran",
+  "source": "https://commons.wikimedia.org/wiki/Image:Francisco_de_Zurbar%C3%A1n_057.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-franz-von-defregger1.jpg",
+  "title": "Franz Von Defregger",
+  "source": "https://commons.wikimedia.org/wiki/Image:Franz_von_Defregger_Halbbildnis_eines_Zigeunerjungen.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-franz-von-defregger2.jpg",
+  "title": "Franz Von Defregger",
+  "source": "https://commons.wikimedia.org/wiki/Image:Defregger_Bauerndirndl_1896.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-franz-von-defregger3.jpg",
+  "title": "Franz Von Defregger",
+  "source": "https://commons.wikimedia.org/wiki/Image:Defregger_Bauerndirndl.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-frederic-westin1.jpg",
+  "title": "Frederic Westin",
+  "source": "https://commons.wikimedia.org/wiki/Image:Oscar_I_of_Sweden.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-frederic-yates1.jpg",
+  "title": "Frederic Yates",
+  "source": "https://commons.wikimedia.org/wiki/Image:'Portrait_of_Anna_Rice_Cooke',_oil_on_canvas_painting_by_Frederic_Yates_(1854-1919),_1910,_Honolulu_Academy_of_Arts.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-frederick-leighton1.jpg",
+  "title": "Frederick Leighton",
+  "source": "https://commons.wikimedia.org/wiki/Image:Frederick_Leighton_-_An_Italian_Lady.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-gaston-bussiere1.jpg",
+  "title": "Gaston Bussiere",
+  "source": "https://commons.wikimedia.org/wiki/Image:Bussiere,Gaston_-_Salammbo,_1907.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-george-henry-hall1.jpg",
+  "title": "George Henry Hall",
+  "source": "https://commons.wikimedia.org/wiki/Image:George_Henry_Hall_-_Portrait_of_a_Spanish_Woman_with_a_Lace_Shawl_and_Rose,_1866.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-giovanni-battista-tiepolo1.jpg",
+  "title": "Giovanni Battista Tiepolo",
+  "source": "https://commons.wikimedia.org/wiki/Image:Giovanni_Battista_Tiepolo_073.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-giovanni-bellini1.jpg",
+  "title": "Giovanni Bellini",
+  "source": "https://commons.wikimedia.org/wiki/Image:Agostino_Barbarigo.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-hans-holbein1.jpg",
+  "title": "Hans Holbein",
+  "source": "https://commons.wikimedia.org/wiki/Image:AnnavonKlevePortrait.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-hayez-francesco1.jpg",
+  "title": "Hayez Francesco",
+  "source": "https://commons.wikimedia.org/wiki/Image:Francesco_Hayez_020.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-henryk-siemiradzki1.jpg",
+  "title": "Henryk Siemiradzki",
+  "source": "https://commons.wikimedia.org/wiki/Image:Siemiradzki-Cyganka.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-ilja-jefimowitsch-repin1.jpg",
+  "title": "Ilja Jefimowitsch Repin",
+  "source": "https://commons.wikimedia.org/wiki/Image:Archdeacon_by_Repin.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-james-carrol-beckwith1.jpg",
+  "title": "James Carrol Beckwith",
+  "source": "https://commons.wikimedia.org/wiki/Image:Beckwith_James_Carroll_A_Wistful_Look.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-jean-baptiste-camille-corot1.jpg",
+  "title": "Jean Baptiste Camille Corot",
+  "source": "https://commons.wikimedia.org/wiki/Image:Corot_-_ciganabandolimmasp.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-jean-baptiste-camille-corot2.jpg",
+  "title": "Jean Baptiste Camille Corot",
+  "source": "https://commons.wikimedia.org/wiki/Image:Corot.agostina.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-jean-leon-gerome1.jpg",
+  "title": "Jean Leon Gerome",
+  "source": "https://commons.wikimedia.org/wiki/Image:G%C3%A9r%C3%B4me_-_Egyptian_Water_Carrier.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-jean-leon-gerome2.jpg",
+  "title": "Jean Leon Gerome",
+  "source": "https://commons.wikimedia.org/wiki/Image:G%C3%A9r%C3%B4me-Black_Bashi-Bazouk-c._1869.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-jean-leon-gerome3.jpg",
+  "title": "Jean Leon Gerome",
+  "source": "https://commons.wikimedia.org/wiki/Image:G%C3%A9r%C3%B4me_-_Mufti_Reading_in_His_Prayer_Stool.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-jean-leon-gerome4.jpg",
+  "title": "Jean Leon Gerome",
+  "source": "https://commons.wikimedia.org/wiki/Image:Jean-L%C3%A9on_G%C3%A9r%C3%B4me_016_Pelt.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-john-william-godward1.jpg",
+  "title": "John William Godward",
+  "source": "https://commons.wikimedia.org/wiki/Image:Godward-At_the_Gate_of_the_Temple-1898.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-john-william-godward2.jpg",
+  "title": "John William Godward",
+  "source": "https://commons.wikimedia.org/wiki/Image:Godward-Ionian_Dancing_Girl-1902.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-john-william-godward3.jpg",
+  "title": "John William Godward",
+  "source": "https://commons.wikimedia.org/wiki/Image:Godward-Reverie-1912.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-julije-klovic1.jpg",
+  "title": "Julije Klovic",
+  "source": "https://commons.wikimedia.org/wiki/Image:Julije_Klovic_2.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-juriaen-streek1.jpg",
+  "title": "Juriaen Streek",
+  "source": "https://commons.wikimedia.org/wiki/Image:Juriaen_van_Streek_002.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-kiprenskij-orest-adamovic1.jpg",
+  "title": "Kiprenskij Orest Adamovic",
+  "source": "https://commons.wikimedia.org/wiki/Image:Orest_Adamovic_Kiprenskij_001.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-konstantin-makovsky1.jpg",
+  "title": "Konstantin Makovsky",
+  "source": "https://commons.wikimedia.org/wiki/Image:Kmakovs_107.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-lefebvre-jules-joseph1.jpg",
+  "title": "Lefebvre Jules Joseph",
+  "source": "https://commons.wikimedia.org/wiki/Image:Portrait_of_Julia_Foster_Ward.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-leon-francois-comerre1.jpg",
+  "title": "Leon Francois Comerre",
+  "source": "https://commons.wikimedia.org/wiki/Image:Comerre_Leon_Francois_An_Eastern_Beauty.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-leopold-loffler1.jpg",
+  "title": "Leopold Loffler",
+  "source": "https://commons.wikimedia.org/wiki/Image:L%C3%B6ffler-Portret_Marii_Sawiczewskiej.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-lewis-john-frederick1.jpg",
+  "title": "Lewis John Frederick",
+  "source": "https://commons.wikimedia.org/wiki/Image:John_Frederick_Lewis_004.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-madrazo-garreta-raimundo1.jpg",
+  "title": "Madrazo Garreta Raimundo",
+  "source": "https://commons.wikimedia.org/wiki/Image:Raimundo_Madrazo_-_Gitana.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-marie-bashkirtseff1.jpg",
+  "title": "Marie Bashkirtseff",
+  "source": "https://commons.wikimedia.org/wiki/Image:Bashkirtseff.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-moritz-kellerhoven1.jpg",
+  "title": "Moritz Kellerhoven",
+  "source": "https://commons.wikimedia.org/wiki/Image:Moritz_Kellerhoven_001.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-nathaniel-jocelyn1.jpg",
+  "title": "Nathaniel Jocelyn",
+  "source": "https://commons.wikimedia.org/wiki/Image:Sengbe_Pieh.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-nikolai-alexandrowitsch-jaroschenko1.jpg",
+  "title": "Nikolai Alexandrowitsch Jaroschenko",
+  "source": "https://commons.wikimedia.org/wiki/Image:Nikolaj_Alexandrowitsch_Jaroschenko_009.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-nils-johan-olsson-blommer1.jpg",
+  "title": "Nils Johan Olsson Blommer",
+  "source": "https://commons.wikimedia.org/wiki/Image:Idunn_and_Bragi_by_Blommer.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-paolo-veronese1.jpg",
+  "title": "Paolo Veronese",
+  "source": "https://commons.wikimedia.org/wiki/Image:Paolo_Veronese_032.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-parmigianino1.jpg",
+  "title": "Parmigianino",
+  "source": "https://commons.wikimedia.org/wiki/Image:Parmigianino_007.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-paul-cesar-helleu1.jpg",
+  "title": "Paul Cesar Helleu",
+  "source": "https://commons.wikimedia.org/wiki/Image:Alice_Guerin,_by_Helleu.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-regnault-henri1.jpg",
+  "title": "Regnault Henri",
+  "source": "https://commons.wikimedia.org/wiki/Image:Henri_regnault_maures_grena.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-richard-bergh1.jpg",
+  "title": "Richard Bergh",
+  "source": "https://commons.wikimedia.org/wiki/Image:Portrait_of_August_Strindberg_by_Richard_Bergh_1905.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-richard-bergh2.jpg",
+  "title": "Richard Bergh",
+  "source": "https://commons.wikimedia.org/wiki/Image:Portrait_of_painter_Nils_Kreuger_1883.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-robert-dampier1.jpg",
+  "title": "Robert Dampier",
+  "source": "https://commons.wikimedia.org/wiki/Image:Robert_Dampier%27s_oil_on_canvas_painting_%27Tetuppa,_a_Native_Female_of_the_Sandwitch_Islands%27,_1825.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-robert-lefevre1.jpg",
+  "title": "Robert Lefevre",
+  "source": "https://commons.wikimedia.org/wiki/Image:D%C3%A9sir%C3%A9e_Clary1807-Robert_Lef%C3%A8vre.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-robert-leopold1.jpg",
+  "title": "Robert Leopold",
+  "source": "https://commons.wikimedia.org/wiki/Image:L%C3%A9opold_Robert_001.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-sichel-nathanael1.jpg",
+  "title": "Sichel Nathanael",
+  "source": "https://commons.wikimedia.org/wiki/Image:Nathanael_Sichel_001.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-svetoslav-roerich1.jpg",
+  "title": "Svetoslav Roerich",
+  "source": "https://commons.wikimedia.org/wiki/Image:Devika_Rani_Roerich_1946_2.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-velazquez-diego1.jpg",
+  "title": "Velazquez Diego",
+  "source": "https://commons.wikimedia.org/wiki/Image:Diego_Vel%C3%A1zquez_057.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-viktor-vasnetsov1.jpg",
+  "title": "Viktor Vasnetsov",
+  "source": "https://commons.wikimedia.org/wiki/Image:Dobrinya.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "pd-william-adolphe-bouguereau1.jpg",
+  "title": "William Adolphe Bouguereau",
+  "source": "https://commons.wikimedia.org/wiki/Image:William-adolphe_bouguereau_the_grape_picker.jpg",
+  "license": "Public domain",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "sculpt-1.jpg",
+  "title": "Bearded man",
+  "source": "https://opengameart.org/content/faces",
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "sculpt-2.jpg",
+  "title": "Dark-haired man",
+  "source": "https://opengameart.org/content/faces",
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "sculpt-5.jpg",
+  "title": "Gaunt humanoid",
+  "source": "https://opengameart.org/content/faces",
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "sculpt-6.jpg",
+  "title": "Scarred half-orc",
+  "source": "https://opengameart.org/content/faces",
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "sculpt-7.jpg",
+  "title": "Reptilian humanoid",
+  "source": "https://opengameart.org/content/faces",
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "sculpt-8.jpg",
+  "title": "Crested lizardfolk",
+  "source": "https://opengameart.org/content/faces",
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "sculpt-9.jpg",
+  "title": "Wolf-folk",
+  "source": "https://opengameart.org/content/faces",
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
+ },
+ {
+  "file": "sculpt-10.jpg",
+  "title": "Horned fiend",
+  "source": "https://opengameart.org/content/faces",
+  "license": "CC0",
+  "focus": [
+   0.5,
+   0.42
+  ],
+  "zoom": 1.0
  }
 ]

@@ -8,6 +8,7 @@ import type { SetCharacter } from "./Slots";
 import { CompanionCard, CONDITIONS } from "./ManageTab";
 import { requestRoll } from "./Dice";
 import { isAvailable, usedAfterClick } from "./pips";
+import { getSettings } from "./Settings";
 import { TranslateOptions, useTranslation } from "./TranslateOptions";
 import { TemplateExport } from "./SheetExport";
 
@@ -17,7 +18,7 @@ const skillLabel = (id: string) => id.replace(/\b\w/g, (c) => c.toUpperCase());
 
 function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
   const [open, setOpen] = useState(false);
-  const [opts, setOpts] = useState<PdfOptions>(DEFAULT_PDF_OPTIONS);
+  const [opts, setOpts] = useState<PdfOptions>(() => ({ ...DEFAULT_PDF_OPTIONS, paper: getSettings().paper }));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const counts = cardCounts(r, sheet);

@@ -32,7 +32,10 @@ export function useUpdater() {
       const kind = await invoke<InstallKind>("install_kind");
       const update = await checkUpdate();
       if (update) setFound({ version: update.version, kind, update });
-      else if (manual) setStatus("You are on the latest version.");
+      else if (manual) {
+        const { getVersion } = await import("@tauri-apps/api/app");
+        setStatus(`You are on the latest version (${await getVersion()}).`);
+      }
     } catch (e) {
       // Offline or no release yet: stay quiet unless the person asked.
       if (manual) setStatus(`Could not check for updates: ${String(e)}`);

@@ -111,6 +111,33 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(page.locator(".roll-card")).not.toContainText("(advantage)");
   });
 
+  test("wild shape takes damage first, the journal keeps entries, the language switches", async ({ page }) => {
+    await addTestContent(page);
+    await page.getByRole("button", { name: /random character/i }).click();
+    await tab(page, "Play");
+    await page.locator(".play-tabs").getByRole("button", { name: "Extras" }).click();
+    await page.getByPlaceholder("Form, for example Brown Bear").fill("Wolf");
+    await page.getByLabel("Form hit points").fill("11");
+    await page.getByRole("button", { name: "Assume form" }).click();
+    await expect(page.locator(".hp-bar.wild")).toContainText("Wolf: 11 / 11");
+    await page.locator(".hp-manage input").fill("4");
+    await page.locator(".hp-manage").getByRole("button", { name: "Damage" }).click();
+    await expect(page.locator(".hp-bar.wild")).toContainText("Wolf: 7 / 11");
+    await page.locator(".play-tabs").getByRole("button", { name: "Notes" }).click();
+    await page.getByRole("button", { name: "New entry" }).click();
+    await page.getByLabel("Entry title").fill("Session one");
+    await page.getByLabel("Entry text").fill("We met the innkeeper.");
+    await page.reload();
+    await tab(page, "Play");
+    await page.locator(".play-tabs").getByRole("button", { name: "Notes" }).click();
+    await expect(page.getByLabel("Entry title")).toHaveValue("Session one");
+    await page.getByRole("button", { name: /^menu/i }).click();
+    await page.getByRole("button", { name: /settings/i }).click();
+    await page.getByLabel("Language", { exact: true }).selectOption("de");
+    await page.getByRole("button", { name: "Close" }).click();
+    await expect(page.locator("header nav")).toContainText("Spielen");
+  });
+
   test("the homebrew builder makes a spell that shows up in the content browser", async ({ page }) => {
     await addTestContent(page);
     await tab(page, "Content");

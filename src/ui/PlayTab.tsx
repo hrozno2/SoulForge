@@ -9,6 +9,7 @@ import { ConditionsPanel } from "./ConditionsPanel";
 import { applyDamage, applyHealing } from "./hpModel";
 import { FormsPanel } from "./FormsPanel";
 import { Journal } from "./Journal";
+import { t } from "../i18n";
 import { CONDITION_TEXT, speedAfterExhaustion } from "./conditions";
 import { Hint } from "./Help";
 import { RollChips } from "./RollChips";
@@ -84,15 +85,16 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
   return (
     <div className="vitals">
       <div className="hp-main">
-        <small>Hit Points</small>
+        <small>{t("Hit Points")}</small>
         <div className={pct < 25 ? "hp-bar big low" : "hp-bar big"}><div style={{ width: `${hpPart}%` }} />{ch.play.tempHp > 0 && <div className="temp-fill" style={{ left: `${hpPart}%`, width: `${tempPart}%` }} />}<span>{hp} / {sheet.hp}{ch.play.tempHp > 0 ? ` (+${ch.play.tempHp})` : ""}</span>{ch.play.tempHp > 0 && <i className="hp-temp" title="Temporary hit points">{ch.play.tempHp}</i>}</div>
         {ch.play.wildShape && <div className="hp-bar wild" title={`Wild Shape: ${ch.play.wildShape.name}`}><div style={{ width: `${Math.max(0, Math.min(100, (ch.play.wildShape.hp / (ch.play.wildShape.maxHp || 1)) * 100))}%` }} /><span>{ch.play.wildShape.name}: {ch.play.wildShape.hp} / {ch.play.wildShape.maxHp}</span></div>}
       </div>
+      <output className="sr-only" aria-live="polite">{`${t("Hit Points")}: ${hp} / ${sheet.hp}${ch.play.tempHp ? `, +${ch.play.tempHp}` : ""}${ch.play.wildShape ? `, ${ch.play.wildShape.name} ${ch.play.wildShape.hp} / ${ch.play.wildShape.maxHp}` : ""}`}</output>
       <div className="hp-manage">
-        <input type="number" min={0} placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => e.key === "Enter" && damage()} />
-        <button onClick={heal}>Heal</button>
-        <button onClick={damage}>Damage</button>
-        <button onClick={temp}>Temp</button>
+        <input type="number" min={0} placeholder={t("Amount")} value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => e.key === "Enter" && damage()} />
+        <button onClick={heal}>{t("Heal")}</button>
+        <button onClick={damage}>{t("Damage")}</button>
+        <button onClick={temp}>{t("Temp")}</button>
       </div>
       {conc && ch.play.concentration && (
         <div className="conc-check" role="alert">
@@ -483,8 +485,8 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
         <div className="play-buttons">
           <button className="inspire" onClick={() => set((c) => ({ ...c, play: { ...c.play, inspiration: !c.play.inspiration } }))}>{ch.play.inspiration ? "★ Inspired" : "☆ Inspiration"}</button>
           {sheet.level < 20 && ch.classes.length > 0 && <button onClick={() => window.dispatchEvent(new Event("cf-levelup"))}>Level up</button>}
-          <button onClick={rests.shortRest}>Short rest</button>
-          <button className="primary" onClick={rests.longRest}>Long rest</button>
+          <button onClick={rests.shortRest}>{t("Short rest")}</button>
+          <button className="primary" onClick={rests.longRest}>{t("Long rest")}</button>
         </div>
         <div className="level-medal" title={`Level ${sheet.level}`}><b>{sheet.level}</b><small>Level</small></div>
         <div className="xp wide"><div style={{ width: `${xpPct}%` }} /><span>{ch.xp} / {nextXp || "max"} XP</span></div>

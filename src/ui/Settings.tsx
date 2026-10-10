@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { backupFileName, isBackup, makeBackup, restoreBackup } from "../aurora/backup";
 import { backupStore } from "../aurora/storage";
 import { pickFiles, saveFile } from "../store";
+import { LANGUAGES, setLanguage, t, type Lang } from "../i18n";
 
 export interface AppSettings {
   /** Interface size in percent. */
@@ -10,10 +11,11 @@ export interface AppSettings {
   reduceMotion: boolean;
   paper: "a4" | "letter";
   autoBackup: boolean;
+  language: Lang;
 }
 
 const KEY = "charforge.settings";
-const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true };
+const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en" };
 
 function read(): AppSettings {
   try {
@@ -31,6 +33,7 @@ export function applySettings(s: AppSettings = current): void {
   (root.style as CSSStyleDeclaration & { zoom: string }).zoom = String(s.scale / 100);
   root.classList.toggle("compact", s.compact);
   root.classList.toggle("reduce-motion", s.reduceMotion);
+  setLanguage(s.language);
 }
 
 export const getSettings = (): AppSettings => current;
@@ -117,9 +120,13 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
     <div className="modal-back" role="dialog" aria-label="Settings" onClick={onClose}>
       <div className="modal-page settings" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" aria-label="Close" onClick={onClose}>×</button>
-        <h2>Settings</h2>
+        <h2>{t("Settings")}</h2>
         <label className="set-row">
-          <span><b>Interface size</b><small className="muted"> Ctrl or Cmd with + and − works too</small></span>
+          <span><b>{t("Language")}</b><small className="muted"> Buttons and menus. Rules text keeps its own language.</small></span>
+          <select aria-label="Language" value={s.language} onChange={(e) => updateSettings({ language: e.target.value as Lang })}>{LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}</select>
+        </label>
+        <label className="set-row">
+          <span><b>{t("Interface size")}</b><small className="muted"> Ctrl or Cmd with + and − works too</small></span>
           <span className="set-ctl">
             <input type="range" min={70} max={150} step={5} value={s.scale} onChange={(e) => updateSettings({ scale: Number(e.target.value) })} aria-label="Interface size" />
             <output>{s.scale}%</output>

@@ -3,6 +3,7 @@ import { deleteCharacterRecord, listCharacters, type CharacterRecord } from "../
 import { normalizeCharacter, uid, type Character } from "../aurora/character";
 import { downloadText, pickFiles } from "../store";
 import { Hint } from "./Help";
+import { t } from "../i18n";
 import { PartyView } from "./PartyView";
 import type { ARegistry } from "../aurora/registry";
 
@@ -60,11 +61,11 @@ export function StartTab({
         </section>
       )}
       <section className="card">
-        <h2>Characters</h2>
+        <h2>{t("Characters")}</h2>
         <Hint id="home-1">Characters save on this computer as you work. Export gives you a file to back up or share.</Hint>
         <div className="row">
-          <button className="primary" onClick={onNew}>New character</button>
-          <button onClick={onRandom} disabled={sourceCount === 0}>Random character</button>
+          <button className="primary" onClick={onNew}>{t("New character")}</button>
+          <button onClick={onRandom} disabled={sourceCount === 0}>{t("Random character")}</button>
           <button onClick={async () => { const f = await pickFiles(["json"]); if (f === null) fileRef.current?.click(); else if (f[0]) importJson(f[0]); }}>Open file (.json)</button>
           <button onClick={async () => { const f = await pickFiles(["json"]); if (f === null) foreignRef.current?.click(); else if (f[0]) setMsg(await onImportForeign(f[0])); }}>Import Foundry / Roll20 / Plutonium</button>
           <input ref={fileRef} type="file" accept=".json" hidden onChange={(e) => { importJson(e.target.files?.[0]); e.target.value = ""; }} />
@@ -80,9 +81,9 @@ export function StartTab({
                 <span className="muted">{c.summary || "empty"}</span>
                 <small className="muted">{ago(c.updated)}</small>
               </button>
-              <button onClick={() => { onOpen(uid(), { ...c.data, name: `${c.data.name || "Character"} (copy)` }); }}>Duplicate</button>
-              <button onClick={() => downloadText(`${c.name || "character"}.json`, JSON.stringify(c.data, null, 2))}>Export</button>
-              <button onClick={async () => { if (confirm(`Delete ${c.name || "this character"}?`)) { await deleteCharacterRecord(c.id); refresh(); } }}>Delete</button>
+              <button onClick={() => { onOpen(uid(), { ...c.data, name: `${c.data.name || "Character"} (copy)` }); }}>{t("Duplicate")}</button>
+              <button onClick={() => downloadText(`${c.name || "character"}.json`, JSON.stringify(c.data, null, 2))}>{t("Export")}</button>
+              <button onClick={async () => { if (confirm(`Delete ${c.name || "this character"}?`)) { await deleteCharacterRecord(c.id); refresh(); } }}>{t("Delete")}</button>
             </li>
           ))}
           {!list.length && <li className="muted">No saved characters yet. Your work saves automatically.</li>}

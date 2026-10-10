@@ -87,9 +87,10 @@ A character builder for D&D 5e (2024 rules, and older editions through content f
 
 - **Build**: species and subspecies, class with multiclassing and level up, background, ability scores (point buy, standard array, manual), languages, proficiencies, feats and ability score improvements. Every choice comes from rules in the content files, so what you can pick follows the books you load.
 - **Magic**: spellcasting per class with save DC, attack, slots (shared multiclass table and Warlock pact slots), cantrips and spells to learn, prepared spells, always-prepared spells, slot tracking.
-- **Equipment**: search items, weapons, armor and magic items, equip, attune, containers, quantities, weight and carrying capacity, coins, equipment packs, custom items. Armor class and attacks follow from what you wear and wield.
+- **Equipment**: buttons for what players usually add: the starting equipment of the class and background (each option, or the gold instead), adventuring packs (opened into their items or kept whole) and common gear. Plus search for any item, equip, attune, containers, quantities, weight and carrying capacity, coins, custom items. Armor class and attacks follow from what you wear and wield.
 - **Manage**: level, XP and hit points (average or rolled), character details and backstory, options, manual additions (extra languages, feats and spells your table allows), custom attacks, companions with stat blocks, conditions, source restrictions.
-- **Character sheet**: the 2024 layout with live hit points, death saves, hit dice and spell slot tracking, plus PDF export of the sheet and printable spell, item and feature cards (A4 or Letter).
+- **Play**: a play screen laid out like D&D Beyond: ability row, hit points with damage, heal and temporary points, short and long rests, saving throws, senses, skills, and tabs for actions, spells (cast from slots), inventory, features and traits, description, notes and extras. Click any bonus to roll it.
+- **Sheet**: a printable sheet with live hit points, death saves, hit dice and spell slots, PDF export of the sheet and printable spell, item and feature cards (A4 or Letter), and filling of fillable character sheet PDFs (see below).
 - **Content**: add Aurora content by link and it keeps itself up to date, import the 5etools data that Plutonium uses, import files, or write your own content.
 
 ## Content
@@ -121,11 +122,28 @@ Characters made with Plutonium in Foundry export as normal dnd5e actors, so Foun
 
 No book content ships with CharForge and none is bundled by the importers. Content comes from files and addresses you supply. Aurora, the Aurora Legacy team, 5e.tools and Wizards of the Coast are not affiliated with CharForge.
 
+## Fillable character sheets
+
+Sheet tab, Export PDF, "Fillable sheets": load your own copy of a sheet PDF once, and CharForge fills it in from the character and keeps the fields editable. The PDFs stay on your computer (CharForge does not include any sheet).
+
+Supported:
+
+- **DLDM 5E24 character sheets**, the five-page file ("Updated Form Fields" version) or its single pages: Page 1 style A and style B, Page 2 style A (spellcasting, equipment, coins) and style B (equipment, backstory, companion block), and the spell list page. Pages are recognised by their field names, so any mix works; tick the pages you want.
+- **DLDM companion sheets** (Familiar, Paladin Mount, Beastmaster Ranger, Drakewarden Ranger): the companion's stat block is written onto the page.
+
+What is filled: name, species, class, subclass, background, level, experience, armor class, hit points, hit dice, speed, size, darkvision, inspiration, conditions, ability scores and modifiers, saving throws and skills with proficiency and expertise marks, proficiency bonus, weapon, armor and tool training, languages, attacks, class features, species traits, feats, spellcasting numbers, spell slots, up to 20 spells on page 2 and a full list on the spell page with casting time, range, duration and components, equipment, magic items with attunement, coins, backstory, appearance and your portrait.
+
+Limits: the old five-page file without "Updated Form Fields" uses different field names and is not recognised. Long text is shrunk to fit a box and cut when it cannot; features that did not fit page 1 go to the "additional features" box on page 2B. Spell lists cover the first 20 spells on page 2 and about 30 on the spell page.
+
 ## Importing characters
 
 - Start tab, Import: Foundry VTT (dnd5e actor JSON, including actors made with Plutonium) or Roll20 (D&D 5e OGL sheet attributes as JSON). Names are matched against loaded content. Anything not found is reported, and items not found become custom items.
 - The Foundry and Roll20 readers were written from the documented sheet structure, not from real exports. If a file imports badly, keep it and adjust `src/aurora/foreign.ts`.
 - Characters made in earlier CharForge versions (0.2.x) are not carried over: the engine changed in 0.3.
+
+## Design
+
+The look follows D&D Beyond and the WotC books: dark leather with gold rules and red actions (or parchment in the light theme), Cinzel headings, Roboto Condensed for the interface, Crimson Pro for rules text, cut corners, ribbons, and choice cards for species, classes and backgrounds. All fonts are bundled and open licensed. No artwork from D&D Beyond or Wizards is used. Light, dark and five accent colours are in the top bar.
 
 ## Usability test
 
@@ -133,7 +151,7 @@ No book content ships with CharForge and none is bundled by the importers. Conte
 
     AURORA_FIXTURES_2014=/path/to/folder npm test
 
-where the folder holds the AuroraLegacy `core/internal.xml`, `core/ALE.xml` and the 2014 `players-handbook` files. `src/aurora/fivetools.test.ts` does the same for 5etools data with `FIVETOOLS_FIXTURES=/path/to/data`. Both skip when the variable is not set.
+where the folder holds the AuroraLegacy `core/internal.xml`, `core/ALE.xml` and the 2014 `players-handbook` files. `src/aurora/fivetools.test.ts` does the same for 5etools data with `FIVETOOLS_FIXTURES=/path/to/data`. `src/sheets/*.test.ts` fill the DLDM PDFs with `SHEET_FIXTURES=/path/to/pdfs` (and `SHEET_OUT=/path` to keep the results for a look). Equipment tests use both content folders. All of these skip when their variable is not set.
 
 What the pregens showed: things the sheet lists that no rule gives (bonus languages, items the content lacks) need manual additions and custom items, which the app provides.
 
@@ -145,7 +163,9 @@ Content is a set of elements. An element has an id, name, type and source, sette
 
 - Aurora character files (`.dnd5e`) cannot be opened. CharForge saves its own `.json` characters.
 - Spell replacement on level up, level-dependent text variants beyond the highest level reached, and spell lists that depend on other spell sources are not modelled.
-- Aurora's companion gallery, symbol and portrait galleries, theme manager and quick bar are not here yet.
+- Aurora's companion gallery and symbol galleries are not here. There is one portrait per character.
+- The sheet filler only knows the DLDM sheets. Other sheets need their own field mapping.
+- Species and backgrounds give no starting equipment in the 2024 and 2014 rules, so there is no species equipment button; background and class equipment are covered.
 - 5etools conversion covers the structured fields listed above. Spells granted by species and feats in 5etools (`additionalSpells`) are not turned into rules, apart from Magic Initiate style feats.
 
 ## License

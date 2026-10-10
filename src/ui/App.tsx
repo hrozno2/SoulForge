@@ -10,6 +10,7 @@ import { MagicTab } from "./MagicTab";
 import { EquipmentTab } from "./EquipmentTab";
 import { ManageTab } from "./ManageTab";
 import { SheetTab } from "./SheetTab";
+import { PlayTab } from "./PlayTab";
 import { ContentTab } from "./ContentTab";
 import { StartTab } from "./StartTab";
 import { DetailPanel } from "./DetailPanel";
@@ -19,8 +20,8 @@ import { ThemePicker } from "./Theme";
 import { useUpdater } from "../updater";
 import { importForeignCharacter } from "../aurora/foreign";
 
-type Tab = "start" | "build" | "magic" | "equipment" | "manage" | "sheet" | "content";
-const TABS: [Tab, string][] = [["start", "Start"], ["build", "Build"], ["magic", "Magic"], ["equipment", "Equipment"], ["manage", "Manage"], ["sheet", "Character sheet"], ["content", "Content"]];
+type Tab = "start" | "build" | "magic" | "equipment" | "manage" | "play" | "sheet" | "content";
+const TABS: [Tab, string][] = [["start", "Start"], ["build", "Build"], ["magic", "Magic"], ["equipment", "Equipment"], ["manage", "Manage"], ["play", "Play"], ["sheet", "Sheet"], ["content", "Content"]];
 const CUR_KEY = "charforge.current.v2";
 
 function loadCurrent(): { id: string; ch: Character } {
@@ -92,12 +93,15 @@ export function App() {
   };
 
   const pending = r.slots.filter((s) => !s.rule.optional && s.chosen.length < s.rule.number && s.options.length).length + (character.race ? 0 : 1) + (character.classes.length ? 0 : 1);
-  const showDetail = tab !== "start" && tab !== "sheet";
+  const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play";
 
   return (
     <div className="app">
       <header className="topbar">
-        <strong className="brand">CharForge</strong>
+        <strong className="brand">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 28 9v14l-12 7L4 23V9z" fill="none" stroke="#c9a45c" strokeWidth="1.6" /><path d="M16 2v28M4 9l12 7 12-7M4 23l12-7 12 7" fill="none" stroke="#c53131" strokeWidth="1.1" /><text x="16" y="19.5" textAnchor="middle" fontSize="9" fontWeight="700" fill="#f0d9a0" fontFamily="Cinzel, serif">20</text></svg>
+          CharForge
+        </strong>
         <nav>
           {TABS.map(([k, label]) => (
             <button key={k} className={tab === k ? "tab active" : "tab"} onClick={() => setTab(k)}>
@@ -124,6 +128,7 @@ export function App() {
           {tab === "magic" && <MagicTab r={r} ch={character} set={set} onDetail={setDetail} />}
           {tab === "equipment" && <EquipmentTab r={r} ch={character} set={set} onDetail={setDetail} />}
           {tab === "manage" && <ManageTab r={r} ch={character} set={set} onDetail={setDetail} />}
+          {tab === "play" && <PlayTab r={r} ch={character} set={set} />}
           {tab === "sheet" && <SheetTab r={r} ch={character} set={set} />}
           {tab === "content" && <ContentTab content={content} onDetail={setDetail} />}
         </div>

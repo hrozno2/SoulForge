@@ -1,0 +1,115 @@
+import { useMemo, useState } from "react";
+import type { AElement } from "../aurora/types";
+import type { Resolved } from "../aurora/engine";
+import type { Character } from "../aurora/character";
+import {
+  ItemIndex, addToInventory, adventuringPacks, anyWeaponKind, autoEquip, commonGear, expandPack, startingPlans, variantItems, weaponChoices, type EquipPlan, type EquipVariant, type ResolvedItem,
+} from "../aurora/startingEquipment";
+import type { SetCharacter } from "./Slots";
+
+const gpText = (n: number) => (n ? `${Number.isInteger(n) ? n : n.toFixed(1)} GP` : "");
+
+function Preview({ items, gp }: { items: ResolvedItem[]; gp: number }) {
+  const lines = items.map((i) => `${i.qty > 1 ? `${i.qty} ` : ""}${i.name}${i.el ? "" : " (custom)"}`);
+  return <p className="muted small-text">{[...lines, gpText(gp)].filter(Boolean).join(", ") || "Nothing"}</p>;
+}
+
+function VariantCard({ plan, v, idx, prefer, onAdd }: { plan: EquipPlan; v: EquipVariant; idx: ItemIndex; prefer: string; onAdd: (items: ResolvedItem[], gp: number) => void }) {
+  const [picks, setPicks] = useState<number[]>([]);
+  const [weapons, setWeapons] = useState<Record<string, string>>({});
+  const [open, setOpen] = useState(true);
+  const items = useMemo(() => variantItems(v, picks, idx, prefer, open, weapons), [v, picks, idx, prefer, open, weapons]);
+  return (
+    <div className="equip-card">
+      <div className="row">
+        <b>{v.label}</b>
+        {v.choices.length === 0 && <button className="primary" onClick={() => onAdd(items, v.gp)}>Add</button>}
+      </div>
+      {v.choices.map((g, gi) => (
+        <div key={gi} className="choice-group">
+          {g.options.map((o, oi) => (
+            <label key={oi} className="check">
+              <input type="radio" name={`${plan.title}-${v.label}-${gi}`} checked={(picks[gi] ?? 0) === oi} onChange={() => setPicks((p) => { const n = [...p]; n[gi] = oi; return n; })} />
+              {o.map((r, ri) => {
+                const kind = anyWeaponKind(r.text);
+                if (!kind) return `${ri ? " and " : ""}${r.qty > 1 ? `${r.qty} ` : ""}${r.text}`;
+                return (
+                  <select key={ri} value={weapons[`${gi}:${oi}:${ri}`] ?? ""} onClick={(e) => e.stopPropagation()} onChange={(e) => { setPicks((p) => { const n = [...p]; n[gi] = oi; return n; }); setWeapons((w) => ({ ...w, [`${gi}:${oi}:${ri}`]: e.target.value })); }}>
+                    <option value="">{r.text}</option>
+                    {weaponChoices(idx.registry, kind).map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                  </select>
+                );
+              })}
+            </label>
+          ))}
+        </div>
+      ))}
+      <Preview items={items} gp={v.gp} />
+      {v.choices.length > 0 && <button className="primary" onClick={() => onAdd(items, v.gp)}>Add these</button>}
+      <label className="check small"><input type="checkbox" checked={open} onChange={() => setOpen(!open)} /> open packs into separate items</label>
+    </div>
+  );
+}
+
+/** Buttons that put the usual starting gear into the inventory. */
+export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
+  const [equip, setEquip] = useState(true);
+  const [note, setNote] = useState("");
+  const idx = useMemo(() => new ItemIndex(r.reg), [r.reg]);
+  const plans = useMemo(() => startingPlans(ch, r.reg), [ch.classes, ch.background, r.reg]); // eslint-disable-line react-hooks/exhaustive-deps
+  const prefer = ch.classes[0] ? r.reg.get(ch.classes[0].classId)?.source ?? "" : "";
+  const packs = useMemo(() => adventuringPacks(r.reg, prefer), [r.reg, prefer]);
+  const gear = useMemo(() => commonGear(r.reg, prefer), [r.reg, prefer]);
+
+  const add = (items: ResolvedItem[], gp: number, label: string) => {
+    set((c) => {
+      let next = addToInventory(c, items, gp);
+      if (equip) next = autoEquip(next, r.reg);
+      return next;
+    });
+    setNote(`Added ${label}.`);
+  };
+  const addOne = (el: AElement, open: boolean) => add(open && el.extract?.length ? expandPack(el, r.reg) : [{ el, name: el.name, qty: 1 }], 0, el.name);
+
+  return (
+    <section className="card">
+      <h2>Starting equipment</h2>
+      <p className="muted">One click adds what your class and background offer. Choose an option, or take the gold instead. Armor, shield and the first weapons are equipped for you unless you turn that off.</p>
+      <label className="check"><input type="checkbox" checked={equip} onChange={() => setEquip(!equip)} /> Equip armor, shield and weapons automatically</label>
+      {ch.classes.length === 0 && !ch.background && <p className="notice">Pick a class and a background on the Build tab to see their starting equipment.</p>}
+      {plans.map((p) => (
+        <div key={p.kind} className="equip-origin">
+          <h3>{p.kind === "class" ? "Class" : "Background"}: {p.title}</h3>
+          <div className="equip-grid">
+            {p.variants.map((v) => <VariantCard key={v.label} plan={p} v={v} idx={idx} prefer={p.source} onAdd={(items, gp) => add(items, gp, `${p.title}, ${v.label.toLowerCase()}`)} />)}
+          </div>
+        </div>
+      ))}
+      {(ch.classes.length > 0 || ch.background) && plans.length === 0 && <p className="muted">The loaded content does not list starting equipment for your class or background.</p>}
+
+      {packs.length > 0 && (
+        <>
+          <h3>Adventuring packs</h3>
+          <div className="chips">
+            {packs.map((p) => (
+              <span key={p.id} className="pack-btn">
+                <button onClick={() => addOne(p, true)} onMouseEnter={() => onDetail(p)} title="Add the contents of the pack">{p.name}</button>
+                <button className="more tiny" onClick={() => addOne(p, false)} title="Add as one item">1×</button>
+              </span>
+            ))}
+          </div>
+          <p className="muted small-text">The pack name adds its contents. The 1× button keeps it as a single pack.</p>
+        </>
+      )}
+      {gear.length > 0 && (
+        <>
+          <h3>Common gear</h3>
+          <div className="chips">
+            {gear.map((g) => <button key={g.id} className="pill" onClick={() => addOne(g, false)} onMouseEnter={() => onDetail(g)}>+ {g.name}</button>)}
+          </div>
+        </>
+      )}
+      {note && <p className="notice">{note}</p>}
+    </section>
+  );
+}

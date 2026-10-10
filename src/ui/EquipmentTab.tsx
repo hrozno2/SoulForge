@@ -4,6 +4,7 @@ import type { Resolved } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
 import { uid, type Character, type InvItem } from "../aurora/character";
 import type { SetCharacter } from "./Slots";
+import { StartingEquipment } from "./StartingEquipment";
 
 const ITEM_TYPES = ["Item", "Weapon", "Armor", "Magic Item"];
 const COINS = ["pp", "gp", "ep", "sp", "cp"] as const;
@@ -59,6 +60,7 @@ export function EquipmentTab({ r, ch, set, onDetail }: { r: Resolved; ch: Charac
 
   return (
     <div className="equip">
+      <StartingEquipment r={r} ch={ch} set={set} onDetail={onDetail} />
       <section className="card">
         <h2>Add equipment</h2>
         <div className="row">

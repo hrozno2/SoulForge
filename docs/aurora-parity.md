@@ -40,3 +40,9 @@ Aurora Builder's installer was inspected for its screens, controls and rule type
 - Campaigns (sets of sources shared between characters), character groups.
 - Symbol and companion image galleries; sheet layout customisation.
 - Spell replacement rules (`allowReplace`) when levelling up.
+
+## Added after the first release
+
+- Starting equipment buttons for class and background, adventuring packs and common gear.
+- Fillable character sheet PDFs (DLDM 5E24 and companion sheets), filled from your own copy of the file.
+- A play screen modelled on D&D Beyond, and a restyle toward D&D Beyond and the WotC books.

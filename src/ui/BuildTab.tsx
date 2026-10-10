@@ -8,46 +8,39 @@ import {
 } from "../aurora/character";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { buildSheet } from "../aurora/sheet";
+import { PickCards } from "./PickCards";
 
 type Sub = "race" | "class" | "background" | "abilities" | "languages" | "proficiencies" | "feats";
 const SUBS: [Sub, string][] = [["race", "Species"], ["class", "Class"], ["background", "Background"], ["abilities", "Ability scores"], ["languages", "Languages"], ["proficiencies", "Proficiencies"], ["feats", "Feats"]];
 
-function Picker({ title, items, value, onPick, onDetail, allowClear }: { title: string; items: AElement[]; value?: string; onPick: (id?: string) => void; onDetail: (e: AElement) => void; allowClear?: boolean }) {
-  const [q, setQ] = useState("");
-  const [open, setOpen] = useState(!value);
-  const list = useMemo(() => {
-    const n = q.trim().toLowerCase();
-    return items.filter((e) => !e.compendiumHidden && (!n || e.name.toLowerCase().includes(n) || e.source.toLowerCase().includes(n))).sort((a, b) => a.name.localeCompare(b.name));
-  }, [items, q]);
+/** A grid of cards until something is chosen; then the choice with its follow-up questions and a way to change it. */
+function ChosenOrCards({ kicker, title, label, items, value, onPick, onClear, onDetail, children }: { kicker: string; title: string; label: string; items: AElement[]; value?: string; onPick: (id: string) => void; onClear: () => void; onDetail: (e: AElement) => void; children: React.ReactNode }) {
+  const [changing, setChanging] = useState(false);
   const cur = items.find((i) => i.id === value);
+  if (!cur || changing) {
+    return (
+      <>
+        {cur && <button className="more" onClick={() => setChanging(false)}>Keep {cur.name}</button>}
+        <PickCards kicker={kicker} title={title} items={items} value={value} onPick={(id) => { onPick(id); setChanging(false); }} onDetail={onDetail} />
+      </>
+    );
+  }
   return (
-    <div className={`slot ${value ? "done" : "todo"}`}>
-      <button className="slot-head" onClick={() => setOpen(!open)}>
-        <span className="slot-name">{title}</span>
-        <span className="slot-chosen">{cur?.name ?? ""}</span>
-        <span className="slot-count">{cur ? "" : "choose"}</span>
-        <span className="chev">{open ? "▾" : "▸"}</span>
-      </button>
-      {open && (
-        <div className="slot-body">
-          {items.length === 0 && <p className="muted">No {title.toLowerCase()} options are loaded. Add content on the Content tab.</p>}
-          {items.length > 12 && <input className="slot-search" placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} />}
-          <ul className="options">
-            {list.map((o) => (
-              <li key={o.id} className={o.id === value ? "picked" : ""}>
-                <button onClick={() => { onPick(o.id); setOpen(false); }} onMouseEnter={() => onDetail(o)} onFocus={() => onDetail(o)}>
-                  <span className="tick">{o.id === value ? "✓" : ""}</span>
-                  <span className="opt-name">{o.name}</span>
-                  <span className="opt-meta" />
-                  <span className="opt-src">{o.source}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          {allowClear && value && <button className="more" onClick={() => onPick(undefined)}>Clear</button>}
+    <>
+      <div className="slot done">
+        <div className="slot-head" style={{ cursor: "default" }} onMouseEnter={() => onDetail(cur)}>
+          <span className="slot-name">{label}</span>
+          <span className="slot-chosen">{cur.name} <small className="muted">{cur.source}</small></span>
+          <span />
+          <span />
         </div>
-      )}
-    </div>
+        <div className="slot-body row">
+          <button onClick={() => setChanging(true)}>Change</button>
+          <button onClick={onClear}>Clear</button>
+        </div>
+      </div>
+      {children}
+    </>
   );
 }
 
@@ -85,26 +78,14 @@ function ClassPanel({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
         {!ch.classes.length && <p className="muted">Pick a class to start.</p>}
       </div>
       <div className="row">
-        <button className="primary" onClick={() => setAdding(!adding)}>{ch.classes.length ? "Add class (multiclass)" : "Choose class"}</button>
+        <button className="primary" onClick={() => setAdding(!adding)}>{adding ? "Close" : ch.classes.length ? "Add class (multiclass)" : "Choose class"}</button>
         {level >= 20 && <span className="muted">Level 20 is the maximum.</span>}
       </div>
       {adding && (
-        <ul className="options boxed">
-          {classes.filter((c) => !have.has(c.id)).map((c) => {
-            const multi = ch.classes.length > 0;
-            const ok = !multi || !c.multiclass || meets(c.multiclass.requirements, ctx);
-            return (
-              <li key={c.id} className={ok ? "" : "dim"}>
-                <button disabled={multi && level >= 20} onClick={() => { add(c.id); setAdding(false); }} onMouseEnter={() => onDetail(c)}>
-                  <span className="tick" />
-                  <span className="opt-name">{c.name}</span>
-                  <span className="opt-meta">{multi && c.multiclass?.prerequisite ? `needs ${c.multiclass.prerequisite}${ok ? "" : " (not met)"}` : ""}</span>
-                  <span className="opt-src">{c.source}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <PickCards
+          kicker={ch.classes.length ? "Add a class" : "Choose a class"} title={ch.classes.length ? "Branch out." : "Claim your role."}
+          items={classes.filter((c) => !have.has(c.id) && (!ch.classes.length || !c.multiclass || meets(c.multiclass.requirements, ctx)))} onPick={(id) => { add(id); setAdding(false); }} onDetail={onDetail}
+        />
       )}
       {ch.classes.map((c) => {
         const slots = r.slots.filter((s) => tabOfSlot(s) === "class" && s.root === `class:${c.classId}`);
@@ -210,17 +191,15 @@ export function BuildTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character;
         })}
       </nav>
       {sub === "race" && (
-        <>
-          <Picker title="Species" items={races} value={ch.race} onPick={(id) => set((c) => ({ ...c, race: id }))} onDetail={onDetail} allowClear />
+        <ChosenOrCards kicker="Choose a species" title="Pick your heritage." label="Species" items={races} value={ch.race} onPick={(id) => set((c) => ({ ...c, race: id }))} onClear={() => set((c) => ({ ...c, race: undefined }))} onDetail={onDetail}>
           <SlotList slots={of("race")} r={r} set={set} onDetail={onDetail} />
-        </>
+        </ChosenOrCards>
       )}
       {sub === "class" && <ClassPanel r={r} ch={ch} set={set} onDetail={onDetail} />}
       {sub === "background" && (
-        <>
-          <Picker title="Background" items={backgrounds} value={ch.background} onPick={(id) => set((c) => ({ ...c, background: id }))} onDetail={onDetail} allowClear />
+        <ChosenOrCards kicker="Choose a background" title="Where did you come from?" label="Background" items={backgrounds} value={ch.background} onPick={(id) => set((c) => ({ ...c, background: id }))} onClear={() => set((c) => ({ ...c, background: undefined }))} onDetail={onDetail}>
           <SlotList slots={of("background")} r={r} set={set} onDetail={onDetail} />
-        </>
+        </ChosenOrCards>
       )}
       {sub === "abilities" && <Abilities r={r} ch={ch} set={set} onDetail={onDetail} />}
       {sub === "languages" && (

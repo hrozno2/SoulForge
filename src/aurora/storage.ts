@@ -2,7 +2,7 @@ import type { Character } from "./character";
 import type { FileCache, SourceConfig } from "./sources";
 
 const DB_NAME = "charforge";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -16,6 +16,7 @@ function openDb(): Promise<IDBDatabase> {
         files.createIndex("root", "root");
       }
       if (!db.objectStoreNames.contains("characters")) db.createObjectStore("characters", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("templates")) db.createObjectStore("templates", { keyPath: "id" });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -131,5 +132,40 @@ export async function deleteCharacterRecord(id: string): Promise<void> {
   const db = await openDb();
   const tx = db.transaction("characters", "readwrite");
   tx.objectStore("characters").delete(id);
+  await done(tx);
+}
+
+/** A fillable sheet PDF the player loaded. The file itself is kept on this computer only. */
+export interface TemplateRecord {
+  id: string;
+  name: string;
+  kind: "dldm5e24" | "companion";
+  /** For DLDM sheets, the page styles it contains. For companion sheets, the layout. */
+  pages: string[];
+  bytes: ArrayBuffer;
+  added: number;
+}
+
+export async function listTemplates(): Promise<TemplateRecord[]> {
+  try {
+    const db = await openDb();
+    const all = (await wrap(db.transaction("templates").objectStore("templates").getAll())) as TemplateRecord[];
+    return all.sort((a, b) => a.name.localeCompare(b.name));
+  } catch {
+    return [];
+  }
+}
+
+export async function saveTemplate(rec: TemplateRecord): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction("templates", "readwrite");
+  tx.objectStore("templates").put(rec);
+  await done(tx);
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction("templates", "readwrite");
+  tx.objectStore("templates").delete(id);
   await done(tx);
 }

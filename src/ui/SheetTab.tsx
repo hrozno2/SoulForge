@@ -7,6 +7,7 @@ import { DEFAULT_PDF_OPTIONS, buildPdf, cardCounts, type PdfOptions } from "../p
 import type { SetCharacter } from "./Slots";
 import { CompanionCard, CONDITIONS } from "./ManageTab";
 import { requestRoll } from "./Dice";
+import { TemplateExport } from "./SheetExport";
 
 const sign = (n: number) => (n >= 0 ? `+${n}` : String(n));
 const rollBtn = (label: string, bonus: number) => requestRoll(label, `1d20${bonus >= 0 ? "+" : ""}${bonus}`);
@@ -50,6 +51,7 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
           <p className="muted">Cards are 2.5 x 3.5 in (poker size), nine to a page, ready to cut.</p>
           <button className="primary" disabled={busy || !(opts.sheet || opts.spellCards || opts.itemCards || opts.featureCards)} onClick={run}>{busy ? "Creating..." : "Create PDF"}</button>
           {msg && <p className="notice">{msg}</p>}
+          <TemplateExport r={r} sheet={sheet} />
         </div>
       )}
     </div>

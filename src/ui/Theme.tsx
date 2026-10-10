@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 
 const ACCENTS: Record<string, [string, string]> = {
-  Gold: ["#d4a24c", "#9a6a12"],
-  Blue: ["#5b9bd5", "#2c6aa8"],
-  Green: ["#6fb98a", "#2f7d4f"],
-  Purple: ["#a78bd6", "#6b4aa8"],
-  Red: ["#e07a5f", "#b03a1f"],
+  Red: ["#c53131", "#9b2020"],
+  Gold: ["#b8902f", "#8a6a24"],
+  Blue: ["#3f78b8", "#2c5d93"],
+  Green: ["#3f8f5c", "#2f7d4f"],
+  Purple: ["#7d5cc0", "#5b3f99"],
 };
 
 const read = (k: string, d: string) => {
@@ -19,13 +19,13 @@ const read = (k: string, d: string) => {
 /** Light or dark, plus an accent colour. Remembered between launches. */
 export function ThemePicker() {
   const [mode, setMode] = useState(() => read("charforge.theme", "auto"));
-  const [accent, setAccent] = useState(() => read("charforge.accent", "Gold"));
+  const [accent, setAccent] = useState(() => read("charforge.accent", "Red"));
   useEffect(() => {
     const root = document.documentElement;
     if (mode === "auto") root.removeAttribute("data-theme");
     else root.setAttribute("data-theme", mode);
     const dark = mode === "dark" || (mode === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    const [d, l] = ACCENTS[accent] ?? ACCENTS.Gold;
+    const [d, l] = ACCENTS[accent] ?? ACCENTS.Red;
     root.style.setProperty("--accent", dark ? d : l);
     try {
       localStorage.setItem("charforge.theme", mode);

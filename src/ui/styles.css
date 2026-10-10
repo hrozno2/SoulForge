@@ -441,14 +441,14 @@ button.tiny { padding: 0 6px; }
 .opt-main .tick { width: 14px; color: var(--gold2); font-weight: 700; }
 .opt-main .opt-name { font: 600 15px var(--display); }
 .opt-blurb { flex: 1; color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.why { color: var(--warn); }
+.why { color: var(--muted); font-size: 12px; }
 .learn { width: 22px; height: 22px; padding: 0; border-radius: 50%; font: 700 12px var(--display); flex: none; }
 .spell-rows .opt-row, .spell-rows .row-head { display: grid; grid-template-columns: 26px minmax(110px, 1.4fr) 38px 30px 52px 42px 38px minmax(86px, 1fr) 22px; gap: 6px; }
 .spell-rows .opt-main { min-width: 0; }
 .spell-rows .opt-name { font: 700 14px/1.15 var(--body); letter-spacing: 0; }
 .spell-rows .vchips { flex-wrap: nowrap; overflow: hidden; }
 .row-head { padding: 4px 8px; font: 700 10.5px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel2); z-index: 1; }
-.spell-rows .why { grid-column: 2 / 9; }
+.spell-rows .why { display: none; } /* the reason is in the row's hover text, so the grid keeps its columns */
 .lvl { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--gold); font: 700 13px var(--display); color: var(--gold2); background: #0004; clip-path: polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 0 100%, 0 5px); }
 .lvl.cantrip { background: var(--accent); color: #fff; border-color: var(--accent); }
 .c-school, .c-time, .c-range, .c-comp { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

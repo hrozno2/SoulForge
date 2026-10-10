@@ -210,7 +210,7 @@ export function Browse({ items, type, chosen, onPick, onSwap, disabledReason, ow
             const owner = g.variants.map((x) => ownedBy?.(x.el)).find(Boolean);
             const picked = g.variants.some((x) => chosenSet.has(x.el.id));
             return (
-              <div key={g.key} className={`opt-row ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} title={owner} onMouseEnter={() => onHover?.(e)}>
+              <div key={g.key} className={`opt-row ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} title={owner ?? why} onMouseEnter={() => onHover?.(e)}>
                 {type === "Spell" && <span className={`lvl ${e.setters.level?.value === "0" ? "cantrip" : ""}`}>{e.setters.level?.value === "0" ? "C" : e.setters.level?.value ?? "?"}</span>}
                 <button className="opt-main" disabled={false} title={owner ?? why} aria-disabled={owner ? true : undefined} onClick={() => !owner && onPick(e)}>
                   <span className="tick">{chosenSet.has(e.id) || owner ? "✓" : ""}</span>

@@ -39,8 +39,25 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm test
 
-  build:
+  # The five builds upload at the same time. Creating the draft release first, once, stops them racing to create it.
+  release:
     needs: verify
+    runs-on: ubuntu-latest
+    outputs:
+      id: ${{ steps.draft.outputs.id }}
+    steps:
+      - id: draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ID="$(gh api "repos/${GITHUB_REPOSITORY}/releases" --paginate --jq ".[] | select(.tag_name==\"${GITHUB_REF_NAME}\") | .id" | head -n1)"
+          if [ -z "$ID" ]; then
+            ID="$(gh api "repos/${GITHUB_REPOSITORY}/releases" -f tag_name="${GITHUB_REF_NAME}" -f name="CharForge ${GITHUB_REF_NAME}" -F draft=true --jq .id)"
+          fi
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: release
     strategy:
       fail-fast: false
       matrix:
@@ -86,8 +103,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: CharForge ${{ github.ref_name }}
+          releaseId: ${{ needs.release.outputs.id }}
           releaseBody: |
             Install options:
             - macOS: `brew install --cask ${{ github.repository_owner }}/charforge/charforge`

@@ -172,7 +172,7 @@ export function ContentTab({ content, onDetail }: { content: ContentState; onDet
       <section className="card">
         <h2>Content links</h2>
         <p className="muted">
-          Add the address of an Aurora index file. CharForge downloads everything it lists, keeps a copy for offline use, and checks for new versions each time it starts.
+          Add the address of an Aurora index file. Soul Forge downloads everything it lists, keeps a copy for offline use, and checks for new versions each time it starts.
         </p>
         <div className="row">
           <input style={{ flex: 1 }} value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://.../something.index" />

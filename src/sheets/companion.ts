@@ -1,7 +1,7 @@
 /**
  * Writes a companion's stat block onto the DLDM 5E14 companion sheets (Familiar, Paladin Mount, Beastmaster
  * Ranger, Drakewarden Ranger). Those PDFs have no form fields, so text is placed at fixed positions.
- * The PDFs are not part of CharForge: the player loads their own copy.
+ * The PDFs are not part of Soul Forge: the player loads their own copy.
  */
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";

@@ -1,6 +1,6 @@
 /**
  * Fills the DLDM "5E24" fillable character sheets (the five-page file and its single-page parts) from a character.
- * The PDFs are not part of CharForge: the player loads their own copy. Pages are recognised by the names of their
+ * The PDFs are not part of Soul Forge: the player loads their own copy. Pages are recognised by the names of their
  * form fields, so the five-page file and the separate pages both work.
  */
 import fontkit from "@pdf-lib/fontkit";
@@ -278,7 +278,7 @@ function page1a(c: Ctx, d: FillData): void {
     { name: "WEAPON NAME 5", bonus: "Text Field55", dmg: "Text Field56", notes: "Text Field57" }, { name: "WEAPON NAME 6", bonus: "Text Field59", dmg: "Text Field60", notes: "Text Field61" },
   ]);
   const cf = splitEntries(d.classFeatures, 1650, 2);
-  multiBox(c, "CLASS FEATURES 1", cf.texts[0]); multiBox(c, "CLASS FEATURES 2", cf.texts[1] + (cf.dropped ? `\n(+${cf.dropped} more features, see CharForge)` : ""));
+  multiBox(c, "CLASS FEATURES 1", cf.texts[0]); multiBox(c, "CLASS FEATURES 2", cf.texts[1] + (cf.dropped ? `\n(+${cf.dropped} more features, see Soul Forge)` : ""));
   multiBox(c, "TRAITS", d.traits.join("\n")); multiBox(c, "FEATS", d.feats.join("\n"));
 }
 
@@ -327,7 +327,7 @@ function page1b(c: Ctx, d: FillData): void {
     { name: "Text Field98", bonus: "Text Field99", dmg: "Text Field100", notes: "Text Field101" }, { name: "Text Field102", bonus: "Text Field103", dmg: "Text Field104", notes: "Text Field105" },
   ]);
   const cf = splitEntries(d.classFeatures, 1650, 2);
-  multiBox(c, "CLASS FEATURES 0", cf.texts[0]); multiBox(c, "CLASS FEATURES 3", cf.texts[1] + (cf.dropped ? `\n(+${cf.dropped} more features, see CharForge)` : ""));
+  multiBox(c, "CLASS FEATURES 0", cf.texts[0]); multiBox(c, "CLASS FEATURES 3", cf.texts[1] + (cf.dropped ? `\n(+${cf.dropped} more features, see Soul Forge)` : ""));
   multiBox(c, "TRAITS0", d.traits.join("\n")); multiBox(c, "FEATS0", d.feats.join("\n"));
 }
 

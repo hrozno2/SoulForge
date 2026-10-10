@@ -413,7 +413,7 @@ export async function buildPdf(r: Resolved, sh: SheetData, opts: PdfOptions, fon
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
   pdf.setTitle(r.character.name || "Character");
-  pdf.setCreator("CharForge");
+  pdf.setCreator("Soul Forge");
   const f: Fonts = {
     r: await pdf.embedFont(fonts.regular, { subset: true }),
     b: await pdf.embedFont(fonts.bold, { subset: true }),

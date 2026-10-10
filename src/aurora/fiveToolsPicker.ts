@@ -108,7 +108,7 @@ export async function resolveLinks(base: string, links: string[]): Promise<{ fou
       continue;
     }
     if (p === "unsupported") {
-      problems.push(`CharForge cannot import from this page yet: ${l.slice(0, 60)}. Use Fetch the whole data folder for classes.`);
+      problems.push(`Soul Forge cannot import from this page yet: ${l.slice(0, 60)}. Use Fetch the whole data folder for classes.`);
       continue;
     }
     try {

@@ -54,7 +54,7 @@ gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --repo "$REPO" --body "$PASS"
 # Homebrew tap: a repository named homebrew-<name> that the release workflow keeps up to date.
 if ! gh repo view "$TAP" >/dev/null 2>&1; then
   gh repo create "$TAP" --public --add-readme \
-    --description "Homebrew tap for CharForge"
+    --description "Homebrew tap for Soul Forge"
 fi
 
 cat <<MSG

@@ -1,11 +1,11 @@
-# CharForge user guide
+# Soul Forge user guide
 
-CharForge builds and plays D&D 5e (2024) characters. It runs on macOS, Windows and Linux, keeps everything on your computer, and ships without rules content: you load that yourself.
+Soul Forge builds and plays D&D 5e (2024) characters. It runs on macOS, Windows and Linux, keeps everything on your computer, and ships without rules content: you load that yourself.
 
 ## 1. First run
 
 1. Open the **Content** tab.
-2. The AuroraLegacy link is listed. Press **Add** (or paste your own `.index` link). CharForge downloads the elements and checks for updates every hour.
+2. The AuroraLegacy link is listed. Press **Add** (or paste your own `.index` link). Soul Forge downloads the elements and checks for updates every hour.
 3. Go to **Home** and press **New character**.
 
 Content links work like Aurora's: add as many as you like, switch parts of them off in the tree, and use **Check for updates** to refresh by hand.
@@ -50,10 +50,10 @@ Open **Sheet** and press **Export PDF**.
 ### Official 2024 sheet (default)
 
 1. Download the free 2024 character sheet from Wizards of the Coast (search "D&D 2024 character sheet PDF" on dndbeyond.com).
-2. Press **Add sheet PDF** and pick it. CharForge recognises it and keeps a copy on your computer only.
+2. Press **Add sheet PDF** and pick it. Soul Forge recognises it and keeps a copy on your computer only.
 3. Choose pages and press **Fill and save**.
 
-The official sheet has no form fields, so text is placed on it as printed. Long feature text shrinks to fit; if something is cut off, CharForge says so.
+The official sheet has no form fields, so text is placed on it as printed. Long feature text shrinks to fit; if something is cut off, Soul Forge says so.
 
 ### Other sheets
 
@@ -64,13 +64,13 @@ The official sheet has no form fields, so text is placed on it as printed. Long 
 
 Under any sheet you can tick **Spell cards**, **Item cards**, **Feature cards** and **Tips and tricks for play**. They are appended after the sheet pages.
 
-### CharForge style PDF
+### Soul Forge style PDF
 
-A sheet in CharForge's own layout. It has the same add-ons. Cards are poker size, nine to a page.
+A sheet in Soul Forge's own layout. It has the same add-ons. Cards are poker size, nine to a page.
 
 ## 6. Importing from 5e.tools and Plutonium
 
-CharForge cannot read 5e.tools directly (the site blocks apps). It reads the same JSON data files that Plutonium uses.
+Soul Forge cannot read 5e.tools directly (the site blocks apps). It reads the same JSON data files that Plutonium uses.
 
 Under **Content → 5etools data**:
 
@@ -102,4 +102,4 @@ The app checks for updates and offers to install them. Content sources can be re
 
 ## 11. Help and contributing
 
-CharForge is free and open source under the MIT license. Report problems or send changes at https://github.com/hrozno2/charforge. Third-party material is listed in `NOTICE.md`.
+Soul Forge is free and open source under the MIT license. Report problems or send changes at https://github.com/hrozno2/charforge. Third-party material is listed in `NOTICE.md`.

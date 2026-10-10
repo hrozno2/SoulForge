@@ -103,7 +103,7 @@ export function App() {
       <header className="topbar">
         <strong className="brand">
           <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 28 9v14l-12 7L4 23V9z" fill="none" stroke="#c9a45c" strokeWidth="1.6" /><path d="M16 2v28M4 9l12 7 12-7M4 23l12-7 12 7" fill="none" stroke="#c53131" strokeWidth="1.1" /><text x="16" y="19.5" textAnchor="middle" fontSize="9" fontWeight="700" fill="#f0d9a0" fontFamily="Cinzel, serif">20</text></svg>
-          CharForge
+          Soul Forge
         </strong>
         <nav>
           {TABS.map(([k, label]) => (

@@ -1,7 +1,7 @@
 /**
  * Writes a character onto the official 2024 D&D character sheet (the free two-page PDF Wizards of the Coast
  * publishes). That PDF has no form fields, so text and marks are placed at fixed positions.
- * The PDF is not part of CharForge: the player loads their own copy.
+ * The PDF is not part of Soul Forge: the player loads their own copy.
  */
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";

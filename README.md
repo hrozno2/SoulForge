@@ -1,4 +1,4 @@
-# CharForge
+# Soul Forge
 
 Desktop D&D 5e (2024 rules) character builder on the Aurora element format, with content links that update themselves and 5etools/Plutonium data import.
 Runs on Windows, macOS and Linux through Tauri. Original code, not affiliated with Aurora Builder or Wizards of the Coast.
@@ -24,7 +24,7 @@ Then:
 
     sudo pacman -Syu charforge-bin
 
-After that, `sudo pacman -Syu` updates CharForge together with the rest of the system. Packages are not GPG signed,
+After that, `sudo pacman -Syu` updates Soul Forge together with the rest of the system. Packages are not GPG signed,
 so the repo is trusted only over HTTPS from your GitHub account. x86_64 only. To build it yourself instead, copy
 `packaging/arch/PKGBUILD` and run `makepkg -si`.
 
@@ -69,7 +69,7 @@ Back up `~/.charforge-signing`. If the key is lost, installed copies can never u
 ### Before the first release
 
 - Test updating: release `0.2.0`, install it, release `0.2.1`, and launch the old copy.
-- CachyOS itself only ships packages its maintainers add. Users get CharForge from the pacman repository above.
+- CachyOS itself only ships packages its maintainers add. Users get Soul Forge from the pacman repository above.
 
 ## Develop
 
@@ -101,7 +101,7 @@ A character builder for D&D 5e (2024 rules, and older editions through content f
 
 ## Content
 
-CharForge ships without rules content. Add it on the Content tab.
+Soul Forge ships without rules content. Add it on the Content tab.
 
 ### Aurora content by link
 
@@ -109,7 +109,7 @@ Paste the address of an Aurora index file, for example the AuroraLegacy elements
 
     https://raw.githubusercontent.com/AuroraLegacy/elements/master/AuroraLegacy.index
 
-CharForge reads the index and every index it lists, downloads the files, and keeps a copy for offline use. On each launch (at most once an hour) it fetches the small index files again and downloads only the parts whose version changed. You can switch whole books on or off in the tree, force a full re-download, or remove a link.
+Soul Forge reads the index and every index it lists, downloads the files, and keeps a copy for offline use. On each launch (at most once an hour) it fetches the small index files again and downloads only the parts whose version changed. You can switch whole books on or off in the tree, force a full re-download, or remove a link.
 
 ### 5etools data and Plutonium
 
@@ -126,7 +126,7 @@ Characters made with Plutonium in Foundry export as normal dnd5e actors, so Foun
 
 ### Not included
 
-No book content ships with CharForge and none is bundled by the importers. Content comes from files and addresses you supply. Aurora, the Aurora Legacy team, 5e.tools and Wizards of the Coast are not affiliated with CharForge.
+No book content ships with Soul Forge and none is bundled by the importers. Content comes from files and addresses you supply. Aurora, the Aurora Legacy team, 5e.tools and Wizards of the Coast are not affiliated with Soul Forge.
 
 ## Choosing things
 
@@ -142,9 +142,9 @@ Every list of choices (species, class, background, feats, subclasses, spells, la
 
 ## Fillable character sheets
 
-The official 2024 sheet from Wizards of the Coast is the default export. It has no form fields, so CharForge prints onto it; load your own copy once in the Sheet tab (it is not bundled).
+The official 2024 sheet from Wizards of the Coast is the default export. It has no form fields, so Soul Forge prints onto it; load your own copy once in the Sheet tab (it is not bundled).
 
-Sheet tab, Export PDF, "Fillable sheets": load your own copy of a sheet PDF once, and CharForge fills it in from the character and keeps the fields editable. The PDFs stay on your computer (CharForge does not include any sheet).
+Sheet tab, Export PDF, "Fillable sheets": load your own copy of a sheet PDF once, and Soul Forge fills it in from the character and keeps the fields editable. The PDFs stay on your computer (Soul Forge does not include any sheet).
 
 Supported:
 
@@ -159,7 +159,7 @@ Limits: the old five-page file without "Updated Form Fields" uses different fiel
 
 - Start tab, Import: Foundry VTT (dnd5e actor JSON, including actors made with Plutonium) or Roll20 (D&D 5e OGL sheet attributes as JSON). Names are matched against loaded content. Anything not found is reported, and items not found become custom items.
 - The Foundry and Roll20 readers were written from the documented sheet structure, not from real exports. If a file imports badly, keep it and adjust `src/aurora/foreign.ts`.
-- Characters made in earlier CharForge versions (0.2.x) are not carried over: the engine changed in 0.3.
+- Characters made in earlier Soul Forge versions (0.2.x) are not carried over: the engine changed in 0.3.
 
 ## Design
 
@@ -181,7 +181,7 @@ Content is a set of elements. An element has an id, name, type and source, sette
 
 ## Known gaps
 
-- Aurora character files (`.dnd5e`) cannot be opened. CharForge saves its own `.json` characters.
+- Aurora character files (`.dnd5e`) cannot be opened. Soul Forge saves its own `.json` characters.
 - Spell replacement on level up, level-dependent text variants beyond the highest level reached, and spell lists that depend on other spell sources are not modelled.
 - Aurora's companion gallery and symbol galleries are not here. There is one portrait per character.
 - The sheet filler only knows the DLDM sheets. Other sheets need their own field mapping.
@@ -190,7 +190,7 @@ Content is a set of elements. An element has an id, name, type and source, sette
 
 ## License
 
-MIT, see `LICENSE`. This covers CharForge's code only. It does not include or grant rights to any Dungeons & Dragons
+MIT, see `LICENSE`. This covers Soul Forge's code only. It does not include or grant rights to any Dungeons & Dragons
 content; import your own copies from the Content tab.
 
-CharForge is free and open source. Fork it, change it, redistribute it, no permission needed. Contributions are welcome through issues and pull requests. Third-party material is listed in `NOTICE.md`.
+Soul Forge is free and open source. Fork it, change it, redistribute it, no permission needed. Contributions are welcome through issues and pull requests. Third-party material is listed in `NOTICE.md`.

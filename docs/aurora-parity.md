@@ -1,10 +1,10 @@
 # Aurora Builder feature check
 
-Aurora Builder's installer was inspected for its screens, controls and rule types, and its public documentation was read. This is the checklist of what it offers and where CharForge stands. No Aurora code or assets are used.
+Aurora Builder's installer was inspected for its screens, controls and rule types, and its public documentation was read. This is the checklist of what it offers and where Soul Forge stands. No Aurora code or assets are used.
 
 ## Content format
 
-| Aurora | CharForge |
+| Aurora | Soul Forge |
 | --- | --- |
 | Elements with `name`, `type`, `source`, `id`; later files override earlier ones | Supported |
 | `description`, `sheet` (display, alt, action, usage, per-level text), `setters`, `supports`, `requirements` | Supported |
@@ -20,7 +20,7 @@ Aurora Builder's installer was inspected for its screens, controls and rule type
 
 ## Screens
 
-| Aurora | CharForge |
+| Aurora | Soul Forge |
 | --- | --- |
 | Start: new character, character list, update notices | Start tab: list, new, random, open, duplicate, delete, export |
 | Build: species, class, background, ability scores, languages, proficiencies, feats | Build tab, same sub-tabs |

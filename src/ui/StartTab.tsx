@@ -39,7 +39,7 @@ export function StartTab({
     if (!f) return;
     try {
       const raw = JSON.parse(await f.text()) as Character;
-      if (raw.version !== 2) throw new Error("This is not a CharForge 0.3 character file. Foundry and Roll20 exports go through the Import button next to it.");
+      if (raw.version !== 2) throw new Error("This is not a Soul Forge 0.3 character file. Foundry and Roll20 exports go through the Import button next to it.");
       onOpen(uid(), { ...newCharacter(), ...raw });
       setMsg("");
     } catch (e) {
@@ -52,7 +52,7 @@ export function StartTab({
       {contentReady && sourceCount === 0 && (
         <section className="card callout">
           <h2>Add content first</h2>
-          <p>CharForge ships without rules content. Add the AuroraLegacy link to download species, classes, spells and items.</p>
+          <p>Soul Forge ships without rules content. Add the AuroraLegacy link to download species, classes, spells and items.</p>
           <button className="primary" onClick={goContent}>Go to Content</button>
         </section>
       )}

@@ -63,7 +63,7 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
         if (layout) {
           await saveTemplate({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "companion", pages: [layout], size: bytes.byteLength, added: Date.now() }, bytes);
           notes.push(`${file.name}: companion sheet`);
-        } else notes.push(`${file.name}: not a sheet CharForge can fill (it fills the official 2024 sheet, the DLDM 5E24 sheets and the DLDM companion sheets)`);
+        } else notes.push(`${file.name}: not a sheet Soul Forge can fill (it fills the official 2024 sheet, the DLDM 5E24 sheets and the DLDM companion sheets)`);
       } catch (e) {
         notes.push(`${file.name}: ${(e as Error).message}`);
       }
@@ -118,7 +118,7 @@ export function TemplateExport({ r, sheet }: { r: Resolved; sheet: SheetData }) 
   return (
     <div className="subcard">
       <h3>Your own sheet PDFs</h3>
-      <p className="muted">Load your own copy of a sheet. Supported: the official 2024 character sheet (free from Wizards of the Coast at dndbeyond.com, search "2024 character sheet"; filled as printed text), the DLDM 5E24 sheets (stay editable) and the DLDM companion sheets. CharForge keeps the file on this computer only.</p>
+      <p className="muted">Load your own copy of a sheet. Supported: the official 2024 character sheet (free from Wizards of the Coast at dndbeyond.com, search "2024 character sheet"; filled as printed text), the DLDM 5E24 sheets (stay editable) and the DLDM companion sheets. Soul Forge keeps the file on this computer only.</p>
       <div className="row">
         <button onClick={() => fileRef.current?.click()}>Add sheet PDF...</button>
         <input ref={fileRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = ""; }} />

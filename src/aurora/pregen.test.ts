@@ -1,6 +1,6 @@
 /**
  * Usability test: rebuild free official pregenerated characters (D&D Starter Set characters, 2014 rules)
- * with the builder and compare every number and list on the printed sheet with what CharForge produces.
+ * with the builder and compare every number and list on the printed sheet with what Soul Forge produces.
  * Needs real content, which is not in this repository. Point AURORA_FIXTURES_2014 at a folder holding
  * the AuroraLegacy files (core internal.xml, ALE.xml and the 2014 players-handbook folder).
  */

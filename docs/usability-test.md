@@ -1,6 +1,6 @@
 # Usability test: rebuilding pregenerated characters
 
-Goal: take real printed character sheets and check that everything on them can be produced by CharForge.
+Goal: take real printed character sheets and check that everything on them can be produced by Soul Forge.
 
 Sheets used: the five free pregenerated characters of the D&D Starter Set (Wizards of the Coast, 2022 PDF, 2014 rules). Four were rebuilt: Hill Dwarf Cleric (Life, Soldier), Wood Elf Fighter (Folk Hero), High Elf Wizard (Sage), Human Paladin (Noble). Content came from the AuroraLegacy elements (2014 Player's Handbook), loaded through the same code path as the app.
 
@@ -8,7 +8,7 @@ The test is automated: `src/aurora/pregen.test.ts`. It chooses the same options 
 
 ## Every field on the printed sheet
 
-| Sheet field | Where in CharForge | Result |
+| Sheet field | Where in Soul Forge | Result |
 | --- | --- | --- |
 | Class, level, background, race and subrace, size, alignment | Sheet header | Matches. Subrace and size added to the header after the test showed they were missing |
 | Proficiency bonus | Sheet | Matches |

@@ -41,8 +41,8 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
       {open && (
         <div className="subcard">
           <TemplateExport r={r} sheet={sheet} />
-          <h3>CharForge style PDF</h3>
-          <p className="muted">A sheet in CharForge's own layout, with optional cards and play tips. Use this if you have no official sheet loaded.</p>
+          <h3>Soul Forge style PDF</h3>
+          <p className="muted">A sheet in Soul Forge's own layout, with optional cards and play tips. Use this if you have no official sheet loaded.</p>
           <label className="check"><input type="checkbox" checked={opts.sheet} onChange={() => toggle("sheet")} /> Character sheet</label>
           <label className="check"><input type="checkbox" checked={opts.spellCards} onChange={() => toggle("spellCards")} /> Spell cards <small>{counts.spells}</small></label>
           <label className="check"><input type="checkbox" checked={opts.itemCards} onChange={() => toggle("itemCards")} /> Item cards <small>{counts.items}</small></label>

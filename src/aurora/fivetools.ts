@@ -1,10 +1,10 @@
 /**
  * Converts 5etools-format JSON data (the format used by 5e.tools, its mirrors, and the Plutonium Foundry
- * module) into CharForge elements. The data describes content in prose plus structured fields, so this
+ * module) into Soul Forge elements. The data describes content in prose plus structured fields, so this
  * maps the structured parts (proficiencies, saves, speeds, spell tables, hit dice, ability bonuses, items)
  * into rules and keeps the rest as description text.
  *
- * The data itself is never bundled with CharForge: it is read from files or a base address the user supplies.
+ * The data itself is never bundled with Soul Forge: it is read from files or a base address the user supplies.
  */
 import type { AElement, ARule, SetterValue } from "./types";
 

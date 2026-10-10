@@ -1,6 +1,6 @@
 # Maintainer: hrozno2/charforge <https://github.com/hrozno2/charforge>
 pkgname=charforge-bin
-_name=CharForge
+_name=SoulForge
 pkgver=0.2.0
 pkgrel=1
 pkgdesc="D&D 5e (2024) character builder with custom modifiers, content import and PDF export"

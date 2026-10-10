@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-/// How this copy of CharForge was installed, so the UI knows how updates work.
+/// How this copy of Soul Forge was installed, so the UI knows how updates work.
 ///
 /// - `app`: Windows installer or macOS app. The in-app updater replaces the files.
 /// - `appimage`: Linux AppImage. The in-app updater replaces the AppImage.
@@ -31,5 +31,5 @@ fn main() {
         .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![install_kind])
         .run(tauri::generate_context!())
-        .expect("error while running CharForge");
+        .expect("error while running Soul Forge");
 }

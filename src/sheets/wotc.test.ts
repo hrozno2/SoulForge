@@ -45,7 +45,7 @@ describe.skipIf(!OFFICIAL || !CONTENT)("official 2024 sheet", () => {
     if (process.env.SHEET_OUT) writeFileSync(`${process.env.SHEET_OUT}/wotc.pdf`, res.bytes);
   });
 
-  it("builds the CharForge PDF with tips", async () => {
+  it("builds the Soul Forge PDF with tips", async () => {
     const { r, sheet } = make();
     const bytes = await buildPdf(r, sheet, { paper: "letter", sheet: false, spellCards: false, itemCards: false, featureCards: false, tips: true }, font);
     if (process.env.SHEET_OUT) writeFileSync(`${process.env.SHEET_OUT}/tips.pdf`, bytes);

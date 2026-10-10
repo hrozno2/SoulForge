@@ -86,6 +86,8 @@ export interface BrowseProps {
   /** Called when a version chip in the list is clicked while another version of the same option is picked. */
   onSwap?: (from: AElement, to: AElement) => void;
   disabledReason?: (el: AElement) => string | undefined;
+  /** Says what already gives the character this option. Such options show a locked check mark and cannot be picked here. */
+  ownedBy?: (el: AElement) => string | undefined;
   defaultView?: "cards" | "list";
   /** Cards need a bit of room, so small pickers only offer the list. */
   allowCards?: boolean;
@@ -97,7 +99,7 @@ export interface BrowseProps {
   defaultSort?: SortMode;
 }
 
-export function Browse({ items, type, chosen, onPick, onSwap, disabledReason, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort }: BrowseProps) {
+export function Browse({ items, type, chosen, onPick, onSwap, disabledReason, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort }: BrowseProps) {
   const { books, learn } = useUi();
   const [view, setView] = useStored<"cards" | "list">(`view.${type}`, defaultView);
   const [sort, setSort] = useStored<SortMode>(`sort.${type}`, defaultSort ?? (type === "Spell" ? "level" : "recommended"));
@@ -180,16 +182,17 @@ export function Browse({ items, type, chosen, onPick, onSwap, disabledReason, de
             const e = v.el;
             const hue = hueOf(e.name);
             const why = disabledReason?.(e);
+            const owner = g.variants.map((x) => ownedBy?.(x.el)).find(Boolean);
             const picked = g.variants.some((x) => chosenSet.has(x.el.id));
             return (
-              <div key={g.key} className={`pick-card ${picked ? "picked" : ""} ${why ? "dim" : ""}`} style={{ ["--hue" as string]: hue }} data-glyph={e.name.charAt(0)} onMouseEnter={() => onHover?.(e)}>
+              <div key={g.key} title={owner} className={`pick-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} style={{ ["--hue" as string]: hue }} data-glyph={e.name.charAt(0)} onMouseEnter={() => onHover?.(e)}>
                 <div className="ribbon">{e.name.charAt(0)}</div>
                 <h3>{e.name}</h3>
                 <VariantChips g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} />
                 <p className="pick-blurb">{blurb(e.description) || "No description in the content file."}</p>
                 <div className="pick-actions">
                   <button className="ghost" onClick={() => learn(e)}>Learn more</button>
-                  <button className="primary" disabled={!!why} title={why} onClick={() => onPick(e)}>{chosenSet.has(e.id) ? "Selected" : (pickLabel?.(e) ?? "Select")}</button>
+                  <button className="primary" disabled={!!why || !!owner} title={owner ?? why} onClick={() => onPick(e)}>{owner ? "✓ Already have" : chosenSet.has(e.id) ? "Selected" : (pickLabel?.(e) ?? "Select")}</button>
                 </div>
               </div>
             );
@@ -204,16 +207,17 @@ export function Browse({ items, type, chosen, onPick, onSwap, disabledReason, de
             const v = activeOf(g);
             const e = v.el;
             const why = disabledReason?.(e);
+            const owner = g.variants.map((x) => ownedBy?.(x.el)).find(Boolean);
             const picked = g.variants.some((x) => chosenSet.has(x.el.id));
             return (
-              <div key={g.key} className={`opt-row ${picked ? "picked" : ""} ${why ? "dim" : ""}`} onMouseEnter={() => onHover?.(e)}>
+              <div key={g.key} className={`opt-row ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} title={owner} onMouseEnter={() => onHover?.(e)}>
                 {type === "Spell" && <span className={`lvl ${e.setters.level?.value === "0" ? "cantrip" : ""}`}>{e.setters.level?.value === "0" ? "C" : e.setters.level?.value ?? "?"}</span>}
-                <button className="opt-main" disabled={false} title={why} onClick={() => onPick(e)}>
-                  <span className="tick">{chosenSet.has(e.id) ? "✓" : ""}</span>
+                <button className="opt-main" disabled={false} title={owner ?? why} aria-disabled={owner ? true : undefined} onClick={() => !owner && onPick(e)}>
+                  <span className="tick">{chosenSet.has(e.id) || owner ? "✓" : ""}</span>
                   <span className="opt-name">{e.name}</span>
                 </button>
                 {type === "Spell" ? <SpellCells el={e} /> : <span className="opt-blurb">{blurb(e.description, 110)}</span>}
-                {why && <small className="why">{why}</small>}
+                {why && !owner && <small className="why">{why}</small>}
                 <VariantChips short g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} onSwitch={onSwap} />
                 <button className="learn" onClick={() => learn(e)} title="Read the full description">i</button>
               </div>

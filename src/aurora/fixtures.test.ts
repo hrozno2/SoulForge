@@ -10,6 +10,7 @@ import { autoFill } from "./autofill";
 import { buildSheet } from "./sheet";
 import { ItemIndex, addToInventory, adventuringPacks, autoEquip, expandPack, startingPlans } from "./startingEquipment";
 import { importForeignCharacter } from "./foreign";
+import { ownership } from "../ui/Slots";
 import { exportFoundry, exportRoll20 } from "./exportForeign";
 
 const reg = loadRegistry("fixtures/content");
@@ -145,4 +146,25 @@ describe("export to other tools", () => {
       for (const a of sheet.abilities) expect(buildSheet(resolve(back.character, reg)).abilities.find((x) => x.id === a.id)!.score, `${label} ${a.id}`).toBe(a.score);
     });
   }
+});
+
+describe("what already gives an option", () => {
+  it("names the source of an option the character has from somewhere else", () => {
+    let found = 0;
+    for (const race of reg.ofType("Race")) for (const cls of reg.ofType("Class")) {
+      const r = resolve(build(race.id, reg.ofType("Background")[0].id, cls.id, 3), reg);
+      for (const slot of r.slots) for (const el of slot.options) {
+        if (slot.chosen.includes(el.id) || !r.ids.has(el.id)) continue;
+        const why = ownership(r, el, slot.key);
+        expect(why, `${slot.rule.name}: ${el.name}`).toMatch(/^(Granted by .+|You chose this for .+|Already granted by your build)\.$/);
+        found++;
+      }
+    }
+    expect(found).toBeGreaterThan(0);
+  });
+  it("says nothing for something the character does not have", () => {
+    const r = resolve(build(reg.ofType("Race")[0].id, reg.ofType("Background")[0].id, reg.ofType("Class")[0].id, 1), reg);
+    const missing = reg.ofType("Spell").find((e) => !r.ids.has(e.id))!;
+    expect(ownership(r, missing, "x")).toBeUndefined();
+  });
 });

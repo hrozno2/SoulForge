@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Browse } from "./Browse";
 import type { AElement } from "../aurora/types";
 import type { Resolved, SelectSlot } from "../aurora/engine";
@@ -15,6 +15,21 @@ export function metaLine(el: AElement): string {
   return "";
 }
 
+/** What already gives the character this option, in words, or nothing when they do not have it. */
+export function ownership(r: Resolved, el: AElement, thisSlot: string): string | undefined {
+  if (!r.ids.has(el.id)) return undefined;
+  const other = r.slots.find((s) => s.key !== thisSlot && s.chosen.includes(el.id));
+  if (other) return `You chose this for ${other.rule.name} (${other.owner.name}).`;
+  const a = r.active.find((x) => x.el.id === el.id);
+  const from = a?.from ? r.reg.get(a.from)?.name : undefined;
+  const ch = r.character;
+  const rootId = !a ? "" : a.root === "race" ? ch.race ?? "" : a.root === "background" ? ch.background ?? "" : a.root.startsWith("class:") ? a.root.slice(6) : "";
+  const root = rootId ? r.reg.get(rootId)?.name : undefined;
+  if (from && root && root !== from) return `Granted by ${from} (${root}).`;
+  if (from || root) return `Granted by ${from ?? root}.`;
+  return "Already granted by your build.";
+}
+
 export function setSelection(set: SetCharacter, key: string, ids: string[]): void {
   set((c) => ({ ...c, selections: { ...c.selections, [key]: ids } }));
 }
@@ -23,6 +38,12 @@ export function Slot({ slot, r, set, onDetail }: { slot: SelectSlot; r: Resolved
   const { rule, chosen } = slot;
   const [open, setOpen] = useState(chosen.length < rule.number);
   const full = chosen.length >= rule.number;
+  // A choice that just got filled folds away so the next one is in view. Opening it again stays open.
+  const wasFull = useRef(full);
+  useEffect(() => {
+    if (full && !wasFull.current) setOpen(false);
+    wasFull.current = full;
+  }, [full]);
 
   const toggle = (el: AElement) => {
     let next: string[];
@@ -44,7 +65,8 @@ export function Slot({ slot, r, set, onDetail }: { slot: SelectSlot; r: Resolved
   const chosenNames = slot.listItems ? chosen.map((id) => slot.listItems!.find((i) => i.id === id)?.text ?? id) : chosen.map((id) => r.reg.get(id)?.name ?? id);
   const need = rule.number;
   const type = rule.type;
-  const reason = (el: AElement): string | undefined => (slot.blocked.has(el.id) ? "requirements not met" : !chosen.includes(el.id) && r.ids.has(el.id) ? "already have" : undefined);
+  const reason = (el: AElement): string | undefined => (slot.blocked.has(el.id) ? "requirements not met" : undefined);
+  const owned = (el: AElement): string | undefined => (chosen.includes(el.id) ? undefined : ownership(r, el, slot.key));
 
   return (
     <div className={`slot ${full ? "done" : "todo"}`}>
@@ -78,8 +100,9 @@ export function Slot({ slot, r, set, onDetail }: { slot: SelectSlot; r: Resolved
           ) : slot.options.length === 0 ? (
             <p className="muted">Nothing matches this choice in the loaded content.</p>
           ) : (
-            <Browse items={slot.options} type={type} chosen={chosen} onPick={toggle} onSwap={swap} onHover={onDetail} disabledReason={reason} defaultView="list" allowCards={!["Spell", "Language", "Proficiency", "Ability Score Improvement", "Companion"].includes(type)} perPage={60} />
+            <Browse items={slot.options} type={type} chosen={chosen} onPick={toggle} onSwap={swap} onHover={onDetail} disabledReason={reason} ownedBy={owned} defaultView="list" allowCards={!["Spell", "Language", "Proficiency", "Ability Score Improvement", "Companion"].includes(type)} perPage={60} />
           )}
+          <button className="ghost slot-done" onClick={() => setOpen(false)}>Done</button>
         </div>
       )}
     </div>

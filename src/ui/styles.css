@@ -747,3 +747,7 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .pb-costs th, .pb-costs td { padding: 3px 6px; text-align: center; }
 .pb-costs input { width: 56px; }
 .pb-costs { display: block; overflow-x: auto; max-width: 100%; }
+.opt-row.owned, .pick-card.owned { opacity: .55; filter: grayscale(.6); }
+.opt-row.owned .opt-main { cursor: default; }
+.opt-row.owned .tick { color: var(--muted); }
+.slot-done { margin-top: 8px; }

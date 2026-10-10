@@ -1,3 +1,4 @@
+import { DiceBag } from "./icons";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { combine, effectsFor, type RollKind } from "./conditions";
 
@@ -275,7 +276,7 @@ export function DicePanel() {
         </div>
       )}
       <button className="primary dice-toggle" onClick={() => (open ? close() : setOpen(true))}>
-        {open ? "Close dice" : "Dice"}
+        {open ? "Close dice" : <><DiceBag size={26} /><span>Dice</span></>}
       </button>
     </div>
   );

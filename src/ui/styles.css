@@ -776,3 +776,19 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 :root[data-theme="dark"] .rich table th { background: var(--panel); color: var(--gold2); }
 :root[data-theme="dark"] .rich table td { border-color: var(--line); }
 :root[data-theme="light"] .detail h2, :root:not([data-theme="dark"]) .detail h2 { color: #8b1e1e; }
+
+/* ================= tabletop touches ================= */
+.ico { flex: none; vertical-align: -3px; margin-right: 6px; opacity: .85; }
+.tab.active .ico, .tab:hover .ico { opacity: 1; }
+@media (max-width: 1180px) { .tabs-nav .tab .ico, .tabs-measure .tab .ico { display: none; } }
+.dice-toggle { display: inline-flex; align-items: center; gap: 8px; }
+.dice-toggle .dice-bag { margin: 0; opacity: 1; stroke-width: 1.5; }
+.dice-toggle:hover .dice-bag { animation: bag-wobble .5s ease; }
+@keyframes bag-wobble { 25% { transform: rotate(-9deg); } 60% { transform: rotate(7deg); } }
+.reduce-motion .dice-toggle:hover .dice-bag { animation: none; }
+/* A faint dragon in the corner of the page, and a divider under card titles. */
+body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 120px; height: 120px; pointer-events: none; opacity: .06; z-index: 0;
+  background: no-repeat center / contain url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c9a45c' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2.500l8.500 4.800v9.400L12 21.500l-8.500-4.800V7.300z'/><path d='M12 8l4.500 8h-9z'/><path d='M12 2.500V8M3.500 7.300 7.500 16M20.500 7.300 16.500 16M7.500 16l-4 .7M16.500 16l4 .7M12 21.500V16'/></svg>"); }
+.card > h2::after { content: ""; display: block; height: 10px; margin-top: 6px; opacity: .55;
+  background: no-repeat left center / 150px 10px url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 10'><path d='M0 5h58M92 5h58' stroke='%23c9a45c' stroke-width='1'/><path d='M75 0.500l4 4.500-4 4.500-4-4.500z' fill='none' stroke='%23c9a45c' stroke-width='1.200'/><circle cx='62' cy='5' r='1.200' fill='%23c9a45c'/><circle cx='88' cy='5' r='1.200' fill='%23c9a45c'/></svg>"); }
+:root[data-theme="light"] .card > h2::after { filter: hue-rotate(-10deg) brightness(.7); }

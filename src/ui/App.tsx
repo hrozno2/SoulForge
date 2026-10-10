@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { t } from "../i18n";
+import { TAB_ICONS } from "./icons";
 import { newCharacter, normalizeCharacter, uid, type Character } from "../aurora/character";
 import { resolve } from "../aurora/engine";
 import { autoFill } from "../aurora/autofill";
@@ -126,7 +127,7 @@ export function App() {
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width="28" height="28" />
           Soul Forge
         </strong>
-        <Tabs tabs={TABS.map(([key, label]) => ({ key, label: t(label), badge: key === "build" ? pending : undefined }))} current={tab} onPick={setTab} />
+        <Tabs tabs={TABS.map(([key, label]) => ({ key, label: t(label), icon: (() => { const I = TAB_ICONS[key]; return I ? <I size={15} /> : undefined; })(), badge: key === "build" ? pending : undefined }))} current={tab} onPick={setTab} />
         <span className="who">{character.name || "Unnamed"} · {r.totalLevel ? `Level ${r.totalLevel}` : "no class yet"}</span>
         {content.busy && <span className="muted busy">{content.status || "Working..."}</span>}
         <HelpButton tab={tab} />

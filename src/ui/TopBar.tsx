@@ -4,6 +4,7 @@ export interface TabDef<T extends string> {
   key: T;
   label: string;
   badge?: number;
+  icon?: ReactNode;
 }
 
 /** Closes a popup when the user clicks outside it or presses Escape. */
@@ -65,7 +66,7 @@ export function Tabs<T extends string>({ tabs, current, onPick }: { tabs: TabDef
 
   const btn = (t: TabDef<T>, cls = "tab") => (
     <button key={t.key} className={current === t.key ? `${cls} active` : cls} onClick={() => { onPick(t.key); more.setOpen(false); }}>
-      {t.label}
+      {t.icon}{t.label}
       {!!t.badge && <span className="badge">{t.badge}</span>}
     </button>
   );
@@ -80,7 +81,7 @@ export function Tabs<T extends string>({ tabs, current, onPick }: { tabs: TabDef
         </div>
       )}
       <div className="tabs-measure" ref={measure} aria-hidden="true">
-        {tabs.map((t) => <button key={t.key} className="tab" tabIndex={-1}>{t.label}{!!t.badge && <span className="badge">{t.badge}</span>}</button>)}
+        {tabs.map((t) => <button key={t.key} className="tab" tabIndex={-1}>{t.icon}{t.label}{!!t.badge && <span className="badge">{t.badge}</span>}</button>)}
       </div>
     </nav>
   );

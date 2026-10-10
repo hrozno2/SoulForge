@@ -569,3 +569,25 @@ details.tip summary { cursor: pointer; color: var(--muted); }
 .menu-row { cursor: default; }
 .menu-row .theme select { background: var(--panel2); color: var(--text); }
 @media (max-width: 900px) { .who { display: none; } }
+
+.die-btn { position: relative; }
+.die-btn.has .die-icon path { fill: color-mix(in srgb, var(--accent) 35%, var(--panel)); }
+.die-count { position: absolute; top: -2px; right: -2px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--accent); color: #fff; font: 700 11px/18px var(--body); text-align: center; }
+.dice-form { flex-wrap: nowrap; }
+.dice-form input { flex: 1; min-width: 0; }
+.dice-form button { padding: 4px 8px; }
+
+.roll-card { width: 100%; text-align: left; }
+.roll-label { font: 600 12px var(--body); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+.roll-formula { background: var(--panel2); border: 1px solid var(--line); text-align: center; padding: 3px 8px; font-weight: 600; margin-bottom: 6px; }
+.roll-term { margin-bottom: 6px; }
+.roll-term-head { display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+.roll-term-head b { background: var(--panel2); border: 1px solid var(--line); min-width: 28px; text-align: center; padding: 0 6px; }
+.roll-chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
+.chip { display: inline-grid; place-items: center; width: 28px; height: 30px; background: var(--panel2); color: var(--text); font: 700 13px var(--body); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); border: 0; box-shadow: inset 0 0 0 1px var(--line); }
+.chip.max { background: #2f6b3a; color: #fff; }
+.chip.min { background: #8a2323; color: #fff; }
+.roll-total { margin-top: 6px; background: var(--panel2); border: 1px solid var(--line); text-align: center; font: 900 44px/1.1 var(--display); color: var(--gold2); text-shadow: 0 2px 0 rgba(0,0,0,.3); }
+.dice-result { align-items: stretch; text-align: left; justify-content: flex-start; min-height: 0; }
+.dice-panel { max-height: calc(100vh - 90px); overflow: auto; }
+.dice-result .roll-term-head b { font: 700 14px var(--body); color: var(--text); text-shadow: none; }

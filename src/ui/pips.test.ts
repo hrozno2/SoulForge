@@ -13,3 +13,27 @@ describe("pips", () => {
     expect(usedAfterClick(4, 4, 0)).toBe(3); // all spent, click first: one back
   });
 });
+
+import { changePool, diceCount } from "./Dice";
+
+describe("dice pool", () => {
+  it("adds dice of the same size together and keeps the bonus last", () => {
+    let e = "";
+    e = changePool(e, 6, 1);
+    e = changePool(e, 6, 1);
+    expect(e).toBe("2d6");
+    e = changePool(e, 8, 1);
+    e = changePool(e, 0, 3);
+    expect(e).toBe("2d6+1d8+3");
+    expect(diceCount(e, 6)).toBe(2);
+  });
+  it("removes one at a time and drops empty terms", () => {
+    expect(changePool("2d6+1d8", 8, -1)).toBe("2d6");
+    expect(changePool("1d6", 6, -1)).toBe("");
+    expect(changePool("1d6+2", 0, -1)).toBe("1d6+1");
+    expect(changePool("1d6", 0, -2)).toBe("1d6-2");
+  });
+  it("keeps what the player typed when it is valid", () => {
+    expect(changePool("3d4+2", 4, 1)).toBe("4d4+2");
+  });
+});

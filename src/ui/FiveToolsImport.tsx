@@ -2,6 +2,9 @@ import { useMemo, useState } from "react";
 import { KINDS, loadCategory, resolveLinks, savePicks, type Entry, type Kind } from "../aurora/fiveToolsPicker";
 import type { ContentState } from "./useContent";
 
+/** A public copy of the 5etools data on GitHub. It is only used when the player presses the button for it. */
+const MIRROR = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data";
+
 const key = (e: Entry) => `${e.kind}|${e.name}|${e.source}`;
 const lvl = (n?: number) => (n === undefined ? "" : n === 0 ? "C" : String(n));
 
@@ -23,9 +26,9 @@ export function FiveToolsImport({ content, baseUrl, setBaseUrl }: { content: Con
     try {
       const entries = await loadCategory(baseUrl, kind, (d, t) => setMsg(`Loading ${d} of ${t} files...`));
       setCache((c) => ({ ...c, [kind]: entries }));
-      setMsg(entries.length ? "" : "That address returned nothing for this category. Check the address.");
+      setMsg(entries.length ? "" : `Nothing came back from ${baseUrl}. It should be the folder that holds races.json and the spells folder.`);
     } catch (e) {
-      setMsg(`Could not load: ${(e as Error).message}`);
+      setMsg(`Could not load from ${baseUrl}: ${(e as Error).message}. Check the address, or use the GitHub button.`);
     } finally {
       setBusy(false);
     }
@@ -80,11 +83,15 @@ export function FiveToolsImport({ content, baseUrl, setBaseUrl }: { content: Con
       <div className="row">
         <input style={{ flex: 1 }} value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="Address of the 5etools data folder" aria-label="Data address" />
       </div>
+      <div className="row">
+        <button disabled={baseUrl === MIRROR} onClick={() => setBaseUrl(MIRROR)}>Use the public 5etools copy on GitHub</button>
+        <small className="muted">Fills in the address for you. Entries you pick are downloaded and kept on this computer.</small>
+      </div>
       <details className="tip">
         <summary>Where do I get this address?</summary>
         <p className="muted">
           Plutonium reads the same data from a data source you set up in Foundry. Use that address here: a 5etools copy you host or have access to, which serves its <code>data</code> folder.
-          5e.tools itself blocks apps, so its own address will not work. If you only have the files, use "Data folder or ZIP" below to import them from disk, no address needed.
+          5e.tools itself blocks apps, so its own address will not work. The button above uses a public copy of the same data on GitHub run by the 5etools community; you are responsible for having the right to use the content it holds. If you only have the files, use "Data folder or ZIP" below to import them from disk, no address needed.
         </p>
       </details>
 

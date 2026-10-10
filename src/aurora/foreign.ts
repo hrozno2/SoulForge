@@ -30,10 +30,17 @@ export function detectCharacterFormat(data: unknown): "foundry" | "roll20" | "ch
 const normalize = (s: string) =>
   s.toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
 
+/** Keeps the words inside parentheses and after a colon: "Magic Initiate: Warlock" and "Magic Initiate (Warlock)" agree. */
+const normalizeFull = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
 function findByName(reg: ARegistry, types: string[], name: string): AElement | undefined {
   const want = normalize(name);
   if (!want) return undefined;
-  const hits = types.flatMap((t) => reg.ofType(t)).filter((e) => normalize(e.name) === want);
+  const pool = types.flatMap((t) => reg.ofType(t));
+  const full = normalizeFull(name);
+  const exact = pool.filter((e) => normalizeFull(e.name) === full);
+  if (exact.length) return exact.find((e) => /2024|24/.test(e.source + e.id)) ?? exact[exact.length - 1];
+  const hits = pool.filter((e) => normalize(e.name) === want);
   return hits.find((e) => /2024|24/.test(e.source + e.id)) ?? hits[hits.length - 1];
 }
 
@@ -46,7 +53,7 @@ class Importer {
   missing: string[] = [];
   private wantedChoices: { types: string[]; name: string; label: string }[] = [];
   /** What the file says the character has, used to fill open choices (skills, languages, tools, expertise, saves). */
-  hints = { skills: new Set<string>(), expertise: new Set<string>(), tools: new Set<string>(), languages: new Set<string>(), saves: new Set<string>() };
+  hints = { skills: new Set<string>(), expertise: new Set<string>(), tools: new Set<string>(), languages: new Set<string>(), saves: new Set<string>(), names: new Set<string>(), size: "" };
 
   constructor(private reg: ARegistry) {}
 
@@ -75,7 +82,9 @@ class Importer {
     const inner = /\((.*)\)\s*$/.exec(n)?.[1]?.trim() ?? n;
     const h = this.hints;
     if (/^skill expertise/.test(n)) return h.expertise.has(inner) ? 100 : 0;
-    if (/^tool proficiency/.test(n)) return h.tools.has(inner) ? 100 : 0;
+    if (/^tool proficiency/.test(n)) return [...h.tools].some((t) => inner.includes(t) || t.includes(inner)) ? 100 : 0;
+    if (h.names.has(normalizeFull(optionName))) return 100;
+    if (h.size && n === h.size) return 100;
     if (h.languages.has(n)) return 100;
     const ab = ABILITY_IDS.find((a) => a === n);
     if (ab) {
@@ -85,6 +94,11 @@ class Importer {
       return total;
     }
     if (h.skills.has(n)) return h.expertise.has(n) ? 95 : 90;
+    // "Strength +1, Dexterity +1" style options: favour the abilities the character is best at.
+    const mentioned = ABILITY_IDS.filter((a) => n.includes(a));
+    if (mentioned.length && /[+]\d/.test(n)) return 2 + mentioned.reduce((t, a) => t + (scores[a] ?? 0), 0) / 10;
+    // Without data, a level choice takes the plain score improvement rather than an arbitrary feat, and Medium size.
+    if (/^ability score improvement/.test(n) || n === "medium") return 1;
     return 0;
   }
 
@@ -238,6 +252,9 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
     if (v >= 2) b.hints.expertise.add(name);
   }
   for (const [k, a] of Object.entries(ABBR)) if (Number(sys.abilities?.[k]?.proficient) >= 1) b.hints.saves.add(a);
+  const SIZE: Record<string, string> = { tiny: "tiny", sm: "small", med: "medium", lg: "large", huge: "huge", grg: "gargantuan" };
+  b.hints.size = SIZE[String(sys.traits?.size ?? "")] ?? "";
+  for (const it of items) if (it?.name && ["feat", "subclass"].includes(it.type)) b.hints.names.add(normalizeFull(String(it.name)));
   for (const l of sys.traits?.languages?.value ?? []) b.hints.languages.add(String(l).toLowerCase());
   for (const l of sys.traits?.languages?.custom ? String(sys.traits.languages.custom).split(/[;,]/) : []) if (l.trim()) b.hints.languages.add(l.trim().toLowerCase());
   for (const [k, t] of Object.entries<Json>(sys.tools ?? {})) if (Number(t?.value) >= 1) b.hints.tools.add(k.toLowerCase());
@@ -352,6 +369,7 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   for (const f of rows.get("proficiencies")?.values() ?? []) {
     if (/language/i.test(f.prof_type ?? "") && f.name) b.hints.languages.add(f.name.trim().toLowerCase());
   }
+  for (const f of rows.get("traits")?.values() ?? []) if (f.name) b.hints.names.add(normalizeFull(f.name));
   for (const f of rows.get("tool")?.values() ?? []) if (f.toolname) b.hints.tools.add(f.toolname.trim().toLowerCase());
 
   // Details

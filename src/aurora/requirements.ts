@@ -123,7 +123,7 @@ function evalNode(n: Node, ctx: ReqCtx, equipment: boolean): boolean {
       const key = n.key.toLowerCase();
       if (key === "type") return ctx.hasType(n.value);
       if (key === "id") return ctx.hasId(n.value);
-      if (key === "level") return ctx.level >= (parseInt(n.value, 10) || 0);
+      if (key === "level" || key === "character") return ctx.level >= (parseInt(n.value, 10) || 0);
       if (equipment || key === "armor" || key === "shield" || key === "weapon") {
         if (ctx.equipped && (equipment || ["armor", "shield", "weapon"].includes(key))) return ctx.equipped(key, n.value);
       }

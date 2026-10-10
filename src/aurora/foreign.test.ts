@@ -85,4 +85,19 @@ describe.skipIf(!CONTENT24 || !DIR)("foreign import against the 2024 rules", () 
     expect(names("FEAT_RESILIENT")).toEqual(["Constitution"]);
     expect(r.stats.get("charisma")).toBe(20);
   });
+
+  it("settles the choices of a Foundry fighter", () => {
+    const reg = loadRegistry(CONTENT24!);
+    const res = importForeignCharacter(JSON.parse(readFileSync(`${DIR}/fvtt-Actor-waldrom-brahms-Be4NGiw22hg7gVBb(1).json`, "utf8")), reg);
+    const r = resolve(res.character, reg);
+    const open = r.slots.filter((s) => !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length);
+    expect(open).toEqual([]);
+    const names = (id: string) => r.slots.filter((s) => s.key.includes(id)).flatMap((s) => s.chosen.map((c) => reg.get(c)?.name));
+    expect(names("RACE_HUMAN|2")).toEqual(["Medium"]);
+    expect(names("FIGHTER_SUBCLASS")).toEqual(["Eldritch Knight"]);
+    expect(names("FIGHTING_STYLE")).toContain("Dueling");
+    // Level 4 and later choices are score improvements, not arbitrary feats.
+    expect(names("FIGHTER_ABILITY_SCORE_IMPROVEMENT")).toEqual(Array(5).fill("Ability Score Improvement"));
+    expect(r.stats.get("strength")).toBe(20);
+  });
 });

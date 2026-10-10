@@ -89,6 +89,8 @@ export interface FillData {
   /** Features that did not fit the first page, for the "additional features" box. */
   portrait?: string;
   companion?: CompanionFill;
+  /** Every feature with its full text, grouped, for sheets with room to print it. */
+  featureList: { group: string; name: string; usage: string; text: string }[];
 }
 
 /** Pulls attack lines out of a stat block's action text: name, to-hit and damage. */
@@ -227,6 +229,7 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
     personality: [...sh.lists.map((l) => `${l.name}: ${l.texts.join(" ")}`), ch.info.traits && `Traits: ${ch.info.traits}`, ch.info.ideals && `Ideals: ${ch.info.ideals}`, ch.info.bonds && `Bonds: ${ch.info.bonds}`, ch.info.flaws && `Flaws: ${ch.info.flaws}`].filter(Boolean).join("\n"),
     appearance: [ch.info.gender, ch.info.age && `Age ${ch.info.age}`, ch.info.height, ch.info.weight, ch.info.eyes && `${ch.info.eyes} eyes`, ch.info.hair && `${ch.info.hair} hair`, ch.info.skin && `${ch.info.skin} skin`].filter(Boolean).join(", "),
     alignment: ch.info.alignment, notes: ch.notes, portrait: ch.portrait, companion: comp,
+    featureList: ([["Class features", ["Class Feature", "Archetype Feature"]], ["Species traits", ["Racial Trait"]], ["Feats", ["Feat", "Feat Feature", "Background Feature"]]] as [string, string[]][]).flatMap(([group, types]) => feat(types).map((f) => ({ group, name: f.name, usage: f.usage ?? "", text: f.text.replace(/\s+/g, " ").trim() }))),
   };
 }
 

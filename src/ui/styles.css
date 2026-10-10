@@ -887,3 +887,7 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .cond-tile.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--panel2)); color: var(--text); }
 .cond-tile.on .cond-icon { opacity: 1; color: var(--accent-ink, #fff); }
 .exhaustion-row .cond-icon { color: var(--gold2); }
+
+/* Descriptions inside the level up window follow the theme's text colour. */
+.modal-page.themed .rich, .modal-page.themed .rich p, .modal-page.themed .levelup-features .rich { color: var(--text); background-color: transparent; background-image: none; box-shadow: none; border: 0; padding-left: 0; }
+.modal-page.themed .levelup-features .rich { font-size: 14px; opacity: .92; margin: 4px 0 0; }

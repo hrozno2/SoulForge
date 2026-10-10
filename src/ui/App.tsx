@@ -116,7 +116,12 @@ export function App() {
     }
   };
 
-  const pending = r.slots.filter((s) => !s.rule.optional && s.chosen.length < s.rule.number && s.options.length).length + (character.race ? 0 : 1) + (character.classes.length ? 0 : 1);
+  const pendingList = [
+    ...(character.race ? [] : ["Pick a species"]),
+    ...(character.classes.length ? [] : ["Pick a class"]),
+    ...r.slots.filter((s) => !s.rule.optional && s.chosen.length < s.rule.number && s.options.length).map((s) => `${s.rule.name}: ${s.rule.number - s.chosen.length} to choose`),
+  ];
+  const pending = pendingList.length;
   const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play";
 
   return (
@@ -127,7 +132,7 @@ export function App() {
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width="28" height="28" />
           Soul Forge
         </strong>
-        <Tabs tabs={TABS.map(([key, label]) => ({ key, label: t(label), icon: (() => { const I = TAB_ICONS[key]; return I ? <I size={15} /> : undefined; })(), badge: key === "build" ? pending : undefined }))} current={tab} onPick={setTab} />
+        <Tabs tabs={TABS.map(([key, label]) => ({ key, label: t(label), icon: (() => { const I = TAB_ICONS[key]; return I ? <I size={15} /> : undefined; })(), badge: key === "build" ? pending : undefined, badgeTitle: key === "build" && pending ? `Still to choose on the Build tab:\n${pendingList.slice(0, 12).join("\n")}${pendingList.length > 12 ? `\n...and ${pendingList.length - 12} more` : ""}` : undefined }))} current={tab} onPick={setTab} />
         <span className="who">{character.name || "Unnamed"} · {r.totalLevel ? `Level ${r.totalLevel}` : "no class yet"}</span>
         {content.busy && <span className="muted busy">{content.status || "Working..."}</span>}
         <HelpButton tab={tab} />

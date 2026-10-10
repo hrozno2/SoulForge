@@ -4,7 +4,7 @@ import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { stripHtml, type SheetData } from "../aurora/sheet";
 import { playTips } from "./tips";
-import { drawOfficialStyle } from "./sheet2024";
+import { drawSoulForgeSheet } from "./sheetSF";
 import { buildFillData } from "../sheets/data";
 import { translatable, translateAll, type BatchTranslator } from "./translate";
 
@@ -282,7 +282,7 @@ async function buildPdfOnce(r: Resolved, sh: SheetData, opts: PdfOptions, fonts:
     b: await pdf.embedFont(fonts.bold, { subset: true }),
   };
   const size = PAPER[opts.paper];
-  if (opts.sheet) drawOfficialStyle(pdf, f, buildFillData(r, sh), size);
+  if (opts.sheet) await drawSoulForgeSheet(pdf, f, buildFillData(r, sh), size, clean);
 
   const src = cardSources(r, sh);
   const cards: CardData[] = [];

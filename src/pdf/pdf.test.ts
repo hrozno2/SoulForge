@@ -59,7 +59,7 @@ describe("pdf export", () => {
     const { r, sheet } = setup();
     const bytes = await buildPdf(r, sheet, { ...DEFAULT_PDF_OPTIONS, paper: "letter", spellCards: false, itemCards: false, featureCards: false, tips: false }, fonts);
     const doc = await PDFDocument.load(bytes);
-    expect(doc.getPageCount()).toBe(2); // the two sheet pages, laid out like the official sheet
+    expect(doc.getPageCount()).toBe(3); // play page, spells, equipment and story
     expect(doc.getPage(0).getSize()).toEqual({ width: 612, height: 792 });
   });
 

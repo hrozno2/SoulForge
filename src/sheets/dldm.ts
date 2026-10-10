@@ -46,6 +46,8 @@ export const isDldm = (widgets: Widget[]) => detectPages(widgets).size > 0;
 
 interface Ctx {
   doc: PDFDocument;
+  /** Fonts for text drawn straight onto the page, so feature names can be bold. */
+  rich?: { r: PDFFont; b: PDFFont };
   form: ReturnType<PDFDocument["getForm"]>;
   widgets: Widget[];
   missing: string[];
@@ -229,6 +231,58 @@ function multiBox(c: Ctx, name: string | string[], text: string): void {
   setText(c, name, text, { max: 8 });
 }
 
+/**
+ * A box of features, one per line as "Name: text". A form field holds one font, so the names cannot be bold there.
+ * When a bold font is available the text is drawn on the page with bold names, and the field is left empty.
+ */
+function featureBox(c: Ctx, name: string, text: string): void {
+  const real = actual(c, name);
+  const wd = c.rich && text.trim() ? c.widgets.find((x) => x.name === real[0]) : undefined;
+  if (!c.rich || !wd) return multiBox(c, name, text);
+  const { r, b } = c.rich;
+  const entries = text.split("\n").filter(Boolean).map((l) => {
+    const m = l.match(/^([^:\n]{2,70}): ([\s\S]+)$/);
+    return m ? { lead: `${m[1]}:`, body: m[2] } : { lead: "", body: l };
+  });
+  const layout = (size: number): { lines: { lead?: string; text: string }[]; h: number } => {
+    const lines: { lead?: string; text: string }[] = [];
+    const w = wd.w - 8;
+    for (const e of entries) {
+      const lead = e.lead ? `${e.lead} ` : "";
+      const leadW = lead ? b.widthOfTextAtSize(lead, size) : 0;
+      let cur = "";
+      let first = true;
+      for (const word of e.body.split(/\s+/).filter(Boolean)) {
+        const room = w - (first ? leadW : 0);
+        const next = cur ? `${cur} ${word}` : word;
+        if (r.widthOfTextAtSize(next, size) <= room) cur = next;
+        else {
+          lines.push({ lead: first ? e.lead : undefined, text: cur });
+          first = false;
+          cur = word;
+        }
+      }
+      lines.push({ lead: first ? e.lead : undefined, text: cur });
+    }
+    return { lines, h: lines.length * size * 1.2 };
+  };
+  let size = 8.5;
+  let lay = layout(size);
+  while (lay.h > wd.h - 6 && size > 4.6) { size -= 0.4; lay = layout(size); }
+  const page = c.doc.getPage(wd.page);
+  let y = wd.y + wd.h - 3 - size;
+  for (const l of lay.lines.slice(0, Math.max(1, Math.floor((wd.h - 4) / (size * 1.2))))) {
+    let x = wd.x + 4;
+    if (l.lead) {
+      page.drawText(`${l.lead} `, { x, y, size, font: b });
+      x += b.widthOfTextAtSize(`${l.lead} `, size);
+    }
+    page.drawText(l.text, { x, y, size, font: r });
+    y -= size * 1.2;
+  }
+  setText(c, name, "");
+}
+
 function deathBoxes(c: Ctx, names: string[], count: number): void {
   names.forEach((n, i) => setBox(c, n, i < count));
 }
@@ -278,8 +332,8 @@ function page1a(c: Ctx, d: FillData): void {
     { name: "WEAPON NAME 5", bonus: "Text Field55", dmg: "Text Field56", notes: "Text Field57" }, { name: "WEAPON NAME 6", bonus: "Text Field59", dmg: "Text Field60", notes: "Text Field61" },
   ]);
   const cf = splitEntries(d.classFeatures, 1650, 2);
-  multiBox(c, "CLASS FEATURES 1", cf.texts[0]); multiBox(c, "CLASS FEATURES 2", cf.texts[1] + (cf.dropped ? `\n(+${cf.dropped} more features, see Soul Forge)` : ""));
-  multiBox(c, "TRAITS", d.traits.join("\n")); multiBox(c, "FEATS", d.feats.join("\n"));
+  featureBox(c, "CLASS FEATURES 1", cf.texts[0]); featureBox(c, "CLASS FEATURES 2", cf.texts[1] + (cf.dropped ? `\n(+${cf.dropped} more features, see Soul Forge)` : ""));
+  featureBox(c, "TRAITS", d.traits.join("\n")); featureBox(c, "FEATS", d.feats.join("\n"));
 }
 
 // ---------------------------------------------------------------- page 1 (style B)
@@ -327,8 +381,8 @@ function page1b(c: Ctx, d: FillData): void {
     { name: "Text Field98", bonus: "Text Field99", dmg: "Text Field100", notes: "Text Field101" }, { name: "Text Field102", bonus: "Text Field103", dmg: "Text Field104", notes: "Text Field105" },
   ]);
   const cf = splitEntries(d.classFeatures, 1650, 2);
-  multiBox(c, "CLASS FEATURES 0", cf.texts[0]); multiBox(c, "CLASS FEATURES 3", cf.texts[1] + (cf.dropped ? `\n(+${cf.dropped} more features, see Soul Forge)` : ""));
-  multiBox(c, "TRAITS0", d.traits.join("\n")); multiBox(c, "FEATS0", d.feats.join("\n"));
+  featureBox(c, "CLASS FEATURES 0", cf.texts[0]); featureBox(c, "CLASS FEATURES 3", cf.texts[1] + (cf.dropped ? `\n(+${cf.dropped} more features, see Soul Forge)` : ""));
+  featureBox(c, "TRAITS0", d.traits.join("\n")); featureBox(c, "FEATS0", d.feats.join("\n"));
 }
 
 // ---------------------------------------------------------------- spells and slots (geometry based)
@@ -433,7 +487,7 @@ function page2b(c: Ctx, d: FillData): void {
   // Features that did not fit on page 1, then the player's notes, go in the additional features box.
   const first = splitEntries(d.classFeatures, 1650, 2);
   const extra = splitEntries([...first.overflow, ...(d.notes ? d.notes.split("\n").filter(Boolean) : [])], 1000, 2);
-  multiBox(c, "Text Field118", extra.texts[0]); multiBox(c, "Text Field119", extra.texts[1]);
+  featureBox(c, "Text Field118", extra.texts[0]); featureBox(c, "Text Field119", extra.texts[1]);
   const k = d.companion;
   if (k) {
     setText(c, "Text Field126", k.name); setText(c, "Text Field127", k.type); setText(c, "Text Field128", [k.creature, k.size].filter(Boolean).join(", "));
@@ -457,7 +511,7 @@ function spellsPage(c: Ctx, d: FillData, page: number): void {
 
 export interface FillOptions {
   pages: DldmPage[];
-  font: { regular: ArrayBuffer | Uint8Array };
+  font: { regular: ArrayBuffer | Uint8Array; bold?: ArrayBuffer | Uint8Array };
 }
 
 export interface FillResult {
@@ -485,7 +539,8 @@ export async function fillDldm(template: Uint8Array | ArrayBuffer, data: FillDat
       if (!own.includes(w.name)) own.push(w.name);
     }
   }
-  const c: Ctx = { doc, form: doc.getForm(), widgets, missing: [], alias };
+  const bold = opts.font.bold ? await doc.embedFont(opts.font.bold, { subset: true }) : undefined;
+  const c: Ctx = { doc, form: doc.getForm(), widgets, missing: [], alias, rich: bold ? { r: font, b: bold } : undefined };
   const notes: string[] = [];
   const want = new Set(opts.pages);
 

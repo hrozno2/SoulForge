@@ -4,6 +4,8 @@ export interface TabDef<T extends string> {
   key: T;
   label: string;
   badge?: number;
+  /** What the badge counts, shown on hover. */
+  badgeTitle?: string;
   icon?: ReactNode;
 }
 
@@ -65,9 +67,9 @@ export function Tabs<T extends string>({ tabs, current, onPick }: { tabs: TabDef
   const rest = tabs.filter((t) => !visible.includes(t));
 
   const btn = (t: TabDef<T>, cls = "tab") => (
-    <button key={t.key} className={current === t.key ? `${cls} active` : cls} onClick={() => { onPick(t.key); more.setOpen(false); }}>
+    <button key={t.key} className={current === t.key ? `${cls} active` : cls} title={t.badgeTitle} onClick={() => { onPick(t.key); more.setOpen(false); }}>
       {t.icon}{t.label}
-      {!!t.badge && <span className="badge">{t.badge}</span>}
+      {!!t.badge && <span className="badge" title={t.badgeTitle} aria-label={t.badgeTitle ? `${t.badge} choices left` : undefined}>{t.badge}</span>}
     </button>
   );
 

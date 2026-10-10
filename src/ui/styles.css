@@ -17,6 +17,17 @@
   --display: "Cinzel", "Trajan Pro", Georgia, serif;
   --body: "Roboto Condensed", "Segoe UI", system-ui, sans-serif;
   --book: "Crimson Pro", Georgia, "Times New Roman", serif;
+  --scala: "Alegreya Sans", "Roboto Condensed", system-ui, sans-serif;
+  --initial: "Cinzel Decorative", "Cinzel", Georgia, serif;
+  /* the printed-book palette (as used by the Homebrewery PHB theme) */
+  --paper: #faf7ea;
+  --paper2: #eee5ce;
+  --note: #e0e5c1;
+  --stat: #fdf1dc;
+  --ink: #222;
+  --crimson: #58180d;
+  --gilt: #c9ad6a;
+  --stat-rule: #e69a28;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
@@ -327,3 +338,49 @@ button.tiny { padding: 0 6px; }
 .inv-row { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 4px 0; }
 .stat-shield small { font-size: 9px; letter-spacing: 0.08em; }
 .stat-shield svg { width: 84px; height: 98px; top: -2px; }
+
+/* ================= printed-book look for rules text ================= */
+.paper-noise { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .33  0 0 0 0 .15  0 0 0 .07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+.rich, .detail { color: var(--ink); background-color: var(--paper); }
+.rich { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .33  0 0 0 0 .15  0 0 0 .07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); border: 1px solid var(--gilt); box-shadow: 1px 4px 14px rgba(0,0,0,.35); padding: 12px 18px; margin: 8px 0; font: 17px/1.32 var(--book); }
+.rich p { margin: 0 0 .5em; }
+.rich p + p { text-indent: 1em; margin-top: -.15em; }
+.rich .flavor { color: #6b5a3a; }
+.rich strong, .rich b { letter-spacing: .02em; }
+.rich h4, .rich h5 { font-family: var(--display); color: var(--crimson); margin: .6em 0 .25em; }
+.rich h4 { font-size: 20px; border-bottom: 2px solid var(--gilt); }
+.rich h5 { font: 700 13px var(--display); letter-spacing: .1em; text-transform: uppercase; border: 0; }
+.rich ul { margin: 0 0 .6em; padding-left: 1.3em; }
+.rich table { border-collapse: collapse; width: 100%; font: 400 14.5px var(--scala); margin: .4em 0 .8em; background: #fff; border: 1px solid var(--gilt); }
+.rich th, .rich thead td { font-weight: 700; color: var(--crimson); border: 0; border-bottom: 2px solid var(--gilt); padding: 3px 6px; text-align: center; }
+.rich td { border: 0; padding: 2px 6px; text-align: center; }
+.rich tr:nth-child(odd) td { background: var(--note); }
+.rich tr:nth-child(even) td { background: transparent; }
+.rich td.left { text-align: left; }
+.rich .sidebar { background: var(--note); font-family: var(--scala); font-size: 15px; line-height: 1.25; margin: 12px 4px; padding: 6px 14px; border: 1px solid var(--gilt); outline: 2px solid var(--gilt); outline-offset: 3px; box-shadow: 1px 4px 14px #8888; border-left: 0; }
+.rich .sidebar h5, .rich .sidebar h4 { color: var(--crimson); }
+.rich.cap > p:first-of-type:not(.flavor)::first-letter { float: left; font: 700 3.5em/0.82 var(--initial); color: var(--crimson); padding: 4px 6px 0 0; }
+.rich a { color: var(--crimson); }
+.detail { padding: 16px 22px; border: 1px solid var(--gilt); border-top: 3px solid var(--crimson); background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .33  0 0 0 0 .15  0 0 0 .07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+.detail h2 { color: var(--crimson); font-size: 24px; border-bottom: 2px solid var(--gilt); margin-bottom: 4px; }
+.detail .muted, .detail small { color: #6b5a3a; }
+.detail .rich { border: 0; box-shadow: none; padding: 0; margin: 6px 0; background-image: none; background-color: transparent; }
+.detail .facts dt { color: var(--crimson); font-family: var(--scala); font-weight: 700; }
+.detail .facts dd { font-family: var(--scala); }
+.detail a { color: var(--crimson); }
+/* stat block, after the monster stat blocks of the books */
+.statblock { background: var(--stat); color: var(--crimson); font-family: var(--scala); border: 0; border-top: 3px solid var(--stat-rule); border-bottom: 3px solid var(--stat-rule); box-shadow: 0 0 8px #8888; padding: 8px 14px 10px; margin: 10px 0; }
+.statblock h4 { font: 700 22px var(--display); color: #7a200d; margin: 0; padding-bottom: 2px; background: linear-gradient(90deg, #922610, #c6a063 50%, transparent) bottom / 100% 2px no-repeat; }
+.statblock p { margin: 3px 0; }
+.statblock .rich { background: transparent; box-shadow: none; border: 0; padding: 0; color: var(--ink); font-family: var(--scala); }
+.statblock .abil-line { color: #7a200d; font-family: var(--scala); font-weight: 700; letter-spacing: .04em; }
+/* feature and spell text inside the play view reads like a book page too */
+.feature-text { color: var(--ink); background: var(--paper); background-image: none; padding: 8px 12px; border-left: 3px solid var(--gilt); }
+.spell-row .rich { margin: 4px 0 8px; }
+/* light theme = parchment table */
+:root[data-theme="light"] body, :root:not([data-theme="dark"]) body { }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) body { background-color: var(--paper2); background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .33  0 0 0 0 .15  0 0 0 .08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); } }
+:root[data-theme="light"] body { background-color: var(--paper2); background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .33  0 0 0 0 .15  0 0 0 .08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+:root[data-theme="light"] { --panel: var(--paper); --panel2: #f3ecd6; --line: #d8c690; --gold: #8a6a24; --gold2: var(--crimson); --text: #222; --muted: #6b5a3a; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --panel: var(--paper); --panel2: #f3ecd6; --line: #d8c690; --gold: #8a6a24; --gold2: var(--crimson); --text: #222; --muted: #6b5a3a; } }
+@media print { .rich { box-shadow: none; } }

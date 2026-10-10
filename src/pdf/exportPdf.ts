@@ -29,9 +29,9 @@ export const DEFAULT_PDF_OPTIONS: PdfOptions = {
 const PAPER = { a4: [595.28, 841.89], letter: [612, 792] } as const;
 const INK = rgb(0.1, 0.1, 0.12);
 const MUTED = rgb(0.4, 0.4, 0.45);
-const LINE = rgb(0.72, 0.72, 0.76);
-const ACCENT = rgb(0.45, 0.3, 0.05);
-const FILL = rgb(0.95, 0.94, 0.92);
+const LINE = rgb(0.788, 0.678, 0.416); // #C9AD6A gilt
+const ACCENT = rgb(0.345, 0.094, 0.051); // #58180D, the heading red of the printed books
+const FILL = rgb(0.933, 0.898, 0.808); // #EEE5CE parchment
 
 const sign = (n: number) => (n >= 0 ? `+${n}` : String(n));
 const label = (id: string) => id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());

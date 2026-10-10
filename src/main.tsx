@@ -7,6 +7,10 @@ import "@fontsource/roboto-condensed/700.css";
 import "@fontsource/crimson-pro/400.css";
 import "@fontsource/crimson-pro/400-italic.css";
 import "@fontsource/crimson-pro/600.css";
+import "@fontsource/alegreya-sans/400.css";
+import "@fontsource/alegreya-sans/400-italic.css";
+import "@fontsource/alegreya-sans/700.css";
+import "@fontsource/cinzel-decorative/700.css";
 import { App } from "./ui/App";
 import "./ui/styles.css";
 

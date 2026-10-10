@@ -23,7 +23,8 @@ export function sanitize(html: string): string {
   return doc.body.innerHTML;
 }
 
-export function Html({ html, className }: { html: string; className?: string }) {
+/** `cap` gives the first paragraph a drop cap, as in the books. */
+export function Html({ html, className, cap }: { html: string; className?: string; cap?: boolean }) {
   const clean = useMemo(() => sanitize(html), [html]);
-  return <div className={`rich ${className ?? ""}`} dangerouslySetInnerHTML={{ __html: clean }} />;
+  return <div className={`rich ${cap ? "cap" : ""} ${className ?? ""}`} dangerouslySetInnerHTML={{ __html: clean }} />;
 }

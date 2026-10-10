@@ -143,7 +143,7 @@ Limits: the old five-page file without "Updated Form Fields" uses different fiel
 
 ## Design
 
-The look follows D&D Beyond and the WotC books: dark leather with gold rules and red actions (or parchment in the light theme), Cinzel headings, Roboto Condensed for the interface, Crimson Pro for rules text, cut corners, ribbons, and choice cards for species, classes and backgrounds. All fonts are bundled and open licensed. No artwork from D&D Beyond or Wizards is used. Light, dark and five accent colours are in the top bar.
+The look follows D&D Beyond and the WotC books: dark leather with gold rules and red actions (or parchment in the light theme), Cinzel headings, Roboto Condensed for the interface, Crimson Pro for rules text, cut corners, ribbons, and choice cards for species, classes and backgrounds. Rules text is set as a printed page, after the Homebrewery PHB theme (an MIT licensed project): parchment, dark-red headings with a gilt rule, drop caps, pale note boxes, striped tables and cream stat blocks. Homebrewery\u2019s own fonts (Bookinsanity, Scaly Sans, Mr Eaves) are not bundled, because their licenses are unclear; open licensed look-alikes (Crimson Pro, Alegreya Sans, Cinzel Decorative) stand in. All fonts are bundled and open licensed. No artwork from D&D Beyond or Wizards is used. Light, dark and five accent colours are in the top bar.
 
 ## Usability test
 

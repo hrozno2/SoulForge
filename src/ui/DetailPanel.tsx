@@ -28,7 +28,7 @@ export function DetailPanel({ el }: { el: AElement | null }) {
           ))}
         </dl>
       )}
-      <Html html={el.description || "<p>No description in the content file.</p>"} />
+      <Html cap html={el.description || "<p>No description in the content file.</p>"} />
       {el.source && (
         <p className="muted">
           Source: <a href="#" onClick={(e) => { e.preventDefault(); openExternal(`https://www.google.com/search?q=${encodeURIComponent(`${el.source} ${el.name}`)}`); }}>{el.source}</a>

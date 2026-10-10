@@ -59,6 +59,13 @@ const POPULAR: Record<string, string[]> = {
   Feat: ["great weapon master", "sharpshooter", "war caster", "lucky", "alert", "resilient", "tough", "sentinel", "polearm master", "crossbow expert", "mobile", "observant", "magic initiate", "skilled", "savage attacker", "ability score improvement"],
 };
 
+/** True when the "recommended" order has anything to go on for this type: a popularity list, or choices from books of different standing. */
+export function hasRecommendation(type: string, groups: Group[]): boolean {
+  if (POPULAR[type]) return true;
+  const tiers = new Set(groups.map((g) => Math.min(...g.variants.map((v) => bookTier(v.book, v.el.source)))));
+  return tiers.size > 1;
+}
+
 export function popularity(type: string, name: string): number {
   const list = POPULAR[type];
   const i = list ? list.indexOf(name.toLowerCase()) : -1;

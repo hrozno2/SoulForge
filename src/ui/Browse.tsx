@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AElement } from "../aurora/types";
-import { formatRelease, groupVariants, sortGroups, type Group, type SortMode, type Variant } from "../aurora/books";
+import { formatRelease, groupVariants, hasRecommendation, sortGroups, type Group, type SortMode, type Variant } from "../aurora/books";
 import { applyFacets, facetCounts, facetsFor, type Selected } from "../aurora/facets";
 import { stripHtml } from "../aurora/sheet";
 import { shortRange, shortTime } from "../sheets/data";
@@ -115,7 +115,10 @@ export function Browse({ items, type, chosen, onPick, onSwap, disabledReason, de
     const byText = n ? items.filter((e) => e.name.toLowerCase().includes(n)) : items;
     return applyFacets(byText, defs, sel, books);
   }, [items, q, sel, defs, books]);
-  const groups = useMemo(() => sortGroups(groupVariants(filtered, books), type === "Spell" || sort !== "level" ? sort : "az"), [filtered, books, sort, type]);
+  // Recommended only means something where there is a popularity order or the books differ in standing. Elsewhere it would just be A to Z.
+  const recommends = useMemo(() => hasRecommendation(type, groupVariants(items, books)), [items, books, type]);
+  const effSort: SortMode = sort === "recommended" && !recommends ? "az" : sort;
+  const groups = useMemo(() => sortGroups(groupVariants(filtered, books), type === "Spell" || effSort !== "level" ? effSort : "az"), [filtered, books, effSort, type]);
   useEffect(() => setShown(perPage), [q, sel, sort, view, perPage]);
 
   const activeCount = Object.values(sel).reduce((n, s) => n + s.size, 0);
@@ -126,7 +129,8 @@ export function Browse({ items, type, chosen, onPick, onSwap, disabledReason, de
       else next[id].add(v);
       return next;
     });
-  const sorts: [SortMode, string][] = type === "Spell" ? [["level", "Level"], ...SORTS] : SORTS;
+  const base = recommends ? SORTS : SORTS.filter(([k]) => k !== "recommended");
+  const sorts: [SortMode, string][] = type === "Spell" ? [["level", "Level"], ...base] : base;
   const useCards = allowCards && view === "cards";
 
   const activeOf = (g: Group): Variant => g.variants.find((v) => v.el.id === active[g.key]) ?? g.variants.find((v) => chosenSet.has(v.el.id)) ?? g.best;
@@ -142,7 +146,7 @@ export function Browse({ items, type, chosen, onPick, onSwap, disabledReason, de
       <div className="browse-bar">
         <input type="search" placeholder={`Search ${items.length} options`} value={q} onChange={(e) => setQ(e.target.value)} />
         <button className={open || activeCount ? "pill active" : "pill"} onClick={() => setOpen(!open)}>Filters{activeCount ? ` (${activeCount})` : ""}</button>
-        <label className="sort-select">Sort <select value={sort} onChange={(e) => setSort(e.target.value as SortMode)}>{sorts.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+        <label className="sort-select">Sort <select value={effSort} onChange={(e) => setSort(e.target.value as SortMode)}>{sorts.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
         {allowCards && (
           <span className="view-toggle" role="group" aria-label="View">
             <button className={view === "cards" ? "pill active" : "pill"} onClick={() => setView("cards")}>Badges</button>

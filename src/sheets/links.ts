@@ -18,22 +18,63 @@ export const SHEET_LINKS: { label: string; url: string }[] = [
 export const SHEET_SEARCH = "https://www.google.com/search?q=DLDM+5E24+character+sheet+form+fillable";
 
 /**
- * The official Wizards of the Coast sheets, which Soul Forge fills completely. They are not bundled: the desktop app downloads
- * them from Wizards' own address when asked, and the copy stays on this computer.
+ * Sheets Soul Forge fills completely, with where to get them. None are bundled: the desktop app downloads them from their
+ * makers' own addresses when asked, and the copy stays on this computer. Each address is on its own line for the link check.
  */
-export const OFFICIAL_DOWNLOADS: { id: string; label: string; note: string; url: string; file: string }[] = [
+export interface SheetDownload {
+  id: string;
+  label: string;
+  /** Who made it, for the credit next to the button. */
+  by: string;
+  note: string;
+  /** One or more files. A .zip is opened and every PDF in it is added. */
+  files: { url: string; file: string }[];
+}
+
+
+
+export const OFFICIAL_DOWNLOADS: SheetDownload[] = [
   {
-    id: "2014-all",
-    label: "All the classic 2014 sheets",
-    note: "The whole official set: fillable and print versions, the alternative layouts, the spellcasting and details pages.",
-    url: "https://media.dndbeyond.com/compendium-images/marketing/5e_charactersheets.zip",
-    file: "5e_charactersheets.zip",
+    id: "2024-dldm",
+    label: "2024 sheet, fillable (DLDM, 5 pages)",
+    by: "DLtheDM",
+    note: "A fillable 2024 sheet: two page 1 styles, two page 2 styles and a spell list page. Fields stay editable.",
+    files: [{
+      url: "https://drive.usercontent.google.com/download?id=120ePGYWD6NmExoEefO1wSOQA_gMhqaqy&export=download",
+      file: "DLDM - 5E24 CHARACTER SHEET - 5pg - Updated Form Fields.pdf",
+    }],
   },
   {
     id: "2024-print",
-    label: "Official 2024 sheet",
+    label: "Official 2024 sheet (print)",
+    by: "Wizards of the Coast",
     note: "2 pages. This copy has no form fields, so the text is written onto the page. A fillable copy of the same sheet works too if you load it.",
-    url: "https://media.dndbeyond.com/compendium-images/phb/downloads/DnD_2024_Character-Sheet.pdf",
-    file: "DnD_2024_Character-Sheet.pdf",
+    files: [{
+      url: "https://media.dndbeyond.com/compendium-images/phb/downloads/DnD_2024_Character-Sheet.pdf",
+      file: "DnD_2024_Character-Sheet.pdf",
+    }],
+  },
+  {
+    id: "2014-all",
+    label: "All the classic 2014 sheets",
+    by: "Wizards of the Coast",
+    note: "The whole official set: fillable and print versions, the alternative layouts, the spellcasting and details pages.",
+    files: [{
+      url: "https://media.dndbeyond.com/compendium-images/marketing/5e_charactersheets.zip",
+      file: "5e_charactersheets.zip",
+    }],
+  },
+  {
+    id: "dldm-companions",
+    label: "Companion sheets (DLDM)",
+    by: "DLtheDM",
+    note: "Familiar, Paladin Mount, Beastmaster Ranger and Drakewarden Ranger companion sheets.",
+    files: [
+      { url: "https://drive.usercontent.google.com/download?id=1Ixz6HQA-xGRIIAQS_eKca76AtMZubU86&export=download", file: "DLDM - 5E14 - Companion Sheet - Familiar.pdf" },
+      { url: "https://drive.usercontent.google.com/download?id=1lE48RMvEqq8wqyeIaV542W0sxKWE0Dvg&export=download", file: "DLDM - 5E14 - Companion Sheet - Paladin Mount.pdf" },
+      { url: "https://drive.usercontent.google.com/download?id=1TxcJiL_6En9Bvho8Jfx6-2Yqz6p9n9WQ&export=download", file: "DLDM - 5E14 - Companion Sheet - Beastmaster Ranger.pdf" },
+      { url: "https://drive.usercontent.google.com/download?id=14A6ZhYwGuerxuI84l3Gs-aaowaRdE26O&export=download", file: "DLDM - 5E14 - Companion Sheet - Drakewarden Ranger.pdf" },
+    ],
   },
 ];
+

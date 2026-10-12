@@ -28,6 +28,12 @@
         },
         {
           "url": "https://media.dndbeyond.com/*"
+        },
+        {
+          "url": "https://drive.usercontent.google.com/*"
+        },
+        {
+          "url": "https://drive.google.com/*"
         }
       ]
     }

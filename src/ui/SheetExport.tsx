@@ -49,9 +49,9 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   ];
   const companionList = companions.filter((c, i, a) => c.id && a.findIndex((x) => x.id === c.id && x.name === c.name) === i);
 
-  /** Gets an official sheet from Wizards' own address and adds it. Needs the desktop app; the web version opens the link. */
+  /** Gets a sheet from its maker's own address and adds it. Needs the desktop app; the web version opens the link. */
   const getOfficial = async (o: (typeof OFFICIAL_DOWNLOADS)[number]) => {
-    if (!isDesktop()) return openExternal(o.url);
+    if (!isDesktop()) return openExternal(o.files[0].url);
     try {
       setMsg(`Downloading ${o.label}...`);
       setMsg((await downloadOfficialSheet(o)).join(". "));
@@ -167,7 +167,7 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
       <div className="row">
         <button onClick={choose}>Add sheet PDF...</button>
         <span className="muted">Need one?</span>
-        {OFFICIAL_DOWNLOADS.map((o) => <button key={o.id} title={`${o.note} Downloaded from Wizards of the Coast's own address and kept on this computer.`} onClick={() => getOfficial(o)}>Get: {o.label}</button>)}
+        {OFFICIAL_DOWNLOADS.map((o) => <button key={o.id} title={`${o.note} By ${o.by}. Downloaded from their own address and kept on this computer.`} onClick={() => getOfficial(o)}>Get: {o.label}</button>)}
         {SHEET_LINKS.map((l) => <a key={l.url} href={l.url} onClick={(e) => { e.preventDefault(); openExternal(l.url); }}>{l.label}</a>)}
         <small className="muted">A link not working? <a href={SHEET_SEARCH} onClick={(e) => { e.preventDefault(); openExternal(SHEET_SEARCH); }}>Search for the sheet</a>; any copy of the same sheet works.</small>
         <input ref={fileRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = ""; }} />

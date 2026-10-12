@@ -178,9 +178,9 @@ export function Tutorial(p: TutorialProps) {
       title: "4. Get a character sheet",
       body: (
         <>
-          <p>The <b>official Wizards of the Coast sheets</b> give the best results, with every field filled. Soul Forge keeps a copy on this computer.</p>
+          <p>These sheets are filled completely: the <b>fillable 2024 sheet by DLtheDM</b> (stays editable), the <b>official Wizards of the Coast sheets</b> for 2024 and 2014, and companion sheets. Soul Forge downloads them from their makers and keeps a copy on this computer.</p>
           <div className="row tutorial-sheets">
-            {OFFICIAL_DOWNLOADS.map((o) => <button key={o.id} disabled={sheetBusy} title={o.note} onClick={() => void getSheet(o)}>Get: {o.label}</button>)}
+            {OFFICIAL_DOWNLOADS.map((o) => <button key={o.id} disabled={sheetBusy} title={`${o.note} By ${o.by}.`} onClick={() => void getSheet(o)}>Get: {o.label}</button>)}
             <button disabled={sheetBusy} onClick={() => void chooseSheet()}>Add my own PDF...</button>
             <input ref={pdfRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { void addOwnSheet(e.target.files); e.target.value = ""; }} />
           </div>

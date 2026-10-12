@@ -82,18 +82,24 @@ export async function addSheetFiles(list: FileList | File[]): Promise<string[]> 
   return notes;
 }
 
-/** Downloads an official sheet, or a zip of them, from Wizards' own address (desktop app) and adds what it holds. Returns the notes. */
+/** Downloads a sheet (or several, or a zip of them) from its maker's own address (desktop app) and adds them. Returns the notes. */
 export async function downloadOfficialSheet(o: (typeof OFFICIAL_DOWNLOADS)[number]): Promise<string[]> {
-  const res = await (await desktopFetch())(o.url);
-  if (!res.ok) throw new Error(`The site answered ${res.status}.`);
-  const bytes = await res.arrayBuffer();
-  if (!/\.zip$/i.test(o.file)) return addSheetFiles([new File([bytes], o.file, { type: "application/pdf" })]);
-  const { default: JSZip } = await import("jszip");
-  const zip = await JSZip.loadAsync(bytes);
+  const get = await desktopFetch();
   const files: File[] = [];
-  for (const [name, entry] of Object.entries(zip.files)) {
-    if (entry.dir || !/\.pdf$/i.test(name) || name.startsWith("__MACOSX")) continue;
-    files.push(new File([await entry.async("arraybuffer")], name.split("/").pop()!, { type: "application/pdf" }));
+  for (const f of o.files) {
+    const res = await get(f.url);
+    if (!res.ok) throw new Error(`The site answered ${res.status} for ${f.file}.`);
+    const bytes = await res.arrayBuffer();
+    if (!/\.zip$/i.test(f.file)) {
+      files.push(new File([bytes], f.file, { type: "application/pdf" }));
+      continue;
+    }
+    const { default: JSZip } = await import("jszip");
+    const zip = await JSZip.loadAsync(bytes);
+    for (const [name, entry] of Object.entries(zip.files)) {
+      if (entry.dir || !/\.pdf$/i.test(name) || name.startsWith("__MACOSX")) continue;
+      files.push(new File([await entry.async("arraybuffer")], name.split("/").pop()!, { type: "application/pdf" }));
+    }
   }
   return addSheetFiles(files);
 }

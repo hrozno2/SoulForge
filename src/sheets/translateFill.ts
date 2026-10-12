@@ -15,7 +15,7 @@ export interface FillTranslation {
 }
 
 /** Fields the player wrote or that are numbers and names; they are printed as they are. */
-const KEEP = new Set(["name", "portrait", "backstory", "personality", "appearance", "alignment", "notes", "coins", "carryCapacity", "pushDrag", "hdMax", "profBonus", "initiative", "speed", "languages"]);
+const KEEP = new Set(["body", "passive", "name", "portrait", "backstory", "personality", "appearance", "alignment", "notes", "coins", "carryCapacity", "pushDrag", "hdMax", "profBonus", "initiative", "speed", "languages"]);
 
 /** Fields that hold names, one per line or one per entry. */
 const NAME_KEYS = new Set(["weaponsText", "otherGear", "armorWorn"]);
@@ -46,6 +46,8 @@ export async function translateFill(d: FillData, t: FillTranslation): Promise<Fi
   const nmLines = (v: unknown) => (typeof v === "string" ? v.split("\n").map(nm).join("\n") : v);
   const each = (f: (s: string) => string): FillData => {
     const out = Object.fromEntries(Object.entries(d).map(([k, v]) => {
+      // Feature entries: the group is a key the sheets sort by, so it stays; the text is translated, the name kept or looked up.
+      if (k === "featureList" && Array.isArray(v)) return [k, (v as FillData["featureList"]).map((ft) => ({ ...ft, name: names ? nm(ft.name) : f(ft.name), usage: ft.usage ? f(ft.usage) : "", text: ft.text ? f(ft.text) : "" }))];
       if (names && NAME_KEYS.has(k)) return [k, nmLines(v)];
       if (names && FEATURE_KEYS.has(k) && Array.isArray(v)) return [k, (v as string[]).map((line) => { const [head, body] = splitFeature(line); return (head ? `${nm(head.slice(0, -2))}: ` : "") + f(body); })];
       return [k, walk(v, f, KEEP.has(k))];

@@ -187,7 +187,6 @@ function drawFlow(sh: Sheet, lines: Flow[], x: number, top: number, w: number, b
   return lines.slice(i);
 }
 
-const num = (s: string) => Number(String(s).replace("+", "")) || 0;
 
 // ---------------------------------------------------------------- page 1
 
@@ -216,7 +215,7 @@ function page1(sh: Sheet, d: FillData): Flow[] {
   const gap = 5;
   const widths = [58, 58, 58, 58, 122, 74, 0];
   widths[6] = W - widths.slice(0, 6).reduce((a, b) => a + b, 0) - gap * 6;
-  const pp = 10 + num(d.skills.perception?.bonus ?? "0");
+  const pp = d.passive;
   const tiles: [string, string, string?][] = [
     ["Proficiency", d.profBonus],
     ["Initiative", d.initiative],

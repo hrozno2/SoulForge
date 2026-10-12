@@ -3,7 +3,7 @@
  * in its fillable form and, from the same field positions, in its plain printing form.
  * Check boxes have no useful names on these sheets, so they are found by where they sit next to a labelled field.
  */
-import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString, type PDFFont, type PDFPage, rgb } from "pdf-lib";
+import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString, PDFTextField, type PDFFont, type PDFPage, rgb } from "pdf-lib";
 import type { FillData } from "./data";
 import { readWidgets, type Widget } from "./widgets";
 
@@ -102,7 +102,7 @@ export function fill2024Form(ws: W[], d: FillData, sink: Sink): void {
   s.set("Level", d.level); s.set("XP Points", d.xp || ""); s.set("Armor Class", d.ac); s.set("Current HP", d.hpCurrent); s.set("Max HP", d.hpMax); s.set("Temp HP", d.hpTemp || "");
   s.set("Spent HD", d.hdSpent || ""); s.set("Max HD", d.hdMax);
   s.set("init", d.initiative); s.set("SPEED", d.speed ? `${d.speed} ft` : ""); s.set("SIZE", d.size); s.set("PROF BONUS", d.profBonus);
-  s.set("PASSIVE PERCEPTION", String(10 + Number((d.skills.perception?.bonus ?? "+0").replace("+", ""))));
+  s.set("PASSIVE PERCEPTION", d.passive);
   for (const a of ABIL_KEYS) {
     const ab = d.abilities[a];
     s.set(`${SHORT[a]} SCORE`, ab.score); s.set(`${SHORT[a]} MOD`, ab.mod);
@@ -179,7 +179,7 @@ export function fill2014(ws: W[], d: FillData, sink: Sink): void {
   s.set("ProfBonus", d.profBonus); s.set("AC", d.ac); s.set("Initiative", d.initiative); s.set("Speed", d.speed);
   s.set("HPMax", d.hpMax); s.set("HPCurrent", d.hpCurrent); s.set("HPTemp", d.hpTemp || "");
   s.set("HDTotal", d.hdMax); s.set("HD", d.hdMax.replace(/^\d+/, String(Math.max(0, parseInt(d.hdMax, 10) - d.hdSpent || 0))));
-  s.set("Passive", String(10 + Number((d.skills.perception?.bonus ?? "+0").replace("+", ""))));
+  s.set("Passive", d.passive);
   const mods: Record<string, string> = { strength: "STRmod", dexterity: "DEXmod", constitution: "CONmod", intelligence: "INTmod", wisdom: "WISmod", charisma: "CHamod" };
   const names2014: Record<string, string> = { strength: "ST Strength", dexterity: "ST Dexterity", constitution: "ST Constitution", intelligence: "ST Intelligence", wisdom: "ST Wisdom", charisma: "ST Charisma" };
   for (const a of ABIL_KEYS) {
@@ -244,7 +244,7 @@ export function fill2014(ws: W[], d: FillData, sink: Sink): void {
     used.set(lv, (used.get(lv) ?? 0) + 1);
     sink.text(slotField, sp.name);
     const box = ws.find((b) => b.t === "Btn" && b.p === 2 && Math.abs(cy(b) - cy(slotField)) <= 5 && cx(b) < slotField.x && slotField.x - cx(b) < 24);
-    if (box) sink.check(box, lv === 0 ? false : /prepared|always/.test(sp.notes));
+    if (box) sink.check(box, lv === 0 ? false : (sp.prepared ?? /prepared|always/.test(sp.notes)));
   }
 }
 
@@ -333,7 +333,8 @@ export function formSink(doc: PDFDocument, font: PDFFont): Sink & { done(): void
     },
     done() {
       // Only text fields are redrawn. Check boxes keep the sheet's own drawing of a tick.
-      for (const f of form.getFields()) if (f.constructor.name === "PDFTextField") (f as unknown as { updateAppearances(font: PDFFont): void }).updateAppearances(font);
+      // (Checked by type, not by class name: the production build shortens class names.)
+      for (const f of form.getFields()) if (f instanceof PDFTextField) f.updateAppearances(font);
     },
   };
 }

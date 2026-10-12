@@ -191,7 +191,6 @@ export function buildPlan(fields: AutoField[]): { plan: Plan; unmatched: AutoFie
   return { plan, unmatched };
 }
 
-const num = (s: string) => Number(String(s).replace("+", "")) || 0;
 const cy = (w: W) => w.y + w.h / 2;
 const cx = (w: W) => w.x + w.w / 2;
 
@@ -227,7 +226,7 @@ export function autoFill(fields: AutoField[], d: FillData, sink: Sink): AutoResu
   put("classLevel", [d.className, d.level].filter(Boolean).join(" ")); put("level", d.level); put("alignment", d.alignment); put("xp", d.xp || ""); put("player", "");
   put("hp.max", d.hpMax); put("hp.current", d.hpCurrent); put("hp.temp", d.hpTemp || ""); put("ac", d.ac); put("initiative", d.initiative); put("speed", d.speed ? `${d.speed} ft` : "");
   put("size", d.size); put("prof", d.profBonus); put("hd", d.hdMax);
-  put("passive", String(10 + num(d.skills.perception?.bonus ?? "+0")));
+  put("passive", d.passive);
   put("inspiration", d.inspiration ? "1" : "");
   for (const a of abilities) {
     const ab = d.abilities[a];
@@ -255,9 +254,8 @@ export function autoFill(fields: AutoField[], d: FillData, sink: Sink): AutoResu
   }
   for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) put(`coin.${k}`, d.coins[k] === "0" ? "" : d.coins[k]);
   d.weapons.slice(0, 8).forEach((w, i) => {
-    for (const row of [String(i + 1), ...(i === 0 ? [""] : [])]) {
-      put(`weapon.${row || "1"}.name`, w.name); put(`weapon.${row || "1"}.bonus`, w.bonus); put(`weapon.${row || "1"}.damage`, w.damage); put(`weapon.${row || "1"}.notes`, w.notes);
-    }
+    const row = String(i + 1);
+    put(`weapon.${row}.name`, w.name); put(`weapon.${row}.bonus`, w.bonus); put(`weapon.${row}.damage`, w.damage); put(`weapon.${row}.notes`, w.notes);
   });
   const feat = (g: string) => d.featureList.filter((f) => f.group === g).map((f) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${f.text}`).join("\n");
   const allFeatures = d.featureList.map((f) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${f.text}`).join("\n");
@@ -304,7 +302,7 @@ export function autoFill(fields: AutoField[], d: FillData, sink: Sink): AutoResu
       used.set(lv, (used.get(lv) ?? 0) + 1);
       sink.text(f, sp.name); matched++;
       const box = boxBeside(fields, f);
-      if (box) sink.check(box, lv > 0 && /prepared|always/.test(sp.notes));
+      if (box) sink.check(box, lv > 0 && (sp.prepared ?? /prepared|always/.test(sp.notes)));
     }
   } else {
     d.spells.slice(0, names.length).forEach((sp, i) => { sink.text(names[i], sp.name); matched++; });

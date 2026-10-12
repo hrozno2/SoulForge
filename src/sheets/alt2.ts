@@ -31,7 +31,7 @@ export function fillAlt2(ws: W[], d: FillData, sink: Sink): void {
     attacks.forEach((sp, i) => { put(`spa${i + 1}.name`, sp.name); put(`spa${i + 1}.atk`, d.casting!.attack); });
     const byLevel = ["cantrips", "l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9"];
     byLevel.forEach((k, lv) => put(`spells.${k}`, d.spells.filter((s) => Number(s.level) === lv).map((s) => s.name).join(", ")));
-    put("prepared", d.spells.filter((s) => Number(s.level) > 0 && /prepared|always/.test(s.notes)).map((s) => s.name).join(", "));
+    put("prepared", d.spells.filter((s) => Number(s.level) > 0 && (s.prepared ?? /prepared|always/.test(s.notes))).map((s) => s.name).join(", "));
   }
   const group = (g: string) => d.featureList.filter((f) => f.group === g).map((f) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${f.text}`).join("\n");
   put("classfeatures", group("Class features")); put("racialtraits", group("Species traits"));

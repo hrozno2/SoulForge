@@ -16,6 +16,8 @@ export interface SpellRow {
   s: boolean;
   m: boolean;
   notes: string;
+  /** Prepared or always prepared. Kept apart from the notes, which may be translated. */
+  prepared?: boolean;
 }
 
 export interface CompanionFill {
@@ -62,6 +64,8 @@ export interface FillData {
   deathFail: number;
   profBonus: string;
   initiative: string;
+  /** Passive Perception as the sheet works it out, including feats and other bonuses. */
+  passive: string;
   abilities: Record<AbilityId, { score: string; mod: string; save: string; saveProf: boolean }>;
   skills: Record<string, { bonus: string; prof: boolean; expert: boolean }>;
   armorTraining: { light: boolean; medium: boolean; heavy: boolean; shield: boolean };
@@ -177,6 +181,7 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
         duration: dur.text, concentration: dur.conc || set("isConcentration") === "true", ritual: set("isRitual") === "true",
         v: set("hasVerbalComponent") === "true", s: set("hasSomaticComponent") === "true", m: set("hasMaterialComponent") === "true",
         notes: set("level") === "0" ? "" : p.granted ? "always prepared" : c.prepare ? "prepared" : "",
+        prepared: set("level") !== "0" && (p.granted || c.prepare),
       });
     }
   }
@@ -219,7 +224,7 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
     })(),
     inspiration: ch.play.inspiration, conditions: ch.play.conditions.join(", "), exhaustion: ch.play.conditions.find((c) => /exhaustion/i.test(c)) ? "1" : "",
     deathSuccess: ch.play.deathSaves.success, deathFail: ch.play.deathSaves.fail,
-    profBonus: signed(sh.proficiency), initiative: signed(sh.initiative), abilities, skills, armorTraining, weaponTraining,
+    profBonus: signed(sh.proficiency), initiative: signed(sh.initiative), passive: String(sh.passivePerception), abilities, skills, armorTraining, weaponTraining,
     tools: other.join(", "), languages: sh.proficiencies.languages.join(", "),
     traits: feat(["Racial Trait"]).map((f) => line(f, 160)), feats: feat(["Feat", "Feat Feature", "Background Feature"]).map((f) => line(f, 160)),
     classFeatures: feat(["Class Feature", "Archetype Feature"]).map((f) => line(f, 260)),

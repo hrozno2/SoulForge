@@ -9,7 +9,7 @@ export function maximal(): FillData {
   const abil = { score: "14", mod: "+2", save: "+4", saveProf: true };
   return {
     name: "Test Hero", background: "Sage", className: "Wizard", species: "Elf", subclass: "Evoker", level: 5, xp: 6500, ac: 15, shield: true, hpMax: 40, hpCurrent: 30, hpTemp: 5, hdSpent: 2, hdMax: "5d6",
-    speed: "30", size: "Medium", darkvision: "60 ft", inspiration: true, conditions: "", exhaustion: "", deathSuccess: 2, deathFail: 1, profBonus: "+3", initiative: "+2",
+    speed: "30", size: "Medium", darkvision: "60 ft", inspiration: true, conditions: "", exhaustion: "", deathSuccess: 2, deathFail: 1, profBonus: "+3", initiative: "+2", passive: "15",
     abilities: { strength: abil, dexterity: abil, constitution: abil, intelligence: abil, wisdom: abil, charisma: abil },
     skills: Object.fromEntries(SKILLS.map((k) => [k, sk("+5")])),
     armorTraining: { light: true, medium: true, heavy: true, shield: true }, weaponTraining: { simple: true, martial: true, improvised: false },

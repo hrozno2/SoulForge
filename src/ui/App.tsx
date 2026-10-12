@@ -21,6 +21,7 @@ import { SettingsDialog, getSettings, useScaleShortcuts } from "./Settings";
 import { runAutoBackup } from "../aurora/backup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter } from "../aurora/foreign";
+import { listCharacters } from "../aurora/storage";
 import { Tutorial, tutorialWanted } from "./Tutorial";
 import { CompendiumSearch } from "./CompendiumSearch";
 
@@ -37,12 +38,14 @@ type Tab = "start" | "build" | "magic" | "equipment" | "manage" | "play" | "shee
 const TABS: [Tab, string][] = [["start", "Home"], ["build", "Build"], ["magic", "Magic"], ["equipment", "Equipment"], ["manage", "Manage"], ["play", "Play"], ["sheet", "Export"], ["content", "Content"]];
 const CUR_KEY = "charforge.current.v2";
 
-function loadCurrent(): { id: string; ch: Character } {
+function loadCurrent(): { id: string; ch: Character; fromLibrary?: boolean } {
   try {
     const raw = localStorage.getItem(CUR_KEY);
     if (raw) {
-      const p = JSON.parse(raw) as { id: string; ch: Character };
+      const p = JSON.parse(raw) as { id: string; ch?: Character };
       if (p.ch?.version === 2) return { id: p.id, ch: normalizeCharacter(p.ch) };
+      // Only the id was kept (the character was too big for this storage): it is loaded from the library below.
+      if (p.id) return { id: p.id, ch: newCharacter(), fromLibrary: true };
     }
   } catch {
     /* start fresh */
@@ -71,6 +74,16 @@ export function App() {
   const initial = useMemo(loadCurrent, []);
   const [id, setId] = useState(initial.id);
   const [character, setCharacter] = useState<Character>(initial.ch);
+  // While the open character is still coming from the library, nothing is saved over it.
+  const loading = useRef(!!initial.fromLibrary);
+  useEffect(() => {
+    if (!initial.fromLibrary) return;
+    void listCharacters().then((all) => {
+      const rec = all.find((c) => c.id === initial.id);
+      loading.current = false;
+      if (rec) setCharacter(normalizeCharacter(rec.data));
+    }).catch(() => { loading.current = false; });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [detail, setDetail] = useState<AElement | null>(null);
   const content = useContent();
   const updater = useUpdater();
@@ -81,10 +94,16 @@ export function App() {
   // Autosave the open character, and keep a copy in the library.
   const saveTimer = useRef<number | undefined>(undefined);
   useEffect(() => {
+    if (loading.current) return;
     try {
       localStorage.setItem(CUR_KEY, JSON.stringify({ id, ch: character }));
     } catch {
-      /* storage can be unavailable */
+      // Too big for this storage (a large portrait, say): keep the id, the library has the character.
+      try {
+        localStorage.setItem(CUR_KEY, JSON.stringify({ id }));
+      } catch {
+        /* storage can be unavailable */
+      }
     }
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {

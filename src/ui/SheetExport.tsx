@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PDFDocument } from "pdf-lib";
 import type { Resolved } from "../aurora/engine";
 import type { SheetData } from "../aurora/sheet";
@@ -122,7 +122,14 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   };
 
   // The preview refreshes when the sheet or its page choice changes. It never translates and never saves.
-  const previewKey = current ? `${current.id}|${pages.join(",")}|${companion}|${r.character.name}|${r.totalLevel}` : "";
+  // Any change to what would be printed refreshes it, not only the name and level.
+  const printed = useMemo(() => {
+    const json = JSON.stringify({ ...buildFillData(r, sheet), portrait: r.character.portrait?.length ?? 0 });
+    let h = 0;
+    for (let i = 0; i < json.length; i++) h = (h * 31 + json.charCodeAt(i)) | 0;
+    return h;
+  }, [r, sheet]);
+  const previewKey = current ? `${current.id}|${pages.join(",")}|${companion}|${printed}` : "";
   useEffect(() => {
     if (!current) { setPreviewBytes(null); return; }
     let live = true;

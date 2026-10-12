@@ -69,3 +69,16 @@ describe("translating sheet values", () => {
     expect(sent).not.toContain("Quarterstaff");
   });
 });
+
+describe("feature entries", () => {
+  it("translate the text, keep the group the sheets sort by", async () => {
+    const d = { ...base, featureList: [{ group: "Class features", name: "Arcane Recovery", usage: "1/Long Rest", text: "Recover spell slots." }] } as unknown as FillData;
+    const out = await translateFill(d, {
+      target: "de",
+      keepNames: true,
+      translator: async (texts) => texts.map((t) => `<${t}>`),
+      cache: { get: async () => undefined, put: async () => undefined },
+    });
+    expect(out.featureList[0]).toEqual({ group: "Class features", name: "Arcane Recovery", usage: "<1/Long Rest>", text: "<Recover spell slots.>" });
+  });
+});

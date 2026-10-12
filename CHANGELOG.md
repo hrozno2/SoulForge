@@ -2,6 +2,20 @@
 
 What changed in each release. Newest first.
 
+## v0.10.0 (2026-10-12)
+
+- Printouts checked for five imported characters on three sheets: one line per spell when both editions are on a character, shared form fields emptied before drawing, generated ability improvement choices kept off the sheet; Dueling adds its +2 damage; tests follow the sheet's misnamed spellcasting fields and leave unfilled spell choices to the player; lint fixes
+- Roll20 import (including VTTES exports): the 2014 or 2024 class and the species version from the features the sheet lists, species with a kind in parentheses (Genasi (Earth)), prepared spells, hit point maximum, scores Roll20 leaves at the default; Foundry prepared spells; playtest versions only when nothing else matches
+- Visual pass: play header readable in light themes, Escape closes level up, random prepared casters prepare spells, inventory and feature rows aligned, no '+ 0' in dice sums
+- Test: drag into favorites in steps, like a person
+- Starting equipment: inline (a)/(b) options in older class text, 'a martial weapon' as a weapon choice, 'wooden shield' as a shield; random characters pick real weapons for those choices
+- Foundry import checked against 21 real characters: 2014 or 2024 rules from the file, species and subraces from item or text (Hill Dwarf, Halfling (Lotusden), Elf; Wood Elf Lineage), backgrounds from text, hit points matched to the file, spell choices the file leaves out stay open instead of guessed, class features never added on top of the content, Resilient and ability choices from the file's saves and scores, quantities in names; base scores above 20 stay
+- Test: six ability boxes besides initiative
+- Play sheet in a Tidy-style layout with the D&D Beyond look: header with portrait, hit points and hit dice, ability hexes with their saves, icon buttons for inspiration, level up and rests; sidebar switching favorites and skills; actions as grouped tables with uses, roll, formula, range and target
+- Random characters follow the content filters, put scores where the class needs them and start with gear; '!' in supports filters (Mark of Detection); 2014 sheet lists the whole spellbook with prepared bubbles; required choices are never emptied by content filters; Spelljammer and Adventurers League books count as other settings
+- Importer: subclasses and lineages before spells, item names and +N bonuses (Foundry base items, Roll20 modifiers), equipped gear from Roll20, magic item effects kept out of base scores, mastery and other guesses from the character's own books and weapons; Improvement Option choices for 2014 classes (ability scores or a feat); item labels and magic bonuses in AC and attacks
+- Sheet fixes from real characters: multiclass spell slots, DLDM spellcasting boxes by position, 2014 slots expended, personality split into ideals/bonds/flaws, carried weapons when none equipped, single-weapon training in the weapons line, aligned spell rows, overflow note for spells, shorter ranges; compact compendium search
+
 ## v0.9.0 (2026-10-12)
 
 - Locked options stay visible with the reason; level up and multiclass as cards; dice show the sum; readable rules tables; stat blocks keep the printed look; play sheet fits; favorites drag in the desktop app; sheet downloads in Manage sheets; tutorial step for finding your way; filled sheets: text fits its box, short casting times and ranges, centred numbers

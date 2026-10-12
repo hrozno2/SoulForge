@@ -242,12 +242,14 @@ test.describe("Soul Forge smoke tests", () => {
       await rows.nth(1).dragTo(bar);
       await expect(bar.locator(".fav-tile.feature")).toHaveCount(2);
     }
-    // Only the player hides it, and that sticks.
-    await bar.getByRole("button", { name: "Hide" }).click();
-    await expect(page.getByRole("button", { name: /Show favorites/ })).toBeVisible();
+    // Favorites are kept with the character; the sidebar can switch to the skills and back.
     await page.reload();
     await tab(page, "Play");
-    await expect(page.getByRole("button", { name: /Show favorites/ })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Favorites" }).getByText("Ki")).toBeVisible();
+    await page.getByRole("tab", { name: "Skills" }).click();
+    await expect(page.locator(".play-side .skill-line").first()).toBeVisible();
+    await page.getByRole("tab", { name: /Favorites/ }).click();
+    await expect(page.getByRole("region", { name: "Favorites" })).toBeVisible();
   });
 
   test("a form can come from a creature, shows its stat block, and polymorph ties to concentration", async ({ page }) => {
@@ -368,7 +370,7 @@ test.describe("Soul Forge smoke tests", () => {
     await tab(page, "Play");
     const level = async () => Number(await page.locator(".level-medal b").innerText());
     const start = await level();
-    await page.locator(".play-buttons").getByRole("button", { name: "Level up" }).click();
+    await page.locator(".hero-icons").getByRole("button", { name: "Level up" }).click();
     const dialog = page.getByRole("dialog", { name: "Level up" });
     await dialog.getByRole("button", { name: "Level up" }).first().click();
     await expect(dialog.getByText("Hit points", { exact: true })).toBeVisible();
@@ -378,7 +380,7 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(dialog).toHaveCount(0);
     expect(await level()).toBe(start);
     // Doing it again and finishing keeps the level.
-    await page.locator(".play-buttons").getByRole("button", { name: "Level up" }).click();
+    await page.locator(".hero-icons").getByRole("button", { name: "Level up" }).click();
     await dialog.getByRole("button", { name: "Level up" }).first().click();
     await dialog.locator("button.primary", { hasText: "Done" }).click();
     expect(await level()).toBe(start + 1);

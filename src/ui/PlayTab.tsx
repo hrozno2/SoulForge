@@ -12,6 +12,7 @@ import { Journal } from "./Journal";
 import { SchoolIcon } from "./schoolIcons";
 import { ConditionIcon } from "./conditionIcons";
 import { toggleEquip } from "../aurora/hands";
+import { shortRange } from "../sheets/data";
 import { t } from "../i18n";
 import { CONDITION_TEXT, speedAfterExhaustion } from "./conditions";
 import { Hint } from "./Help";
@@ -90,12 +91,33 @@ function Panel({ title, children, className = "" }: { title: string; children: R
 
 function AbilityBox({ id, a }: { id: AbilityId; a: SheetData["abilities"][number] }) {
   return (
-    <button className="ab-box" title={`Roll ${ABILITY_LABEL[id]} check`} onClick={() => roll(`${ABILITY_LABEL[id]} check`, a.mod, { kind: "check", ability: id })}>
-      <small>{ABILITY_LABEL[id]}</small>
-      <b>{sign(a.mod)}</b>
-      <span className="ab-score">{a.score}</span>
-    </button>
+    <div className="ab-col">
+      <button className="ab-box" title={`Roll ${ABILITY_LABEL[id]} check`} onClick={() => roll(`${ABILITY_LABEL[id]} check`, a.mod, { kind: "check", ability: id })}>
+        <small>{ABILITY_SHORT[id]}</small>
+        <b>{sign(a.mod)}</b>
+        <span className="ab-score">{a.score}</span>
+      </button>
+      <button className={a.saveProficient ? "ab-save on" : "ab-save"} title={`Roll ${ABILITY_LABEL[id]} saving throw${a.saveProficient ? " (proficient)" : ""}`} onClick={() => roll(`${ABILITY_LABEL[id]} save`, a.save, { kind: "save", ability: id })}>
+        {sign(a.save)}<SaveMark on={a.saveProficient} />
+      </button>
+    </div>
   );
+}
+
+function SaveMark({ on }: { on: boolean }) {
+  return <svg className="save-mark" viewBox="0 0 16 18" width="12" height="13" aria-hidden="true"><path d="M8 1 15 3.5v5.5c0 4.2-3 6.8-7 8-4-1.2-7-3.8-7-8V3.5z" fill={on ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.6" /></svg>;
+}
+
+/** Small line icons for the header buttons. */
+function HeadIcon({ name }: { name: "star" | "starOn" | "up" | "meal" | "tent" }) {
+  const p: Record<string, React.ReactNode> = {
+    star: <path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />,
+    starOn: <path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" fill="currentColor" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />,
+    up: <><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" /><path d="M12 17V8m-4 4 4-4 4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></>,
+    meal: <path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-2 1-3 4-3 7h3v11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />,
+    tent: <path d="M3 20h18M12 4 4 20M12 4l8 16M12 4v16m-3 0 3-6 3 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />,
+  };
+  return <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">{p[name]}</svg>;
 }
 
 function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetCharacter }) {
@@ -141,7 +163,7 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
       </div>
       <output className="sr-only" aria-live="polite">{`${t("Hit Points")}: ${hp} / ${sheet.hp}${ch.play.tempHp ? `, +${ch.play.tempHp}` : ""}${ch.play.wildShape ? `, ${ch.play.wildShape.name} ${ch.play.wildShape.hp} / ${ch.play.wildShape.maxHp}` : ""}`}</output>
       <div className="hp-manage">
-        <input type="number" min={0} placeholder={t("Amount")} value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => e.key === "Enter" && damage()} />
+        <input type="number" min={0} placeholder="HP" title={t("Amount")} aria-label={t("Amount")} value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => e.key === "Enter" && damage()} />
         <button onClick={heal}>{t("Heal")}</button>
         <button onClick={damage}>{t("Damage")}</button>
         <button onClick={temp}>{t("Temp")}</button>
@@ -241,48 +263,107 @@ function Ammo({ a, r, ch, set }: { a: SheetData["attacks"][number]; r: Resolved;
   );
 }
 
+/** A group of the Actions tab: a red bar with the count and column names, then rows. */
+function ActGroup({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <section className="act-group">
+      <button className="act-head" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span className="chev">{open ? "▾" : "▸"}</span><b>{title}</b><em>{count}</em>
+        <span>Uses</span><span>Roll</span><span>Formula</span><span>Range</span><span>Target</span>
+      </button>
+      {open && children}
+    </section>
+  );
+}
+
+/** A feature as a row of the actions table; its text opens below it. */
+function ActFeature({ f, ch, set, sheet }: { f: FeatureLine; ch: Character; set: SetCharacter; sheet: SheetData }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="act-row feature" {...favDrag("feature", f.id)}>
+      <span className="act-name">
+        <FavStar ch={ch} set={set} kind="feature" refId={f.id} />
+        <button className="act-title" onClick={() => setOpen(!open)} aria-expanded={open}><b>{f.name}</b><small>{f.source}</small></button>
+      </span>
+      <span className="act-uses"><Uses f={f} ch={ch} set={set} /></span>
+      <span className="act-roll" />
+      <span className="act-formula"><RollChips name={f.name} html={f.text} ctx={dcContext(sheet)} attackBonus={sheet.casting[0]?.attack} /></span>
+      <span>–</span>
+      <span>–</span>
+      {open && <p className="feature-text act-text">{f.text || "No description."}</p>}
+    </div>
+  );
+}
+
 function Actions({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: SheetData; set: SetCharacter }) {
-  const groups: [string, (f: FeatureLine) => boolean][] = [
-    ["Actions", (f) => /^action$/i.test(f.action ?? "") || /^1 ?action/i.test(f.action ?? "")],
-    ["Bonus actions", (f) => /bonus/i.test(f.action ?? "")],
-    ["Reactions", (f) => /reaction/i.test(f.action ?? "")],
+  const kinds: [string, (f: FeatureLine) => boolean][] = [
+    ["Action", (f) => /^action$/i.test(f.action ?? "") || /^1 ?action/i.test(f.action ?? "")],
+    ["Bonus Action", (f) => /bonus/i.test(f.action ?? "")],
+    ["Reaction", (f) => /reaction/i.test(f.action ?? "")],
+    // Features you track uses of, without an action type: Channel Divinity, Lay On Hands pools and the like.
+    ["Special", (f) => !!f.usage],
   ];
   const used = new Set<string>();
+  const byKind = kinds.map(([title, test]) => {
+    const list = sheet.features.filter((f) => test(f) && !used.has(f.id));
+    list.forEach((f) => used.add(f.id));
+    return [title, list] as const;
+  });
   /** Taking a shot uses one piece of the ammunition chosen for that weapon. */
   const spendAmmo = (id?: string) => {
     const uid = id ? ch.attackEdits?.[id]?.ammoUid : undefined;
     if (uid) set((c) => ({ ...c, inventory: c.inventory.map((i) => (i.uid === uid ? { ...i, qty: Math.max(0, i.qty - 1) } : i)) }));
   };
   const cantrips = sheet.casting.flatMap((c) => c.cantripsKnown.map((p) => r.reg.get(p.id)).filter((e): e is AElement => !!e));
+  const castTime = (e: AElement) => (e.setters.time?.value ?? "").toLowerCase();
+  const rangeOf = (a: SheetData["attacks"][number]) => {
+    const el = a.elId ? r.reg.get(a.elId) : undefined;
+    const rg = el?.setters.range?.value;
+    if (rg) return rg.replace(/\s*feet|\s*ft\.?/gi, "").trim() + " ft";
+    return /reach/i.test(a.properties) ? "10 ft" : "5 ft";
+  };
+  const spellRow = (e: AElement) => (
+    <div key={e.id} className="act-row spell" {...favDrag("spell", e.id)}>
+      <span className="act-name"><FavStar ch={ch} set={set} kind="spell" refId={e.id} /><span className="act-title"><b>{e.name}</b><small>Cantrip · {e.setters.school?.value ?? ""}</small></span></span>
+      <span className="act-uses">–</span>
+      <span className="act-roll" />
+      <span className="act-formula"><RollChips name={e.name} html={e.description} ctx={dcContext(sheet)} attackBonus={sheet.casting[0]?.attack} /></span>
+      <span>{e.setters.range?.value ? shortRange(e.setters.range.value) : "–"}</span>
+      <span>–</span>
+    </div>
+  );
+  const actionCantrips = cantrips.filter((e) => /^(1 )?action/.test(castTime(e)));
+  const bonusCantrips = cantrips.filter((e) => /bonus/.test(castTime(e)));
   return (
     <>
-      <Panel title="Attacks">
-        {sheet.attacks.length === 0 && <p className="muted">Equip a weapon on the Equipment tab.</p>}
-        {sheet.attacks.length > 0 && (
-          <table className="attacks play-attacks">
-            <thead><tr><th>Name</th><th>Hit / DC</th><th>Damage</th><th>Notes</th></tr></thead>
-            <tbody>
-              {sheet.attacks.map((a, i) => (
-                <tr key={i} {...favDrag("weapon", a.id ?? a.name)}>
-                  <td><FavStar ch={ch} set={set} kind="weapon" refId={a.id ?? a.name} /><b>{a.name}</b><Ammo a={a} r={r} ch={ch} set={set} /></td>
-                  <td><button className="roll-btn" onClick={() => { roll(`${a.name} attack`, a.bonus, { kind: "attack" }); spendAmmo(a.id); }}>{sign(a.bonus)}</button></td>
-                  <td><button className="roll-btn" onClick={() => a.damage && requestRoll(`${a.name} damage`, a.damage.replace(/\s+/g, ""))}>{a.damage}</button> <small>{a.damageType}</small></td>
-                  <td><small>{[a.properties, a.notes].filter(Boolean).join("; ")}</small></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        {cantrips.length > 0 && <p className="muted small-text">Cantrips: {cantrips.map((c) => c.name).join(", ")}. See the Spells tab to cast them.</p>}
-      </Panel>
-      {groups.map(([title, test]) => {
-        const list = sheet.features.filter((f) => test(f) && !used.has(f.id));
-        list.forEach((f) => used.add(f.id));
-        if (!list.length) return null;
+      <ActGroup title="Action" count={sheet.attacks.length + byKind[0][1].length + actionCantrips.length}>
+        {sheet.attacks.length === 0 && <p className="muted act-empty">No weapon equipped. Equip one on the Equipment tab.</p>}
+        {sheet.attacks.map((a, i) => (
+          <div key={i} className="act-row weapon" {...favDrag("weapon", a.id ?? a.name)}>
+            <span className="act-name">
+              <FavStar ch={ch} set={set} kind="weapon" refId={a.id ?? a.name} />
+              <span className="act-title"><b>{a.name}</b><small>{[a.properties, a.notes].filter(Boolean).join("; ") || "Weapon attack"}</small></span>
+              <Ammo a={a} r={r} ch={ch} set={set} />
+            </span>
+            <span className="act-uses">–</span>
+            <span className="act-roll"><button className="roll-btn" title="Roll to hit" onClick={() => { roll(`${a.name} attack`, a.bonus, { kind: "attack" }); spendAmmo(a.id); }}>{sign(a.bonus)}</button></span>
+            <span className="act-formula"><button className="roll-btn" title="Roll damage" onClick={() => a.damage && requestRoll(`${a.name} damage`, a.damage.replace(/\s+/g, ""))}>{a.damage}</button> <small>{a.damageType}</small></span>
+            <span>{rangeOf(a)}</span>
+            <span>1 creature</span>
+          </div>
+        ))}
+        {byKind[0][1].map((f) => <ActFeature key={f.id} f={f} ch={ch} set={set} sheet={sheet} />)}
+        {actionCantrips.map(spellRow)}
+      </ActGroup>
+      {byKind.slice(1).map(([title, list]) => {
+        const extra = title === "Bonus Action" ? bonusCantrips : [];
+        if (!list.length && !extra.length) return null;
         return (
-          <Panel key={title} title={title}>
-            {list.map((f) => <FeatureRow key={f.id} f={f} ch={ch} set={set} sheet={sheet} />)}
-          </Panel>
+          <ActGroup key={title} title={title} count={list.length + extra.length}>
+            {list.map((f) => <ActFeature key={f.id} f={f} ch={ch} set={set} sheet={sheet} />)}
+            {extra.map(spellRow)}
+          </ActGroup>
         );
       })}
     </>
@@ -610,32 +691,50 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
   const sheet = useMemo(() => buildSheet(r), [r]);
   const head = headerInfo(r);
   const [tab, setTab] = useState<Tab>("actions");
+  const [side, setSide] = useState<"favorites" | "skills">("favorites");
   const rests = useRests(r, ch, sheet, set);
   const hasSpells = sheet.casting.length > 0;
   const nextXp = XP_TABLE[Math.min(19, sheet.level)] ?? 0;
   const prevXp = XP_TABLE[Math.max(0, sheet.level - 1)] ?? 0;
   const xpPct = nextXp > prevXp ? Math.max(0, Math.min(100, ((ch.xp - prevXp) / (nextXp - prevXp)) * 100)) : 100;
-  const tabs: [Tab, string, boolean][] = [["actions", "Actions", true], ["spells", "Spells", hasSpells], ["inventory", "Inventory", true], ["resources", "Resources", true], ["features", "Features & Traits", true], ["description", "Description", true], ["notes", "Notes", true], ["extras", "Extras", sheet.features.length >= 0]];
+  const tabs: [Tab, string, boolean][] = [["actions", "Sheet", true], ["spells", "Spells", hasSpells], ["inventory", "Inventory", true], ["resources", "Resources", true], ["features", "Features & Traits", true], ["description", "Description", true], ["notes", "Notes", true], ["extras", "Extras", sheet.features.length >= 0]];
   const companions = [...r.active.filter((a) => a.el.type === "Companion").map((a) => ({ el: a.el, name: a.el.name })), ...ch.companions.map((c) => ({ el: r.reg.get(c.id), name: c.name }))];
 
   return (
     <div className="play">
-      <header className="play-head">
-        <div className="play-id">
+      <header className="play-head hero">
+        <div className="hero-left">
           {ch.portrait ? <img className="portrait-lg" src={ch.portrait} alt="" /> : <div className="portrait-lg ph">{(ch.name || "?").charAt(0)}</div>}
-          <div>
-            <h1>{ch.name || "Unnamed character"}</h1>
-            <p className="muted">{head.species} · {head.classLine}{head.subclass !== "-" ? ` (${head.subclass})` : ""} · {head.background}</p>
+          <Vitals ch={ch} sheet={sheet} set={set} />
+          <div className="hd-row">
+            <div className="hd-bar" title={`Hit dice: ${sheet.hitDice.map((h) => `${h.count}d${h.die}`).join(" + ")}`}><div style={{ width: `${sheet.level ? (rests.left / sheet.level) * 100 : 0}%` }} /><span>{rests.left} / {sheet.level} HD · {sheet.hitDice.map((h) => `${h.count}d${h.die}`).join(" + ")}</span></div>
+            <button className="icon-btn" title="Spend a hit die" aria-label="Spend a hit die" disabled={!rests.left || rests.hp >= sheet.hp} onClick={rests.spendHitDie}>+</button>
           </div>
         </div>
-        <div className="play-buttons">
-          <button className="inspire" onClick={() => set((c) => ({ ...c, play: { ...c.play, inspiration: !c.play.inspiration } }))}>{ch.play.inspiration ? "★ Inspired" : "☆ Inspiration"}</button>
-          {sheet.level < 20 && ch.classes.length > 0 && <button onClick={() => window.dispatchEvent(new Event("cf-levelup"))}>Level up</button>}
-          <button onClick={rests.shortRest}>{t("Short rest")}</button>
-          <button className="primary" onClick={rests.longRest}>{t("Long rest")}</button>
+        <div className="hero-mid play-id">
+          <h1>{ch.name || "Unnamed character"}</h1>
+          <p className="hero-sub">
+            {[`Walk ${speedAfterExhaustion(sheet.speed, ch.play.exhaustion ?? 0)} ft`, ...sheet.otherSpeeds.map((x) => `${x.kind} ${x.value} ft`), head.size, head.species, head.alignment !== "-" ? head.alignment : "", head.classLine + (head.subclass !== "-" ? ` (${head.subclass})` : ""), head.background !== "-" ? head.background : "", ...sheet.casting.map((c) => `${ABILITY_SHORT[c.ability as AbilityId] ?? c.name} DC ${c.dc}`)].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}
+          </p>
+          <div className="hero-stats">
+            <Shield value={sheet.ac.value} />
+            <div className="ab-row">{sheet.abilities.map((a) => <AbilityBox key={a.id} id={a.id} a={a} />)}</div>
+            <div className="ab-col">
+              <button className="ab-box init" onClick={() => roll("Initiative", sheet.initiative, { kind: "check", ability: "dexterity" })} title="Roll initiative"><small>Init</small><b>{sign(sheet.initiative)}</b><span className="ab-score">PB {sign(sheet.proficiency)}</span></button>
+              <span className="ab-save static">Saves</span>
+            </div>
+          </div>
         </div>
-        <div className="level-medal" title={`Level ${sheet.level}`}><b>{sheet.level}</b><small>Level</small></div>
-        <div className="xp wide"><div style={{ width: `${xpPct}%` }} /><span>{ch.xp} / {nextXp || "max"} XP</span></div>
+        <div className="hero-right">
+          <div className="hero-icons">
+            <button className={ch.play.inspiration ? "icon-btn on" : "icon-btn"} title={ch.play.inspiration ? "Heroic Inspiration: you have it" : "Heroic Inspiration"} aria-label="Inspiration" aria-pressed={ch.play.inspiration} onClick={() => set((c) => ({ ...c, play: { ...c.play, inspiration: !c.play.inspiration } }))}><HeadIcon name={ch.play.inspiration ? "starOn" : "star"} /></button>
+            {sheet.level < 20 && ch.classes.length > 0 && <button className="icon-btn" title="Level up" aria-label="Level up" onClick={() => window.dispatchEvent(new Event("cf-levelup"))}><HeadIcon name="up" /></button>}
+            <button className="icon-btn" title={t("Short rest")} aria-label={t("Short rest")} onClick={rests.shortRest}><HeadIcon name="meal" /></button>
+            <button className="icon-btn" title={t("Long rest")} aria-label={t("Long rest")} onClick={rests.longRest}><HeadIcon name="tent" /></button>
+          </div>
+          <div className="level-medal" title={`Level ${sheet.level}`}><b>{sheet.level}</b><small>Level</small></div>
+          <div className="xp"><div style={{ width: `${xpPct}%` }} /><span>{ch.xp} / {nextXp || "max"} XP</span></div>
+        </div>
       </header>
 
       {xpToLevel(ch.xp) > sheet.level && sheet.level < 20 && (
@@ -645,17 +744,6 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
         <div className="rollmode-row"><small>d20 rolls</small><RollModeSwitch /></div>
         <Hint id="play-1">Click any modifier to roll it. Click a pip on a feature to spend a use.</Hint>
       </div>
-      <div className="vital-row">
-        <div className="ab-row">{sheet.abilities.map((a) => <AbilityBox key={a.id} id={a.id} a={a} />)}</div>
-        <div className="stat-tiles">
-          <div className="tile"><small>Proficiency</small><b>{sign(sheet.proficiency)}</b></div>
-          <div className="tile"><small>Speed</small><b>{speedAfterExhaustion(sheet.speed, ch.play.exhaustion ?? 0)}<em> ft</em></b>{(ch.play.exhaustion ?? 0) > 0 && <small>exhaustion {ch.play.exhaustion}</small>}{sheet.otherSpeeds.length > 0 && <small>{sheet.otherSpeeds.map((s) => `${s.kind} ${s.value}`).join(", ")}</small>}</div>
-          <button className="tile" onClick={() => roll("Initiative", sheet.initiative, { kind: "check", ability: "dexterity" })}><small>Initiative</small><b>{sign(sheet.initiative)}</b></button>
-          <Shield value={sheet.ac.value} />
-        </div>
-        <Vitals ch={ch} sheet={sheet} set={set} />
-      </div>
-
       {(ch.play.conditions.length > 0 || (ch.play.exhaustion ?? 0) > 0) && (
         <div className="condition-strip" aria-label="Active conditions">
           {ch.play.conditions.map((c) => (
@@ -677,44 +765,39 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
       {ch.play.concentration && (
         <p className="concentration-strip">Concentrating on <b>{ch.play.concentration}</b> <button onClick={() => set((c) => ({ ...c, play: { ...c.play, concentration: undefined } }))}>End</button></p>
       )}
-      <div className="hd-row">
-        <div className="hd-bar" title={`Hit dice: ${sheet.hitDice.map((h) => `${h.count}d${h.die}`).join(" + ")}`}><div style={{ width: `${sheet.level ? (rests.left / sheet.level) * 100 : 0}%` }} /><span>Hit dice {rests.left} / {sheet.level} · {sheet.hitDice.map((h) => `${h.count}d${h.die}`).join(" + ")}</span></div>
-        <button disabled={!rests.left || rests.hp >= sheet.hp} onClick={rests.spendHitDie}>Spend a hit die</button>
-      </div>
-
-      <Favorites r={r} ch={ch} sheet={sheet} set={set} />
       <div className="play-grid">
         <aside className="play-side">
-          <Panel title="Saving throws">
-            {sheet.abilities.map((a) => (
-              <button key={a.id} className="line-btn" onClick={() => roll(`${ABILITY_LABEL[a.id]} save`, a.save, { kind: "save", ability: a.id })}>
-                <i className={a.saveProficient ? "dot on" : "dot"} /><span>{ABILITY_SHORT[a.id]}</span><em>{ABILITY_LABEL[a.id]}</em><b>{sign(a.save)}</b>
-              </button>
-            ))}
-          </Panel>
-          <Panel title="Senses">
-            <div className="line"><span /><span>Passive Perception</span><b>{sheet.passivePerception}</b></div>
-            <div className="line"><span /><span>Passive Investigation</span><b>{sheet.skills.find((s) => s.name === "investigation")?.passive}</b></div>
-            <div className="line"><span /><span>Passive Insight</span><b>{sheet.skills.find((s) => s.name === "insight")?.passive}</b></div>
-            {sheet.vision.length > 0 && <p className="muted small-text">{sheet.vision.join(", ")}</p>}
-          </Panel>
-          <Panel title="Training">
-            {([["Armor", sheet.proficiencies.armor], ["Weapons", sheet.proficiencies.weapons], ["Tools", sheet.proficiencies.tools], ["Languages", sheet.proficiencies.languages]] as [string, string[]][])
-              .filter(([, v]) => v.length)
-              .map(([k, v]) => <p key={k} className="small-text"><b>{k}.</b> {v.map((x) => x.replace(/^(Armor|Weapon|Tool) Proficiency \((.*)\)$/, "$2")).join(", ")}</p>)}
-          </Panel>
-        </aside>
-
-        <aside className="play-skills">
-          <Panel title="Skills">
-            <div className="skill-head"><span /><span>Mod</span><span>Skill</span><span>Bonus</span></div>
-            {sheet.skills.map((s) => (
-              <button key={s.name} className="skill-line" onClick={() => roll(skillLabel(s.name), s.bonus, { kind: "check", ability: s.ability })}>
-                <i className={s.level === "none" ? "dot" : s.level === "expertise" ? "dot on x2" : "dot on"} />
-                <small>{ABILITY_SHORT[s.ability]}</small><span>{skillLabel(s.name)}</span><b>{sign(s.bonus)}</b>
-              </button>
-            ))}
-          </Panel>
+          <div className="side-switch" role="tablist" aria-label="Sidebar">
+            <button role="tab" aria-selected={side === "favorites"} className={side === "favorites" ? "on" : ""} onClick={() => setSide("favorites")}>★ Favorites</button>
+            <button role="tab" aria-selected={side === "skills"} className={side === "skills" ? "on" : ""} onClick={() => setSide("skills")}>Skills</button>
+          </div>
+          {side === "favorites" && <Favorites r={r} ch={ch} sheet={sheet} set={set} />}
+          {side === "skills" && (
+            <>
+              <Panel title="Skills">
+                <div className="skill-head"><span /><span>Mod</span><span>Skill</span><span>Bonus</span><span>Passive</span></div>
+                {sheet.skills.map((s) => (
+                  <button key={s.name} className="skill-line" onClick={() => roll(skillLabel(s.name), s.bonus, { kind: "check", ability: s.ability })}>
+                    <i className={s.level === "none" ? "dot" : s.level === "expertise" ? "dot on x2" : "dot on"} />
+                    <small>{ABILITY_SHORT[s.ability]}</small><span>{skillLabel(s.name)}</span><b>{sign(s.bonus)}</b><em>{s.passive}</em>
+                  </button>
+                ))}
+              </Panel>
+              <Panel title="Senses">
+                <div className="line"><span /><span>Passive Perception</span><b>{sheet.passivePerception}</b></div>
+                <div className="line"><span /><span>Passive Investigation</span><b>{sheet.skills.find((x) => x.name === "investigation")?.passive}</b></div>
+                <div className="line"><span /><span>Passive Insight</span><b>{sheet.skills.find((x) => x.name === "insight")?.passive}</b></div>
+                {sheet.vision.length > 0 && <p className="muted small-text">{sheet.vision.join(", ")}</p>}
+              </Panel>
+              <Panel title="Training">
+                {([["Armor", sheet.proficiencies.armor], ["Weapons", sheet.proficiencies.weapons], ["Tools", sheet.proficiencies.tools], ["Languages", sheet.proficiencies.languages]] as [string, string[]][])
+                  .filter(([, v]) => v.length)
+                  .map(([k, v]) => (
+                    <div key={k} className="train-group"><small>{k}</small><div className="train-tags">{v.map((x) => <span key={x}>{x.replace(/^(Armor|Weapon|Tool) Proficiency \((.*)\)$/, "$2")}</span>)}</div></div>
+                  ))}
+              </Panel>
+            </>
+          )}
         </aside>
 
         <div className="play-main">

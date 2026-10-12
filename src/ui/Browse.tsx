@@ -133,7 +133,11 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
   const chosenSet = useMemo(() => new Set(chosen), [chosen]);
   const prefs = useSettings();
   // The global content filters. Whatever is already picked stays visible.
-  const items = useMemo(() => allItems.filter((e) => chosenSet.has(e.id) || !hiddenBy(books.info(e.source), e.source, { legacy: prefs.showLegacy, playtest: prefs.showPlaytest, unusual: prefs.showUnusual })), [allItems, books, chosenSet, prefs.showLegacy, prefs.showPlaytest, prefs.showUnusual]);
+  const items = useMemo(() => {
+    const kept = allItems.filter((e) => chosenSet.has(e.id) || !hiddenBy(books.info(e.source), e.source, { legacy: prefs.showLegacy, playtest: prefs.showPlaytest, unusual: prefs.showUnusual }));
+    // A choice the rules require is never emptied by the content filters: if they would hide everything, show it all.
+    return kept.length ? kept : allItems;
+  }, [allItems, books, chosenSet, prefs.showLegacy, prefs.showPlaytest, prefs.showUnusual]);
   const hidden = allItems.length - items.length;
 
   const defs = useMemo(() => facetsFor(type), [type]);

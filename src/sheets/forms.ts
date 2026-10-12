@@ -245,7 +245,8 @@ export function fill2014(ws: W[], d: FillData, sink: Sink): void {
   for (const f of fields) (byLevel.get(levelOf(f)) ?? byLevel.set(levelOf(f), []).get(levelOf(f))!).push(f);
   for (const list of byLevel.values()) list.sort((a, b) => b.y - a.y);
   const used = new Map<number, number>();
-  for (const sp of d.spells) {
+  // This page has a "prepared" bubble on every line, so it lists the whole spellbook and fills the bubbles.
+  for (const sp of d.spellbook?.length ? d.spellbook : d.spells) {
     const lv = Number(sp.level) || 0;
     const slotField = byLevel.get(lv)?.[used.get(lv) ?? 0];
     if (!slotField) continue;

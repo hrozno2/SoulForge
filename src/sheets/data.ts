@@ -83,6 +83,8 @@ export interface FillData {
   weapons: { name: string; bonus: string; damage: string; notes: string }[];
   casting?: { ability: string; mod: string; dc: string; attack: string; focus: string; slots: number[]; used: number[] };
   spells: SpellRow[];
+  /** Every known spell, prepared or not, with `prepared` set; for sheets that mark prepared spells. */
+  spellbook?: SpellRow[];
   armorWorn: string;
   weaponsText: string;
   otherGear: string;
@@ -188,28 +190,46 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
   const feat = (types: string[]) => sh.features.filter((f) => types.includes(f.type));
   const line = (f: { name: string; usage?: string; text: string }, max: number) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${sentence(f.text, max)}`;
 
-  // Spells: cantrips first, then by level. Prepare casters list what is prepared plus what is always prepared.
+  // Spells: cantrips first, then by level. Prepare casters list what is prepared plus what is always prepared
+  // (or everything they know when nothing is prepared yet); `spellbook` has every known spell, prepared or not,
+  // for sheets that mark prepared spells with a bubble.
+  const row = (p: { id: string; granted?: boolean }, prepared: boolean): SpellRow | undefined => {
+    const el = r.reg.get(p.id);
+    if (!el) return undefined;
+    const set = (k: string) => el.setters[k]?.value ?? "";
+    const dur = shortDuration(set("duration"));
+    const cantrip = (set("level") || "0") === "0";
+    return {
+      level: set("level") || "0", name: el.name, school: set("school").slice(0, 4), time: shortTime(set("time")), range: shortRange(set("range")),
+      duration: dur.text, concentration: dur.conc || set("isConcentration") === "true", ritual: set("isRitual") === "true",
+      v: set("hasVerbalComponent") === "true", s: set("hasSomaticComponent") === "true", m: set("hasMaterialComponent") === "true",
+      notes: cantrip ? "" : p.granted ? "always prepared" : prepared ? "prepared" : "",
+      prepared: !cantrip && prepared,
+    };
+  };
   const spells: SpellRow[] = [];
+  const spellbook: SpellRow[] = [];
   const seen = new Set<string>();
+  const seenBook = new Set<string>();
   for (const c of sh.casting) {
-    const list = [...c.cantripsKnown, ...(c.prepare ? [...c.granted, ...c.spells.filter((s) => s.prepared)] : [...c.spells, ...c.granted])];
+    const anyPrepared = c.spells.some((s) => s.prepared);
+    const list = [...c.cantripsKnown, ...(c.prepare && anyPrepared ? [...c.granted, ...c.spells.filter((s) => s.prepared)] : [...c.spells, ...c.granted])];
     for (const p of list) {
       if (seen.has(p.id)) continue;
       seen.add(p.id);
-      const el = r.reg.get(p.id);
-      if (!el) continue;
-      const set = (k: string) => el.setters[k]?.value ?? "";
-      const dur = shortDuration(set("duration"));
-      spells.push({
-        level: set("level") || "0", name: el.name, school: set("school").slice(0, 4), time: shortTime(set("time")), range: shortRange(set("range")),
-        duration: dur.text, concentration: dur.conc || set("isConcentration") === "true", ritual: set("isRitual") === "true",
-        v: set("hasVerbalComponent") === "true", s: set("hasSomaticComponent") === "true", m: set("hasMaterialComponent") === "true",
-        notes: set("level") === "0" ? "" : p.granted ? "always prepared" : c.prepare ? "prepared" : "",
-        prepared: set("level") !== "0" && (p.granted || c.prepare),
-      });
+      const x = row(p, !!p.granted || (c.prepare && !!(p as { prepared?: boolean }).prepared) || !c.prepare);
+      if (x) spells.push(x);
+    }
+    for (const p of [...c.cantripsKnown, ...c.granted, ...c.spells]) {
+      if (seenBook.has(p.id)) continue;
+      seenBook.add(p.id);
+      const x = row(p, !!p.granted || !c.prepare || !!(p as { prepared?: boolean }).prepared);
+      if (x) spellbook.push(x);
     }
   }
-  spells.sort((a, b) => Number(a.level) - Number(b.level) || a.name.localeCompare(b.name));
+  const byLevelName = (a: SpellRow, b: SpellRow) => Number(a.level) - Number(b.level) || a.name.localeCompare(b.name);
+  spells.sort(byLevelName);
+  spellbook.sort(byLevelName);
 
   const first = sh.casting[0];
   const slots = Array(9).fill(0) as number[];
@@ -254,7 +274,7 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
     classFeatures: feat(["Class Feature", "Archetype Feature"]).map((f) => line(f, 260)),
     // With nothing equipped, the sheet lists what the character carries rather than an empty table.
     weapons: (sh.attacks.some((a) => a.auto) ? sh.attacks : sh.attacksCarried).map((a) => ({ name: a.name, bonus: signed(a.bonus), damage: `${a.damage} ${a.damageType}`.trim(), notes: [a.properties, a.notes].filter(Boolean).join("; ") })),
-    casting, spells, armorWorn: armor?.el?.name ?? "", weaponsText, otherGear: gear, magicItems: magic,
+    casting, spells, spellbook, armorWorn: armor?.el?.name ?? "", weaponsText, otherGear: gear, magicItems: magic,
     coins: { cp: String(ch.coins.cp), sp: String(ch.coins.sp), ep: String(ch.coins.ep), gp: String(ch.coins.gp), pp: String(ch.coins.pp) },
     carryCapacity: String(sh.weight.capacity), pushDrag: String(sh.weight.capacity * 2),
     backstory: [ch.info.backstory, ch.info.allies && `Allies: ${ch.info.allies}`].filter(Boolean).join("\n\n"),

@@ -145,7 +145,7 @@ export function sortGroups(groups: Group[], mode: SortMode): Group[] {
 }
 
 /** Campaign setting and adventure books, whose options suit one world. */
-const SETTING_BOOKS = /eberron|ravnica|theros|strixhaven|spelljammer|wildemount|explorer.s guide to|planescape|dragonlance|ravenloft|van richten|forgotten realms|sword coast|avernus|baldur|icewind|candlekeep|acquisitions inc|mythic odysseys|plane shift|critical role|radiant citadel|netherdeep|witchlight|journeys through|golden vault|infinite staircase|dragonlance|dark sun|greyhawk|midnight|kobold press|tal.dorei|lost laboratory|call of the/i;
+const SETTING_BOOKS = /eberron|ravnica|theros|strixhaven|spelljammer|wildemount|explorer.s guide to|planescape|dragonlance|ravenloft|van richten|forgotten realms|sword coast|avernus|baldur|icewind|candlekeep|acquisitions inc|mythic odysseys|plane shift|critical role|radiant citadel|netherdeep|witchlight|journeys through|golden vault|infinite staircase|dragonlance|dark sun|greyhawk|midnight|kobold press|tal.dorei|lost laboratory|call of the|astral adventurer|boo.s astral|adventurers league|tomb of annihilation|storm king|princes of the apocalypse|out of the abyss|waterdeep|rime of the|ghosts of saltmarsh|elemental evil|tyranny of dragons|adventure with muk/i;
 
 export type ContentFilters = { legacy: boolean; playtest: boolean; unusual: boolean };
 

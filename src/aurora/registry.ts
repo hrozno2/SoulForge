@@ -1,7 +1,7 @@
 import type { AAppend, AElement, ParsedFile } from "./types";
 
-/** A `supports` filter: `A,B` is AND, `A||B` is OR, `A|B` is any of these ids, parentheses group. */
-type SNode = { t: "and" | "or"; a: SNode[] } | { t: "any"; words: string[] };
+/** A `supports` filter: `A,B` is AND, `A||B` is OR, `A|B` is any of these ids, `!A` is NOT, parentheses group. */
+type SNode = { t: "and" | "or"; a: SNode[] } | { t: "any"; words: string[] } | { t: "not"; n: SNode };
 
 function tokenizeSupports(src: string): string[] {
   const out: string[] = [];
@@ -55,6 +55,16 @@ function parseSupports(src: string): SNode | null {
   };
   const parseAtom = (): SNode => {
     const t = toks[pos++];
+    // "!Dexterity": everything except what carries that tag (Mark of Detection's free ability increase).
+    if (t && t.startsWith("!")) {
+      if (t === "!" && toks[pos] === "(") {
+        pos++;
+        const n = parseOr();
+        if (toks[pos] === ")") pos++;
+        return { t: "not", n };
+      }
+      return { t: "not", n: { t: "any", words: t.slice(1).split("|").map((w) => w.trim().toLowerCase()).filter(Boolean) } };
+    }
     if (t === "(") {
       const n = parseOr();
       if (toks[pos] === ")") pos++;
@@ -80,6 +90,7 @@ function offered(el: AElement): Set<string> {
 
 function matchNode(n: SNode, have: Set<string>): boolean {
   if (n.t === "any") return n.words.some((w) => have.has(w));
+  if (n.t === "not") return !matchNode(n.n, have);
   if (n.t === "and") return n.a.every((x) => matchNode(x, have));
   return n.a.some((x) => matchNode(x, have));
 }

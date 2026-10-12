@@ -53,6 +53,8 @@ export function App() {
   const [tab, setTab] = useState<Tab>("start");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(tutorialWanted);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [tutorialMin, setTutorialMin] = useState(false);
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   useEffect(() => {
     const on = () => setLevelUpOpen(true);
@@ -147,11 +149,11 @@ export function App() {
         <AppMenu>
           <label className="menu-row">Theme <ThemePicker /></label>
           <button className="menu-item" onClick={() => setSettingsOpen(true)}>Settings...</button>
-          <button className="menu-item" onClick={() => setTutorialOpen(true)}>Show the tutorial</button>
+          <button className="menu-item" onClick={() => { setTutorialStep(0); setTutorialMin(false); setTutorialOpen(true); }}>Show the tutorial</button>
           <button className="menu-item" onClick={() => updater.check(true)}>Check for updates</button>
         </AppMenu>
       </header>
-      {tutorialOpen && <Tutorial onClose={() => setTutorialOpen(false)} onGo={(t) => setTab(t as Tab)} />}
+      {tutorialOpen && <Tutorial step={tutorialStep} setStep={setTutorialStep} minimized={tutorialMin} setMinimized={setTutorialMin} onClose={() => { setTutorialOpen(false); setTutorialMin(false); }} onGo={(t) => setTab(t as Tab)} content={content} onImportForeign={importForeign} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       {levelUpOpen && <Suspense fallback={null}><LevelUp r={r} ch={character} set={set} onDetail={setDetail} onClose={() => setLevelUpOpen(false)} /></Suspense>}
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} dismiss={updater.dismiss} />

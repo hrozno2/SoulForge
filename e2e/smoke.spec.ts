@@ -274,17 +274,24 @@ test.describe("Soul Forge smoke tests", () => {
       const dialog = page.getByRole("dialog", { name: "Tutorial" });
       await expect(dialog).toBeVisible();
       await expect(dialog).toContainText("Welcome to Soul Forge");
-      await dialog.getByRole("button", { name: "Next" }).click();
+      await dialog.getByRole("button", { name: "Start" }).click();
       await expect(dialog).toContainText("Add rules content from Aurora");
+      await expect(dialog.getByRole("button", { name: "Download rules content" })).toBeVisible();
       // Skipping closes it for now only.
       await dialog.getByRole("button", { name: "Skip for now" }).click();
       await expect(dialog).toHaveCount(0);
       await page.reload();
       await expect(page.getByRole("dialog", { name: "Tutorial" })).toBeVisible();
-      // A step can take you where it is talking about.
+      // A step can take you where it is talking about, and the tutorial waits for you instead of vanishing.
+      await page.getByRole("button", { name: "Start" }).click();
       await page.getByRole("button", { name: "Next" }).click();
-      await page.getByRole("button", { name: "Open the Content tab" }).click();
+      await page.getByRole("button", { name: "Open the importer" }).click();
       await expect(page.getByRole("dialog", { name: "Tutorial" })).toHaveCount(0);
+      await expect(page.getByText("Tutorial, step 3 of 5")).toBeVisible();
+      await page.getByRole("button", { name: "Resume" }).click();
+      await expect(page.getByRole("dialog", { name: "Tutorial" })).toContainText("Import from 5e.tools");
+      await page.getByRole("button", { name: "Minimize the tutorial" }).click();
+      await page.getByRole("button", { name: "Close the tutorial" }).click();
       await page.reload();
       await page.getByRole("dialog", { name: "Tutorial" }).getByRole("button", { name: "Never show this again" }).click();
       await page.reload();

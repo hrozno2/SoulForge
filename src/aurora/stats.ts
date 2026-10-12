@@ -99,7 +99,8 @@ export class StatBook {
     if ((ABILITY_IDS as readonly string[]).includes(name)) {
       const id = name as AbilityId;
       const raw = inp.abilityBase[id] + this.aggregate(name);
-      const max = 20 + this.aggregate(`${name}:max`);
+      // Increases stop at 20 (or a raised maximum); a score that already starts higher stays as it is.
+      const max = Math.max(20 + this.aggregate(`${name}:max`), inp.abilityBase[id]);
       let score = Math.min(raw, max);
       if (this.contribs.has(`${name}:score:set`)) score = Math.max(score, this.aggregate(`${name}:score:set`));
       return score;

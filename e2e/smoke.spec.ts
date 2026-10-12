@@ -324,7 +324,7 @@ test.describe("Soul Forge smoke tests", () => {
     await tab(page, "Export");
     await page.getByRole("button", { name: "Export PDF..." }).click();
     const choose = async () => {
-      const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.getByRole("button", { name: "Add sheet PDF..." }).click()]);
+      const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.getByRole("button", { name: "Add PDF..." }).click()]);
       await chooser.setFiles(file);
     };
     await choose();
@@ -337,6 +337,14 @@ test.describe("Soul Forge smoke tests", () => {
     await choose();
     await expect(page.getByText(/already added|replaced/i).first()).toBeVisible();
     expect(await page.locator("option", { hasText: /Classic 2014/ }).count()).toBe(1);
+    // The manager shows every sheet with a picture of its first page and can remove one.
+    await page.getByRole("button", { name: /Manage sheets/ }).click();
+    const manager = page.getByRole("dialog", { name: "Manage sheets" });
+    await expect(manager.locator(".sheet-thumb img")).toBeVisible({ timeout: 30_000 });
+    await expect(manager.getByText(/2 pages/)).toBeVisible();
+    await manager.getByRole("button", { name: "Remove..." }).click();
+    await manager.getByRole("button", { name: "Remove", exact: true }).click();
+    await expect(manager.getByText("No sheets yet.")).toBeVisible();
   });
 
   test("the homebrew builder makes a spell that shows up in the content browser", async ({ page }) => {

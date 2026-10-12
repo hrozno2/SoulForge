@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PDFDocument } from "pdf-lib";
 import type { Resolved } from "../aurora/engine";
 import type { SheetData } from "../aurora/sheet";
-import { deleteTemplate, listTemplates, templateBytes, type TemplateRecord } from "../aurora/storage";
+import { listTemplates, templateBytes, type TemplateRecord } from "../aurora/storage";
 import { buildPdf, cardCounts } from "../pdf/exportPdf";
 import { fillAuto } from "../sheets/forms";
 import { fillOfficialSheet } from "../sheets/official";
@@ -12,6 +12,7 @@ import { translateCompanion, translateFill } from "../sheets/translateFill";
 import { DLDM_PAGES, fillDldm, type DldmPage } from "../sheets/dldm";
 import { fillCompanion } from "../sheets/companion";
 import { SheetPreview } from "./SheetPreview";
+import { SheetManager } from "./SheetManager";
 import { OFFICIAL_DOWNLOADS, SHEET_LINKS, SHEET_SEARCH } from "../sheets/links";
 import { addSheetFiles, downloadOfficialSheet, mergeDuplicateSheets } from "../sheets/templates";
 import { nextFrame, openExternal, pickFiles, saveFile } from "../store";
@@ -30,6 +31,7 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmPlain, setConfirmPlain] = useState(false);
+  const [manage, setManage] = useState(false);
   const [previewBytes, setPreviewBytes] = useState<Uint8Array | null>(null);
   const [previewNote, setPreviewNote] = useState("");
   /** A sheet with no form fields: the text is drawn onto the page, so it cannot be edited afterwards. */
@@ -169,23 +171,19 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
 
   return (
     <div className="subcard">
-      <h3>Your own sheet PDFs</h3>
-      <p className="muted"><b>Best results: the official Wizards of the Coast sheets</b>, 2024 and the classic 2014 set. Every field on them is filled, and the preview below shows your character on the sheet before you save. Fillable copies stay editable; print copies (no form fields) have the text written onto the page. Other fillable sheets are matched field by field, and anything that cannot be placed is listed. The DLDM sheets are supported too. Soul Forge keeps the file on this computer only.</p>
-      <div className="row">
-        <button onClick={choose}>Add sheet PDF...</button>
-        <span className="muted">Need one?</span>
-        {OFFICIAL_DOWNLOADS.map((o) => <button key={o.id} title={`${o.note} By ${o.by}. Downloaded from their own address and kept on this computer.`} onClick={() => getOfficial(o)}>Get: {o.label}</button>)}
-        {SHEET_LINKS.map((l) => <a key={l.url} href={l.url} onClick={(e) => { e.preventDefault(); openExternal(l.url); }}>{l.label}</a>)}
-        <small className="muted">A link not working? <a href={SHEET_SEARCH} onClick={(e) => { e.preventDefault(); openExternal(SHEET_SEARCH); }}>Search for the sheet</a>; any copy of the same sheet works.</small>
-        <input ref={fileRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = ""; }} />
-      </div>
+      <h3>Fill a character sheet</h3>
+      {templates.length === 0 && <p className="muted">No sheet yet. Get one below or add your own PDF; your character is written onto it.</p>}
+      <input ref={fileRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = ""; }} />
       {templates.length > 0 && (
         <>
-          <div className="row">
-            <select value={current?.id ?? ""} onChange={(e) => setPick(e.target.value)}>
-              {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-            {current && <button onClick={async () => { await deleteTemplate(current.id); setPick(""); refresh(); }}>Remove</button>}
+          <div className="row sheet-pick">
+            <label className="field-inline">Sheet
+              <select aria-label="Sheet" value={current?.id ?? ""} onChange={(e) => setPick(e.target.value)}>
+                {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </label>
+            <button onClick={() => setManage(true)} title="See all your sheets, rename or remove them">Manage sheets ({templates.length})</button>
+            <button className="ghost" onClick={choose}>Add PDF...</button>
           </div>
           {current?.kind === "dldm5e24" && (
             <div>
@@ -233,6 +231,27 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
         </>
       )}
       {msg && <p className="notice">{msg}</p>}
+      {manage && <SheetManager templates={templates} current={current?.id} onUse={setPick} onChanged={refresh} onClose={() => setManage(false)} />}
+      <details className="sheet-get" open={templates.length === 0}>
+        <summary>Get more sheets</summary>
+        <ul className="sheet-downloads">
+          {OFFICIAL_DOWNLOADS.map((o) => (
+            <li key={o.id}>
+              <div><b>{o.label}</b><small className="muted">{o.by}. {o.note}</small></div>
+              <button onClick={() => getOfficial(o)} title="Downloaded from the maker's own address and kept on this computer">Get</button>
+            </li>
+          ))}
+          <li>
+            <div><b>Your own PDF</b><small className="muted">Any fillable sheet works: Soul Forge matches its fields by name and lists anything it cannot place.</small></div>
+            <button onClick={choose}>Add PDF...</button>
+          </li>
+        </ul>
+        <p className="muted small-text">
+          Fillable sheets stay editable. Print copies have the text written onto the page. Files stay on this computer.{" "}
+          {SHEET_LINKS.filter((l) => /drive\.google/.test(l.url)).map((l) => <a key={l.url} href={l.url} onClick={(e) => { e.preventDefault(); openExternal(l.url); }}>DLtheDM's folder</a>)}
+          {" · "}<a href={SHEET_SEARCH} onClick={(e) => { e.preventDefault(); openExternal(SHEET_SEARCH); }}>Search for a sheet</a>
+        </p>
+      </details>
     </div>
   );
 }

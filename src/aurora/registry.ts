@@ -118,6 +118,7 @@ export class ARegistry {
       target.rules = [...target.rules, ...ap.rules];
       if (ap.supports.length) target.supports = [...target.supports, ...ap.supports];
     }
+    for (const el of improvementOptions([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
     for (const el of this.byId.values()) {
       const key = el.type.toLowerCase();
       (this.byType.get(key) ?? this.byType.set(key, []).get(key)!).push(el);
@@ -167,4 +168,42 @@ export class ARegistry {
     }
     return out;
   }
+}
+
+const ABILITIES = ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"];
+
+/**
+ * The original Aurora app builds the choices behind "Improvement Option" selects itself (the 2014 classes' Ability
+ * Score Improvement levels); the content only declares the select. This makes them: +2 to one score, +1 to two
+ * scores, or a feat. The +1 and +2 elements come from the content's internal file when it has them.
+ */
+function improvementOptions(all: AElement[]): AElement[] {
+  const out: AElement[] = [];
+  const have = new Set(all.map((e) => e.id));
+  const tagged = (tag: string) => all.some((e) => e.supports.some((x) => x.trim().toLowerCase() === tag.toLowerCase()));
+  for (const [n, tag] of [[1, "Custom Ability Score Increase 1"], [2, "Custom Ability Score Increase 2"]] as const) {
+    if (tagged(tag)) continue;
+    for (const a of ABILITIES) {
+      const id = `ID_INTERNAL_ASI_${a.toUpperCase()}_PLUS_${n}`;
+      if (!have.has(id)) out.push({ id, name: a, type: "Ability Score Improvement", source: "Internal", supports: [tag], description: `<p>Your ${a} increases by ${n}.</p>`, compendiumHidden: true, setters: {}, rules: [{ kind: "stat", name: a.toLowerCase(), value: String(n), alt: "Ability Score Improvement" } as never] });
+    }
+  }
+  const seen = new Set<string>();
+  for (const el of all) {
+    for (const r of el.rules) {
+      if (r.kind !== "select" || !/^\s*Improvement Option\s*,/i.test(r.supports) || seen.has(r.supports)) continue;
+      seen.add(r.supports);
+      const parts = r.supports.split(",").map((x) => x.trim()).filter(Boolean);
+      // Content that ships its own options for this select keeps them.
+      if (all.some((e) => e.type === r.type && parts.every((p) => e.supports.some((x) => x.trim().toLowerCase() === p.toLowerCase())))) continue;
+      const key = parts.join("_").toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+      const make = (suffix: string, name: string, text: string, rules: AElement["rules"]): AElement => ({ id: `ID_INTERNAL_IMPROVEMENT_${key}_${suffix}`, name, type: r.type, source: "Internal", supports: parts, description: `<p>${text}</p>`, compendiumHidden: true, setters: {}, rules });
+      out.push(
+        make("PLUS2", "Ability Score Improvement (+2)", "Increase one ability score by 2. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +2", supports: "Custom Ability Score Increase 2", number: 1 }]),
+        make("PLUS1", "Ability Score Improvement (+1, +1)", "Increase two different ability scores by 1. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +1", supports: "Custom Ability Score Increase 1", number: 2 }]),
+        make("FEAT", "Feat", "Take a feat instead of increasing your ability scores.", [{ kind: "select", type: "Feat", name: "Feat", supports: "", number: 1 }]),
+      );
+    }
+  }
+  return out;
 }

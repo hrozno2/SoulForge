@@ -3,7 +3,7 @@
  * Both are best effort and name-based. Items come across with their descriptions but without links to any compendium,
  * so the target tool shows them as plain items and features.
  */
-import { ABILITY_IDS, type AbilityId } from "./character";
+import { ABILITY_IDS, itemLabel, type AbilityId } from "./character";
 import type { Resolved } from "./engine";
 import { buildSheet } from "./sheet";
 
@@ -39,7 +39,7 @@ export function exportFoundry(r: Resolved): Record<string, unknown> {
   }
   for (const it of c.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;
-    const name = el?.name ?? it.custom?.name ?? "Item";
+    const name = itemLabel(it, el?.name) || "Item";
     const type = el?.type === "Weapon" ? "weapon" : el?.type === "Armor" ? "equipment" : "loot";
     add(type, name, { quantity: it.qty, equipped: it.equipped, attunement: it.attuned ? 2 : 0, description: { value: el?.description ?? html(it.custom?.description ?? "") } });
   }
@@ -96,7 +96,7 @@ export function exportRoll20(r: Resolved): Record<string, unknown> {
   };
   for (const it of c.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;
-    row("inventory", { itemname: el?.name ?? it.custom?.name ?? "Item", itemcount: it.qty, equipped: it.equipped ? 1 : 0 });
+    row("inventory", { itemname: itemLabel(it, el?.name) || "Item", itemcount: it.qty, equipped: it.equipped ? 1 : 0 });
   }
   const seen = new Set<string>();
   for (const line of sheet.casting) for (const p of [...line.cantripsKnown, ...line.spells, ...line.granted]) {

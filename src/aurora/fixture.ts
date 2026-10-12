@@ -24,16 +24,18 @@ function walkDir(dir: string, out: string[]): string[] {
 export function loadRegistries(dirs: string[]): ARegistry {
   const reg = new ARegistry();
   const files = dirs.flatMap((d) => walkDir(d, [])).sort((a, b) => Number(/internal|ALE/.test(b)) - Number(/internal|ALE/.test(a)));
-  for (const f of files) reg.addFile(parseElementsXml(readFileSync(f, "utf8"), nodeXml, f));
+  for (const f of files) {
+    // Some content files start with a byte order mark, and a few are not well formed; skip those like the app does.
+    try {
+      reg.addFile(parseElementsXml(readFileSync(f, "utf8").replace(/^\uFEFF/, ""), nodeXml, f));
+    } catch {
+      /* not a content file */
+    }
+  }
   reg.build();
   return reg;
 }
 
 export function loadRegistry(dir: string): ARegistry {
-  const reg = new ARegistry();
-  // Internal files first so content can override them.
-  const files = walkDir(dir, []).sort((a, b) => Number(/internal|ALE/.test(b)) - Number(/internal|ALE/.test(a)));
-  for (const f of files) reg.addFile(parseElementsXml(readFileSync(f, "utf8"), nodeXml, f));
-  reg.build();
-  return reg;
+  return loadRegistries([dir]);
 }

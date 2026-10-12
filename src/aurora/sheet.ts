@@ -1,6 +1,6 @@
 import type { AElement } from "./types";
 import { FULL_CASTER_SLOTS, itemWeight, multiclassCasterLevel, sharedSlotLevel, type ActiveElement, type Resolved, type SpellPick } from "./engine";
-import { ABILITY_IDS, SKILL_ABILITY, type AbilityId } from "./character";
+import { ABILITY_IDS, SKILL_ABILITY, itemLabel, type AbilityId } from "./character";
 
 const lc = (s: string) => s.toLowerCase();
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
@@ -247,10 +247,17 @@ function buildAc(r: Resolved): { value: number; parts: string[] } {
     value = base;
     parts.push(alt > 10 + dex ? `Alternate calculation ${alt}` : `10 ${signed(dex)} Dex`);
   }
+  // +1, +2 and +3 armor and shields from the inventory.
+  let enchant = 0;
+  for (const it of r.character.inventory) {
+    const el = it.equipped && it.magic && it.id ? r.reg.get(it.id) : undefined;
+    if (el?.type === "Armor") enchant += it.magic ?? 0;
+  }
   const shield = s.get("ac:shield");
   const misc = s.get("ac:misc") + s.get("ac");
-  value += shield + misc;
+  value += shield + misc + enchant;
   if (shield) parts.push(`Shield ${signed(shield)}`);
+  if (enchant) parts.push(`Magic armor ${signed(enchant)}`);
   if (misc) parts.push(`Other ${signed(misc)}`);
   return { value, parts };
 }
@@ -270,8 +277,8 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     const finesse = tags.some((t) => t.includes("finesse"));
     const ability: AbilityId = ranged ? "dexterity" : finesse && mods("dexterity") > mods("strength") ? "dexterity" : "strength";
     const proficient = (el.setters.proficiency?.value ?? "").split(",").some((id) => r.ids.has(id.trim()));
-    const magicAtk = Number(el.setters.attackBonus?.value) || 0;
-    const magicDmg = Number(el.setters.damageBonus?.value) || 0;
+    const magicAtk = (Number(el.setters.attackBonus?.value) || 0) + (it.magic ?? 0);
+    const magicDmg = (Number(el.setters.damageBonus?.value) || 0) + (it.magic ?? 0);
     const kind = ranged ? "ranged" : "melee";
     // Fighting styles and similar features add to every attack of a kind.
     const atkExtra = s.get(`${kind}:attack`) + s.get("attack") + magicAtk;
@@ -286,7 +293,7 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
       id: it.uid,
       elId: el.id,
       auto: true,
-      name: edit?.name?.trim() || el.name,
+      name: edit?.name?.trim() || itemLabel(it, el.name),
       bonus: mods(ability) + (proficient ? prof : 0) + atkExtra + (edit?.bonusAdjust ?? 0),
       damage: edit?.damage?.trim() || (dmg ? `${dmg.value}${mods(ability) + dmgExtra ? signed(mods(ability) + dmgExtra) : ""}` : ""),
       damageType: edit?.damageType ?? dmg?.attrs.type ?? "",

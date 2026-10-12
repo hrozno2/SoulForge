@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, headerInfo, type CastingLine, type FeatureLine, type SheetData } from "../aurora/sheet";
-import { ABILITY_LABEL, ABILITY_SHORT, XP_TABLE, uid, xpToLevel, type AbilityId, type Character, type Resource } from "../aurora/character";
+import { ABILITY_LABEL, ABILITY_SHORT, XP_TABLE, itemLabel, uid, xpToLevel, type AbilityId, type Character, type Resource } from "../aurora/character";
 import type { AElement } from "../aurora/types";
 import { Html } from "./Html";
 import { requestRoll, RollModeSwitch, type RollOptions } from "./Dice";
@@ -226,7 +226,7 @@ const AMMO_WORDS = /arrow|bolt|bullet|needle|dart|pellet|stone|shot|quiver/i;
 /** A weapon with the ammunition property: choose which stack it draws from. Each attack uses one. */
 function Ammo({ a, r, ch, set }: { a: SheetData["attacks"][number]; r: Resolved; ch: Character; set: SetCharacter }) {
   if (!a.auto || !a.id || !/ammunition/i.test(a.properties)) return null;
-  const name = (i: Character["inventory"][number]) => (i.id ? r.reg.get(i.id)?.name : undefined) ?? i.custom?.name ?? "";
+  const name = (i: Character["inventory"][number]) => itemLabel(i, i.id ? r.reg.get(i.id)?.name : undefined);
   const options = ch.inventory.filter((i) => AMMO_WORDS.test(name(i)));
   const pick = ch.attackEdits?.[a.id]?.ammoUid;
   const stack = ch.inventory.find((i) => i.uid === pick);
@@ -441,7 +441,7 @@ function Inventory({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: S
     return (
       <div key={i.uid} className="inv-row" {...favDrag("item", i.uid)}>
         <FavStar ch={ch} set={set} kind="item" refId={i.uid} />
-        <label className="check"><input type="checkbox" checked={i.equipped} onChange={() => toggle(i.uid)} /> <b>{i.qty > 1 ? `${i.qty} × ` : ""}{el?.name ?? i.custom?.name ?? i.id}</b></label>
+        <label className="check"><input type="checkbox" checked={i.equipped} onChange={() => toggle(i.uid)} /> <b>{i.qty > 1 ? `${i.qty} × ` : ""}{itemLabel(i, el?.name)}</b></label>
         <small className="muted">{el?.type}{i.attuned ? " · attuned" : ""}</small>
         {el?.description && <RollChips name={el.name} html={el.description} ctx={dcContext(sheet)} attackBonus={sheet.casting[0]?.attack} />}
       </div>
@@ -562,7 +562,7 @@ function Favorites({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: S
       const el = it?.id ? r.reg.get(it.id) : undefined;
       body = it ? (
         <div className="fav-weapon">
-          <b>{el?.name ?? it.custom?.name ?? it.id}</b>
+          <b>{itemLabel(it, el?.name)}</b>
           <span className="stepper">
             <button aria-label="One fewer" onClick={() => set((c) => ({ ...c, inventory: c.inventory.map((x) => (x.uid === it.uid ? { ...x, qty: Math.max(0, x.qty - 1) } : x)) }))}>−</button>
             <span>{it.qty}</span>

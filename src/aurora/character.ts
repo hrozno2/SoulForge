@@ -57,6 +57,10 @@ export interface InvItem {
   twoHanded?: boolean;
   /** Uid of the container (storage) holding it. */
   container?: string;
+  /** The item's own name when it differs from the base item, for example "Requital" for a +2 longsword. */
+  label?: string;
+  /** A +1, +2 or +3 item: added to attack and damage for weapons, to armor class for armor and shields. */
+  magic?: number;
   /** Free-form fields for custom items and per-item notes. */
   custom?: { name: string; type?: string; weight?: number; cost?: string; description?: string; ac?: number; damage?: string };
   notes?: string;
@@ -307,4 +311,10 @@ export function normalizeCharacter(raw: Partial<Character>): Character {
     selections: raw.selections ?? {},
     version: 2,
   };
+}
+
+/** The name to show for an inventory item: its own label, the element's name, or the custom name. */
+export function itemLabel(it: InvItem, name?: string): string {
+  const base = it.label?.trim() || name || it.custom?.name || it.id;
+  return it.magic && !/[+]\d/.test(base) ? `${base} +${it.magic}` : base;
 }

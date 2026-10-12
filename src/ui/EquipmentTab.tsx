@@ -4,7 +4,7 @@ import { HANDS, handsUsed, setTwoHanded, toggleEquip } from "../aurora/hands";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
-import { uid, type Character, type InvItem } from "../aurora/character";
+import { itemLabel, uid, type Character, type InvItem } from "../aurora/character";
 import type { SetCharacter } from "./Slots";
 import { StartingEquipment } from "./StartingEquipment";
 
@@ -103,7 +103,7 @@ export function EquipmentTab({ r, ch, set, onDetail }: { r: Resolved; ch: Charac
           <tbody>
             {ch.inventory.map((it) => {
               const el = it.id ? r.reg.get(it.id) : undefined;
-              const name = el?.name ?? it.custom?.name ?? it.id;
+              const name = itemLabel(it, el?.name);
               const weight = (Number(el?.setters.weight?.attrs.lb) || it.custom?.weight || 0) * it.qty;
               return (
                 <tr key={it.uid} onMouseEnter={() => el && onDetail(el)}>

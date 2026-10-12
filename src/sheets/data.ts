@@ -1,7 +1,7 @@
 import { companionHtml } from "../aurora/companion";
 import type { Resolved } from "../aurora/engine";
 import { headerInfo, type SheetData } from "../aurora/sheet";
-import { ABILITY_IDS, ABILITY_LABEL, SKILL_ABILITY, type AbilityId } from "../aurora/character";
+import { ABILITY_IDS, ABILITY_LABEL, SKILL_ABILITY, itemLabel, type AbilityId, type InvItem } from "../aurora/character";
 
 export interface SpellRow {
   level: string;
@@ -226,7 +226,7 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
     : undefined;
 
   const inv = ch.inventory.map((i) => ({ i, el: i.id ? r.reg.get(i.id) : undefined }));
-  const nm = (x: { i: { qty: number; custom?: { name: string } }; el?: { name: string } }) => `${x.i.qty > 1 ? `${x.i.qty} ` : ""}${x.el?.name ?? x.i.custom?.name ?? "?"}`;
+  const nm = (x: { i: InvItem; el?: { name: string } }) => `${x.i.qty > 1 ? `${x.i.qty} ` : ""}${itemLabel(x.i, x.el?.name) || "?"}`;
   const armor = inv.find((x) => x.i.equipped && x.el?.type === "Armor" && !/shield/i.test(x.el.name));
   const weaponsText = inv.filter((x) => x.el?.type === "Weapon").map(nm).join("\n");
   const gear = inv.filter((x) => !(x.el?.type === "Weapon") && !(x.el?.type === "Armor" && x.i.equipped)).filter((x) => !(x.el && /magic/i.test(x.el.type) && x.i.equipped)).map(nm).join("\n");

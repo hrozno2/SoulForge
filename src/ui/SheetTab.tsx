@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, headerInfo, type SheetData } from "../aurora/sheet";
-import { ABILITY_LABEL, ABILITY_SHORT, type Character } from "../aurora/character";
+import { ABILITY_LABEL, ABILITY_SHORT, itemLabel, type Character } from "../aurora/character";
 import { downloadText, saveFile } from "../store";
 import { exportFoundry, exportRoll20 } from "../aurora/exportForeign";
 import { DEFAULT_PDF_OPTIONS, buildPdf, cardCounts, type PdfOptions } from "../pdf/exportPdf";
@@ -240,7 +240,7 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
             <h3>Equipment</h3>
             {ch.inventory.map((i) => {
               const el = i.id ? r.reg.get(i.id) : undefined;
-              return <p key={i.uid}>{i.qty > 1 ? `${i.qty} × ` : ""}{el?.name ?? i.custom?.name ?? i.id}{i.equipped ? " (equipped)" : ""}{i.attuned ? " (attuned)" : ""}</p>;
+              return <p key={i.uid}>{i.qty > 1 ? `${i.qty} × ` : ""}{itemLabel(i, el?.name)}{i.equipped ? " (equipped)" : ""}{i.attuned ? " (attuned)" : ""}</p>;
             })}
             <p className="muted">{sheet.weight.carried} / {sheet.weight.capacity} lb · attuned {attuned}/{sheet.attunement.max}</p>
             <p><b>Coins.</b> {(["pp", "gp", "ep", "sp", "cp"] as const).map((k) => `${ch.coins[k]} ${k.toUpperCase()}`).join(", ")}</p>

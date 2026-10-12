@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 export const THEMES: Record<string, { label: string; base: "dark" | "light"; note: string }> = {
   obsidian: { label: "Obsidian", base: "dark", note: "Black and red, like D&D Beyond's dark mode" },
   leather: { label: "Leather", base: "dark", note: "Dark brown with gold" },
+  slate: { label: "Slate and amber", base: "dark", note: "Cool grey with amber, after Aurora Builder" },
   tools: { label: "Tools blue", base: "dark", note: "Slate blue, in the spirit of 5e.tools" },
   daylight: { label: "Daylight", base: "light", note: "Clean light mode" },
   parchment: { label: "Printed book", base: "light", note: "Cream paper and crimson, like the printed books" },

@@ -906,3 +906,42 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .tutorial-sheets { gap: 8px; flex-wrap: wrap; }
 .tutorial-summary { margin-top: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel2); }
 .tutorial-summary ul { list-style: none; padding-left: 0; margin: 4px 0 0; }
+
+/* ================= Slate and amber, after Aurora Builder ================= */
+:root[data-skin="slate"] {
+  --bg: #14181c; --bg2: #191e23; --panel: #20272e; --panel2: #29313a; --line: #37424d;
+  --gold: #d9a441; --gold2: #f0c46a; --text: #dce1e6; --muted: #8c98a4;
+  --accent: #d9a441; --accent-ink: #1a1408; --crimson: #d9a441; --gilt: #46525e; --warn: #e8946a; --ok: #6cc08b;
+  --display: "Roboto Condensed", system-ui, sans-serif; --book: "Roboto Condensed", system-ui, sans-serif;
+}
+:root[data-skin="slate"] body { background-image: none; }
+:root[data-skin="slate"] .topbar { background: #0f1317; border-bottom: 1px solid var(--line); }
+:root[data-skin="slate"] h2 { color: var(--text); }
+:root[data-skin="slate"] h3 { color: var(--gold2); }
+:root[data-skin="slate"] .tab.active { border-bottom-color: var(--gold); background: none; color: #fff; }
+:root[data-skin="slate"] button.primary { color: var(--accent-ink); }
+:root[data-skin="slate"] .slot-head { background: var(--panel2); }
+
+/* ================= top bar: compendium search and character badge ================= */
+.csearch { position: relative; margin-left: auto; width: min(260px, 22vw); min-width: 150px; }
+.csearch input { width: 100%; box-sizing: border-box; padding: 6px 10px; font-size: 13px; background: #0b0e11; border: 1px solid var(--line); border-radius: 4px; color: var(--text); }
+.csearch input::placeholder { color: var(--muted); }
+.csearch-list { position: absolute; z-index: 40; right: 0; left: 0; top: calc(100% + 4px); margin: 0; padding: 4px; list-style: none; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: var(--shadow, 0 8px 24px #000a); max-height: 60vh; overflow: auto; min-width: 320px; }
+.csearch-list li { padding: 4px 8px; }
+.csearch-list button { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; width: 100%; text-align: left; background: none; border: 0; padding: 5px 6px; border-radius: 4px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.csearch-list button b { font: 600 14px var(--display); }
+.csearch-list button small:nth-of-type(2) { grid-column: 1 / -1; }
+.csearch-list button.on, .csearch-list button:hover { background: color-mix(in srgb, var(--gold) 18%, transparent); }
+.who-badge { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 4px 6px; border-radius: 4px; text-align: right; cursor: pointer; letter-spacing: 0; text-transform: none; }
+.who-badge:hover { background: #ffffff10; }
+.who-badge img, .who-badge .ph { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid var(--gold); display: grid; place-items: center; font: 700 15px var(--display); color: var(--gold2); background: #0006; flex: none; }
+.who-text { display: flex; flex-direction: column; line-height: 1.15; }
+.who-text b { font: 700 12px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--gold2); max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who-text small { font: 400 11px var(--body); color: #b9ad94; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar .who { display: none; }
+@media (max-width: 1100px) { .who-text small { display: none; } .csearch { width: 150px; } }
+
+/* a strip of actions above the build screens */
+.actionbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin: -4px 0 10px; padding: 4px 0 8px; border-bottom: 1px solid var(--line); }
+.actionbar button { padding: 3px 12px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
+.actionbar .saved { margin-right: auto; color: var(--muted); font-size: 12px; }

@@ -22,6 +22,7 @@ import { runAutoBackup } from "../aurora/backup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter } from "../aurora/foreign";
 import { Tutorial, tutorialWanted } from "./Tutorial";
+import { CompendiumSearch } from "./CompendiumSearch";
 
 // The tabs that are not needed at start-up load on first use, which keeps the first screen quick.
 const MagicTab = lazy(() => import("./MagicTab").then((m) => ({ default: m.MagicTab })));
@@ -143,7 +144,14 @@ export function App() {
           Soul Forge
         </strong>
         <Tabs tabs={TABS.map(([key, label]) => ({ key, label: t(label), icon: (() => { const I = TAB_ICONS[key]; return I ? <I size={15} /> : undefined; })(), badge: key === "build" ? pending : key === "magic" ? magicList.length : undefined, badgeTitle: key === "build" && pending ? tip("Build", pendingList) : key === "magic" && magicList.length ? tip("Magic", magicList) : undefined }))} current={tab} onPick={setTab} />
-        <span className="who">{character.name || "Unnamed"} · {r.totalLevel ? `Level ${r.totalLevel}` : "no class yet"}</span>
+        <CompendiumSearch />
+        <button className="who-badge" title="Character details" onClick={() => setTab("manage")}>
+          {character.portrait ? <img src={character.portrait} alt="" /> : <span className="ph">{(character.name || "?").charAt(0)}</span>}
+          <span className="who-text">
+            <b>{character.name || "Unnamed"}</b>
+            <small>{[r.totalLevel ? `Level ${r.totalLevel}` : "no class yet", character.race ? content.reg.get(character.race)?.name : "", character.classes[0] ? content.reg.get(character.classes[0].classId)?.name : ""].filter(Boolean).join(" ")}</small>
+          </span>
+        </button>
         {content.busy && <span className="muted busy">{content.status || "Working..."}</span>}
         <HelpButton tab={tab} />
         <AppMenu>
@@ -159,6 +167,14 @@ export function App() {
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} dismiss={updater.dismiss} />
       <main className={showDetail ? "with-detail" : ""}>
         <div className="pane">
+          {["build", "magic", "equipment", "manage"].includes(tab) && (
+            <div className="actionbar" role="toolbar" aria-label="Character actions">
+              <span className="saved" title="Characters save as you work">✓ Saved</span>
+              <button onClick={() => window.dispatchEvent(new Event("cf-levelup"))} disabled={!character.classes.length}>Level up</button>
+              <button onClick={() => setTab("play")}>Play</button>
+              <button onClick={() => setTab("sheet")}>Sheet</button>
+            </div>
+          )}
           <Suspense fallback={<p className="muted">Loading...</p>}>
           {tab === "start" && <StartTab currentId={id} onOpen={open} onNew={() => open(uid(), newCharacter())} onRandom={random} contentReady={content.ready} sourceCount={content.sources.length} goContent={() => setTab("content")} onImportForeign={importForeign} reg={content.reg} />}
           {tab === "build" && (

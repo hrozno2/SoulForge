@@ -137,7 +137,7 @@ export function Tutorial(p: TutorialProps) {
             {aurora && <span className="done-mark">✓ {content.sources.length} source{content.sources.length === 1 ? "" : "s"} ready</span>}
           </div>
           {content.busy && (
-            <div className="progress"><div className="bar" style={{ width: `${pct}%` }} /><span>{content.status || "Working..."} {content.progress ? `${content.progress.done}/${content.progress.total}` : ""}</span></div>
+            <div className="progress"><div style={{ width: `${pct}%` }} /><span>{content.status || "Working..."} {content.progress ? `${content.progress.done}/${content.progress.total}` : ""}</span></div>
           )}
           {!content.busy && content.status && !aurora && <p className="notice">{content.status}</p>}
           <p className="muted">It is a large download and takes a minute or two. Other Aurora links can be added later on the Content tab.</p>

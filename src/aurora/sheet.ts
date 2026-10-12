@@ -434,3 +434,19 @@ export function headerInfo(r: Resolved): HeaderInfo {
     alignment: ch.info.alignment || "-",
   };
 }
+
+/**
+ * The spells a prepared caster chooses from: the spells they know (a wizard's spellbook) or, for casters like the
+ * Cleric, the whole class list up to the highest slot level, from the book of the class when it has one.
+ */
+export function preparePool(r: Resolved, line: CastingLine): AElement[] {
+  const entry = r.spellcasting.get(line.name.toLowerCase());
+  if (!entry) return [];
+  const known = line.spells.map((p) => r.reg.get(p.id)).filter((e): e is AElement => !!e);
+  if (known.length) return known;
+  const levels = Array.from({ length: Math.max(1, line.maxSpellLevel) }, (_, i) => i + 1).join("||");
+  const all = r.reg.find("Spell", `(${entry.lists.join("||")}),(${levels})`);
+  const book = r.reg.get(entry.owner)?.source;
+  const same = all.filter((x) => x.source === book);
+  return same.length ? same : all;
+}

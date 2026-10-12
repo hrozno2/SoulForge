@@ -2,7 +2,7 @@ import { isAvailable, usedAfterClick } from "./pips";
 import { useMemo } from "react";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
-import { buildSheet, type CastingLine } from "../aurora/sheet";
+import { buildSheet, preparePool, type CastingLine } from "../aurora/sheet";
 import type { Character } from "../aurora/character";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { Browse } from "./Browse";
@@ -34,18 +34,7 @@ function SlotTracker({ line, set }: { line: CastingLine; set: SetCharacter }) {
 }
 
 function Prepared({ line, r, ch, set, onDetail }: { line: CastingLine; r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
-  const entry = r.spellcasting.get(line.name.toLowerCase());
-  const pool = useMemo<AElement[]>(() => {
-    if (!entry) return [];
-    const known = line.spells.map((p) => r.reg.get(p.id)).filter((e): e is AElement => !!e);
-    if (known.length) return known;
-    // Casters like Clerics prepare from their whole class list, from the book of their class when it has one.
-    const levels = Array.from({ length: Math.max(1, line.maxSpellLevel) }, (_, i) => i + 1).join("||");
-    const all = r.reg.find("Spell", `(${entry.lists.join("||")}),(${levels})`);
-    const book = r.reg.get(entry.owner)?.source;
-    const same = all.filter((s) => s.source === book);
-    return same.length ? same : all;
-  }, [entry, line.spells, line.maxSpellLevel, r.reg]);
+  const pool = useMemo<AElement[]>(() => preparePool(r, line), [r, line]);
   const chosen = ch.prepared[line.name] ?? [];
   const valid = chosen.filter((id) => pool.some((p) => p.id === id));
   const toggle = (id: string) =>

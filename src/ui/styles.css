@@ -1248,3 +1248,18 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .play-side .skill-head, .play-side .skill-line { grid-template-columns: 12px 30px minmax(0, 1fr) 32px 30px; gap: 6px; }
 .play-side .skill-head span:last-child { font-size: 9.5px; }
 .act-head b { white-space: nowrap; }
+
+/* the play header is always dark, also in light themes */
+.play-head.hero { --gold: #c9a45c; --gold2: #e6cc8e; --text: #ece3d0; --muted: #a89e8a; --line: #4b402c; --panel: #1f1a16; --panel2: #29231d; --bg2: #191512; color: var(--text); color-scheme: dark; }
+:root[data-theme="light"] .play-head.hero { background: linear-gradient(135deg, #5a1414, #2b1010 70%); }
+.play-head.hero .hp-manage button { color: #f3e7cf; border-color: rgba(255,255,255,.4); background: rgba(0,0,0,.3); }
+.play-head.hero .hp-manage input { color: #fff; background: rgba(0,0,0,.4); border-color: rgba(255,255,255,.3); }
+
+/* inventory and feature rows: name on the left, details on the right */
+.inv-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto auto; align-items: center; gap: 8px; justify-content: stretch; }
+.inv-row .check { justify-self: start; text-align: left; }
+.feature-row:not(.spell-row) { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; }
+.feature-row:not(.spell-row) > .fav-star { grid-column: 1; grid-row: 1; }
+.feature-row:not(.spell-row) > .feature-head { grid-column: 2; grid-row: 1; }
+.feature-row:not(.spell-row) > .uses { grid-column: 3; grid-row: 1; }
+.feature-row:not(.spell-row) > :not(.fav-star):not(.feature-head):not(.uses) { grid-column: 2 / -1; }

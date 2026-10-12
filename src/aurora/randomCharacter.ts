@@ -1,5 +1,7 @@
 /** A random character that makes sense: books the player shows, the best scores where the class needs them, starting gear on. */
 import { autoFill } from "./autofill";
+import { resolve } from "./engine";
+import { buildSheet, preparePool } from "./sheet";
 import { ABILITY_IDS, newCharacter, type AbilityId, type Character } from "./character";
 import { BookIndex, hiddenBy, type ContentFilters } from "./books";
 import type { ARegistry } from "./registry";
@@ -72,6 +74,13 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
     c = { ...c, equipmentAdded: [...(c.equipmentAdded ?? []), label], equipmentLedger: { ...(c.equipmentLedger ?? {}), [label]: ledgerOf(items, v.gp) } };
   }
   c = autoEquip(c, reg);
+  // Prepared casters start with a full set of prepared spells.
+  const sheet = buildSheet(resolve(c, reg));
+  for (const line of sheet.casting) {
+    if (!line.prepare || line.prepareMax <= 0) continue;
+    const pool = preparePool(resolve(c, reg), line).sort(() => rng() - 0.5);
+    c = { ...c, prepared: { ...c.prepared, [line.name]: pool.slice(0, line.prepareMax).map((e) => e.id) } };
+  }
   c.name = "Random adventurer";
   return c;
 }

@@ -158,7 +158,7 @@ export function DieIcon({ sides, label, size = 34 }: { sides: number; label?: st
 
 /** The sum written out: "16 + 2 = 18", with several dice of a kind in brackets. */
 export function rollMath(r: RollResult): string {
-  const parts = r.terms.map((t, i) => {
+  const parts = r.terms.filter((t) => t.sides > 0 || t.sum !== 0).map((t, i) => {
     const body = t.sides ? (t.rolls.length > 1 ? `(${t.rolls.join(" + ")})` : String(t.rolls[0] ?? 0)) : String(Math.abs(t.sum));
     const neg = t.sign < 0;
     return i === 0 ? `${neg ? "−" : ""}${body}` : `${neg ? "−" : "+"} ${body}`;

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import { hitDieOf, resolve } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
@@ -27,6 +27,14 @@ export function LevelUp({ r, ch, set, onDetail, onClose }: { r: Resolved; ch: Ch
 
   const multiOptions = r.reg.ofType("Class").filter((c) => !c.compendiumHidden && !ch.classes.some((x) => x.classId === c.id));
   const [showMulti, setShowMulti] = useState(false);
+  // Escape: before a level is chosen it closes; afterwards it keeps the level (like Done).
+  const applyRef = useRef(applied);
+  applyRef.current = applied;
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => { if (e.key === "Escape") (applyRef.current ? onClose : cancelRef.current)(); };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [onClose]);
 
   const advance = (classId: string, isNew: boolean) => {
     set((c) => ({
@@ -39,6 +47,8 @@ export function LevelUp({ r, ch, set, onDetail, onClose }: { r: Resolved; ch: Ch
     if (applied) set(() => before.current);
     onClose();
   };
+  const cancelRef = useRef(cancel);
+  cancelRef.current = cancel;
 
   const newFeatures = applied ? sheet.features.filter((f) => !oldSheet.features.some((o) => o.id === f.id)) : [];
   const hpGain = applied ? r.stats.get("hp") - oldResolved.stats.get("hp") : 0;

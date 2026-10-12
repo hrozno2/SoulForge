@@ -23,7 +23,7 @@ test.describe("Soul Forge smoke tests", () => {
     await randomCharacter(page);
     await tab(page, "Play");
     await expect(page.locator(".play-id h1")).toHaveText(/random adventurer/i);
-    await expect(page.locator(".ab-box")).toHaveCount(6);
+    await expect(page.locator(".ab-row .ab-box")).toHaveCount(6);
     await expect(page.locator(".hp-bar")).toBeVisible();
     // Roll an ability check: the dice panel opens with a result card.
     await page.locator(".ab-box").first().click();

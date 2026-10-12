@@ -23,16 +23,16 @@ export const SHEET_SEARCH = "https://www.google.com/search?q=DLDM+5E24+character
  */
 export const OFFICIAL_DOWNLOADS: { id: string; label: string; note: string; url: string; file: string }[] = [
   {
-    id: "2014-fillable",
-    label: "Classic 2014 sheet, fillable",
-    note: "3 pages with spellcasting. Fields are filled and stay editable.",
-    url: "https://media.wizards.com/2016/dnd/downloads/5E_CharacterSheet_Fillable.pdf",
-    file: "5E_CharacterSheet_Fillable.pdf",
+    id: "2014-all",
+    label: "All the classic 2014 sheets",
+    note: "The whole official set: fillable and print versions, the alternative layouts, the spellcasting and details pages.",
+    url: "https://media.dndbeyond.com/compendium-images/marketing/5e_charactersheets.zip",
+    file: "5e_charactersheets.zip",
   },
   {
     id: "2024-print",
-    label: "Official 2024 sheet, print version",
-    note: "2 pages. The text is written onto the page.",
+    label: "Official 2024 sheet",
+    note: "2 pages. This copy has no form fields, so the text is written onto the page. A fillable copy of the same sheet works too if you load it.",
     url: "https://media.dndbeyond.com/compendium-images/phb/downloads/DnD_2024_Character-Sheet.pdf",
     file: "DnD_2024_Character-Sheet.pdf",
   },

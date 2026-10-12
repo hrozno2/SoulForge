@@ -61,6 +61,7 @@ export function classify(f: AutoField): string | undefined {
   const att = raw.match(/attun\w*\s*(\d+)?/);
   if (att && /attun/.test(raw)) return `attune.${att[1] ?? "1"}`;
 
+  if (/^savingthrows?\d*$/.test(sq)) return "save.seq";
   // Abilities, saves and modifiers
   const ab = (Object.keys(ABIL) as A3[]).find((k) => new RegExp(`^(st\\s*)?${k}|${k}(ength|terity|stitution|elligence|dom|isma)?`).test(raw));
   if (ab) {
@@ -96,9 +97,11 @@ export function classify(f: AutoField): string | undefined {
     [/^inspiration$|heroic inspiration/, "inspiration"],
     [/hit dice|^hd\b|^hdtotal|total hit dice/, "hd"],
     [/^(cp|copper)$/, "coin.cp"], [/^(sp|silver)$/, "coin.sp"], [/^(ep|electrum)$/, "coin.ep"], [/^(gp|gold)$/, "coin.gp"], [/^(pp|platinum)$/, "coin.pp"],
-    [/personality|traits(?! and)$/, "personality"], [/^ideals?$/, "ideals"], [/^bonds?$/, "bonds"], [/^flaws?$/, "flaws"],
+    [/feat\s*\+?\s*traits|additional.*(features|traits)/, "extra"],
+    [/features?\s*(&|and|\+)?\s*traits?|^features$|class features/, "features"],
+    [/^personality( traits)?$|^personalitytraits$|^traits$/, "personality"], [/^ideals?$/, "ideals"], [/^bonds?$/, "bonds"], [/^flaws?$/, "flaws"],
     [/^(age)$/, "age"], [/^height$/, "height"], [/^weight$/, "weight"], [/^eyes$/, "eyes"], [/^skin$/, "skin"], [/^hair$/, "hair"],
-    [/appearance/, "appearance"], [/back\s*story|^backstory|background story/, "backstory"], [/^allies|organi[sz]ations/, "allies"], [/^treasure/, "treasure"],
+    [/faction/, "faction"], [/appearance/, "appearance"], [/back\s*story|^backstory|background story/, "backstory"], [/^allies|organi[sz]ations/, "allies"], [/^treasure/, "treasure"],
     [/features?\s*(&|and|\+)?\s*traits?|^features$|class features/, "features"], [/species traits|racial traits|race traits/, "traits"], [/^feats$/, "feats"],
     [/^equipment|^gear|^inventory/, "equipment"], [/languages?\s*(&|and)?\s*prof|^other prof|^proficiencies|prof.*lang|languages/, "profs"], [/^tool/, "tools"], [/^weapon prof/, "weaponProf"],
     [/attacks.*spell|attacks & spell/, "attacksText"], [/^notes?$|additional/, "notes"],
@@ -108,18 +111,41 @@ export function classify(f: AutoField): string | undefined {
   return undefined;
 }
 
-/** Everything that can be matched, grouped by what it is. */
+const ALPHA = SKILLS.map(([k]) => k).sort();
+
+/** Some sheets give two fields the same name; when a skill is missing, the odd duplicate is that skill, judged by its neighbours. */
+function fixDuplicateSkills(fields: AutoField[], keys: Map<AutoField, string | undefined>): void {
+  const skillOf = (f: AutoField) => keys.get(f)?.replace(/^skill\./, "");
+  const skillKeys = fields.filter((f) => keys.get(f)?.startsWith("skill."));
+  const count = new Map<string, AutoField[]>();
+  for (const f of skillKeys) (count.get(skillOf(f)!) ?? count.set(skillOf(f)!, []).get(skillOf(f)!)!).push(f);
+  const missing = ALPHA.filter((k) => !count.has(k));
+  const dups = [...count.entries()].filter(([, l]) => l.length > 1);
+  if (missing.length !== 1 || dups.length !== 1) return;
+  const [m] = missing;
+  const [dupName, list] = dups[0];
+  const before = ALPHA[ALPHA.indexOf(m) - 1];
+  const after = ALPHA[ALPHA.indexOf(m) + 1];
+  const nearest = (f: AutoField, up: boolean) =>
+    skillKeys.filter((o) => o !== f && o.p === f.p && Math.abs(o.x - f.x) < 40 && (up ? o.y > f.y : o.y < f.y)).sort((x, y) => Math.abs(x.y - f.y) - Math.abs(y.y - f.y))[0];
+  const score = (f: AutoField) => (skillOf(nearest(f, true) ?? f) === before ? 1 : 0) + (skillOf(nearest(f, false) ?? f) === after ? 1 : 0);
+  const odd = list.slice().sort((x, y) => score(y) - score(x))[0];
+  if (odd && dupName) keys.set(odd, `skill.${m}`);
+}
+
+/** Everything that can be matched, grouped by what it is. One entry per field, so a name used twice can mean two things. */
 export function buildPlan(fields: AutoField[]): { plan: Plan; unmatched: AutoField[] } {
   const plan: Plan = new Map();
   const unmatched: AutoField[] = [];
+  const tx = fields.filter((f) => f.t === "Tx");
+  const keys = new Map<AutoField, string | undefined>(tx.map((f) => [f, classify(f)]));
+  fixDuplicateSkills(tx, keys);
   const seen = new Set<string>();
-  for (const f of fields) {
-    if (f.t !== "Tx") continue;
-    if (seen.has(f.name)) continue;
-    seen.add(f.name);
-    const key = classify(f);
+  for (const f of tx) {
+    const key = keys.get(f);
     if (!key) {
-      unmatched.push(f);
+      if (!seen.has(f.name)) unmatched.push(f);
+      seen.add(f.name);
       continue;
     }
     (plan.get(key) ?? plan.set(key, []).get(key)!).push(f);
@@ -174,6 +200,14 @@ export function autoFill(fields: AutoField[], d: FillData, sink: Sink): AutoResu
       if (box) sink.check(box, ab.saveProf);
     }
   }
+  // Saving throws named by number only: top to bottom they are Strength to Charisma.
+  (plan.get("save.seq") ?? []).slice().sort((x, y) => x.p - y.p || y.y - x.y || x.x - y.x).forEach((f, i) => {
+    const a = abilities[i];
+    if (!a) return;
+    sink.text(f, d.abilities[a].save); matched++;
+    const box = boxBeside(fields, f);
+    if (box) sink.check(box, d.abilities[a].saveProf);
+  });
   for (const [skill, k] of Object.entries(d.skills)) {
     for (const f of plan.get(`skill.${skill}`) ?? []) {
       sink.text(f, k.bonus); matched++;
@@ -197,7 +231,9 @@ export function autoFill(fields: AutoField[], d: FillData, sink: Sink): AutoResu
   const pick = (label: string) => person.find((l) => l.toLowerCase().startsWith(`${label}:`))?.replace(/^[^:]+:\s*/, "") ?? "";
   put("ideals", pick("ideals")); put("bonds", pick("bonds")); put("flaws", pick("flaws"));
   put("personality", plan.has("ideals") || plan.has("bonds") ? pick("traits") : d.personality);
-  put("backstory", d.backstory); put("appearance", d.appearance); put("allies", ""); put("notes", d.notes); put("treasure", d.magicItems.map((m) => m.name).join(", "));
+  put("age", d.body.age); put("height", d.body.height); put("weight", d.body.weight); put("eyes", d.body.eyes); put("skin", d.body.skin); put("hair", d.body.hair); put("faction", d.body.deity);
+  put("extra", d.notes); put("allies", d.body.allies);
+  put("backstory", d.backstory); put("appearance", d.appearance); put("notes", d.notes); put("treasure", d.magicItems.map((m) => m.name).join(", "));
   put("attacksText", d.casting ? `Spell save DC ${d.casting.dc}, spell attack ${d.casting.attack}` : "");
   if (d.casting) { put("casting.ability", d.casting.ability); put("casting.mod", d.casting.mod); put("casting.dc", d.casting.dc); put("casting.attack", d.casting.attack); put("casting.class", d.className); }
   // Slot fields are numbered either by level or by a running number; rank the numbers to get the level.
@@ -210,8 +246,31 @@ export function autoFill(fields: AutoField[], d: FillData, sink: Sink): AutoResu
   });
   d.magicItems.slice(0, 5).forEach((m, i) => put(`attune.${i + 1}`, m.name));
   put("hd.spent", d.hdSpent || ""); put("hd.max", d.hdMax);
-  // Spells go into the spell name fields in reading order, cantrips first.
-  const names = (plan.get("spell.name") ?? []).slice().sort((a, b) => a.p - b.p || Math.round(b.y / 4) - Math.round(a.y / 4) || a.x - b.x);
-  d.spells.slice(0, names.length).forEach((sp, i) => { sink.text(names[i], sp.name); matched++; });
+  // Spells go into the spell name fields. Where the sheet has a heading per level (slot fields), each spell goes under its own level.
+  const names = (plan.get("spell.name") ?? []).slice().sort((x, y) => x.p - y.p || Math.round(y.y / 4) - Math.round(x.y / 4) || x.x - y.x);
+  const headers = [...plan.entries()].flatMap(([k, list]) => (/^slots\.\d+\.total$/.test(k) ? list.map((f) => ({ f, n: Number(k.split(".")[1]) })) : []));
+  const lowest = Math.min(...headers.map((h) => h.n));
+  const level = (f: AutoField): number => {
+    const col = (x: number) => Math.floor(x / 204);
+    const above = headers.filter((h) => h.f.p === f.p && col(h.f.x) === col(f.x) && h.f.y >= f.y).sort((x, y) => x.f.y - y.f.y)[0];
+    return above ? (slotNums[slotNums.length - 1] > 9 ? above.n - lowest + 1 : above.n) : 0;
+  };
+  if (headers.length && d.spells.length) {
+    const byLevel = new Map<number, AutoField[]>();
+    for (const f of names) (byLevel.get(level(f)) ?? byLevel.set(level(f), []).get(level(f))!).push(f);
+    const used = new Map<number, number>();
+    for (const sp of d.spells) {
+      const lv = Number(sp.level) || 0;
+      const f = byLevel.get(lv)?.[used.get(lv) ?? 0];
+      if (!f) continue;
+      used.set(lv, (used.get(lv) ?? 0) + 1);
+      sink.text(f, sp.name); matched++;
+      const box = boxBeside(fields, f);
+      if (box) sink.check(box, lv > 0 && /prepared|always/.test(sp.notes));
+    }
+  } else {
+    d.spells.slice(0, names.length).forEach((sp, i) => { sink.text(names[i], sp.name); matched++; });
+  }
+  for (const b of fields) if (b.t === "Btn" && /character.?image|portrait|picture/i.test(b.name) && !/faction|symbol/i.test(b.name)) sink.image?.(b);
   return { matched, total: new Set(fields.filter((f) => f.t === "Tx").map((f) => f.name)).size, unmatched: unmatched.map((u) => u.name.trim()) };
 }

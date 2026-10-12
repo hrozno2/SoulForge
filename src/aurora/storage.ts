@@ -160,11 +160,16 @@ export async function deleteCharacterRecord(id: string): Promise<void> {
 export interface TemplateRecord {
   id: string;
   name: string;
-  kind: "dldm5e24" | "companion" | "wotc2024" | "wotc2024form" | "wotc2014form" | "wotc2014" | "auto";
+  kind: "dldm5e24" | "companion" | "official" | "auto" | "wotc2024" | "wotc2024form" | "wotc2014form" | "wotc2014";
   /** For DLDM sheets, the page styles it contains. For companion sheets, the layout. */
   pages: string[];
   size: number;
   added: number;
+  /** SHA-256 of the file, so the same file is never kept twice. */
+  hash?: string;
+  /** For official sheets: which known layout it is, and whether the boxes are real form fields. */
+  layout?: string;
+  form?: boolean;
 }
 
 export async function listTemplates(): Promise<TemplateRecord[]> {

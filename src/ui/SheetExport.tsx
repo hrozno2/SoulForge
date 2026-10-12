@@ -4,15 +4,15 @@ import type { Resolved } from "../aurora/engine";
 import type { SheetData } from "../aurora/sheet";
 import { deleteTemplate, listTemplates, templateBytes, type TemplateRecord } from "../aurora/storage";
 import { buildPdf, cardCounts } from "../pdf/exportPdf";
-import { fillAuto, fillOfficial, isEditable } from "../sheets/forms";
+import { fillAuto } from "../sheets/forms";
+import { fillOfficialSheet } from "../sheets/official";
 import { isDesktop } from "../net";
-import { WOTC_PAGES, fillWotc, type WotcPage } from "../sheets/wotc";
 import { buildFillData, companionFill } from "../sheets/data";
 import { translateCompanion, translateFill } from "../sheets/translateFill";
 import { DLDM_PAGES, fillDldm, type DldmPage } from "../sheets/dldm";
 import { fillCompanion } from "../sheets/companion";
 import { OFFICIAL_DOWNLOADS, SHEET_LINKS, SHEET_SEARCH } from "../sheets/links";
-import { addSheetFiles, downloadOfficialSheet } from "../sheets/templates";
+import { addSheetFiles, downloadOfficialSheet, mergeDuplicateSheets } from "../sheets/templates";
 import { nextFrame, openExternal, pickFiles, saveFile } from "../store";
 import type { Translation } from "./TranslateOptions";
 
@@ -24,17 +24,18 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   const [pick, setPick] = useState("");
   const [pages, setPages] = useState<DldmPage[]>([]);
   const [companion, setCompanion] = useState("");
-  const [wotcPages, setWotcPages] = useState<WotcPage[]>(["page1", "page2"]);
   const [cards, setCards] = useState({ spells: false, items: false, features: false, tips: false });
   const counts = cardCounts(r, sheet);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmPlain, setConfirmPlain] = useState(false);
+  /** A sheet with no form fields: the text is drawn onto the page, so it cannot be edited afterwards. */
+  const isPlain = (t: TemplateRecord) => (t.kind === "official" ? !t.form : t.kind === "wotc2024" || t.kind === "wotc2014");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => listTemplates().then(setTemplates);
-  useEffect(() => { refresh(); }, []);
-  const current = templates.find((t) => t.id === pick) ?? templates.find((t) => t.kind === "wotc2024") ?? templates.find((t) => t.kind === "dldm5e24") ?? templates[0];
+  useEffect(() => { void mergeDuplicateSheets().then(refresh); }, []);
+  const current = templates.find((t) => t.id === pick) ?? templates.find((t) => t.kind === "official" && t.form) ?? templates.find((t) => t.kind === "official") ?? templates.find((t) => t.kind === "dldm5e24") ?? templates[0];
   useEffect(() => {
     if (current?.kind === "dldm5e24") setPages(current.pages as DldmPage[]);
   }, [current?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -97,12 +98,8 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
         const res = await fillAuto(tpl, await fillData(), fonts);
         bytes = res.bytes;
         notes = res.notes;
-      } else if (current.kind === "wotc2024form" || current.kind === "wotc2014form" || current.kind === "wotc2014") {
-        const res = await fillOfficial(tpl, current.kind, await fillData(), fonts);
-        bytes = res.bytes;
-        notes = res.notes;
-      } else if (current.kind === "wotc2024") {
-        const res = await fillWotc(tpl, await fillData(), { pages: wotcPages, font: fonts });
+      } else if (current.kind === "official" || current.kind.startsWith("wotc")) {
+        const res = await fillOfficialSheet(tpl, current.name, await fillData(), fonts);
         bytes = res.bytes;
         notes = res.notes;
       } else if (current.kind === "dldm5e24") {
@@ -162,16 +159,6 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
               ))}
             </div>
           )}
-          {current?.kind === "wotc2024" && (
-            <div>
-              {(Object.keys(WOTC_PAGES) as WotcPage[]).map((p) => (
-                <label key={p} className="check">
-                  <input type="checkbox" checked={wotcPages.includes(p)} onChange={() => setWotcPages((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]))} />
-                  {WOTC_PAGES[p].label} <small className="muted">{WOTC_PAGES[p].note}</small>
-                </label>
-              ))}
-            </div>
-          )}
           {current && current.kind !== "companion" && (
             <div>
               <small className="muted">Add to the end of the PDF</small>
@@ -190,7 +177,7 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
               </select>
             </div>
           )}
-          <button className="primary" disabled={busy || !tr.ready || !current || (current.kind === "dldm5e24" && pages.length === 0) || (current.kind === "wotc2024" && wotcPages.length === 0)} onClick={() => (current && !isEditable(current.kind) ? setConfirmPlain(true) : run())}>{busy ? "Filling..." : "Fill and save"}</button>
+          <button className="primary" disabled={busy || !tr.ready || !current || (current.kind === "dldm5e24" && pages.length === 0)} onClick={() => (current && isPlain(current) ? setConfirmPlain(true) : run())}>{busy ? "Filling..." : "Fill and save"}</button>
           {confirmPlain && (
             <div className="modal-back" role="dialog" aria-label="This sheet is not editable" onClick={() => setConfirmPlain(false)}>
               <div className="modal-page themed" onClick={(e) => e.stopPropagation()}>

@@ -6,7 +6,6 @@
 import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString, type PDFFont, type PDFPage, rgb } from "pdf-lib";
 import type { FillData } from "./data";
 import { readWidgets, type Widget } from "./widgets";
-import rects2014 from "./rects2014.json";
 
 /** A field on the sheet: where it is and what kind. Positions are PDF points from the bottom left. */
 export interface W {
@@ -158,12 +157,12 @@ export function fill2024Form(ws: W[], d: FillData, sink: Sink): void {
   for (let i = d.magicItems.length; i < 3; i++) s.boxFor(`ATTUNMENT ${i + 1}`, false);
   for (const b of ws) if (b.t === "Btn" && /portrait|image/i.test(b.name)) sink.image?.(b);
   s.set("PERSONALITY", [d.appearance, d.personality].filter(Boolean).join("\n\n"), 1);
+  // Newer copies of the sheet split the text into three boxes.
+  s.set("APPEARANCE", d.appearance, 1); s.set("Alignment", d.alignment, 1); s.set("BACKSTORY / PERSONALITY", [d.personality, d.backstory].filter(Boolean).join("\n\n"), 1);
   for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) s.set(k.toUpperCase(), d.coins[k] === "0" ? "" : d.coins[k], 1);
 }
 
 // ---------------------------------------------------------------- 2014 classic
-
-export const RECTS_2014: W[] = (rects2014 as { n: string; t: "Tx" | "Btn"; p: number; x: number; y: number; w: number; h: number }[]).map((r) => ({ name: r.n, t: r.t, p: r.p, x: r.x, y: r.y, w: r.w, h: r.h }));
 
 const SKILLS_2014: Record<string, string> = {
   acrobatics: "Acrobatics", "animal handling": "Animal", arcana: "Arcana", athletics: "Athletics", deception: "Deception", history: "History", insight: "Insight", intimidation: "Intimidation",
@@ -253,9 +252,14 @@ export function fill2014(ws: W[], d: FillData, sink: Sink): void {
 
 const BLACK = rgb(0.05, 0.05, 0.08);
 
+/** Whether text belongs in a tall box as several lines, or on one line in a short one. */
+function wantsMulti(font: PDFFont, value: string, w: W): boolean {
+  return w.h > 40 || value.includes("\n") || (w.h > 24 && font.widthOfTextAtSize(value, 9) > w.w - 4);
+}
+
 /** Fits text into a box: the largest size that keeps every line inside. */
 function layout(font: PDFFont, text: string, w: number, h: number, multi: boolean): { lines: string[]; size: number } {
-  const tries = multi ? [9, 8.5, 8, 7.5, 7, 6.5, 6, 5.5, 5, 4.5, 4] : [11, 10, 9, 8, 7, 6.5, 6, 5.5, 5];
+  const tries = multi ? [9, 8.5, 8, 7.5, 7, 6.5, 6, 5.5, 5, 4.5, 4] : [11, 10, 9, 8, 7, 6.5, 6, 5.5, 5].filter((t) => t <= Math.max(5, h * 0.78));
   for (const size of tries) {
     if (!multi) {
       if (font.widthOfTextAtSize(text, size) <= w - 3 && size * 1.1 <= h + 1) return { lines: [text], size };
@@ -291,10 +295,18 @@ export function formSink(doc: PDFDocument, font: PDFFont): Sink & { done(): void
       images.push(w);
     },
     text(w, value) {
+      // Two widgets with one name are one field to the form, so they would show the same value. Draw those instead.
+      if (widgets.filter((x) => x.name === w.name).length > 1) {
+        const page = doc.getPage(w.p);
+        const multi = wantsMulti(font, value, w);
+        const { lines, size } = layout(font, value, w.w, w.h, multi);
+        lines.forEach((l, i) => page.drawText(l, { x: w.x + (!multi && w.w <= 50 ? (w.w - font.widthOfTextAtSize(l, size)) / 2 : 2), y: multi ? w.y + w.h - 2 - size - i * size * 1.15 : w.y + (w.h - size * 0.72) / 2, size, font, color: BLACK }));
+        return;
+      }
       try {
         const f = form.getTextField(w.name);
         f.setText(value);
-        const multi = f.isMultiline() || w.h > 24;
+        const multi = f.isMultiline() || wantsMulti(font, value, w);
         const { size } = layout(font, value, w.w, w.h, multi);
         try {
           f.setFontSize(size);
@@ -336,7 +348,7 @@ export function overlaySink(doc: PDFDocument, font: PDFFont): Sink {
   return {
     text(w, value) {
       draw(w, (page) => {
-        const multi = w.h > 24;
+        const multi = wantsMulti(font, value, w);
         const { lines, size } = layout(font, value, w.w, w.h, multi);
         // Small boxes (scores, modifiers, bonuses) are centred like the printed numbers around them.
         const centre = !multi && w.w <= 50;
@@ -357,7 +369,7 @@ export function overlaySink(doc: PDFDocument, font: PDFFont): Sink {
 }
 
 /** Puts the portrait in the first picture box. On a plain sheet it is drawn there; on a form it goes into the button field. */
-async function placePortrait(doc: PDFDocument, data: FillData, boxes: W[], notes: string[], draw = false): Promise<void> {
+export async function placePortrait(doc: PDFDocument, data: FillData, boxes: W[], notes: string[], draw = false): Promise<void> {
   if (!data.portrait || !boxes.length) return;
   try {
     const bytes = Uint8Array.from(atob(data.portrait.split(",")[1] ?? ""), (c) => c.charCodeAt(0));
@@ -379,45 +391,6 @@ export interface FormFillResult {
   notes: string[];
 }
 
-export type FormKind = "wotc2024form" | "wotc2014form" | "wotc2014" | "auto";
-
-/** Which official sheet a PDF is, from its size, page count and field names. */
-export function detectOfficial(doc: PDFDocument, nameHint: string): FormKind | undefined {
-  const size = doc.getPage(0).getSize();
-  const names = new Set(doc.getForm().getFields().map((f) => f.getName().trim()));
-  if (names.has("CharacterName") && names.has("Wpn Name")) return "wotc2014form";
-  if (names.has("STR SAVE") && names.has("NAME - WEAPON 1")) return "wotc2024form";
-  if (names.size === 0 && Math.abs(size.width - 612) < 4 && Math.abs(size.height - 792) < 4 && doc.getPageCount() <= 3 && /5e|dnd|character|sheet/i.test(nameHint) && !/2024/.test(nameHint)) return "wotc2014";
-  return undefined;
-}
-
-/** Fills one of the official sheets. */
-export async function fillOfficial(template: Uint8Array | ArrayBuffer, kind: FormKind, data: FillData, font: { regular: ArrayBuffer | Uint8Array }): Promise<FormFillResult> {
-  const doc = await PDFDocument.load(template, { ignoreEncryption: true });
-  const fontkit = (await import("@pdf-lib/fontkit")).default;
-  doc.registerFontkit(fontkit);
-  const f = await doc.embedFont(font.regular, { subset: true });
-  const notes: string[] = [];
-  if (kind === "wotc2014") {
-    const over = overlaySink(doc, f);
-    const pics: W[] = [];
-    fill2014(RECTS_2014, data, { ...over, image: (w) => void pics.push(w) });
-    await placePortrait(doc, data, pics, notes, true);
-  } else {
-    const sink = formSink(doc, f);
-    const ws: W[] = sink.widgets.map((w) => ({ name: w.name, t: w.type === "Btn" ? "Btn" : "Tx", p: w.page, x: w.x, y: w.y, w: w.w, h: w.h }));
-    (kind === "wotc2014form" ? fill2014 : fill2024Form)(ws, data, sink);
-    sink.done();
-    await placePortrait(doc, data, sink.images, notes);
-    // Make the embedded font known to the form so viewers keep using it when text is edited.
-    const acro = doc.catalog.lookup(PDFName.of("AcroForm"));
-    void acro;
-  }
-  if (data.spells.length > 28 && kind !== "wotc2014") notes.push(`${data.spells.length - 28} spells did not fit on the sheet.`);
-  return { bytes: await doc.save({ updateFieldAppearances: false }), notes };
-}
-
-
 /** Every field of a PDF as the automatic matcher wants it, with its tooltip. */
 export function autoFields(doc: PDFDocument): import("./automap").AutoField[] {
   return readWidgets(doc).map((w) => {
@@ -435,7 +408,6 @@ export function autoFields(doc: PDFDocument): import("./automap").AutoField[] {
     return { name: w.name, t: w.type === "Btn" ? "Btn" : "Tx", p: w.page, x: w.x, y: w.y, w: w.w, h: w.h, tip, multiline: w.multiline };
   });
 }
-
 
 export interface AutoFillResult extends FormFillResult {
   matched: number;
@@ -456,10 +428,4 @@ export async function fillAuto(template: Uint8Array | ArrayBuffer, data: FillDat
   const notes = [`Matched ${res.matched} entries to ${res.total} fields.`];
   if (res.unmatched.length) notes.push(`Not matched, fill by hand: ${res.unmatched.slice(0, 12).join(", ")}${res.unmatched.length > 12 ? ` and ${res.unmatched.length - 12} more` : ""}.`);
   return { bytes: await doc.save({ updateFieldAppearances: false }), notes, ...res };
-}
-
-
-/** True for sheets whose boxes are real form fields, so the filled text stays editable in a PDF viewer. */
-export function isEditable(kind: string): boolean {
-  return kind !== "wotc2024" && kind !== "wotc2014";
 }

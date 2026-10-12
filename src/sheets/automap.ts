@@ -3,7 +3,7 @@
  * then matched to a piece of the character: name, class, scores, skills, attacks, spells and so on. What cannot be matched
  * is left alone and reported, so the player knows what to type in by hand.
  */
-import type { FillData } from "./data";
+import { splitPersonality, type FillData } from "./data";
 import type { Sink, W } from "./forms";
 
 export interface AutoField extends W {
@@ -85,7 +85,9 @@ export function classify(f: AutoField): string | undefined {
   const slot = raw.match(/(?:lvl|level|slots?)\s*(\d+)\s*(total|slots?)?|(?:slots?)\s*(?:total|remaining|expended)\s*(\d+)/);
   if (slot && /slot|total/.test(raw)) {
     const n = slot[1] ?? slot[3];
-    return /remain|expend|used/.test(raw) ? `slots.${n}.left` : `slots.${n}.total`;
+    // The official sheets name the box "SlotsRemaining", but print "slots expended" over it.
+    if (/expend|used/.test(raw) || /^slotsremaining\s*\d+$/.test(raw.replace(/\s+/g, " ").trim())) return `slots.${n}.used`;
+    return /remain/.test(raw) ? `slots.${n}.left` : `slots.${n}.total`;
   }
   const att = raw.match(/attun\w*\s*(\d+)?/);
   if (att && /attun/.test(raw)) return `attune.${att[1] ?? "1"}`;
@@ -263,10 +265,10 @@ export function autoFill(fields: AutoField[], d: FillData, sink: Sink): AutoResu
   put("equipment", [d.armorWorn, d.weaponsText.replace(/\n/g, ", "), d.otherGear.replace(/\n/g, ", ")].filter(Boolean).join("\n"));
   put("profs", [d.languages && `Languages: ${d.languages}`, d.tools && `Tools: ${d.tools}`].filter(Boolean).join("\n")); put("tools", d.tools);
   put("weaponProf", [d.weaponTraining.simple && "Simple", d.weaponTraining.martial && "Martial"].filter(Boolean).join(", "));
-  const person = d.personality.split("\n");
-  const pick = (label: string) => person.find((l) => l.toLowerCase().startsWith(`${label}:`))?.replace(/^[^:]+:\s*/, "") ?? "";
-  put("ideals", pick("ideals")); put("bonds", pick("bonds")); put("flaws", pick("flaws"));
-  put("personality", plan.has("ideals") || plan.has("bonds") ? pick("traits") : d.personality);
+  const person = splitPersonality(d.personality);
+  const split = person.found && (plan.has("ideals") || plan.has("bonds"));
+  if (split) { put("ideals", person.ideals); put("bonds", person.bonds); put("flaws", person.flaws); }
+  put("personality", split ? person.traits : d.personality);
   put("age", d.body.age); put("height", d.body.height); put("weight", d.body.weight); put("eyes", d.body.eyes); put("skin", d.body.skin); put("hair", d.body.hair); put("faction", d.body.deity);
   put("extra", d.notes); put("allies", d.body.allies);
   put("backstory", d.backstory); put("appearance", d.appearance); put("notes", d.notes); put("treasure", d.magicItems.map((m) => m.name).join(", "));
@@ -279,6 +281,8 @@ export function autoFill(fields: AutoField[], d: FillData, sink: Sink): AutoResu
     const total = d.casting?.slots[level - 1] ?? 0;
     if (!total) return;
     put(`slots.${n}.total`, total); put(`slots.${n}.left`, Math.max(0, total - (d.casting?.used[level - 1] ?? 0)));
+    const spent = Math.min(total, d.casting?.used[level - 1] ?? 0);
+    put(`slots.${n}.used`, spent || "");
   });
   d.magicItems.slice(0, 5).forEach((m, i) => put(`attune.${i + 1}`, m.name));
   put("hd.spent", d.hdSpent || ""); put("hd.max", d.hdMax);

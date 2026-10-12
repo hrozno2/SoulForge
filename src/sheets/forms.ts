@@ -4,7 +4,7 @@
  * Check boxes have no useful names on these sheets, so they are found by where they sit next to a labelled field.
  */
 import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString, PDFTextField, TextAlignment, type PDFFont, type PDFPage, rgb } from "pdf-lib";
-import type { FillData } from "./data";
+import { splitPersonality, type FillData } from "./data";
 import { readWidgets, type Widget } from "./widgets";
 
 /** A field on the sheet: where it is and what kind. Positions are PDF points from the bottom left. */
@@ -72,7 +72,8 @@ const SHORT = { strength: "STR", dexterity: "DEX", constitution: "CON", intellig
 const joinLines = (a: string[]) => a.join("\n");
 
 /** Spell rows: the name fields from top to bottom, with the other fields on the same line. */
-function spellRows(s: Sheet, page: number, d: FillData, ctx: { level: string; name: string; time: string; range: string; notes: string; boxX: [number, number, number] }): void {
+/** Fills the spell table row by row. Returns the spells that did not fit. */
+function spellRows(s: Sheet, page: number, d: FillData, ctx: { level: string; name: string; time: string; range: string; notes: string; boxX: [number, number, number] }): string[] {
   const names = s.ws.filter((w) => w.t === "Tx" && w.p === page && w.name.startsWith(ctx.name)).sort((a, b) => b.y - a.y);
   const seen = new Set<number>();
   const rows = names.filter((w) => (seen.has(Math.round(w.y)) ? false : (seen.add(Math.round(w.y)), true)));
@@ -92,11 +93,14 @@ function spellRows(s: Sheet, page: number, d: FillData, ctx: { level: string; na
     const boxes = s.boxesIn(page, cy(row), ctx.boxX[0] - 6, ctx.boxX[2] + 6);
     [sp.concentration, sp.ritual, sp.m].forEach((on, k) => { if (boxes[k]) s.sink.check(boxes[k], on); });
   });
+  return rows.length ? d.spells.slice(rows.length).map((sp) => sp.name) : [];
 }
 
 // ---------------------------------------------------------------- 2024 fillable
 
-export function fill2024Form(ws: W[], d: FillData, sink: Sink): void {
+/** Fills the official 2024 sheet. Returns notes for the player, such as spells that did not fit. */
+export function fill2024Form(ws: W[], d: FillData, sink: Sink): string[] {
+  const notes: string[] = [];
   const s = new Sheet(ws, sink);
   s.set("Name", d.name); s.set("Background", d.background); s.set("Class", d.className); s.set("Species", d.species); s.set("Subclass", d.subclass);
   s.set("Level", d.level); s.set("XP Points", d.xp || ""); s.set("Armor Class", d.ac); s.set("Current HP", d.hpCurrent); s.set("Max HP", d.hpMax); s.set("Temp HP", d.hpTemp || "");
@@ -125,8 +129,8 @@ export function fill2024Form(ws: W[], d: FillData, sink: Sink): void {
   s.set("CLASS FEATURES 1", joinLines(feats.slice(0, half))); s.set("CLASS FEATURES 2", joinLines(feats.slice(half)));
   s.set("SPECIES TRAITS", joinLines(d.featureList.filter((f) => f.group === "Species traits").map((f) => `${f.name}: ${f.text}`)));
   s.set("FEATS", joinLines(d.featureList.filter((f) => f.group === "Feats").map((f) => `${f.name}: ${f.text}`)));
-  s.set("TOOL PROF", d.tools);
-  s.set("WEAPON PROF", [d.weaponTraining.simple && "Simple", d.weaponTraining.martial && "Martial"].filter(Boolean).join(", "));
+  s.set("TOOL PROF", d.toolsOnly);
+  s.set("WEAPON PROF", [d.weaponTraining.simple && "Simple", d.weaponTraining.martial && "Martial", d.weaponsOther].filter(Boolean).join(", "));
   // Armor training boxes sit in a row near the bottom left, then the shield, heroic inspiration and death saves.
   const armor = s.boxesIn(0, 125, 40, 200, 6);
   [d.armorTraining.light, d.armorTraining.medium, d.armorTraining.heavy, d.armorTraining.shield].forEach((on, i) => armor[i] && sink.check(armor[i], on));
@@ -150,7 +154,8 @@ export function fill2024Form(ws: W[], d: FillData, sink: Sink): void {
     // The boxes you have are ticked as spent; the rest stay empty.
     boxes.forEach((b, i) => sink.check(b, i < Math.min(total, d.casting?.used[n - 1] ?? 0)));
   }
-  spellRows(s, 1, d, { level: "SPELL LEVEL", name: "SPELL NAME", time: "CASTING TIME", range: "RANGE", notes: "SPELL NOTES", boxX: [239, 261, 283] });
+  const left = spellRows(s, 1, d, { level: "SPELL LEVEL", name: "SPELL NAME", time: "CASTING TIME", range: "RANGE", notes: "SPELL NOTES", boxX: [239, 261, 283] });
+  if (left.length) notes.push(`${left.length} spell${left.length === 1 ? "" : "s"} did not fit in the spell table (${left.join(", ")}). Tick "Spell cards" to add every spell to the end of the PDF.`);
   s.set("LANGUAGES", d.languages, 1);
   s.set("EQUIPMENT", [d.armorWorn && `Armor: ${d.armorWorn}`, d.weaponsText && `Weapons: ${d.weaponsText.replace(/\n/g, ", ")}`, d.otherGear.replace(/\n/g, ", ")].filter(Boolean).join("\n"), 1);
   d.magicItems.slice(0, 3).forEach((m, i) => { s.set(`ATTUNMENT ${i + 1}`, m.name, 1); s.boxFor(`ATTUNMENT ${i + 1}`, m.attuned); });
@@ -160,6 +165,7 @@ export function fill2024Form(ws: W[], d: FillData, sink: Sink): void {
   // Newer copies of the sheet split the text into three boxes.
   s.set("APPEARANCE", d.appearance, 1); s.set("Alignment", d.alignment, 1); s.set("BACKSTORY / PERSONALITY", [d.personality, d.backstory].filter(Boolean).join("\n\n"), 1);
   for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) s.set(k.toUpperCase(), d.coins[k] === "0" ? "" : d.coins[k], 1);
+  return notes;
 }
 
 // ---------------------------------------------------------------- 2014 classic
@@ -208,10 +214,10 @@ export function fill2014(ws: W[], d: FillData, sink: Sink): void {
   death.forEach((b, i) => sink.check(b, i < 3 ? i < d.deathSuccess : i - 3 < d.deathFail));
   for (const b of ws) if (b.t === "Btn" && /image/i.test(b.name)) sink.image?.(b);
   // Personality text and notes
-  const person = d.personality.split("\n");
-  const pick = (label: string) => person.find((l) => l.toLowerCase().startsWith(`${label}:`))?.replace(/^[^:]+:\s*/, "") ?? "";
-  s.set("PersonalityTraits", pick("traits") || pick("personality traits")); s.set("Ideals", pick("ideals")); s.set("Bonds", pick("bonds")); s.set("Flaws", pick("flaws"));
-  if (!pick("traits") && !pick("ideals") && !pick("bonds") && !pick("flaws")) s.set("PersonalityTraits", d.personality);
+  const person = splitPersonality(d.personality);
+  if (person.found) {
+    s.set("PersonalityTraits", person.traits); s.set("Ideals", person.ideals); s.set("Bonds", person.bonds); s.set("Flaws", person.flaws);
+  } else s.set("PersonalityTraits", d.personality);
   s.set("Backstory", d.backstory); s.set("Allies", d.body.allies); s.set("Treasure", d.magicItems.map((m) => m.name).join(", "));
   s.set("Age", d.body.age); s.set("Height", d.body.height); s.set("Weight", d.body.weight); s.set("Eyes", d.body.eyes); s.set("Skin", d.body.skin); s.set("Hair", d.body.hair);
   s.set("FactionName", d.body.deity); s.set("Feat+Traits", d.notes);
@@ -222,7 +228,9 @@ export function fill2014(ws: W[], d: FillData, sink: Sink): void {
     for (let n = 1; n <= 9; n++) {
       const total = d.casting.slots[n - 1] ?? 0;
       s.set(`SlotsTotal ${18 + n}`, total || "", 2);
-      s.set(`SlotsRemaining ${18 + n}`, total ? Math.max(0, total - (d.casting.used[n - 1] ?? 0)) : "", 2);
+      // The field is called "remaining", but the printed box above it says "slots expended".
+      const used = d.casting.used[n - 1] ?? 0;
+      s.set(`SlotsRemaining ${18 + n}`, total && used ? Math.min(total, used) : "", 2);
     }
   }
   // The spell name boxes belong to a level by the heading above them in the same column.
@@ -334,7 +342,14 @@ export function formSink(doc: PDFDocument, font: PDFFont): Sink & { done(): void
         const page = doc.getPage(w.p);
         const multi = wantsMulti(font, value, w);
         const { lines, size } = layout(font, value, w.w, w.h, multi);
-        lines.forEach((l, i) => page.drawText(l, { x: w.x + (!multi && (w.w <= 50 || isShort(value)) ? (w.w - font.widthOfTextAtSize(l, size)) / 2 : 2), y: multi ? w.y + w.h - 2 - size - i * Math.max(size * 1.15, font.heightAtSize(size) * 1.2) : w.y + (w.h - size * 0.72) / 2, size, font, color: BLACK }));
+        // Line up with the neighbouring fields: centre only where the form itself centres this field.
+        let centred = false;
+        try {
+          centred = form.getTextField(w.name).getAlignment() === TextAlignment.Center;
+        } catch {
+          centred = !multi && w.w <= 50;
+        }
+        lines.forEach((l, i) => page.drawText(l, { x: w.x + (centred ? (w.w - font.widthOfTextAtSize(l, size)) / 2 : 2), y: multi ? w.y + w.h - 2 - size - i * Math.max(size * 1.15, font.heightAtSize(size) * 1.2) : w.y + (w.h - size * 0.72) / 2, size, font, color: BLACK }));
         return;
       }
       try {

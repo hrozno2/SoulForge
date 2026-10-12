@@ -9,6 +9,7 @@ it("shortens casting times and ranges for the sheet boxes", () => {
   expect(shortRange("Self (15-foot Cone)")).toBe("15ft cone");
   expect(shortRange("Self (30-foot radius)")).toBe("30ft rad");
   expect(shortRange("Self (60-foot line)")).toBe("60ft line");
+  expect(shortRange("Self (10-foot Emanation)")).toBe("10ft eman");
   expect(shortRange("120 feet")).toBe("120 ft");
   expect(shortRange("Self")).toBe("Self");
 });

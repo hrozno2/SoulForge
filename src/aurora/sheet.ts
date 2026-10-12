@@ -1,5 +1,5 @@
 import type { AElement } from "./types";
-import { FULL_CASTER_SLOTS, itemWeight, sharedSlotLevel, type ActiveElement, type Resolved, type SpellPick } from "./engine";
+import { FULL_CASTER_SLOTS, itemWeight, multiclassCasterLevel, sharedSlotLevel, type ActiveElement, type Resolved, type SpellPick } from "./engine";
 import { ABILITY_IDS, SKILL_ABILITY, type AbilityId } from "./character";
 
 const lc = (s: string) => s.toLowerCase();
@@ -50,6 +50,8 @@ export interface AttackLine {
   /** True when the line is worked out from an equipped weapon. */
   auto?: boolean;
   hiddenByEdit?: boolean;
+  /** The weapon element, for weapons. */
+  elId?: string;
   name: string;
   bonus: number;
   damage: string;
@@ -89,6 +91,8 @@ export interface SheetData {
   attacks: AttackLine[];
   /** Every attack including ones the player hid, for the editing list. */
   attacksAll: AttackLine[];
+  /** The same, counting weapons that are carried but not equipped. Used by sheets when nothing is equipped. */
+  attacksCarried: AttackLine[];
   weight: { carried: number; capacity: number };
   attunement: { current: number; max: number };
   size?: string;
@@ -173,8 +177,9 @@ function buildCasting(r: Resolved): CastingLine[] {
   const ch = r.character;
   const entries = [...r.spellcasting.values()];
   const nonPact = entries.filter((e) => !(r.stats.get(`${lc(e.name)}:spellcasting:slots:count`) > 0));
-  const useShared = nonPact.length > 1 && r.stats.get("multiclass:spellcasting:level") > 0;
-  const sharedRow = useShared ? (FULL_CASTER_SLOTS[Math.min(20, r.stats.get("multiclass:spellcasting:level"))] ?? []) : [];
+  const mcLevel = multiclassCasterLevel(r, r.reg);
+  const useShared = nonPact.length > 1 && mcLevel > 0;
+  const sharedRow = useShared ? (FULL_CASTER_SLOTS[Math.min(20, mcLevel)] ?? []) : [];
 
   return entries.map((e) => {
     const key = lc(e.name);
@@ -250,14 +255,16 @@ function buildAc(r: Resolved): { value: number; parts: string[] } {
   return { value, parts };
 }
 
-function buildAttacks(r: Resolved): AttackLine[] {
+/** Attack lines from equipped weapons and custom attacks. With `carried`, weapons that are only carried count too, once per kind. */
+function buildAttacks(r: Resolved, carried = false): AttackLine[] {
   const s = r.stats;
   const prof = s.get("proficiency");
   const out: AttackLine[] = [];
   const mods = (a: AbilityId) => s.get(`${a}:modifier`);
   for (const it of r.character.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;
-    if (!it.equipped || !el || el.type !== "Weapon") continue;
+    if ((!it.equipped && !carried) || !el || el.type !== "Weapon") continue;
+    if (carried && !it.equipped && out.some((o) => o.elId === el.id)) continue;
     const tags = el.supports.map(lc);
     const ranged = tags.some((t) => t.includes("ranged"));
     const finesse = tags.some((t) => t.includes("finesse"));
@@ -277,6 +284,7 @@ function buildAttacks(r: Resolved): AttackLine[] {
     const edit = r.character.attackEdits?.[it.uid];
     const line: AttackLine = {
       id: it.uid,
+      elId: el.id,
       auto: true,
       name: edit?.name?.trim() || el.name,
       bonus: mods(ability) + (proficient ? prof : 0) + atkExtra + (edit?.bonusAdjust ?? 0),
@@ -377,6 +385,7 @@ export function buildSheet(r: Resolved): SheetData {
     features,
     attacks: buildAttacks(r).filter((a) => !a.hiddenByEdit),
     attacksAll: buildAttacks(r),
+    attacksCarried: buildAttacks(r, true).filter((a) => !a.hiddenByEdit),
     weight: { carried: Math.round(carried * 10) / 10, capacity: s.get("strength") * 15 },
     attunement: { current: s.get("attunement:current"), max: s.get("attunement:max") },
     size: sizeEl?.el.name,

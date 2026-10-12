@@ -339,9 +339,42 @@ export function resolveSupports(filter: string, casting: string | undefined, pas
   return filter.replace(/\$\(spellcasting:list\)/g, listExpr).replace(/\$\(spellcasting:slots\)/g, slotExpr);
 }
 
+const HALF_CASTERS = new Set(["paladin", "ranger", "artificer"]);
+const FULL_CASTERS = new Set(["bard", "cleric", "druid", "sorcerer", "wizard"]);
+
+/**
+ * The combined caster level for multiclass spell slots. Content may state it; when it does not, it is worked out from
+ * the rules: full casters count their level, half casters half (rounded up in the 2024 rules, down in 2014, always up
+ * for the artificer), third casters such as the Eldritch Knight a third. Other casters count the full caster level whose
+ * slots match their own. Zero when the character has fewer than two classes that use the shared table.
+ */
+export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
+  const stated = pass.stats.get("multiclass:spellcasting:level");
+  if (stated > 0) return stated;
+  const own = [...pass.spellcasting.values()].filter((e) => !(pass.stats.get(`${lc(e.name)}:spellcasting:slots:count`) > 0));
+  const byOwner = new Map(own.map((e) => [e.owner, e]));
+  if (byOwner.size < 2) return 0;
+  let total = 0;
+  for (const e of byOwner.values()) {
+    const cls = reg?.get(e.owner);
+    const name = lc(cls?.name ?? (e.owner.match(/CLASS_([A-Z]+)$/i)?.[1] ?? e.name));
+    const modern = /PHB24|XPHB|2024/i.test(`${e.owner} ${cls?.source ?? ""}`);
+    if (FULL_CASTERS.has(name)) total += e.level;
+    else if (HALF_CASTERS.has(name)) total += name === "artificer" || modern ? Math.ceil(e.level / 2) : Math.floor(e.level / 2);
+    else if (name === "fighter" || name === "rogue") total += Math.floor(e.level / 3);
+    else {
+      // A caster this does not know: count the full caster level whose slots match its own.
+      const row = Array.from({ length: 9 }, (_, i) => pass.stats.get(`${lc(e.name)}:spellcasting:slots:${i + 1}`)).filter((n) => n > 0);
+      const match = FULL_CASTER_SLOTS.findIndex((r, i) => i > 0 && r.length === row.length && r.every((n, j) => n === row[j]));
+      total += match > 0 ? match : 0;
+    }
+  }
+  return total;
+}
+
 /** Highest spell level a shared multiclass slot table gives, 0 when not applicable. */
 export function sharedSlotLevel(pass: Pass): number {
-  const mc = pass.stats.get("multiclass:spellcasting:level");
+  const mc = multiclassCasterLevel(pass);
   if (mc <= 0) return 0;
   const row = FULL_CASTER_SLOTS[Math.min(20, mc)] ?? [];
   return row.length;

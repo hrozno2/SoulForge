@@ -410,7 +410,13 @@ function fillSlots(c: Ctx, page: number, which: "p2a" | "spells", d: FillData): 
 
 function spellHeader(c: Ctx, d: FillData, names: { ability: string; mod: string; dc: string; attack: string }): void {
   if (!d.casting) return;
-  setText(c, names.ability, d.casting.ability); setText(c, names.mod, d.casting.mod); setText(c, names.dc, d.casting.dc); setText(c, names.attack, d.casting.attack);
+  setText(c, names.ability, d.casting.ability);
+  // The sheet's three boxes read, top to bottom: modifier, save DC, attack bonus. Their field names do not match
+  // their boxes on every copy, so the values go by where each field sits, not by its name.
+  const top = (name: string) => Math.max(-1, ...c.widgets.filter((w) => w.name === name || w.name.startsWith(`${name}__p`)).map((w) => w.y));
+  const fields = [names.mod, names.dc, names.attack];
+  const placed = fields.every((f) => top(f) >= 0) ? [...fields].sort((a, b) => top(b) - top(a)) : fields;
+  setText(c, placed[0], d.casting.mod); setText(c, placed[1], d.casting.dc); setText(c, placed[2], d.casting.attack);
 }
 
 function fillSpellRows(c: Ctx, page: number, which: "p2a" | "spells", spells: SpellRow[]): void {

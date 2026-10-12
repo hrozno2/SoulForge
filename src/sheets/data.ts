@@ -70,7 +70,12 @@ export interface FillData {
   skills: Record<string, { bonus: string; prof: boolean; expert: boolean }>;
   armorTraining: { light: boolean; medium: boolean; heavy: boolean; shield: boolean };
   weaponTraining: { simple: boolean; martial: boolean; improvised: boolean };
+  /** Tools, plus single weapons a character is trained with, for sheets that have one box for both. */
   tools: string;
+  /** Tools and other proficiencies only. */
+  toolsOnly: string;
+  /** Single weapons a character is trained with, beyond simple and martial. */
+  weaponsOther: string;
   languages: string;
   traits: string[];
   feats: string[];
@@ -126,7 +131,11 @@ export const shortTime = (raw: string) => {
 /** Ranges as the sheets print them: "Self (15-foot Cone)" becomes "15ft cone". */
 export const shortRange = (s: string) => {
   const self = s.trim().match(/^Self\s*\((\d+)[-\s]*(?:foot|feet|ft)\.?[-\s]*(?:radius\s+)?(\w+)?\)$/i);
-  if (self) return `${self[1]}ft ${(self[2] ?? "").toLowerCase().replace("radius", "rad").replace("sphere", "sph")}`.trim();
+  const SHAPE: Record<string, string> = { radius: "rad", sphere: "sph", emanation: "eman", cylinder: "cyl", hemisphere: "hemi" };
+  if (self) {
+    const shape = (self[2] ?? "").toLowerCase();
+    return `${self[1]}ft ${SHAPE[shape] ?? shape}`.trim();
+  }
   return s.replace(/\s*feet\b/i, " ft").replace(/\s*mile(s)?\b/i, " mi").replace(/^Self \((.*)\)$/i, "S ($1)").trim();
 };
 export function shortDuration(s: string): { text: string; conc: boolean } {
@@ -172,7 +181,9 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
     heavy: /heavy armor|all armor/.test(profText), shield: /shield/.test(profText),
   };
   const weaponTraining = { simple: /simple/.test(profText), martial: /martial/.test(profText), improvised: false };
-  const other = [...sh.proficiencies.weapons.filter((w) => !/simple|martial/i.test(w)).map((w) => w.replace(/^Weapon Proficiency \((.*)\)$/, "$1")), ...sh.proficiencies.tools.map((t) => t.replace(/^Tool Proficiency \((.*)\)$/, "$1")), ...sh.proficiencies.other];
+  const specificWeapons = sh.proficiencies.weapons.filter((w) => !/simple|martial/i.test(w)).map((w) => w.replace(/^Weapon Proficiency \((.*)\)$/, "$1"));
+  const toolList = [...sh.proficiencies.tools.map((t) => t.replace(/^Tool Proficiency \((.*)\)$/, "$1")), ...sh.proficiencies.other];
+  const other = [...specificWeapons, ...toolList];
 
   const feat = (types: string[]) => sh.features.filter((f) => types.includes(f.type));
   const line = (f: { name: string; usage?: string; text: string }, max: number) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${sentence(f.text, max)}`;
@@ -238,10 +249,11 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
     inspiration: ch.play.inspiration, conditions: ch.play.conditions.join(", "), exhaustion: ch.play.conditions.find((c) => /exhaustion/i.test(c)) ? "1" : "",
     deathSuccess: ch.play.deathSaves.success, deathFail: ch.play.deathSaves.fail,
     profBonus: signed(sh.proficiency), initiative: signed(sh.initiative), passive: String(sh.passivePerception), abilities, skills, armorTraining, weaponTraining,
-    tools: other.join(", "), languages: sh.proficiencies.languages.join(", "),
+    tools: other.join(", "), toolsOnly: toolList.join(", "), weaponsOther: specificWeapons.join(", "), languages: sh.proficiencies.languages.join(", "),
     traits: feat(["Racial Trait"]).map((f) => line(f, 160)), feats: feat(["Feat", "Feat Feature", "Background Feature"]).map((f) => line(f, 160)),
     classFeatures: feat(["Class Feature", "Archetype Feature"]).map((f) => line(f, 260)),
-    weapons: sh.attacks.map((a) => ({ name: a.name, bonus: signed(a.bonus), damage: `${a.damage} ${a.damageType}`.trim(), notes: [a.properties, a.notes].filter(Boolean).join("; ") })),
+    // With nothing equipped, the sheet lists what the character carries rather than an empty table.
+    weapons: (sh.attacks.some((a) => a.auto) ? sh.attacks : sh.attacksCarried).map((a) => ({ name: a.name, bonus: signed(a.bonus), damage: `${a.damage} ${a.damageType}`.trim(), notes: [a.properties, a.notes].filter(Boolean).join("; ") })),
     casting, spells, armorWorn: armor?.el?.name ?? "", weaponsText, otherGear: gear, magicItems: magic,
     coins: { cp: String(ch.coins.cp), sp: String(ch.coins.sp), ep: String(ch.coins.ep), gp: String(ch.coins.gp), pp: String(ch.coins.pp) },
     carryCapacity: String(sh.weight.capacity), pushDrag: String(sh.weight.capacity * 2),
@@ -255,3 +267,19 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
 }
 
 export { ABILITY_LABEL, SKILL_ABILITY, has };
+
+/** Personality text split into the four boxes the sheets have. Labels may be singular or plural ("Ideal:" or "Ideals:"). */
+export function splitPersonality(text: string): { traits: string; ideals: string; bonds: string; flaws: string; found: boolean } {
+  const out = { traits: [] as string[], ideals: [] as string[], bonds: [] as string[], flaws: [] as string[] };
+  let found = false;
+  for (const line of text.split("\n")) {
+    const m = line.match(/^\s*([^:]{2,30}):\s*(.*)$/);
+    const label = m?.[1].toLowerCase() ?? "";
+    const key = /^(personality|traits?)\b/.test(label) ? "traits" : /^ideals?$/.test(label) ? "ideals" : /^bonds?$/.test(label) ? "bonds" : /^flaws?$/.test(label) ? "flaws" : undefined;
+    if (key && m) {
+      out[key].push(m[2].trim());
+      found = true;
+    }
+  }
+  return { traits: out.traits.join("\n"), ideals: out.ideals.join("\n"), bonds: out.bonds.join("\n"), flaws: out.flaws.join("\n"), found };
+}

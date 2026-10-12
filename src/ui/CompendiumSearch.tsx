@@ -40,7 +40,8 @@ export function CompendiumSearch() {
         ref={input}
         type="search"
         aria-label="Compendium search"
-        placeholder="Compendium search (Ctrl+K)"
+        placeholder="Search rules (Ctrl+K)"
+        title="Search the compendium (Ctrl+K)"
         value={q}
         onChange={(e) => { setQ(e.target.value); setOpen(true); setAt(0); }}
         onFocus={() => setOpen(true)}

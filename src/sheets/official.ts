@@ -87,11 +87,12 @@ const withAliases = (layout: LayoutId, ws: AutoField[]): AutoField[] => {
 };
 
 /** Fills the layout's fields: by hand-made mapping for the two big sheets, by matching names for the rest. */
-function run(layout: LayoutId, ws: AutoField[], data: FillData, sink: Sink): void {
-  if (layout === "2024") fill2024Form(ws, data, sink);
+function run(layout: LayoutId, ws: AutoField[], data: FillData, sink: Sink): string[] {
+  if (layout === "2024") return fill2024Form(ws, data, sink);
   else if (layout === "3p") fill2014(ws, data, sink);
   else if (layout === "alt2") fillAlt2(ws, data, sink);
   else autoFill(withAliases(layout, ws), data, sink);
+  return [];
 }
 
 /** Fills one of the official sheets, fillable or plain. */
@@ -107,14 +108,14 @@ export async function fillOfficialSheet(template: Uint8Array | ArrayBuffer, name
   if (!id.form) {
     const over = overlaySink(doc, f);
     const pics: W[] = [];
-    run(id.layout, known, data, { ...over, image: (w) => void pics.push(w) });
+    notes.push(...run(id.layout, known, data, { ...over, image: (w) => void pics.push(w) }));
     await placePortrait(doc, data, pics, notes, true);
     notes.push("This copy has no form fields, so the text is written onto the page and cannot be edited afterwards.");
     return { bytes: await doc.save(), notes, layout: id.layout, form: false };
   }
   const sink = formSink(doc, f);
   const ws: AutoField[] = sink.widgets.map((w) => ({ name: w.name, t: w.type === "Btn" ? "Btn" : "Tx", p: w.page, x: w.x, y: w.y, w: w.w, h: w.h }));
-  run(id.layout, ws, data, sink);
+  notes.push(...run(id.layout, ws, data, sink));
   sink.done();
   await placePortrait(doc, data, sink.images, notes);
   return { bytes: await doc.save({ updateFieldAppearances: false }), notes, layout: id.layout, form: true };

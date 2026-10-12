@@ -992,7 +992,7 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .csearch { position: relative; margin-left: auto; width: min(260px, 22vw); min-width: 150px; }
 .csearch input { width: 100%; box-sizing: border-box; padding: 6px 10px; font-size: 13px; background: #0b0e11; border: 1px solid var(--line); border-radius: 4px; color: var(--text); }
 .csearch input::placeholder { color: var(--muted); }
-.csearch-list { position: absolute; z-index: 40; right: 0; left: 0; top: calc(100% + 4px); margin: 0; padding: 4px; list-style: none; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: var(--shadow, 0 8px 24px #000a); max-height: 60vh; overflow: auto; min-width: 320px; }
+.csearch-list { position: absolute; z-index: 40; right: 0; left: auto; width: 360px; top: calc(100% + 4px); margin: 0; padding: 4px; list-style: none; background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; box-shadow: var(--shadow, 0 8px 24px #000a); max-height: 60vh; overflow: auto; min-width: 320px; }
 .csearch-list li { padding: 4px 8px; }
 .csearch-list button { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; width: 100%; text-align: left; background: none; border: 0; padding: 5px 6px; border-radius: 4px; font-weight: 400; letter-spacing: 0; text-transform: none; }
 .csearch-list button b { font: 600 14px var(--display); }
@@ -1147,3 +1147,8 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 :root[data-theme="light"] .pick-card { --fg: #c9a45c; }
 :root[data-theme="light"] .pick-card.dim { --fg: #6d6656; }
 .pick-card.dim::before { color: rgba(255, 255, 255, .05); }
+
+/* compendium search in the top bar: compact */
+.csearch { width: min(190px, 16vw); min-width: 130px; }
+.csearch input { padding: 4px 8px; font-size: 12px; height: 28px; }
+@media (max-width: 1100px) { .csearch { width: 130px; } }

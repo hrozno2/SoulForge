@@ -267,6 +267,35 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(page.locator(".hp-bar.wild")).toHaveCount(0);
   });
 
+  test.describe("tutorial", () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
+    test("opens for everyone, can be skipped, comes back next time, and never shows again when asked", async ({ page }) => {
+      await page.goto("/");
+      const dialog = page.getByRole("dialog", { name: "Tutorial" });
+      await expect(dialog).toBeVisible();
+      await expect(dialog).toContainText("Welcome to Soul Forge");
+      await dialog.getByRole("button", { name: "Next" }).click();
+      await expect(dialog).toContainText("Add rules content from Aurora");
+      // Skipping closes it for now only.
+      await dialog.getByRole("button", { name: "Skip for now" }).click();
+      await expect(dialog).toHaveCount(0);
+      await page.reload();
+      await expect(page.getByRole("dialog", { name: "Tutorial" })).toBeVisible();
+      // A step can take you where it is talking about.
+      await page.getByRole("button", { name: "Next" }).click();
+      await page.getByRole("button", { name: "Open the Content tab" }).click();
+      await expect(page.getByRole("dialog", { name: "Tutorial" })).toHaveCount(0);
+      await page.reload();
+      await page.getByRole("dialog", { name: "Tutorial" }).getByRole("button", { name: "Never show this again" }).click();
+      await page.reload();
+      await expect(page.getByRole("dialog", { name: "Tutorial" })).toHaveCount(0);
+      // It is still there under the menu.
+      await page.getByRole("button", { name: /^menu/i }).click();
+      await page.getByRole("button", { name: "Show the tutorial" }).click();
+      await expect(page.getByRole("dialog", { name: "Tutorial" })).toBeVisible();
+    });
+  });
+
   test("the homebrew builder makes a spell that shows up in the content browser", async ({ page }) => {
     await addTestContent(page);
     await tab(page, "Content");

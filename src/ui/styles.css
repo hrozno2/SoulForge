@@ -891,3 +891,14 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 /* Descriptions inside the level up window follow the theme's text colour. */
 .modal-page.themed .rich, .modal-page.themed .rich p, .modal-page.themed .levelup-features .rich { color: var(--text); background-color: transparent; background-image: none; box-shadow: none; border: 0; padding-left: 0; }
 .modal-page.themed .levelup-features .rich { font-size: 14px; opacity: .92; margin: 4px 0 0; }
+
+/* first-run tutorial */
+.modal-page.tutorial { width: min(640px, 100%); }
+.tutorial h2 { margin-top: 2px; }
+.tutorial ul { padding-left: 20px; }
+.tutorial .copy-link { display: block; word-break: break-all; padding: 6px 8px; background: var(--panel2); border: 1px solid var(--line); border-radius: 4px; font-size: 12px; }
+.tutorial-dots { display: flex; gap: 6px; justify-content: center; margin: 14px 0 8px; }
+.tutorial-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.tutorial-dots span.on { background: var(--gold); }
+.tutorial-nav { gap: 8px; flex-wrap: wrap; align-items: center; }
+.tutorial-nav .ghost { margin-left: auto; }

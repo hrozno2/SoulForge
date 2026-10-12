@@ -15,6 +15,8 @@ export default defineConfig({
     viewport: { width: 1280, height: 800 },
     acceptDownloads: true,
     trace: "retain-on-failure",
+    // The tutorial opens for everyone until they say never; most tests are about something else.
+    storageState: { cookies: [], origins: [{ origin: "http://localhost:4173", localStorage: [{ name: "charforge.tutorial", value: "never" }] }] },
   },
   webServer: {
     command: "npm run build && npx vite preview",

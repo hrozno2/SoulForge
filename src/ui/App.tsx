@@ -21,6 +21,7 @@ import { SettingsDialog, getSettings, useScaleShortcuts } from "./Settings";
 import { runAutoBackup } from "../aurora/backup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter } from "../aurora/foreign";
+import { Tutorial, tutorialWanted } from "./Tutorial";
 
 // The tabs that are not needed at start-up load on first use, which keeps the first screen quick.
 const MagicTab = lazy(() => import("./MagicTab").then((m) => ({ default: m.MagicTab })));
@@ -51,6 +52,7 @@ function loadCurrent(): { id: string; ch: Character } {
 export function App() {
   const [tab, setTab] = useState<Tab>("start");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(tutorialWanted);
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   useEffect(() => {
     const on = () => setLevelUpOpen(true);
@@ -145,9 +147,11 @@ export function App() {
         <AppMenu>
           <label className="menu-row">Theme <ThemePicker /></label>
           <button className="menu-item" onClick={() => setSettingsOpen(true)}>Settings...</button>
+          <button className="menu-item" onClick={() => setTutorialOpen(true)}>Show the tutorial</button>
           <button className="menu-item" onClick={() => updater.check(true)}>Check for updates</button>
         </AppMenu>
       </header>
+      {tutorialOpen && <Tutorial onClose={() => setTutorialOpen(false)} onGo={(t) => setTab(t as Tab)} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       {levelUpOpen && <Suspense fallback={null}><LevelUp r={r} ch={character} set={set} onDetail={setDetail} onClose={() => setLevelUpOpen(false)} /></Suspense>}
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} dismiss={updater.dismiss} />

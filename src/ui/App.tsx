@@ -16,7 +16,7 @@ import { DicePanel, setRollContext } from "./Dice";
 import { UiProvider } from "./Learn";
 import { ThemePicker } from "./Theme";
 import { HelpButton } from "./Help";
-import { AppMenu, Tabs } from "./TopBar";
+import { AppMenu, GroupNav } from "./TopBar";
 import { SettingsDialog, getSettings, useScaleShortcuts } from "./Settings";
 import { runAutoBackup } from "../aurora/backup";
 import { useUpdater } from "../updater";
@@ -34,7 +34,7 @@ const LevelUp = lazy(() => import("./LevelUp").then((m) => ({ default: m.LevelUp
 const ContentTab = lazy(() => import("./ContentTab").then((m) => ({ default: m.ContentTab })));
 
 type Tab = "start" | "build" | "magic" | "equipment" | "manage" | "play" | "sheet" | "content";
-const TABS: [Tab, string][] = [["start", "Home"], ["build", "Build"], ["magic", "Magic"], ["equipment", "Equipment"], ["manage", "Manage"], ["play", "Play"], ["sheet", "Sheet"], ["content", "Content"]];
+const TABS: [Tab, string][] = [["start", "Home"], ["build", "Build"], ["magic", "Magic"], ["equipment", "Equipment"], ["manage", "Manage"], ["play", "Play"], ["sheet", "Export"], ["content", "Content"]];
 const CUR_KEY = "charforge.current.v2";
 
 function loadCurrent(): { id: string; ch: Character } {
@@ -143,7 +143,16 @@ export function App() {
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width="28" height="28" />
           Soul Forge
         </strong>
-        <Tabs tabs={TABS.map(([key, label]) => ({ key, label: t(label), icon: (() => { const I = TAB_ICONS[key]; return I ? <I size={15} /> : undefined; })(), badge: key === "build" ? pending : key === "magic" ? magicList.length : undefined, badgeTitle: key === "build" && pending ? tip("Build", pendingList) : key === "magic" && magicList.length ? tip("Magic", magicList) : undefined }))} current={tab} onPick={setTab} />
+        <GroupNav current={tab} onPick={setTab} groups={(() => {
+          const defs = TABS.map(([key, label]) => ({ key, label: t(label), icon: (() => { const I = TAB_ICONS[key]; return I ? <I size={15} /> : undefined; })(), badge: key === "build" ? pending : key === "magic" ? magicList.length : undefined, badgeTitle: key === "build" && pending ? tip("Build", pendingList) : key === "magic" && magicList.length ? tip("Magic", magicList) : undefined }));
+          const pick = (...keys: Tab[]) => keys.map((k) => defs.find((d) => d.key === k)!).filter(Boolean);
+          return [
+            { key: "home", label: t("Home"), items: pick("start") },
+            { key: "build", label: t("Build"), icon: defs.find((d) => d.key === "build")?.icon, items: pick("build", "magic", "equipment") },
+            { key: "manage", label: t("Manage"), icon: defs.find((d) => d.key === "manage")?.icon, items: pick("manage", "content") },
+            { key: "sheet", label: t("Sheet"), icon: defs.find((d) => d.key === "sheet")?.icon, items: pick("play", "sheet") },
+          ];
+        })()} />
         <CompendiumSearch />
         <button className="who-badge" title="Character details" onClick={() => setTab("manage")}>
           {character.portrait ? <img src={character.portrait} alt="" /> : <span className="ph">{(character.name || "?").charAt(0)}</span>}
@@ -172,7 +181,7 @@ export function App() {
               <span className="saved" title="Characters save as you work">✓ Saved</span>
               <button onClick={() => window.dispatchEvent(new Event("cf-levelup"))} disabled={!character.classes.length}>Level up</button>
               <button onClick={() => setTab("play")}>Play</button>
-              <button onClick={() => setTab("sheet")}>Sheet</button>
+              <button onClick={() => setTab("sheet")}>Export</button>
             </div>
           )}
           <Suspense fallback={<p className="muted">Loading...</p>}>

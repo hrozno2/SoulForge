@@ -29,21 +29,17 @@ export function watchProblems(page: Page): { csp: string[]; errors: string[] } {
 
 export async function tab(page: Page, name: string): Promise<void> {
   const nav = page.locator("header nav");
-  const direct = nav.getByRole("button", { name: new RegExp(`^${name}`) });
-  const more = nav.getByRole("button", { name: /more/i });
-  // The bar re-measures after layout, so the tab can sit in the row or under More. Look again until one shows.
-  await expect(direct.or(more).first()).toBeVisible();
-  for (let i = 0; i < 20; i++) {
-    if (await direct.count()) return void (await direct.first().click());
-    if (await more.count()) {
-      await more.click();
-      const item = page.getByRole("button", { name: new RegExp(`^${name}`) });
-      if (await item.count()) return void (await item.first().click());
-      await page.keyboard.press("Escape");
-    }
-    await page.waitForTimeout(100);
+  await expect(nav).toBeVisible();
+  const re = new RegExp(`^${name}`);
+  // Pages sit in groups that roll out a menu. Look in each group first, then for a plain tab.
+  const groups = nav.locator('button[aria-haspopup="menu"]');
+  for (let i = 0; i < (await groups.count()); i++) {
+    await groups.nth(i).click();
+    const item = page.getByRole("menuitem", { name: re });
+    if (await item.count()) return void (await item.first().click());
+    await page.keyboard.press("Escape");
   }
-  throw new Error(`Tab not found: ${name}`);
+  await nav.getByRole("button", { name: re }).first().click();
 }
 
 /** Adds the test content through the Content tab and waits for it to load. */

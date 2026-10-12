@@ -952,3 +952,14 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .sheet-preview-frame img { max-width: 100%; height: auto; background: #fff; box-shadow: 0 4px 16px #0008; }
 .sheet-preview-busy { position: absolute; right: 12px; top: 8px; color: var(--muted); }
 .sheet-preview-nav { justify-content: center; align-items: center; gap: 14px; margin-top: 8px; }
+
+/* grouped main navigation with rollout menus */
+.group-nav { gap: 2px; }
+.nav-group .caret { margin-left: 6px; font-size: 10px; opacity: .7; }
+.nav-menu { min-width: 210px; padding: 6px; }
+.nav-menu .menu-item { display: flex; align-items: center; justify-content: flex-start; gap: 12px; width: 100%; text-align: left; padding: 9px 12px; border-radius: 4px; font: 700 13px var(--body); letter-spacing: .1em; text-transform: uppercase; }
+.nav-menu .menu-item .nav-item-icon { display: inline-flex; width: 18px; justify-content: center; opacity: .8; }
+.nav-menu .menu-item .nav-item-icon .ico { margin: 0; }
+.nav-menu .menu-item .nav-item-label { flex: 1; }
+.nav-menu .menu-item.active { background: color-mix(in srgb, var(--accent) 22%, transparent); color: #fff; }
+.nav-menu .menu-item:hover { background: #ffffff12; }

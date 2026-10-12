@@ -66,7 +66,7 @@ test.describe("Soul Forge smoke tests", () => {
     const seen = watchProblems(page);
     await addTestContent(page);
     await randomCharacter(page);
-    await tab(page, "Sheet");
+    await tab(page, "Export");
     await page.getByRole("button", { name: /export pdf/i }).click();
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: /create pdf/i }).click();
@@ -144,7 +144,7 @@ test.describe("Soul Forge smoke tests", () => {
     await page.getByRole("button", { name: /settings/i }).click();
     await page.getByLabel("Language", { exact: true }).selectOption("de");
     await page.getByRole("button", { name: "Close" }).click();
-    await expect(page.locator("header nav")).toContainText("Spielen");
+    await expect(page.locator("header nav")).toContainText("Aufbau");
   });
 
   test("point buy follows the standard table and custom house rules", async ({ page }) => {
@@ -321,7 +321,7 @@ test.describe("Soul Forge smoke tests", () => {
     writeFileSync(file, await doc.save());
     await addTestContent(page);
     await randomCharacter(page);
-    await tab(page, "Sheet");
+    await tab(page, "Export");
     await page.getByRole("button", { name: "Export PDF..." }).click();
     const choose = async () => {
       const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.getByRole("button", { name: "Add sheet PDF..." }).click()]);

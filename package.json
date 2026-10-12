@@ -6,7 +6,8 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "tauri": "tauri",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test-app": "scripts/test-app.sh --open"
   },
   "dependencies": {
     "@fontsource/alegreya-sans": "^5.3.0",

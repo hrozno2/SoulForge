@@ -1,0 +1,217 @@
+/**
+ * Fills a fillable character sheet Soul Forge has never seen. Each field is read for what it is called, and what its tooltip says,
+ * then matched to a piece of the character: name, class, scores, skills, attacks, spells and so on. What cannot be matched
+ * is left alone and reported, so the player knows what to type in by hand.
+ */
+import type { FillData } from "./data";
+import type { Sink, W } from "./forms";
+
+export interface AutoField extends W {
+  /** The field's tooltip, which many sheets use to say what the field is for. */
+  tip?: string;
+  multiline?: boolean;
+}
+
+export type Plan = Map<string, AutoField[]>;
+
+const ABIL = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma", chr: "charisma" } as const;
+type A3 = keyof typeof ABIL;
+
+const SKILLS: [string, RegExp][] = [
+  ["acrobatics", /acrobat/], ["animal handling", /animal/], ["arcana", /arcana/], ["athletics", /athlet/], ["deception", /decept/], ["history", /histor/], ["insight", /insight/],
+  ["intimidation", /intimid/], ["investigation", /investig/], ["medicine", /medic/], ["nature", /^nature|nature$|\bnature\b/], ["perception", /^perception|perception$/], ["performance", /perform/],
+  ["persuasion", /persua/], ["religion", /relig/], ["sleight of hand", /sleight/], ["stealth", /stealth/], ["survival", /surviv/],
+];
+
+const norm = (s: string) => s.toLowerCase().replace(/[_\-./\\()[\]:]+/g, " ").replace(/\s+/g, " ").trim();
+const squash = (s: string) => norm(s).replace(/ /g, "");
+
+/** What a text field is, as a key, or nothing when it cannot be told. */
+export function classify(f: AutoField): string | undefined {
+  const raw = norm(f.name);
+  const tip = norm(f.tip ?? "");
+  const both = `${raw} ${tip}`.trim();
+  const sq = squash(f.name);
+  const pick = (re: RegExp) => re.test(raw) || re.test(sq) || (tip !== "" && re.test(tip));
+
+  // Rows of attacks and spells come first, because their words overlap with others.
+  const wpn = raw.match(/(?:wpn|weapon|attack)s?\s*(\d+)?\s*(name|atk\s*bonus|attack\s*bonus|bonus|dmg|damage|notes?|type|range)?/);
+  if (wpn && /(wpn|weapon)/.test(raw) && (wpn[1] || /name|atk|bonus|damage|dmg/.test(raw))) {
+    const row = wpn[1] ?? (raw.match(/(\d+)\s*$/)?.[1]) ?? "1";
+    const what = /name/.test(raw) ? "name" : /atk|attack|bonus|dc/.test(raw) ? "bonus" : /dam|dmg/.test(raw) ? "damage" : /note/.test(raw) ? "notes" : "name";
+    return `weapon.${row}.${what}`;
+  }
+  if (/^spells?\s*\d+$/.test(raw) || /^spell\s*name\s*\d*$/.test(raw) || /^spell\s*\d+\s*name$/.test(raw)) return "spell.name";
+  if (/^spell\s*level\s*\d*$/.test(raw)) return "spell.level";
+  if (/^(casting time|spell casting time)\s*\d*$/.test(raw)) return "spell.time";
+  if (/^(range|spell range)\s*\d*$/.test(raw)) return "spell.range";
+  if (/^(spell\s*)?(notes?|duration)\s*\d*$/.test(raw) && /spell/.test(raw)) return "spell.notes";
+
+  if (pick(/spell.*(save|dc)|spellsavedc/)) return "casting.dc";
+  if (pick(/spell.*(atk|attack)/)) return "casting.attack";
+  if (pick(/spell.*(abil)|spellcasting ability/)) return "casting.ability";
+  if (pick(/spellcasting.*(mod)/)) return "casting.mod";
+  if (pick(/spellcasting class|spell class/)) return "casting.class";
+  // Spell slot fields: the number may be the level (LVL1 TOTAL) or just a running number on the sheet (SlotsTotal 19).
+  const slot = raw.match(/(?:lvl|level|slots?)\s*(\d+)\s*(total|slots?)?|(?:slots?)\s*(?:total|remaining|expended)\s*(\d+)/);
+  if (slot && /slot|total/.test(raw)) {
+    const n = slot[1] ?? slot[3];
+    return /remain|expend|used/.test(raw) ? `slots.${n}.left` : `slots.${n}.total`;
+  }
+  const att = raw.match(/attun\w*\s*(\d+)?/);
+  if (att && /attun/.test(raw)) return `attune.${att[1] ?? "1"}`;
+
+  // Abilities, saves and modifiers
+  const ab = (Object.keys(ABIL) as A3[]).find((k) => new RegExp(`^(st\\s*)?${k}|${k}(ength|terity|stitution|elligence|dom|isma)?`).test(raw));
+  if (ab) {
+    const full = ABIL[ab];
+    if (/save|saving|^st /.test(raw) || (/\bst\b/.test(raw))) return `${full}.save`;
+    if (/mod|bonus/.test(raw)) return `${full}.mod`;
+    if (new RegExp(`^${ab}(\\s*(score|total))?$`).test(raw) || new RegExp(`^${full}(\\s*score)?$`).test(raw)) return `${full}.score`;
+  }
+  for (const [skill, re] of SKILLS) if (re.test(raw) && raw.split(" ").length <= 4 && !/save|spell/.test(raw)) return `skill.${skill}`;
+
+  const pairs: [RegExp, string][] = [
+    [/^(char(acter)?\s*name|name|charactername\s*\d*)$/, "name"],
+    [/class\s*(&|and)?\s*level|classlevel/, "classLevel"],
+    [/^class(es)?$/, "class"],
+    [/^(race|species|ancestry|lineage)\b/, "species"],
+    [/^background$/, "background"],
+    [/^(sub\s*class|archetype)$/, "subclass"],
+    [/^(level|lvl)$/, "level"],
+    [/^(alignment)$/, "alignment"],
+    [/^(xp|exp|experience( points)?)(\s*points)?$/, "xp"],
+    [/player/, "player"],
+    [/spent.*(hd|hit dice)/, "hd.spent"], [/max.*(hd|hit dice)/, "hd.max"],
+    [/^(hp|hit points?)\s*(max|maximum)|^max\s*hp|hpmax|hit point maximum/, "hp.max"],
+    [/^(hp|hit points?)\s*(cur|current)|^current\s*hp|hpcurrent|current hit/, "hp.current"],
+    [/(temp|temporary)\s*(hp|hit)|hptemp/, "hp.temp"],
+    [/^(hp|hit points)$/, "hp.current"],
+    [/^(ac|armor class|armour class)$/, "ac"],
+    [/^(init|initiative)$/, "initiative"],
+    [/^speed$|^walking speed$/, "speed"],
+    [/^size$/, "size"],
+    [/^(prof|proficiency)\s*(bonus)?$|profbonus/, "prof"],
+    [/passive/, "passive"],
+    [/^inspiration$|heroic inspiration/, "inspiration"],
+    [/hit dice|^hd\b|^hdtotal|total hit dice/, "hd"],
+    [/^(cp|copper)$/, "coin.cp"], [/^(sp|silver)$/, "coin.sp"], [/^(ep|electrum)$/, "coin.ep"], [/^(gp|gold)$/, "coin.gp"], [/^(pp|platinum)$/, "coin.pp"],
+    [/personality|traits(?! and)$/, "personality"], [/^ideals?$/, "ideals"], [/^bonds?$/, "bonds"], [/^flaws?$/, "flaws"],
+    [/^(age)$/, "age"], [/^height$/, "height"], [/^weight$/, "weight"], [/^eyes$/, "eyes"], [/^skin$/, "skin"], [/^hair$/, "hair"],
+    [/appearance/, "appearance"], [/back\s*story|^backstory|background story/, "backstory"], [/^allies|organi[sz]ations/, "allies"], [/^treasure/, "treasure"],
+    [/features?\s*(&|and|\+)?\s*traits?|^features$|class features/, "features"], [/species traits|racial traits|race traits/, "traits"], [/^feats$/, "feats"],
+    [/^equipment|^gear|^inventory/, "equipment"], [/languages?\s*(&|and)?\s*prof|^other prof|^proficiencies|prof.*lang|languages/, "profs"], [/^tool/, "tools"], [/^weapon prof/, "weaponProf"],
+    [/attacks.*spell|attacks & spell/, "attacksText"], [/^notes?$|additional/, "notes"],
+  ];
+  for (const [re, key] of pairs) if (re.test(raw) || re.test(sq) || (tip && re.test(tip) && !/\d/.test(tip))) return key;
+  void both;
+  return undefined;
+}
+
+/** Everything that can be matched, grouped by what it is. */
+export function buildPlan(fields: AutoField[]): { plan: Plan; unmatched: AutoField[] } {
+  const plan: Plan = new Map();
+  const unmatched: AutoField[] = [];
+  const seen = new Set<string>();
+  for (const f of fields) {
+    if (f.t !== "Tx") continue;
+    if (seen.has(f.name)) continue;
+    seen.add(f.name);
+    const key = classify(f);
+    if (!key) {
+      unmatched.push(f);
+      continue;
+    }
+    (plan.get(key) ?? plan.set(key, []).get(key)!).push(f);
+  }
+  return { plan, unmatched };
+}
+
+const num = (s: string) => Number(String(s).replace("+", "")) || 0;
+const cy = (w: W) => w.y + w.h / 2;
+const cx = (w: W) => w.x + w.w / 2;
+
+/** Check boxes beside a field: nearest one at the same height, on its left, then on its right. */
+function boxBeside(all: AutoField[], f: W): W | undefined {
+  const near = all.filter((b) => b.t === "Btn" && b.p === f.p && Math.abs(cy(b) - cy(f)) <= 6);
+  const left = near.filter((b) => cx(b) < f.x + 2 && f.x - cx(b) <= 34).sort((a, b) => cx(b) - cx(a))[0];
+  return left ?? near.filter((b) => cx(b) > f.x + f.w - 2 && cx(b) - (f.x + f.w) <= 20).sort((a, b) => cx(a) - cx(b))[0];
+}
+
+export interface AutoResult {
+  matched: number;
+  total: number;
+  /** Field names that could not be matched, for the player to fill in by hand. */
+  unmatched: string[];
+}
+
+/** Writes the character into a sheet using what the field names and tooltips say. */
+export function autoFill(fields: AutoField[], d: FillData, sink: Sink): AutoResult {
+  const { plan, unmatched } = buildPlan(fields);
+  let matched = 0;
+  const put = (key: string, value: string | number | undefined, multi = false) => {
+    const list = plan.get(key);
+    if (!list || value === undefined || String(value) === "") return;
+    for (const f of list) {
+      sink.text(f, String(value));
+      matched++;
+    }
+    void multi;
+  };
+  const abilities = Object.keys(d.abilities) as (keyof FillData["abilities"])[];
+  put("name", d.name); put("class", d.className); put("species", d.species); put("background", d.background); put("subclass", d.subclass);
+  put("classLevel", [d.className, d.level].filter(Boolean).join(" ")); put("level", d.level); put("alignment", d.alignment); put("xp", d.xp || ""); put("player", "");
+  put("hp.max", d.hpMax); put("hp.current", d.hpCurrent); put("hp.temp", d.hpTemp || ""); put("ac", d.ac); put("initiative", d.initiative); put("speed", d.speed ? `${d.speed} ft` : "");
+  put("size", d.size); put("prof", d.profBonus); put("hd", d.hdMax);
+  put("passive", String(10 + num(d.skills.perception?.bonus ?? "+0")));
+  put("inspiration", d.inspiration ? "1" : "");
+  for (const a of abilities) {
+    const ab = d.abilities[a];
+    put(`${a}.score`, ab.score); put(`${a}.mod`, ab.mod);
+    for (const f of plan.get(`${a}.save`) ?? []) {
+      sink.text(f, ab.save); matched++;
+      const box = boxBeside(fields, f);
+      if (box) sink.check(box, ab.saveProf);
+    }
+  }
+  for (const [skill, k] of Object.entries(d.skills)) {
+    for (const f of plan.get(`skill.${skill}`) ?? []) {
+      sink.text(f, k.bonus); matched++;
+      const box = boxBeside(fields, f);
+      if (box) sink.check(box, k.prof || k.expert);
+    }
+  }
+  for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) put(`coin.${k}`, d.coins[k] === "0" ? "" : d.coins[k]);
+  d.weapons.slice(0, 8).forEach((w, i) => {
+    for (const row of [String(i + 1), ...(i === 0 ? [""] : [])]) {
+      put(`weapon.${row || "1"}.name`, w.name); put(`weapon.${row || "1"}.bonus`, w.bonus); put(`weapon.${row || "1"}.damage`, w.damage); put(`weapon.${row || "1"}.notes`, w.notes);
+    }
+  });
+  const feat = (g: string) => d.featureList.filter((f) => f.group === g).map((f) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${f.text}`).join("\n");
+  const allFeatures = d.featureList.map((f) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${f.text}`).join("\n");
+  put("features", plan.has("traits") ? feat("Class features") : allFeatures); put("traits", feat("Species traits")); put("feats", feat("Feats"));
+  put("equipment", [d.armorWorn, d.weaponsText.replace(/\n/g, ", "), d.otherGear.replace(/\n/g, ", ")].filter(Boolean).join("\n"));
+  put("profs", [d.languages && `Languages: ${d.languages}`, d.tools && `Tools: ${d.tools}`].filter(Boolean).join("\n")); put("tools", d.tools);
+  put("weaponProf", [d.weaponTraining.simple && "Simple", d.weaponTraining.martial && "Martial"].filter(Boolean).join(", "));
+  const person = d.personality.split("\n");
+  const pick = (label: string) => person.find((l) => l.toLowerCase().startsWith(`${label}:`))?.replace(/^[^:]+:\s*/, "") ?? "";
+  put("ideals", pick("ideals")); put("bonds", pick("bonds")); put("flaws", pick("flaws"));
+  put("personality", plan.has("ideals") || plan.has("bonds") ? pick("traits") : d.personality);
+  put("backstory", d.backstory); put("appearance", d.appearance); put("allies", ""); put("notes", d.notes); put("treasure", d.magicItems.map((m) => m.name).join(", "));
+  put("attacksText", d.casting ? `Spell save DC ${d.casting.dc}, spell attack ${d.casting.attack}` : "");
+  if (d.casting) { put("casting.ability", d.casting.ability); put("casting.mod", d.casting.mod); put("casting.dc", d.casting.dc); put("casting.attack", d.casting.attack); put("casting.class", d.className); }
+  // Slot fields are numbered either by level or by a running number; rank the numbers to get the level.
+  const slotNums = [...new Set([...plan.keys()].map((k) => k.match(/^slots\.(\d+)\./)?.[1]).filter(Boolean).map(Number))].sort((a, b) => a - b);
+  slotNums.forEach((n, i) => {
+    const level = slotNums[slotNums.length - 1] > 9 ? i + 1 : n;
+    const total = d.casting?.slots[level - 1] ?? 0;
+    if (!total) return;
+    put(`slots.${n}.total`, total); put(`slots.${n}.left`, Math.max(0, total - (d.casting?.used[level - 1] ?? 0)));
+  });
+  d.magicItems.slice(0, 5).forEach((m, i) => put(`attune.${i + 1}`, m.name));
+  put("hd.spent", d.hdSpent || ""); put("hd.max", d.hdMax);
+  // Spells go into the spell name fields in reading order, cantrips first.
+  const names = (plan.get("spell.name") ?? []).slice().sort((a, b) => a.p - b.p || Math.round(b.y / 4) - Math.round(a.y / 4) || a.x - b.x);
+  d.spells.slice(0, names.length).forEach((sp, i) => { sink.text(names[i], sp.name); matched++; });
+  return { matched, total: new Set(fields.filter((f) => f.t === "Tx").map((f) => f.name)).size, unmatched: unmatched.map((u) => u.name.trim()) };
+}

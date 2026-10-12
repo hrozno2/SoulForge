@@ -39,6 +39,7 @@ export interface TranslatorConfig {
 }
 
 import { lookup, type Glossary } from "./glossary";
+import { desktopFetch } from "../net";
 
 export const DEFAULT_TRANSLATOR: TranslatorConfig = { provider: "gfree", key: "", url: "https://libretranslate.com" };
 
@@ -47,12 +48,6 @@ export type BatchTranslator = (texts: string[], target: string) => Promise<strin
 
 /** DeepL wants its own language codes; Portuguese must say which. */
 const DEEPL_LANG: Record<string, string> = { pt: "PT-BR", nb: "NB", el: "EL", uk: "UK" };
-
-/** DeepL does not allow requests from a web page, so they go out through the desktop app's own network access. */
-async function desktopFetch(): Promise<typeof fetch> {
-  if (!(window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) throw new Error("DeepL works in the desktop app only, because DeepL does not accept requests from a web page. Use the app, or pick another service.");
-  return (await import("@tauri-apps/plugin-http")).fetch as unknown as typeof fetch;
-}
 
 const hash = (s: string) => {
   let h = 5381;

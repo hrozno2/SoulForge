@@ -90,6 +90,8 @@ export interface FillData {
   portrait?: string;
   companion?: CompanionFill;
   /** Every feature with its full text, grouped, for sheets with room to print it. */
+  /** Details a sheet may have its own boxes for. */
+  body: { age: string; height: string; weight: string; eyes: string; hair: string; skin: string; gender: string; deity: string; allies: string; player: string };
   featureList: { group: string; name: string; usage: string; text: string }[];
 }
 
@@ -229,6 +231,7 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
     personality: [...sh.lists.map((l) => `${l.name}: ${l.texts.join(" ")}`), ch.info.traits && `Traits: ${ch.info.traits}`, ch.info.ideals && `Ideals: ${ch.info.ideals}`, ch.info.bonds && `Bonds: ${ch.info.bonds}`, ch.info.flaws && `Flaws: ${ch.info.flaws}`].filter(Boolean).join("\n"),
     appearance: [ch.info.gender, ch.info.age && `Age ${ch.info.age}`, ch.info.height, ch.info.weight, ch.info.eyes && `${ch.info.eyes} eyes`, ch.info.hair && `${ch.info.hair} hair`, ch.info.skin && `${ch.info.skin} skin`].filter(Boolean).join(", "),
     alignment: ch.info.alignment, notes: ch.notes, portrait: ch.portrait, companion: comp,
+    body: { age: ch.info.age ?? "", height: ch.info.height ?? "", weight: ch.info.weight ?? "", eyes: ch.info.eyes ?? "", hair: ch.info.hair ?? "", skin: ch.info.skin ?? "", gender: ch.info.gender ?? "", deity: ch.info.deity ?? "", allies: ch.info.allies ?? "", player: ch.playerName ?? "" },
     featureList: ([["Class features", ["Class Feature", "Archetype Feature"]], ["Species traits", ["Racial Trait"]], ["Feats", ["Feat", "Feat Feature", "Background Feature"]]] as [string, string[]][]).flatMap(([group, types]) => feat(types).map((f) => ({ group, name: f.name, usage: f.usage ?? "", text: f.text.replace(/\s+/g, " ").trim() }))),
   };
 }

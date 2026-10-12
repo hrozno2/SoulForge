@@ -160,7 +160,7 @@ export async function deleteCharacterRecord(id: string): Promise<void> {
 export interface TemplateRecord {
   id: string;
   name: string;
-  kind: "dldm5e24" | "companion" | "wotc2024";
+  kind: "dldm5e24" | "companion" | "wotc2024" | "wotc2024form" | "wotc2014form" | "wotc2014" | "auto";
   /** For DLDM sheets, the page styles it contains. For companion sheets, the layout. */
   pages: string[];
   size: number;

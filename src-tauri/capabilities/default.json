@@ -22,6 +22,12 @@
         },
         {
           "url": "https://api.deepl.com/*"
+        },
+        {
+          "url": "https://media.wizards.com/*"
+        },
+        {
+          "url": "https://media.dndbeyond.com/*"
         }
       ]
     }

@@ -4,6 +4,8 @@ import type { Resolved } from "../aurora/engine";
 import type { SheetData } from "../aurora/sheet";
 import { deleteTemplate, listTemplates, saveTemplate, templateBytes, type TemplateRecord } from "../aurora/storage";
 import { buildPdf, cardCounts } from "../pdf/exportPdf";
+import { detectOfficial, fillAuto, fillOfficial } from "../sheets/forms";
+import { desktopFetch, isDesktop } from "../net";
 import { WOTC_PAGES, looksLikeWotc2024, fillWotc, type WotcPage } from "../sheets/wotc";
 import { uid } from "../aurora/character";
 import { buildFillData, companionFill } from "../sheets/data";
@@ -11,7 +13,7 @@ import { translateCompanion, translateFill } from "../sheets/translateFill";
 import { DLDM_PAGES, detectPages, fillDldm, type DldmPage } from "../sheets/dldm";
 import { companionLayoutOfPdf, fillCompanion } from "../sheets/companion";
 import { readWidgets } from "../sheets/widgets";
-import { SHEET_LINKS, SHEET_SEARCH } from "../sheets/links";
+import { OFFICIAL_DOWNLOADS, SHEET_LINKS, SHEET_SEARCH } from "../sheets/links";
 import { nextFrame, openExternal, pickFiles, saveFile } from "../store";
 import type { Translation } from "./TranslateOptions";
 
@@ -43,6 +45,18 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   ];
   const companionList = companions.filter((c, i, a) => c.id && a.findIndex((x) => x.id === c.id && x.name === c.name) === i);
 
+  /** Gets an official sheet from Wizards' own address and adds it. Needs the desktop app; the web version opens the link. */
+  const getOfficial = async (o: (typeof OFFICIAL_DOWNLOADS)[number]) => {
+    if (!isDesktop()) return openExternal(o.url);
+    try {
+      setMsg(`Downloading ${o.label}...`);
+      const res = await (await desktopFetch())(o.url);
+      if (!res.ok) throw new Error(`The site answered ${res.status}.`);
+      await add([new File([await res.arrayBuffer()], o.file, { type: "application/pdf" })]);
+    } catch (e) {
+      setMsg(`Could not download it: ${(e as Error).message} You can open the link and load the file yourself.`);
+    }
+  };
   const choose = async () => {
     const files = await pickFiles(["pdf"], true);
     if (files === null) fileRef.current?.click();
@@ -61,6 +75,13 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
         const widgets = readWidgets(doc);
         const found = [...detectPages(widgets).values()];
         const first = doc.getPage(0).getSize();
+        const official = found.length ? undefined : detectOfficial(doc, file.name);
+        if (official) {
+          const label = ({ wotc2024form: "Official 2024 sheet (fillable)", wotc2014form: "Classic 2014 sheet (fillable)", wotc2014: "Classic 2014 sheet (print)", auto: file.name } as Record<string, string>)[official];
+          await saveTemplate({ id: uid(), name: label, kind: official, pages: ["all"], size: bytes.byteLength, added: Date.now() }, bytes);
+          notes.push(`${file.name}: ${label.toLowerCase()}`);
+          continue;
+        }
         if (!found.length && looksLikeWotc2024(first.width, first.height, doc.getPageCount(), doc.getForm().getFields().length, file.name)) {
           await saveTemplate({ id: uid(), name: "Official 2024 sheet", kind: "wotc2024", pages: ["page1", "page2"], size: bytes.byteLength, added: Date.now() }, bytes);
           notes.push(`${file.name}: official 2024 character sheet`);
@@ -75,7 +96,10 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
         if (layout) {
           await saveTemplate({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "companion", pages: [layout], size: bytes.byteLength, added: Date.now() }, bytes);
           notes.push(`${file.name}: companion sheet`);
-        } else notes.push(`${file.name}: not a sheet Soul Forge can fill (it fills the official 2024 sheet, the DLDM 5E24 sheets and the DLDM companion sheets)`);
+        } else if (doc.getForm().getFields().length > 0) {
+          await saveTemplate({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "auto", pages: ["all"], size: bytes.byteLength, added: Date.now() }, bytes);
+          notes.push(`${file.name}: a fillable sheet Soul Forge has not seen before. It will match fields by their names.`);
+        } else notes.push(`${file.name}: not a sheet Soul Forge can fill (it fills the official 2024 sheet, the classic 2014 sheet, the DLDM 5E24 sheets and the DLDM companion sheets)`);
       } catch (e) {
         notes.push(`${file.name}: ${(e as Error).message}`);
       }
@@ -106,7 +130,15 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
       let bytes: Uint8Array;
       let notes: string[] = [];
       const tpl = await templateBytes(current.id);
-      if (current.kind === "wotc2024") {
+      if (current.kind === "auto") {
+        const res = await fillAuto(tpl, await fillData(), fonts);
+        bytes = res.bytes;
+        notes = res.notes;
+      } else if (current.kind === "wotc2024form" || current.kind === "wotc2014form" || current.kind === "wotc2014") {
+        const res = await fillOfficial(tpl, current.kind, await fillData(), fonts);
+        bytes = res.bytes;
+        notes = res.notes;
+      } else if (current.kind === "wotc2024") {
         const res = await fillWotc(tpl, await fillData(), { pages: wotcPages, font: fonts });
         bytes = res.bytes;
         notes = res.notes;
@@ -140,10 +172,11 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   return (
     <div className="subcard">
       <h3>Your own sheet PDFs</h3>
-      <p className="muted">Load your own copy of a sheet. Supported: the official 2024 character sheet (free from Wizards of the Coast at dndbeyond.com, search "2024 character sheet". The print version has no form fields, so Soul Forge writes the text onto it. Keep "2024" in the file name), the DLDM 5E24 sheets (stay editable) and the DLDM companion sheets. Soul Forge keeps the file on this computer only.</p>
+      <p className="muted"><b>Best results: the official Wizards of the Coast sheets.</b> Every field on them is filled. Use the Get buttons below, or load your own copy. Other fillable sheets are matched field by field by name, and anything it cannot place is listed. Load your own copy of a sheet. Supported: the official 2024 character sheet (free from Wizards of the Coast at dndbeyond.com, search "2024 character sheet". The print version has no form fields, so Soul Forge writes the text onto it. Keep "2024" in the file name), the DLDM 5E24 sheets (stay editable) and the DLDM companion sheets. Soul Forge keeps the file on this computer only.</p>
       <div className="row">
         <button onClick={choose}>Add sheet PDF...</button>
         <span className="muted">Need one?</span>
+        {OFFICIAL_DOWNLOADS.map((o) => <button key={o.id} title={`${o.note} Downloaded from Wizards of the Coast's own address and kept on this computer.`} onClick={() => getOfficial(o)}>Get: {o.label}</button>)}
         {SHEET_LINKS.map((l) => <a key={l.url} href={l.url} onClick={(e) => { e.preventDefault(); openExternal(l.url); }}>{l.label}</a>)}
         <small className="muted">A link not working? <a href={SHEET_SEARCH} onClick={(e) => { e.preventDefault(); openExternal(SHEET_SEARCH); }}>Search for the sheet</a>; any copy of the same sheet works.</small>
         <input ref={fileRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = ""; }} />

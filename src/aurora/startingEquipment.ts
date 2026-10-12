@@ -151,7 +151,8 @@ function lettersVariants(text: string): { label: string; refs: ItemRef[]; gp: nu
 function groupVariant(items: string[]): EquipVariant {
   const v: EquipVariant = { label: "Starting equipment", fixed: [], gp: 0, choices: [] };
   for (const li of items) {
-    const marked = li.replace(/<i>\s*\(([a-z])\)\s*<\/i>/gi, "\u0001$1\u0002");
+    // Options are marked "(a)", "(b)": in italics in most books, as plain text in some (the 2014 Wizard and Druid).
+    const marked = li.replace(/(?:<i>\s*)?\(([a-c])\)(?:\s*<\/i>)?/gi, "\u0001$1\u0002");
     if (marked.includes("\u0001")) {
       const opts = marked.split(/\u0001[a-z]\u0002/).map((s) => stripTags(s).replace(/,?\s*(or)?\s*$/i, "").trim()).filter(Boolean);
       v.choices.push({ options: opts.map((o) => parseItems(o).refs) });
@@ -279,7 +280,8 @@ export class ItemIndex {
 
 /** "any simple weapon", "any martial melee weapon": which kind of weapon the player may pick. */
 export function anyWeaponKind(text: string): { category: "simple" | "martial"; reach?: "melee" | "ranged" } | undefined {
-  const m = text.toLowerCase().match(/^any (simple|martial)( melee| ranged)? weapon/);
+  // "any martial weapon", "a martial weapon", "two martial weapons", "a simple melee weapon"
+  const m = text.toLowerCase().replace(/^(any|a|an|one|two)\s+/, "").match(/^(simple|martial)( melee| ranged)? weapons?\b/);
   return m ? { category: m[1] as "simple" | "martial", reach: m[2] ? (m[2].trim() as "melee" | "ranged") : undefined } : undefined;
 }
 
@@ -306,7 +308,8 @@ export function resolveRef(ref: ItemRef, idx: ItemIndex, prefer: string, picked?
     const el = (picked ? idx.registry.get(picked) : undefined) ?? list.find((w) => w.source === prefer) ?? list[0];
     if (el) return { el, name: el.name, qty: ref.qty };
   }
-  const el = idx.find(ref.text, prefer);
+  // "wooden shield", "a worn holy symbol": the item is the last words without the description in front.
+  const el = idx.find(ref.text, prefer) ?? (/^(wooden|worn|small|simple|common|fine)\s+/i.test(ref.text) ? idx.find(ref.text.replace(/^\S+\s+/, ""), prefer) : undefined);
   if (!el) {
     // Keep names short; the long form ("a trophy (a dagger, a broken blade...)") goes in the note.
     const short = ref.text.replace(/\s*\(.*$/, "").trim() || ref.text;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseDice, rollExpression } from "./Dice";
+import { parseDice, rollExpression, rollMath } from "./Dice";
 
 describe("dice", () => {
   it("parses expressions", () => {
@@ -14,6 +14,10 @@ describe("dice", () => {
     expect(r.rolls).toEqual([4, 4]);
     expect(r.total).toBe(11);
     expect(rollExpression("1d20-2", "", () => 0)!.total).toBe(-1);
+  });
+  it("writes the sum out with the bonuses", () => {
+    expect(rollMath(rollExpression("2d6+3", "", () => 0.5)!)).toBe("(4 + 4) + 3 = 11");
+    expect(rollMath(rollExpression("1d20-2", "", () => 0)!)).toBe("1 − 2 = -1");
   });
   it("refuses absurd rolls", () => {
     expect(rollExpression("500d6")).toBeNull();

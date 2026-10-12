@@ -27,7 +27,7 @@ export function neverShowTutorial(): void {
 
 export const AURORA_LINK = "https://raw.githubusercontent.com/AuroraLegacy/elements/master/AuroraLegacy.index";
 
-export const TUTORIAL_STEPS = 5;
+export const TUTORIAL_STEPS = 6;
 
 export interface TutorialProps {
   step: number;
@@ -179,14 +179,36 @@ export function Tutorial(p: TutorialProps) {
       body: (
         <>
           <p>These sheets are filled completely: the <b>fillable 2024 sheet by DLtheDM</b> (stays editable), the <b>official Wizards of the Coast sheets</b> for 2024 and 2014, and companion sheets. Soul Forge downloads them from their makers and keeps a copy on this computer.</p>
-          <div className="row tutorial-sheets">
-            {OFFICIAL_DOWNLOADS.map((o) => <button key={o.id} disabled={sheetBusy} title={`${o.note} By ${o.by}.`} onClick={() => void getSheet(o)}>Get: {o.label}</button>)}
-            <button disabled={sheetBusy} onClick={() => void chooseSheet()}>Add my own PDF...</button>
-            <input ref={pdfRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { void addOwnSheet(e.target.files); e.target.value = ""; }} />
-          </div>
+          <ul className="sheet-downloads">
+            {OFFICIAL_DOWNLOADS.map((o) => (
+              <li key={o.id}>
+                <div><b>{o.label}</b><small className="muted">{o.by}. {o.note}</small></div>
+                <button disabled={sheetBusy} onClick={() => void getSheet(o)}>Get</button>
+              </li>
+            ))}
+            <li>
+              <div><b>Your own PDF</b><small className="muted">Any fillable sheet works.</small></div>
+              <button disabled={sheetBusy} onClick={() => void chooseSheet()}>Add PDF...</button>
+            </li>
+          </ul>
+          <input ref={pdfRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { void addOwnSheet(e.target.files); e.target.value = ""; }} />
           {sheetMsg && <p className="notice">{sheetMsg}</p>}
           <p>{sheets > 0 ? <span className="done-mark">✓ {sheets} sheet{sheets === 1 ? "" : "s"} ready to fill</span> : <span className="muted">No sheet yet. The Soul Forge style PDF always works without one.</span>}</p>
-          <p className="muted">Fillable sheets stay editable. A print version is written onto the page and cannot be edited afterwards. Fill any sheet from the Sheet tab.</p>
+          <p className="muted">Fillable sheets stay editable. A print version is written onto the page and cannot be edited afterwards. Fill a sheet from Sheet, Export. <b>Manage sheets</b> there shows all your sheets with a preview, lets you rename or remove them, and has these downloads again.</p>
+        </>
+      ),
+    },
+    {
+      title: "5. Finding your way",
+      body: (
+        <>
+          <ul className="tutorial-tour">
+            <li><b>Build</b>: species, class and background are picked from cards. Use <b>Learn more</b> to read the full rules. Options you cannot take yet stay visible, grayed out, with what is missing written on them; the <b>Locked</b> switch hides them.</li>
+            <li><b>Multiclassing</b>: <b>Level up</b> lets you add a level to a class you have or start a new one. Classes whose requirements you do not meet show the missing ability scores.</li>
+            <li><b>Play</b>: click any modifier to roll. The dice panel shows the dice and the sum written out, for example 16 + 2 = 18. Drag weapons, spells and features into <b>Favorites</b>, or click their star.</li>
+            <li><b>Sheet</b>: print the Soul Forge sheet or fill an official one, in your language if you like.</li>
+            <li><b>Menu, Settings</b>: theme, interface size, which books show in lists, and backups.</li>
+          </ul>
           {last && (
             <div className="tutorial-summary">
               <b>You are set up:</b>

@@ -3,7 +3,7 @@
  * in its fillable form and, from the same field positions, in its plain printing form.
  * Check boxes have no useful names on these sheets, so they are found by where they sit next to a labelled field.
  */
-import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString, PDFTextField, type PDFFont, type PDFPage, rgb } from "pdf-lib";
+import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString, PDFTextField, TextAlignment, type PDFFont, type PDFPage, rgb } from "pdf-lib";
 import type { FillData } from "./data";
 import { readWidgets, type Widget } from "./widgets";
 
@@ -253,13 +253,18 @@ export function fill2014(ws: W[], d: FillData, sink: Sink): void {
 const BLACK = rgb(0.05, 0.05, 0.08);
 
 /** Whether text belongs in a tall box as several lines, or on one line in a short one. */
+/** A number or a few dice, such as hit points or "5d6": centred and large in its box, whatever the box. */
+const isShort = (value: string) => /^[+\-−]?\d[\dd+\-/]{0,5}$/i.test(value.trim());
+
 function wantsMulti(font: PDFFont, value: string, w: W): boolean {
+  if (isShort(value)) return false;
   return w.h > 40 || value.includes("\n") || (w.h > 24 && font.widthOfTextAtSize(value, 9) > w.w - 4);
 }
 
 /** Fits text into a box: the largest size that keeps every line inside. */
 function layout(font: PDFFont, text: string, w: number, h: number, multi: boolean): { lines: string[]; size: number } {
-  const tries = multi ? [9, 8.5, 8, 7.5, 7, 6.5, 6, 5.5, 5, 4.5, 4] : [11, 10, 9, 8, 7, 6.5, 6, 5.5, 5].filter((t) => t <= Math.max(5, h * 0.78));
+  const big = !multi && isShort(text) && h > 22 ? [20, 18, 16, 14, 12] : [];
+  const tries = multi ? [9, 8.5, 8, 7.5, 7, 6.5, 6, 5.5, 5, 4.5, 4] : [...big, 11, 10, 9, 8, 7, 6.5, 6, 5.5, 5].filter((t) => t <= Math.max(5, big.length ? h * 0.6 : h * 0.78));
   for (const size of tries) {
     if (!multi) {
       if (font.widthOfTextAtSize(text, size) <= w - 3 && size * 1.1 <= h + 1) return { lines: [text], size };
@@ -270,7 +275,7 @@ function layout(font: PDFFont, text: string, w: number, h: number, multi: boolea
       let cur = "";
       for (const word of para.split(/\s+/).filter(Boolean)) {
         const next = cur ? `${cur} ${word}` : word;
-        if (font.widthOfTextAtSize(next, size) <= w - 5) cur = next;
+        if (font.widthOfTextAtSize(next, size) <= w - 7) cur = next;
         else {
           if (cur) lines.push(cur);
           cur = word;
@@ -278,9 +283,38 @@ function layout(font: PDFFont, text: string, w: number, h: number, multi: boolea
       }
       lines.push(cur);
     }
-    if (lines.length * size * 1.15 <= h - 2) return { lines, size };
+    // PDF viewers space lines by the font's own height and leave a small margin, so count with that.
+    const lh = Math.max(size * 1.15, font.heightAtSize(size) * 1.2);
+    if (lines.length * lh + size * 0.5 + 4 <= h) return { lines, size };
   }
-  return { lines: [text], size: 4 };
+  // Nothing fits: shorten the text at the smallest size rather than letting it spill out of the box.
+  const size = multi ? 4.5 : 5;
+  const fits = (t: string) => font.widthOfTextAtSize(t, size) <= w - 7;
+  const clip = (t: string) => {
+    if (fits(t)) return t;
+    let cut = t;
+    while (cut.length > 1 && !fits(`${cut}...`)) cut = cut.slice(0, -1);
+    return `${cut.trimEnd()}...`;
+  };
+  if (!multi) return { lines: [clip(text)], size };
+  const lh = Math.max(size * 1.15, font.heightAtSize(size) * 1.2);
+  const max = Math.max(1, Math.floor((h - size * 0.5 - 4) / lh));
+  const all: string[] = [];
+  for (const para of text.split("\n")) {
+    let cur = "";
+    for (const word of para.split(/\s+/).filter(Boolean)) {
+      const next = cur ? `${cur} ${word}` : word;
+      if (fits(next)) cur = next;
+      else {
+        if (cur) all.push(cur);
+        cur = word;
+      }
+    }
+    all.push(cur);
+  }
+  const lines = all.slice(0, max);
+  if (all.length > max) lines[max - 1] = clip(`${lines[max - 1]} ...`);
+  return { lines, size };
 }
 
 /** Writes into the form's own fields. Text keeps being editable. */
@@ -300,12 +334,16 @@ export function formSink(doc: PDFDocument, font: PDFFont): Sink & { done(): void
         const page = doc.getPage(w.p);
         const multi = wantsMulti(font, value, w);
         const { lines, size } = layout(font, value, w.w, w.h, multi);
-        lines.forEach((l, i) => page.drawText(l, { x: w.x + (!multi && w.w <= 50 ? (w.w - font.widthOfTextAtSize(l, size)) / 2 : 2), y: multi ? w.y + w.h - 2 - size - i * size * 1.15 : w.y + (w.h - size * 0.72) / 2, size, font, color: BLACK }));
+        lines.forEach((l, i) => page.drawText(l, { x: w.x + (!multi && (w.w <= 50 || isShort(value)) ? (w.w - font.widthOfTextAtSize(l, size)) / 2 : 2), y: multi ? w.y + w.h - 2 - size - i * Math.max(size * 1.15, font.heightAtSize(size) * 1.2) : w.y + (w.h - size * 0.72) / 2, size, font, color: BLACK }));
         return;
       }
       try {
         const f = form.getTextField(w.name);
         f.setText(value);
+        if (isShort(value) && f.isMultiline()) {
+          f.disableMultiline();
+          f.setAlignment(TextAlignment.Center);
+        }
         const multi = f.isMultiline() || wantsMulti(font, value, w);
         const { size } = layout(font, value, w.w, w.h, multi);
         try {
@@ -352,9 +390,9 @@ export function overlaySink(doc: PDFDocument, font: PDFFont): Sink {
         const multi = wantsMulti(font, value, w);
         const { lines, size } = layout(font, value, w.w, w.h, multi);
         // Small boxes (scores, modifiers, bonuses) are centred like the printed numbers around them.
-        const centre = !multi && w.w <= 50;
+        const centre = !multi && (w.w <= 50 || isShort(value));
         lines.forEach((l, i) => {
-          const y = multi ? w.y + w.h - 2 - size - i * size * 1.15 : w.y + (w.h - size * 0.72) / 2;
+          const y = multi ? w.y + w.h - 2 - size - i * Math.max(size * 1.15, font.heightAtSize(size) * 1.2) : w.y + (w.h - size * 0.72) / 2;
           const x = centre ? w.x + (w.w - font.widthOfTextAtSize(l, size)) / 2 : w.x + 2;
           page.drawText(l, { x, y, size, font, color: BLACK });
         });

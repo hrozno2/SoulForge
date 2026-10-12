@@ -12,6 +12,8 @@ export interface RollResult {
   notes?: string[];
   /** A difficulty to beat, with the outcome worked out. */
   dc?: { value: number; success: boolean };
+  /** With advantage or disadvantage: the d20 that was not used. */
+  dropped?: number;
   /** Each dice group with its individual dice, and flat bonuses (sides 0), for display. */
   terms: { sides: number; sign: 1 | -1; rolls: number[]; sum: number }[];
 }
@@ -154,28 +156,38 @@ export function DieIcon({ sides, label, size = 34 }: { sides: number; label?: st
   );
 }
 
-/** A roll shown like a chat card: the formula, each group with its dice as hexagons, and a large total. */
+/** The sum written out: "16 + 2 = 18", with several dice of a kind in brackets. */
+export function rollMath(r: RollResult): string {
+  const parts = r.terms.map((t, i) => {
+    const body = t.sides ? (t.rolls.length > 1 ? `(${t.rolls.join(" + ")})` : String(t.rolls[0] ?? 0)) : String(Math.abs(t.sum));
+    const neg = t.sign < 0;
+    return i === 0 ? `${neg ? "−" : ""}${body}` : `${neg ? "−" : "+"} ${body}`;
+  });
+  return `${parts.join(" ")} = ${r.total}`;
+}
+
+/** A roll shown like a chat card: the formula, the dice, the sum written out and a large total. */
 function RollCard({ r }: { r: RollResult }) {
+  const dice = r.terms.filter((t) => t.sides > 0);
+  const flat = r.terms.filter((t) => t.sides === 0).reduce((a, t) => a + t.sum, 0);
   return (
     <div className="roll-card">
       {r.label && <div className="roll-label">{r.label}</div>}
       <div className="roll-formula">{r.expr}</div>
-      {r.terms.map((t, i) => (
-        <div key={i} className="roll-term">
-          <div className="roll-term-head">
-            <span>{t.sides ? `${t.rolls.length}d${t.sides}` : "bonus"}</span>
-            <b>{t.sum}</b>
-          </div>
-          {t.sides > 0 && (
-            <div className="roll-chips">
-              {t.rolls.map((v, j) => <span key={j} className={v === t.sides ? "chip max" : v === 1 ? "chip min" : "chip"}>{v}</span>)}
-            </div>
-          )}
-        </div>
-      ))}
+      <div className="roll-dice">
+        {dice.map((t, i) => (
+          <span key={i} className="roll-group" title={`${t.rolls.length}d${t.sides}`}>
+            <small>{t.sign < 0 ? "−" : ""}{t.rolls.length}d{t.sides}</small>
+            {t.rolls.map((v, j) => <span key={j} className={v === t.sides ? "chip max" : v === 1 ? "chip min" : "chip"}>{v}</span>)}
+            {i === 0 && r.dropped !== undefined && <span className="chip dropped" title="The other d20, not used">{r.dropped}</span>}
+          </span>
+        ))}
+        {flat !== 0 && <span className="roll-group"><small>bonus</small><span className="chip flat">{flat > 0 ? `+${flat}` : `−${-flat}`}</span></span>}
+      </div>
+      <div className="roll-math" aria-label="The sum">{rollMath(r)}</div>
       <div className="roll-total">{r.total}</div>
       {r.dc && <div className={r.dc.success ? "roll-dc ok" : "roll-dc bad"}>vs DC {r.dc.value}: {r.dc.success ? "success" : "fail"}</div>}
-      {r.detail.includes("other") && <small className="muted">{r.detail.replace(/^.*, /, "")}</small>}
+      {r.dropped !== undefined && <small className="muted">The other d20 rolled {r.dropped} and was not used.</small>}
       {r.notes?.map((n, i) => <small key={i} className="roll-note">{n}</small>)}
     </div>
   );
@@ -203,7 +215,7 @@ export function DicePanel() {
       const r2 = rollExpression(expression, label);
       if (r2) {
         const keep = finalMode === "adv" ? (r2.total > r.total ? r2 : r) : (r2.total < r.total ? r2 : r);
-        out = { ...keep, label: `${label ? label + " " : ""}(${finalMode === "adv" ? "advantage" : "disadvantage"})`, detail: `${keep.detail}, other ${keep === r ? r2.total : r.total}` };
+        out = { ...keep, label: `${label ? label + " " : ""}(${finalMode === "adv" ? "advantage" : "disadvantage"})`, detail: `${keep.detail}, other ${keep === r ? r2.total : r.total}`, dropped: (keep === r ? r2 : r).rolls[0] };
       }
     }
     if (fx?.autoFail) {

@@ -113,9 +113,22 @@ export function parseActions(html: string): { name: string; bonus: string; damag
 
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
 
-const TIME: [RegExp, string][] = [[/^(1 )?action$/i, "1A"], [/^(1 )?bonus action$/i, "1BA"], [/^(1 )?reaction.*/i, "1R"], [/^1 minute$/i, "1m"], [/^(\d+) minutes?$/i, "$1m"], [/^1 hour$/i, "1h"], [/^(\d+) hours?$/i, "$1h"]];
-export const shortTime = (s: string) => TIME.reduce((t, [re, to]) => (re.test(t) ? t.replace(re, to) : t), s.trim());
-export const shortRange = (s: string) => s.replace(/\s*feet\b/i, " ft").replace(/\s*mile(s)?\b/i, " mi").replace(/^Self \((.*)\)$/i, "S ($1)").trim();
+const TIME: [RegExp, string][] = [[/^(1 )?action$/i, "1A"], [/^(1 )?bonus action$/i, "1BA"], [/^(1 )?reaction$/i, "1R"], [/^1 minute$/i, "1m"], [/^(\d+) minutes?$/i, "$1m"], [/^1 hour$/i, "1h"], [/^(\d+) hours?$/i, "$1h"]];
+/** Casting times as the sheets print them: "1BA" for "Bonus Action, which you take immediately after...", "1A/R" for "Action or Ritual". */
+export const shortTime = (raw: string) => {
+  const s = raw.trim();
+  const ritual = /\bor ritual\b/i.test(s);
+  // Keep the first part: the trigger text after the comma belongs in the description, not the box.
+  const head = s.replace(/\s+or ritual\b.*/i, "").split(/,|;| which /i)[0].trim();
+  const t = TIME.reduce((v, [re, to]) => (re.test(v) ? v.replace(re, to) : v), head);
+  return ritual ? `${t}/R` : t;
+};
+/** Ranges as the sheets print them: "Self (15-foot Cone)" becomes "15ft cone". */
+export const shortRange = (s: string) => {
+  const self = s.trim().match(/^Self\s*\((\d+)[-\s]*(?:foot|feet|ft)\.?[-\s]*(?:radius\s+)?(\w+)?\)$/i);
+  if (self) return `${self[1]}ft ${(self[2] ?? "").toLowerCase().replace("radius", "rad").replace("sphere", "sph")}`.trim();
+  return s.replace(/\s*feet\b/i, " ft").replace(/\s*mile(s)?\b/i, " mi").replace(/^Self \((.*)\)$/i, "S ($1)").trim();
+};
 export function shortDuration(s: string): { text: string; conc: boolean } {
   const conc = /concentration/i.test(s);
   const t = s.replace(/concentration,?\s*(up to)?\s*/i, "").replace(/instantaneous/i, "Inst").replace(/\s*minutes?\b/i, " min").replace(/\s*hours?\b/i, " hr").replace(/\s*rounds?\b/i, " rd").trim();

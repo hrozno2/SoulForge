@@ -15,13 +15,13 @@ export function hueOf(name: string): number {
 }
 
 export function PickCards({
-  kicker, title, items, value, onPick, onDetail,
-}: { kicker: string; title: string; items: AElement[]; value?: string; onPick: (id: string) => void; onDetail: (e: AElement) => void; perPage?: number }) {
+  kicker, title, items, value, onPick, onDetail, disabledReason,
+}: { kicker: string; title: string; items: AElement[]; value?: string; onPick: (id: string) => void; onDetail: (e: AElement) => void; perPage?: number; disabledReason?: (e: AElement) => string | undefined }) {
   const type = items[0]?.type ?? "Race";
   return (
     <div>
       {items.length === 0 && <p className="muted">Nothing is loaded for this yet. Add content on the Content tab.</p>}
-      <Browse items={items} type={type} chosen={value ? [value] : []} onPick={(e) => onPick(e.id)} onSwap={(_, to) => onPick(to.id)} onHover={onDetail} defaultView="cards" hero={{ kicker, title }} />
+      <Browse items={items} type={type} chosen={value ? [value] : []} onPick={(e) => onPick(e.id)} onSwap={(_, to) => onPick(to.id)} onHover={onDetail} defaultView="cards" hero={{ kicker, title }} disabledReason={disabledReason} />
     </div>
   );
 }

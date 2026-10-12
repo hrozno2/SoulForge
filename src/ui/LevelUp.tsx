@@ -1,12 +1,13 @@
 import { useMemo, useRef, useState } from "react";
 import type { Resolved } from "../aurora/engine";
-import { hitDieOf, reqCtx, resolve } from "../aurora/engine";
-import { meets } from "../aurora/requirements";
+import { hitDieOf, resolve } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
 import { totalLevel, type Character } from "../aurora/character";
 import type { AElement } from "../aurora/types";
 import { SlotList, type SetCharacter } from "./Slots";
 import { Html } from "./Html";
+import { ChosenBanner, PickCards } from "./PickCards";
+import { multiclassLock } from "./multiclass";
 
 /** Spell slots at each level, from a caster's casting lines, as a short text. */
 const slotText = (sh: ReturnType<typeof buildSheet>) =>
@@ -19,14 +20,13 @@ const slotText = (sh: ReturnType<typeof buildSheet>) =>
 export function LevelUp({ r, ch, set, onDetail, onClose }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; onClose: () => void }) {
   const before = useRef(ch);
   const [applied, setApplied] = useState<string | null>(null);
-  const [pickMulti, setPickMulti] = useState("");
   const level = totalLevel(ch);
   const oldResolved = useMemo(() => resolve(before.current, r.reg), [r.reg]);
   const oldSheet = useMemo(() => buildSheet(oldResolved), [oldResolved]);
   const sheet = useMemo(() => buildSheet(r), [r]);
 
-  const ctx = reqCtx(r);
-  const multiOptions = r.reg.ofType("Class").filter((c) => !c.compendiumHidden && !ch.classes.some((x) => x.classId === c.id) && (!c.multiclass || meets(c.multiclass.requirements, ctx)));
+  const multiOptions = r.reg.ofType("Class").filter((c) => !c.compendiumHidden && !ch.classes.some((x) => x.classId === c.id));
+  const [showMulti, setShowMulti] = useState(false);
 
   const advance = (classId: string, isNew: boolean) => {
     set((c) => ({
@@ -57,44 +57,40 @@ export function LevelUp({ r, ch, set, onDetail, onClose }: { r: Resolved; ch: Ch
 
         {!applied && (
           <>
-            <p className="muted">You are level {level}. Choose which class gains a level.</p>
+            <p className="levelup-sub">Level {level} <span aria-hidden="true">→</span> {Math.min(20, level + 1)}. Choose which class gains the level.</p>
             {level >= 20 && <p className="notice">Level 20 is the maximum.</p>}
-            <ul className="added">
-              {ch.classes.map((c) => {
-                const el = r.reg.get(c.classId);
-                return (
-                  <li key={c.classId}>
-                    <span><b>{el?.name ?? c.classId}</b> <small className="muted">level {c.level} to {c.level + 1}</small></span>
-                    <button className="primary" disabled={level >= 20 || c.level >= 20} onClick={() => advance(c.classId, false)}>Level up</button>
-                  </li>
-                );
-              })}
-            </ul>
+            {ch.classes.map((c) => {
+              const el = r.reg.get(c.classId);
+              if (!el) return null;
+              return (
+                <ChosenBanner key={c.classId} el={el} label={`${el.name} ${c.level} → ${c.level + 1} · d${hitDieOf(el)} hit die`} onHover={onDetail}>
+                  <button className="pick-select" disabled={level >= 20 || c.level >= 20} onClick={() => advance(c.classId, false)}>Level up</button>
+                </ChosenBanner>
+              );
+            })}
             {multiOptions.length > 0 && level < 20 && ch.classes.length > 0 && (
-              <div className="row">
-                <label>Or multiclass into{" "}
-                  <select value={pickMulti} onChange={(e) => setPickMulti(e.target.value)}>
-                    <option value="">Choose a class...</option>
-                    {multiOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </label>
-                <button disabled={!pickMulti} onClick={() => advance(pickMulti, true)}>Take a level</button>
+              <div className="levelup-multi">
+                <button className="ghost" aria-expanded={showMulti} onClick={() => setShowMulti(!showMulti)}>{showMulti ? "Hide other classes" : "Or take a level in a new class (multiclass)..."}</button>
+                {showMulti && (
+                  <PickCards kicker="Multiclass" title="Branch out." items={multiOptions} onPick={(id) => advance(id, true)} onDetail={onDetail} disabledReason={(c) => multiclassLock(r, c)} />
+                )}
               </div>
             )}
-            <div className="row"><button onClick={cancel}>Cancel</button></div>
+            <div className="levelup-foot"><button onClick={cancel}>Cancel</button></div>
           </>
         )}
 
         {applied && (
           <>
-            <p><b>{leveled?.name}</b> level {ch.classes.find((c) => c.classId === applied)?.level}. Character level {newLevel}.</p>
-
-            <h3>Hit points</h3>
-            <p>
-              Maximum hit points went up by <b>{hpGain >= 0 ? `+${hpGain}` : hpGain}</b> ({ch.hpMode === "roll" && rolled !== undefined ? `rolled ${rolled}` : `average of the d${die}`}).{" "}
+            <div className="levelup-summary">
+              <div className="lu-tile"><span>{leveled?.name}</span><b>{ch.classes.find((c) => c.classId === applied)?.level}</b><small>class level</small></div>
+              <div className="lu-tile"><span>Character</span><b>{newLevel}</b><small>total level</small></div>
+              <div className="lu-tile hp"><span>Hit points</span><b>{hpGain >= 0 ? `+${hpGain}` : hpGain}</b><small>{ch.hpMode === "roll" && rolled !== undefined ? `rolled ${rolled} on the d${die}` : `average of the d${die}`}</small></div>
+            </div>
+            <div className="row lu-hp-actions">
               <button onClick={() => { const v = 1 + Math.floor(Math.random() * die); set((c) => ({ ...c, hpMode: "roll", hpRolls: { ...c.hpRolls, [String(newLevel)]: v } })); }}>Roll the d{die} instead</button>
-              {ch.hpMode === "roll" && rolled !== undefined && <button onClick={() => set((c) => { const next = { ...c.hpRolls }; delete next[String(newLevel)]; return { ...c, hpRolls: next }; })}> Use the average</button>}
-            </p>
+              {ch.hpMode === "roll" && rolled !== undefined && <button onClick={() => set((c) => { const next = { ...c.hpRolls }; delete next[String(newLevel)]; return { ...c, hpRolls: next }; })}>Use the average</button>}
+            </div>
 
             {newFeatures.length > 0 && (
               <>
@@ -127,9 +123,9 @@ export function LevelUp({ r, ch, set, onDetail, onClose }: { r: Resolved; ch: Ch
             )}
 
             {open.length > 0 && <p className="muted">You can leave choices open and finish them on the Build tab.</p>}
-            <div className="row">
-              <button className="primary" onClick={onClose}>Done</button>
+            <div className="levelup-foot">
               <button onClick={cancel}>Undo this level</button>
+              <button className="primary" onClick={onClose}>Done</button>
             </div>
           </>
         )}

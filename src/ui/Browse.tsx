@@ -95,6 +95,10 @@ function SpellCells({ el }: { el: AElement }) {
   );
 }
 
+export function LockIcon() {
+  return <svg className="lock-ico" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1.5A1.5 1.5 0 0 1 20 11.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 20.5v-9A1.5 1.5 0 0 1 5.5 10H7zm2 0h6V7a3 3 0 0 0-6 0v3z" fill="currentColor" /></svg>;
+}
+
 export interface BrowseProps {
   items: AElement[];
   type: string;
@@ -120,6 +124,7 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
   const { books, learn } = useUi();
   const [view, setView] = useStored<"cards" | "list">(`view.${type}`, defaultView);
   const [sort, setSort] = useStored<SortMode>(`sort.${type}`, defaultSort ?? (type === "Spell" ? "level" : "recommended"));
+  const [lockMode, setLockMode] = useStored<"show" | "hide">(`locked.${type}`, "show");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState<Selected>({});
@@ -136,12 +141,20 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
   const filtered = useMemo(() => {
     const n = q.trim().toLowerCase();
     const byText = n ? items.filter((e) => e.name.toLowerCase().includes(n)) : items;
-    return applyFacets(byText, defs, sel, books);
-  }, [items, q, sel, defs, books]);
+    const visible = lockMode === "hide" && disabledReason ? byText.filter((e) => chosenSet.has(e.id) || !disabledReason(e)) : byText;
+    return applyFacets(visible, defs, sel, books);
+  }, [items, q, sel, defs, books, lockMode, disabledReason, chosenSet]);
+  const lockedCount = useMemo(() => (disabledReason ? items.filter((e) => !chosenSet.has(e.id) && disabledReason(e)).length : 0), [items, disabledReason, chosenSet]);
   // Recommended only means something where there is a popularity order or the books differ in standing. Elsewhere it would just be A to Z.
   const recommends = useMemo(() => hasRecommendation(type, groupVariants(items, books)), [items, books, type]);
   const effSort: SortMode = sort === "recommended" && !recommends ? "az" : sort;
-  const groups = useMemo(() => sortGroups(groupVariants(filtered, books), type === "Spell" || effSort !== "level" ? effSort : "az"), [filtered, books, effSort, type]);
+  const groups = useMemo(() => {
+    const sorted = sortGroups(groupVariants(filtered, books), type === "Spell" || effSort !== "level" ? effSort : "az");
+    // Options that can be taken come first; locked ones follow, in the same order.
+    if (!disabledReason) return sorted;
+    const locked = (g: Group) => g.variants.every((v) => !chosenSet.has(v.el.id) && !!disabledReason(v.el));
+    return [...sorted.filter((g) => !locked(g)), ...sorted.filter(locked)];
+  }, [filtered, books, effSort, type, disabledReason, chosenSet]);
   useEffect(() => setShown(perPage), [q, sel, sort, view, perPage]);
 
   const activeCount = Object.values(sel).reduce((n, s) => n + s.size, 0);
@@ -191,6 +204,15 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
             </span>
           </div>
         )}
+        {lockedCount > 0 && (
+          <div className="seg-group">
+            <span className="seg-label">Locked ({lockedCount})</span>
+            <span className="seg" role="group" aria-label="Locked options">
+              <button className={lockMode === "show" ? "on" : ""} onClick={() => setLockMode("show")} title="Show options you cannot take yet, grayed out with the reason">Show</button>
+              <button className={lockMode === "hide" ? "on" : ""} onClick={() => setLockMode("hide")}>Hide</button>
+            </span>
+          </div>
+        )}
         <div className="seg-group grow">
           <span className="seg-label">&nbsp;</span>
           <span className="search-row">
@@ -233,6 +255,7 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
             return (
               <div key={g.key} title={owner} className={`pick-card ${type === "Class" ? "is-class" : ""} ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} style={{ ["--hue" as string]: hue }} data-glyph={hasClassIcon(e.name) ? "" : e.name.charAt(0)} onMouseEnter={() => onHover?.(e)}>
                 {hasClassIcon(e.name) && <ClassIcon name={e.name} size={260} className="pick-watermark" />}
+                {why && !owner && <div className="lock-note" role="note"><LockIcon />{why}</div>}
                 {type === "Class" && <div className="ribbon">{hasClassIcon(e.name) ? <ClassIcon name={e.name} size={34} /> : e.name.charAt(0)}</div>}
                 <h3>{e.name}</h3>
                 {CLASS_TAGS[e.name] && type === "Class" && <div className="pick-tags">{CLASS_TAGS[e.name].map((t) => <span key={t}>{t}</span>)}</div>}
@@ -268,7 +291,7 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
                   <span className="opt-name">{e.name}</span>
                 </button>
                 {type === "Spell" ? <SpellCells el={e} /> : <span className="opt-blurb">{blurb(e.description, 110)}</span>}
-                {why && !owner && <small className="why">{why}</small>}
+                {why && !owner && <small className="why"><LockIcon />{why}</small>}
                 <VariantChips short g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} onSwitch={onSwap} onPickVersion={owner || why ? undefined : onPick} />
                 <button className="learn" onClick={() => learn(e)} title="Read the full description">i</button>
               </div>

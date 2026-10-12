@@ -2,14 +2,13 @@ import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as
 import { useMemo, useState } from "react";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
-import { reqCtx } from "../aurora/engine";
-import { meets } from "../aurora/requirements";
 import {
   ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, totalLevel, type AbilityId, type Character,
 } from "../aurora/character";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { buildSheet } from "../aurora/sheet";
 import { ChosenBanner, PickCards } from "./PickCards";
+import { multiclassLock } from "./multiclass";
 
 type Sub = "race" | "class" | "background" | "abilities" | "languages" | "proficiencies" | "feats";
 const SUBS: [Sub, string][] = [["race", "Species"], ["class", "Class"], ["background", "Background"], ["abilities", "Ability scores"], ["languages", "Languages"], ["proficiencies", "Proficiencies"], ["feats", "Feats"]];
@@ -40,7 +39,6 @@ function ChosenOrCards({ kicker, title, label, items, value, onPick, onClear, on
 function ClassPanel({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
   const classes = r.reg.ofType("Class").filter((c) => !c.compendiumHidden);
   const [adding, setAdding] = useState(false);
-  const ctx = reqCtx(r);
   const level = totalLevel(ch);
   const setLevel = (i: number, delta: number) =>
     set((c) => {
@@ -79,7 +77,8 @@ function ClassPanel({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
       {adding && (
         <PickCards
           kicker={ch.classes.length ? "Add a class" : "Choose a class"} title={ch.classes.length ? "Branch out." : "Claim your role."}
-          items={classes.filter((c) => !have.has(c.id) && (!ch.classes.length || !c.multiclass || meets(c.multiclass.requirements, ctx)))} onPick={(id) => { add(id); setAdding(false); }} onDetail={onDetail}
+          items={classes.filter((c) => !have.has(c.id))} onPick={(id) => { add(id); setAdding(false); }} onDetail={onDetail}
+          disabledReason={ch.classes.length ? (c) => multiclassLock(r, c) : undefined}
         />
       )}
       {ch.classes.map((c) => {

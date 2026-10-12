@@ -36,13 +36,27 @@ const roll = (label: string, bonus: number, opts?: RollOptions) => requestRoll(l
 
 type FavKind = NonNullable<Character["favorites"]>[number]["kind"];
 const FAV_MIME = "application/x-soulforge-favorite";
+const FAV_TEXT = "soulforge-favorite:";
+/** What was dragged, from either the custom type or the plain text copy. */
+const readFav = (dt: DataTransfer): { kind: FavKind; ref: string } | undefined => {
+  try {
+    const own = dt.getData(FAV_MIME);
+    if (own) return JSON.parse(own);
+    const text = dt.getData("text/plain");
+    if (text.startsWith(FAV_TEXT)) return JSON.parse(text.slice(FAV_TEXT.length));
+  } catch {
+    /* something else was dropped */
+  }
+  return undefined;
+};
 
 /** Props that make a row draggable into the favorites row. */
 const favDrag = (kind: FavKind, ref: string) => ({
   draggable: true,
   onDragStart: (e: React.DragEvent) => {
     e.dataTransfer.setData(FAV_MIME, JSON.stringify({ kind, ref }));
-    e.dataTransfer.setData("text/plain", ref);
+    // The desktop app's web view only passes plain text along, so the favourite rides in it too.
+    e.dataTransfer.setData("text/plain", `${FAV_TEXT}${JSON.stringify({ kind, ref })}`);
     e.dataTransfer.effectAllowed = "copy";
   },
 });
@@ -519,12 +533,8 @@ function Favorites({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: S
   const drop = (e: React.DragEvent) => {
     e.preventDefault();
     setOver(false);
-    try {
-      const d = JSON.parse(e.dataTransfer.getData(FAV_MIME)) as { kind: FavKind; ref: string };
-      if (d?.kind && d.ref && !isFav(ch, d.kind, d.ref)) toggleFav(set, d.kind, d.ref);
-    } catch {
-      /* something else was dropped */
-    }
+    const d = readFav(e.dataTransfer);
+    if (d?.kind && d.ref && !isFav(ch, d.kind, d.ref)) toggleFav(set, d.kind, d.ref);
   };
   const castingOf = (id: string) => sheet.casting.find((c) => [...c.cantripsKnown, ...c.spells, ...c.granted].some((p) => p.id === id));
   const remove = (uidv: string) => set((c) => ({ ...c, favorites: (c.favorites ?? []).filter((f) => f.uid !== uidv) }));
@@ -569,7 +579,7 @@ function Favorites({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: S
     );
   };
   return (
-    <section className={over ? "fav-bar over" : "fav-bar"} aria-label="Favorites" onDragOver={(e) => { if (e.dataTransfer.types.includes(FAV_MIME)) { e.preventDefault(); setOver(true); } }} onDragLeave={() => setOver(false)} onDrop={drop}>
+    <section className={over ? "fav-bar over" : "fav-bar"} aria-label="Favorites" onDragOver={(e) => { const t = Array.from(e.dataTransfer.types); if (t.includes(FAV_MIME) || t.includes("text/plain")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setOver(true); } }} onDragLeave={() => setOver(false)} onDrop={drop}>
       <header>
         <h3>Favorites</h3>
         <small className="muted">Drag weapons, spells, features and items here, or click their ☆. Resources stay here too.</small>

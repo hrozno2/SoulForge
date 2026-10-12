@@ -169,6 +169,28 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
     }
   };
 
+  const getSheets = (
+    <>
+      <ul className="sheet-downloads">
+        {OFFICIAL_DOWNLOADS.map((o) => (
+          <li key={o.id}>
+            <div><b>{o.label}</b><small className="muted">{o.by}. {o.note}</small></div>
+            <button onClick={() => getOfficial(o)} title="Downloaded from the maker's own address and kept on this computer">Get</button>
+          </li>
+        ))}
+        <li>
+          <div><b>Your own PDF</b><small className="muted">Any fillable sheet works: Soul Forge matches its fields by name and lists anything it cannot place.</small></div>
+          <button onClick={choose}>Add PDF...</button>
+        </li>
+      </ul>
+      <p className="muted small-text">
+        Fillable sheets stay editable. Print copies have the text written onto the page. Files stay on this computer.{" "}
+        {SHEET_LINKS.filter((l) => /drive\.google/.test(l.url)).map((l) => <a key={l.url} href={l.url} onClick={(e) => { e.preventDefault(); openExternal(l.url); }}>DLtheDM's folder</a>)}
+        {" · "}<a href={SHEET_SEARCH} onClick={(e) => { e.preventDefault(); openExternal(SHEET_SEARCH); }}>Search for a sheet</a>
+      </p>
+    </>
+  );
+
   return (
     <div className="subcard">
       <h3>Fill a character sheet</h3>
@@ -231,26 +253,10 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
         </>
       )}
       {msg && <p className="notice">{msg}</p>}
-      {manage && <SheetManager templates={templates} current={current?.id} onUse={setPick} onChanged={refresh} onClose={() => setManage(false)} />}
+      {manage && <SheetManager templates={templates} current={current?.id} onUse={setPick} onChanged={refresh} onClose={() => setManage(false)} msg={msg}>{getSheets}</SheetManager>}
       <details className="sheet-get" open={templates.length === 0}>
         <summary>Get more sheets</summary>
-        <ul className="sheet-downloads">
-          {OFFICIAL_DOWNLOADS.map((o) => (
-            <li key={o.id}>
-              <div><b>{o.label}</b><small className="muted">{o.by}. {o.note}</small></div>
-              <button onClick={() => getOfficial(o)} title="Downloaded from the maker's own address and kept on this computer">Get</button>
-            </li>
-          ))}
-          <li>
-            <div><b>Your own PDF</b><small className="muted">Any fillable sheet works: Soul Forge matches its fields by name and lists anything it cannot place.</small></div>
-            <button onClick={choose}>Add PDF...</button>
-          </li>
-        </ul>
-        <p className="muted small-text">
-          Fillable sheets stay editable. Print copies have the text written onto the page. Files stay on this computer.{" "}
-          {SHEET_LINKS.filter((l) => /drive\.google/.test(l.url)).map((l) => <a key={l.url} href={l.url} onClick={(e) => { e.preventDefault(); openExternal(l.url); }}>DLtheDM's folder</a>)}
-          {" · "}<a href={SHEET_SEARCH} onClick={(e) => { e.preventDefault(); openExternal(SHEET_SEARCH); }}>Search for a sheet</a>
-        </p>
+        {getSheets}
       </details>
     </div>
   );

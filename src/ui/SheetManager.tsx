@@ -12,7 +12,7 @@ export function sheetKind(t: TemplateRecord): string {
 }
 
 /** Every stored sheet side by side: a picture of its first page, rename, use and remove. */
-export function SheetManager({ templates, current, onUse, onChanged, onClose }: { templates: TemplateRecord[]; current?: string; onUse: (id: string) => void; onChanged: () => void; onClose: () => void }) {
+export function SheetManager({ templates, current, onUse, onChanged, onClose, msg, children }: { templates: TemplateRecord[]; current?: string; onUse: (id: string) => void; onChanged: () => void; onClose: () => void; msg?: string; children?: React.ReactNode }) {
   const [thumbs, setThumbs] = useState<Record<string, { img: string; pages: number } | "error">>({});
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
@@ -95,6 +95,9 @@ export function SheetManager({ templates, current, onUse, onChanged, onClose }: 
             );
           })}
         </ul>
+        <h3 className="sheet-manager-get">Get more sheets</h3>
+        {msg && <p className="notice">{msg}</p>}
+        {children}
       </div>
     </div>
   );

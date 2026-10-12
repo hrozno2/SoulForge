@@ -287,7 +287,7 @@ test.describe("Soul Forge smoke tests", () => {
       await page.getByRole("button", { name: "Next" }).click();
       await page.getByRole("button", { name: "Open the importer" }).click();
       await expect(page.getByRole("dialog", { name: "Tutorial" })).toHaveCount(0);
-      await expect(page.getByText("Tutorial, step 3 of 5")).toBeVisible();
+      await expect(page.getByText("Tutorial, step 3 of 6")).toBeVisible();
       await page.getByRole("button", { name: "Resume" }).click();
       await expect(page.getByRole("dialog", { name: "Tutorial" })).toContainText("Import from 5e.tools");
       await page.getByRole("button", { name: "Minimize the tutorial" }).click();
@@ -341,7 +341,7 @@ test.describe("Soul Forge smoke tests", () => {
     await page.getByRole("button", { name: /Manage sheets/ }).click();
     const manager = page.getByRole("dialog", { name: "Manage sheets" });
     await expect(manager.locator(".sheet-thumb img")).toBeVisible({ timeout: 30_000 });
-    await expect(manager.getByText(/2 pages/)).toBeVisible();
+    await expect(manager.locator(".sheet-grid").getByText(/2 pages/)).toBeVisible();
     await manager.getByRole("button", { name: "Remove..." }).click();
     await manager.getByRole("button", { name: "Remove", exact: true }).click();
     await expect(manager.getByText("No sheets yet.")).toBeVisible();
@@ -370,7 +370,7 @@ test.describe("Soul Forge smoke tests", () => {
     const dialog = page.getByRole("dialog", { name: "Level up" });
     await dialog.getByRole("button", { name: "Level up" }).first().click();
     await expect(dialog.getByText("Hit points", { exact: true })).toBeVisible();
-    await expect(dialog.getByText(/Maximum hit points went up/)).toBeVisible();
+    await expect(dialog.locator(".lu-tile.hp b")).toHaveText(/^[+-]?\d+$/);
     expect(await level()).toBe(start + 1);
     await dialog.getByRole("button", { name: /undo this level/i }).click();
     await expect(dialog).toHaveCount(0);

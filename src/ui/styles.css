@@ -813,8 +813,7 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 /* Dark themes get a dark helper window. Light themes keep the paper look with a title that is always readable. */
 :root[data-theme="dark"] .detail,
 :root[data-theme="dark"] .rich,
-:root[data-theme="dark"] .feature-text,
-:root[data-theme="dark"] .statblock .rich {
+:root[data-theme="dark"] .feature-text {
   background-color: var(--panel2); background-image: none; color: var(--text); border-color: var(--line);
 }
 :root[data-theme="dark"] .detail { border-top: 3px solid var(--gold); }
@@ -826,6 +825,20 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 :root[data-theme="dark"] .rich .sidebar h4, :root[data-theme="dark"] .rich .sidebar h5, :root[data-theme="dark"] .rich h3, :root[data-theme="dark"] .rich h4 { color: var(--gold2); }
 :root[data-theme="dark"] .rich table th { background: var(--panel); color: var(--gold2); }
 :root[data-theme="dark"] .rich table td { border-color: var(--line); }
+:root[data-theme="dark"] .rich table { background: transparent; border-color: var(--line); color: var(--text); }
+:root[data-theme="dark"] .rich th, :root[data-theme="dark"] .rich thead td { background: color-mix(in srgb, var(--gold) 14%, var(--panel)); color: var(--gold2); border-bottom-color: var(--gold); }
+:root[data-theme="dark"] .rich tr:nth-child(odd) td { background: rgba(255, 255, 255, .045); color: var(--text); }
+:root[data-theme="dark"] .rich tr:nth-child(even) td { background: transparent; color: var(--text); }
+:root[data-theme="dark"] .rich .flavor { color: var(--muted); }
+:root[data-theme="dark"] .rich h5 { color: var(--gold); }
+/* Stat blocks and item cards keep the printed-book look in every theme. */
+:root .statblock .rich, :root .statblock .rich p, :root .statblock .rich ul, :root .statblock .rich li { background: transparent; background-image: none; color: var(--ink); border: 0; box-shadow: none; }
+:root .statblock .rich table { background: #fff; color: var(--ink); }
+:root .statblock .rich tr:nth-child(odd) td { background: var(--note); color: var(--ink); }
+:root .statblock .rich tr:nth-child(even) td { background: transparent; color: var(--ink); }
+:root .statblock .rich th, :root .statblock .rich thead td { background: transparent; color: var(--crimson); }
+:root .statblock .rich a { color: var(--crimson); }
+:root .statblock .muted, :root .statblock small { color: #7a6a4a; }
 :root[data-theme="light"] .detail h2, :root:not([data-theme="dark"]) .detail h2 { color: #8b1e1e; }
 
 /* ================= tabletop touches ================= */
@@ -1064,3 +1077,73 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .chosen-banner .stepper { display: inline-flex; align-items: center; gap: 8px; color: #fff; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; }
 .chosen-banner .stepper button { padding: 4px 10px; border-radius: 4px; color: #fff; border-color: #d8d2c4; background: rgba(0, 0, 0, .35); }
 .class-list { display: grid; gap: 0; }
+.statblock h5 { color: #7a200d; font: 700 15px var(--display); border-bottom: 1px solid #c6a063; margin: 8px 0 3px; letter-spacing: .04em; text-transform: none; }
+
+/* locked options: grayed out, with what is missing written over them */
+.lock-ico { flex: none; vertical-align: -2px; margin-right: 5px; }
+.pick-card.dim { opacity: 1; --fg: #6d6656; }
+.pick-card.dim > :not(.lock-note) { opacity: .38; filter: grayscale(1); }
+.pick-card.dim { background:
+    radial-gradient(circle at 0 0, #0000 14px, var(--fg) 14px 16px, #0000 16px), radial-gradient(circle at 100% 0, #0000 14px, var(--fg) 14px 16px, #0000 16px),
+    radial-gradient(circle at 0 100%, #0000 14px, var(--fg) 14px 16px, #0000 16px), radial-gradient(circle at 100% 100%, #0000 14px, var(--fg) 14px 16px, #0000 16px),
+    linear-gradient(180deg, #2a2723, #141210); }
+.pick-card.dim:hover { transform: none; filter: none; }
+.lock-note { position: absolute; z-index: 3; left: 50%; top: 42%; transform: translate(-50%, -50%); max-width: calc(100% - 48px); display: flex; align-items: center; gap: 2px; padding: 8px 14px; background: rgba(12, 10, 8, .92); border: 1px solid var(--gold); border-radius: 6px; color: #f1e6cc; font: 600 13.5px/1.3 var(--body); letter-spacing: .02em; text-align: center; box-shadow: 0 4px 18px rgba(0, 0, 0, .6); }
+.lock-note .lock-ico { color: var(--gold); }
+.opt-row.dim { opacity: 1; }
+.opt-row.dim > :not(.why) { opacity: .45; }
+.opt-row .why { display: inline-flex; align-items: center; padding: 1px 8px; border: 1px solid var(--gold); border-radius: 10px; color: var(--text); font-size: 12px; white-space: nowrap; background: color-mix(in srgb, var(--gold) 10%, transparent); }
+.spell-rows .opt-row { position: relative; }
+.spell-rows .opt-row .why { position: absolute; right: 34px; top: 50%; transform: translateY(-50%); z-index: 1; background: var(--panel); }
+
+/* level up window */
+.modal-page.levelup { width: min(980px, 100%); padding-bottom: 0; }
+.levelup-sub { font: 600 16px var(--body); color: var(--text); margin: 4px 0 12px; }
+.levelup .chosen-banner { min-height: 170px; }
+.levelup-multi { margin: 6px 0 0; }
+.levelup-multi > .ghost { width: 100%; padding: 10px; border-style: dashed; color: var(--gold2); }
+.levelup-multi .card-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.levelup-foot { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 10px; margin: 16px -28px 0; padding: 12px 28px; background: var(--bg2); border-top: 1px solid var(--line); }
+.levelup-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 8px; }
+.lu-tile { display: flex; flex-direction: column; align-items: center; padding: 10px; border: 1px solid var(--gold); border-radius: 6px; background: var(--panel); }
+.lu-tile span { font: 700 11.5px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.lu-tile b { font: 700 36px/1.1 var(--book); color: var(--gold2); }
+.lu-tile small { color: var(--muted); }
+.lu-tile.hp b { color: #8fd09a; }
+.lu-hp-actions { justify-content: center; margin-bottom: 6px; }
+.levelup-features { list-style: none; padding: 0; display: grid; gap: 8px; }
+.levelup-features li { margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 4px; background: var(--panel); }
+
+/* dice result: the dice, the sum written out, then the total */
+.roll-dice { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; margin: 4px 0 6px; }
+.roll-group { display: inline-flex; align-items: center; gap: 3px; }
+.roll-group small { font: 700 11px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 3px; }
+.roll-group .chip { display: inline-grid; place-items: center; min-width: 30px; height: 32px; padding: 0 4px; background: var(--panel2); color: var(--text); font: 700 14px var(--body); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px var(--line); }
+.roll-group .chip.max { background: #2f6b3a; color: #fff; }
+.roll-group .chip.min { background: #8a2323; color: #fff; }
+.roll-group .chip.dropped { opacity: .45; text-decoration: line-through; }
+.roll-group .chip.flat { clip-path: none; border-radius: 4px; color: var(--gold2); }
+.roll-math { text-align: center; font: 600 15px var(--body); letter-spacing: .04em; color: var(--text); padding: 4px 0 0; border-top: 1px dashed var(--line); }
+
+/* play sheet: a little narrower, and the top row always fits inside it */
+.play { max-width: 1380px; }
+.vital-row { grid-template-columns: auto auto minmax(300px, 1fr); column-gap: 14px; }
+.ab-row { grid-template-columns: repeat(6, 92px); gap: 0 8px; }
+.ab-box small { letter-spacing: .08em; }
+.stat-tiles { grid-template-columns: repeat(4, 102px); gap: 8px; }
+.stat-tiles .tile, .stat-tiles .stat-shield { width: 102px; height: 112px; }
+.hp-panel, .vital-row > :last-child { min-width: 0; }
+.hp-manage { display: grid; grid-template-columns: minmax(84px, 1fr) repeat(3, auto); gap: 6px; }
+.hp-manage button { padding: 6px 9px; }
+.play-tabs button { padding: 10px 11px; letter-spacing: .07em; }
+.hp-manage input[type="number"] { width: 100%; min-width: 0; }
+@media (max-width: 1420px) { .vital-row { grid-template-columns: auto auto; } .vital-row > :last-child { grid-column: 1 / -1; } }
+@media (max-width: 1150px) { .vital-row { grid-template-columns: 1fr; } }
+.tutorial-tour { padding-left: 18px; display: grid; gap: 8px; } .tutorial-tour li { line-height: 1.4; }
+
+/* The top bar and the art cards are always dark, so they keep the dark palette in light themes too. */
+.topbar, .pick-card, .lock-note { --gold: #c9a45c; --gold2: #e6cc8e; --text: #ece3d0; --muted: #a89e8a; --line: #4b402c; --panel: #1f1a16; --panel2: #29231d; --bg2: #191512; color-scheme: dark; }
+.topbar { color: var(--text); }
+:root[data-theme="light"] .pick-card { --fg: #c9a45c; }
+:root[data-theme="light"] .pick-card.dim { --fg: #6d6656; }
+.pick-card.dim::before { color: rgba(255, 255, 255, .05); }

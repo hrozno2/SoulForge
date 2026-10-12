@@ -140,3 +140,44 @@ export function meets(req: string | undefined, ctx: ReqCtx, equipment = false): 
   const node = parse(req);
   return node ? evalNode(node, ctx, equipment) : true;
 }
+
+const ABILITY_NAME: Record<string, string> = { strength: "Strength", dexterity: "Dexterity", constitution: "Constitution", intelligence: "Intelligence", wisdom: "Wisdom", charisma: "Charisma" };
+
+/** A readable name for an element id when no registry is at hand: ID_WOTC_PHB_CLASS_FIGHTER becomes "Fighter". */
+const prettyId = (id: string) => {
+  const tail = id.replace(/^ID_/, "").split("_").slice(-2).join(" ").toLowerCase();
+  return tail.replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+/**
+ * What a character is missing for a requirement, in words: "Strength 13 or Dexterity 13" or "Level 4".
+ * Only the parts that fail are named. Returns undefined when the requirement is met.
+ */
+export function explainUnmet(req: string | undefined, ctx: ReqCtx, nameOf: (id: string) => string | undefined = () => undefined): string | undefined {
+  if (meets(req, ctx)) return undefined;
+  const node = parse(req!);
+  if (!node) return undefined;
+  const name = (id: string) => nameOf(id) ?? prettyId(id);
+  const say = (n: Node): string => {
+    switch (n.t) {
+      case "and":
+        return n.a.filter((x) => !evalNode(x, ctx, false)).map(say).join(" and ");
+      case "or":
+        return n.a.map(say).join(" or ");
+      case "not":
+        return n.n.t === "id" ? `not having ${name(n.n.id)}` : `not ${say(n.n)}`;
+      case "id":
+        return name(n.id);
+      case "pair": {
+        const key = n.key.toLowerCase();
+        if (key === "type") return n.value;
+        if (key === "id") return name(n.value);
+        if (key === "level" || key === "character") return `level ${n.value}`;
+        const stat = ABILITY_ALIAS[key] ?? key;
+        return `${ABILITY_NAME[stat] ?? stat} ${n.value}`;
+      }
+    }
+  };
+  const text = say(node).trim();
+  return text ? `Needs ${text}` : "Requirements not met";
+}

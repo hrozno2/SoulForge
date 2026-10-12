@@ -12,3 +12,13 @@ describe("official 2024 sheet recognition", () => {
     expect(looksLikeWotc2024(603, 774, 5, 0, "DnD_2024_Character-Sheet.pdf")).toBe(false);
   });
 });
+
+import { isEditable } from "./forms";
+
+describe("which sheets stay editable", () => {
+  it("only the plain print sheets are drawn text", () => {
+    expect(isEditable("wotc2024")).toBe(false);
+    expect(isEditable("wotc2014")).toBe(false);
+    for (const k of ["wotc2024form", "wotc2014form", "dldm5e24", "companion", "auto"]) expect(isEditable(k), k).toBe(true);
+  });
+});

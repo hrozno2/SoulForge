@@ -457,3 +457,9 @@ export async function fillAuto(template: Uint8Array | ArrayBuffer, data: FillDat
   if (res.unmatched.length) notes.push(`Not matched, fill by hand: ${res.unmatched.slice(0, 12).join(", ")}${res.unmatched.length > 12 ? ` and ${res.unmatched.length - 12} more` : ""}.`);
   return { bytes: await doc.save({ updateFieldAppearances: false }), notes, ...res };
 }
+
+
+/** True for sheets whose boxes are real form fields, so the filled text stays editable in a PDF viewer. */
+export function isEditable(kind: string): boolean {
+  return kind !== "wotc2024" && kind !== "wotc2014";
+}

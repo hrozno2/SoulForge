@@ -4,7 +4,7 @@ import type { Resolved } from "../aurora/engine";
 import type { SheetData } from "../aurora/sheet";
 import { deleteTemplate, listTemplates, saveTemplate, templateBytes, type TemplateRecord } from "../aurora/storage";
 import { buildPdf, cardCounts } from "../pdf/exportPdf";
-import { detectOfficial, fillAuto, fillOfficial } from "../sheets/forms";
+import { detectOfficial, fillAuto, fillOfficial, isEditable } from "../sheets/forms";
 import { desktopFetch, isDesktop } from "../net";
 import { WOTC_PAGES, looksLikeWotc2024, fillWotc, type WotcPage } from "../sheets/wotc";
 import { uid } from "../aurora/character";
@@ -30,6 +30,7 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   const counts = cardCounts(r, sheet);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [confirmPlain, setConfirmPlain] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => listTemplates().then(setTemplates);
@@ -227,7 +228,20 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
               </select>
             </div>
           )}
-          <button className="primary" disabled={busy || !tr.ready || !current || (current.kind === "dldm5e24" && pages.length === 0) || (current.kind === "wotc2024" && wotcPages.length === 0)} onClick={run}>{busy ? "Filling..." : "Fill and save"}</button>
+          <button className="primary" disabled={busy || !tr.ready || !current || (current.kind === "dldm5e24" && pages.length === 0) || (current.kind === "wotc2024" && wotcPages.length === 0)} onClick={() => (current && !isEditable(current.kind) ? setConfirmPlain(true) : run())}>{busy ? "Filling..." : "Fill and save"}</button>
+          {confirmPlain && (
+            <div className="modal-back" role="dialog" aria-label="This sheet is not editable" onClick={() => setConfirmPlain(false)}>
+              <div className="modal-page themed" onClick={(e) => e.stopPropagation()}>
+                <h2>This sheet is not a form</h2>
+                <p>The copy you loaded has no form fields. Soul Forge will write the text straight onto the page, so afterwards <b>you cannot edit it in a PDF viewer</b>: a mistake means making the PDF again from Soul Forge.</p>
+                <p className="muted">A fillable copy of the same sheet keeps every box editable. The official 2014 sheet and the DLDM sheets come as fillable files.</p>
+                <div className="row">
+                  <button className="primary" onClick={() => { setConfirmPlain(false); run(); }}>Proceed</button>
+                  <button onClick={() => setConfirmPlain(false)}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
       {msg && <p className="notice">{msg}</p>}

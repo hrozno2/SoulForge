@@ -35,7 +35,7 @@ function LearnModal({ el, books, onClose }: { el: AElement; books: BookIndex; on
   const s = el.setters;
   return (
     <div className="modal-back" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="modal-page" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-page themed learn-page" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
         <h2>{el.name}</h2>
         <p className="muted">{el.type} · {el.source}{b.release ? ` · ${formatRelease(b.release)}` : ""}{b.playtest ? " · playtest" : ""}</p>

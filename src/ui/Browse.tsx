@@ -32,14 +32,14 @@ function useStored<T extends string>(key: string, initial: T): [T, (v: T) => voi
   return [v, set];
 }
 
-const blurb = (html: string, max = 170) => {
+export const blurb = (html: string, max = 170) => {
   const m = html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
   const t = stripHtml(m ? m[1] : html).replace(/\s+/g, " ").trim();
   return t.length > max ? `${t.slice(0, max).replace(/\s+\S*$/, "")}...` : t;
 };
 
 /** The feat a background gives, when its rules name one. */
-const featOf = (e: AElement): string | undefined => {
+export const featOf = (e: AElement): string | undefined => {
   if (e.type !== "Background") return undefined;
   const g = e.rules.find((r) => r.kind === "grant" && r.type === "Feat") as { name?: string; id: string } | undefined;
   if (!g) return undefined;
@@ -50,7 +50,7 @@ const featOf = (e: AElement): string | undefined => {
 
 const SORTS: [SortMode, string][] = [["az", "A to Z"], ["recommended", "Recommended"], ["newest", "Newest"]];
 
-function VariantChips({ g, activeId, chosen, onActive, short, onSwitch }: { g: Group; activeId: string; chosen: Set<string>; onActive: (id: string) => void; short?: boolean; onSwitch?: (from: AElement, to: AElement) => void }) {
+function VariantChips({ g, activeId, chosen, onActive, short, onSwitch, onPickVersion }: { g: Group; activeId: string; chosen: Set<string>; onActive: (id: string) => void; short?: boolean; onSwitch?: (from: AElement, to: AElement) => void; onPickVersion?: (el: AElement) => void }) {
   const when = (r?: number) => (short ? (r ? String(Math.floor(r / 10000)) : "") : formatRelease(r));
   if (g.variants.length < 2) {
     const v = g.variants[0];
@@ -65,6 +65,8 @@ function VariantChips({ g, activeId, chosen, onActive, short, onSwitch }: { g: G
           // In the list a version you click replaces the one you already picked from this group.
           const have = g.variants.find((x) => chosen.has(x.el.id));
           if (onSwitch && have && have.el.id !== v.el.id) onSwitch(have.el, v.el);
+          // Nothing from this group picked yet: in the list a click on a version picks it.
+          else if (!have && onPickVersion) onPickVersion(v.el);
         }}>
           {v.book.abbr ?? v.el.source}
           {v.book.release ? <small> {when(v.book.release)}</small> : null}
@@ -267,7 +269,7 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
                 </button>
                 {type === "Spell" ? <SpellCells el={e} /> : <span className="opt-blurb">{blurb(e.description, 110)}</span>}
                 {why && !owner && <small className="why">{why}</small>}
-                <VariantChips short g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} onSwitch={onSwap} />
+                <VariantChips short g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} onSwitch={onSwap} onPickVersion={owner || why ? undefined : onPick} />
                 <button className="learn" onClick={() => learn(e)} title="Read the full description">i</button>
               </div>
             );

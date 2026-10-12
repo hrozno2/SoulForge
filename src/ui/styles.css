@@ -192,7 +192,7 @@ button.tiny { padding: 0 6px; }
 .ribbon { position: absolute; left: 22px; top: 3px; width: 56px; height: 82px; background: linear-gradient(180deg, hsl(var(--hue) 65% 50%), hsl(var(--hue) 60% 34%)); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%); display: flex; align-items: flex-start; justify-content: center; padding-top: 12px; font: 700 26px var(--book); color: #fff; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .2); }
 .ribbon svg { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .35)); }
 .pick-card:not(.is-class) { padding-top: 120px; }
-:root .browse .pick-card h3, .pick-card h3 { font: 700 40px/1.05 var(--book); margin: 0 0 8px; color: #fff; text-transform: none; letter-spacing: -0.005em; text-shadow: 0 2px 10px rgba(0, 0, 0, .7); }
+:root .pick-card.pick-card h3 { font: 700 40px/1.05 var(--book); margin: 0 0 8px; color: #fff; text-transform: none; letter-spacing: -0.005em; text-shadow: 0 2px 10px rgba(0, 0, 0, .7); }
 .pick-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .pick-tags span { font: 500 12px var(--body); letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 12px; border: 1.5px solid hsl(var(--hue) 70% 62%); color: #f3ead8; border-radius: 14px; background: rgba(0, 0, 0, .35); }
 .pick-blurb { font: 400 15.5px/1.4 var(--body); color: #e4dccb; margin: 0 0 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
@@ -1053,3 +1053,14 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .modal-page.themed .set-row input[type="range"] { accent-color: var(--accent); }
 .modal-page.themed .modal-close { color: var(--gold2); border-color: var(--line); }
 :root[data-theme="light"] .search-box { background: var(--panel); color: var(--muted); }
+
+/* the chosen species, class or background: the same card, wide and shorter */
+.chosen-banner { min-height: 200px; padding-top: 70px; margin: 6px 0 14px; }
+.chosen-banner:not(.is-class) { padding-top: 64px; }
+.chosen-banner.is-class { padding-left: 100px; padding-top: 26px; }
+.chosen-banner:hover { transform: none; }
+.chosen-kicker { font: 700 12px var(--display); letter-spacing: .16em; text-transform: uppercase; color: var(--gold2); text-shadow: 0 1px 4px #000; }
+.chosen-banner .pick-blurb { max-width: 720px; -webkit-line-clamp: 2; }
+.chosen-banner .stepper { display: inline-flex; align-items: center; gap: 8px; color: #fff; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; }
+.chosen-banner .stepper button { padding: 4px 10px; border-radius: 4px; color: #fff; border-color: #d8d2c4; background: rgba(0, 0, 0, .35); }
+.class-list { display: grid; gap: 0; }

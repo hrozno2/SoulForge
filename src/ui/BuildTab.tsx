@@ -9,7 +9,7 @@ import {
 } from "../aurora/character";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { buildSheet } from "../aurora/sheet";
-import { PickCards } from "./PickCards";
+import { ChosenBanner, PickCards } from "./PickCards";
 
 type Sub = "race" | "class" | "background" | "abilities" | "languages" | "proficiencies" | "feats";
 const SUBS: [Sub, string][] = [["race", "Species"], ["class", "Class"], ["background", "Background"], ["abilities", "Ability scores"], ["languages", "Languages"], ["proficiencies", "Proficiencies"], ["feats", "Feats"]];
@@ -28,18 +28,10 @@ function ChosenOrCards({ kicker, title, label, items, value, onPick, onClear, on
   }
   return (
     <>
-      <div className="slot done">
-        <div className="slot-head" style={{ cursor: "default" }} onMouseEnter={() => onDetail(cur)}>
-          <span className="slot-name">{label}</span>
-          <span className="slot-chosen">{cur.name} <small className="muted">{cur.source}</small></span>
-          <span />
-          <span />
-        </div>
-        <div className="slot-body row">
-          <button onClick={() => setChanging(true)}>Change</button>
-          <button onClick={onClear}>Clear</button>
-        </div>
-      </div>
+      <ChosenBanner el={cur} label={`Your ${label.toLowerCase()}`} onHover={onDetail}>
+        <button className="ghost" onClick={onClear}>Clear</button>
+        <button className="pick-select" onClick={() => setChanging(true)}>Change</button>
+      </ChosenBanner>
       {children}
     </>
   );
@@ -64,16 +56,18 @@ function ClassPanel({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
         {ch.classes.map((c, i) => {
           const el = r.reg.get(c.classId);
           return (
-            <div className="class-row" key={c.classId} onMouseEnter={() => el && onDetail(el)}>
-              <b>{el?.name ?? c.classId}</b>
-              <span className="muted">{i === 0 ? "starting class" : "multiclass"}</span>
-              <span className="stepper">
-                <button onClick={() => setLevel(i, -1)} disabled={c.level <= 1}>−</button>
-                <span>Level {c.level}</span>
-                <button onClick={() => setLevel(i, 1)} disabled={c.level >= 20 || level >= 20}>+</button>
-              </span>
-              <button onClick={() => remove(i)}>Remove</button>
-            </div>
+            el ? (
+              <ChosenBanner key={c.classId} el={el} label={i === 0 ? "Starting class" : "Multiclass"} onHover={onDetail}>
+                <span className="stepper">
+                  <button onClick={() => setLevel(i, -1)} disabled={c.level <= 1} aria-label="Level down">−</button>
+                  <span>Level {c.level}</span>
+                  <button onClick={() => setLevel(i, 1)} disabled={c.level >= 20 || level >= 20} aria-label="Level up">+</button>
+                </span>
+                <button className="ghost" onClick={() => remove(i)}>Remove</button>
+              </ChosenBanner>
+            ) : (
+              <div className="class-row" key={c.classId}><b>{c.classId}</b><button onClick={() => remove(i)}>Remove</button></div>
+            )
           );
         })}
         {!ch.classes.length && <p className="muted">Pick a class to start.</p>}

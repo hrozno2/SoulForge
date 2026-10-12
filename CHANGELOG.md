@@ -2,6 +2,26 @@
 
 What changed in each release. Newest first.
 
+## v0.9.0 (2026-10-12)
+
+- Locked options stay visible with the reason; level up and multiclass as cards; dice show the sum; readable rules tables; stat blocks keep the printed look; play sheet fits; favorites drag in the desktop app; sheet downloads in Manage sheets; tutorial step for finding your way; filled sheets: text fits its box, short casting times and ranges, centred numbers
+- Chosen species, class and background shown as cards; list view version chips pick that version; Learn more follows the theme
+- Premium pick cards: gilded notched frames, class emblems and role tags, serif headings, segmented filter bar; settings follow the dark themes
+- Sheet panel: pick, preview and fill first; downloads tucked away; sheet manager with thumbnails, rename and remove
+- Bug fixes from a review: form text redrawn in the production build, translated group and notes no longer break sheet filling, passive perception from the sheet, preview refreshes on any change, large characters survive a reload
+- Main navigation in four groups with rollout menus: Home, Build, Manage, Sheet
+- One-click downloads for the DLDM 2024 fillable sheet and companion sheets, with credit
+- Smarter matching of unknown sheets (printed labels, word order, named check boxes), aliases for wrongly named official fields
+- Sheet preview with page buttons, file list copied before the input resets, layouts and tests for the whole official set
+- Official sheets: layouts for every sheet in the WotC set, plain and fillable, duplicate merge, one-click download of the whole 2014 set
+- Compendium search, character badge and action strip in the top bar, Slate and amber theme after Aurora Builder
+- Tutorial progress bar uses the same markup as the Content tab
+- Tutorial does the setup itself (Aurora download, character import, official sheets) and minimizes instead of closing
+- Script to build a test copy of the app next to the released one
+- Warn before filling a sheet that is not a form, with a Proceed button
+- First-run tutorial for new and updated installs, skippable, with never show again
+- Fill the official 2024 fillable and classic 2014 sheets by field, automatic matching for other fillable sheets, one-click official sheet download, Magic tab badge
+
 ## v0.8.0 (2026-10-10)
 
 - DeepL translation service (desktop app), glossary of fixed term translations with starter lists

@@ -303,6 +303,42 @@ test.describe("Soul Forge smoke tests", () => {
     });
   });
 
+  test("a loaded sheet previews filled in with page buttons, and the same sheet is not kept twice", async ({ page }, info) => {
+    const { PDFDocument, StandardFonts } = await import("pdf-lib");
+    // A small fillable sheet with the field names of the classic 2014 sheet, made here so no one else's file is needed.
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    for (let n = 0; n < 2; n++) {
+      const pg = doc.addPage([612, 792]);
+      pg.drawText(`Test sheet page ${n + 1}`, { x: 40, y: 740, size: 14, font });
+      if (n === 0) {
+        const f = doc.getForm();
+        for (const [i, name] of ["CharacterName", "Wpn Name", "ClassLevel", "Race"].entries()) f.createTextField(name).addToPage(pg, { x: 40, y: 700 - i * 30, width: 200, height: 20 });
+      }
+    }
+    const file = info.outputPath("classic-test.pdf");
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(file, await doc.save());
+    await addTestContent(page);
+    await randomCharacter(page);
+    await tab(page, "Sheet");
+    await page.getByRole("button", { name: "Export PDF..." }).click();
+    const choose = async () => {
+      const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.getByRole("button", { name: "Add sheet PDF..." }).click()]);
+      await chooser.setFiles(file);
+    };
+    await choose();
+    await expect(page.getByText(/classic 2014|fillable sheet/i).first()).toBeVisible();
+    await expect(page.locator(".sheet-preview img")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText("Page 1 of 2")).toBeVisible();
+    await page.getByRole("button", { name: "Next page" }).click();
+    await expect(page.getByText("Page 2 of 2")).toBeVisible();
+    // Adding the very same file again keeps one copy.
+    await choose();
+    await expect(page.getByText(/already added|replaced/i).first()).toBeVisible();
+    expect(await page.locator("option", { hasText: /Classic 2014/ }).count()).toBe(1);
+  });
+
   test("the homebrew builder makes a spell that shows up in the content browser", async ({ page }) => {
     await addTestContent(page);
     await tab(page, "Content");

@@ -945,3 +945,10 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .actionbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin: -4px 0 10px; padding: 4px 0 8px; border-bottom: 1px solid var(--line); }
 .actionbar button { padding: 3px 12px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
 .actionbar .saved { margin-right: auto; color: var(--muted); font-size: 12px; }
+
+/* sheet preview */
+.sheet-preview { margin: 10px 0; }
+.sheet-preview-frame { position: relative; display: grid; place-items: center; min-height: 200px; padding: 8px; background: #0003; border: 1px solid var(--line); border-radius: 6px; overflow: auto; max-height: 70vh; }
+.sheet-preview-frame img { max-width: 100%; height: auto; background: #fff; box-shadow: 0 4px 16px #0008; }
+.sheet-preview-busy { position: absolute; right: 12px; top: 8px; color: var(--muted); }
+.sheet-preview-nav { justify-content: center; align-items: center; gap: 14px; margin-top: 8px; }

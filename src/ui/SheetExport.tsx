@@ -11,6 +11,7 @@ import { buildFillData, companionFill } from "../sheets/data";
 import { translateCompanion, translateFill } from "../sheets/translateFill";
 import { DLDM_PAGES, fillDldm, type DldmPage } from "../sheets/dldm";
 import { fillCompanion } from "../sheets/companion";
+import { SheetPreview } from "./SheetPreview";
 import { OFFICIAL_DOWNLOADS, SHEET_LINKS, SHEET_SEARCH } from "../sheets/links";
 import { addSheetFiles, downloadOfficialSheet, mergeDuplicateSheets } from "../sheets/templates";
 import { nextFrame, openExternal, pickFiles, saveFile } from "../store";
@@ -29,6 +30,8 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmPlain, setConfirmPlain] = useState(false);
+  const [previewBytes, setPreviewBytes] = useState<Uint8Array | null>(null);
+  const [previewNote, setPreviewNote] = useState("");
   /** A sheet with no form fields: the text is drawn onto the page, so it cannot be edited afterwards. */
   const isPlain = (t: TemplateRecord) => (t.kind === "official" ? !t.form : t.kind === "wotc2024" || t.kind === "wotc2014");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -63,8 +66,10 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
     else add(files);
   };
 
-  const add = async (list: FileList | File[] | null) => {
-    if (!list || !list.length) return;
+  const add = async (picked: FileList | File[] | null) => {
+    // The list of files empties when the input is reset, so take the files out of it right away.
+    const list = picked ? Array.from(picked) : [];
+    if (!list.length) return;
     setMsg("Reading...");
     await nextFrame();
     const notes = await addSheetFiles(list);
@@ -76,11 +81,56 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   const failedRef = useRef(0);
   const onFailed = (f: number) => { failedRef.current += f; };
   /** The values for the sheet, translated when a language is chosen. */
-  const fillData = async () => {
+  const fillData = async (translate = true) => {
     const data = buildFillData(r, sheet);
+    if (!translate) return data;
     const t = tr.option((d, n) => setMsg(`Translating ${d} of ${n}...`), (f) => onFailed(f));
     return t ? translateFill(data, t) : data;
   };
+
+  /** Fills the chosen sheet. A preview skips translation and the extra cards, so it is quick and costs nothing. */
+  const build = async (preview: boolean): Promise<{ bytes: Uint8Array; notes: string[] }> => {
+    if (!current) throw new Error("No sheet chosen.");
+    const { loadFonts } = await import("../pdf/fonts");
+    const fonts = await loadFonts();
+    let bytes: Uint8Array;
+    let notes: string[] = [];
+    const tpl = await templateBytes(current.id);
+    const data = () => fillData(!preview);
+    if (current.kind === "auto") {
+      const res = await fillAuto(tpl, await data(), fonts);
+      bytes = res.bytes;
+      notes = res.notes;
+    } else if (current.kind === "official" || current.kind.startsWith("wotc")) {
+      const res = await fillOfficialSheet(tpl, current.name, await data(), fonts);
+      bytes = res.bytes;
+      notes = res.notes;
+    } else if (current.kind === "dldm5e24") {
+      const res = await fillDldm(tpl, await data(), { pages, font: fonts });
+      bytes = res.bytes;
+      notes = res.notes;
+    } else {
+      const id = companion || companionList[0]?.id;
+      const el = id ? r.reg.get(id) : undefined;
+      if (!el) throw new Error("This character has no companion yet. Add one on the Manage tab.");
+      const name = r.character.companions.find((c) => c.id === id)?.name ?? el.name;
+      const cf = companionFill(el, name, r.reg);
+      const t = preview ? undefined : tr.option((d, n) => setMsg(`Translating ${d} of ${n}...`), onFailed);
+      bytes = await fillCompanion(tpl, t ? await translateCompanion(cf, t) : cf, { font: fonts, profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency), layout: current.pages[0] as "mount" | "ranger" });
+    }
+    return { bytes, notes };
+  };
+
+  // The preview refreshes when the sheet or its page choice changes. It never translates and never saves.
+  const previewKey = current ? `${current.id}|${pages.join(",")}|${companion}|${r.character.name}|${r.totalLevel}` : "";
+  useEffect(() => {
+    if (!current) { setPreviewBytes(null); return; }
+    let live = true;
+    const t = window.setTimeout(() => {
+      build(true).then((res) => { if (live) { setPreviewBytes(res.bytes); setPreviewNote(""); } }).catch((e) => { if (live) { setPreviewBytes(null); setPreviewNote((e as Error).message); } });
+    }, 250);
+    return () => { live = false; window.clearTimeout(t); };
+  }, [previewKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const run = async () => {
     if (!current) return;
@@ -91,28 +141,9 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
       const { loadFonts } = await import("../pdf/fonts");
       const fonts = await loadFonts();
       const base = (r.character.name || "character").replace(/[^\p{L}\p{N}]+/gu, "-");
-      let bytes: Uint8Array;
-      let notes: string[] = [];
-      const tpl = await templateBytes(current.id);
-      if (current.kind === "auto") {
-        const res = await fillAuto(tpl, await fillData(), fonts);
-        bytes = res.bytes;
-        notes = res.notes;
-      } else if (current.kind === "official" || current.kind.startsWith("wotc")) {
-        const res = await fillOfficialSheet(tpl, current.name, await fillData(), fonts);
-        bytes = res.bytes;
-        notes = res.notes;
-      } else if (current.kind === "dldm5e24") {
-        const res = await fillDldm(tpl, await fillData(), { pages, font: fonts });
-        bytes = res.bytes;
-        notes = res.notes;
-      } else {
-        const id = companion || companionList[0]?.id;
-        const el = id ? r.reg.get(id) : undefined;
-        if (!el) throw new Error("This character has no companion yet. Add one on the Manage tab.");
-        const name = r.character.companions.find((c) => c.id === id)?.name ?? el.name;
-        bytes = await fillCompanion(tpl, await (async () => { const cf = companionFill(el, name, r.reg); const t = tr.option((d, n) => setMsg(`Translating ${d} of ${n}...`), onFailed); return t ? translateCompanion(cf, t) : cf; })(), { font: fonts, profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency), layout: current.pages[0] as "mount" | "ranger" });
-      }
+      const built = await build(false);
+      let bytes = built.bytes;
+      const notes = built.notes;
       if (cards.spells || cards.items || cards.features || cards.tips) {
         const extra = await buildPdf(r, sheet, { paper: "letter", sheet: false, spellCards: cards.spells, itemCards: cards.items, featureCards: cards.features, tips: cards.tips, translate: tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`), onFailed) }, fonts);
         const main = await PDFDocument.load(bytes);
@@ -159,6 +190,7 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
               ))}
             </div>
           )}
+          {current && <SheetPreview bytes={previewBytes} note={previewNote} />}
           {current && current.kind !== "companion" && (
             <div>
               <small className="muted">Add to the end of the PDF</small>

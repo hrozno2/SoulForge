@@ -80,8 +80,9 @@ export function Tutorial(p: TutorialProps) {
       void refreshSheets();
     }
   };
-  const addOwnSheet = async (files: FileList | File[] | null) => {
-    if (!files || !files.length) return;
+  const addOwnSheet = async (picked: FileList | File[] | null) => {
+    const files = picked ? Array.from(picked) : [];
+    if (!files.length) return;
     setSheetBusy(true);
     setSheetMsg((await addSheetFiles(files)).join(". "));
     setSheetBusy(false);

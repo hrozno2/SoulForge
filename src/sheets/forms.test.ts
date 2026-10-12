@@ -4,7 +4,7 @@ import { fill2014, fill2024Form, type Sink, type W } from "./forms";
 import { LAYOUTS } from "./official";
 
 const RECTS_2014 = LAYOUTS["3p"].widgets;
-import { buildPlan } from "./automap";
+import { autoFill, buildPlan } from "./automap";
 
 const recorder = () => {
   const text = new Map<string, string>();
@@ -55,4 +55,17 @@ describe("automatic matching of other fillable sheets", () => {
     expect(plan.has("skill.sleight of hand")).toBe(true);
     expect(unmatched.length).toBeLessThanOrEqual(2);
   });
+});
+
+describe("the other official layouts are matched by name", () => {
+  for (const id of ["classic", "alt", "details", "spells", "adventurers"] as const) {
+    it(`${id}: nearly every text field gets a value`, () => {
+      const ws = LAYOUTS[id].widgets;
+      const { sink, text } = recorder();
+      autoFill(ws, maximal(), sink);
+      const missed = unreached(ws, text);
+      const total = new Set(ws.filter((w) => w.t === "Tx").map((w) => w.name.trim())).size;
+      expect(missed.length / total, `${id} missed: ${missed.join(", ")}`).toBeLessThan(0.06);
+    });
+  }
 });

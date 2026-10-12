@@ -71,7 +71,8 @@ describe.skipIf(!SHEETS || !CONTENT)("DLDM 5E24 sheets", () => {
     for (const a of sheet.abilities) expect(a.score).toBeGreaterThan(0);
     expect(text("INT SCORE")).toBe(String(sheet.abilities.find((a) => a.id === "intelligence")!.score));
     expect(text("ARCANA")).toBe(`+${sheet.skills.find((s) => s.name === "arcana")!.bonus}`);
-    expect(text("SPELL SAVE DC25")).toBe(String(sheet.casting[0].dc));
+    // The sheet's three spellcasting fields are named one box off; the DC goes in the middle box, whatever its name.
+    expect(text("SPELLCASTING MOD24")).toBe(String(sheet.casting[0].dc));
     expect(form.getCheckBox("CB-INTSAVE").isChecked()).toBe(true);
     expect(text("COIN9")).toBe("25");
     void ABILITY_IDS;

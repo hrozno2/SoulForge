@@ -268,6 +268,9 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
   const prof = s.get("proficiency");
   const out: AttackLine[] = [];
   const mods = (a: AbilityId) => s.get(`${a}:modifier`);
+  // Dueling: +2 damage with a melee weapon held in one hand and no other weapon. The content leaves this to the app.
+  const dueling = r.active.some((a) => /^dueling$/i.test(a.el.name) && /feature|feat/i.test(a.el.type));
+  const weaponsHeld = r.character.inventory.filter((i) => i.equipped && i.id && r.reg.get(i.id)?.type === "Weapon").length;
   for (const it of r.character.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;
     if ((!it.equipped && !carried) || !el || el.type !== "Weapon") continue;
@@ -282,7 +285,9 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     const kind = ranged ? "ranged" : "melee";
     // Fighting styles and similar features add to every attack of a kind.
     const atkExtra = s.get(`${kind}:attack`) + s.get("attack") + magicAtk;
-    const dmgExtra = s.get(`${kind}:damage`) + s.get("damage") + magicDmg;
+    const twoHandedWeapon = tags.some((t) => /two.?handed/.test(t)) || it.twoHanded;
+    const duel = dueling && kind === "melee" && !twoHandedWeapon && weaponsHeld <= 1 ? 2 : 0;
+    const dmgExtra = s.get(`${kind}:damage`) + s.get("damage") + magicDmg + duel;
     const dmg = it.twoHanded && el.setters.versatile ? { value: el.setters.versatile.value, attrs: el.setters.damage?.attrs ?? {} } : el.setters.damage;
     const props = el.supports
       .filter((t) => /WEAPON_PROPERTY/.test(t))

@@ -414,7 +414,7 @@ function spellPages(sh: Sheet, d: FillData): void {
 // ---------------------------------------------------------------- equipment and story
 
 function lastPages(sh: Sheet, d: FillData, portrait?: { w: number; h: number; draw: (x: number, top: number, w: number, h: number) => void }): void {
-  let top = sh.newPage("Equipment and story");
+  const top = sh.newPage("Equipment and story");
   const W = sh.W;
   const lw = (W - 10) * 0.46;
   const rw = W - lw - 10;

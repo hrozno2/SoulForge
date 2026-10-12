@@ -208,7 +208,8 @@ function improvementOptions(all: AElement[]): AElement[] {
       // Content that ships its own options for this select keeps them.
       if (all.some((e) => e.type === r.type && parts.every((p) => e.supports.some((x) => x.trim().toLowerCase() === p.toLowerCase())))) continue;
       const key = parts.join("_").toUpperCase().replace(/[^A-Z0-9]+/g, "_");
-      const make = (suffix: string, name: string, text: string, rules: AElement["rules"]): AElement => ({ id: `ID_INTERNAL_IMPROVEMENT_${key}_${suffix}`, name, type: r.type, source: "Internal", supports: parts, description: `<p>${text}</p>`, compendiumHidden: true, setters: {}, rules });
+      // Hidden from the sheet: the increase shows in the scores, and a feat taken here shows under feats.
+      const make = (suffix: string, name: string, text: string, rules: AElement["rules"]): AElement => ({ id: `ID_INTERNAL_IMPROVEMENT_${key}_${suffix}`, name, type: r.type, source: "Internal", supports: parts, description: `<p>${text}</p>`, compendiumHidden: true, sheet: { display: false, descriptions: [] }, setters: {}, rules });
       out.push(
         make("PLUS2", "Ability Score Improvement (+2)", "Increase one ability score by 2. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +2", supports: "Custom Ability Score Increase 2", number: 1 }]),
         make("PLUS1", "Ability Score Improvement (+1, +1)", "Increase two different ability scores by 1. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +1", supports: "Custom Ability Score Increase 1", number: 2 }]),

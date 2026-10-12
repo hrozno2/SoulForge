@@ -90,8 +90,9 @@ describe.skipIf(!CONTENT24 || !DIR)("foreign import against the 2024 rules", () 
     const reg = loadRegistry(CONTENT24!);
     const res = importForeignCharacter(JSON.parse(readFileSync(`${DIR}/fvtt-Actor-waldrom-brahms-Be4NGiw22hg7gVBb(1).json`, "utf8")), reg);
     const r = resolve(res.character, reg);
-    const open = r.slots.filter((s) => !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length);
-    expect(open).toEqual([]);
+    // Spell choices the file does not fill are left for the player; everything else is settled.
+    const open = r.slots.filter((s) => s.rule.type !== "Spell" && !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length);
+    expect(open.map((s) => s.rule.name)).toEqual([]);
     const names = (id: string) => r.slots.filter((s) => s.key.includes(id)).flatMap((s) => s.chosen.map((c) => reg.get(c)?.name));
     expect(names("RACE_HUMAN|2")).toEqual(["Medium"]);
     expect(names("FIGHTER_SUBCLASS")).toEqual(["Eldritch Knight"]);

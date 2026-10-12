@@ -51,7 +51,7 @@ export function toggleEquip(inv: InvItem[], uid: string, reg: ARegistry): HandsR
   if (!it) return { inventory: inv, dropped: [] };
   const el = it.id ? reg.get(it.id) : undefined;
   const want = !it.equipped;
-  let next = inv.map((i) => {
+  const next = inv.map((i) => {
     if (i.uid === uid) return { ...i, equipped: want, twoHanded: want ? i.twoHanded : false };
     const other = i.id ? reg.get(i.id) : undefined;
     if (want && el?.type === "Armor" && other?.type === "Armor" && isShieldEl(el) === isShieldEl(other)) return { ...i, equipped: false };

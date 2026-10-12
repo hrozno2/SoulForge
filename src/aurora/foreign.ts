@@ -324,6 +324,11 @@ class Importer {
     }
     if (inner) this.hints.names.add(normalizeFull(inner));
     const r = resolve(ch, this.reg);
+    // A spell the character already has under this name (a domain spell in the other edition) is not taken twice.
+    if (all[0].type === "Spell" && [...r.ids].some((id) => { const e = this.reg.get(id); return e?.type === "Spell" && normalize(e.name) === normalize(all[0].name); })) {
+      this.matched.push(`${all[0].name} (already granted)`);
+      return ch;
+    }
     // Of the elements with this name, the one an open choice can take wins (a 2014 subclass for a 2014 class);
     // otherwise the one from the character's edition.
     const fits = all.filter((e) => r.slots.some((s) => s.chosen.length < s.rule.number && s.options.some((o) => o.id === e.id)));

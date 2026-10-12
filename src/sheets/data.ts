@@ -214,15 +214,18 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
   for (const c of sh.casting) {
     const anyPrepared = c.spells.some((s) => s.prepared);
     const list = [...c.cantripsKnown, ...(c.prepare && anyPrepared ? [...c.granted, ...c.spells.filter((s) => s.prepared)] : [...c.spells, ...c.granted])];
-    for (const p of list) {
-      if (seen.has(p.id)) continue;
-      seen.add(p.id);
+    // One line per spell name: the 2014 and 2024 versions of a spell (one from a domain, one chosen) are the same spell.
+    const nameOf = (id: string) => (r.reg.get(id)?.name ?? id).toLowerCase().replace(/[’']/g, "'");
+    const byGrantFirst = [...list].sort((a, b) => Number(!!b.granted) - Number(!!a.granted));
+    for (const p of byGrantFirst) {
+      if (seen.has(nameOf(p.id))) continue;
+      seen.add(nameOf(p.id));
       const x = row(p, !!p.granted || (c.prepare && !!(p as { prepared?: boolean }).prepared) || !c.prepare);
       if (x) spells.push(x);
     }
     for (const p of [...c.cantripsKnown, ...c.granted, ...c.spells]) {
-      if (seenBook.has(p.id)) continue;
-      seenBook.add(p.id);
+      if (seenBook.has(nameOf(p.id))) continue;
+      seenBook.add(nameOf(p.id));
       const x = row(p, !!p.granted || !c.prepare || !!(p as { prepared?: boolean }).prepared);
       if (x) spellbook.push(x);
     }

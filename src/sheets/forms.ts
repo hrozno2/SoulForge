@@ -340,6 +340,13 @@ export function formSink(doc: PDFDocument, font: PDFFont): Sink & { done(): void
     text(w, value) {
       // Two widgets with one name are one field to the form, so they would show the same value. Draw those instead.
       if (widgets.filter((x) => x.name === w.name).length > 1) {
+        // The field's own value would show in every one of its boxes, so it is emptied (a sheet used before keeps old text).
+        try {
+          const field = form.getTextField(w.name);
+          if (field.getText()) field.setText("");
+        } catch {
+          /* not a text field */
+        }
         const page = doc.getPage(w.p);
         const multi = wantsMulti(font, value, w);
         const { lines, size } = layout(font, value, w.w, w.h, multi);

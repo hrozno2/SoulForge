@@ -239,7 +239,14 @@ test.describe("Soul Forge smoke tests", () => {
     await rows.nth(0).getByRole("button", { name: "Add to favorites" }).click();
     await expect(bar.locator(".fav-tile.feature")).toHaveCount(1);
     if ((await rows.count()) > 1) {
-      await rows.nth(1).dragTo(bar);
+      // Drag the way a person does: press, move over the favorites in steps, let go.
+      const from = (await rows.nth(1).boundingBox())!;
+      const to = (await bar.boundingBox())!;
+      await page.mouse.move(from.x + 20, from.y + from.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(to.x + to.width / 2, to.y + 10, { steps: 12 });
+      await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 6 });
+      await page.mouse.up();
       await expect(bar.locator(".fav-tile.feature")).toHaveCount(2);
     }
     // Favorites are kept with the character; the sidebar can switch to the skills and back.

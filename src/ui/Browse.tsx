@@ -7,9 +7,10 @@ import { shortRange, shortTime } from "../sheets/data";
 import { hueOf } from "./PickCards";
 import { useUi } from "./Learn";
 import { SchoolIcon } from "./schoolIcons";
+import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
 
 const SCHOOLS = new Set(["abjuration", "conjuration", "divination", "enchantment", "evocation", "illusion", "necromancy", "transmutation"]);
-import { useSettings } from "./Settings";
+import { updateSettings, useSettings } from "./Settings";
 
 function useStored<T extends string>(key: string, initial: T): [T, (v: T) => void] {
   const full = `charforge.browse.${key}`;
@@ -35,6 +36,16 @@ const blurb = (html: string, max = 170) => {
   const m = html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
   const t = stripHtml(m ? m[1] : html).replace(/\s+/g, " ").trim();
   return t.length > max ? `${t.slice(0, max).replace(/\s+\S*$/, "")}...` : t;
+};
+
+/** The feat a background gives, when its rules name one. */
+const featOf = (e: AElement): string | undefined => {
+  if (e.type !== "Background") return undefined;
+  const g = e.rules.find((r) => r.kind === "grant" && r.type === "Feat") as { name?: string; id: string } | undefined;
+  if (!g) return undefined;
+  if (g.name) return g.name;
+  const m = g.id.match(/FEAT_(.+)$/i);
+  return m ? m[1].toLowerCase().split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : undefined;
 };
 
 const SORTS: [SortMode, string][] = [["az", "A to Z"], ["recommended", "Recommended"], ["newest", "Newest"]];
@@ -154,17 +165,42 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
         </div>
       )}
       <div className="browse-bar">
-        <input type="search" placeholder={`Search ${items.length} options`} value={q} onChange={(e) => setQ(e.target.value)} />
-        <button className={open || activeCount ? "pill active" : "pill"} onClick={() => setOpen(!open)}>Filters{activeCount ? ` (${activeCount})` : ""}</button>
-        <label className="sort-select">Sort <select value={effSort} onChange={(e) => setSort(e.target.value as SortMode)}>{sorts.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
-        {allowCards && (
-          <span className="view-toggle" role="group" aria-label="View">
-            <button className={view === "cards" ? "pill active" : "pill"} onClick={() => setView("cards")}>Badges</button>
-            <button className={view === "list" ? "pill active" : "pill"} onClick={() => setView("list")}>List</button>
-          </span>
+        {hero && (
+          <div className="seg-group">
+            <span className="seg-label">Rules</span>
+            <span className="seg" role="group" aria-label="Rules">
+              <button className={!prefs.showLegacy ? "on" : ""} onClick={() => updateSettings({ showLegacy: false })} title="Only the 2024 books, plus what you already picked">2024</button>
+              <button className={prefs.showLegacy ? "on" : ""} onClick={() => updateSettings({ showLegacy: true })} title="The 2024 and the 2014 books">All</button>
+            </span>
+          </div>
         )}
-        <span className="muted count">{groups.length} shown{filtered.length !== groups.length ? `, ${filtered.length} versions` : ""}{hidden > 0 ? `, ${hidden} hidden by your content filters (Menu, Settings)` : ""}</span>
+        <div className="seg-group">
+          <span className="seg-label">Sort</span>
+          <span className="seg" role="group" aria-label="Sort">
+            {sorts.map(([k, l]) => <button key={k} className={effSort === k ? "on" : ""} onClick={() => setSort(k)}>{l}</button>)}
+          </span>
+        </div>
+        {allowCards && (
+          <div className="seg-group">
+            <span className="seg-label">View</span>
+            <span className="seg" role="group" aria-label="View">
+              <button className={view === "cards" ? "on" : ""} onClick={() => setView("cards")}>Cards</button>
+              <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}>List</button>
+            </span>
+          </div>
+        )}
+        <div className="seg-group grow">
+          <span className="seg-label">&nbsp;</span>
+          <span className="search-row">
+            <span className="search-box">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" /><path d="M15.5 15.5 21 21" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" /></svg>
+              <input type="search" placeholder={`Search ${items.length} options`} value={q} onChange={(e) => setQ(e.target.value)} />
+            </span>
+            <button className={`filters-btn ${open || activeCount ? "on" : ""}`} onClick={() => setOpen(!open)}>Filters{activeCount ? ` (${activeCount})` : ""}</button>
+          </span>
+        </div>
       </div>
+      <p className="muted count">{groups.length} shown{filtered.length !== groups.length ? `, ${filtered.length} versions` : ""}{hidden > 0 ? `, ${hidden} hidden by your content filters (Menu, Settings)` : ""}</p>
       {open && (
         <div className="filters">
           {counts.map(({ def, values }) => (
@@ -193,14 +229,19 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
             const owner = g.variants.map((x) => ownedBy?.(x.el)).find(Boolean);
             const picked = g.variants.some((x) => chosenSet.has(x.el.id));
             return (
-              <div key={g.key} title={owner} className={`pick-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} style={{ ["--hue" as string]: hue }} data-glyph={e.name.charAt(0)} onMouseEnter={() => onHover?.(e)}>
-                <div className="ribbon">{e.name.charAt(0)}</div>
+              <div key={g.key} title={owner} className={`pick-card ${type === "Class" ? "is-class" : ""} ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} style={{ ["--hue" as string]: hue }} data-glyph={hasClassIcon(e.name) ? "" : e.name.charAt(0)} onMouseEnter={() => onHover?.(e)}>
+                {hasClassIcon(e.name) && <ClassIcon name={e.name} size={260} className="pick-watermark" />}
+                {type === "Class" && <div className="ribbon">{hasClassIcon(e.name) ? <ClassIcon name={e.name} size={34} /> : e.name.charAt(0)}</div>}
                 <h3>{e.name}</h3>
-                <VariantChips g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} />
+                {CLASS_TAGS[e.name] && type === "Class" && <div className="pick-tags">{CLASS_TAGS[e.name].map((t) => <span key={t}>{t}</span>)}</div>}
                 <p className="pick-blurb">{blurb(e.description) || "No description in the content file."}</p>
-                <div className="pick-actions">
-                  <button className="ghost" onClick={() => learn(e)}>Learn more</button>
-                  <button className="primary" disabled={!!why || !!owner} title={owner ?? why} onClick={() => onPick(e)}>{owner ? "✓ Already have" : chosenSet.has(e.id) ? "Selected" : (pickLabel?.(e) ?? "Select")}</button>
+                {featOf(e) && <p className="pick-feat"><b>Feat:</b> {featOf(e)}</p>}
+                <div className="pick-foot">
+                  <VariantChips g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} />
+                  <div className="pick-actions">
+                    <button className="ghost" onClick={() => learn(e)}>Learn more</button>
+                    <button className={`pick-select ${picked ? "is-on" : ""}`} disabled={!!why || !!owner} title={owner ?? why} onClick={() => onPick(e)}>{owner ? "✓ Already have" : chosenSet.has(e.id) ? "Selected" : (pickLabel?.(e) ?? "Select")}</button>
+                  </div>
                 </div>
               </div>
             );

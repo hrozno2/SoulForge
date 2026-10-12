@@ -1,3 +1,4 @@
+import { CLASS_ICON_CREDIT } from "./classIcons";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { backupFileName, isBackup, makeBackup, restoreBackup } from "../aurora/backup";
 import { backupStore } from "../aurora/storage";
@@ -124,7 +125,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
   };
   return (
     <div className="modal-back" role="dialog" aria-label="Settings" onClick={onClose}>
-      <div className="modal-page settings" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-page themed settings" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" aria-label="Close" onClick={onClose}>×</button>
         <h2>{t("Settings")}</h2>
         <label className="set-row">
@@ -194,7 +195,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           <span><b>Tips</b><small className="muted"> Bring back hints you dismissed</small></span>
           <button onClick={resetHints}>Show tips again</button>
         </div>
-        <p className="muted small-text credits">{SCHOOL_CREDIT}. {CONDITION_CREDIT}. Stock portraits are credited in public/portraits/CREDITS.md.</p>
+        <p className="muted small-text credits">{SCHOOL_CREDIT}. {CONDITION_CREDIT}. {CLASS_ICON_CREDIT}. Stock portraits are credited in public/portraits/CREDITS.md.</p>
       </div>
     </div>
   );

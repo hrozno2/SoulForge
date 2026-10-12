@@ -96,7 +96,7 @@ export function PortraitCropper({ file, onDone, onCancel }: { file: File; onDone
   const side = img ? Math.min(img.naturalWidth, img.naturalHeight) / zoom : 0;
   return (
     <div className="modal-back" role="dialog" aria-label="Crop portrait" onClick={onCancel}>
-      <div className="modal-page cropper" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-page themed cropper" onClick={(e) => e.stopPropagation()}>
         <h2>Crop the portrait</h2>
         <p className="muted">Click the face. Soul Forge crops around it instead of the middle of the picture.</p>
         <div className="crop-row">

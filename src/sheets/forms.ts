@@ -422,8 +422,22 @@ export async function fillAuto(template: Uint8Array | ArrayBuffer, data: FillDat
   doc.registerFontkit(fontkit);
   const f = await doc.embedFont(font.regular, { subset: true });
   const sink = formSink(doc, f);
-  const { autoFill } = await import("./automap");
-  const res = autoFill(autoFields(doc), data, sink);
+  const { autoFill, attachLabels } = await import("./automap");
+  let fields = autoFields(doc);
+  // Names like "Text Field12" say nothing, so read the printed words around the fields and use them as clues.
+  if (fields.some((f) => /^(text ?field|check ?box|button)[\s_.-]*\d*$/i.test(f.name.trim()))) {
+    try {
+      const { openPdf } = await import("../pdf/preview");
+      const pdf = await openPdf(new Uint8Array(template as ArrayBuffer));
+      const words: { p: number; text: string; x: number; y: number; w: number; h: number }[] = [];
+      for (let i = 0; i < pdf.count; i++) for (const w of await pdf.words(i)) words.push({ p: i, ...w });
+      pdf.destroy();
+      fields = attachLabels(fields, words);
+    } catch {
+      /* without the printed words, the names and tooltips still do the matching */
+    }
+  }
+  const res = autoFill(fields, data, sink);
   sink.done();
   const notes = [`Matched ${res.matched} entries to ${res.total} fields.`];
   if (res.unmatched.length) notes.push(`Not matched, fill by hand: ${res.unmatched.slice(0, 12).join(", ")}${res.unmatched.length > 12 ? ` and ${res.unmatched.length - 12} more` : ""}.`);

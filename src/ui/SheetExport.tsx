@@ -163,7 +163,7 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   return (
     <div className="subcard">
       <h3>Your own sheet PDFs</h3>
-      <p className="muted"><b>Best results: the official Wizards of the Coast sheets.</b> Every field on them is filled. Use the Get buttons below, or load your own copy. Other fillable sheets are matched field by field by name, and anything it cannot place is listed. Load your own copy of a sheet. Supported: the official 2024 character sheet (free from Wizards of the Coast at dndbeyond.com, search "2024 character sheet". The print version has no form fields, so Soul Forge writes the text onto it. Keep "2024" in the file name), the DLDM 5E24 sheets (stay editable) and the DLDM companion sheets. Soul Forge keeps the file on this computer only.</p>
+      <p className="muted"><b>Best results: the official Wizards of the Coast sheets</b>, 2024 and the classic 2014 set. Every field on them is filled, and the preview below shows your character on the sheet before you save. Fillable copies stay editable; print copies (no form fields) have the text written onto the page. Other fillable sheets are matched field by field, and anything that cannot be placed is listed. The DLDM sheets are supported too. Soul Forge keeps the file on this computer only.</p>
       <div className="row">
         <button onClick={choose}>Add sheet PDF...</button>
         <span className="muted">Need one?</span>

@@ -69,3 +69,36 @@ describe("the other official layouts are matched by name", () => {
     });
   }
 });
+
+describe("matching sheets with other naming styles", () => {
+  const mk = (names: string[]) => names.map((n, i) => ({ name: n, t: "Tx" as const, p: 0, x: 40 + (i % 5) * 100, y: 700 - Math.floor(i / 5) * 20, w: 80, h: 14 }));
+  const keysOf = (names: string[]) => {
+    const { plan } = buildPlan(mk(names));
+    const out: Record<string, string[]> = {};
+    for (const [k, list] of plan) out[k] = list.map((f) => f.name);
+    return out;
+  };
+  it("reads separators, plurals and word order", () => {
+    const k = keysOf(["Character Name", "Class & Level", "Strength Score", "Strength Modifier", "Saving Throw - Strength", "str_mod", "DEX", "Armor Class", "Hit Points Max", "Passive Perception", "Athletics Bonus", "Sleight of Hand", "Spell Save DC", "Copper", "Gold"]);
+    expect(k.name).toEqual(["Character Name"]);
+    expect(k.classLevel).toEqual(["Class & Level"]);
+    expect(k["strength.score"]).toEqual(["Strength Score"]);
+    expect(k["strength.mod"]).toEqual(expect.arrayContaining(["Strength Modifier", "str_mod"]));
+    expect(k["strength.save"]).toEqual(["Saving Throw - Strength"]);
+    expect(k["dexterity.score"]).toEqual(["DEX"]);
+    expect(k.ac).toEqual(["Armor Class"]);
+    expect(k["hp.max"]).toEqual(["Hit Points Max"]);
+    expect(k["skill.athletics"]).toEqual(["Athletics Bonus"]);
+    expect(k["skill.sleight of hand"]).toEqual(["Sleight of Hand"]);
+    expect(k["casting.dc"]).toEqual(["Spell Save DC"]);
+    expect(k["coin.cp"]).toEqual(["Copper"]);
+  });
+  it("uses the printed label when the field name says nothing", async () => {
+    const { attachLabels } = await import("./automap");
+    const fields = [{ name: "Text Field12", t: "Tx" as const, p: 0, x: 100, y: 500, w: 60, h: 14 }, { name: "Text Field13", t: "Tx" as const, p: 0, x: 200, y: 500, w: 60, h: 14 }];
+    const words = [{ p: 0, text: "Armor Class", x: 100, y: 488, w: 55, h: 8 }, { p: 0, text: "Initiative", x: 205, y: 488, w: 40, h: 8 }];
+    const { plan } = buildPlan(attachLabels(fields, words));
+    expect(plan.get("ac")?.[0].name).toBe("Text Field12");
+    expect(plan.get("initiative")?.[0].name).toBe("Text Field13");
+  });
+});

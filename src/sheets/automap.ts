@@ -9,10 +9,38 @@ import type { Sink, W } from "./forms";
 export interface AutoField extends W {
   /** The field's tooltip, which many sheets use to say what the field is for. */
   tip?: string;
+  /** What the field really is, when the sheet's own name for it is wrong. */
+  alias?: string;
+  /** The printed label found next to the field, for sheets whose field names say nothing. */
+  label?: string;
   multiline?: boolean;
 }
 
 export type Plan = Map<string, AutoField[]>;
+
+/** Names that say nothing, like "Text Field12" or "Check Box7". For those the printed label is the better clue. */
+const GENERIC_NAME = /^(text ?field|textfield|field|text|check ?box|checkbox|button|undefined|untitled)[\s_.-]*\d*$/i;
+
+/** The printed words nearest each field: right below, to the left on the same line, or just above. */
+export function attachLabels(fields: AutoField[], words: { p: number; text: string; x: number; y: number; w: number; h: number }[]): AutoField[] {
+  return fields.map((f) => {
+    if (f.label) return f;
+    const cx = f.x + f.w / 2;
+    const cy = f.y + f.h / 2;
+    const score = (w: (typeof words)[number]): number => {
+      const wx = w.x + w.w / 2;
+      const wy = w.y + w.h / 2;
+      const below = f.y - (w.y + w.h) ;
+      if (Math.abs(wx - cx) < Math.max(f.w, w.w) / 2 + 6 && below > -3 && below < 18) return below + 2; // label printed under the box
+      if (Math.abs(wy - cy) < Math.max(f.h, w.h) / 2 + 3 && w.x + w.w <= f.x + 2 && f.x - (w.x + w.w) < 40) return f.x - (w.x + w.w) + 4; // label to the left
+      const above = w.y - (f.y + f.h);
+      if (Math.abs(wx - cx) < Math.max(f.w, w.w) / 2 + 6 && above > -3 && above < 14) return above + 8; // label above
+      return Infinity;
+    };
+    const best = words.filter((w) => w.p === f.p).map((w) => ({ w, s: score(w) })).filter((x) => x.s !== Infinity).sort((a, b) => a.s - b.s)[0];
+    return best ? { ...f, label: best.w.text.trim() } : f;
+  });
+}
 
 const ABIL = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma", chr: "charisma" } as const;
 type A3 = keyof typeof ABIL;
@@ -28,10 +56,11 @@ const squash = (s: string) => norm(s).replace(/ /g, "");
 
 /** What a text field is, as a key, or nothing when it cannot be told. */
 export function classify(f: AutoField): string | undefined {
-  const raw = norm(f.name);
-  const tip = norm(f.tip ?? "");
+  const generic = GENERIC_NAME.test(f.name.trim());
+  const raw = f.alias ? norm(f.alias) : generic && f.label ? norm(f.label) : norm(f.name);
+  const tip = f.alias ? "" : norm(f.tip ?? "");
   const both = `${raw} ${tip}`.trim();
-  const sq = squash(f.name);
+  const sq = squash(f.alias ?? f.name);
   const pick = (re: RegExp) => re.test(raw) || re.test(sq) || (tip !== "" && re.test(tip));
 
   // Rows of attacks and spells come first, because their words overlap with others.
@@ -62,6 +91,15 @@ export function classify(f: AutoField): string | undefined {
   if (att && /attun/.test(raw)) return `attune.${att[1] ?? "1"}`;
 
   if (/^savingthrows?\d*$/.test(sq)) return "save.seq";
+  // Abilities, saves and modifiers, read word by word so "Strength Modifier", "str_mod" and "Saving Throw - STR" all work.
+  const words = norm(raw).split(" ");
+  const abilityWord = words.map((w) => (Object.keys(ABIL) as A3[]).find((k) => w === k || w === ABIL[k] || w.startsWith(ABIL[k].slice(0, 6)))).find(Boolean);
+  if (abilityWord && words.length <= 5 && !/skill|check box/.test(raw)) {
+    const full = ABIL[abilityWord];
+    if (words.some((w) => /^(save|saves|saving|st)$/.test(w) || w === "throw")) return `${full}.save`;
+    if (words.some((w) => /^(mod|modifier|bonus)$/.test(w))) return `${full}.mod`;
+    if (words.every((w) => w === abilityWord || w === ABIL[abilityWord] || /^(score|total|value|ability)$/.test(w))) return `${full}.score`;
+  }
   // Abilities, saves and modifiers
   const ab = (Object.keys(ABIL) as A3[]).find((k) => new RegExp(`^(st\\s*)?${k}|${k}(ength|terity|stitution|elligence|dom|isma)?`).test(raw));
   if (ab) {
@@ -270,6 +308,27 @@ export function autoFill(fields: AutoField[], d: FillData, sink: Sink): AutoResu
     }
   } else {
     d.spells.slice(0, names.length).forEach((sp, i) => { sink.text(names[i], sp.name); matched++; });
+  }
+  // Check boxes that say what they are in their name, tooltip or printed label.
+  for (const b of fields) {
+    if (b.t !== "Btn") continue;
+    const text = norm(`${GENERIC_NAME.test(b.name.trim()) ? "" : b.name} ${b.tip ?? ""} ${b.label ?? ""}`);
+    if (!text.trim()) continue;
+    if (/inspiration/.test(text)) { sink.check(b, d.inspiration); continue; }
+    const n = Number(text.match(/(\d)\s*$/)?.[1] ?? 0);
+    if (/death/.test(text) || /succes|fail/.test(text)) {
+      if (/succes/.test(text)) sink.check(b, n ? d.deathSuccess >= n : d.deathSuccess > 0);
+      else if (/fail/.test(text)) sink.check(b, n ? d.deathFail >= n : d.deathFail > 0);
+      continue;
+    }
+    const skill = SKILLS.find(([, re]) => re.test(text));
+    if (skill && /prof|expert/.test(text)) { const k = d.skills[skill[0]]; if (k) sink.check(b, /expert/.test(text) ? k.expert : k.prof || k.expert); continue; }
+    const ab = abilities.find((a) => new RegExp(`\\b(${a.slice(0, 3)}|${a})\\b`).test(text));
+    if (ab && /save|saving/.test(text) && /prof/.test(text)) { sink.check(b, d.abilities[ab].saveProf); continue; }
+    if (/(armor|armour).*(light|medium|heavy|shield)|^(light|medium|heavy|shields?)\b/.test(text)) {
+      const kind = /light/.test(text) ? "light" : /medium/.test(text) ? "medium" : /heavy/.test(text) ? "heavy" : "shield";
+      sink.check(b, d.armorTraining[kind as keyof FillData["armorTraining"]]);
+    }
   }
   for (const b of fields) if (b.t === "Btn" && /character.?image|portrait|picture/i.test(b.name) && !/faction|symbol/i.test(b.name)) sink.image?.(b);
   return { matched, total: new Set(fields.filter((f) => f.t === "Tx").map((f) => f.name)).size, unmatched: unmatched.map((u) => u.name.trim()) };

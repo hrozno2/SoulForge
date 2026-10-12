@@ -78,12 +78,20 @@ export function identifySheet(doc: PDFDocument, nameHint: string): Identified | 
   return undefined;
 }
 
+/** Fields whose name on the official file is wrong: on the alternative sheet the Inspiration and Proficiency Bonus boxes carry each other's names. */
+const WRONG_NAMES: Partial<Record<LayoutId, Record<string, string>>> = { alt: { Inspiration: "ProfBonus", ProfBonus: "Inspiration" } };
+
+const withAliases = (layout: LayoutId, ws: AutoField[]): AutoField[] => {
+  const fix = WRONG_NAMES[layout];
+  return fix ? ws.map((w) => (fix[w.name.trim()] ? { ...w, alias: fix[w.name.trim()] } : w)) : ws;
+};
+
 /** Fills the layout's fields: by hand-made mapping for the two big sheets, by matching names for the rest. */
 function run(layout: LayoutId, ws: AutoField[], data: FillData, sink: Sink): void {
   if (layout === "2024") fill2024Form(ws, data, sink);
   else if (layout === "3p") fill2014(ws, data, sink);
   else if (layout === "alt2") fillAlt2(ws, data, sink);
-  else autoFill(ws, data, sink);
+  else autoFill(withAliases(layout, ws), data, sink);
 }
 
 /** Fills one of the official sheets, fillable or plain. */

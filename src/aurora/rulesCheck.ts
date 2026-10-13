@@ -74,7 +74,17 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   const names = new Set(r.active.map((a) => norm(a.el.name)));
   const has = (re: RegExp) => r.active.some((a) => re.test(a.el.name.replace(/^\s*level\s+\d+\s*:\s*/i, "")));
   // Content spells some names differently ("Persistant Rage"): a name one or two letters off still counts.
-  const near = (want: string) => names.has(want) || [...names].some((n) => Math.abs(n.length - want.length) <= 2 && edits(n, want) <= 2);
+  // Channel Divinity options are named with or without the "Channel Divinity:" prefix. A subclass can replace a
+  // feature with its own version ("Wild Shape Feature Replacement", "Animal and Nature Speaker"), which counts too.
+  const cd = (x: string) => x.replace(/^channel divinity /, "");
+  const short = new Set([...names].map(cd));
+  const near = (want0: string) => {
+    const want = cd(want0);
+    if (short.has(want)) return true;
+    if ([...short].some((n) => Math.abs(n.length - want.length) <= 2 && edits(n, want) <= 2)) return true;
+    if (want.length >= 8 && [...short].some((n) => n.includes(want) || n === `${want} feature replacement`)) return true;
+    return false;
+  };
   const level = ch.classes.reduce((n, c) => n + c.level, 0);
   const score = (a: AbilityId) => sh.abilities.find((x) => x.id === a)!;
   const mod = (a: AbilityId) => score(a).mod;
@@ -124,6 +134,8 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const lvlOf = (re: RegExp) => refs.find((x) => re.test(x.el.name))?.c.level ?? 0;
     if (lvlOf(/monk/i) >= 14) ABILITY_IDS.forEach((a) => extra.add(a));
     if (lvlOf(/rogue/i) >= 15) { extra.add("wisdom"); if (first.edition === "one" || isModern(refs.find((x) => /rogue/i.test(x.el.name))!.el)) extra.add("charisma"); }
+    // Samurai's Elegant Courtier: Wisdom, or Intelligence or Charisma if already proficient in Wisdom.
+    if (has(/^elegant courtier$/i)) { extra.add("wisdom"); extra.add("intelligence"); extra.add("charisma"); }
     if (has(/^(iron mind|mind of steel)$/i) || (lvlOf(/ranger/i) >= 7 && has(/iron mind/i))) extra.add("wisdom");
     if (has(/^(stalwart|aura of protection|diamond soul|disciplined survivor|slippery mind)$/i)) { /* covered above or a bonus, not a proficiency */ }
     if (has(/^(battle hardened|unwavering|steady mind)/i)) { /* subclass features handled by name below */ }
@@ -170,7 +182,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   // Class and subclass features by level, against the reference. Optional features (Tasha's) and the ones that
   // are only a heading for something else are not required.
   // "Extra Elemental Discipline" is one more discipline choice, which the completeness check above already covers.
-  const skip = /^(ability score improvement|epic boon|subclass feature|extra elemental discipline|additional .* options?|.* options|optional rule.*|.* improvements|.* subclass|.* feature|.* improvement|proficiencies|.* versatility|primal knowledge|martial versatility|cantrip formulas|cantrip versatility|optional class features|.*\bdivine domain|.*\bsacred oath|.*\barcane tradition|.*\bdruid circle|.*\bmonastic tradition|.*\bmartial archetype|.*\branger archetype|.*\broguish archetype|.*\bsorcerous origin|.*\botherworldly patron|.*\bbard college|.*\bprimal path|.*\bartificer specialist)$/i;
+  const skip = /^(ability score improvement|epic boon|subclass feature|extra elemental discipline|additional .*|.* options|optional rule.*|.* improvements|.* subclass|.* feature|.* improvement|proficiencies|.* versatility|primal knowledge|martial versatility|cantrip formulas|cantrip versatility|optional class features|.*\bdivine domain|.*\bsacred oath|.*\barcane tradition|.*\bdruid circle|.*\bmonastic tradition|.*\bmartial archetype|.*\branger archetype|.*\broguish archetype|.*\bsorcerous origin|.*\botherworldly patron|.*\bbard college|.*\bprimal path|.*\bartificer specialist)$/i;
   for (const x of refs) {
     if (!x.ref) continue;
     for (const f of x.ref.features) {
@@ -179,9 +191,12 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     }
     const sub = r.active.find((a) => a.el.type === "Archetype" && a.root === `class:${x.c.classId}`)?.el;
     if (!sub) continue;
-    const subMatches = x.ref.subclasses.filter((s) => [s.name, s.shortName].some((n) => norm(n) === norm(sub.name) || norm(sub.name).includes(norm(n)) || norm(n).includes(norm(sub.name))));
+    // Whole words only: "Twilight Domain" must not match the "Light" domain.
+    const word = (hay: string, needle: string) => new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(hay);
+    const exact = x.ref.subclasses.filter((s) => [s.name, s.shortName].some((n) => norm(n) === norm(sub.name)));
+    const subMatches = exact.length ? exact : x.ref.subclasses.filter((s) => [s.name, s.shortName].some((n) => word(norm(sub.name), norm(n)) || word(norm(n), norm(sub.name))));
     const subEd = isModern(sub) ? ["XPHB", "EFA"] : [];
-    const refSub = subMatches.find((s) => subEd.length ? subEd.includes(s.source) : !["XPHB", "EFA"].includes(s.source)) ?? x.ref.subclasses.find((s) => [s.name, s.shortName].some((n) => norm(n) === norm(sub.name) || norm(sub.name).includes(norm(n)) || norm(n).includes(norm(sub.name))));
+    const refSub = subMatches.find((s) => subEd.length ? subEd.includes(s.source) : !["XPHB", "EFA"].includes(s.source)) ?? subMatches[0] ?? x.ref.subclasses.find((s) => [s.name, s.shortName].some((n) => norm(n) === norm(sub.name) || norm(sub.name).includes(norm(n)) || norm(n).includes(norm(sub.name))));
     if (!refSub) continue;
     for (const f of refSub.features) {
       if (f.level > x.c.level || f.optional || skip.test(f.name) || norm(f.name) === norm(refSub.name) || norm(f.name) === norm(refSub.shortName)) continue;

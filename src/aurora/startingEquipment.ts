@@ -4,6 +4,8 @@
  * 2024 rules, or lists of "(a) X or (b) Y" for older classes). This reads that text and matches it to items.
  */
 import type { AElement } from "./types";
+import { buildSheet } from "./sheet";
+import { resolve } from "./engine";
 import type { ARegistry } from "./registry";
 import { uid, type Character, type InvItem } from "./character";
 import { HANDS, handsFor, handsUsed } from "./hands";
@@ -415,9 +417,18 @@ export function autoEquip(ch: Character, reg: ARegistry): Character {
   let armor = inv.some((i) => i.equipped && i.id && reg.get(i.id)?.type === "Armor" && !isShield(reg.get(i.id)!));
   let shield = inv.some((i) => i.equipped && i.id && reg.get(i.id)?.type === "Armor" && isShield(reg.get(i.id)!));
   let hands = handsUsed(inv, reg);
+  // Only armor the character is trained in is put on: untrained armor gives disadvantage and stops spellcasting.
+  // (Older class gear reads "chain mail (if proficient)" for this reason.)
+  const trained = buildSheet(resolve(ch, reg)).proficiencies.armor.join(" ").toLowerCase();
+  const canWear = (e: AElement) => {
+    if (isShield(e)) return /shield/.test(trained);
+    const kind = (e.setters.armor?.value ?? "").toLowerCase();
+    return !kind || trained.includes(kind) || trained.includes("all armor");
+  };
   for (const i of inv) {
     const e = i.id ? reg.get(i.id) : undefined;
     if (!e || i.equipped) continue;
+    if (e.type === "Armor" && !canWear(e)) continue;
     if (e.type === "Armor" && isShield(e) && !shield && hands + 1 <= HANDS) {
       i.equipped = true;
       shield = true;

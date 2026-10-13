@@ -128,7 +128,8 @@ export function fill2024Form(ws: W[], d: FillData, sink: Sink): string[] {
   const half = Math.ceil(feats.length / 2);
   s.set("CLASS FEATURES 1", joinLines(feats.slice(0, half))); s.set("CLASS FEATURES 2", joinLines(feats.slice(half)));
   s.set("SPECIES TRAITS", joinLines(d.featureList.filter((f) => f.group === "Species traits").map((f) => `${f.name}: ${f.text}`)));
-  s.set("FEATS", joinLines(d.featureList.filter((f) => f.group === "Feats").map((f) => `${f.name}: ${f.text}`)));
+  // Feat spellcasting with its own DC (Shadow-Touched, Magic Initiate) first, so it shows even when the spells overflow.
+  s.set("FEATS", joinLines([...d.otherCasting, ...d.featureList.filter((f) => f.group === "Feats").map((f) => `${f.name}: ${f.text}`)]));
   s.set("TOOL PROF", d.toolsOnly);
   s.set("WEAPON PROF", [d.weaponTraining.simple && "Simple", d.weaponTraining.martial && "Martial", d.weaponsOther].filter(Boolean).join(", "));
   // Armor training boxes sit in a row near the bottom left, then the shield, heroic inspiration and death saves.
@@ -203,7 +204,7 @@ export function fill2014(ws: W[], d: FillData, sink: Sink): void {
     s.set(`Wpn Name${n}`, wp.name); s.set(`Wpn${i + 1} AtkBonus`, wp.bonus); s.set(`Wpn${i + 1} Damage`, wp.damage);
   });
   const extra = d.weapons.slice(3).map((wp) => `${wp.name} ${wp.bonus}, ${wp.damage}`);
-  s.set("AttacksSpellcasting", joinLines([...extra, d.casting ? `Spell save DC ${d.casting.dc}, spell attack ${d.casting.attack}` : ""].filter(Boolean)));
+  s.set("AttacksSpellcasting", joinLines([...extra, d.casting ? `Spell save DC ${d.casting.dc}, spell attack ${d.casting.attack}` : "", ...d.otherCasting].filter(Boolean)));
   s.set("ProficienciesLang", [d.languages && `Languages: ${d.languages}`, d.tools && `Tools: ${d.tools}`, `Armor: ${[d.armorTraining.light && "light", d.armorTraining.medium && "medium", d.armorTraining.heavy && "heavy", d.armorTraining.shield && "shields"].filter(Boolean).join(", ") || "none"}`, `Weapons: ${[d.weaponTraining.simple && "simple", d.weaponTraining.martial && "martial"].filter(Boolean).join(", ") || "none"}`].filter(Boolean).join("\n"));
   for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) s.set(k.toUpperCase(), d.coins[k] === "0" ? "" : d.coins[k]);
   s.set("Equipment", [d.armorWorn, d.weaponsText.replace(/\n/g, ", "), d.otherGear.replace(/\n/g, ", ")].filter(Boolean).join("\n"));

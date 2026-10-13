@@ -333,7 +333,7 @@ function page1a(c: Ctx, d: FillData): void {
   ]);
   const cf = splitEntries(d.classFeatures, 1650, 2);
   featureBox(c, "CLASS FEATURES 1", cf.texts[0]); featureBox(c, "CLASS FEATURES 2", cf.texts[1] + (cf.dropped ? `\n(+${cf.dropped} more features, see Soul Forge)` : ""));
-  featureBox(c, "TRAITS", d.traits.join("\n")); featureBox(c, "FEATS", d.feats.join("\n"));
+  featureBox(c, "TRAITS", d.traits.join("\n")); featureBox(c, "FEATS", [...d.otherCasting, ...d.feats].join("\n"));
 }
 
 // ---------------------------------------------------------------- page 1 (style B)
@@ -382,7 +382,7 @@ function page1b(c: Ctx, d: FillData): void {
   ]);
   const cf = splitEntries(d.classFeatures, 1650, 2);
   featureBox(c, "CLASS FEATURES 0", cf.texts[0]); featureBox(c, "CLASS FEATURES 3", cf.texts[1] + (cf.dropped ? `\n(+${cf.dropped} more features, see Soul Forge)` : ""));
-  featureBox(c, "TRAITS0", d.traits.join("\n")); featureBox(c, "FEATS0", d.feats.join("\n"));
+  featureBox(c, "TRAITS0", d.traits.join("\n")); featureBox(c, "FEATS0", [...d.otherCasting, ...d.feats].join("\n"));
 }
 
 // ---------------------------------------------------------------- spells and slots (geometry based)

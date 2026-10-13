@@ -317,7 +317,8 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const opts = [10 + dex];
     if (has(/^unarmored defense/i) && refs.some((x) => /barbarian/i.test(x.el.name))) opts.push(10 + dex + mod("constitution"));
     if (has(/^unarmored defense/i) && refs.some((x) => /monk/i.test(x.el.name)) && !shield) opts.push(10 + dex + mod("wisdom"));
-    if (has(/draconic resilience/i)) opts.push(13 + dex);
+    // Draconic Resilience: 13 + Dex in 2014, 10 + Dex + Cha in 2024.
+    if (has(/draconic resilience/i)) opts.push(r.active.some((a) => /draconic resilience/i.test(a.el.name) && /PHB24|2024/i.test(`${a.el.id} ${a.el.source}`)) ? 10 + dex + mod("charisma") : 13 + dex);
     if (has(/^dazzling footwork/i) && !shield) opts.push(10 + dex + mod("charisma"));
     // Natural armor by species (Volo's, Mordenkainen's, Locathah Rising, The Tortle Package, Guildmasters' Guide).
     const race = lc(reg.get(ch.race ?? "")?.name ?? "");
@@ -330,6 +331,8 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (shield) ac += 2 + (shield.i.magic ?? 0);
     if (body && has(/^defense$/i)) ac += 1;
     if (has(/integrated protection/i)) ac += 1;
+    // Mariner fighting style (Unearthed Arcana): +1 without heavy armor or a shield.
+    if (has(/^mariner$/i) && !shield && !/heavy/i.test(body?.el.setters.armor?.value ?? "")) ac += 1;
     const known = has(/bladesong|warforged|integrated protection|shield of faith|ring of protection|cloak of protection|bracers of defense|soul of the forge|defensive duelist|medium armor master|dual wielder|elven accuracy/i) || ch.inventory.some((i) => i.attuned) || (ch.customStats ?? []).length > 0;
     if (sh.ac.value !== ac && !known) add("Armor class", `${sh.ac.value}, the armor tables give ${ac} (${sh.ac.parts.join(", ")})`);
   }

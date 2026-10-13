@@ -29,7 +29,8 @@ describe("text parsing", () => {
 
 const XML = `<elements>
   <element name="Wizard" type="Class" source="B" id="C_WIZ"><description><table><tr><td><b>Starting Equipment</b></td><td>Choose A or B: (A) 2 Daggers, Robe, Explorer's Pack and 5 GP; or (B) 55 GP</td></tr></table></description></element>
-  <element name="Cleric" type="Class" source="B" id="C_CLR"><description><h5>EQUIPMENT</h5><ul><li><i>(a)</i> a mace or <i>(b)</i> a warhammer (if proficient)</li><li>A shield and a holy symbol</li></ul></description></element>
+  <element name="Cleric" type="Class" source="B" id="C_CLR"><description><h5>EQUIPMENT</h5><ul><li><i>(a)</i> a mace or <i>(b)</i> a warhammer (if proficient)</li><li>A shield and a holy symbol</li></ul></description><rules><grant type="Proficiency" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELDS" /></rules></element>
+  <element name="Shields" type="Proficiency" source="B" id="ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELDS"><description><p>Shields.</p></description></element>
   <element name="Dagger" type="Weapon" source="B" id="W_DAGGER"><setters><set name="damage" type="piercing">1d4</set></setters></element>
   <element name="Mace" type="Weapon" source="B" id="W_MACE"><setters><set name="damage" type="bludgeoning">1d6</set></setters></element>
   <element name="Robe" type="Item" source="B" id="I_ROBE"/>

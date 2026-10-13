@@ -1309,4 +1309,7 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .play-side .fav-tiles { flex: 1; }
 .fav-drop { flex: 1; min-height: 70px; margin: 6px 0 0; display: grid; place-items: center; border: 1px dashed var(--line); border-radius: 4px; font-size: 12px; }
 .fav-bar.over .fav-drop { border-color: var(--gold); color: var(--gold2); }
+.test-bar { display: flex; align-items: center; gap: 8px; padding: 4px 16px; background: #1d3a5c; color: #fff; font-size: 12px; }
+.test-bar button { padding: 3px 10px; font-size: 12px; }
+.test-bar b { margin-right: 4px; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; }
 .test-toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 60; padding: 10px 16px; background: #1d3a5c; color: #fff; border: 1px solid #4aa0ee; border-radius: 6px; cursor: pointer; box-shadow: var(--shadow); }

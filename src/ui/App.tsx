@@ -195,15 +195,16 @@ export function App() {
           <label className="menu-row">Theme <ThemePicker /></label>
           <button className="menu-item" onClick={() => setSettingsOpen(true)}>Settings...</button>
           <button className="menu-item" onClick={() => { setTutorialStep(0); setTutorialMin(false); setTutorialOpen(true); }}>Show the tutorial</button>
-          {testToolsEnabled && (
-            <>
-              <button className="menu-item" onClick={async () => { const made = await makeTestBatch(content.reg); if (made[0]) open(made[0].id, made[0].ch); setTab("start"); setTestMsg(`Made ${made.length} test characters. They are on Home.`); }}>Test: make 10 random characters</button>
-              <button className="menu-item" onClick={async () => setTestMsg(await testExport(content.reg, setTestMsg))}>Test: export test characters</button>
-            </>
-          )}
           <button className="menu-item" onClick={() => updater.check(true)}>Check for updates</button>
         </AppMenu>
       </header>
+      {testToolsEnabled && (
+        <div className="test-bar noprint">
+          <b>Test build</b>
+          <button onClick={async () => { if (!content.ready) { setTestMsg("Load rules content first (Home, Go to content)."); return; } setTestMsg("Making 10 random characters..."); const made = await makeTestBatch(content.reg); if (made[0]) open(made[0].id, made[0].ch); setTab("start"); setTestMsg(`Made ${made.length} test characters. They are on Home.`); }}>Make 10 random characters</button>
+          <button onClick={async () => setTestMsg(await testExport(content.reg, setTestMsg))}>Export test characters</button>
+        </div>
+      )}
       {testMsg && <div className="test-toast" role="status" onClick={() => setTestMsg("")}>{testMsg} <small>(click to close)</small></div>}
       {report && <ImportReport name={report.name} res={report.res} onClose={() => setReport(null)} onBuild={() => setTab("build")} />}
       {tutorialOpen && <Tutorial step={tutorialStep} setStep={setTutorialStep} minimized={tutorialMin} setMinimized={setTutorialMin} onClose={() => { setTutorialOpen(false); setTutorialMin(false); }} onGo={(t) => setTab(t as Tab)} content={content} onImportForeign={importForeign} />}

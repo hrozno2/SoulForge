@@ -21,7 +21,7 @@ import { SettingsDialog, getSettings, useScaleShortcuts } from "./Settings";
 import { runAutoBackup } from "../aurora/backup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
-import { ImportReport } from "./ImportReport";
+import { ImportReport, importReportText } from "./ImportReport";
 import { makeTestBatch, testExport, testToolsEnabled } from "./TestTools";
 import { listCharacters } from "../aurora/storage";
 import { Tutorial, tutorialWanted } from "./Tutorial";
@@ -124,9 +124,25 @@ export function App() {
   };
   const [testMsg, setTestMsg] = useState("");
   const [report, setReport] = useState<{ name: string; res: ForeignImport } | null>(null);
+  // After an import report closes: where to find it again.
+  const [notesHint, setNotesHint] = useState(false);
+  useEffect(() => {
+    if (!notesHint) return;
+    const t = window.setTimeout(() => setNotesHint(false), 9000);
+    return () => window.clearTimeout(t);
+  }, [notesHint]);
+  const [notesFocus, setNotesFocus] = useState(0);
+  const openNotes = () => {
+    setNotesHint(false);
+    setNotesFocus((n) => n + 1);
+    setTab("manage");
+  };
   const importForeign = async (file: File): Promise<string> => {
     try {
       const res = importForeignCharacter(JSON.parse(await file.text()), content.reg);
+      // The report also goes into the character's notes, to read again later.
+      const text = importReportText(res, file.name);
+      res.character = { ...res.character, notes: [res.character.notes, text].filter(Boolean).join("\n\n") };
       open(uid(), res.character);
       setReport({ name: res.character.name, res });
       return `Imported ${res.character.name || "the character"}.`;
@@ -207,7 +223,14 @@ export function App() {
         </div>
       )}
       {testMsg && <div className="test-toast" role="status" onClick={() => setTestMsg("")}>{testMsg} <small>(click to close)</small></div>}
-      {report && <ImportReport name={report.name} res={report.res} onClose={() => setReport(null)} onBuild={() => setTab("build")} />}
+      {report && <ImportReport name={report.name} res={report.res} onClose={() => { setReport(null); setNotesHint(true); }} onBuild={() => setTab("build")} />}
+      {notesHint && (
+        <div className="notice-toast noprint" role="status">
+          <span>The import notes are saved. Read them again any time in the character's Notes (Manage, or Play, Notes).</span>
+          <button className="primary" onClick={openNotes}>Open notes</button>
+          <button className="notice-x" aria-label="Close" onClick={() => setNotesHint(false)}>×</button>
+        </div>
+      )}
       {tutorialOpen && <Tutorial step={tutorialStep} setStep={setTutorialStep} minimized={tutorialMin} setMinimized={setTutorialMin} onClose={() => { setTutorialOpen(false); setTutorialMin(false); }} onGo={(t) => setTab(t as Tab)} content={content} onImportForeign={importForeign} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       {levelUpOpen && <Suspense fallback={null}><LevelUp r={r} ch={character} set={set} onDetail={setDetail} onClose={() => setLevelUpOpen(false)} /></Suspense>}
@@ -232,7 +255,7 @@ export function App() {
           )}
           {tab === "magic" && <MagicTab r={r} ch={character} set={set} onDetail={setDetail} />}
           {tab === "equipment" && <EquipmentTab r={r} ch={character} set={set} onDetail={setDetail} />}
-          {tab === "manage" && <ManageTab r={r} ch={character} set={set} onDetail={setDetail} />}
+          {tab === "manage" && <ManageTab r={r} ch={character} set={set} onDetail={setDetail} focusNotes={notesFocus} />}
           {tab === "play" && <PlayTab r={r} ch={character} set={set} />}
           {tab === "sheet" && <SheetTab r={r} ch={character} set={set} />}
           {tab === "content" && <ContentTab content={content} onDetail={setDetail} />}

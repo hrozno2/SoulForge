@@ -1,5 +1,5 @@
 import { requestRoll } from "./Dice";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PortraitCropper, PortraitPicker } from "./Portrait";
 import { ConditionsPanel } from "./ConditionsPanel";
 import type { AElement } from "../aurora/types";
@@ -109,7 +109,7 @@ function Info({ ch, set, r }: { ch: Character; set: SetCharacter; r: Resolved })
         {FIELDS.filter(([k]) => k !== "alignment" && k !== "deity").map(([k, label]) => <label className="field" key={k}><span>{label}</span><input value={ch.info[k]} onChange={(e) => put(k, e.target.value)} /></label>)}
       </div>
       {AREAS.map(([k, label]) => <label className="field" key={k}><span>{label}</span><textarea rows={k === "backstory" ? 6 : 3} value={ch.info[k]} onChange={(e) => put(k, e.target.value)} /></label>)}
-      <label className="field"><span>Notes</span><textarea rows={6} value={ch.notes} onChange={(e) => set((c) => ({ ...c, notes: e.target.value }))} /></label>
+      <label className="field"><span>Notes</span><textarea id="character-notes" rows={6} value={ch.notes} onChange={(e) => set((c) => ({ ...c, notes: e.target.value }))} /></label>
     </>
   );
 }
@@ -365,8 +365,15 @@ function Sources({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter
   );
 }
 
-export function ManageTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
-  const [sub, setSub] = useState<Sub>("level");
+export function ManageTab({ r, ch, set, onDetail, focusNotes = 0 }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; focusNotes?: number }) {
+  const [sub, setSub] = useState<Sub>(focusNotes ? "info" : "level");
+  // "Open notes" after an import: the character details, with the notes in view.
+  useEffect(() => {
+    if (!focusNotes) return;
+    setSub("info");
+    const t = window.setTimeout(() => { const el = document.getElementById("character-notes"); el?.scrollIntoView({ block: "center" }); el?.focus(); }, 60);
+    return () => window.clearTimeout(t);
+  }, [focusNotes]);
   const other = r.slots.filter((s) => tabOfSlot(s) === "other" && s.rule.type !== "Companion");
   return (
     <div>

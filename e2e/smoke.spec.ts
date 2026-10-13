@@ -409,4 +409,31 @@ test.describe("Soul Forge smoke tests", () => {
     await dialog.locator("button.primary", { hasText: "Done" }).click();
     expect(await level()).toBe(start + 1);
   });
+  test("an import report is kept in the character's notes and says where to find it", async ({ page }) => {
+    const seen = watchProblems(page);
+    await addTestContent(page);
+    const foundry = {
+      name: "Imported Ira", type: "character", system: { abilities: { str: { value: 14 } }, details: {} },
+      items: [
+        { name: "Warden", type: "class", system: { levels: 2 } },
+        { name: "Hollowfolk", type: "race", system: {} },
+        { name: "Wayfarer", type: "background", system: {} },
+        { name: "Mystery Trinket", type: "loot", system: { quantity: 1 } },
+      ],
+    };
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: /import foundry/i }).click();
+    await (await chooser).setFiles({ name: "ira.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(foundry)) });
+    const report = page.getByRole("dialog", { name: /import report/i });
+    await expect(report).toContainText("Mystery Trinket");
+    await report.getByText("Close", { exact: true }).click();
+    const notice = page.locator(".notice-toast");
+    await expect(notice).toContainText(/notes/i);
+    await page.screenshot({ path: "/tmp/zz-notice.png" });
+    await notice.getByRole("button", { name: /open notes/i }).click();
+    await expect(page.locator("#character-notes")).toHaveValue(/Import notes: ira\.json[\s\S]*Mystery Trinket/);
+    await page.screenshot({ path: "/tmp/zz-notes.png" });
+    expect(seen.csp).toEqual([]);
+    expect(seen.errors).toEqual([]);
+  });
 });

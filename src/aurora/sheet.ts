@@ -480,13 +480,16 @@ export function headerInfo(r: Resolved): HeaderInfo {
 
 /**
  * The spells a prepared caster chooses from: the spells they know (a wizard's spellbook) or, for casters like the
- * Cleric, the whole class list up to the highest slot level, from the book of the class when it has one.
+ * Cleric, the whole class list up to the highest slot level, one version of each spell from the class's edition.
  */
 export function preparePool(r: Resolved, line: CastingLine): AElement[] {
   const entry = r.spellcasting.get(line.name.toLowerCase());
   if (!entry) return [];
   const known = line.spells.map((p) => r.reg.get(p.id)).filter((e): e is AElement => !!e);
-  if (known.length) return known;
+  // A wizard prepares from the spellbook. Other prepared casters prepare from the whole class list; a spell a feature
+  // lets them pick for the class (a domain or circle choice) is one more on it, not the whole list.
+  const book = r.slots.some((s) => s.rule.type === "Spell" && /spellbook/i.test(s.rule.name) && s.rule.name.toLowerCase().includes(line.name.toLowerCase()));
+  if (book && known.length) return known;
   const levels = Array.from({ length: Math.max(1, line.maxSpellLevel) }, (_, i) => i + 1).join("||");
   const all = r.reg.find("Spell", `(${entry.lists.join("||")}),(${levels})`);
   // One version of each spell, from the class's own edition where both exist (the 2024 Fireball for a 2024 class).
@@ -498,5 +501,6 @@ export function preparePool(r: Resolved, line: CastingLine): AElement[] {
     const cur = byName.get(k);
     if (!cur || (modern(cur) !== want && modern(x) === want)) byName.set(k, x);
   }
+  for (const k of known) if (!byName.has(k.name.toLowerCase())) byName.set(k.name.toLowerCase(), k);
   return [...byName.values()];
 }

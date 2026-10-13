@@ -243,6 +243,9 @@ const SYNONYMS: Record<string, string[]> = {
   "healer's kit": ["Healer's Kit"],
   "potion of healing": ["Potion of Healing"],
   "chess set": ["Dragonchess Set", "Dragonchess set"],
+  // Renamed in the 2024 Dungeon Master's Guide.
+  "efficient quiver": ["Quiver of Ehlonna"],
+  "iron bands": ["Iron Bands of Bilarro"],
   "robes": ["Robes"],
   "book": ["Book"],
 };

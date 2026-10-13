@@ -135,6 +135,12 @@ function itemNameVariants(name: string, base?: string): string[] {
   }
   // "Spell Scroll (1st Level) chromatic orb" is a Spell Scroll (Level 1); "Blowgun Needles" a Blowgun Needle;
   // "Slumbering Scaled Ornament" the Scaled Ornament (Slumbering); "Belt Pouch" a Pouch.
+  // "Potion of Giant Strength (Fire)" is the Potion of Fire Giant Strength.
+  // "Ioun Stone of Reserve" is the Ioun Stone (Reserve).
+  const ofKind = /^(.+?) of (\w+)$/i.exec(name.trim());
+  if (ofKind) add(`${ofKind[1]} (${ofKind[2]})`);
+  const kindOf = /^(.+?) of (.+?) \((\w+)\)$/i.exec(name.trim());
+  if (kindOf) add(`${kindOf[1]} of ${kindOf[3]} ${kindOf[2]}`);
   const potion = /^potion of (\w+) resistance$/i.exec(name.trim());
   if (potion) add(`Potion of Resistance (${potion[1]})`);
   const scroll = /spell scroll\s*\(?\s*(cantrip|(\d)(?:st|nd|rd|th)?[- ]?level|level\s*(\d))/i.exec(name);
@@ -216,7 +222,7 @@ class Importer {
   notes: string[] = [];
   matched: string[] = [];
   missing: string[] = [];
-  private wantedChoices: { types: string[]; name: string; label: string; alts?: string[] }[] = [];
+  private wantedChoices: { types: string[]; name: string; label: string; alts?: string[]; from?: string }[] = [];
   /** Which rules the character was made with, when the file says. Picks the 2014 or 2024 version of a name. */
   edition?: Edition;
   /** Weapons the character carries, for weapon mastery when the file names none. */
@@ -228,12 +234,19 @@ class Importer {
   speciesTraits = new Set<string>();
   private guessed = 0;
   private index?: ItemIndex;
+  /** How many times the file lists each feat: a repeatable feat (Skilled, Magic Initiate) is taken no more often. */
+  private featCount = new Map<string, number>();
+  /** How many level-up improvements the file records as ability scores rather than feats. */
+  asiTaken = 0;
+  /** Spells no choice can hold yet: tried again once the other choices are made (a Magic Initiate list). */
+  private deferring = false;
+  private deferred: { types: string[]; name: string; label: string; alts?: string[]; from?: string }[] = [];
   /** The background is the Custom Background standing in for one the content lacks. */
   private customBg = false;
   /** Each choice the file said nothing about, with what was put in, for the import report. */
   guesses: string[] = [];
   /** What the file says the character has, used to fill open choices (skills, languages, tools, expertise, saves). */
-  hints = { skills: new Set<string>(), expertise: new Set<string>(), tools: new Set<string>(), languages: new Set<string>(), saves: new Set<string>(), names: new Set<string>(), masteries: new Set<string>(), size: "", armor: new Set<string>(), weapons: new Set<string>(), spells: new Set<string>() };
+  hints = { skills: new Set<string>(), expertise: new Set<string>(), tools: new Set<string>(), languages: new Set<string>(), saves: new Set<string>(), names: new Set<string>(), masteries: new Set<string>(), size: "", armor: new Set<string>(), weapons: new Set<string>(), spells: new Set<string>(), resist: new Set<string>() };
 
   /**
    * A feature or option name the file lists. "Replicate Bag of Holding" is the Replicate Magic Item infusion with
@@ -266,6 +279,14 @@ class Importer {
     this.notes.push(`${name.replace(/ \(background\)$/, "")} is not in your loaded content, so the character has a Custom Background with the skills, tools and languages from the file.`);
   }
 
+  /** The 2024 books drop the wizard from some spell names: "Tiny Hut" is Leomund's Tiny Hut, "Arcane Hand" Bigby's Hand. */
+  renamedSpell(name: string): AElement[] {
+    const RENAMED: Record<string, string> = { "arcane hand": "Bigby’s Hand", "arcane sword": "Mordenkainen’s Sword" };
+    const tail = normalize(name);
+    if (RENAMED[tail]) return findAllByName(this.reg, ["Spell"], RENAMED[tail]);
+    return this.reg.ofType("Spell").filter((e) => { const n = normalize(e.name.replace(/^[\w-]+[’']s\s+/, "")); return n === tail && n !== normalize(e.name); });
+  }
+
   /** A language the file lists; "Any" and blanks say nothing. */
   addLanguage(n: string): void {
     for (const part of n.split(/[,;]/)) {
@@ -277,9 +298,11 @@ class Importer {
   constructor(private reg: ARegistry) {}
 
   /** Remember something to put into whichever choice can hold it once the character is shaped. */
-  want(types: string[], name: string, label: string, alts: string[] = []): void {
+  /** `from` names where the file says it came from ("magic initiate"), to pick the choice that holds it. */
+  want(types: string[], name: string, label: string, alts: string[] = [], from?: string): void {
     if (name && label === "spell") this.hints.spells.add(normalize(name));
-    if (name) this.wantedChoices.push({ types, name, label, alts });
+    if (name && label === "feat") this.featCount.set(normalize(name), (this.featCount.get(normalize(name)) ?? 0) + 1);
+    if (name) this.wantedChoices.push({ types, name, label, alts, from });
   }
 
   addItem(name: string, qty: number, equipped: boolean, attuned: boolean, extra: { base?: string; magic?: number } = {}): void {
@@ -292,7 +315,7 @@ class Importer {
     // "Spell Scroll: Detect Poison and Disease" is a scroll of that spell's level.
     const scrollOf = /^spell scroll\s*[:\-–]\s*(.+)$/i.exec(name.trim());
     if (scrollOf && !extra.base) {
-      const sp = findByName(this.reg, ["Spell"], scrollOf[1], this.edition);
+      const sp = findByName(this.reg, ["Spell"], scrollOf[1], this.edition) ?? this.renamedSpell(scrollOf[1])[0];
       const lv = Number(sp?.setters.level?.value ?? NaN);
       if (sp && Number.isFinite(lv)) extra = { ...extra, base: lv === 0 ? "Spell Scroll (Cantrip)" : `Spell Scroll (Level ${lv})` };
     }
@@ -330,6 +353,9 @@ class Importer {
       return [...h.tools].some((t) => { const tt = tight(t); return tt.length >= 4 && (ti.includes(tt) || tt.includes(ti)); }) ? 100 : 0;
     }
     if (h.names.has(normalizeFull(optionName)) || h.names.has(normalize(optionName))) return 100;
+    // "Infernal Legacy" for a file that says "Tiefling, Infernal": the option without its kind word.
+    const core = normalize(optionName).replace(/\b(legacy|lineage|ancestry|heritage|descent)\b/g, " ").replace(/\s+/g, " ").trim();
+    if (core && core !== normalize(optionName) && h.names.has(core)) return 100;
     // A one-word option the file names as part of a longer name: "Witherbloom" in "Witherbloom Initiate".
     const word = normalize(optionName);
     if (word.length >= 6 && !word.includes(" ") && [...h.names].some((x) => x.startsWith(`${word} `))) return 60;
@@ -391,9 +417,29 @@ class Importer {
     const cls = /^(?:magic initiate\s*[:(]\s*)?(artificer|bard|cleric|druid|paladin|ranger|sorcerer|warlock|wizard)\)?$/i.exec(o.name.trim())?.[1];
     if (!cls || !this.hints.spells.size) return 0;
     let n = 0;
-    for (const sp of this.reg.ofType("Spell")) if (this.hints.spells.has(normalize(sp.name)) && sp.supports.some((x) => x.toLowerCase() === cls.toLowerCase())) n++;
+    // Only spells the character's own classes do not have count: those are the ones a feat brought.
+    const own = new Set(this.ch.classes.map((c) => (this.reg.get(c.classId)?.name ?? "").toLowerCase()));
+    const offList = (sp: AElement) => !sp.supports.some((x) => own.has(x.toLowerCase()));
+    const offNames = new Set(this.reg.ofType("Spell").filter((sp) => this.hints.spells.has(normalize(sp.name))).filter((sp) => !this.reg.ofType("Spell").some((o) => normalize(o.name) === normalize(sp.name) && !offList(o))).map((sp) => normalize(sp.name)));
+    for (const name of offNames) if (this.reg.ofType("Spell").some((sp) => normalize(sp.name) === name && sp.supports.some((x) => x.toLowerCase() === cls.toLowerCase()))) n++;
     // Counted once per spell name, at most a point each; enough to beat a guess, not a file's named choice.
     return Math.min(n, 20) * 2;
+  }
+
+  /**
+   * An option that grants a damage resistance the file lists and nothing else gives yet (a draconic sorcerer's
+   * Elemental Affinity: poison when the tiefling already covers fire).
+   */
+  private resistScore(o: AElement, has: Set<string>): number {
+    if (!this.hints.resist.size) return 0;
+    let sc = 0;
+    for (const r of o.rules) {
+      if (r.kind !== "grant") continue;
+      const m = /DAMAGE_RESISTANCE_([A-Z]+)$/.exec(r.id);
+      if (!m) continue;
+      sc += this.hints.resist.has(m[1].toLowerCase()) ? (has.has(r.id) ? 5 : 40) : -5;
+    }
+    return sc;
   }
 
   /** An option that grants spells the file lists (a Divine Soul's Good affinity brings Cure Wounds). */
@@ -425,9 +471,21 @@ class Importer {
         .sort((a, b) => a.options.length - b.options.length)[0];
       if (!open) break;
       const taken = new Set(open.chosen);
+      const feats = new Map<string, number>();
+      for (const a of r.active) if (a.el.type === "Feat") feats.set(normalize(a.el.name), (feats.get(normalize(a.el.name)) ?? 0) + 1);
+      // A feat the file lists once is taken once, even where the content lets it repeat.
+      // The file's list of feats is the whole list: a feat it does not name is not taken (the score improvements it
+      // records stay score improvements).
+      // A background's feat given as the feat's own part (the Sage's ID_..._MAGIC_INITIATE_WIZARD) counts too.
+      for (const a of r.active) {
+        if (a.el.type === "Feat") continue;
+        const base = this.reg.ofType("Feat").find((f) => a.el.id.startsWith(`${f.id}_`) && !r.active.some((b) => b.el.id === f.id));
+        if (base) feats.set(normalize(base.name), (feats.get(normalize(base.name)) ?? 0) + 1);
+      }
+      const spent = (o: AElement) => o.type === "Feat" && !/^ability score improvement/i.test(o.name) && (this.featCount.size > 0 || this.asiTaken > 0) && (this.featCount.has(normalize(o.name)) ? (feats.get(normalize(o.name)) ?? 0) >= this.featCount.get(normalize(o.name))! : !this.hints.names.has(normalizeFull(o.name)) && !this.hints.names.has(normalize(o.name)));
       const candidates = open.options
-        .filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !r.ids.has(o.id))
-        .map((o) => ({ o, sc: this.score(`${open.key} ${open.rule.name}`, o.name, scores) + this.trainingScore(o) + this.spellListScore(o) + this.grantedSpellScore(o) + (own.has(o.source) ? 0.5 : 0) }))
+        .filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !r.ids.has(o.id) && !spent(o))
+        .map((o) => ({ o, sc: this.score(`${open.key} ${open.rule.name}`, o.name, scores) + this.trainingScore(o) + this.spellListScore(o) + this.grantedSpellScore(o) + this.resistScore(o, r.ids) + (own.has(o.source) ? 0.5 : 0) }))
         .sort((a, b) => b.sc - a.sc);
       const best = candidates[0] ?? { o: open.options.find((o) => !taken.has(o.id)), sc: 0 };
       if (!best.o) break;
@@ -517,7 +575,7 @@ class Importer {
   }
 
   /** Puts one wanted thing into a choice that can hold it. Spells and feats nothing can hold are added by hand. */
-  private place(ch: Character, w: { types: string[]; name: string; label: string; alts?: string[] }): Character {
+  private place(ch: Character, w: { types: string[]; name: string; label: string; alts?: string[]; from?: string }): Character {
     // "Magic Initiate: Warlock" is the Magic Initiate feat with Warlock chosen inside it.
     const base = w.name.split(/[:(]/)[0].trim();
     const inner = w.name.slice(base.length).replace(/[:()]/g, " ").trim();
@@ -525,6 +583,8 @@ class Importer {
     let all = findAllByName(this.reg, w.types, clean);
     for (const alt of w.alts ?? []) if (!all.length) all = findAllByName(this.reg, w.types, alt);
     if (!all.length && base !== clean) all = findAllByName(this.reg, w.types, base);
+    // The 2024 books drop the wizard from some spell names: "Tiny Hut" is Leomund's Tiny Hut.
+    if (!all.length && w.label === "spell") all = this.renamedSpell(clean);
     // Sheets write a subclass short: "Grave" for the Grave Domain, "Eloquence" for the College of Eloquence.
     if (!all.length && w.label === "subclass") {
       const words = new RegExp(`\\b${normalize(clean).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
@@ -579,10 +639,35 @@ class Importer {
       this.matched.push(`${el.name} (already granted)`);
       return ch;
     }
-    const slot = r.slots.find((s) => s.chosen.length < s.rule.number && s.options.some((o) => o.id === el.id));
+    // A feat the background or species already gives (the 2024 Sage's Magic Initiate) is the one the file lists.
+    if (el.type === "Feat") {
+      // The Sage grants Magic Initiate (Wizard) as the feat's own part, ID_..._FEAT_MAGIC_INITIATE_WIZARD.
+      const asPart = r.active.some((a) => a.el.type !== "Feat" && a.el.id.startsWith(`${el.id}_`)) && !r.active.some((a) => a.el.type === "Feat" && normalize(a.el.name) === normalize(el.name));
+      const have = r.active.filter((a) => a.el.type === "Feat" && normalize(a.el.name) === normalize(el.name)).length + (asPart ? 1 : 0);
+      if (have >= (this.featCount.get(normalize(w.name)) ?? 1)) {
+        this.matched.push(`${el.name} (already granted)`);
+        return ch;
+      }
+    }
+    // Of the choices that can hold it: the one the file says it came from (Magic Initiate), then the narrowest, so an
+    // Evocation Savant or a feat's list is not left empty while the class's own spells take everything.
+    const from = w.from ? normalize(w.from) : "";
+    const fits2 = r.slots.filter((s) => s.chosen.length < s.rule.number && s.options.some((o) => o.id === el.id));
+    const origin = (s: (typeof fits2)[number]) => (from && (normalize(s.owner.name).includes(from) || normalize(s.owner.id.replace(/_/g, " ")).includes(from) || normalize(s.rule.name).includes(from)) ? 0 : 1);
+    // A spell the file says came from a feat whose choice is not open yet (the Magic Initiate list is picked later)
+    // waits for it rather than filling the class's own spells.
+    if (this.deferring && from && el.type === "Spell" && !fits2.some((s) => origin(s) === 0) && !/^(class|race|species|background)\b/.test(from) && !this.reg.ofType("Class").some((c) => normalize(c.name) === from)) {
+      this.deferred.push(w);
+      return ch;
+    }
+    const slot = [...fits2].sort((a, b) => origin(a) - origin(b) || a.options.length - b.options.length)[0];
     if (slot) {
       this.matched.push(`${el.name} (${w.label})`);
       return { ...ch, selections: { ...ch.selections, [slot.key]: [...slot.chosen, el.id] } };
+    }
+    if (el.type === "Spell" && this.deferring) {
+      this.deferred.push(w);
+      return ch;
     }
     if (el.type === "Spell" || el.type === "Feat") {
       // No open choice can hold it (a racial spell, a Magical Secrets pick): keep it as a manual addition.
@@ -608,14 +693,17 @@ class Importer {
     const cantrip = (w: { label: string; name: string }) => w.label === "spell" && findAllByName(this.reg, ["Spell"], w.name).some((e) => Number(e.setters.level?.value) === 0);
     const order = (w: { label: string; name: string }) => (w.label === "subclass" ? 0 : /subrace|lineage/.test(w.label) ? 1 : w.label === "feat" ? 2 : cantrip(w) ? 3 : 4);
     const wanted = [...this.wantedChoices].sort((x, y) => order(x) - order(y));
+    this.deferring = true;
     for (const w of wanted.filter((x) => order(x) < 4)) ch = this.place(ch, w);
+    this.deferring = false;
     ch = this.fillOpen(ch, importedScores, true);
-    for (const w of wanted.filter((x) => order(x) >= 4)) ch = this.place(ch, w);
+    for (const w of [...this.deferred, ...wanted.filter((x) => order(x) >= 4)]) ch = this.place(ch, w);
     // Fill what is still open from the file's skills, languages, tools and scores, then with defaults. Spells the
     // file does not list are left for the player to choose rather than guessed.
     ch = this.fillOpen(ch, importedScores, true);
-    const openSpells = resolve(ch, this.reg).slots.filter((s) => s.rule.type === "Spell" && !s.rule.optional && s.chosen.length < s.rule.number && s.options.length).reduce((n, s) => n + s.rule.number - s.chosen.length, 0);
-    if (openSpells) this.notes.push(`${openSpells} spell choices the file does not fill are left open on the Magic tab.`);
+    const open = resolve(ch, this.reg).slots.filter((s) => s.rule.type === "Spell" && !s.rule.optional && s.chosen.length < s.rule.number && s.options.length);
+    const openSpells = open.reduce((n, s) => n + s.rule.number - s.chosen.length, 0);
+    if (openSpells) this.notes.push(`The file lists fewer spells than the character chooses, so ${openSpells === 1 ? "1 spell choice is" : `${openSpells} spell choices are`} left open on the Magic tab: ${open.map((s) => `${s.rule.name} (${s.rule.number - s.chosen.length})`).join(", ")}.`);
     if (this.guessed) this.notes.push(`${this.guessed} choices the file did not say anything about were filled with the first option. Check the Build tab.`);
     // Imported scores already include species and background bonuses, so remove them to get the base.
     // Foundry keeps the scores without what magic items add (a Headband of Intellect sets 19 on top), so items are left
@@ -730,6 +818,8 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
         subclasses.push(name);
         break;
       case "race":
+        // "Tiefling, Infernal" also names the legacy to choose.
+        b.addName(name);
         speciesSet = b.setSpecies(name);
         if (!speciesSet) b.missing.push(`${name} (species)`);
         break;
@@ -751,7 +841,9 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
         break;
       }
       case "spell": {
-        b.want(["Spell"], name, "spell");
+        // Foundry 5 says where a spell came from: "class:wizard", "feat:magic-initiate", "race:gnome-rock".
+        const origin = String(isys.sourceItem ?? "").replace(/^\w+:/, "").replace(/-/g, " ");
+        b.want(["Spell"], name, "spell", [], origin || undefined);
         const prep = isys.prepared ?? isys.preparation?.prepared;
         // Spells a feature keeps prepared (mode "always", or prepared 2: oath and domain spells) and innate, pact or at-will spells do not
         // count against the prepared limit.
@@ -766,12 +858,14 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
       case "tool":
       case "loot":
       case "container": {
-        // The unarmed strike is part of every character, not an item.
-        if (/^unarmed strike$/i.test(name)) break;
+        // The unarmed strike is part of every character, not an item; a quiver's compartments are parts of the quiver.
+        if (/^unarmed strike$/i.test(name) || (isys.container && /\bcompartment$/i.test(name))) break;
         const equipped = !!(isys.equipped ?? isys.equipment?.equipped);
         const attuned = isys.attuned === true || isys.attunement === 2 || isys.attuned === 1;
         const magic = Number(isys.magicalBonus ?? isys.armor?.magicalBonus) || 0;
-        b.addItem(name, Number(isys.quantity) || 1, equipped, attuned, { base: String(isys.type?.baseItem ?? "") || undefined, magic });
+        // Foundry names the base item by its key: "dice" is the Dice Set, "thief" the thieves' tools.
+        const baseKey = String(isys.type?.baseItem ?? "");
+        b.addItem(name, Number(isys.quantity) || 1, equipped, attuned, { base: FTOOL[baseKey] ?? (baseKey || undefined), magic });
         break;
       }
       default:
@@ -814,6 +908,11 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
     const base = String(it.system?.type?.baseItem ?? "").toLowerCase();
     if (it.type === "tool" && base && FTOOL[base]) b.hints.tools.add(FTOOL[base]);
   }
+  for (const it of items) {
+    if (it.type !== "class") continue;
+    const adv = it.system?.advancement;
+    for (const a of (Array.isArray(adv) ? adv : Object.values<Json>(adv ?? {})) as Json[]) if (a?.type === "AbilityScoreImprovement" && a.value?.type === "asi" && Object.keys(a.value?.assignments ?? {}).length) b.asiTaken++;
+  }
   // The choices the class, species and background items record: "skills:ath", "tool:art:smith", "languages:exotic:draconic".
   for (const it of items) {
     const adv = it.system?.advancement;
@@ -833,6 +932,7 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
       }
     }
   }
+  for (const d of (sys.traits?.dr?.value ?? []) as string[]) b.hints.resist.add(String(d).toLowerCase());
   for (const a of (sys.traits?.armorProf?.value ?? []) as string[]) b.hints.armor.add(({ lgt: "light", med: "medium", hvy: "heavy", shl: "shields" } as Record<string, string>)[a] ?? a);
   for (const w of (sys.traits?.weaponProf?.value ?? []) as string[]) if (/^(sim|mar)$/.test(w)) b.hints.weapons.add(w === "sim" ? "simple" : "martial");
   for (const m of sys.traits?.weaponProf?.mastery?.value ?? []) b.hints.masteries.add(String(m).toLowerCase().replace(/[^a-z]/g, ""));

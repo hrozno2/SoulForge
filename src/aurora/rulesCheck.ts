@@ -164,8 +164,9 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
       } else {
         const all = Object.entries(rf.multiclass ?? {}) as [AbilityId, number][];
         const alt = rf.multiclassOr ?? [];
-        ok = all.every(([a, v]) => score(a).score >= v) && (!alt.length || alt.some((o) => (Object.entries(o) as [AbilityId, number][]).every(([a, v]) => score(a).score >= v)));
-        need = [...all.map(([a, v]) => `${a} ${v}`), ...(alt.length ? [alt.map((o) => Object.entries(o).map(([a, v]) => `${a} ${v}`).join(" and ")).join(" or ")] : [])].join(", ");
+        // An "or" group in the 5e.tools data means any one of its abilities (Fighter: Strength 13 or Dexterity 13).
+        ok = all.every(([a, v]) => score(a).score >= v) && (!alt.length || alt.every((o) => (Object.entries(o) as [AbilityId, number][]).some(([a, v]) => score(a).score >= v)));
+        need = [...all.map(([a, v]) => `${a} ${v}`), ...alt.map((o) => Object.entries(o).map(([a, v]) => `${a} ${v}`).join(" or "))].join(", ");
       }
       if (!ok) add("Multiclass requirement not met", `${x.el.name} needs ${need}`);
     }
@@ -317,6 +318,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (has(/^unarmored defense/i) && refs.some((x) => /barbarian/i.test(x.el.name))) opts.push(10 + dex + mod("constitution"));
     if (has(/^unarmored defense/i) && refs.some((x) => /monk/i.test(x.el.name)) && !shield) opts.push(10 + dex + mod("wisdom"));
     if (has(/draconic resilience/i)) opts.push(13 + dex);
+    if (has(/^dazzling footwork/i) && !shield) opts.push(10 + dex + mod("charisma"));
     // Natural armor by species (Volo's, Mordenkainen's, Locathah Rising, The Tortle Package, Guildmasters' Guide).
     const race = lc(reg.get(ch.race ?? "")?.name ?? "");
     const NATURAL: [RegExp, () => number][] = [[/lizardfolk/, () => 13 + dex], [/locathah/, () => 12 + dex], [/tortle/, () => 17], [/loxodon/, () => 12 + mod("constitution")], [/autognome|warforged/, () => 13 + dex], [/thri-?kreen/, () => 13 + dex]];

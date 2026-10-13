@@ -489,7 +489,14 @@ export function preparePool(r: Resolved, line: CastingLine): AElement[] {
   if (known.length) return known;
   const levels = Array.from({ length: Math.max(1, line.maxSpellLevel) }, (_, i) => i + 1).join("||");
   const all = r.reg.find("Spell", `(${entry.lists.join("||")}),(${levels})`);
-  const book = r.reg.get(entry.owner)?.source;
-  const same = all.filter((x) => x.source === book);
-  return same.length ? same : all;
+  // One version of each spell, from the class's own edition where both exist (the 2024 Fireball for a 2024 class).
+  const modern = (e?: AElement) => !!e && /PHB24|2024|XPHB/i.test(`${e.id} ${e.source}`);
+  const want = modern(r.reg.get(entry.owner));
+  const byName = new Map<string, AElement>();
+  for (const x of all) {
+    const k = x.name.toLowerCase();
+    const cur = byName.get(k);
+    if (!cur || (modern(cur) !== want && modern(x) === want)) byName.set(k, x);
+  }
+  return [...byName.values()];
 }

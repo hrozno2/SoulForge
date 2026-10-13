@@ -249,7 +249,7 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
     : undefined;
 
   const inv = ch.inventory.map((i) => ({ i, el: i.id ? r.reg.get(i.id) : undefined }));
-  const nm = (x: { i: InvItem; el?: { name: string } }) => `${x.i.qty > 1 ? `${x.i.qty} ` : ""}${itemLabel(x.i, x.el?.name) || "?"}`;
+  const nm = (x: { i: InvItem; el?: { name: string } }) => `${x.i.qty > 1 ? `${x.i.qty} ` : ""}${listName(itemLabel(x.i, x.el?.name) || "?")}`;
   const armor = inv.find((x) => x.i.equipped && x.el?.type === "Armor" && !/shield/i.test(x.el.name));
   const weaponsText = inv.filter((x) => x.el?.type === "Weapon").map(nm).join("\n");
   const gear = inv.filter((x) => !(x.el?.type === "Weapon") && !(x.el?.type === "Armor" && x.i.equipped)).filter((x) => !(x.el && /magic/i.test(x.el.type) && x.i.equipped)).map(nm).join("\n");
@@ -305,4 +305,12 @@ export function splitPersonality(text: string): { traits: string; ideals: string
     }
   }
   return { traits: out.traits.join("\n"), ideals: out.ideals.join("\n"), bonds: out.bonds.join("\n"), flaws: out.flaws.join("\n"), found };
+}
+
+/** Catalog names read naturally in a comma-separated list: "Clothes, Traveler's" is "Traveler's Clothes", "Rope, Hempen (50 feet)" is "Hempen Rope (50 feet)". */
+export function listName(name: string): string {
+  const m = /^([^,()]+), ([^,()\d][^,()]*?)(\s*\(.*\))?$/.exec(name);
+  if (!m) return name;
+  if (/^ammunition$/i.test(m[1].trim())) return `${m[2]}${m[3] ?? ""}`;
+  return `${m[2]} ${m[1].trim()}${m[3] ?? ""}`;
 }

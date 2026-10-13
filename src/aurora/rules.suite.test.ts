@@ -5,7 +5,7 @@
  *   SOULFORGE_RULES=<cache folder>   RULES_SEED=<number, optional>   RULES_OUT=<folder for the files, optional>
  * A run passes only when a fresh batch comes out with no findings at all.
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { PDFDocument, PDFTextField } from "pdf-lib";
@@ -24,6 +24,7 @@ import { fillOfficialSheet } from "../sheets/official";
 import { fillDldm } from "../sheets/dldm";
 import { buildPdf, DEFAULT_PDF_OPTIONS } from "../pdf/exportPdf";
 import { BUILDS } from "./builds";
+import { importForeignCharacter } from "./foreign";
 
 const CACHE = process.env.SOULFORGE_RULES;
 const OUT = process.env.RULES_OUT;
@@ -212,6 +213,29 @@ describe.skipIf(!CACHE)("rules", () => {
     report.push(`\n### every element on its own\n${found.length ? found.map((f) => `- ${f}`).join("\n") : "- no findings"}`);
     expect([...new Set(found)]).toEqual([]);
   }, 3600000);
+
+  // Characters made in Roll20 and Foundry (kept in the cache's imports folder, not in this repository). Each one
+  // imports, exports, and guesses no more than it did when its baseline was written: a guess is a choice the file
+  // does not settle, so a new one means the importer lost something it used to read.
+  it("imported characters", async () => {
+    const dir = join(CACHE, "imports");
+    if (!existsSync(dir)) return;
+    const basePath = join(dir, "baseline.json");
+    const baseline: Record<string, number> = existsSync(basePath) ? JSON.parse(readFileSync(basePath, "utf8")) : {};
+    const now: Record<string, number> = {};
+    const worse: string[] = [];
+    for (const f of readdirSync(dir).filter((x) => x.endsWith(".json") && x !== "baseline.json").sort()) {
+      let res;
+      try { res = importForeignCharacter(JSON.parse(readFileSync(join(dir, f), "utf8")), reg); } catch (e) { worse.push(`${f}: ${(e as Error).message}`); continue; }
+      now[f] = res.guessed.length;
+      report.push(`\n### import ${f}\n- guessed: ${res.guessed.join("; ") || "nothing"}\n- not in the content: ${res.missing.length}`);
+      const found = (await check(`import ${f}`, res.character)).filter((x) => /export|round trip|sheet/i.test(x.rule));
+      for (const x of found) worse.push(`${f}: ${x.rule}: ${x.detail}`);
+      if (baseline[f] !== undefined && res.guessed.length > baseline[f]) worse.push(`${f}: ${res.guessed.length} guesses, the baseline is ${baseline[f]}: ${res.guessed.join("; ")}`);
+    }
+    if (!existsSync(basePath) || process.env.IMPORT_BASELINE) writeFileSync(basePath, JSON.stringify(now, null, 2));
+    expect(worse, worse.join("\n")).toEqual([]);
+  }, 600000);
 
   it("writes the report", () => {
     writeReport();

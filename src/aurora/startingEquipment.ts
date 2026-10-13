@@ -242,6 +242,9 @@ const SYNONYMS: Record<string, string[]> = {
   "thieves' tools": ["Thieves' Tools", "Thieves' tools"],
   "healer's kit": ["Healer's Kit"],
   "potion of healing": ["Potion of Healing"],
+  "chess set": ["Dragonchess Set", "Dragonchess set"],
+  "robes": ["Robes"],
+  "book": ["Book"],
 };
 
 export class ItemIndex {
@@ -508,7 +511,9 @@ export function resolveChosenTools(items: ResolvedItem[], activeIds: Iterable<st
   const used: Record<string, number> = {};
   return items.map((it) => {
     if (it.el) return it;
-    const kind = /gaming set/i.test(it.name) ? "gaming" : /musical instrument/i.test(it.name) ? "instrument" : /artisan/i.test(it.name) ? "artisan" : undefined;
+    // "Tool you choose for this background's tool proficiency" (Inheritor): whichever tool was chosen.
+    const kind = /gaming set/i.test(it.name) ? "gaming" : /musical instrument/i.test(it.name) ? "instrument" : /artisan/i.test(it.name) ? "artisan" : /\btools?\b.*\b(choose|choice)\b.*\bproficien/i.test(it.name) ? "any" : undefined;
+    if (kind === "any") chosen.any = [...chosen.gaming, ...chosen.instrument, ...chosen.artisan];
     const pick = kind ? chosen[kind][used[kind] ?? 0] : undefined;
     if (!kind || !pick) return it;
     const el = idx.find(pick, prefer);

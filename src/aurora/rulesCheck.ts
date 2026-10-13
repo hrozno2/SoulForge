@@ -6,7 +6,7 @@
  * Player's Handbooks. Every finding names the rule it breaks.
  */
 import type { Resolved } from "./engine";
-import type { SheetData } from "./sheet";
+import { preparePool, type SheetData } from "./sheet";
 import type { AElement } from "./types";
 import { ABILITY_IDS, type AbilityId } from "./character";
 import { meets } from "./requirements";
@@ -275,6 +275,9 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const levelOf = (id: string) => Number(reg.get(id)?.setters.level?.value ?? 0);
     if (line.prepare) {
       if (line.prepareMax && line.prepareMax !== want && x.ref.prepared) add("Prepared spells", `${x.el.name} ${x.c.level}: may prepare ${line.prepareMax}, the class table gives ${want}`);
+      // The list to prepare from must hold at least as many spells as may be prepared.
+      const pool = preparePool(r, line).length;
+      if (line.prepareMax && pool < line.prepareMax) add("Too few spells to prepare from", `${x.el.name} ${x.c.level}: ${pool} on the list, ${line.prepareMax} may be prepared`);
     } else {
       // Only the class's own spellcasting choices count; a subclass's extra spells (Magical Secrets) are on top.
       const own = r.slots.filter((s) => s.root === `class:${x.c.classId}` && s.rule.type === "Spell" && !/cantrip/i.test(s.rule.name) && /spellcasting|pact magic|^magical secrets$/i.test(s.owner.name.replace(/^level \d+: /i, "")) && !/arcanum/i.test(s.rule.name));

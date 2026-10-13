@@ -1305,3 +1305,8 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .play-side .fav-tile .feature-row .feature-head { flex-wrap: wrap; gap: 0 8px; }
 .play-side .fav-tile .feature-row .feature-head b { font-size: 13.5px; }
 .play-side .fav-tile .feature-row .feature-head small { font-size: 11px; }
+.play-side .fav-bar { min-height: 320px; display: flex; flex-direction: column; }
+.play-side .fav-tiles { flex: 1; }
+.fav-drop { flex: 1; min-height: 70px; margin: 6px 0 0; display: grid; place-items: center; border: 1px dashed var(--line); border-radius: 4px; font-size: 12px; }
+.fav-bar.over .fav-drop { border-color: var(--gold); color: var(--gold2); }
+.test-toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 60; padding: 10px 16px; background: #1d3a5c; color: #fff; border: 1px solid #4aa0ee; border-radius: 6px; cursor: pointer; box-shadow: var(--shadow); }

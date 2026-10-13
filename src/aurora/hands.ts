@@ -12,7 +12,7 @@ export function handsFor(it: InvItem, el?: AElement): number {
   if (!el) return 0;
   if (isShieldEl(el)) return 1;
   if (el.type !== "Weapon") return 0;
-  const twoByRule = /twohand/i.test(el.setters.slot?.value ?? "") || el.supports.some((t) => /TWO.HANDED/i.test(t));
+  const twoByRule = /twohand/i.test(el.setters.slot?.value ?? "") || el.supports.some((t) => /TWO.?HANDED/i.test(t));
   return twoByRule || (it.twoHanded && !!el.setters.versatile) ? HANDS : 1;
 }
 

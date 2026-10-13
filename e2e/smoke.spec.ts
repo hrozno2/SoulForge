@@ -249,14 +249,27 @@ test.describe("Soul Forge smoke tests", () => {
       await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 6 });
       await page.mouse.up();
       await expect(bar.locator(".fav-tile.feature")).toHaveCount(2);
+      // A second drag, dropped low in the panel, lands too.
+      if ((await rows.count()) > 2) {
+        const f2 = (await rows.nth(2).boundingBox())!;
+        const t2 = (await bar.boundingBox())!;
+        await page.mouse.move(f2.x + 20, f2.y + f2.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(t2.x + t2.width / 2, t2.y + t2.height - 30, { steps: 12 });
+        await page.mouse.move(t2.x + t2.width / 2, t2.y + t2.height - 20, { steps: 4 });
+        await page.mouse.up();
+        await expect(bar.locator(".fav-tile.feature")).toHaveCount(3);
+      }
     }
     // Favorites are kept with the character; the sidebar can switch to the skills and back.
     await page.reload();
     await tab(page, "Play");
     await expect(page.locator(".res-strip").getByText("Ki")).toBeVisible();
     // A favorite can be taken off again.
+    const favTiles = page.getByRole("region", { name: "Favorites" }).locator(".fav-tile.feature");
+    const before = await favTiles.count();
     await page.getByRole("region", { name: "Favorites" }).getByRole("button", { name: "Remove from favorites" }).first().click();
-    await expect(page.getByRole("region", { name: "Favorites" }).locator(".fav-tile.feature")).toHaveCount(1);
+    await expect(favTiles).toHaveCount(before - 1);
     await page.getByRole("tab", { name: "Skills" }).click();
     await expect(page.locator(".play-side .skill-line").first()).toBeVisible();
     await page.getByRole("tab", { name: /Favorites/ }).click();

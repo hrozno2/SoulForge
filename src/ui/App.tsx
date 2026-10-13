@@ -22,6 +22,7 @@ import { runAutoBackup } from "../aurora/backup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
 import { ImportReport } from "./ImportReport";
+import { makeTestBatch, testExport, testToolsEnabled } from "./TestTools";
 import { listCharacters } from "../aurora/storage";
 import { Tutorial, tutorialWanted } from "./Tutorial";
 import { CompendiumSearch } from "./CompendiumSearch";
@@ -121,6 +122,7 @@ export function App() {
     const p = getSettings();
     open(uid(), randomCharacter(content.reg, level, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual }));
   };
+  const [testMsg, setTestMsg] = useState("");
   const [report, setReport] = useState<{ name: string; res: ForeignImport } | null>(null);
   const importForeign = async (file: File): Promise<string> => {
     try {
@@ -193,9 +195,16 @@ export function App() {
           <label className="menu-row">Theme <ThemePicker /></label>
           <button className="menu-item" onClick={() => setSettingsOpen(true)}>Settings...</button>
           <button className="menu-item" onClick={() => { setTutorialStep(0); setTutorialMin(false); setTutorialOpen(true); }}>Show the tutorial</button>
+          {testToolsEnabled && (
+            <>
+              <button className="menu-item" onClick={async () => { const made = await makeTestBatch(content.reg); if (made[0]) open(made[0].id, made[0].ch); setTab("start"); setTestMsg(`Made ${made.length} test characters. They are on Home.`); }}>Test: make 10 random characters</button>
+              <button className="menu-item" onClick={async () => setTestMsg(await testExport(content.reg, setTestMsg))}>Test: export test characters</button>
+            </>
+          )}
           <button className="menu-item" onClick={() => updater.check(true)}>Check for updates</button>
         </AppMenu>
       </header>
+      {testMsg && <div className="test-toast" role="status" onClick={() => setTestMsg("")}>{testMsg} <small>(click to close)</small></div>}
       {report && <ImportReport name={report.name} res={report.res} onClose={() => setReport(null)} onBuild={() => setTab("build")} />}
       {tutorialOpen && <Tutorial step={tutorialStep} setStep={setTutorialStep} minimized={tutorialMin} setMinimized={setTutorialMin} onClose={() => { setTutorialOpen(false); setTutorialMin(false); }} onGo={(t) => setTab(t as Tab)} content={content} onImportForeign={importForeign} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}

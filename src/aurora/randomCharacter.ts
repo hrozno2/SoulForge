@@ -1,6 +1,6 @@
 /** A random character that makes sense: books the player shows, the best scores where the class needs them, starting gear on. */
 import { autoFill } from "./autofill";
-import { resolve } from "./engine";
+import { hitDieOf, resolve } from "./engine";
 import { buildSheet, preparePool } from "./sheet";
 import { ABILITY_IDS, newCharacter, type AbilityId, type Character } from "./character";
 import { BookIndex, hiddenBy, type ContentFilters } from "./books";
@@ -26,7 +26,27 @@ export function classPriorities(cls: AElement): AbilityId[] {
   return out;
 }
 
-export function randomCharacter(reg: ARegistry, level: number, filters: ContentFilters, rng: () => number = Math.random, force: { classId?: string } = {}): Character {
+export interface RandomForce {
+  classId?: string;
+  raceId?: string;
+  backgroundId?: string;
+  /** A second class with this many of the levels. */
+  multiclass?: { classId: string; level: number };
+  /** Pick a starting equipment option at random instead of the first with gear. */
+  randomGear?: boolean;
+  /** Optional rules to switch on (Firearms, Customized Ability Scores). */
+  options?: string[];
+  /** Add a companion creature by hand. */
+  companion?: boolean;
+  /** Roll hit points instead of taking the average. */
+  rollHp?: boolean;
+  /** More classes after the second, for three-class builds. */
+  more?: { classId: string; level: number }[];
+  /** Option names to choose wherever they are offered (a subclass, feats, a fighting style). */
+  prefer?: string[];
+}
+
+export function randomCharacter(reg: ARegistry, level: number, filters: ContentFilters, rng: () => number = Math.random, force: RandomForce = {}): Character {
   const books = new BookIndex(reg);
   const shown = (e: AElement) => !e.compendiumHidden && !hiddenBy(books.info(e.source), e.source, filters);
   const pick = <T,>(a: T[]): T | undefined => a[Math.floor(rng() * a.length)];
@@ -44,21 +64,31 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
     return rng() < 0.8 && same.length ? same : p;
   };
   let c = newCharacter();
-  c.race = pick(sameEdition("Race"))?.id;
-  c.background = pick(sameEdition("Background"))?.id;
-  if (cls) c.classes = [{ classId: cls.id, level: Math.max(1, Math.min(20, Math.floor(level) || 1)) }];
+  c.race = force.raceId ?? pick(sameEdition("Race"))?.id;
+  c.background = force.backgroundId ?? pick(sameEdition("Background"))?.id;
+  const total = Math.max(1, Math.min(20, Math.floor(level) || 1));
+  const second = force.multiclass && force.multiclass.level < total ? reg.get(force.multiclass.classId) : undefined;
+  const moreLv = (force.more ?? []).reduce((t, m) => t + m.level, 0);
+  if (cls) c.classes = second ? [{ classId: cls.id, level: total - force.multiclass!.level - moreLv }, { classId: second.id, level: force.multiclass!.level }, ...(force.more ?? [])] : [{ classId: cls.id, level: total }];
+  c.options = force.options ?? [];
   c.abilityMethod = "standard";
-  const first = cls ? classPriorities(cls) : [];
+  // The second class's prerequisite abilities come right after the first class's main one, so both reach 13.
+  const p1 = cls ? classPriorities(cls) : [];
+  const p2 = second ? classPriorities(second).slice(0, 2) : [];
+  const first = [...new Set([p1[0], ...p2, ...p1.slice(1)].filter(Boolean))] as AbilityId[];
   const rest = ABILITY_IDS.filter((a) => !first.includes(a)).sort(() => rng() - 0.5);
   [...first, ...rest].forEach((a, i) => (c.abilityBase[a] = [15, 14, 13, 12, 10, 8][i]));
-  c = autoFill(c, reg, () => rng(), shown);
+  const wanted = (force.prefer ?? []).map((x) => x.toLowerCase());
+  const preferFn = (_slot: string, option: string) => (wanted.some((w) => option.toLowerCase() === w || option.toLowerCase().startsWith(`${w} (`)) ? 100 : rng());
+  c = autoFill(c, reg, preferFn, shown);
   // Starting equipment: the first option of the class and of the background, worn and wielded.
   const idx = new ItemIndex(reg);
   const prefer = cls?.source ?? "";
   for (const plan of startingPlans(c, reg)) {
     // The option with gear rather than only gold; in the older "choose (a) or (b)" lists, an option at random,
     // with an actual weapon wherever it says "any martial weapon".
-    const v = plan.variants.find((x) => x.fixed.length + x.choices.length > 0 && !/^\s*\d+\s*gp\s*$/i.test(x.label)) ?? plan.variants[0];
+    const withGear = plan.variants.filter((x) => x.fixed.length + x.choices.length > 0 && !/^\s*\d+\s*gp\s*$/i.test(x.label));
+    const v = force.randomGear && plan.variants.length > 1 ? plan.variants[Math.floor(rng() * plan.variants.length)] : withGear[0] ?? plan.variants[0];
     if (!v) continue;
     const picks = v.choices.map((g) => Math.floor(rng() * g.options.length));
     const weapons: Record<string, string> = {};
@@ -80,6 +110,17 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
     if (!line.prepare || line.prepareMax <= 0) continue;
     const pool = preparePool(resolve(c, reg), line).sort(() => rng() - 0.5);
     c = { ...c, prepared: { ...c.prepared, [line.name]: pool.slice(0, line.prepareMax).map((e) => e.id) } };
+  }
+  if (force.companion) {
+    const beasts = reg.ofType("Companion").filter((e) => shown(e) && /beast/i.test(e.setters.type?.value ?? ""));
+    const b = pick(beasts);
+    if (b) c = { ...c, companions: [...c.companions, { uid: `cmp${Math.floor(rng() * 1e9)}`, id: b.id, name: b.name }] };
+  }
+  if (force.rollHp) {
+    const rolls: Record<string, number> = {};
+    let n = 0;
+    for (const k of c.classes) for (let i = 0; i < k.level; i++) { n++; if (n > 1) { const die = hitDieOf(reg.get(k.classId)) || 8; rolls[String(n)] = 1 + Math.floor(rng() * die); } }
+    c = { ...c, hpMode: "roll", hpRolls: rolls };
   }
   c.name = "Random adventurer";
   return c;

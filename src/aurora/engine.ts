@@ -335,7 +335,9 @@ export function resolveSupports(filter: string, casting: string | undefined, pas
     // Pact magic casters state the slot level directly.
     const pact = pass.stats.get(`${name}:spellcasting:slot`);
     if (pact > maxSlot) maxSlot = pact;
-    if (shared !== undefined && shared > maxSlot) maxSlot = shared;
+    // Multiclassed, a class still learns and prepares spells by its own level, not by the combined slot table
+    // (PHB, Multiclassing: "as if you were a single-classed member of that class"). So the shared table is not used here.
+    void shared;
   }
   const slotExpr = maxSlot > 0 ? `(${Array.from({ length: maxSlot }, (_, i) => i + 1).join("||")})` : "(none)";
   return filter.replace(/\$\(spellcasting:list\)/g, listExpr).replace(/\$\(spellcasting:slots\)/g, slotExpr);

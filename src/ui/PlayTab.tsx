@@ -697,6 +697,8 @@ function Favorites({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: S
       <div className="fav-tiles">
         {favs.map(tile)}
         {favs.length === 0 && <p className="muted fav-empty">Nothing pinned yet. Drag a weapon, spell, feature or item here, or click its ☆.</p>}
+        {/* The drop area stays big after the first favorite, so the next one has somewhere to land. */}
+        {favs.length > 0 && <p className="muted fav-drop" aria-hidden="true">Drop here to add</p>}
       </div>
     </section>
   );

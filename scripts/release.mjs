@@ -40,6 +40,11 @@ console.log("Checking: types, tests, build...");
 sh("npx tsc --noEmit", { show: true });
 sh("npm test", { show: true });
 sh("npm run build", { show: true });
+// The rules check: a fresh random batch, level 20 in every class, level-ups, multiclasses, companions, optional
+// rules, community builds and full coverage of every subclass, species, background and feat, all checked against
+// the rules and exported. A release is only cut when a fresh run (a new seed) has no findings at all.
+console.log("Rules check (fresh seed, full coverage)...");
+execSync("node scripts/rules-check.mjs", { stdio: "inherit", env: { ...process.env, RULES_TIER: "full" } });
 
 sh(`node scripts/bump-version.mjs ${next}`, { show: true });
 const header = "# Changelog\n\nWhat changed in each release. Newest first.\n\n";

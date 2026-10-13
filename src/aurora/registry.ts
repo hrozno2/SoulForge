@@ -85,6 +85,14 @@ function offered(el: AElement): Set<string> {
   if (el.type === "Spell" && lvl !== undefined) s.add(lvl.trim());
   // A spell's school works as a tag too, so "Evocation" in a filter finds evocation spells.
   if (el.type === "Spell" && el.setters.school?.value) s.add(el.setters.school.value.trim().toLowerCase());
+  // "Ritual" and "Concentration" in a filter (Ritual Caster) find spells by those properties.
+  if (el.type === "Spell" && el.setters.isRitual?.value === "true") s.add("ritual");
+  if (el.type === "Spell" && el.setters.isConcentration?.value === "true") s.add("concentration");
+  // Creatures: their type, size and challenge rating work as tags ("Beast,(Tiny||Small||Medium),(1/4||1/8||0)").
+  if (el.type === "Companion" || el.type === "Monster") for (const k of ["type", "size", "challenge", "cr"]) {
+    const v = el.setters[k]?.value?.trim().toLowerCase();
+    if (v) { s.add(v); s.add(v.split(/[\s(]/)[0]); }
+  }
   return s;
 }
 
@@ -130,6 +138,7 @@ export class ARegistry {
       if (ap.supports.length) target.supports = [...target.supports, ...ap.supports];
     }
     for (const el of improvementOptions([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
+    for (const el of classAsiChoices([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
     for (const el of this.byId.values()) {
       const key = el.type.toLowerCase();
       (this.byType.get(key) ?? this.byType.set(key, []).get(key)!).push(el);
@@ -183,6 +192,12 @@ export class ARegistry {
 
 const ABILITIES = ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"];
 
+/** The six abilities as +1 or +2 options of one improvement, with their own tag so other choices do not block them. */
+function abilityOptions(tag: string, n: 1 | 2, key: string): AElement[] {
+  return ABILITIES.map((a) => ({ id: `ID_INTERNAL_${key}_${a.toUpperCase()}_PLUS_${n}`, name: a, type: "Ability Score Improvement", source: "Internal", supports: [tag], description: `<p>Your ${a} increases by ${n}. You can't raise a score above 20 this way.</p>`, compendiumHidden: true, sheet: { display: false, descriptions: [] }, setters: {}, rules: [{ kind: "stat", name: a.toLowerCase(), value: String(n), alt: "Ability Score Improvement" } as never] }));
+}
+
+
 /**
  * The original Aurora app builds the choices behind "Improvement Option" selects itself (the 2014 classes' Ability
  * Score Improvement levels); the content only declares the select. This makes them: +2 to one score, +1 to two
@@ -199,6 +214,11 @@ function improvementOptions(all: AElement[]): AElement[] {
       if (!have.has(id)) out.push({ id, name: a, type: "Ability Score Improvement", source: "Internal", supports: [tag], description: `<p>Your ${a} increases by ${n}.</p>`, compendiumHidden: true, setters: {}, rules: [{ kind: "stat", name: a.toLowerCase(), value: String(n), alt: "Ability Score Improvement" } as never] });
     }
   }
+  // ID_INTERNAL_ASI_STRENGTH and its kin: referenced by species (Changeling, Warforged) but made by the original app.
+  for (const a of ABILITIES) {
+    const id = `ID_INTERNAL_ASI_${a.toUpperCase()}`;
+    if (!have.has(id)) out.push({ id, name: a, type: "Ability Score Improvement", source: "Internal", supports: [], description: `<p>Your ${a} increases by 1.</p>`, compendiumHidden: true, setters: {}, rules: [{ kind: "stat", name: a.toLowerCase(), value: "1", alt: "Ability Score Increase" } as never] });
+  }
   const seen = new Set<string>();
   for (const el of all) {
     for (const r of el.rules) {
@@ -210,12 +230,45 @@ function improvementOptions(all: AElement[]): AElement[] {
       const key = parts.join("_").toUpperCase().replace(/[^A-Z0-9]+/g, "_");
       // Hidden from the sheet: the increase shows in the scores, and a feat taken here shows under feats.
       const make = (suffix: string, name: string, text: string, rules: AElement["rules"]): AElement => ({ id: `ID_INTERNAL_IMPROVEMENT_${key}_${suffix}`, name, type: r.type, source: "Internal", supports: parts, description: `<p>${text}</p>`, compendiumHidden: true, sheet: { display: false, descriptions: [] }, setters: {}, rules });
+      const t2 = `Improvement ${key} +2`;
+      const t1 = `Improvement ${key} +1`;
       out.push(
-        make("PLUS2", "Ability Score Improvement (+2)", "Increase one ability score by 2. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +2", supports: "Custom Ability Score Increase 2", number: 1 }]),
-        make("PLUS1", "Ability Score Improvement (+1, +1)", "Increase two different ability scores by 1. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +1", supports: "Custom Ability Score Increase 1", number: 2 }]),
+        make("PLUS2", "Ability Score Improvement (+2)", "Increase one ability score by 2. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +2", supports: t2, number: 1 }]),
+        make("PLUS1", "Ability Score Improvement (+1, +1)", "Increase two different ability scores by 1. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +1", supports: t1, number: 2 }]),
         make("FEAT", "Feat", "Take a feat instead of increasing your ability scores.", [{ kind: "select", type: "Feat", name: "Feat", supports: "", number: 1 }]),
+        ...abilityOptions(t2, 2, key),
+        ...abilityOptions(t1, 1, key),
       );
     }
+  }
+  return out;
+}
+
+/**
+ * Some classes (the Eberron and Tasha's Artificer) ask for two "Ability Score Improvement, Class" picks, options the
+ * original app made up itself. Such a choice becomes one pick of: +2 to one score, +1 to two scores, or a feat.
+ * The element's rule is changed in place; the returned elements are the options.
+ */
+function classAsiChoices(all: AElement[]): AElement[] {
+  const out: AElement[] = [];
+  for (const el of all) {
+    el.rules = el.rules.map((r) => {
+      if (r.kind !== "select" || r.type !== "Ability Score Improvement" || !/^\s*ability score improvement\s*,\s*class\s*$/i.test(r.supports)) return r;
+      if (all.some((e) => e.type === r.type && matchesSupports(e, r.supports))) return r;
+      const tag = `Class ASI ${el.id} ${r.level ?? 0}`;
+      const key = tag.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+      const make = (suffix: string, name: string, text: string, rules: AElement["rules"]): AElement => ({ id: `ID_INTERNAL_${key}_${suffix}`, name, type: "Class Feature", source: "Internal", supports: [tag], description: `<p>${text}</p>`, compendiumHidden: true, sheet: { display: false, descriptions: [] }, setters: {}, rules });
+      const t2 = `Improvement ${key} +2`;
+      const t1 = `Improvement ${key} +1`;
+      out.push(
+        make("PLUS2", "Ability Score Improvement (+2)", "Increase one ability score by 2. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +2", supports: t2, number: 1 }]),
+        make("PLUS1", "Ability Score Improvement (+1, +1)", "Increase two different ability scores by 1. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +1", supports: t1, number: 2 }]),
+        make("FEAT", "Feat", "Take a feat instead of increasing your ability scores.", [{ kind: "select", type: "Feat", name: "Feat", supports: "", number: 1 }]),
+        ...abilityOptions(t2, 2, key),
+        ...abilityOptions(t1, 1, key),
+      );
+      return { ...r, type: "Class Feature", supports: tag, number: 1 };
+    });
   }
   return out;
 }

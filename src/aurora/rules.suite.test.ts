@@ -218,6 +218,7 @@ describe.skipIf(!CACHE)("rules", () => {
   // imports, exports, and guesses no more than it did when its baseline was written: a guess is a choice the file
   // does not settle, so a new one means the importer lost something it used to read.
   it("imported characters", async () => {
+    if (!CACHE) return;
     const dir = join(CACHE, "imports");
     if (!existsSync(dir)) return;
     const basePath = join(dir, "baseline.json");

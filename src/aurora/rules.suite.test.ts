@@ -5,7 +5,9 @@
  *   SOULFORGE_RULES=<cache folder>   RULES_SEED=<number, optional>   RULES_OUT=<folder for the files, optional>
  * A run passes only when a fresh batch comes out with no findings at all.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { PDFDocument, PDFTextField } from "pdf-lib";
@@ -29,6 +31,33 @@ import { importForeignCharacter } from "./foreign";
 const CACHE = process.env.SOULFORGE_RULES;
 const OUT = process.env.RULES_OUT;
 const SEED = Number(process.env.RULES_SEED) || Date.now() % 2147483647;
+
+/**
+ * What a filled sheet must show, read back as text (pdftotext): the name, AC, maximum hit points, the six scores,
+ * the proficiency bonus, each spell save DC and the first weapon. Empty when pdftotext is missing.
+ */
+function sheetShows(bytes: Uint8Array, ch: Character, sh: ReturnType<typeof buildSheet>): string[] {
+  let text = "";
+  try {
+    const file = join(tmpdir(), `sf-sheet-${process.pid}-${Math.random().toString(36).slice(2)}.pdf`);
+    writeFileSync(file, bytes);
+    text = execFileSync("pdftotext", ["-layout", file, "-"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    rmSync(file, { force: true });
+  } catch { return []; }
+  const flat = text.replace(/\s+/g, " ");
+  const has = (v: string | number) => new RegExp(`(^|[^\\d])${String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^\\d]|$)`).test(flat);
+  const words = (v: string) => flat.toLowerCase().includes(v.toLowerCase().slice(0, 10));
+  const miss: string[] = [];
+  if (ch.name && !words(ch.name)) miss.push(`name "${ch.name}"`);
+  if (!has(sh.ac.value)) miss.push(`AC ${sh.ac.value}`);
+  if (!has(sh.hp)) miss.push(`HP ${sh.hp}`);
+  for (const a of sh.abilities) if (!has(a.score)) miss.push(`${a.id} ${a.score}`);
+  if (!flat.includes(`+${sh.proficiency}`)) miss.push(`proficiency +${sh.proficiency}`);
+  for (const l of sh.casting) if (l.dc > 0 && !has(l.dc)) miss.push(`${l.name} spell save DC ${l.dc}`);
+  const weapon = sh.attacks.find((a) => !a.hiddenByEdit)?.name;
+  if (weapon && !words(weapon)) miss.push(`weapon ${weapon}`);
+  return miss;
+}
 
 describe.skipIf(!CACHE)("rules", () => {
   const reg = CACHE ? loadRegistry(join(CACHE, "elements-master")) : undefined!;
@@ -58,6 +87,7 @@ describe.skipIf(!CACHE)("rules", () => {
     try {
       const p24 = await fillOfficialSheet(readFileSync(join(sheets, "2024-print.pdf")), "2024-print.pdf", data, font);
       save("2024.pdf", p24.bytes);
+      for (const miss of sheetShows(p24.bytes, ch, sh)) found.push({ rule: "2024 sheet shows the character", detail: miss });
     } catch (e) { found.push({ rule: "2024 sheet export", detail: (e as Error).message }); }
     try {
       const p14 = await fillOfficialSheet(readFileSync(join(sheets, "2014-3pages.pdf")), "CharacterSheet_3Pgs_ Complete.pdf", data, font);
@@ -75,6 +105,7 @@ describe.skipIf(!CACHE)("rules", () => {
     try {
       const sf = await buildPdf(r, sh, { ...DEFAULT_PDF_OPTIONS, paper: "letter" }, font);
       save("soulforge.pdf", sf);
+      for (const miss of sheetShows(sf, ch, sh)) found.push({ rule: "Soul Forge sheet shows the character", detail: miss });
       if ((await PDFDocument.load(sf)).getPageCount() < 1) found.push({ rule: "Soul Forge sheet export", detail: "no pages" });
     } catch (e) { found.push({ rule: "Soul Forge sheet export", detail: (e as Error).message }); }
     report.push(`\n### ${label}\n${found.length ? found.map((f) => `- ${f.rule}: ${f.detail}`).join("\n") : "- no findings"}`);

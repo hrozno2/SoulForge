@@ -82,6 +82,8 @@ export interface FillData {
   classFeatures: string[];
   weapons: { name: string; bonus: string; damage: string; notes: string }[];
   casting?: { ability: string; mod: string; dc: string; attack: string; focus: string; slots: number[]; used: number[] };
+  /** Spellcasting with its own DC besides the main one: "Rune Shaper: save DC 14, attack +6 (Intelligence)". */
+  otherCasting: string[];
   spells: SpellRow[];
   /** Every known spell, prepared or not, with `prepared` set; for sheets that mark prepared spells. */
   spellbook?: SpellRow[];
@@ -211,6 +213,9 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
   const spellbook: SpellRow[] = [];
   const seen = new Set<string>();
   const seenBook = new Set<string>();
+  const main = sh.casting[0];
+  // A line with its own DC (a feat's spells cast with another ability) says so on each of its spells.
+  const ownDc = (c: (typeof sh.casting)[number]) => (main && c !== main && (c.dc !== main.dc || c.attack !== main.attack) ? `DC ${c.dc}` : "");
   for (const c of sh.casting) {
     const anyPrepared = c.spells.some((s) => s.prepared);
     const list = [...c.cantripsKnown, ...(c.prepare && anyPrepared ? [...c.granted, ...c.spells.filter((s) => s.prepared)] : [...c.spells, ...c.granted])];
@@ -221,6 +226,7 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
       if (seen.has(nameOf(p.id))) continue;
       seen.add(nameOf(p.id));
       const x = row(p, !!p.granted || (c.prepare && !!(p as { prepared?: boolean }).prepared) || !c.prepare);
+      if (x && ownDc(c)) x.notes = [ownDc(c), x.notes].filter(Boolean).join(", ");
       if (x) spells.push(x);
     }
     for (const p of [...c.cantripsKnown, ...c.granted, ...c.spells]) {
@@ -277,7 +283,7 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
     classFeatures: feat(["Class Feature", "Archetype Feature"]).map((f) => line(f, 260)),
     // With nothing equipped, the sheet lists what the character carries rather than an empty table.
     weapons: (sh.attacks.some((a) => a.auto) ? sh.attacks : sh.attacksCarried).map((a) => ({ name: a.name, bonus: signed(a.bonus), damage: `${a.damage} ${a.damageType}`.trim(), notes: [a.properties, a.notes].filter(Boolean).join("; ") })),
-    casting, spells, spellbook, armorWorn: armor?.el?.name ?? "", weaponsText, otherGear: gear, magicItems: magic,
+    casting, otherCasting: sh.casting.slice(1).filter((c) => main && (c.dc !== main.dc || c.attack !== main.attack)).map((c) => `${c.name}: save DC ${c.dc}, attack ${signed(c.attack)}${c.ability ? ` (${c.ability.charAt(0).toUpperCase()}${c.ability.slice(1)})` : ""}`), spells, spellbook, armorWorn: armor?.el?.name ?? "", weaponsText, otherGear: gear, magicItems: magic,
     coins: { cp: String(ch.coins.cp), sp: String(ch.coins.sp), ep: String(ch.coins.ep), gp: String(ch.coins.gp), pp: String(ch.coins.pp) },
     carryCapacity: String(sh.weight.capacity), pushDrag: String(sh.weight.capacity * 2),
     backstory: [ch.info.backstory, ch.info.allies && `Allies: ${ch.info.allies}`].filter(Boolean).join("\n\n"),

@@ -422,6 +422,9 @@ class Importer {
     const offList = (sp: AElement) => !sp.supports.some((x) => own.has(x.toLowerCase()));
     const offNames = new Set(this.reg.ofType("Spell").filter((sp) => this.hints.spells.has(normalize(sp.name))).filter((sp) => !this.reg.ofType("Spell").some((o) => normalize(o.name) === normalize(sp.name) && !offList(o))).map((sp) => normalize(sp.name)));
     for (const name of offNames) if (this.reg.ofType("Spell").some((sp) => normalize(sp.name) === name && sp.supports.some((x) => x.toLowerCase() === cls.toLowerCase()))) n++;
+    // The feat may use the character's own class list (a cleric's Magic Initiate: Cleric for two more cleric
+    // cantrips). Without spells from outside the class, the own list is the likelier pick, but still a guess.
+    if (!n && own.has(cls.toLowerCase())) return 0.4;
     // Counted once per spell name, at most a point each; enough to beat a guess, not a file's named choice.
     return Math.min(n, 20) * 2;
   }

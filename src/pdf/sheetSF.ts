@@ -354,6 +354,11 @@ function spellPages(sh: Sheet, d: FillData): void {
     const tw = (W - 15) / 4;
     [["Spellcasting ability", c.ability], ["Modifier", c.mod], ["Spell save DC", c.dc], ["Spell attack", c.attack]].forEach(([l, v], i) => sh.tile(M + i * (tw + 5), top, tw, 42, l, v));
     top += 48;
+    // Spells cast with another ability (a feat's): their own DC and attack, under the main ones.
+    for (const line of d.otherCasting) {
+      sh.text(line, M, top + 6, { size: 7.5, color: MUTED });
+      top += 11;
+    }
     // Slots: nine columns
     sh.rect(M, top, W, 52, { fill: PANEL, border: GILT });
     sh.text("SPELL SLOTS", M + 8, top + 10, { size: 6.4, bold: true, color: ACCENT });

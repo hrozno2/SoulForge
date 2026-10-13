@@ -226,13 +226,14 @@ test.describe("Soul Forge smoke tests", () => {
     await tab(page, "Play");
     const bar = page.getByRole("region", { name: "Favorites" });
     await expect(bar).toBeVisible();
-    // A resource shows in the row on every tab.
+    // A resource shows above the tabs, on every tab.
+    const strip = page.locator(".res-strip");
     await page.locator(".play-tabs").getByRole("button", { name: "Resources" }).click();
     await page.getByRole("button", { name: "Add resource" }).click();
     await page.getByLabel("Resource name").fill("Ki");
-    await expect(bar.getByText("Ki")).toBeVisible();
+    await expect(strip.getByText("Ki")).toBeVisible();
     await page.locator(".play-tabs").getByRole("button", { name: "Notes" }).click();
-    await expect(bar.getByText("Ki")).toBeVisible();
+    await expect(strip.getByText("Ki")).toBeVisible();
     // Star a feature, then drag another in.
     await page.locator(".play-tabs").getByRole("button", { name: /^Features/ }).click();
     const rows = page.locator(".play-body .feature-row");
@@ -252,7 +253,10 @@ test.describe("Soul Forge smoke tests", () => {
     // Favorites are kept with the character; the sidebar can switch to the skills and back.
     await page.reload();
     await tab(page, "Play");
-    await expect(page.getByRole("region", { name: "Favorites" }).getByText("Ki")).toBeVisible();
+    await expect(page.locator(".res-strip").getByText("Ki")).toBeVisible();
+    // A favorite can be taken off again.
+    await page.getByRole("region", { name: "Favorites" }).getByRole("button", { name: "Remove from favorites" }).first().click();
+    await expect(page.getByRole("region", { name: "Favorites" }).locator(".fav-tile.feature")).toHaveCount(1);
     await page.getByRole("tab", { name: "Skills" }).click();
     await expect(page.locator(".play-side .skill-line").first()).toBeVisible();
     await page.getByRole("tab", { name: /Favorites/ }).click();

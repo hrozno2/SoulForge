@@ -20,7 +20,8 @@ import { AppMenu, GroupNav } from "./TopBar";
 import { SettingsDialog, getSettings, useScaleShortcuts } from "./Settings";
 import { runAutoBackup } from "../aurora/backup";
 import { useUpdater } from "../updater";
-import { importForeignCharacter } from "../aurora/foreign";
+import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
+import { ImportReport } from "./ImportReport";
 import { listCharacters } from "../aurora/storage";
 import { Tutorial, tutorialWanted } from "./Tutorial";
 import { CompendiumSearch } from "./CompendiumSearch";
@@ -120,11 +121,13 @@ export function App() {
     const p = getSettings();
     open(uid(), randomCharacter(content.reg, level, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual }));
   };
+  const [report, setReport] = useState<{ name: string; res: ForeignImport } | null>(null);
   const importForeign = async (file: File): Promise<string> => {
     try {
       const res = importForeignCharacter(JSON.parse(await file.text()), content.reg);
       open(uid(), res.character);
-      return res.notes.join(" ");
+      setReport({ name: res.character.name, res });
+      return `Imported ${res.character.name || "the character"}.`;
     } catch (e) {
       return `Could not import: ${(e as Error).message}`;
     }
@@ -140,6 +143,19 @@ export function App() {
   ];
   const magicList = unfilled.filter((s) => tabOfSlot(s) === "magic").map(describe);
   const pending = pendingList.length;
+  // Starting gear not chosen: shown on the Equipment tab, like open choices on Build.
+  const equipPending = character.classes.length > 0 && !(character.equipmentAdded?.length) && character.inventory.length === 0;
+  const hasMagic = r.spellcasting.size > 0 || r.spellPicks.length > 0;
+  // When the last open choice on Build is made, go on to Magic (casters) or Equipment; when the last spell is
+  // chosen on Magic, go on to Equipment. Only on the change itself, so opening a finished character moves nothing.
+  const prevOpen = useRef({ build: pending, magic: magicList.length, id });
+  useEffect(() => {
+    const prev = prevOpen.current;
+    prevOpen.current = { build: pending, magic: magicList.length, id };
+    if (prev.id !== id) return;
+    if (tab === "build" && prev.build > 0 && pending === 0) setTab(hasMagic ? "magic" : "equipment");
+    else if (tab === "magic" && prev.magic > 0 && magicList.length === 0 && pending === 0) setTab("equipment");
+  }, [pending, magicList.length, id]); // eslint-disable-line react-hooks/exhaustive-deps
   const tip = (where: string, list: string[]) => `Still to choose on the ${where} tab:\n${list.slice(0, 12).join("\n")}${list.length > 12 ? `\n...and ${list.length - 12} more` : ""}`;
   const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play";
 
@@ -152,11 +168,13 @@ export function App() {
           Soul Forge
         </strong>
         <GroupNav current={tab} onPick={setTab} groups={(() => {
-          const defs = TABS.map(([key, label]) => ({ key, label: t(label), icon: (() => { const I = TAB_ICONS[key]; return I ? <I size={15} /> : undefined; })(), badge: key === "build" ? pending : key === "magic" ? magicList.length : undefined, badgeTitle: key === "build" && pending ? tip("Build", pendingList) : key === "magic" && magicList.length ? tip("Magic", magicList) : undefined }));
+          const defs = TABS.map(([key, label]) => ({ key, label: t(label), icon: (() => { const I = TAB_ICONS[key]; return I ? <I size={15} /> : undefined; })(), badge: key === "build" ? pending : key === "magic" ? magicList.length : key === "equipment" ? (equipPending ? 1 : undefined) : undefined, badgeTitle: key === "build" && pending ? tip("Build", pendingList) : key === "magic" && magicList.length ? tip("Magic", magicList) : key === "equipment" && equipPending ? "Starting equipment is not chosen yet" : undefined }));
           const pick = (...keys: Tab[]) => keys.map((k) => defs.find((d) => d.key === k)!).filter(Boolean);
           return [
             { key: "home", label: t("Home"), items: pick("start") },
-            { key: "build", label: t("Build"), icon: defs.find((d) => d.key === "build")?.icon, items: pick("build", "magic", "equipment") },
+            { key: "build", label: t("Build"), items: pick("build") },
+            { key: "magic", label: t("Magic"), items: pick("magic") },
+            { key: "equipment", label: t("Equipment"), items: pick("equipment") },
             { key: "manage", label: t("Manage"), icon: defs.find((d) => d.key === "manage")?.icon, items: pick("manage", "content") },
             { key: "sheet", label: t("Sheet"), icon: defs.find((d) => d.key === "sheet")?.icon, items: pick("play", "sheet") },
           ];
@@ -178,6 +196,7 @@ export function App() {
           <button className="menu-item" onClick={() => updater.check(true)}>Check for updates</button>
         </AppMenu>
       </header>
+      {report && <ImportReport name={report.name} res={report.res} onClose={() => setReport(null)} onBuild={() => setTab("build")} />}
       {tutorialOpen && <Tutorial step={tutorialStep} setStep={setTutorialStep} minimized={tutorialMin} setMinimized={setTutorialMin} onClose={() => { setTutorialOpen(false); setTutorialMin(false); }} onGo={(t) => setTab(t as Tab)} content={content} onImportForeign={importForeign} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       {levelUpOpen && <Suspense fallback={null}><LevelUp r={r} ch={character} set={set} onDetail={setDetail} onClose={() => setLevelUpOpen(false)} /></Suspense>}

@@ -17,6 +17,8 @@ export interface ForeignImport {
   notes: string[];
   matched: string[];
   missing: string[];
+  /** Choices the file did not settle, with what was chosen for them. */
+  guessed: string[];
 }
 
 export function detectCharacterFormat(data: unknown): "foundry" | "roll20" | "charforge" | "unknown" {
@@ -154,6 +156,8 @@ class Importer {
   /** Species traits the file lists, to tell versions of a species apart. */
   speciesTraits = new Set<string>();
   private guessed = 0;
+  /** Each choice the file said nothing about, with what was put in, for the import report. */
+  guesses: string[] = [];
   /** What the file says the character has, used to fill open choices (skills, languages, tools, expertise, saves). */
   hints = { skills: new Set<string>(), expertise: new Set<string>(), tools: new Set<string>(), languages: new Set<string>(), saves: new Set<string>(), names: new Set<string>(), masteries: new Set<string>(), size: "" };
 
@@ -241,7 +245,10 @@ class Importer {
         skip.add(open.key);
         continue;
       }
-      if (best.sc <= 0.5 && !/^\s*ability score/i.test(open.rule.name)) guessed++;
+      if (best.sc <= 0.5 && !/^\s*ability score/i.test(open.rule.name)) {
+        guessed++;
+        this.guesses.push(`${open.rule.name}: ${best.o.name}`);
+      }
       cur = { ...cur, selections: { ...cur.selections, [open.key]: [...open.chosen, best.o.id] } };
     }
     this.guessed += guessed;
@@ -410,7 +417,7 @@ class Importer {
     }
     if (this.missing.length) this.notes.push(`${this.missing.length} things were not found in your loaded content and were skipped or kept as custom items.`);
     this.notes.push(`${this.matched.length} matched.`);
-    return { character: ch, notes: this.notes, matched: this.matched, missing: this.missing };
+    return { character: ch, notes: this.notes, matched: this.matched, missing: this.missing, guessed: this.guesses };
   }
 }
 
@@ -614,7 +621,8 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   if (cls) {
     b.ch.classes.push({ classId: cls.id, level: mainLevel });
     b.matched.push(`${cls.name} (class)`);
-  } else b.notes.push(className ? `Class "${className}" is not in your loaded content.` : "No class found in the file.");
+  } else if (className) b.missing.push(`${className} (class)`);
+  else b.notes.push("No class found in the file.");
   for (const c of extraClasses) {
     const el = classByFeatures(reg, c.name, featureNames, b.edition);
     if (el) { b.ch.classes.push({ classId: el.id, level: c.level }); b.matched.push(`${el.name} (class)`); } else b.missing.push(`${c.name} (class)`);

@@ -477,3 +477,32 @@ export function focusNote(name: string): string | undefined {
   }
   return undefined;
 }
+
+/**
+ * "Gaming Set (same as above)", "Musical Instrument (one of your choice)" and "Artisan's Tools (same as above)":
+ * the item the character chose a proficiency in, when the starting gear names only the kind.
+ */
+export function resolveChosenTools(items: ResolvedItem[], activeIds: Iterable<string>, reg: ARegistry, prefer = ""): ResolvedItem[] {
+  const idx = new ItemIndex(reg);
+  const chosen: Record<string, string[]> = { gaming: [], instrument: [], artisan: [] };
+  for (const id of activeIds) {
+    const el = reg.get(id);
+    if (!el || el.type !== "Proficiency") continue;
+    const inner = /\((.*)\)\s*$/.exec(el.name)?.[1];
+    if (!inner) continue;
+    if (/GAMING/.test(id)) chosen.gaming.push(inner);
+    else if (/INSTRUMENT/.test(id)) chosen.instrument.push(inner);
+    else if (/ARTISAN/.test(id)) chosen.artisan.push(inner);
+  }
+  const used: Record<string, number> = {};
+  return items.map((it) => {
+    if (it.el) return it;
+    const kind = /gaming set/i.test(it.name) ? "gaming" : /musical instrument/i.test(it.name) ? "instrument" : /artisan/i.test(it.name) ? "artisan" : undefined;
+    const pick = kind ? chosen[kind][used[kind] ?? 0] : undefined;
+    if (!kind || !pick) return it;
+    const el = idx.find(pick, prefer);
+    if (!el) return it;
+    used[kind] = (used[kind] ?? 0) + 1;
+    return { ...it, el, name: el.name };
+  });
+}

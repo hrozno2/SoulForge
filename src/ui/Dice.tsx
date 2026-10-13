@@ -14,6 +14,8 @@ export interface RollResult {
   dc?: { value: number; success: boolean };
   /** With advantage or disadvantage: the d20 that was not used. */
   dropped?: number;
+  /** With advantage or disadvantage: the whole roll that was not used. */
+  other?: RollResult;
   /** Each dice group with its individual dice, and flat bonuses (sides 0), for display. */
   terms: { sides: number; sign: 1 | -1; rolls: number[]; sum: number }[];
 }
@@ -166,28 +168,39 @@ export function rollMath(r: RollResult): string {
   return `${parts.join(" ")} = ${r.total}`;
 }
 
-/** A roll shown like a chat card: the formula, the dice, the sum written out and a large total. */
-function RollCard({ r }: { r: RollResult }) {
+/** The dice, the sum written out and the total of one roll. */
+function RollBody({ r, dim }: { r: RollResult; dim?: boolean }) {
   const dice = r.terms.filter((t) => t.sides > 0);
   const flat = r.terms.filter((t) => t.sides === 0).reduce((a, t) => a + t.sum, 0);
   return (
-    <div className="roll-card">
-      {r.label && <div className="roll-label">{r.label}</div>}
-      <div className="roll-formula">{r.expr}</div>
+    <div className={dim ? "roll-body dim" : "roll-body"} aria-label={dim ? "The roll that was not used" : undefined}>
+      {dim && <small className="roll-unused">not used</small>}
       <div className="roll-dice">
         {dice.map((t, i) => (
           <span key={i} className="roll-group" title={`${t.rolls.length}d${t.sides}`}>
             <small>{t.sign < 0 ? "−" : ""}{t.rolls.length}d{t.sides}</small>
             {t.rolls.map((v, j) => <span key={j} className={v === t.sides ? "chip max" : v === 1 ? "chip min" : "chip"}>{v}</span>)}
-            {i === 0 && r.dropped !== undefined && <span className="chip dropped" title="The other d20, not used">{r.dropped}</span>}
           </span>
         ))}
         {flat !== 0 && <span className="roll-group"><small>bonus</small><span className="chip flat">{flat > 0 ? `+${flat}` : `−${-flat}`}</span></span>}
       </div>
       <div className="roll-math" aria-label="The sum">{rollMath(r)}</div>
       <div className="roll-total">{r.total}</div>
+    </div>
+  );
+}
+
+/** A roll shown like a chat card: the formula, then the roll; with advantage or disadvantage the other roll beside it. */
+function RollCard({ r }: { r: RollResult }) {
+  return (
+    <div className="roll-card">
+      {r.label && <div className="roll-label">{r.label}</div>}
+      <div className="roll-formula">{r.expr}</div>
+      <div className={r.other ? "roll-pair" : undefined}>
+        <RollBody r={r} />
+        {r.other && <RollBody r={r.other} dim />}
+      </div>
       {r.dc && <div className={r.dc.success ? "roll-dc ok" : "roll-dc bad"}>vs DC {r.dc.value}: {r.dc.success ? "success" : "fail"}</div>}
-      {r.dropped !== undefined && <small className="muted">The other d20 rolled {r.dropped} and was not used.</small>}
       {r.notes?.map((n, i) => <small key={i} className="roll-note">{n}</small>)}
     </div>
   );
@@ -215,7 +228,7 @@ export function DicePanel() {
       const r2 = rollExpression(expression, label);
       if (r2) {
         const keep = finalMode === "adv" ? (r2.total > r.total ? r2 : r) : (r2.total < r.total ? r2 : r);
-        out = { ...keep, label: `${label ? label + " " : ""}(${finalMode === "adv" ? "advantage" : "disadvantage"})`, detail: `${keep.detail}, other ${keep === r ? r2.total : r.total}`, dropped: (keep === r ? r2 : r).rolls[0] };
+        out = { ...keep, label: `${label ? label + " " : ""}(${finalMode === "adv" ? "advantage" : "disadvantage"})`, detail: `${keep.detail}, other ${keep === r ? r2.total : r.total}`, dropped: (keep === r ? r2 : r).rolls[0], other: keep === r ? r2 : r };
       }
     }
     if (fx?.autoFail) {

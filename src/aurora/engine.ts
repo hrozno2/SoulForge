@@ -33,6 +33,8 @@ export interface SpellPick {
   prepared: boolean;
   /** Where the spell was offered from, used to pick a spellcasting entry when none was named. */
   hint?: string;
+  /** The element whose rule gave the spell (a feat or a species trait), for spells outside any class's spellcasting. */
+  from?: string;
 }
 
 export interface SelectSlot {
@@ -219,7 +221,7 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
           return;
         }
         if (rule.spellcasting && rule.type === "Spell") {
-          spellPicks.push({ id: rule.id, casting: rule.spellcasting, granted: true, prepared: true });
+          spellPicks.push({ id: rule.id, casting: rule.spellcasting, granted: true, prepared: true, from: el.id });
         }
         if (!meets(target.requirements, makeCtx(prev, ownerLevel, ch, reg, empty))) return;
         visit(target, ownerLevel, el.id, root, classOwner);
@@ -240,7 +242,7 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
             continue;
           }
           if (rule.type === "Spell") {
-            spellPicks.push({ id, casting: rule.spellcasting ?? "", granted: false, prepared: false, hint: rule.supports });
+            spellPicks.push({ id, casting: rule.spellcasting ?? "", granted: false, prepared: false, hint: rule.supports, from: el.id });
           }
           visit(target, ownerLevel, el.id, root, classOwner);
         }

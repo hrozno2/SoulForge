@@ -158,7 +158,13 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
     <div className="vitals">
       <div className="hp-main">
         <small>{t("Hit Points")}</small>
-        <div className={pct < 25 ? "hp-bar big low" : "hp-bar big"}><div style={{ width: `${hpPart}%` }} />{ch.play.tempHp > 0 && <div className="temp-fill" style={{ left: `${hpPart}%`, width: `${tempPart}%` }} />}<span>{hp} / {sheet.hp}{ch.play.tempHp > 0 ? ` (+${ch.play.tempHp})` : ""}</span>{ch.play.tempHp > 0 && <i className="hp-temp" title="Temporary hit points">{ch.play.tempHp}</i>}</div>
+        <div className={pct < 25 ? "hp-bar big low" : "hp-bar big"}><div style={{ width: `${hpPart}%` }} />{ch.play.tempHp > 0 && <div className="temp-fill" style={{ left: `${hpPart}%`, width: `${tempPart}%` }} />}<span>{hp} / {sheet.hp}</span></div>
+        {ch.play.tempHp > 0 && (
+          <div className="temp-line" title="Temporary hit points are lost first and do not stack">
+            <span className="temp-pill">+{ch.play.tempHp} temp</span>
+            <button className="tiny" aria-label="Clear temporary hit points" onClick={() => patch({ tempHp: 0 })}>×</button>
+          </div>
+        )}
         {ch.play.wildShape && <div className="hp-bar wild" title={`Wild Shape: ${ch.play.wildShape.name}`}><div style={{ width: `${Math.max(0, Math.min(100, (ch.play.wildShape.hp / (ch.play.wildShape.maxHp || 1)) * 100))}%` }} /><span>{ch.play.wildShape.name}: {ch.play.wildShape.hp} / {ch.play.wildShape.maxHp}</span></div>}
       </div>
       <output className="sr-only" aria-live="polite">{`${t("Hit Points")}: ${hp} / ${sheet.hp}${ch.play.tempHp ? `, +${ch.play.tempHp}` : ""}${ch.play.wildShape ? `, ${ch.play.wildShape.name} ${ch.play.wildShape.hp} / ${ch.play.wildShape.maxHp}` : ""}`}</output>
@@ -602,14 +608,36 @@ type Tab = "actions" | "spells" | "inventory" | "resources" | "features" | "desc
 
 
 /** The row above the play sheet: resources always, plus whatever was pinned or dragged in. Only the player hides it. */
+/** Resources (ki, rage, a wand's charges): always in view above the tabs, spent and restored with a click. */
+function ResourceStrip({ ch, set }: { ch: Character; set: SetCharacter }) {
+  const resources = ch.resources ?? [];
+  if (!resources.length) return null;
+  const patchRes = (id: string, p: Partial<Resource>) => set((c) => ({ ...c, resources: (c.resources ?? []).map((x) => (x.id === id ? { ...x, ...p } : x)) }));
+  return (
+    <div className="res-strip" aria-label="Resources">
+        {resources.map((x) => (
+          <div key={x.id} className="res-chip">
+            <b>{x.name || "Resource"}</b>
+            <span className="res-pips">
+              {x.max <= 12 ? Array.from({ length: x.max }, (_, i) => <button key={i} aria-label={`Use ${i + 1}`} className={i < x.current ? "pip small" : "pip spent small"} onClick={() => patchRes(x.id, { current: i < x.current ? i : i + 1 })} />) : null}
+            </span>
+            <span className="stepper">
+              <button aria-label="Spend one" onClick={() => patchRes(x.id, { current: Math.max(0, x.current - 1) })}>−</button>
+              <span>{x.current} / {x.max}</span>
+              <button aria-label="Restore one" onClick={() => patchRes(x.id, { current: Math.min(x.max, x.current + 1) })}>+</button>
+            </span>
+          </div>
+        ))}
+    </div>
+  );
+}
+
 function Favorites({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: SheetData; set: SetCharacter }) {
   const [over, setOver] = useState(false);
-  const resources = ch.resources ?? [];
   const favs = ch.favorites ?? [];
-  const patchRes = (id: string, p: Partial<Resource>) => set((c) => ({ ...c, resources: (c.resources ?? []).map((x) => (x.id === id ? { ...x, ...p } : x)) }));
   const setHidden = (v: boolean) => set((c) => ({ ...c, favoritesHidden: v }));
   if (ch.favoritesHidden) {
-    return <div className="fav-bar collapsed"><button onClick={() => setHidden(false)}>☆ Show favorites{favs.length + resources.length ? ` (${favs.length + resources.length})` : ""}</button></div>;
+    return <div className="fav-bar collapsed"><button onClick={() => setHidden(false)}>☆ Show favorites{favs.length ? ` (${favs.length})` : ""}</button></div>;
   }
   const drop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -667,21 +695,8 @@ function Favorites({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: S
         <button onClick={() => setHidden(true)}>Hide</button>
       </header>
       <div className="fav-tiles">
-        {resources.map((x) => (
-          <div key={x.id} className="fav-tile resource">
-            <b>{x.name || "Resource"}</b>
-            <span className="res-pips">
-              {x.max <= 12 ? Array.from({ length: x.max }, (_, i) => <button key={i} aria-label={`Use ${i + 1}`} className={i < x.current ? "pip small" : "pip spent small"} onClick={() => patchRes(x.id, { current: i < x.current ? i : i + 1 })} />) : null}
-            </span>
-            <span className="stepper">
-              <button aria-label="Spend one" onClick={() => patchRes(x.id, { current: Math.max(0, x.current - 1) })}>−</button>
-              <span>{x.current} / {x.max}</span>
-              <button aria-label="Restore one" onClick={() => patchRes(x.id, { current: Math.min(x.max, x.current + 1) })}>+</button>
-            </span>
-          </div>
-        ))}
         {favs.map(tile)}
-        {resources.length + favs.length === 0 && <p className="muted fav-empty">Nothing pinned yet. Drag a weapon, spell, feature or item here.</p>}
+        {favs.length === 0 && <p className="muted fav-empty">Nothing pinned yet. Drag a weapon, spell, feature or item here, or click its ☆.</p>}
       </div>
     </section>
   );
@@ -801,6 +816,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
         </aside>
 
         <div className="play-main">
+          <ResourceStrip ch={ch} set={set} />
           <nav className="play-tabs">
             {tabs.filter(([, , show]) => show).map(([k, label]) => <button key={k} className={tab === k ? "active" : ""} onClick={() => setTab(k)}>{label}</button>)}
           </nav>

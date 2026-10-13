@@ -3,7 +3,7 @@ import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import type { Character } from "../aurora/character";
 import {
-  ItemIndex, addToInventory, adventuringPacks, anyWeaponKind, autoEquip, commonGear, expandPack, ledgerOf, removeAdded, focusNote, startingPlans, variantItems, weaponChoices, type EquipPlan, type EquipVariant, type ResolvedItem,
+  ItemIndex, addToInventory, adventuringPacks, resolveChosenTools, anyWeaponKind, autoEquip, commonGear, expandPack, ledgerOf, removeAdded, focusNote, startingPlans, variantItems, weaponChoices, type EquipPlan, type EquipVariant, type ResolvedItem,
 } from "../aurora/startingEquipment";
 import type { SetCharacter } from "./Slots";
 
@@ -73,7 +73,7 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
       // Choosing another option for the same class or background takes the earlier one back out first.
       const earlier = plan ? addedFor(plan.title, c.equipmentAdded ?? []) : [];
       let next = earlier.length ? removeAdded(c, earlier) : c;
-      next = addToInventory(next, items, gp);
+      next = addToInventory(next, resolveChosenTools(items, r.ids, r.reg, prefer), gp);
       if (equip) next = autoEquip(next, r.reg);
       return { ...next, equipmentAdded: [...(next.equipmentAdded ?? []), label], equipmentLedger: { ...(next.equipmentLedger ?? {}), [label]: ledgerOf(items, gp) } };
     });

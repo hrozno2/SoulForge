@@ -7,6 +7,12 @@ export function CompendiumSearch() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [at, setAt] = useState(0);
+  // Only an icon until it is wanted; it opens wide when clicked or with Ctrl+K and folds back when you leave it.
+  const [wide, setWide] = useState(false);
+  const expand = () => setWide(true);
+  useEffect(() => {
+    if (wide) { input.current?.focus(); input.current?.select(); }
+  }, [wide]);
   const input = useRef<HTMLInputElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const hits = useMemo(() => (q.trim().length >= 2 ? reg.search(q.trim(), undefined, 12) : []), [q, reg]);
@@ -15,11 +21,15 @@ export function CompendiumSearch() {
     const key = (e: KeyboardEvent) => {
       if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") || (e.altKey && e.key.toLowerCase() === "q")) {
         e.preventDefault();
+        setWide(true);
         input.current?.focus();
-        input.current?.select();
       }
     };
-    const away = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
+    const away = (e: MouseEvent) => {
+      if (box.current?.contains(e.target as Node)) return;
+      setOpen(false);
+      setWide(false);
+    };
     window.addEventListener("keydown", key);
     document.addEventListener("mousedown", away);
     return () => {
@@ -33,9 +43,19 @@ export function CompendiumSearch() {
     if (!el) return;
     learn(el);
     setOpen(false);
+    setWide(false);
   };
+  if (!wide) {
+    return (
+      <div className="csearch collapsed" ref={box} role="search">
+        <button className="icon-btn csearch-icon" aria-label="Search rules" title="Search rules (Ctrl+K)" onClick={expand}>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" /><path d="M15.5 15.5 21 21" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" /></svg>
+        </button>
+      </div>
+    );
+  }
   return (
-    <div className="csearch" ref={box} role="search">
+    <div className="csearch" ref={box} role="search" onBlur={(e) => { if (!box.current?.contains(e.relatedTarget as Node)) { setOpen(false); setWide(false); } }}>
       <input
         ref={input}
         type="search"
@@ -49,7 +69,7 @@ export function CompendiumSearch() {
           if (e.key === "ArrowDown") { e.preventDefault(); setAt((a) => Math.min(hits.length - 1, a + 1)); }
           else if (e.key === "ArrowUp") { e.preventDefault(); setAt((a) => Math.max(0, a - 1)); }
           else if (e.key === "Enter") pick(at);
-          else if (e.key === "Escape") { setOpen(false); input.current?.blur(); }
+          else if (e.key === "Escape") { setOpen(false); setWide(false); }
         }}
       />
       {open && q.trim().length >= 2 && (

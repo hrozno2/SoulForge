@@ -181,7 +181,45 @@ function buildCasting(r: Resolved): CastingLine[] {
   const useShared = nonPact.length > 1 && mcLevel > 0;
   const sharedRow = useShared ? (FULL_CASTER_SLOTS[Math.min(20, mcLevel)] ?? []) : [];
 
-  return entries.map((e) => {
+  // Spells from a feat or a species trait whose source says which ability casts them ("Magic Initiate (Wizard)"
+  // with Wisdom) get a line of their own; others join the first class's line, or one of their own when there is none.
+  const ABIL = ["intelligence", "wisdom", "charisma", "strength", "dexterity", "constitution"];
+  const abilityOf = (fromId: string): string | undefined => {
+    const child = r.active.find((a) => a.from === fromId && ABIL.includes(lc(a.el.name)));
+    if (child) return lc(child.el.name);
+    const texts = [r.reg.get(fromId), ...r.active.filter((a) => a.from === fromId).map((a) => a.el)].map((x) => `${x?.description ?? ""} ${x?.sheet?.descriptions.map((d) => d.text).join(" ") ?? ""}`);
+    for (const t of texts) {
+      const m = /spellcasting ability for (?:th(?:is|ese)[^.]*?|it)\s+is\s+(intelligence|wisdom|charisma)/i.exec(t);
+      if (m) return lc(m[1]);
+    }
+    return undefined;
+  };
+  const orphans = r.spellPicks.filter((p) => !castingOf(r, p) && (!entries.length || (p.from && abilityOf(p.from))));
+  const orphanIds = new Set(orphans.map((p) => p.id));
+  const bySource = new Map<string, SpellPick[]>();
+  for (const p of orphans) {
+    const k = p.from ?? "";
+    (bySource.get(k) ?? bySource.set(k, []).get(k)!).push(p);
+  }
+  const prof = r.stats.get("proficiency");
+  const extraLines: CastingLine[] = [...bySource.entries()].map(([fromId, picks]) => {
+    const src = r.reg.get(fromId);
+    const ability = abilityOf(fromId) ?? ["intelligence", "wisdom", "charisma"].sort((a, b) => r.stats.get(b) - r.stats.get(a))[0];
+    const mod = r.stats.get(`${ability}:modifier`);
+    const lvl = (id: string) => parseInt(r.reg.get(id)?.setters.level?.value ?? "0", 10) || 0;
+    const uniq = picks.filter((p, i) => picks.findIndex((q) => q.id === p.id) === i).map((p) => ({ ...p, prepared: true }));
+    const childAlt = r.active.find((a) => a.from === fromId && a.el.sheet?.alt)?.el.sheet?.alt;
+    const name = childAlt || src?.sheet?.alt || (src && /feat feature|racial trait/i.test(src.type) && r.reg.get(r.active.find((a) => a.el.id === fromId)?.from ?? "")?.name) || src?.name || "Other spells";
+    return {
+      name, ability, dc: 8 + prof + mod, attack: prof + mod, prepare: false, prepareMax: 0, slots: [],
+      cantripsKnown: uniq.filter((p) => lvl(p.id) === 0),
+      spells: uniq.filter((p) => lvl(p.id) > 0 && !p.granted),
+      granted: uniq.filter((p) => p.granted),
+      maxSpellLevel: Math.max(0, ...uniq.map((p) => lvl(p.id))),
+    };
+  });
+
+  return [...entries.map((e) => {
     const key = lc(e.name);
     const slots: SpellSlotRow[] = [];
     const isPact = r.stats.get(`${key}:spellcasting:slots:count`) > 0;
@@ -190,7 +228,7 @@ function buildCasting(r: Resolved): CastingLine[] {
       if (total > 0) slots.push({ level: n, total, used: ch.play.slotsUsed[String(n)] ?? 0 });
     }
     // Spells with no named entry (racial or feat spells) go to the first entry that can cast from their list.
-    const picks = r.spellPicks.filter((p) => (castingOf(r, p) ?? lc(entries[0].name)) === key);
+    const picks = r.spellPicks.filter((p) => !orphanIds.has(p.id) && (castingOf(r, p) ?? lc(entries[0].name)) === key);
     const prepared = new Set(ch.prepared[e.name] ?? []);
     const spells: SpellPick[] = [];
     const cantrips: SpellPick[] = [];
@@ -221,7 +259,7 @@ function buildCasting(r: Resolved): CastingLine[] {
       granted,
       maxSpellLevel: maxLevel,
     };
-  });
+  }), ...extraLines];
 }
 
 function buildAc(r: Resolved): { value: number; parts: string[] } {

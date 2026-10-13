@@ -6,7 +6,7 @@ import { ABILITY_IDS, newCharacter, type AbilityId, type Character } from "./cha
 import { BookIndex, hiddenBy, type ContentFilters } from "./books";
 import type { ARegistry } from "./registry";
 import type { AElement } from "./types";
-import { ItemIndex, addToInventory, anyWeaponKind, autoEquip, ledgerOf, startingPlans, variantItems, weaponChoices } from "./startingEquipment";
+import { ItemIndex, addToInventory, anyWeaponKind, resolveChosenTools, autoEquip, ledgerOf, startingPlans, variantItems, weaponChoices } from "./startingEquipment";
 
 const SHORT: Record<string, AbilityId> = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" };
 const modern = (e?: AElement) => !!e && /PHB24|2024|XPHB/i.test(`${e.id} ${e.source}`);
@@ -68,7 +68,7 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
       const pickW = list.length ? (list.find((w) => modern(w) === modern(cls)) && list.filter((w) => modern(w) === modern(cls))) || list : [];
       if (pickW.length) weapons[`${gi}:${picks[gi]}:${ri}`] = pickW[Math.floor(rng() * pickW.length)].id;
     }));
-    const items = variantItems(v, picks, idx, prefer, true, weapons);
+    const items = resolveChosenTools(variantItems(v, picks, idx, prefer, true, weapons), resolve(c, reg).ids, reg, prefer);
     const label = `${plan.title}, ${v.label.toLowerCase()}`;
     c = addToInventory(c, items, v.gp);
     c = { ...c, equipmentAdded: [...(c.equipmentAdded ?? []), label], equipmentLedger: { ...(c.equipmentLedger ?? {}), [label]: ledgerOf(items, v.gp) } };

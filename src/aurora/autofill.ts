@@ -10,7 +10,12 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
   let cur = ch;
   // Picks that made an earlier choice illegal (2014 Alert at level 4 after 2024 Alert at level 5), not tried again.
   const bad = new Set<string>();
-  const blockedCount = (r: ReturnType<typeof resolve>) => r.slots.reduce((n, s) => n + s.chosen.filter((id) => s.blocked.has(id)).length, 0);
+  // A pick that makes an earlier choice illegal, or opens a choice with no legal option left (Resilient for a
+  // monk who already has every saving throw), is a dead end.
+  const blockedCount = (r: ReturnType<typeof resolve>) => r.slots.reduce((n, s) => {
+    const dead = !s.rule.optional && s.chosen.length < s.rule.number && s.options.length > 0 && s.options.every((o) => s.chosen.includes(o.id) || s.blocked.has(o.id) || r.ids.has(o.id));
+    return n + s.chosen.filter((id) => s.blocked.has(id)).length + (dead ? 1 : 0);
+  }, 0);
   for (let i = 0; i < 600; i++) {
     const r = resolve(cur, reg);
     const open = r.slots.find((s) => !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length);

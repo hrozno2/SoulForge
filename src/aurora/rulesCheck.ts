@@ -323,6 +323,8 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     // Draconic Resilience: 13 + Dex in 2014, 10 + Dex + Cha in 2024.
     if (has(/draconic resilience/i)) opts.push(r.active.some((a) => /draconic resilience/i.test(a.el.name) && /PHB24|2024/i.test(`${a.el.id} ${a.el.source}`)) ? 10 + dex + mod("charisma") : 13 + dex);
     if (has(/^dazzling footwork/i) && !shield) opts.push(10 + dex + mod("charisma"));
+    // Dragon Hide (feat): 13 + Dex without armor.
+    if (has(/^dragon hide$/i)) opts.push(13 + dex);
     // Natural armor by species (Volo's, Mordenkainen's, Locathah Rising, The Tortle Package, Guildmasters' Guide).
     const race = lc(reg.get(ch.race ?? "")?.name ?? "");
     const NATURAL: [RegExp, () => number][] = [[/lizardfolk/, () => 13 + dex], [/locathah/, () => 12 + dex], [/tortle/, () => 17], [/loxodon/, () => 12 + mod("constitution")], [/autognome|warforged/, () => 13 + dex], [/thri-?kreen/, () => 13 + dex]];

@@ -360,12 +360,14 @@ const FULL_CASTERS = new Set(["bard", "cleric", "druid", "sorcerer", "wizard"]);
  * slots match their own. Zero when the character has fewer than two classes that use the shared table.
  */
 export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
+  // The content states a multiclass caster level, but rounds the artificer's share down (it rounds up), so the
+  // level is worked out here whenever every class is known; the stated one only stands in for unknown casters.
   const stated = pass.stats.get("multiclass:spellcasting:level");
-  if (stated > 0) return stated;
   const own = [...pass.spellcasting.values()].filter((e) => !(pass.stats.get(`${lc(e.name)}:spellcasting:slots:count`) > 0));
   const byOwner = new Map(own.map((e) => [e.owner, e]));
-  if (byOwner.size < 2) return 0;
+  if (byOwner.size < 2) return stated > 0 ? stated : 0;
   let total = 0;
+  let unknown = false;
   for (const e of byOwner.values()) {
     const cls = reg?.get(e.owner);
     const name = lc(cls?.name ?? (e.owner.match(/CLASS_([A-Z]+)$/i)?.[1] ?? e.name));
@@ -378,9 +380,10 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
       const row = Array.from({ length: 9 }, (_, i) => pass.stats.get(`${lc(e.name)}:spellcasting:slots:${i + 1}`)).filter((n) => n > 0);
       const match = FULL_CASTER_SLOTS.findIndex((r, i) => i > 0 && r.length === row.length && r.every((n, j) => n === row[j]));
       total += match > 0 ? match : 0;
+      unknown = true;
     }
   }
-  return total;
+  return unknown && stated > 0 ? stated : total;
 }
 
 /** Highest spell level a shared multiclass slot table gives, 0 when not applicable. */

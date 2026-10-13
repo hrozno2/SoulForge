@@ -530,6 +530,26 @@ class Importer {
       const words = new RegExp(`\\b${normalize(clean).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
       all = this.reg.ofType("Archetype").filter((e) => words.test(normalize(e.name)));
     }
+    if (!all.length && w.label === "feat") {
+      // Foundry keeps class, subclass and species features as feats: "The Fiend" is the warlock's patron, "Sorcery
+      // Points" and "Favored Enemy improvement" come with the class, "Dwarf (Hill)" is the species. The subclass is
+      // placed; the others come from the content itself and are only noted.
+      const sub = findAllByName(this.reg, ["Archetype"], clean);
+      if (sub.length) all = sub;
+      else {
+        const key = featureKey(clean.replace(/\b(improvements?|upgrades?)\b/gi, "").split(/\s+and\s+/i)[0]);
+        const FEATURES = ["Class Feature", "Archetype Feature", "Racial Trait", "Race", "Sub Race"];
+        // Or a part a feature of the character describes: Font of Magic tells of Sorcery Points and Flexible Casting.
+        const said = clean.toLowerCase();
+        const described = () => resolve(ch, this.reg).active.some((a) => /feature|archetype|trait/i.test(a.el.type) && a.el.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").toLowerCase().includes(said));
+        const known = key.length >= 4 && (FEATURES.some((t) => this.reg.ofType(t).some((e) => featureKey(e.name) === key)) || (said.length >= 8 && described()));
+        if (known) {
+          this.addName(clean);
+          this.matched.push(`${w.name} (comes with the class or species)`);
+          return ch;
+        }
+      }
+    }
     if (!all.length) {
       this.missing.push(`${w.name} (${w.label})`);
       return ch;
@@ -571,7 +591,10 @@ class Importer {
     }
     // A species or class trait no choice offers comes from the content itself; it is not added on top of it.
     this.hints.names.add(normalizeFull(el.name));
-    if (w.label === "subclass") this.notes.push(`${w.name} could not be placed and was left out.`);
+    if (w.label === "subclass") {
+      const lv = ch.classes.map((c) => `${this.reg.get(c.classId)?.name ?? "?"} ${c.level}`).join(", ");
+      this.notes.push(`${w.name}: the file gives this subclass, but the class does not offer it at this level (${lv}), so it was left out. Add it on the Build tab when the class reaches the subclass level.`);
+    }
     return ch;
   }
 
@@ -730,7 +753,11 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
       case "spell": {
         b.want(["Spell"], name, "spell");
         const prep = isys.prepared ?? isys.preparation?.prepared;
-        if (prep === true || Number(prep) >= 1 || isys.preparation?.mode === "always") b.prepared.add(normalize(name));
+        // Spells a feature keeps prepared (mode "always", or prepared 2: oath and domain spells) and innate, pact or at-will spells do not
+        // count against the prepared limit.
+        const mode = String(isys.preparation?.mode ?? isys.method ?? "prepared");
+        // Foundry 5 writes 1 for prepared and 2 for always prepared.
+        if ((prep === true || Number(prep) === 1) && /^(prepared|spell)$/.test(mode)) b.prepared.add(normalize(name));
         break;
       }
       case "weapon":
@@ -915,7 +942,8 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
         b.want(["Spell"], spell, "spell");
         // Roll20 marks spells that do not count against the prepared limit: "Bane (SC)" for a subclass, "(innate)",
         // "(feat)", "(race)", "(item)".
-        const extra = /\((sc|subclass|domain|innate|feat|race|species|item|background)\b/i.test(f.spellname);
+        // "(A)" is always prepared (a Twilight cleric's domain spells).
+        const extra = /\((a|always|sc|subclass|domain|innate|feat|race|species|item|background)\b/i.test(f.spellname);
         if ((f.spellprepared === "1" || f.spellprepared === "on") && !extra) b.prepared.add(normalize(spell));
       }
       else if (section === "inventory" && f.itemname) {

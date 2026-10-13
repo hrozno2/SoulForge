@@ -51,6 +51,8 @@ export interface SelectSlot {
   /** Options whose own requirements are not met right now. */
   blocked: Set<string>;
   filter: string;
+  /** The class level at which this choice is made (1 for species and background choices). */
+  at?: number;
 }
 
 export interface Pass {
@@ -60,6 +62,8 @@ export interface Pass {
   spellcasting: Map<string, SpellcastingEntry>;
   spellPicks: SpellPick[];
   rawSlots: Omit<SelectSlot, "options" | "blocked" | "filter">[];
+  /** Where and at which class level each element was gained. */
+  gained: Map<string, { root: string; at: number }>;
   warnings: string[];
   signature: string;
 }
@@ -179,10 +183,13 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
   const seen = new Set<string>();
   const lvlTotal = totalLevel(ch);
 
-  const visit = (el: AElement, ownerLevel: number, from: string, root: string, classOwner?: AElement): void => {
+  // The class level at which each element was gained (1 for roots), so a choice can be judged at its own level.
+  const gained = new Map<string, { root: string; at: number }>();
+  const visit = (el: AElement, ownerLevel: number, from: string, root: string, classOwner?: AElement, at = 1): void => {
     if (seen.has(el.id)) return;
     seen.add(el.id);
     ids.add(el.id);
+    gained.set(el.id, { root, at });
     active.push({ el, ownerLevel, from, root });
 
     const sc: SpellcastingInfo | undefined = el.spellcasting;
@@ -224,7 +231,7 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
           spellPicks.push({ id: rule.id, casting: rule.spellcasting, granted: true, prepared: true, from: el.id });
         }
         if (!meets(target.requirements, makeCtx(prev, ownerLevel, ch, reg, empty))) return;
-        visit(target, ownerLevel, el.id, root, classOwner);
+        visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0));
       } else {
         const key = `${el.id}|${idx}`;
         let chosen = (ch.selections[key] ?? []).slice(0, rule.number);
@@ -234,7 +241,7 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
           defaulted = true;
         }
         const isList = rule.type === "List";
-        rawSlots.push({ key, owner: el, rule: isList ? { ...rule, optional: true } : rule, ownerLevel, root, chosen, defaulted });
+        rawSlots.push({ key, owner: el, rule: isList ? { ...rule, optional: true } : rule, ownerLevel, root, chosen, defaulted, at: Math.max(at, rule.level ?? 0) });
         for (const id of isList ? [] : chosen) {
           const target = reg.get(id);
           if (!target) {
@@ -244,7 +251,7 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
           if (rule.type === "Spell") {
             spellPicks.push({ id, casting: rule.spellcasting ?? "", granted: false, prepared: false, hint: rule.supports, from: el.id });
           }
-          visit(target, ownerLevel, el.id, root, classOwner);
+          visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0));
         }
       }
     });
@@ -318,7 +325,7 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
 
   const signature =
     [...ids].sort().join(",") + "#" + [...stats.names()].sort().map((n) => `${n}=${stats.get(n)}`).join(";") + "#" + rawSlots.length;
-  return { ids, active, stats, spellcasting, spellPicks, rawSlots, warnings, signature };
+  return { ids, active, stats, spellcasting, spellPicks, rawSlots, warnings, signature, gained };
 }
 
 /** Replaces `$(spellcasting:list)` and `$(spellcasting:slots)` inside a supports filter. */
@@ -408,7 +415,11 @@ export function resolve(ch: Character, reg: ARegistry): Resolved {
     const filter = resolveSupports(s.rule.supports, s.rule.spellcasting, pass, shared);
     let options = reg.find(s.rule.type, filter);
     if (restricted.size) options = options.filter((e) => !e.source || restricted.has(lc(e.source)) || s.chosen.includes(e.id));
-    const ctx = makeCtx(pass, s.ownerLevel, ch, reg, pass.stats);
+    const base = makeCtx(pass, s.ownerLevel, ch, reg, pass.stats);
+    // A choice is judged at the level it is made: what the same class gains later (a Monk's Disciplined Survivor at
+    // 14) does not make a feat taken at 4 illegal. Other classes' and the species' features count as present.
+    const at = s.at ?? 1;
+    const ctx = { ...base, hasId: (id: string) => { if (!pass.ids.has(id)) return false; const g = pass.gained.get(id); return !g || g.root !== s.root || g.at <= at; } };
     const blocked = new Set<string>();
     for (const e of options) if (!meets(e.requirements, ctx)) blocked.add(e.id);
     // A feat the character already has from another choice or grant (a species feat and an origin feat, say) is not offered again.

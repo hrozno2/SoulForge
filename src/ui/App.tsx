@@ -201,6 +201,7 @@ export function App() {
       {testToolsEnabled && (
         <div className="test-bar noprint">
           <b>Test build</b>
+          <small title="If this is older than the build you expect, quit the app (Cmd+Q) and open it again.">{import.meta.env.VITE_TEST_BUILD}</small>
           <button onClick={async () => { if (!content.ready) { setTestMsg("Load rules content first (Home, Go to content)."); return; } setTestMsg("Making 10 random characters..."); const made = await makeTestBatch(content.reg); if (made[0]) open(made[0].id, made[0].ch); setTab("start"); setTestMsg(`Made ${made.length} test characters. They are on Home.`); }}>Make 10 random characters</button>
           <button onClick={async () => setTestMsg(await testExport(content.reg, setTestMsg))}>Export test characters</button>
         </div>

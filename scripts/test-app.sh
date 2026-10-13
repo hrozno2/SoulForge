@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 . "$HOME/.cargo/env"
-VITE_TEST_TOOLS=1 npx tauri build --debug --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
+VITE_TEST_BUILD="$(git rev-parse --short HEAD), built $(date +%H:%M)" VITE_TEST_TOOLS=1 npx tauri build --debug --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
 SRC="src-tauri/target/debug/bundle/macos/SoulForge.app"
 DEST="$HOME/Applications/Soul Forge Test.app"
 mkdir -p "$HOME/Applications"

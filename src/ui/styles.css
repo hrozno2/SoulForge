@@ -1558,6 +1558,10 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 /* Under the closed lists: what is still to choose, each a shortcut to its place */
 .board-left-summary { background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: 8px; padding: 10px 12px; margin-top: 4px; }
 .board-left-summary h3 { margin: 0 0 6px; font-size: 14px; }
+.board-left-list ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.board-left-list li button { width: 100%; display: flex; gap: 8px; align-items: baseline; text-align: left; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; color: var(--text); font: 400 12.5px var(--body); letter-spacing: 0; text-transform: none; }
+.board-left-list li button:hover { border-color: var(--gold); }
+.board-left-list summary.warn { color: var(--warn); }
 .board-left-summary ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .board-left-summary li button { width: 100%; display: flex; gap: 8px; align-items: baseline; text-align: left; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; color: var(--text); font: 400 13px var(--body); letter-spacing: 0; text-transform: none; }
 .board-left-summary li button:hover { border-color: var(--gold); }

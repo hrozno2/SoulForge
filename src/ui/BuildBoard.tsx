@@ -13,7 +13,7 @@ import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as
 import { buildSheet } from "../aurora/sheet";
 import { groupVariants, hiddenBy } from "../aurora/books";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
-import { ClassPanel, SUBS, todoFor } from "./BuildTab";
+import { ClassPanel } from "./BuildTab";
 import { Browse, VariantChips, blurb, dragMime } from "./Browse";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
 import { ChosenBanner, hueOf } from "./PickCards";
@@ -28,6 +28,8 @@ import { useSettings } from "./Settings";
 import { PortraitCropper, PortraitPicker } from "./Portrait";
 import { D20, Head, Pack, Scroll, Sword, Wand } from "./icons";
 
+/** One thing still to choose, and where it is chosen. */
+type LeftItem = { kind: Kind; text: string; list: boolean };
 type Kind = "race" | "class" | "background" | "magic" | "equipment";
 const TITLE: Record<Kind, string> = { race: "Species", class: "Class", background: "Background", magic: "Spells and magic", equipment: "Equipment" };
 const ASK: Record<Kind, string> = {
@@ -375,13 +377,12 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
 }
 
 /** The right column: scores first, then the numbers, the open score increases and what the character is trained in. */
-function StatsPanel({ r, ch, set, onIncreases }: { r: Resolved; ch: Character; set: SetCharacter; onIncreases: (root: string) => void }) {
+function StatsPanel({ r, ch, set, onIncreases, left, onGo }: { r: Resolved; ch: Character; set: SetCharacter; onIncreases: (root: string) => void; left: LeftItem[]; onGo: (it: LeftItem) => void }) {
   const sh = useMemo(() => buildSheet(r), [r]);
   const tiles: [string, string][] = [["HP", String(sh.hp)], ["AC", String(sh.ac.value)], ["Init", signed(sh.initiative)], ["Speed", `${sh.speed} ft`], ["Prof", signed(sh.proficiency)]];
   const increases = r.slots.filter((s) => tabOfSlot(s) === "abilities");
   const openIncreases = increases.filter((s) => !s.rule.optional && s.chosen.length < s.rule.number).length;
   const defenses = [...sh.defenses.resistances.map((d) => `Resists ${d}`), ...sh.defenses.immunities.map((d) => `Immune to ${d}`), ...sh.defenses.vulnerabilities.map((d) => `Vulnerable to ${d}`)];
-  const left = SUBS.flatMap(([k]) => todoFor(r, ch, k));
   const section = (title: string, items: string[]) => items.length > 0 && (
     <details className="board-sec">
       <summary>{title} <small>{items.length}</small></summary>
@@ -404,7 +405,12 @@ function StatsPanel({ r, ch, set, onIncreases }: { r: Resolved; ch: Character; s
           <button className="pick-select" onClick={() => onIncreases(increases.find((s) => !s.rule.optional && s.chosen.length < s.rule.number)!.root)}>Choose</button>
         </p>
       )}
-      <p className={left.length ? "board-left warn" : "board-left ok"} title={left.join("\n")}>{left.length ? `${left.length} ${left.length === 1 ? "choice" : "choices"} left to make` : "Every choice is made"}</p>
+      {left.length ? (
+        <details className="board-sec board-left-list">
+          <summary className="warn">{left.length} {left.length === 1 ? "choice" : "choices"} left to make</summary>
+          <ul>{left.map((it, i) => <li key={i}><button onClick={() => onGo(it)}><span className="board-left-kind">{TITLE[it.kind]}</span><span>{it.text}</span></button></li>)}</ul>
+        </details>
+      ) : <p className="board-left ok">Every choice is made</p>}
       {section("Senses", [...sh.vision, `Passive Perception ${sh.passivePerception}`])}
       {section("Saving throws", sh.abilities.filter((a) => a.saveProficient).map((a) => `${ABILITY_LABEL[a.id]} ${signed(a.save)}`))}
       {section("Skills", sh.skills.filter((s) => s.level !== "none").map((s) => `${s.name} ${signed(s.bonus)}${s.level === "expertise" ? " (expertise)" : ""}`))}
@@ -524,10 +530,18 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     return Math.min(1, ch.inventory.length / 12);
   }, [ch.inventory, ch.equipmentAdded, ch.equipmentLedger, plans]);
   const filled: Record<Kind, boolean> = { race: !!chosenEl.race, class: !!firstClass, background: !!chosenEl.background, magic: spellCount > 0, equipment: ch.inventory.length > 0 };
-  const todo: Record<Kind, number> = {
-    race: todoFor(r, ch, "race").length, class: todoFor(r, ch, "class").length, background: todoFor(r, ch, "background").length,
-    magic: r.slots.filter((s) => tabOfSlot(s) === "magic" && !s.rule.optional && s.chosen.length < s.rule.number).length, equipment: 0,
-  };
+  // What is left, for the summary under the closed lists: missing picks first, then each open choice.
+  const kindOfSlot = (sl: (typeof r.slots)[number]): Kind => (tabOfSlot(sl) === "magic" ? "magic" : sl.root === "race" ? "race" : sl.root === "background" ? "background" : "class");
+  const leftItems: LeftItem[] = [
+    ...(!ch.race ? [{ kind: "race" as Kind, text: "Choose a species", list: true }] : []),
+    ...(!ch.classes.length ? [{ kind: "class" as Kind, text: "Choose a class", list: true }] : []),
+    ...(!ch.background ? [{ kind: "background" as Kind, text: "Choose a background", list: true }] : []),
+    ...r.slots.filter((sl) => !sl.rule.optional && sl.chosen.length < sl.rule.number).map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: tabOfSlot(sl) === "magic" })),
+    ...(plans.length && packFill < 1 && !plans.every((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))) ? [{ kind: "equipment" as Kind, text: "Starting equipment", list: false }] : []),
+  ];
+  // Each space's count of what is left: every choice its species, class or background asks for (languages,
+  // skills, feats and score increases included), and the spells still to pick.
+  const todo = Object.fromEntries(ORDER.map((k) => [k, leftItems.filter((it) => it.kind === k && k !== "equipment").length])) as Record<Kind, number>;
 
   // Choices that belong to each space: everything its species, class or background asks except spells (under magic).
   const ownSlots = (test: (root: string) => boolean) => r.slots.filter((s) => test(s.root) && tabOfSlot(s) !== "magic");
@@ -640,15 +654,13 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     );
   };
 
-  // What is left, for the summary under the closed lists: missing picks first, then each open choice.
-  const kindOfSlot = (sl: (typeof r.slots)[number]): Kind => (tabOfSlot(sl) === "magic" ? "magic" : sl.root === "race" ? "race" : sl.root === "background" ? "background" : "class");
-  const leftItems: { kind: Kind; text: string; list: boolean }[] = [
-    ...(!ch.race ? [{ kind: "race" as Kind, text: "Choose a species", list: true }] : []),
-    ...(!ch.classes.length ? [{ kind: "class" as Kind, text: "Choose a class", list: true }] : []),
-    ...(!ch.background ? [{ kind: "background" as Kind, text: "Choose a background", list: true }] : []),
-    ...r.slots.filter((sl) => !sl.rule.optional && sl.chosen.length < sl.rule.number).map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: tabOfSlot(sl) === "magic" })),
-    ...(plans.length && packFill < 1 && !plans.every((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))) ? [{ kind: "equipment" as Kind, text: "Starting equipment", list: false }] : []),
-  ];
+  /** Takes you to one thing still to choose: its list opens (spells, or a missing pick) and its space is shown. */
+  const goTo = (it: { kind: Kind; list: boolean }) => {
+    if (it.list) setOpen(it.kind);
+    setFocus(it.kind);
+    setPane(it.list ? "lists" : "board");
+    window.setTimeout(() => (it.list ? document.querySelector(".board-acc.open") : document.querySelector(".board-focus"))?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  };
   const panes: ["lists" | "board" | "stats", string, number][] = [
     ["lists", "Lists", 0],
     ["board", "Character", ORDER.reduce((n, k) => n + todo[k], 0)],
@@ -686,7 +698,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
               <ul>
                 {leftItems.map((it, i) => (
                   <li key={i}>
-                    <button onClick={() => { if (it.list) setOpen(it.kind); setFocus(it.kind); }}>
+                    <button onClick={() => goTo(it)}>
                       <span className="board-left-kind">{TITLE[it.kind]}</span>
                       <span>{it.text}</span>
                     </button>
@@ -747,7 +759,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         </div>
       </section>
 
-      <StatsPanel r={r} ch={ch} set={set} onIncreases={(root) => { setFocus(root === "race" ? "race" : root === "background" ? "background" : "class"); setPane("board"); window.setTimeout(() => document.querySelector(".board-focus")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }} />
+      <StatsPanel r={r} ch={ch} set={set} left={leftItems} onGo={goTo} onIncreases={(root) => { setFocus(root === "race" ? "race" : root === "background" ? "background" : "class"); setPane("board"); window.setTimeout(() => document.querySelector(".board-focus")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }} />
     </div>
   );
 }

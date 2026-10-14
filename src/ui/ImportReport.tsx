@@ -23,6 +23,7 @@ export function importReportText(res: ForeignImport, file: string, when = new Da
     ...part("Not imported (not in the loaded content)", other),
     ...part("To do: choices the file does not settle, left open for you", res.todo),
     ...part("Against the rules (as the file has it)", rules),
+    ...part("Different from the file's own numbers", res.differences),
     ...part("Notes", notes),
     ...part("Kept as custom items", items),
   ].join("\n").trim();
@@ -63,6 +64,13 @@ export function ImportReport({ name, res, rules = [], onClose, onBuild }: { name
             <ul>{rules.map((g, i) => <li key={i}>{g}</li>)}</ul>
           </section>
         )}
+        {res.differences.length > 0 && (
+          <section className="ir-group warn">
+            <h3>Different from the file ({res.differences.length})</h3>
+            <p className="muted small-text">The file states these numbers itself. A difference means the file breaks a rule, uses something not in your content, or a choice above is still open.</p>
+            <ul>{res.differences.map((g, i) => <li key={i}>{g}</li>)}</ul>
+          </section>
+        )}
         {notes.length > 0 && (
           <section className="ir-group">
             <h3>Notes</h3>
@@ -76,7 +84,7 @@ export function ImportReport({ name, res, rules = [], onClose, onBuild }: { name
             <ul className="ir-items">{items.map((m, i) => <li key={i}>{m}</li>)}</ul>
           </section>
         )}
-        {other.length + res.todo.length + rules.length + notes.length + items.length === 0 && <p>Everything came through. Nothing to check.</p>}
+        {other.length + res.todo.length + rules.length + res.differences.length + notes.length + items.length === 0 && <p>Everything came through. Nothing to check.</p>}
         <p className="muted small-text">This report is saved in the character's notes.</p>
         <div className="levelup-foot">
           <button onClick={onClose}>Close</button>

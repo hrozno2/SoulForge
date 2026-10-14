@@ -310,7 +310,7 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
     const el = reg.get(it.id);
     if (!el) continue;
     // Items that need attunement only count once attuned.
-    const needsAttune = /requires attunement/i.test(el.setters.rarity?.value ?? "") || /requires attunement/i.test(el.description.slice(0, 400));
+    const needsAttune = el.setters.attunement?.value === "true" || /requires attunement/i.test(el.setters.rarity?.value ?? "") || /requires attunement/i.test(el.description.slice(0, 400));
     if (needsAttune && !it.attuned) continue;
     visit(el, lvlTotal, "", "item");
   }

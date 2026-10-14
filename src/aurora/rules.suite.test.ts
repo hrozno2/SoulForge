@@ -56,6 +56,8 @@ function importSnapshot(res: ReturnType<typeof importForeignCharacter>) {
     numbers: { ac: sh.ac.value, hp: sh.hp, proficiency: sh.proficiency, scores: sh.abilities.map((a) => a.score), dc: sh.casting.map((l) => l.dc) },
     items: res.character.inventory.map((i) => (i.id ? reg.get(i.id)?.name : `custom: ${i.custom?.name}`)).sort(),
     todo: res.todo,
+    differencesFromFile: res.differences,
+    customBonuses: res.character.customStats.map((c) => `${c.stat} ${c.value >= 0 ? "+" : ""}${c.value}: ${c.note ?? ""}`),
     notInContent: res.missing,
   };
 }

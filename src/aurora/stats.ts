@@ -155,7 +155,9 @@ export class StatBook {
       const m = ability ? this.get(`${ability}:modifier`) : 0;
       const prof = this.get("proficiency");
       const base = sc[2] === "dc" ? 8 + prof + m : sc[2] === "attack" ? prof + m : m;
-      return base + this.aggregate(name);
+      // Bonuses to every spellcasting line (Robe of the Archmagi, Wand of the War Mage, a custom bonus) add too.
+      const all = sc[2] === "modifier" ? 0 : this.aggregate(`spellcasting:${sc[2]}`);
+      return base + all + this.aggregate(name);
     }
 
     return this.aggregate(name);

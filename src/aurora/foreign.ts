@@ -21,6 +21,8 @@ export interface ForeignImport {
   missing: string[];
   /** Choices the file did not settle, left open for the player: "Build: Skill Proficiency (Rogue), choose 2". */
   todo: string[];
+  /** Numbers the file states that Soul Forge works out differently: "AC: the file says 18, Soul Forge 16". */
+  differences: string[];
 }
 
 export function detectCharacterFormat(data: unknown): "foundry" | "roll20" | "charforge" | "unknown" {
@@ -39,6 +41,18 @@ const normalize = (s: string) =>
 const normalizeFull = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 export type Edition = "2014" | "2024";
+
+/** Numbers a file states (Roll20 stores its sheet's results), to compare with what Soul Forge works out. */
+export interface FileNumbers {
+  ac?: number;
+  hpMax?: number;
+  proficiency?: number;
+  spellDc?: number;
+  spellAttack?: number;
+  saves?: Partial<Record<AbilityId, number>>;
+  skills?: Record<string, number>;
+  passivePerception?: number;
+}
 
 /** Every element with this name, by the closest match first: exact, then without parentheses, then without spaces. */
 function findAllByName(reg: ARegistry, types: string[], name: string): AElement[] {
@@ -135,6 +149,9 @@ function itemNameVariants(name: string, base?: string): string[] {
   // "Spell Scroll (1st Level) chromatic orb" is a Spell Scroll (Level 1); "Blowgun Needles" a Blowgun Needle;
   // "Slumbering Scaled Ornament" the Scaled Ornament (Slumbering); "Belt Pouch" a Pouch.
   // "Potion of Giant Strength (Fire)" is the Potion of Fire Giant Strength.
+  // "Rhythm-Maker's Drum +2" is the content's "Rhythm-Maker's Drum, +2".
+  const plusTail = /^(.*\S)\s*,?\s*\+(\d)$/.exec(name.trim());
+  if (plusTail) add(`${plusTail[1]}, +${plusTail[2]}`);
   // "Ioun Stone of Reserve" is the Ioun Stone (Reserve).
   const ofKind = /^(.+?) of (\w+)$/i.exec(name.trim());
   if (ofKind) add(`${ofKind[1]} (${ofKind[2]})`);
@@ -169,6 +186,22 @@ function itemNameVariants(name: string, base?: string): string[] {
 }
 
 const ITEM_TYPES = ["Item", "Weapon", "Armor", "Magic Item"];
+
+/** Bonuses in a Roll20 item's modifiers that are not the item's own attack or armor numbers. */
+function itemBonuses(mods: string): { stat: string; value: number }[] {
+  const out: { stat: string; value: number }[] = [];
+  const num = (re: RegExp) => Number(re.exec(mods)?.[1]);
+  const dc = num(/Spell DC\s*\+(\d+)/i);
+  const atk = num(/Spell Attack\s*\+(\d+)/i);
+  const saves = num(/Saving Throws?\s*\+(\d+)/i);
+  if (dc) out.push({ stat: "spellcasting:dc", value: dc });
+  if (atk) out.push({ stat: "spellcasting:attack", value: atk });
+  if (saves) for (const a of ABILITY_IDS) out.push({ stat: `${a}:save:misc`, value: saves });
+  // "AC +1" on something that is not armor or a shield (a Ring of Protection).
+  const ac = num(/(?:^|,\s*)AC\s*\+(\d+)/i);
+  if (ac && !/Item Type:[^,]*(Armor|Shield)/i.test(mods)) out.push({ stat: "ac:misc", value: ac });
+  return out;
+}
 
 /** Letters only, for names written with different punctuation: "Brewers supplies" and "Brewer’s Supplies". */
 const tight = (s: string) => s.toLowerCase().replace(/\(.*?\)/g, "").replace(/[^a-z]/g, "");
@@ -232,6 +265,8 @@ class Importer {
   /** Species traits the file lists, to tell versions of a species apart. */
   speciesTraits = new Set<string>();
   private index?: ItemIndex;
+  /** Option names that, without their brackets, name several options of the choice being filled. */
+  private ambiguous = new Set<string>();
   /** How many times the file lists each feat: a repeatable feat (Skilled, Magic Initiate) is taken no more often. */
   private featCount = new Map<string, number>();
   /** How many level-up improvements the file records as ability scores rather than feats. */
@@ -298,7 +333,7 @@ class Importer {
     if (name) this.wantedChoices.push({ types, name, label, alts, from });
   }
 
-  addItem(name: string, qty: number, equipped: boolean, attuned: boolean, extra: { base?: string; magic?: number } = {}): void {
+  addItem(name: string, qty: number, equipped: boolean, attuned: boolean, extra: { base?: string; magic?: number; bonuses?: { stat: string; value: number }[] } = {}): void {
     // "Crossbow Bolts (20)" and "Blowgun Needles (50)" are a count of the item.
     const count = /^(.*\S)\s*\((\d{1,4})\)$/.exec(name);
     if (count && qty <= 1) {
@@ -329,6 +364,8 @@ class Importer {
     const magic = el && /[+]\d/.test(el.name) ? 0 : extra.magic || Number(/[+]([1-3])\b/.exec(name)?.[1]) || 0;
     const plain = name.replace(/[+]\d\s*/g, "").replace(/\(\s*\)/g, "").replace(/\s+/g, " ").replace(/\s*,\s*$/, "").trim();
     const label = el && normalize(plain) !== normalize(el.name) && normalizeFull(plain) !== normalizeFull(el.name) ? plain : undefined;
+    // A custom item's bonuses the file applies (Roll20 item modifiers) become custom bonuses named after it.
+    if (!el) for (const bo of extra.bonuses ?? []) this.ch.customStats.push({ id: uid(), stat: bo.stat, value: bo.value, note: `${name} (from the file)` });
     this.ch.inventory.push({ uid: uid(), id: el?.id ?? "", qty: Math.max(1, qty), equipped, attuned, custom: el ? undefined : { name }, ...(label ? { label } : {}), ...(el && magic ? { magic } : {}) });
     (el ? this.matched : this.missing).push(el ? `${el.name} (${el.type})` : `${name} (item, kept as a custom item)`);
     if (el?.type === "Weapon") this.carried.add(normalize(el.name).replace(/ /g, ""));
@@ -345,7 +382,9 @@ class Importer {
       const ti = tight(inner);
       return [...h.tools].some((t) => { const tt = tight(t); return tt.length >= 4 && (ti.includes(tt) || tt.includes(ti)); }) ? 100 : 0;
     }
-    if (h.names.has(normalizeFull(optionName)) || h.names.has(normalize(optionName))) return 100;
+    // Without the brackets only when that names one option: "Cloud's Jaunt" is "Cloud's Jaunt (Cloud Giant)", but
+    // "Resilient" names all of "Resilient (Strength)" to "Resilient (Charisma)".
+    if (h.names.has(normalizeFull(optionName)) || (h.names.has(normalize(optionName)) && !this.ambiguous.has(normalize(optionName)))) return 100;
     // "Infernal Legacy" for a file that says "Tiefling, Infernal": the option without its kind word.
     const core = normalize(optionName).replace(/\b(legacy|lineage|ancestry|heritage|descent)\b/g, " ").replace(/\s+/g, " ").trim();
     if (core && core !== normalize(optionName) && h.names.has(core)) return 100;
@@ -481,7 +520,13 @@ class Importer {
         const base = this.reg.ofType("Feat").find((f) => a.el.id.startsWith(`${f.id}_`) && !r.active.some((b) => b.el.id === f.id));
         if (base) feats.set(normalize(base.name), (feats.get(normalize(base.name)) ?? 0) + 1);
       }
-      const spent = (o: AElement) => o.type === "Feat" && !/^ability score improvement/i.test(o.name) && (this.featCount.size > 0 || this.asiTaken > 0) && (this.featCount.has(normalize(o.name)) ? (feats.get(normalize(o.name)) ?? 0) >= this.featCount.get(normalize(o.name))! : !this.hints.names.has(normalizeFull(o.name)) && !this.hints.names.has(normalize(o.name)));
+      // Only when picking a feat: a feat's own choice whose options are stored as feats ("Resilient (Constitution)")
+      // is settled by the file's other data.
+      const featPick = open.owner.type !== "Feat";
+      const spent = (o: AElement) => featPick && o.type === "Feat" && !/^ability score improvement/i.test(o.name) && (this.featCount.size > 0 || this.asiTaken > 0) && (this.featCount.has(normalize(o.name)) ? (feats.get(normalize(o.name)) ?? 0) >= this.featCount.get(normalize(o.name))! : !this.hints.names.has(normalizeFull(o.name)) && !this.hints.names.has(normalize(o.name)));
+      const counts = new Map<string, number>();
+      for (const o of open.options) counts.set(normalize(o.name), (counts.get(normalize(o.name)) ?? 0) + 1);
+      this.ambiguous = new Set([...counts].filter(([, n]) => n > 1).map(([k]) => k));
       const candidates = open.options
         .filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !r.ids.has(o.id) && !spent(o))
         .map((o) => ({ o, sc: this.score(`${open.key} ${open.rule.name}`, o.name, scores) + this.trainingScore(o) + this.spellListScore(o) + this.grantedSpellScore(o) + this.resistScore(o, r.ids) + (own.has(o.source) ? 0.5 : 0) }))
@@ -495,6 +540,26 @@ class Importer {
       cur = { ...cur, selections: { ...cur.selections, [open.key]: [...open.chosen, best.o.id] } };
     }
     return cur;
+  }
+
+  /** The file's own numbers against Soul Forge's (plan principle P5: an answer key). Only numbers the file states. */
+  private compare(ch: Character, f: FileNumbers | undefined): string[] {
+    if (!f) return [];
+    const sh = buildSheet(resolve(ch, this.reg));
+    const out: string[] = [];
+    const diff = (what: string, file: number | undefined, ours: number | undefined) => {
+      if (file === undefined || ours === undefined || !Number.isFinite(file) || file === ours) return;
+      out.push(`${what}: the file says ${file}, Soul Forge works out ${ours}`);
+    };
+    diff("Armor class", f.ac, sh.ac.value);
+    diff("Hit points", f.hpMax, sh.hp);
+    diff("Proficiency bonus", f.proficiency, sh.proficiency);
+    diff("Spell save DC", f.spellDc, sh.casting[0]?.dc);
+    diff("Spell attack", f.spellAttack, sh.casting[0]?.attack);
+    for (const a of sh.abilities) diff(`${a.id.charAt(0).toUpperCase()}${a.id.slice(1)} saving throw`, f.saves?.[a.id], a.save);
+    for (const k of sh.skills) diff(`${k.name.charAt(0).toUpperCase()}${k.name.slice(1)}`, f.skills?.[k.name.toLowerCase()], k.bonus);
+    diff("Passive Perception", f.passivePerception, sh.skills.find((k) => /^perception$/i.test(k.name))?.passive);
+    return out;
   }
 
   /** Sets rolled hit points for levels 2 and up so the maximum matches the file, staying within each hit die. */
@@ -671,7 +736,7 @@ class Importer {
   }
 
   /** Fill choices (subclass, feats, spells) with everything wanted, then derive base scores. */
-  finish(importedScores: Partial<Record<AbilityId, number>>, opts: { scoresIncludeItems?: boolean; hpMax?: number } = {}): ForeignImport {
+  finish(importedScores: Partial<Record<AbilityId, number>>, opts: { scoresIncludeItems?: boolean; hpMax?: number; numbers?: FileNumbers } = {}): ForeignImport {
     this.scores = importedScores;
     let ch = this.ch;
     // Subclasses and lineages first, so the spell lists and granted spells they bring exist; then feats; then the
@@ -737,7 +802,7 @@ class Importer {
     }
     if (this.missing.length) this.notes.push(`${this.missing.length} things were not found in your loaded content and were skipped or kept as custom items.`);
     this.notes.push(`${this.matched.length} matched.`);
-    return { character: ch, notes: this.notes, matched: this.matched, missing: this.missing, todo };
+    return { character: ch, notes: this.notes, matched: this.matched, missing: this.missing, todo, differences: this.compare(ch, opts.numbers) };
   }
 }
 
@@ -1039,7 +1104,11 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
         const mods = f.itemmodifiers ?? "";
         const worn = f.equipped !== undefined ? f.equipped === "1" || f.equipped === "on" : f.hasattack === "1" || /Item Type:[^,]*(Armor|Shield)/i.test(mods);
         const magic = Number(/\b(?:AC|Attack(?: Bonus)?|Damage(?: Bonus)?)\s*\+(\d)/i.exec(mods)?.[1]) || 0;
-        b.addItem(f.itemname, Number(f.itemcount) || 1, worn, false, { magic });
+        // Bonuses the sheet applies from this item ("Spell Attack +2, Spell DC +2"): a content item that needs
+        // attunement is attuned, so its own rules apply; a custom item's bonuses become custom bonuses.
+        const bonuses = itemBonuses(mods);
+        const active = bonuses.length > 0 && f.equipped !== "0";
+        b.addItem(f.itemname, Number(f.itemcount) || 1, worn || active, active, { magic, bonuses: active ? bonuses : [] });
       }
       else if (section === "traits" && f.name && /^feat$/i.test(f.source ?? "")) b.want(FEATURE_TYPES, f.name, "feat");
     }
@@ -1095,7 +1164,30 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   const xp = Number(val("xp"));
   if (Number.isFinite(xp) && xp > 0) b.ch.xp = xp;
   const hpMax = Number(flat.get("hp")?.max);
-  return b.finish(scores, { hpMax: Number.isFinite(hpMax) && hpMax > 0 ? hpMax : undefined });
+  // The sheet's spell DC and attack modifiers add up its items' bonuses and anything typed in by hand. What the items
+  // do not explain was typed in (a table ruling, a homebrew effect) and becomes a custom bonus.
+  const itemSum = (stat: string) => [...(rows.get("inventory")?.values() ?? [])].filter((f) => f.equipped !== "0").flatMap((f) => itemBonuses(f.itemmodifiers ?? "")).filter((x) => x.stat === stat).reduce((t, x) => t + x.value, 0);
+  for (const [attr, stat, label] of [["spell_dc_mod", "spellcasting:dc", "Spell save DC"], ["spell_attack_mod", "spellcasting:attack", "Spell attack"]] as const) {
+    // A modifier the file does not store says nothing (it is not 0).
+    if (val(attr) === "") continue;
+    const typed = (Number(val(attr)) || 0) - itemSum(stat);
+    if (typed) b.ch.customStats.push({ id: uid(), stat, value: typed, note: `${label} modifier typed into the Roll20 sheet` });
+  }
+  // AC modifier rows switched on in the Roll20 sheet (a table ruling, a homebrew effect) become custom bonuses.
+  for (const f of rows.get("acmod")?.values() ?? []) {
+    const v = Number(f.global_ac_val);
+    if (f.global_ac_active_flag === "1" && Number.isFinite(v) && v !== 0) b.ch.customStats.push({ id: uid(), stat: "ac:misc", value: v, note: `${f.global_ac_name || "AC modifier"} (from the Roll20 sheet)` });
+  }
+  // The sheet's own results, to compare with Soul Forge's. Roll20 saves them as the sheet last worked them out.
+  const n = (k: string) => { const v = Number(String(flat.get(k)?.current ?? "").replace(/^\+/, "")); return String(flat.get(k)?.current ?? "").trim() !== "" && Number.isFinite(v) ? v : undefined; };
+  const numbers: FileNumbers = {
+    ac: n("ac"), hpMax: Number.isFinite(hpMax) && hpMax > 0 ? hpMax : undefined, proficiency: n("pb"),
+    spellDc: n("spell_save_dc"), spellAttack: n("spell_attack_bonus"), passivePerception: n("passive_wisdom"),
+    saves: Object.fromEntries(ABILITY_IDS.map((a) => [a, n(`${a}_save_bonus`)]).filter(([, v]) => v !== undefined)),
+    skills: Object.fromEntries(SKILLS.map((k) => [k.replace(/_/g, " "), n(`${k}_bonus`)]).filter(([, v]) => v !== undefined)),
+  };
+  // A caster's DC and attack only mean something when the character casts.
+  return b.finish(scores, { hpMax: Number.isFinite(hpMax) && hpMax > 0 ? hpMax : undefined, numbers });
 }
 
 export function importForeignCharacter(data: unknown, reg: ARegistry): ForeignImport {

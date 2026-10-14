@@ -137,6 +137,7 @@ const BONUS_PRESETS: [string, string][] = [
   ["Armor Class", "ac:misc"], ["Initiative", "initiative:misc"], ["Speed", "speed:misc"], ["Hit points", "hp"], ["Proficiency bonus", "proficiency"],
   ["Strength", "strength"], ["Dexterity", "dexterity"], ["Constitution", "constitution"], ["Intelligence", "intelligence"], ["Wisdom", "wisdom"], ["Charisma", "charisma"],
   ["Strength save", "strength:save:misc"], ["Dexterity save", "dexterity:save:misc"], ["Constitution save", "constitution:save:misc"], ["Intelligence save", "intelligence:save:misc"], ["Wisdom save", "wisdom:save:misc"], ["Charisma save", "charisma:save:misc"],
+  ["Spell save DC", "spellcasting:dc"], ["Spell attack", "spellcasting:attack"],
   ["Melee attacks", "melee:attack"], ["Melee damage", "melee:damage"], ["Ranged attacks", "ranged:attack"], ["Ranged damage", "ranged:damage"],
   ...["acrobatics", "animal handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight of hand", "stealth", "survival"].map((k): [string, string] => [k.replace(/\b\w/g, (c) => c.toUpperCase()), `${k}:misc`]),
 ];

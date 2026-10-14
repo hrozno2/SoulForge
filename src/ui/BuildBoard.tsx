@@ -624,6 +624,15 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     );
   };
 
+  // What is left, for the summary under the closed lists: missing picks first, then each open choice.
+  const kindOfSlot = (sl: (typeof r.slots)[number]): Kind => (tabOfSlot(sl) === "magic" ? "magic" : sl.root === "race" ? "race" : sl.root === "background" ? "background" : "class");
+  const leftItems: { kind: Kind; text: string; list: boolean }[] = [
+    ...(!ch.race ? [{ kind: "race" as Kind, text: "Choose a species", list: true }] : []),
+    ...(!ch.classes.length ? [{ kind: "class" as Kind, text: "Choose a class", list: true }] : []),
+    ...(!ch.background ? [{ kind: "background" as Kind, text: "Choose a background", list: true }] : []),
+    ...r.slots.filter((sl) => !sl.rule.optional && sl.chosen.length < sl.rule.number).map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: tabOfSlot(sl) === "magic" })),
+    ...(plans.length && packFill < 1 && !plans.every((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))) ? [{ kind: "equipment" as Kind, text: "Starting equipment", list: false }] : []),
+  ];
   const panes: ["lists" | "board" | "stats", string, number][] = [
     ["lists", "Lists", 0],
     ["board", "Character", ORDER.reduce((n, k) => n + todo[k], 0)],
@@ -654,6 +663,23 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
             </section>
           );
         })}
+        {open === null && (
+          <section className="board-left-summary" aria-label="Still to choose">
+            <h3>Still to choose</h3>
+            {leftItems.length ? (
+              <ul>
+                {leftItems.map((it, i) => (
+                  <li key={i}>
+                    <button onClick={() => { if (it.list) setOpen(it.kind); setFocus(it.kind); }}>
+                      <span className="board-left-kind">{TITLE[it.kind]}</span>
+                      <span>{it.text}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="ok">Everything is chosen. Export your sheet when you are ready.</p>}
+          </section>
+        )}
       </nav>
 
       <section className="board-main">

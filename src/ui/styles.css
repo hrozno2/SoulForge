@@ -1331,7 +1331,7 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 
 /* ================= Build board (on trial in the test app) ================= */
 main.wide { max-width: 1900px; }
-.board { display: grid; grid-template-columns: clamp(320px, 22vw, 410px) minmax(0, 1fr) clamp(290px, 18vw, 330px); gap: 18px; align-items: start; }
+.board { display: grid; grid-template-columns: clamp(320px, 22vw, 410px) minmax(0, 1fr) clamp(320px, 20vw, 350px); gap: 18px; align-items: start; }
 
 /* Lists on the left, each opening in place */
 .board-lib { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 70px; max-height: calc(100vh - 86px); overflow: auto; padding-right: 2px; }
@@ -1535,7 +1535,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 }
 /* The portrait at the top of the right column */
 .board-who { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
-.board-arch { flex: none; width: 92px; height: 116px; padding: 0; border-radius: 46px 46px 6px 6px; overflow: hidden; border: 2px solid var(--gold); background: var(--bg2); box-shadow: inset 0 0 0 3px var(--panel), 0 4px 14px rgba(0,0,0,.4); cursor: pointer; transition: transform .2s, box-shadow .2s; }
+.board-arch { flex: none; width: 78px; height: 100px; padding: 0; border-radius: 39px 39px 6px 6px; overflow: hidden; border: 2px solid var(--gold); background: var(--bg2); box-shadow: inset 0 0 0 3px var(--panel), 0 4px 14px rgba(0,0,0,.4); cursor: pointer; transition: transform .2s, box-shadow .2s; }
 .board-arch:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 3px var(--panel), 0 0 16px color-mix(in srgb, var(--gold) 45%, transparent); }
 .board-arch img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .board-arch-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--muted); gap: 4px; }
@@ -1543,7 +1543,8 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-who-text { min-width: 0; }
 .board-name { width: 100%; font: 700 20px var(--display); padding: 4px 6px; background: transparent; border: 1px dashed transparent; color: var(--text); }
 .board-name:hover, .board-name:focus { border-color: var(--gold); background: var(--bg2); }
-.board-who-text { flex: 1; }
+.board-who-text { flex: 1; min-width: 0; }
+.board-method button { padding-left: 4px; padding-right: 4px; }
 .board-who-text small { color: var(--muted); font-size: 12.5px; }
 
 .board-book-block { transform-origin: 0 100px; transition: transform .7s cubic-bezier(.3,1.4,.5,1); }
@@ -1554,3 +1555,17 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-art.board-art-live { position: static; align-self: center; margin: -6px 0 2px; display: flex; justify-content: center; }
 .board-art-live .board-book, .board-art-live .board-pack { width: 112px; height: 112px; }
 .board-magic .board-space-text, .board-equipment .board-space-text { text-shadow: none; }
+
+/* Under the closed lists: what is still to choose, each a shortcut to its place */
+.board-left-summary { background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: 8px; padding: 10px 12px; margin-top: 4px; }
+.board-left-summary h3 { margin: 0 0 6px; font-size: 14px; }
+.board-left-summary ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.board-left-summary li button { width: 100%; display: flex; gap: 8px; align-items: baseline; text-align: left; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; color: var(--text); font: 400 13px var(--body); letter-spacing: 0; text-transform: none; }
+.board-left-summary li button:hover { border-color: var(--gold); }
+.board-left-kind { flex: none; font: 600 10.5px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); min-width: 74px; }
+.board-left-summary .ok { color: var(--ok); margin: 0; font-size: 13px; }
+/* Smaller cards (the background) keep to one line of description and a compact feat line */
+.board-background.has-card .chosen-banner { padding-top: 24px; }
+.board-background.has-card .pick-blurb { -webkit-line-clamp: 1; margin-bottom: 4px; }
+.board-space.has-card .pick-feat { font-size: 13px; margin: 0 0 6px; }
+.board-space.has-card .pick-foot { gap: 6px; }

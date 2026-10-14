@@ -1,3 +1,4 @@
+import { RulesCheckBar } from "./RulesCheck";
 import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as pbSpent } from "../aurora/pointBuy";
 import { useMemo, useState } from "react";
 import type { AElement } from "../aurora/types";
@@ -210,6 +211,7 @@ export function BuildTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character;
   const backgrounds = r.reg.ofType("Background");
   return (
     <div>
+      <RulesCheckBar r={r} />
       <nav className="subtabs">
         {SUBS.map(([k, label]) => {
           const lines = todo(k);

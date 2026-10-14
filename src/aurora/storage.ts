@@ -2,7 +2,7 @@ import type { Character } from "./character";
 import type { FileCache, SourceConfig } from "./sources";
 
 const DB_NAME = "charforge";
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -20,6 +20,8 @@ function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains("templates")) db.createObjectStore("templates", { keyPath: "id" });
       if (!db.objectStoreNames.contains("translations")) db.createObjectStore("translations");
       if (!db.objectStoreNames.contains("backups")) db.createObjectStore("backups");
+      // Small downloaded reference data, by key (the condensed 5e.tools rules reference).
+      if (!db.objectStoreNames.contains("meta")) db.createObjectStore("meta");
       // PDF bytes live in their own store so listing templates stays light.
       if (!db.objectStoreNames.contains("templateBytes")) {
         db.createObjectStore("templateBytes");
@@ -250,5 +252,27 @@ export const backupStore = {
     const tx = db.transaction("backups", "readwrite");
     tx.objectStore("backups").delete(date);
     await done(tx);
+  },
+};
+
+/** Small downloaded data kept between sessions (the rules reference). */
+export const metaStore = {
+  async get<T>(key: string): Promise<T | undefined> {
+    try {
+      const db = await openDb();
+      return (await wrap(db.transaction("meta").objectStore("meta").get(key))) as T | undefined;
+    } catch {
+      return undefined;
+    }
+  },
+  async put(key: string, value: unknown): Promise<void> {
+    try {
+      const db = await openDb();
+      const tx = db.transaction("meta", "readwrite");
+      tx.objectStore("meta").put(value, key);
+      await done(tx);
+    } catch {
+      /* optional */
+    }
   },
 };

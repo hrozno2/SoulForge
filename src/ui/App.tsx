@@ -22,6 +22,7 @@ import { runAutoBackup } from "../aurora/backup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
 import { ImportReport, importReportText } from "./ImportReport";
+import { ruleProblems } from "./RulesCheck";
 import { makeTestBatch, testExport, testToolsEnabled } from "./TestTools";
 import { listCharacters } from "../aurora/storage";
 import { Tutorial, tutorialWanted } from "./Tutorial";
@@ -123,7 +124,7 @@ export function App() {
     open(uid(), randomCharacter(content.reg, level, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual }));
   };
   const [testMsg, setTestMsg] = useState("");
-  const [report, setReport] = useState<{ name: string; res: ForeignImport } | null>(null);
+  const [report, setReport] = useState<{ name: string; res: ForeignImport; rules: string[] } | null>(null);
   // After an import report closes: where to find it again.
   const [notesHint, setNotesHint] = useState(false);
   useEffect(() => {
@@ -141,10 +142,11 @@ export function App() {
     try {
       const res = importForeignCharacter(JSON.parse(await file.text()), content.reg);
       // The report also goes into the character's notes, to read again later.
-      const text = importReportText(res, file.name);
+      const rules = ruleProblems(resolve(res.character, content.reg));
+      const text = importReportText(res, file.name, new Date(), rules);
       res.character = { ...res.character, notes: [res.character.notes, text].filter(Boolean).join("\n\n") };
       open(uid(), res.character);
-      setReport({ name: res.character.name, res });
+      setReport({ name: res.character.name, res, rules });
       return `Imported ${res.character.name || "the character"}.`;
     } catch (e) {
       return `Could not import: ${(e as Error).message}`;
@@ -223,7 +225,7 @@ export function App() {
         </div>
       )}
       {testMsg && <div className="test-toast" role="status" onClick={() => setTestMsg("")}>{testMsg} <small>(click to close)</small></div>}
-      {report && <ImportReport name={report.name} res={report.res} onClose={() => { setReport(null); setNotesHint(true); }} onBuild={() => setTab("build")} />}
+      {report && <ImportReport name={report.name} res={report.res} rules={report.rules} onClose={() => { setReport(null); setNotesHint(true); }} onBuild={() => setTab("build")} />}
       {notesHint && (
         <div className="notice-toast noprint" role="status">
           <span>The import notes and the to-do list are saved in the character's Notes (Manage, or Play, Notes).</span>

@@ -436,4 +436,16 @@ test.describe("Soul Forge smoke tests", () => {
     expect(seen.csp).toEqual([]);
     expect(seen.errors).toEqual([]);
   });
+  test("the rules check on Build says whether the character follows the rules", async ({ page }) => {
+    const seen = watchProblems(page);
+    await addTestContent(page);
+    await randomCharacter(page);
+    await tab(page, "Build");
+    const bar = page.getByRole("region", { name: "Rules check" });
+    await expect(bar).toBeVisible();
+    await expect(bar).toContainText(/follows the rules|against the rules|content problem/i);
+    await page.screenshot({ path: "test-results/rules-check.png" });
+    expect(seen.csp).toEqual([]);
+    expect(seen.errors).toEqual([]);
+  });
 });

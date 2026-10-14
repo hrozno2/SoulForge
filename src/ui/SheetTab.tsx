@@ -1,3 +1,4 @@
+import { ExportRulesNote } from "./RulesCheck";
 import { useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, headerInfo, type SheetData } from "../aurora/sheet";
@@ -133,6 +134,7 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
 
   return (
     <div className="sheet-wrap">
+      <ExportRulesNote r={r} />
       <div className="row noprint">
         <ExportPanel r={r} sheet={sheet} />
         <button onClick={() => window.print()}>Quick print</button>

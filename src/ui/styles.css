@@ -1316,3 +1316,15 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .notice-toast span { flex: 1; }
 .notice-toast .notice-x { background: none; border: 0; color: var(--muted); font-size: 18px; padding: 0 4px; cursor: pointer; }
 .test-toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 60; padding: 10px 16px; background: #1d3a5c; color: #fff; border: 1px solid #4aa0ee; border-radius: 6px; cursor: pointer; box-shadow: var(--shadow); }
+
+/* Rules check bar on Build */
+.rules-check { margin: 0 0 10px; border: 1px solid var(--line); border-left: 3px solid #4f9a5b; border-radius: 4px; background: var(--panel); }
+.rules-check.warn { border-left-color: #d9a43a; }
+.rules-check.bad { border-left-color: var(--accent); }
+.rules-check-head { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 12px; cursor: pointer; color: var(--text); }
+.rules-check-head:not([aria-expanded]) { cursor: default; }
+.rules-check-head b { text-transform: uppercase; letter-spacing: .06em; font-size: 12px; }
+.rules-check-head .chev { margin-left: auto; color: var(--muted); }
+.rules-check ul { margin: 0; padding: 4px 14px 10px 30px; }
+.rules-check li { margin: 3px 0; }
+.rules-export-note { margin: 0 0 10px; padding: 7px 12px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 4px; background: var(--panel); }

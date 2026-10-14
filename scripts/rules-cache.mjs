@@ -9,64 +9,16 @@ import { execSync } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+// The same condensing code the app uses (it has no imports, so Node loads the TypeScript directly).
+import { downloadRulesRef } from "../src/aurora/rulesRef.ts";
 
 export const CACHE = process.env.SOULFORGE_TEST_CACHE || join(homedir(), ".soulforge-test");
 const refresh = process.argv.includes("--refresh");
-const CLASSES = ["artificer", "barbarian", "bard", "cleric", "druid", "fighter", "monk", "paladin", "ranger", "rogue", "sorcerer", "warlock", "wizard"];
-const FIVE = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/class";
 
 async function get(url) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`${url}: ${r.status}`);
   return r;
-}
-
-const AB = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" };
-const strip = (s) => String(s).replace(/\{@\w+ ([^|}]*)[^}]*\}/g, "$1").trim();
-const feat = (f) => {
-  const ref = typeof f === "string" ? f : f.classFeature ?? f.subclassFeature;
-  const p = ref.split("|");
-  // Class features: name|class|classSource|level|source; a source of its own marks an optional feature (Tasha's).
-  // Subclass features: name|class|classSource|subclass|subclassSource|level|source, the same way.
-  const optional = typeof f === "string" ? (p.length === 5 && !!p[4]) || (p.length === 7 && !!p[6]) : false;
-  return { name: strip(p[0]), optional, level: Number(p[p.length - 1].match(/^\d+$/) ? p[p.length - 1] : p.find((x, i) => i > 0 && /^\d+$/.test(x))), subclass: typeof f === "object" && !!f.gainSubclassFeature };
-};
-
-function condense(file) {
-  const out = [];
-  for (const c of file.class ?? []) {
-    const groups = c.classTableGroups ?? [];
-    const slotGroup = groups.find((g) => g.rowsSpellProgression);
-    const flat = groups.find((g) => g.colLabels?.some((l) => /^Spell Slots$/i.test(strip(l))) && g.colLabels?.some((l) => /Slot Level/i.test(strip(l))));
-    let pact;
-    if (flat) {
-      const si = flat.colLabels.findIndex((l) => /^Spell Slots$/i.test(strip(l)));
-      const li = flat.colLabels.findIndex((l) => /Slot Level/i.test(strip(l)));
-      pact = { slots: flat.rows.map((r) => Number(r[si])), level: flat.rows.map((r) => Number(String(strip(r[li])).match(/\d/)?.[0])) };
-    }
-    const features = (c.classFeatures ?? []).map(feat);
-    const req = c.multiclassing?.requirements;
-    out.push({
-      name: c.name, source: c.source, edition: c.edition ?? (c.source === "XPHB" ? "one" : "classic"),
-      hd: c.hd?.faces, saves: (c.proficiency ?? []).map((a) => AB[a]),
-      caster: c.casterProgression ?? null,
-      cantrips: c.cantripProgression ?? null,
-      prepared: c.preparedSpellsProgression ?? null,
-      preparedFormula: typeof c.preparedSpells === "string" ? c.preparedSpells : null,
-      known: c.spellsKnownProgression ?? null,
-      slots: slotGroup ? slotGroup.rowsSpellProgression : null,
-      pact: pact ?? null,
-      features,
-      subclassLevel: features.find((f) => f.subclass)?.level ?? null,
-      asiLevels: features.filter((f) => /^Ability Score Improvement$/i.test(f.name)).map((f) => f.level),
-      epicBoon: c.featProgression?.find((p) => /epic boon/i.test(p.name))?.progression ? Number(Object.keys(c.featProgression.find((p) => /epic boon/i.test(p.name)).progression)[0]) : null,
-      multiclass: req ? Object.fromEntries(Object.entries(req).filter(([k]) => AB[k]).map(([k, v]) => [AB[k], v])) : null,
-      multiclassOr: req?.or ? req.or.map((o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [AB[k], v]))) : null,
-      primaryAbility: c.primaryAbility ? c.primaryAbility.map((o) => Object.keys(o).map((k) => AB[k])) : null,
-      subclasses: (file.subclass ?? []).filter((s) => s.className === c.name && s.classSource === c.source).map((s) => ({ name: s.name, shortName: s.shortName, source: s.source, caster: s.casterProgression ?? null, features: (s.subclassFeatures ?? []).map(feat) })),
-    });
-  }
-  return out;
 }
 
 export async function ensureCache() {
@@ -81,8 +33,7 @@ export async function ensureCache() {
   const ref = join(CACHE, "rules-ref.json");
   if (refresh || !existsSync(ref)) {
     console.log("Downloading the 5e.tools class data...");
-    const all = [];
-    for (const c of CLASSES) all.push(...condense(await (await get(`${FIVE}/class-${c}.json`)).json()));
+    const all = await downloadRulesRef(async (url) => (await get(url)).json());
     writeFileSync(ref, JSON.stringify(all));
   }
   // Blank sheets for the export checks, from their makers' own addresses (the same links the app offers).

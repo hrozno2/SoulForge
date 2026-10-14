@@ -13,7 +13,7 @@ function sorted(res: ForeignImport) {
  * The report as plain text for the character's notes, so it can be read again later: what was not imported, what
  * is left to choose, the notes and the custom items.
  */
-export function importReportText(res: ForeignImport, file: string, when = new Date()): string {
+export function importReportText(res: ForeignImport, file: string, when = new Date(), rules: string[] = []): string {
   const { items, other, notes } = sorted(res);
   const part = (title: string, list: string[]) => (list.length ? [`${title}:`, ...list.map((x) => `- ${x}`), ""] : []);
   return [
@@ -22,13 +22,14 @@ export function importReportText(res: ForeignImport, file: string, when = new Da
     "",
     ...part("Not imported (not in the loaded content)", other),
     ...part("To do: choices the file does not settle, left open for you", res.todo),
+    ...part("Against the rules (as the file has it)", rules),
     ...part("Notes", notes),
     ...part("Kept as custom items", items),
   ].join("\n").trim();
 }
 
 /** What an import brought in, what is left to choose and what it could not find. Shown right after importing. */
-export function ImportReport({ name, res, onClose, onBuild }: { name: string; res: ForeignImport; onClose: () => void; onBuild: () => void }) {
+export function ImportReport({ name, res, rules = [], onClose, onBuild }: { name: string; res: ForeignImport; rules?: string[]; onClose: () => void; onBuild: () => void }) {
   useEffect(() => {
     const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", key);
@@ -55,6 +56,13 @@ export function ImportReport({ name, res, onClose, onBuild }: { name: string; re
             <ul>{res.todo.map((g, i) => <li key={i}>{g}</li>)}</ul>
           </section>
         )}
+        {rules.length > 0 && (
+          <section className="ir-group bad">
+            <h3>Against the rules ({rules.length})</h3>
+            <p className="muted small-text">As the file has it. Fix these on the Build or Magic tab; the Rules check on Build keeps track.</p>
+            <ul>{rules.map((g, i) => <li key={i}>{g}</li>)}</ul>
+          </section>
+        )}
         {notes.length > 0 && (
           <section className="ir-group">
             <h3>Notes</h3>
@@ -68,7 +76,7 @@ export function ImportReport({ name, res, onClose, onBuild }: { name: string; re
             <ul className="ir-items">{items.map((m, i) => <li key={i}>{m}</li>)}</ul>
           </section>
         )}
-        {other.length + res.todo.length + notes.length + items.length === 0 && <p>Everything came through. Nothing to check.</p>}
+        {other.length + res.todo.length + rules.length + notes.length + items.length === 0 && <p>Everything came through. Nothing to check.</p>}
         <p className="muted small-text">This report is saved in the character's notes.</p>
         <div className="levelup-foot">
           <button onClick={onClose}>Close</button>

@@ -67,7 +67,7 @@ let REG: ARegistry | undefined;
  * What a filled sheet must show, read back as text (pdftotext): the name, AC, maximum hit points, the six scores,
  * the proficiency bonus, each spell save DC and the first weapon. Empty when pdftotext is missing.
  */
-function sheetShows(bytes: Uint8Array, ch: Character, sh: ReturnType<typeof buildSheet>): string[] {
+function sheetShows(bytes: Uint8Array, ch: Character, sh: ReturnType<typeof buildSheet>, spells: string[] = []): string[] {
   let text = "";
   try {
     const file = join(tmpdir(), `sf-sheet-${process.pid}-${Math.random().toString(36).slice(2)}.pdf`);
@@ -87,6 +87,9 @@ function sheetShows(bytes: Uint8Array, ch: Character, sh: ReturnType<typeof buil
   for (const l of sh.casting) if (l.dc > 0 && !has(l.dc)) miss.push(`${l.name} spell save DC ${l.dc}`);
   const weapon = sh.attacks.find((a) => !a.hiddenByEdit)?.name;
   if (weapon && !words(weapon)) miss.push(`weapon ${weapon}`);
+  // Every spell is somewhere: in the sheet's own table or on the pages added at the end.
+  const lost = spells.filter((n) => !flat.toLowerCase().replace(/[’']/g, "'").includes(n.toLowerCase().replace(/[’']/g, "'").slice(0, 12)));
+  if (lost.length) miss.push(`${lost.length} spells not on any page (${lost.slice(0, 5).join(", ")})`);
   return miss;
 }
 
@@ -112,14 +115,15 @@ describe.skipIf(!CACHE)("rules", () => {
     for (const k of ["hp", "proficiency", "level", "speed", "initiative"] as const) if (sh2[k] !== sh[k]) found.push({ rule: "JSON file round trip", detail: `${k}: ${sh[k]} became ${sh2[k]}` });
     if (sh2.ac.value !== sh.ac.value) found.push({ rule: "JSON file round trip", detail: `AC ${sh.ac.value} became ${sh2.ac.value}` });
     // The sheets: filled, and the fillable ones say what the character says.
-    const data = buildFillData(r, sh);
+    // Every spell the character can prepare, so the continuation pages are exercised too.
+    const data = buildFillData(r, sh, { allSpells: true });
     const safe = label.replace(/[^\w-]+/g, "_").slice(0, 60);
     const save = (name: string, bytes: Uint8Array | string) => OUT && writeFileSync(join(OUT, `${safe}-${name}`), bytes);
     save("character.json", JSON.stringify(ch, null, 2));
     try {
       const p24 = await fillOfficialSheet(readFileSync(join(sheets, "2024-print.pdf")), "2024-print.pdf", data, font);
       save("2024.pdf", p24.bytes);
-      for (const miss of sheetShows(p24.bytes, ch, sh)) found.push({ rule: "2024 sheet shows the character", detail: miss });
+      for (const miss of sheetShows(p24.bytes, ch, sh, data.spells.map((x) => x.name))) found.push({ rule: "2024 sheet shows the character", detail: miss });
     } catch (e) { found.push({ rule: "2024 sheet export", detail: (e as Error).message }); }
     try {
       const p14 = await fillOfficialSheet(readFileSync(join(sheets, "2014-3pages.pdf")), "CharacterSheet_3Pgs_ Complete.pdf", data, font);

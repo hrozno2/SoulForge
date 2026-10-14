@@ -10,7 +10,7 @@ import type { SetCharacter } from "./Slots";
 import { CompanionCard, CONDITIONS } from "./ManageTab";
 import { requestRoll, type RollOptions } from "./Dice";
 import { isAvailable, usedAfterClick } from "./pips";
-import { getSettings } from "./Settings";
+import { getSettings, updateSettings } from "./Settings";
 import { TranslateOptions, useTranslation } from "./TranslateOptions";
 import { TemplateExport } from "./SheetExport";
 
@@ -24,6 +24,8 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const counts = cardCounts(r, sheet);
+  const prepares = sheet.casting.some((c) => c.prepare);
+  const [allSpells, setAllSpells] = useState(getSettings().allSpells);
   const tr = useTranslation();
   const toggle = (k: "sheet" | "spellCards" | "itemCards" | "featureCards") => setOpts((o) => ({ ...o, [k]: !o[k] }));
   const run = async () => {
@@ -33,7 +35,7 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
       const { loadFonts } = await import("../pdf/fonts");
       let failed = 0;
       const translate = tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`), (f) => (failed = f));
-      const bytes = await buildPdf(r, sheet, { ...opts, translate }, await loadFonts());
+      const bytes = await buildPdf(r, sheet, { ...opts, translate, allSpells: prepares && allSpells }, await loadFonts());
       const base = (r.character.name || "character").replace(/[^\p{L}\p{N}]+/gu, "-");
       const ok = await saveFile(`${base}.pdf`, bytes, "application/pdf");
       setMsg([ok ? "PDF saved." : "Cancelled.", failed ? `${failed} pieces of text could not be translated and stayed in English.` : ""].join(" ").trim());
@@ -49,7 +51,12 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
       {open && (
         <div className="subcard">
           <TranslateOptions tr={tr} />
-          <TemplateExport r={r} sheet={sheet} tr={tr} />
+          {prepares && (
+            <label className="check" title="For casters who prepare spells each day: the sheet's spell table lists every spell you can prepare, with today's prepared ones marked. Spells that do not fit continue on extra pages.">
+              <input type="checkbox" checked={allSpells} onChange={(e) => { updateSettings({ allSpells: e.target.checked }); setAllSpells(e.target.checked); }} /> List every spell I can prepare (to prepare each day)
+            </label>
+          )}
+          <TemplateExport r={r} sheet={sheet} tr={tr} allSpells={prepares && allSpells} />
           <h3>Soul Forge style PDF</h3>
           <p className="muted">A sheet in Soul Forge's own layout, with optional cards and play tips. Use this if you have no official sheet loaded.</p>
           <label className="check"><input type="checkbox" checked={opts.sheet} onChange={() => toggle("sheet")} /> Character sheet</label>

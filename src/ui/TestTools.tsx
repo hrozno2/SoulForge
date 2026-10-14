@@ -51,7 +51,7 @@ export async function testExport(reg: ARegistry, onProgress: (s: string) => void
     const ch = normalizeCharacter(rec.data);
     const r = resolve(ch, reg);
     const sh = buildSheet(r);
-    const data = buildFillData(r, sh);
+    const data = buildFillData(r, sh, { allSpells: true });
     const base = rec.name.replace(/[^\w -]+/g, "").trim() || rec.id;
     zip.file(`${base}/${base}.json`, JSON.stringify(ch, null, 2));
     try { zip.file(`${base}/${base} - Soul Forge.pdf`, await buildPdf(r, sh, { ...DEFAULT_PDF_OPTIONS, paper: getSettings().paper }, fonts)); } catch (e) { notes.push(`${rec.name}: Soul Forge sheet failed: ${(e as Error).message}`); }

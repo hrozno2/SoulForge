@@ -21,7 +21,7 @@ import type { Translation } from "./TranslateOptions";
 /** Fill the player's own copy of a fillable character sheet PDF. The PDF is stored on this computer only. */
 
 
-export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData; tr: Translation }) {
+export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolved; sheet: SheetData; tr: Translation; allSpells?: boolean }) {
   const [templates, setTemplates] = useState<TemplateRecord[]>([]);
   const [pick, setPick] = useState("");
   const [pages, setPages] = useState<DldmPage[]>([]);
@@ -84,7 +84,7 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   const onFailed = (f: number) => { failedRef.current += f; };
   /** The values for the sheet, translated when a language is chosen. */
   const fillData = async (translate = true) => {
-    const data = buildFillData(r, sheet);
+    const data = buildFillData(r, sheet, { allSpells: allSpells });
     if (!translate) return data;
     const t = tr.option((d, n) => setMsg(`Translating ${d} of ${n}...`), (f) => onFailed(f));
     return t ? translateFill(data, t) : data;
@@ -126,11 +126,11 @@ export function TemplateExport({ r, sheet, tr }: { r: Resolved; sheet: SheetData
   // The preview refreshes when the sheet or its page choice changes. It never translates and never saves.
   // Any change to what would be printed refreshes it, not only the name and level.
   const printed = useMemo(() => {
-    const json = JSON.stringify({ ...buildFillData(r, sheet), portrait: r.character.portrait?.length ?? 0 });
+    const json = JSON.stringify({ ...buildFillData(r, sheet, { allSpells: allSpells }), portrait: r.character.portrait?.length ?? 0 });
     let h = 0;
     for (let i = 0; i < json.length; i++) h = (h * 31 + json.charCodeAt(i)) | 0;
     return h;
-  }, [r, sheet]);
+  }, [r, sheet, allSpells]);
   const previewKey = current ? `${current.id}|${pages.join(",")}|${companion}|${printed}` : "";
   useEffect(() => {
     if (!current) { setPreviewBytes(null); return; }

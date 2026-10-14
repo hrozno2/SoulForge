@@ -3,6 +3,7 @@
  * in its fillable form and, from the same field positions, in its plain printing form.
  * Check boxes have no useful names on these sheets, so they are found by where they sit next to a labelled field.
  */
+import type { SpellRow } from "./data";
 import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString, PDFTextField, TextAlignment, type PDFFont, type PDFPage, rgb } from "pdf-lib";
 import { splitPersonality, type FillData } from "./data";
 import { readWidgets, type Widget } from "./widgets";
@@ -73,7 +74,7 @@ const joinLines = (a: string[]) => a.join("\n");
 
 /** Spell rows: the name fields from top to bottom, with the other fields on the same line. */
 /** Fills the spell table row by row. Returns the spells that did not fit. */
-function spellRows(s: Sheet, page: number, d: FillData, ctx: { level: string; name: string; time: string; range: string; notes: string; boxX: [number, number, number] }): string[] {
+function spellRows(s: Sheet, page: number, d: FillData, ctx: { level: string; name: string; time: string; range: string; notes: string; boxX: [number, number, number] }): SpellRow[] {
   const names = s.ws.filter((w) => w.t === "Tx" && w.p === page && w.name.startsWith(ctx.name)).sort((a, b) => b.y - a.y);
   const seen = new Set<number>();
   const rows = names.filter((w) => (seen.has(Math.round(w.y)) ? false : (seen.add(Math.round(w.y)), true)));
@@ -93,13 +94,13 @@ function spellRows(s: Sheet, page: number, d: FillData, ctx: { level: string; na
     const boxes = s.boxesIn(page, cy(row), ctx.boxX[0] - 6, ctx.boxX[2] + 6);
     [sp.concentration, sp.ritual, sp.m].forEach((on, k) => { if (boxes[k]) s.sink.check(boxes[k], on); });
   });
-  return rows.length ? d.spells.slice(rows.length).map((sp) => sp.name) : [];
+  return rows.length ? d.spells.slice(rows.length) : [];
 }
 
 // ---------------------------------------------------------------- 2024 fillable
 
 /** Fills the official 2024 sheet. Returns notes for the player, such as spells that did not fit. */
-export function fill2024Form(ws: W[], d: FillData, sink: Sink): string[] {
+export function fill2024Form(ws: W[], d: FillData, sink: Sink, overflow: SpellRow[] = []): string[] {
   const notes: string[] = [];
   const s = new Sheet(ws, sink);
   s.set("Name", d.name); s.set("Background", d.background); s.set("Class", d.className); s.set("Species", d.species); s.set("Subclass", d.subclass);
@@ -157,7 +158,8 @@ export function fill2024Form(ws: W[], d: FillData, sink: Sink): string[] {
     boxes.forEach((b, i) => sink.check(b, i < Math.min(total, d.casting?.used[n - 1] ?? 0)));
   }
   const left = spellRows(s, 1, d, { level: "SPELL LEVEL", name: "SPELL NAME", time: "CASTING TIME", range: "RANGE", notes: "SPELL NOTES", boxX: [239, 261, 283] });
-  if (left.length) notes.push(`${left.length} spell${left.length === 1 ? "" : "s"} did not fit in the spell table (${left.join(", ")}). Tick "Spell cards" to add every spell to the end of the PDF.`);
+  // What does not fit continues on pages added at the end (the caller adds them).
+  overflow.push(...left);
   s.set("LANGUAGES", d.languages, 1);
   s.set("EQUIPMENT", [d.armorWorn && `Armor: ${d.armorWorn}`, d.weaponsText && `Weapons: ${d.weaponsText.replace(/\n/g, ", ")}`, d.otherGear.replace(/\n/g, ", ")].filter(Boolean).join("\n"), 1);
   d.magicItems.slice(0, 3).forEach((m, i) => { s.set(`ATTUNMENT ${i + 1}`, m.name, 1); s.boxFor(`ATTUNMENT ${i + 1}`, m.attuned); });
@@ -178,7 +180,7 @@ const SKILLS_2014: Record<string, string> = {
   "sleight of hand": "SleightofHand", stealth: "Stealth", survival: "Survival",
 };
 
-export function fill2014(ws: W[], d: FillData, sink: Sink): void {
+export function fill2014(ws: W[], d: FillData, sink: Sink, overflow: SpellRow[] = []): void {
   const s = new Sheet(ws, sink);
   s.set("CharacterName", d.name); s.set("CharacterName 2", d.name); s.set("PlayerName", d.body.player);
   s.set("ClassLevel", [d.className, d.level].filter(Boolean).join(" ")); s.set("Background", d.background); s.set("Race", d.species);
@@ -251,7 +253,10 @@ export function fill2014(ws: W[], d: FillData, sink: Sink): void {
   for (const sp of d.spellbook?.length ? d.spellbook : d.spells) {
     const lv = Number(sp.level) || 0;
     const slotField = byLevel.get(lv)?.[used.get(lv) ?? 0];
-    if (!slotField) continue;
+    if (!slotField) {
+      overflow.push(sp);
+      continue;
+    }
     used.set(lv, (used.get(lv) ?? 0) + 1);
     sink.text(slotField, sp.name);
     const box = ws.find((b) => b.t === "Btn" && b.p === 2 && Math.abs(cy(b) - cy(slotField)) <= 5 && cx(b) < slotField.x && slotField.x - cx(b) < 24);

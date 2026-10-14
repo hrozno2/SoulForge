@@ -3,6 +3,7 @@
  * The PDFs are not part of Soul Forge: the player loads their own copy. Pages are recognised by the names of their
  * form fields, so the five-page file and the separate pages both work.
  */
+import { appendSpellPages } from "./continuation";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFArray, PDFDocument, PDFDict, PDFHexString, PDFName, PDFRef, PDFString, type PDFFont, type PDFTextField } from "pdf-lib";
 import type { FillData, SpellRow } from "./data";
@@ -419,7 +420,8 @@ function spellHeader(c: Ctx, d: FillData, names: { ability: string; mod: string;
   setText(c, placed[0], d.casting.mod); setText(c, placed[1], d.casting.dc); setText(c, placed[2], d.casting.attack);
 }
 
-function fillSpellRows(c: Ctx, page: number, which: "p2a" | "spells", spells: SpellRow[]): void {
+/** Fills a page's spell rows from `spells` in order; returns how many rows the page has. */
+function fillSpellRows(c: Ctx, page: number, which: "p2a" | "spells", spells: SpellRow[]): number {
   const ws = c.widgets.filter((w) => w.page === page);
   const texts = ws.filter((w) => w.type === "Tx" && w.y < (which === "p2a" ? 600 : 600));
   const rows = rowsOf(texts.filter((w) => w.h >= 14 && w.h <= 18 && w.w < 300), 4).filter((r) => r.length >= 4);
@@ -456,6 +458,7 @@ function fillSpellRows(c: Ctx, page: number, which: "p2a" | "spells", spells: Sp
     if (flags.s) setBox(c, flags.s.name, !!s?.s, 0, true);
     if (flags.m) setBox(c, flags.m.name, !!s?.m, 0, true);
   });
+  return rows.length;
 }
 
 // ---------------------------------------------------------------- page 2 (style A) and (style B)
@@ -472,10 +475,10 @@ function magicItems(c: Ctx, d: FillData, attune: string[], names: string[]): voi
   });
 }
 
-function page2a(c: Ctx, d: FillData, page: number): void {
+function page2a(c: Ctx, d: FillData, page: number, next: { at: number }): void {
   spellHeader(c, d, { ability: "SPELLCASTING ABILITY22", mod: "SPELLCASTING MOD24", dc: "SPELL SAVE DC25", attack: "SPELL ATTK BONUS23" });
   fillSlots(c, page, "p2a", d);
-  fillSpellRows(c, page, "p2a", d.spells);
+  next.at += fillSpellRows(c, page, "p2a", d.spells.slice(next.at));
   setText(c, "Armor Worn1", d.armorWorn);
   multiBox(c, "WEAPONS1", d.weaponsText); multiBox(c, "EQUIPMENT1", d.otherGear);
   magicItems(c, d, ["CB-ATTUNE1", "CB-ATTUNE2", "CB-ATTUNE3", "CB-ATTUNE4", "CB-ATTUNE5"], ["MAGIC ITEM1", "MAGIC ITEM2", "MAGIC ITEM3", "MAGIC ITEM4", "MAGIC ITEM5"]);
@@ -506,11 +509,12 @@ function page2b(c: Ctx, d: FillData): void {
   }
 }
 
-function spellsPage(c: Ctx, d: FillData, page: number): void {
+function spellsPage(c: Ctx, d: FillData, page: number, next: { at: number }): void {
   spellHeader(c, d, { ability: "SPELLCASTING ABILITY22", mod: "SPELLCASTING MOD24", dc: "SPELL SAVE DC25", attack: "SPELL ATTK BONUS23" });
   setText(c, "Spellcasting Focus", d.casting?.focus ?? "");
   fillSlots(c, page, "spells", d);
-  fillSpellRows(c, page, "spells", d.spells);
+  // The spell list page carries on where page 2 stopped.
+  next.at += fillSpellRows(c, page, "spells", d.spells.slice(next.at));
 }
 
 // ---------------------------------------------------------------- entry
@@ -549,14 +553,16 @@ export async function fillDldm(template: Uint8Array | ArrayBuffer, data: FillDat
   const c: Ctx = { doc, form: doc.getForm(), widgets, missing: [], alias, rich: bold ? { r: font, b: bold } : undefined };
   const notes: string[] = [];
   const want = new Set(opts.pages);
+  // Spells fill page 2, then the spell list page, then pages added at the end.
+  const next = { at: 0 };
 
   for (const [page, id] of detected) {
     if (!want.has(id)) continue;
     if (id === "p1a") page1a(c, data);
     else if (id === "p1b") page1b(c, data);
-    else if (id === "p2a") page2a(c, data, page);
+    else if (id === "p2a") page2a(c, data, page, next);
     else if (id === "p2b") page2b(c, data);
-    else spellsPage(c, data, page);
+    else spellsPage(c, data, page, next);
   }
   // Portrait goes in the picture boxes on the second-page sheets.
   if (data.portrait) {
@@ -571,9 +577,12 @@ export async function fillDldm(template: Uint8Array | ArrayBuffer, data: FillDat
       notes.push("The portrait could not be placed.");
     }
   }
-  if (data.spells.length > 20 && want.has("p2a") && !want.has("spells")) notes.push(`${data.spells.length - 20} spells did not fit on page 2. Add the spell list page.`);
-  const spellsFit = 32;
-  if (data.spells.length > spellsFit && want.has("spells")) notes.push(`${data.spells.length - spellsFit} spells did not fit on the spell list page.`);
+  // What the sheet's spell rows cannot hold continues on pages at the end.
+  if (want.has("p2a") || want.has("spells")) {
+    const rest = data.spells.slice(next.at);
+    const added = appendSpellPages(doc, font, rest, "Spells, continued", data.name || "Character");
+    if (added) notes.push(`${rest.length} spell${rest.length === 1 ? "" : "s"} did not fit the sheet's spell rows and continue on ${added === 1 ? "a page" : `${added} pages`} at the end.`);
+  }
   if (data.casting && !data.spells.length && (want.has("p2a") || want.has("spells"))) notes.push("No spells are known or prepared yet.");
 
   // Make the embedded font known to the form, so viewers can find it by the name the fields use.

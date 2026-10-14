@@ -2,7 +2,9 @@
  * The official Wizards of the Coast character sheets. Each is a known layout: the positions of every field are kept here,
  * so the same filler works on a fillable copy (the form's own fields) and on a plain printing copy (text drawn at those positions).
  */
-import { PDFDocument } from "pdf-lib";
+import { appendSpellPages } from "./continuation";
+import type { SpellRow } from "./data";
+import { PDFDocument, type PDFFont } from "pdf-lib";
 import type { FillData } from "./data";
 import { fill2014, fill2024Form, formSink, overlaySink, placePortrait, type FormFillResult, type Sink, type W } from "./forms";
 import { autoFill, type AutoField } from "./automap";
@@ -87,12 +89,18 @@ const withAliases = (layout: LayoutId, ws: AutoField[]): AutoField[] => {
 };
 
 /** Fills the layout's fields: by hand-made mapping for the two big sheets, by matching names for the rest. */
-function run(layout: LayoutId, ws: AutoField[], data: FillData, sink: Sink): string[] {
-  if (layout === "2024") return fill2024Form(ws, data, sink);
-  else if (layout === "3p") fill2014(ws, data, sink);
+function run(layout: LayoutId, ws: AutoField[], data: FillData, sink: Sink, overflow: SpellRow[] = []): string[] {
+  if (layout === "2024") return fill2024Form(ws, data, sink, overflow);
+  else if (layout === "3p") fill2014(ws, data, sink, overflow);
   else if (layout === "alt2") fillAlt2(ws, data, sink);
   else autoFill(withAliases(layout, ws), data, sink);
   return [];
+}
+
+/** Spells the sheet has no room for continue on pages at the end, in a table of their own. */
+function continueSpells(doc: PDFDocument, font: PDFFont, rows: SpellRow[], data: FillData, notes: string[]): void {
+  const pages = appendSpellPages(doc, font, rows, "Spells, continued", data.name || "Character");
+  if (pages) notes.push(`${rows.length} spell${rows.length === 1 ? "" : "s"} did not fit the sheet's spell table and continue on ${pages === 1 ? "a page" : `${pages} pages`} at the end.`);
 }
 
 /** Fills one of the official sheets, fillable or plain. */
@@ -108,15 +116,19 @@ export async function fillOfficialSheet(template: Uint8Array | ArrayBuffer, name
   if (!id.form) {
     const over = overlaySink(doc, f);
     const pics: W[] = [];
-    notes.push(...run(id.layout, known, data, { ...over, image: (w) => void pics.push(w) }));
+    const overflow: SpellRow[] = [];
+    notes.push(...run(id.layout, known, data, { ...over, image: (w) => void pics.push(w) }, overflow));
+    continueSpells(doc, f, overflow, data, notes);
     await placePortrait(doc, data, pics, notes, true);
     notes.push("This copy has no form fields, so the text is written onto the page and cannot be edited afterwards.");
     return { bytes: await doc.save(), notes, layout: id.layout, form: false };
   }
   const sink = formSink(doc, f);
   const ws: AutoField[] = sink.widgets.map((w) => ({ name: w.name, t: w.type === "Btn" ? "Btn" : "Tx", p: w.page, x: w.x, y: w.y, w: w.w, h: w.h }));
-  notes.push(...run(id.layout, ws, data, sink));
+  const overflow: SpellRow[] = [];
+  notes.push(...run(id.layout, ws, data, sink, overflow));
   sink.done();
+  continueSpells(doc, f, overflow, data, notes);
   await placePortrait(doc, data, sink.images, notes);
   return { bytes: await doc.save({ updateFieldAppearances: false }), notes, layout: id.layout, form: true };
 }

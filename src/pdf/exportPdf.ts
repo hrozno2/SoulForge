@@ -16,6 +16,8 @@ export interface PdfOptions {
   itemCards: boolean;
   featureCards: boolean;
   tips?: boolean;
+  /** The spell pages list every spell the character can prepare, not only the prepared ones. */
+  allSpells?: boolean;
   /** Translate the printed text. Names the player typed are kept as they are. */
   translate?: {
     target: string;
@@ -285,7 +287,7 @@ async function buildPdfOnce(r: Resolved, sh: SheetData, opts: PdfOptions, fonts:
     b: await pdf.embedFont(fonts.bold, { subset: true }),
   };
   const size = PAPER[opts.paper];
-  if (opts.sheet) await drawSoulForgeSheet(pdf, f, buildFillData(r, sh), size, clean);
+  if (opts.sheet) await drawSoulForgeSheet(pdf, f, buildFillData(r, sh, { allSpells: opts.allSpells }), size, clean);
 
   const src = cardSources(r, sh);
   const cards: CardData[] = [];

@@ -1,6 +1,6 @@
 import { companionHtml } from "../aurora/companion";
 import type { Resolved } from "../aurora/engine";
-import { headerInfo, type SheetData } from "../aurora/sheet";
+import { headerInfo, preparePool, type SheetData } from "../aurora/sheet";
 import { ABILITY_IDS, ABILITY_LABEL, SKILL_ABILITY, itemLabel, type AbilityId, type InvItem } from "../aurora/character";
 
 export interface SpellRow {
@@ -173,7 +173,12 @@ export function companionFill(el: import("../aurora/types").AElement, name: stri
   };
 }
 
-export function buildFillData(r: Resolved, sh: SheetData): FillData {
+/**
+ * `allSpells`: the spell table lists every spell the character can prepare (a cleric's whole class list up to the
+ * highest slot, a wizard's whole spellbook), with today's prepared spells marked, so the sheet can be used to
+ * prepare each day. Off, it lists what is known and prepared.
+ */
+export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: boolean } = {}): FillData {
   const ch = r.character;
   const head = headerInfo(r);
   const abilities = {} as FillData["abilities"];
@@ -231,7 +236,17 @@ export function buildFillData(r: Resolved, sh: SheetData): FillData {
       if (x && ownDc(c)) x.notes = [ownDc(c), x.notes].filter(Boolean).join(", ");
       if (x) spells.push(x);
     }
-    for (const p of [...c.cantripsKnown, ...c.granted, ...c.spells]) {
+    // Everything the line can prepare from, unprepared unless chosen, when the whole list is wanted.
+    const pool = opts.allSpells && c.prepare ? preparePool(r, c).map((e) => ({ id: e.id, granted: false, prepared: false })) : [];
+    if (opts.allSpells) {
+      for (const p of pool) {
+        if (seen.has(nameOf(p.id))) continue;
+        seen.add(nameOf(p.id));
+        const x = row(p, false);
+        if (x) spells.push(x);
+      }
+    }
+    for (const p of [...c.cantripsKnown, ...c.granted, ...c.spells, ...pool]) {
       if (seenBook.has(nameOf(p.id))) continue;
       seenBook.add(nameOf(p.id));
       const x = row(p, !!p.granted || !c.prepare || !!(p as { prepared?: boolean }).prepared);

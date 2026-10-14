@@ -19,10 +19,12 @@ export interface AppSettings {
   showLegacy: boolean;
   showPlaytest: boolean;
   showUnusual: boolean;
+  /** Printed sheets list every spell the character can prepare, with today's prepared ones marked. */
+  allSpells: boolean;
 }
 
 const KEY = "charforge.settings";
-const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true };
+const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true, allSpells: true };
 
 function read(): AppSettings {
   try {

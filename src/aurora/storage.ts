@@ -42,7 +42,15 @@ function openDb(): Promise<IDBDatabase> {
       }
     };
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onerror = () => {
+      // A newer Soul Forge (the test build shares this data) may have raised the version. New versions only ever
+      // add stores, so open it at whatever version it has rather than failing with no content at all.
+      if (req.error?.name === "VersionError") {
+        const any = indexedDB.open(DB_NAME);
+        any.onsuccess = () => resolve(any.result);
+        any.onerror = () => reject(any.error);
+      } else reject(req.error);
+    };
   });
 }
 

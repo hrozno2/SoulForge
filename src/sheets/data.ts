@@ -175,8 +175,8 @@ export function companionFill(el: import("../aurora/types").AElement, name: stri
 
 /**
  * `allSpells`: the spell table lists every spell the character can prepare (a cleric's whole class list up to the
- * highest slot, a wizard's whole spellbook), with today's prepared spells marked, so the sheet can be used to
- * prepare each day. Off, it lists what is known and prepared.
+ * highest slot, a wizard's whole spellbook) with the prepared boxes left blank, so the player marks each day's
+ * choice by hand. Always-prepared spells stay marked. Off, it lists what is known and prepared.
  */
 export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: boolean } = {}): FillData {
   const ch = r.character;
@@ -232,11 +232,11 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     for (const p of byGrantFirst) {
       if (seen.has(nameOf(p.id))) continue;
       seen.add(nameOf(p.id));
-      const x = row(p, !!p.granted || (c.prepare && !!(p as { prepared?: boolean }).prepared) || !c.prepare);
+      const x = row(p, !!p.granted || !c.prepare || (!opts.allSpells && !!(p as { prepared?: boolean }).prepared));
       if (x && ownDc(c)) x.notes = [ownDc(c), x.notes].filter(Boolean).join(", ");
       if (x) spells.push(x);
     }
-    // Everything the line can prepare from, unprepared unless chosen, when the whole list is wanted.
+    // Everything the line can prepare from, every box blank, when the whole list is wanted.
     const pool = opts.allSpells && c.prepare ? preparePool(r, c).map((e) => ({ id: e.id, granted: false, prepared: false })) : [];
     if (opts.allSpells) {
       for (const p of pool) {
@@ -249,7 +249,7 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     for (const p of [...c.cantripsKnown, ...c.granted, ...c.spells, ...pool]) {
       if (seenBook.has(nameOf(p.id))) continue;
       seenBook.add(nameOf(p.id));
-      const x = row(p, !!p.granted || !c.prepare || !!(p as { prepared?: boolean }).prepared);
+      const x = row(p, !!p.granted || !c.prepare || (!opts.allSpells && !!(p as { prepared?: boolean }).prepared));
       if (x) spellbook.push(x);
     }
   }

@@ -31,6 +31,9 @@ export const Scroll = ({ size = 16 }: { size?: number }) => wrap(<><path d="M8 4
 export const Tome = ({ size = 16 }: { size?: number }) => wrap(<><path d="M5 4.500A1.500 1.500 0 0 1 6.500 3H18v15H6.500A1.500 1.500 0 0 0 5 19.500z" /><path d="M5 19.500A1.500 1.500 0 0 0 6.500 21H18v-3" /><path d="M9 7.500h5M9 10.500h4" /></>, size);
 export const Page = ({ size = 16 }: { size?: number }) => wrap(<><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v4h4" /><path d="M9 12h7M9 15.500h7M9 8.500h3" /></>, size);
 
+export const Head = ({ size = 16 }: { size?: number }) => wrap(<><circle cx="12" cy="8.500" r="4" /><path d="M4.500 20.500c.8-4 3.800-6 7.500-6s6.700 2 7.500 6" /><path d="M8.500 6.500 7 3.500l3 1.700M15.500 6.500 17 3.500l-3 1.700" /></>, size);
+export const Speech = ({ size = 16 }: { size?: number }) => wrap(<><path d="M4 5h16v10H10l-4 4v-4H4z" /><path d="M8 9h8M8 12h5" /></>, size);
+export const Star = ({ size = 16 }: { size?: number }) => wrap(<path d="M12 3.500l2.500 5.200 5.700.8-4.100 4 1 5.700L12 16.500l-5.100 2.700 1-5.700-4.100-4 5.700-.8z" />, size);
 export const TAB_ICONS: Record<string, (p: { size?: number }) => ReactNode> = {
   start: Tower, build: Anvil, magic: Wand, equipment: Sword, manage: Scroll, play: D20, sheet: Page, content: Tome,
 };

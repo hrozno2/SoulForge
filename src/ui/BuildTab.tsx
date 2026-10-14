@@ -11,8 +11,8 @@ import { buildSheet } from "../aurora/sheet";
 import { ChosenBanner, PickCards } from "./PickCards";
 import { multiclassLock } from "./multiclass";
 
-type Sub = "race" | "class" | "background" | "abilities" | "languages" | "proficiencies" | "feats";
-const SUBS: [Sub, string][] = [["race", "Species"], ["class", "Class"], ["background", "Background"], ["abilities", "Ability scores"], ["languages", "Languages"], ["proficiencies", "Proficiencies"], ["feats", "Feats"]];
+export type Sub = "race" | "class" | "background" | "abilities" | "languages" | "proficiencies" | "feats";
+export const SUBS: [Sub, string][] = [["race", "Species"], ["class", "Class"], ["background", "Background"], ["abilities", "Ability scores"], ["languages", "Languages"], ["proficiencies", "Proficiencies"], ["feats", "Feats"]];
 
 /** A grid of cards until something is chosen; then the choice with its follow-up questions and a way to change it. */
 function ChosenOrCards({ kicker, title, label, items, value, onPick, onClear, onDetail, children }: { kicker: string; title: string; label: string; items: AElement[]; value?: string; onPick: (id: string) => void; onClear: () => void; onDetail: (e: AElement) => void; children: React.ReactNode }) {
@@ -37,7 +37,8 @@ function ChosenOrCards({ kicker, title, label, items, value, onPick, onClear, on
   );
 }
 
-function ClassPanel({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
+/** The chosen classes with their levels and choices. `picker` off leaves picking a class to the caller (the step layout lists them beside). */
+export function ClassPanel({ r, ch, set, onDetail, picker = true }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; picker?: boolean }) {
   const classes = r.reg.ofType("Class").filter((c) => !c.compendiumHidden);
   const [adding, setAdding] = useState(false);
   const level = totalLevel(ch);
@@ -71,11 +72,11 @@ function ClassPanel({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
         })}
         {!ch.classes.length && <p className="muted">Pick a class to start.</p>}
       </div>
-      <div className="row">
+      {picker && <div className="row">
         <button className="primary" onClick={() => setAdding(!adding)}>{adding ? "Close" : ch.classes.length ? "Add class (multiclass)" : "Choose class"}</button>
         {level >= 20 && <span className="muted">Level 20 is the maximum.</span>}
-      </div>
-      {adding && (
+      </div>}
+      {picker && adding && (
         <PickCards
           kicker={ch.classes.length ? "Add a class" : "Choose a class"} title={ch.classes.length ? "Branch out." : "Claim your role."}
           items={classes.filter((c) => !have.has(c.id))} onPick={(id) => { add(id); setAdding(false); }} onDetail={onDetail}
@@ -96,7 +97,7 @@ function ClassPanel({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
   );
 }
 
-function Abilities({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
+export function Abilities({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
   const rules = normalizeRules(ch.pointBuy);
   const spent = pbSpent(rules, ch.abilityBase);
   const setRules = (p: Partial<typeof rules>, resetCosts = false) => set((c) => {
@@ -183,7 +184,7 @@ function Abilities({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: 
   );
 }
 
-function ActiveList({ title, items }: { title: string; items: string[] }) {
+export function ActiveList({ title, items }: { title: string; items: string[] }) {
   if (!items.length) return null;
   return (
     <>
@@ -193,20 +194,21 @@ function ActiveList({ title, items }: { title: string; items: string[] }) {
   );
 }
 
+/** What is still to do on a part of the build, for the number badges and their hover lists. */
+export function todoFor(r: Resolved, ch: Character, s: Sub): string[] {
+  const lines: string[] = [];
+  if (s === "race" && !ch.race) lines.push("Choose a species");
+  if (s === "class" && !ch.classes.length) lines.push("Choose a class");
+  if (s === "background" && !ch.background) lines.push("Choose a background");
+  for (const x of r.slots.filter((x) => tabOfSlot(x) === s && !x.rule.optional && x.chosen.length < x.rule.number)) lines.push(`${x.rule.name}: ${x.rule.number - x.chosen.length} more to choose${x.rule.number > 1 ? ` (${x.chosen.length}/${x.rule.number})` : ""}`);
+  return lines;
+}
+
 export function BuildTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
   const [sub, setSub] = useState<Sub>("race");
   const sheet = useMemo(() => buildSheet(r), [r]);
-  const open = (s: Sub) => r.slots.filter((x) => tabOfSlot(x) === s && !x.rule.optional && x.chosen.length < x.rule.number);
   const of = (s: Sub) => r.slots.filter((x) => tabOfSlot(x) === s);
-  /** What is still to do on a tab, for the number badge and its hover list. */
-  const todo = (s: Sub): string[] => {
-    const lines: string[] = [];
-    if (s === "race" && !ch.race) lines.push("Choose a species");
-    if (s === "class" && !ch.classes.length) lines.push("Choose a class");
-    if (s === "background" && !ch.background) lines.push("Choose a background");
-    for (const x of open(s)) lines.push(`${x.rule.name}: ${x.rule.number - x.chosen.length} more to choose${x.rule.number > 1 ? ` (${x.chosen.length}/${x.rule.number})` : ""}`);
-    return lines;
-  };
+  const todo = (s: Sub) => todoFor(r, ch, s);
   const races = r.reg.ofType("Race");
   const backgrounds = r.reg.ofType("Background");
   return (

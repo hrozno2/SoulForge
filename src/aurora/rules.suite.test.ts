@@ -36,6 +36,8 @@ import type { ARegistry } from "./registry";
 const CACHE = process.env.SOULFORGE_RULES;
 const OUT = process.env.RULES_OUT;
 const SEED = Number(process.env.RULES_SEED) || Date.now() % 2147483647;
+/** The number of characters in the big run; 0 (the default) skips it. */
+const BIG = Number(process.env.RULES_BIG) || 0;
 
 /** What an imported character became, in a form that is easy to read and compare. */
 function importSnapshot(res: ReturnType<typeof importForeignCharacter>) {
@@ -118,7 +120,9 @@ describe.skipIf(!CACHE)("rules", () => {
     // Every spell the character can prepare, so the continuation pages are exercised too.
     const data = buildFillData(r, sh, { allSpells: true });
     const safe = label.replace(/[^\w-]+/g, "_").slice(0, 60);
-    const save = (name: string, bytes: Uint8Array | string) => OUT && writeFileSync(join(OUT, `${safe}-${name}`), bytes);
+    // A big run keeps the files of characters with findings only.
+    const files: [string, Uint8Array | string][] = [];
+    const save = (name: string, bytes: Uint8Array | string) => files.push([name, bytes]);
     save("character.json", JSON.stringify(ch, null, 2));
     try {
       const p24 = await fillOfficialSheet(readFileSync(join(sheets, "2024-print.pdf")), "2024-print.pdf", data, font);
@@ -144,7 +148,8 @@ describe.skipIf(!CACHE)("rules", () => {
       for (const miss of sheetShows(sf, ch, sh)) found.push({ rule: "Soul Forge sheet shows the character", detail: miss });
       if ((await PDFDocument.load(sf)).getPageCount() < 1) found.push({ rule: "Soul Forge sheet export", detail: "no pages" });
     } catch (e) { found.push({ rule: "Soul Forge sheet export", detail: (e as Error).message }); }
-    report.push(`\n### ${label}\n${found.length ? found.map((f) => `- ${f.rule}: ${f.detail}`).join("\n") : "- no findings"}`);
+    if (OUT && (found.length || !BIG)) for (const [name, bytes] of files) writeFileSync(join(OUT, `${safe}-${name}`), bytes);
+    if (!BIG || found.length) report.push(`\n### ${label}\n${found.length ? found.map((f) => `- ${f.rule}: ${f.detail}`).join("\n") : "- no findings"}`);
     return found;
   }
   const run = async (label: string, chars: [string, Character][]) => {
@@ -156,6 +161,32 @@ describe.skipIf(!CACHE)("rules", () => {
   const writeReport = () => OUT && writeFileSync(join(OUT, "report.md"), report.join("\n"));
 
   const batch = CACHE ? randomBatch(reg, 10, filters, rng) : [];
+
+  // The big run (scripts/rules-big.mjs, on request): many random characters, any level, some multiclassed, with a
+  // count of findings by rule at the top of the report.
+  it.skipIf(!BIG)("a big batch of random characters", async () => {
+    const books = new BookIndex(reg);
+    const classes = reg.ofType("Class").filter((c) => !c.compendiumHidden && !hiddenBy(books.info(c.source), c.source, filters));
+    const tally = new Map<string, number>();
+    let bad = 0;
+    for (let i = 0; i < BIG; i++) {
+      let ch = randomBatch(reg, 1, filters, rng)[0];
+      // A quarter of them take a second class, the way a player would (multiclass requirements met).
+      if (rng() < 0.25 && ch.classes.length === 1 && ch.classes[0].level < 20) {
+        const r = resolve(ch, reg);
+        const ok = classes.filter((k) => k.name !== reg.get(ch.classes[0].classId)?.name && !multiclassLockFor(r, k.id) && !multiclassLockFor({ ...r, character: { ...ch, classes: [...ch.classes, { classId: k.id, level: 1 }] } } as typeof r, k.id));
+        const pick = ok[Math.floor(rng() * ok.length)];
+        if (pick) ch = autoFill({ ...ch, classes: [...ch.classes, { classId: pick.id, level: 1 }] }, reg, () => rng());
+      }
+      const found = await check(`big ${i + 1}: ${ch.name}`, ch);
+      if (found.length) bad++;
+      for (const f of found) tally.set(f.rule, (tally.get(f.rule) ?? 0) + 1);
+      if ((i + 1) % 50 === 0) console.log(`${i + 1} of ${BIG}, ${bad} with findings`);
+    }
+    report.splice(1, 0, `\n${BIG} characters, ${bad} with findings (${((100 * (BIG - bad)) / BIG).toFixed(1)}% clean).`, ...[...tally].sort((a, b) => b[1] - a[1]).map(([rule, n]) => `- ${rule}: ${n}`));
+    writeReport();
+    expect(bad).toBe(0);
+  }, 86400000);
 
   it("a batch of 10 varied random characters", async () => {
     expect(await run("batch", batch.map((c) => [c.name, c]))).toEqual([]);

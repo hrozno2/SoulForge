@@ -77,7 +77,7 @@ export function appendSpellPages(doc: PDFDocument, font: PDFFont, rows: SpellRow
       }
       page.drawLine({ start: { x: M, y: y - 1 }, end: { x: W - M, y: y - 1 }, thickness: 0.3, color: RULE });
     }
-    page.drawText(`Filled box: prepared today. C R M: concentration, ritual, material component.`, { x: M, y: M - 10, size: 7, font, color: MUTED });
+    page.drawText(`Prep: mark the spells you prepare (a filled box is always prepared). C R M: concentration, ritual, material component.`, { x: M, y: M - 10, size: 7, font, color: MUTED });
   }
   return pages;
 }

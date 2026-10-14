@@ -9,6 +9,7 @@ import { saveCharacterRecord } from "../aurora/storage";
 import type { AElement } from "../aurora/types";
 import { useContent } from "./useContent";
 import { BuildTab } from "./BuildTab";
+import { BuildSteps } from "./BuildSteps";
 import { StartTab } from "./StartTab";
 import { DetailPanel } from "./DetailPanel";
 import { UpdateBanner } from "./UpdateBanner";
@@ -17,7 +18,7 @@ import { UiProvider } from "./Learn";
 import { ThemePicker } from "./Theme";
 import { HelpButton } from "./Help";
 import { AppMenu, GroupNav } from "./TopBar";
-import { SettingsDialog, getSettings, useScaleShortcuts } from "./Settings";
+import { SettingsDialog, getSettings, updateSettings, useScaleShortcuts, useSettings } from "./Settings";
 import { runAutoBackup } from "../aurora/backup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
@@ -177,7 +178,10 @@ export function App() {
     else if (tab === "magic" && prev.magic > 0 && magicList.length === 0 && pending === 0) setTab("equipment");
   }, [pending, magicList.length, id]); // eslint-disable-line react-hooks/exhaustive-deps
   const tip = (where: string, list: string[]) => `Still to choose on the ${where} tab:\n${list.slice(0, 12).join("\n")}${list.length > 12 ? `\n...and ${list.length - 12} more` : ""}`;
-  const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play";
+  const settings = useSettings();
+  const steps = testToolsEnabled && settings.buildLayout === "steps";
+  // The step layout of Build has its own description panel beside the summary.
+  const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play" && !(tab === "build" && steps);
 
   return (
     <UiProvider reg={content.reg}>
@@ -222,6 +226,7 @@ export function App() {
           <small title="If this is older than the build you expect, quit the app (Cmd+Q) and open it again.">{import.meta.env.VITE_TEST_BUILD}</small>
           <button onClick={async () => { if (!content.ready) { setTestMsg("Load rules content first (Home, Go to content)."); return; } setTestMsg("Making 10 random characters..."); const made = await makeTestBatch(content.reg); if (made[0]) open(made[0].id, made[0].ch); setTab("start"); setTestMsg(`Made ${made.length} test characters. They are on Home.`); }}>Make 10 random characters</button>
           <button onClick={async () => setTestMsg(await testExport(content.reg, setTestMsg))}>Export test characters</button>
+          <button onClick={() => updateSettings({ buildLayout: steps ? "tabs" : "steps" })} title="Try the new Build layout or go back to the old one">Build layout: {steps ? "new (steps)" : "old (tabs)"}</button>
         </div>
       )}
       {testMsg && <div className="test-toast" role="status" onClick={() => setTestMsg("")}>{testMsg} <small>(click to close)</small></div>}
@@ -252,7 +257,7 @@ export function App() {
           {tab === "build" && (
             <>
               <div className="namebar"><input placeholder="Character name" value={character.name} onChange={(e) => set((c) => ({ ...c, name: e.target.value }))} /></div>
-              <BuildTab r={r} ch={character} set={set} onDetail={setDetail} />
+              {steps ? <BuildSteps r={r} ch={character} set={set} /> : <BuildTab r={r} ch={character} set={set} onDetail={setDetail} />}
             </>
           )}
           {tab === "magic" && <MagicTab r={r} ch={character} set={set} onDetail={setDetail} />}

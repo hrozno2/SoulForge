@@ -53,7 +53,7 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
           <TranslateOptions tr={tr} />
           {prepares && (
             <label className="check" title="For casters who prepare spells each day: the sheet's spell table lists every spell you can prepare, with today's prepared ones marked. Spells that do not fit continue on extra pages.">
-              <input type="checkbox" checked={allSpells} onChange={(e) => { updateSettings({ allSpells: e.target.checked }); setAllSpells(e.target.checked); }} /> List every spell I can prepare (to prepare each day)
+              <input type="checkbox" checked={allSpells} onChange={(e) => { updateSettings({ allSpells: e.target.checked }); setAllSpells(e.target.checked); }} /> List every spell I can prepare, with blank boxes to mark each day
             </label>
           )}
           <TemplateExport r={r} sheet={sheet} tr={tr} allSpells={prepares && allSpells} />

@@ -8,7 +8,8 @@
     "tauri": "tauri",
     "test:e2e": "playwright test",
     "test-app": "scripts/test-app.sh --open",
-    "rules-check": "node scripts/rules-check.mjs"
+    "rules-check": "node scripts/rules-check.mjs",
+    "rules-big": "node scripts/rules-big.mjs"
   },
   "dependencies": {
     "@fontsource/alegreya-sans": "^5.3.0",

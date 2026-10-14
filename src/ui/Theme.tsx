@@ -18,10 +18,29 @@ const read = (k: string, d: string) => {
   }
 };
 
-const migrate = (v: string) => (THEMES[v] ? v : v === "light" ? "parchment" : "obsidian");
+/** The theme for anyone who has not picked one: slate and amber. */
+export const DEFAULT_THEME = "slate";
+
+const migrate = (v: string) => (THEMES[v] ? v : v === "light" ? "parchment" : DEFAULT_THEME);
+
+/**
+ * The saved theme. Obsidian was the default until slate and amber; the picker saved it without anyone choosing it, so
+ * it moves to the new default once (a theme picked afterwards stays).
+ */
+function savedTheme(): string {
+  let v = migrate(read("charforge.theme", DEFAULT_THEME));
+  try {
+    if (!localStorage.getItem("charforge.themeDefault") && v === "obsidian") v = DEFAULT_THEME;
+    localStorage.setItem("charforge.themeDefault", DEFAULT_THEME);
+    localStorage.setItem("charforge.theme", v);
+  } catch {
+    /* storage can be unavailable */
+  }
+  return v;
+}
 
 export function applyTheme(id: string): void {
-  const t = THEMES[id] ?? THEMES.obsidian;
+  const t = THEMES[id] ?? THEMES[DEFAULT_THEME];
   const root = document.documentElement;
   root.setAttribute("data-theme", t.base);
   root.setAttribute("data-skin", id);
@@ -29,7 +48,7 @@ export function applyTheme(id: string): void {
 
 /** Palette switch in the top bar. Remembered between launches. */
 export function ThemePicker() {
-  const [id, setId] = useState(() => migrate(read("charforge.theme", "obsidian")));
+  const [id, setId] = useState(() => migrate(read("charforge.theme", DEFAULT_THEME)));
   useEffect(() => {
     applyTheme(id);
     try {
@@ -48,4 +67,4 @@ export function ThemePicker() {
 }
 
 // Apply the saved theme as soon as the file loads, so the first paint is not the wrong colour.
-if (typeof document !== "undefined") applyTheme(migrate(read("charforge.theme", "obsidian")));
+if (typeof document !== "undefined") applyTheme(savedTheme());

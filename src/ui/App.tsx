@@ -201,7 +201,10 @@ export function App() {
             { key: "build", label: t("Build"), items: pick("build") },
             ...(board ? [] : [{ key: "magic", label: t("Magic"), items: pick("magic") }, { key: "equipment", label: t("Equipment"), items: pick("equipment") }]),
             { key: "manage", label: t("Manage"), icon: defs.find((d) => d.key === "manage")?.icon, items: pick("manage", "content") },
-            { key: "sheet", label: t("Sheet"), icon: defs.find((d) => d.key === "sheet")?.icon, items: pick("play", "sheet") },
+            // With the board, Magic and Equipment are gone from here, so Play and Export each get their own tab.
+            ...(board
+              ? [{ key: "play", label: t("Play"), items: pick("play") }, { key: "export", label: t("Export"), items: pick("sheet") }]
+              : [{ key: "sheet", label: t("Sheet"), icon: defs.find((d) => d.key === "sheet")?.icon, items: pick("play", "sheet") }]),
           ];
         })()} />
         <CompendiumSearch />

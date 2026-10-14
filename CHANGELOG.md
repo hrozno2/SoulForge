@@ -2,6 +2,27 @@
 
 What changed in each release. Newest first.
 
+## v0.12.0 (2026-10-14)
+
+- Storage: open a database a newer build raised the version of, instead of failing
+- Build board: portrait and name at the top of the scores; thickening spellbook and pocket-filling backpack; Magic and Equipment tabs folded into the board
+- Build board: book versions chosen on the card, not in the lists; species, class and background arrive with a card flight
+- Build board: a spellbook that grows and a backpack that fills; every space as a full gold-framed card; tabs on narrow windows
+- Build board (test app): lists on the left, the character filling in on a board in the middle, scores worked in place on the right
+- Rules suite: apply the time limit to every test
+- Rules suite: one generous time limit per test, so a busy machine is not reported as a failure
+- Full spell list prints with blank prepared boxes; on-request big rules run; step layout for Build (test app); slate and amber default theme
+- Plan: progress section
+- Full spell list to prepare from, and continuation pages on every standard sheet
+- Import by source; granted spells everywhere; defenses and unarmed strikes on every sheet
+- Import compared with the file's own numbers; item and typed-in bonuses; two engine fixes
+- Feat prerequisites probed against 5e.tools; missing ones added
+- Spell lists cross-checked against 5e.tools; Frostbite on the Artificer list
+- Content layer: one edition rule, pinned content, content linter and fixes
+- Rules check in the app: Build bar, import report and export warning; reference downloaded, never bundled
+- Import leaves unsettled choices open as a to-do list; import snapshots
+- Plan: decisions recorded; features-later list for the freeze
+
 ## v0.11.0 (2026-10-13)
 
 - Feat spellcasting DC on every sheet even when spells overflow

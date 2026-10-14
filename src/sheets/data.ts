@@ -197,7 +197,7 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
   const other = [...specificWeapons, ...toolList];
 
   const feat = (types: string[]) => sh.features.filter((f) => types.includes(f.type));
-  const line = (f: { name: string; usage?: string; text: string }, max: number) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${sentence(f.text, max)}`;
+  const line = (f: { name: string; usage?: string; text: string }, max: number) => `${f.name}${f.usage ? ` (${f.usage})` : ""}${f.text ? `: ${sentence(f.text, max)}` : ""}`;
 
   // Spells: cantrips first, then by level. Prepare casters list what is prepared plus what is always prepared
   // (or everything they know when nothing is prepared yet); `spellbook` has every known spell, prepared or not,

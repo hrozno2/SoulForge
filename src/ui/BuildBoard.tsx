@@ -13,7 +13,7 @@ import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as
 import { buildSheet } from "../aurora/sheet";
 import { groupVariants, hiddenBy } from "../aurora/books";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
-import { ClassPanel, SUBS, todoFor } from "./BuildTab";
+import { ClassPanel } from "./BuildTab";
 import { Browse, VariantChips, blurb, dragMime } from "./Browse";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
 import { ChosenBanner, hueOf } from "./PickCards";
@@ -28,6 +28,8 @@ import { useSettings } from "./Settings";
 import { PortraitCropper, PortraitPicker } from "./Portrait";
 import { D20, Head, Pack, Scroll, Sword, Wand } from "./icons";
 
+/** One thing still to choose, and where it is chosen. */
+type LeftItem = { kind: Kind; text: string; list: boolean };
 type Kind = "race" | "class" | "background" | "magic" | "equipment";
 const TITLE: Record<Kind, string> = { race: "Species", class: "Class", background: "Background", magic: "Spells and magic", equipment: "Equipment" };
 const ASK: Record<Kind, string> = {
@@ -76,8 +78,8 @@ function fly(from: DOMRect | null, label: string, kind: Kind) {
 }
 
 /**
- * The big choices (species, class, background) arrive as a card: it lifts out of the list, turns over as it arcs
- * across the board, grows to the size of its space and lands with a flash, a ring and a burst of sparks.
+ * The big choices (species, class, background) arrive as a card: it glides from the list to its space, growing to
+ * fit, and an arcane circle draws itself around it as it lands, with a few embers drifting up.
  */
 function epicFly(from: DOMRect | null, label: string, kind: Kind, target: HTMLElement) {
   const to = target.getBoundingClientRect();
@@ -93,45 +95,51 @@ function epicFly(from: DOMRect | null, label: string, kind: Kind, target: HTMLEl
   card.querySelector("b")!.textContent = label;
   Object.assign(card.style, { left: `${start.left}px`, top: `${start.top}px`, width: `${start.width}px`, height: `${Math.max(start.height, 34)}px` });
   document.body.appendChild(card);
-  const w0 = start.width, h0 = Math.max(start.height, 34);
-  const sx = to.width / w0, sy = to.height / h0;
-  const dx = to.left - start.left, dy = to.top - start.top;
-  // A high arc: up and toward the middle of the screen, turning over, then down into the space.
-  const midX = dx * 0.45, midY = Math.min(dy, 0) - 140;
+  // The card's real size and position change (not a stretch), so the name stays in proportion.
+  const h0 = Math.max(start.height, 34);
+  const box = (x: number, y: number, w: number, h: number, font: number, turn: number, tilt: number, extra: Keyframe = {}): Keyframe =>
+    ({ left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, fontSize: `${font}px`, transform: `perspective(900px) rotateY(${turn}deg) rotateZ(${tilt}deg)`, ...extra });
+  // A smooth glide on a gentle curve with a slight tilt; no flips.
+  const midX = start.left + (to.left - start.left) * 0.5, midY = Math.min(start.top, to.top) - 40;
   const anim = card.animate(
     [
-      { transform: "translate(0,0) scale(1,1) rotateY(0deg) rotateZ(0deg)", opacity: 0.9, offset: 0 },
-      { transform: "translate(-6px,-26px) scale(1.12,1.12) rotateY(0deg) rotateZ(-3deg)", opacity: 1, offset: 0.16 },
-      { transform: `translate(${midX}px, ${midY}px) scale(${1 + (sx - 1) * 0.45}, ${1 + (sy - 1) * 0.45}) rotateY(180deg) rotateZ(4deg)`, offset: 0.55 },
-      { transform: `translate(${dx}px, ${dy - 24}px) scale(${sx * 1.06}, ${sy * 1.06}) rotateY(360deg) rotateZ(0deg)`, offset: 0.86 },
-      { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy}) rotateY(360deg)`, opacity: 1, offset: 1 },
+      box(start.left, start.top, start.width, h0, 14, 0, 0, { opacity: 0, offset: 0 }),
+      box(start.left, start.top - 8, start.width, h0, 14, 0, -1.5, { opacity: 1, offset: 0.12 }),
+      box(midX, midY, (start.width + to.width) / 2, (h0 + to.height) / 2, 21, 0, 1, { offset: 0.55 }),
+      box(to.left, to.top, to.width, to.height, 28, 0, 0, { opacity: 1, offset: 1 }),
     ],
-    { duration: 1150, easing: "cubic-bezier(.45,.05,.35,1)", fill: "forwards" },
+    { duration: 780, easing: "cubic-bezier(.22,.8,.24,1)", fill: "forwards" },
   );
   anim.onfinish = () => {
-    card.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: "forwards" }).onfinish = () => card.remove();
+    card.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: "forwards" }).onfinish = () => card.remove();
     delete target.dataset.awaiting;
     delete target.dataset.impact;
     void target.offsetWidth;
     target.dataset.impact = "1";
-    window.setTimeout(() => delete target.dataset.impact, 800);
+    window.setTimeout(() => delete target.dataset.impact, 900);
+    // An arcane circle draws itself around the space and fades, the way a spell takes hold.
     const cx = to.left + to.width / 2, cy = to.top + to.height / 2;
-    const ring = document.createElement("div");
-    ring.className = "board-ring";
-    Object.assign(ring.style, { left: `${cx}px`, top: `${cy}px` });
-    document.body.appendChild(ring);
-    ring.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 0.95 }, { transform: "translate(-50%,-50%) scale(3.2)", opacity: 0 }], { duration: 700, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => ring.remove();
-    for (let i = 0; i < 22; i++) {
-      const p = document.createElement("div");
-      p.className = "board-spark";
-      const ex = cx + (Math.random() - 0.5) * to.width * 0.9, ey = cy + (Math.random() - 0.5) * to.height * 0.7;
-      Object.assign(p.style, { left: `${ex}px`, top: `${ey}px` });
-      document.body.appendChild(p);
-      const ang = Math.random() * Math.PI * 2, dist = 60 + Math.random() * 120;
-      p.animate(
-        [{ transform: "translate(-50%,-50%) scale(1)", opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(ang) * dist}px), calc(-50% + ${Math.sin(ang) * dist - 30}px)) scale(.2)`, opacity: 0 }],
-        { duration: 600 + Math.random() * 500, easing: "cubic-bezier(.1,.8,.3,1)" },
-      ).onfinish = () => p.remove();
+    const size = Math.max(to.width, to.height) * 1.15;
+    const ns = "http://www.w3.org/2000/svg";
+    const sigil = document.createElementNS(ns, "svg");
+    sigil.setAttribute("class", "board-sigil");
+    sigil.setAttribute("viewBox", "-50 -50 100 100");
+    Object.assign(sigil.style, { left: `${cx - size / 2}px`, top: `${cy - size / 2}px`, width: `${size}px`, height: `${size}px` });
+    const tick = Array.from({ length: 12 }, (_, k) => { const a = (k * Math.PI) / 6; return `M${(44 * Math.cos(a)).toFixed(1)} ${(44 * Math.sin(a)).toFixed(1)} L${(40 * Math.cos(a)).toFixed(1)} ${(40 * Math.sin(a)).toFixed(1)}`; }).join(" ");
+    const star = Array.from({ length: 6 }, (_, k) => { const a = (k * Math.PI) / 3 - Math.PI / 2; return `${(34 * Math.cos(a)).toFixed(1)},${(34 * Math.sin(a)).toFixed(1)}`; });
+    sigil.innerHTML = `<circle r="47" pathLength="1"/><circle r="38" pathLength="1"/><path d="${tick}" pathLength="1"/><polygon points="${star[0]} ${star[2]} ${star[4]}" pathLength="1"/><polygon points="${star[1]} ${star[3]} ${star[5]}" pathLength="1"/>`;
+    document.body.appendChild(sigil);
+    sigil.animate([{ transform: "rotate(-20deg) scale(.92)", opacity: 0 }, { transform: "rotate(0deg) scale(1)", opacity: 1, offset: 0.35 }, { transform: "rotate(12deg) scale(1.04)", opacity: 0 }], { duration: 1400, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => sigil.remove();
+    // A few embers drift up from the card's edge.
+    for (let k = 0; k < 9; k++) {
+      const e = document.createElement("div");
+      e.className = "board-ember";
+      Object.assign(e.style, { left: `${to.left + Math.random() * to.width}px`, top: `${to.top + to.height * (0.55 + Math.random() * 0.45)}px` });
+      document.body.appendChild(e);
+      e.animate(
+        [{ transform: "translate(-50%,-50%) scale(1)", opacity: 0 }, { opacity: 0.9, offset: 0.2 }, { transform: `translate(calc(-50% + ${(Math.random() - 0.5) * 30}px), calc(-50% - ${50 + Math.random() * 70}px)) scale(.4)`, opacity: 0 }],
+        { duration: 1100 + Math.random() * 700, delay: Math.random() * 200, easing: "cubic-bezier(.2,.6,.4,1)" },
+      ).onfinish = () => e.remove();
     }
   };
 }
@@ -374,13 +382,12 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
 }
 
 /** The right column: scores first, then the numbers, the open score increases and what the character is trained in. */
-function StatsPanel({ r, ch, set, onIncreases }: { r: Resolved; ch: Character; set: SetCharacter; onIncreases: (root: string) => void }) {
+function StatsPanel({ r, ch, set, onIncreases, left, onGo }: { r: Resolved; ch: Character; set: SetCharacter; onIncreases: (root: string) => void; left: LeftItem[]; onGo: (it: LeftItem) => void }) {
   const sh = useMemo(() => buildSheet(r), [r]);
   const tiles: [string, string][] = [["HP", String(sh.hp)], ["AC", String(sh.ac.value)], ["Init", signed(sh.initiative)], ["Speed", `${sh.speed} ft`], ["Prof", signed(sh.proficiency)]];
   const increases = r.slots.filter((s) => tabOfSlot(s) === "abilities");
   const openIncreases = increases.filter((s) => !s.rule.optional && s.chosen.length < s.rule.number).length;
   const defenses = [...sh.defenses.resistances.map((d) => `Resists ${d}`), ...sh.defenses.immunities.map((d) => `Immune to ${d}`), ...sh.defenses.vulnerabilities.map((d) => `Vulnerable to ${d}`)];
-  const left = SUBS.flatMap(([k]) => todoFor(r, ch, k));
   const section = (title: string, items: string[]) => items.length > 0 && (
     <details className="board-sec">
       <summary>{title} <small>{items.length}</small></summary>
@@ -403,7 +410,12 @@ function StatsPanel({ r, ch, set, onIncreases }: { r: Resolved; ch: Character; s
           <button className="pick-select" onClick={() => onIncreases(increases.find((s) => !s.rule.optional && s.chosen.length < s.rule.number)!.root)}>Choose</button>
         </p>
       )}
-      <p className={left.length ? "board-left warn" : "board-left ok"} title={left.join("\n")}>{left.length ? `${left.length} ${left.length === 1 ? "choice" : "choices"} left to make` : "Every choice is made"}</p>
+      {left.length ? (
+        <details className="board-sec board-left-list">
+          <summary className="warn">{left.length} {left.length === 1 ? "choice" : "choices"} left to make</summary>
+          <ul>{left.map((it, i) => <li key={i}><button onClick={() => onGo(it)}><span className="board-left-kind">{TITLE[it.kind]}</span><span>{it.text}</span></button></li>)}</ul>
+        </details>
+      ) : <p className="board-left ok">Every choice is made</p>}
       {section("Senses", [...sh.vision, `Passive Perception ${sh.passivePerception}`])}
       {section("Saving throws", sh.abilities.filter((a) => a.saveProficient).map((a) => `${ABILITY_LABEL[a.id]} ${signed(a.save)}`))}
       {section("Skills", sh.skills.filter((s) => s.level !== "none").map((s) => `${s.name} ${signed(s.bonus)}${s.level === "expertise" ? " (expertise)" : ""}`))}
@@ -430,6 +442,8 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const [dropOver, setDropOver] = useState<Kind | null>(null);
   /** On a narrow window the three columns are tabs; this is the one showing. */
   const [pane, setPane] = useState<"lists" | "board" | "stats">("lists");
+  /** Change on the class card: the next class picked replaces the starting class instead of adding a multiclass. */
+  const [replacing, setReplacing] = useState(false);
   const lastRow = useRef<DOMRect | null>(null);
   const lastName = useRef("");
   const sheet = useMemo(() => buildSheet(r), [r]);
@@ -458,8 +472,15 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     if (kind === "race") set((c) => ({ ...c, race: el.id }));
     else if (kind === "background") set((c) => ({ ...c, background: el.id }));
     else if (kind === "class") {
-      if (have.has(el.id) || classLock(el)) return;
-      set((c) => ({ ...c, classes: [...c.classes, { classId: el.id, level: 1 }] }));
+      if (replacing && ch.classes.length) {
+        // The starting class swaps, keeping its level; a class already taken further down is not doubled.
+        if (have.has(el.id)) return;
+        set((c) => ({ ...c, classes: c.classes.map((k, i) => (i === 0 ? { ...k, classId: el.id } : k)) }));
+        setReplacing(false);
+      } else {
+        if (have.has(el.id) || classLock(el)) return;
+        set((c) => ({ ...c, classes: [...c.classes, { classId: el.id, level: 1 }] }));
+      }
     } else if (kind === "equipment") addItem(set, el);
     // Filling one of the three core spaces moves the lists on to the next empty one.
     const core: Kind[] = ["race", "class", "background"];
@@ -514,10 +535,18 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     return Math.min(1, ch.inventory.length / 12);
   }, [ch.inventory, ch.equipmentAdded, ch.equipmentLedger, plans]);
   const filled: Record<Kind, boolean> = { race: !!chosenEl.race, class: !!firstClass, background: !!chosenEl.background, magic: spellCount > 0, equipment: ch.inventory.length > 0 };
-  const todo: Record<Kind, number> = {
-    race: todoFor(r, ch, "race").length, class: todoFor(r, ch, "class").length, background: todoFor(r, ch, "background").length,
-    magic: r.slots.filter((s) => tabOfSlot(s) === "magic" && !s.rule.optional && s.chosen.length < s.rule.number).length, equipment: 0,
-  };
+  // What is left, for the summary under the closed lists: missing picks first, then each open choice.
+  const kindOfSlot = (sl: (typeof r.slots)[number]): Kind => (tabOfSlot(sl) === "magic" ? "magic" : sl.root === "race" ? "race" : sl.root === "background" ? "background" : "class");
+  const leftItems: LeftItem[] = [
+    ...(!ch.race ? [{ kind: "race" as Kind, text: "Choose a species", list: true }] : []),
+    ...(!ch.classes.length ? [{ kind: "class" as Kind, text: "Choose a class", list: true }] : []),
+    ...(!ch.background ? [{ kind: "background" as Kind, text: "Choose a background", list: true }] : []),
+    ...r.slots.filter((sl) => !sl.rule.optional && sl.chosen.length < sl.rule.number).map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: tabOfSlot(sl) === "magic" })),
+    ...(plans.length && packFill < 1 && !plans.every((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))) ? [{ kind: "equipment" as Kind, text: "Starting equipment", list: false }] : []),
+  ];
+  // Each space's count of what is left: every choice its species, class or background asks for (languages,
+  // skills, feats and score increases included), and the spells still to pick.
+  const todo = Object.fromEntries(ORDER.map((k) => [k, leftItems.filter((it) => it.kind === k && k !== "equipment").length])) as Record<Kind, number>;
 
   // Choices that belong to each space: everything its species, class or background asks except spells (under magic).
   const ownSlots = (test: (root: string) => boolean) => r.slots.filter((s) => test(s.root) && tabOfSlot(s) !== "magic");
@@ -544,7 +573,12 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
 
   const libList: Record<Kind, React.ReactNode> = {
     race: <Browse items={races} type="Race" chosen={ch.race ? [ch.race] : []} onPick={pick("race")} onSwap={(_, to) => pick("race")(to)} defaultView="list" allowCards={false} perPage={300} draggable />,
-    class: <Browse items={classes} type="Class" chosen={ch.classes.map((c) => c.classId)} onPick={pick("class")} defaultView="list" allowCards={false} perPage={300} draggable disabledReason={ch.classes.length ? classLock : undefined} />,
+    class: (
+      <>
+        {replacing && ch.classes.length > 0 && <p className="board-replace">Pick the class to replace {r.reg.get(ch.classes[0].classId)?.name}. <button className="linkish" onClick={() => setReplacing(false)}>Add a class instead</button></p>}
+        <Browse items={classes} type="Class" chosen={ch.classes.map((c) => c.classId)} onPick={pick("class")} defaultView="list" allowCards={false} perPage={300} draggable disabledReason={ch.classes.length && !replacing ? classLock : undefined} />
+      </>
+    ),
     background: <Browse items={backgrounds} type="Background" chosen={ch.background ? [ch.background] : []} onPick={pick("background")} onSwap={(_, to) => pick("background")(to)} defaultView="list" allowCards={false} perPage={300} draggable />,
     magic: caster ? <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} /> : <p className="muted pad">No spellcasting yet. It appears when a class, species or feat grants it.</p>,
     equipment: <Browse items={items} type="Item" chosen={[]} onPick={pick("equipment")} defaultView="list" allowCards={false} perPage={80} draggable pickLabel={() => "Add"} />,
@@ -575,8 +609,9 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
             <span className="board-card-actions" onClick={(e) => e.stopPropagation()}>
               {(() => { const g = groupOf(el); return g && <VariantChips short g={g} activeId={el.id} chosen={new Set([el.id])} onActive={() => undefined} onSwitch={(from, to) => switchVersion(kind, from, to)} />; })()}
               <button className="ghost" onClick={() => learn(el)}>Learn more</button>
-              {kind !== "class" && <button className="ghost" onClick={() => clear(kind)}>Remove</button>}
-              <button className={`pick-select ${isOpen ? "is-on" : ""}`} onClick={() => { setOpen(isOpen ? null : kind); setFocus(kind); }}>{kind === "class" ? "Add a class" : "Change"}</button>
+              <button className="ghost" onClick={() => (kind === "class" ? set((c) => ({ ...c, classes: c.classes.slice(1) })) : clear(kind))}>Remove</button>
+              {kind === "class" && <button className={`ghost ${isOpen && replacing ? "is-on" : ""}`} onClick={() => { setReplacing(true); setOpen("class"); setFocus("class"); }}>Change</button>}
+              <button className={`pick-select ${isOpen && !replacing ? "is-on" : ""}`} onClick={() => { if (kind === "class") setReplacing(false); setOpen(isOpen && !(kind === "class" && replacing) ? null : kind); setFocus(kind); }}>{kind === "class" ? "Add a class" : "Change"}</button>
             </span>
           </ChosenBanner>
         </div>
@@ -624,6 +659,13 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     );
   };
 
+  /** Takes you to one thing still to choose: its list opens (spells, or a missing pick) and its space is shown. */
+  const goTo = (it: { kind: Kind; list: boolean }) => {
+    if (it.list) setOpen(it.kind);
+    setFocus(it.kind);
+    setPane(it.list ? "lists" : "board");
+    window.setTimeout(() => (it.list ? document.querySelector(".board-acc.open") : document.querySelector(".board-focus"))?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  };
   const panes: ["lists" | "board" | "stats", string, number][] = [
     ["lists", "Lists", 0],
     ["board", "Character", ORDER.reduce((n, k) => n + todo[k], 0)],
@@ -654,6 +696,23 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
             </section>
           );
         })}
+        {open === null && (
+          <section className="board-left-summary" aria-label="Still to choose">
+            <h3>Still to choose</h3>
+            {leftItems.length ? (
+              <ul>
+                {leftItems.map((it, i) => (
+                  <li key={i}>
+                    <button onClick={() => goTo(it)}>
+                      <span className="board-left-kind">{TITLE[it.kind]}</span>
+                      <span>{it.text}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="ok">Everything is chosen. Export your sheet when you are ready.</p>}
+          </section>
+        )}
       </nav>
 
       <section className="board-main">
@@ -705,7 +764,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         </div>
       </section>
 
-      <StatsPanel r={r} ch={ch} set={set} onIncreases={(root) => { setFocus(root === "race" ? "race" : root === "background" ? "background" : "class"); setPane("board"); window.setTimeout(() => document.querySelector(".board-focus")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }} />
+      <StatsPanel r={r} ch={ch} set={set} left={leftItems} onGo={goTo} onIncreases={(root) => { setFocus(root === "race" ? "race" : root === "background" ? "background" : "class"); setPane("board"); window.setTimeout(() => document.querySelector(".board-focus")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }} />
     </div>
   );
 }

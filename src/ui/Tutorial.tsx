@@ -5,6 +5,8 @@ import { addSheetFiles, downloadOfficialSheet } from "../sheets/templates";
 import { isDesktop } from "../net";
 import { pickFiles } from "../store";
 import type { ContentState } from "./useContent";
+import { useSettings } from "./Settings";
+import { testToolsEnabled } from "./TestTools";
 
 const KEY = "charforge.tutorial";
 
@@ -45,6 +47,7 @@ export interface TutorialProps {
 export function Tutorial(p: TutorialProps) {
   const { step: i, setStep, content } = p;
   const last = i === TUTORIAL_STEPS - 1;
+  const settings = useSettings();
   const [sheets, setSheets] = useState(0);
   const [sheetMsg, setSheetMsg] = useState("");
   const [sheetBusy, setSheetBusy] = useState(false);
@@ -117,6 +120,8 @@ export function Tutorial(p: TutorialProps) {
   }
 
   const aurora = content.sources.length > 0;
+  // The build board (the test app's layout) is explained in its own words.
+  const board = testToolsEnabled && settings.buildLayout !== "tabs";
   const steps: { title: string; body: React.ReactNode }[] = [
     {
       title: "Welcome to Soul Forge",
@@ -203,7 +208,16 @@ export function Tutorial(p: TutorialProps) {
       body: (
         <>
           <ul className="tutorial-tour">
-            <li><b>Build</b>: species, class and background are picked from cards. Use <b>Learn more</b> to read the full rules. Options you cannot take yet stay visible, grayed out, with what is missing written on them; the <b>Locked</b> switch hides them.</li>
+            {board ? (
+              <>
+                <li><b>Build</b> is a board that fills in as you go. On the left, <b>Species</b>, <b>Class</b>, <b>Background</b>, <b>Spells and magic</b> and <b>Equipment</b> open into lists with search and filters. Click an entry, or drag it onto its space in the middle, and it flies into place. With every list closed, the left shows what is <b>still to choose</b>; click a line to go there.</li>
+                <li>Click a space in the middle to see its own choices underneath (languages, skills, feats, score increases). The card shows which book it comes from; click another book's chip to switch versions. <b>Learn more</b> opens the full rules.</li>
+                <li>On the right: your <b>portrait</b> and name (click the portrait to change it), then your <b>ability scores</b>, worked in place. <b>Point buy</b> has plus and minus and a points counter (Custom rules for house rules); the <b>Standard array</b> numbers drag onto the scores to swap; <b>Manual</b> lets you type or roll 4d6 and drop the lowest. Below are your numbers and training.</li>
+                <li>The <b>spellbook</b> thickens as you choose spells and the <b>backpack</b> fills as you take your starting gear. On a narrow window the three columns become tabs.</li>
+              </>
+            ) : (
+              <li><b>Build</b>: species, class and background are picked from cards. Use <b>Learn more</b> to read the full rules. Options you cannot take yet stay visible, grayed out, with what is missing written on them; the <b>Locked</b> switch hides them.</li>
+            )}
             <li><b>Multiclassing</b>: <b>Level up</b> lets you add a level to a class you have or start a new one. Classes whose requirements you do not meet show the missing ability scores.</li>
             <li><b>Play</b>: click any modifier to roll. The dice panel shows the dice and the sum written out, for example 16 + 2 = 18. Drag weapons, spells and features into <b>Favorites</b>, or click their star.</li>
             <li><b>Sheet</b>: print the Soul Forge sheet or fill an official one, in your language if you like.</li>

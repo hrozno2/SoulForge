@@ -410,7 +410,14 @@ export function buildSheet(r: Resolved): SheetData {
   const features: FeatureLine[] = [];
   for (const a of r.active) {
     if (!SHEET_TYPES.includes(a.el.type)) continue;
-    if (a.el.sheet && !a.el.sheet.display) continue;
+    // "Not on the sheet" hides a feature's text. A feat still belongs in the sheet's list of feats by name (Skilled,
+    // whose skills already show, is marked that way), so it stays, without its text.
+    const hidden = !!a.el.sheet && !a.el.sheet.display;
+    if (hidden && a.el.type !== "Feat") continue;
+    if (hidden) {
+      if (!features.some((f) => f.name === a.el.name && f.type === "Feat")) features.push({ id: a.el.id, name: a.el.name, type: a.el.type, source: a.el.source, text: "", level: a.ownerLevel });
+      continue;
+    }
     const t = sheetText(a, r);
     if (!t.text && !a.el.sheet) continue;
     features.push({

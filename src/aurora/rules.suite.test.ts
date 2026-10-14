@@ -305,7 +305,7 @@ describe.skipIf(!CACHE)("rules", () => {
       }
       const found = (await check(`import ${f}`, res.character)).filter((x) => /export|round trip|sheet/i.test(x.rule));
       for (const x of found) worse.push(`${f}: ${x.rule}: ${x.detail}`);
-      if (baseline[f] !== undefined && res.todo.length > baseline[f]) worse.push(`${f}: ${res.todo.length} choices left open, the baseline is ${baseline[f]}: ${res.todo.join("; ")}`);
+      if (!process.env.IMPORT_BASELINE && baseline[f] !== undefined && res.todo.length > baseline[f]) worse.push(`${f}: ${res.todo.length} choices left open, the baseline is ${baseline[f]}: ${res.todo.join("; ")}`);
     }
     if (!existsSync(basePath) || process.env.IMPORT_BASELINE) writeFileSync(basePath, JSON.stringify(now, null, 2));
     expect(worse, worse.join("\n")).toEqual([]);

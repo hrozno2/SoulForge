@@ -17,6 +17,7 @@ export function maximal(): FillData {
     weapons: Array.from({ length: 6 }, (_, i) => ({ name: `Weapon ${i + 1}`, bonus: "+5", damage: "1d8+3 slashing", notes: "finesse" })),
     casting: { ability: "Intelligence", mod: "+4", dc: "15", attack: "+7", focus: "Crystal", slots: [4, 3, 3, 3, 2, 1, 1, 1, 1], used: [1, 1, 1, 1, 1, 1, 1, 1, 1] },
     otherCasting: ["Magic Initiate (Cleric): save DC 13, attack +5 (Wisdom)"],
+    defenses: "Resistances: necrotic, radiant.",
     spells: [...[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].flatMap((lv) => Array.from({ length: 20 }, (_, i) => spell(lv, i)))],
     armorWorn: "Chain mail", weaponsText: "Longsword\nDagger", otherGear: "Rope\nTorch\nBackpack", magicItems: [{ name: "Ring", attuned: true }, { name: "Wand", attuned: true }, { name: "Cloak", attuned: false }],
     coins: { cp: "1", sp: "2", ep: "3", gp: "4", pp: "5" }, carryCapacity: "150", pushDrag: "300",

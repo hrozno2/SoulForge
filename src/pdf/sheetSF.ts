@@ -298,7 +298,8 @@ function page1(sh: Sheet, d: FillData): Flow[] {
   // Training
   const langLines = sh.wrap(`Languages: ${d.languages || "Common"}`, f.r, 8, rw - 16);
   const toolLines = sh.wrap(`Tools and other: ${d.tools || "none"}`, f.r, 8, rw - 16);
-  const th = 21 + 32 + (toolLines.length + langLines.length) * 10.5 + 6;
+  const defLines = d.defenses ? sh.wrap(d.defenses, f.r, 8, rw - 16) : [];
+  const th = 21 + 32 + (toolLines.length + langLines.length + defLines.length) * 10.5 + 6;
   iy = sh.panel(rx, ry, rw, th, "Training and proficiencies");
   let cxp = rx + 10;
   sh.text("Armor", cxp, iy + 8, { size: 7.5, bold: true, color: MUTED });
@@ -313,7 +314,7 @@ function page1(sh: Sheet, d: FillData): Flow[] {
     sh.diamond(cxp + 4, iy + 18.5, 3.8, on); sh.text(lab, cxp + 11, iy + 21, { size: 8 }); cxp += 58;
   }
   let ty = iy + 36;
-  for (const l of [...toolLines, ...langLines]) { sh.text(l, rx + 10, ty, { size: 8 }); ty += 10.5; }
+  for (const l of [...toolLines, ...langLines, ...defLines]) { sh.text(l, rx + 10, ty, { size: 8 }); ty += 10.5; }
   ry += th + 6;
 
   // Features, flowing; what does not fit continues on the next page

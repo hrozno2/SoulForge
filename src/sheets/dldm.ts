@@ -213,7 +213,7 @@ function fillCommon(c: Ctx, d: FillData, map: Record<string, string | string[]>)
   const set = (k: string, v: string | number | undefined) => map[k] !== undefined && setText(c, map[k], v);
   set("name", d.name); set("background", d.background); set("class", d.className); set("species", d.species); set("subclass", d.subclass);
   set("level", d.level); set("xp", d.xp || ""); set("ac", d.ac); set("hpCurrent", d.hpCurrent); set("hpMax", d.hpMax); set("hpTemp", d.hpTemp || "");
-  set("hdSpent", d.hdSpent || ""); set("hdMax", d.hdMax); set("speed", d.speed); set("exhaustion", d.exhaustion); set("conditions", d.conditions);
+  set("hdSpent", d.hdSpent || ""); set("hdMax", d.hdMax); set("speed", d.speed); set("exhaustion", d.exhaustion); set("conditions", [d.defenses, d.conditions].filter(Boolean).join("\n"));
   set("prof", d.profBonus); set("size", d.size); set("darkvision", d.darkvision); set("tools", d.tools); set("languages", d.languages);
 }
 

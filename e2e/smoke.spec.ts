@@ -190,8 +190,11 @@ test.describe("Soul Forge smoke tests", () => {
     await addTestContent(page);
     await randomCharacter(page);
     await tab(page, "Equipment");
-    // A random character arrives with its starting gear; start the dialog fresh.
-    await page.locator(".equip-done").getByRole("button", { name: "Reset" }).click();
+    // A random character arrives with its starting gear; starting over takes it back out (adding it again must not
+    // double it).
+    await expect(page.locator("table tbody tr").first()).toBeVisible();
+    await page.locator(".equip-done").getByRole("button", { name: "Start over" }).click();
+    await expect(page.locator("table tbody tr")).toHaveCount(0);
     const origins = page.locator(".equip-origin");
     await expect(origins).toHaveCount(2);
     await origins.first().getByRole("button", { name: "Add", exact: true }).first().click();

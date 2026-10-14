@@ -127,7 +127,8 @@ export function fill2024Form(ws: W[], d: FillData, sink: Sink): string[] {
   const feats = d.featureList.filter((f) => f.group === "Class features").map((f) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${f.text}`);
   const half = Math.ceil(feats.length / 2);
   s.set("CLASS FEATURES 1", joinLines(feats.slice(0, half))); s.set("CLASS FEATURES 2", joinLines(feats.slice(half)));
-  s.set("SPECIES TRAITS", joinLines(d.featureList.filter((f) => f.group === "Species traits").map((f) => `${f.name}: ${f.text}`)));
+  // Damage defenses first: the sheet has no box of its own for them, and they matter at the table.
+  s.set("SPECIES TRAITS", joinLines([d.defenses, ...d.featureList.filter((f) => f.group === "Species traits").map((f) => `${f.name}: ${f.text}`)].filter(Boolean)));
   // Feat spellcasting with its own DC (Shadow-Touched, Magic Initiate) first, so it shows even when the spells overflow.
   s.set("FEATS", joinLines([...d.otherCasting, ...d.featureList.filter((f) => f.group === "Feats").map((f) => `${f.name}: ${f.text}`)]));
   s.set("TOOL PROF", d.toolsOnly);
@@ -209,7 +210,7 @@ export function fill2014(ws: W[], d: FillData, sink: Sink): void {
   for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) s.set(k.toUpperCase(), d.coins[k] === "0" ? "" : d.coins[k]);
   s.set("Equipment", [d.armorWorn, d.weaponsText.replace(/\n/g, ", "), d.otherGear.replace(/\n/g, ", ")].filter(Boolean).join("\n"));
   const feats = d.featureList.map((f) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${f.text}`);
-  s.set("Features and Traits", joinLines(feats));
+  s.set("Features and Traits", joinLines([d.defenses, ...feats].filter(Boolean)));
   // Death saves: the six boxes by the Death Saves panel, successes above failures.
   const death = ws.filter((b) => b.t === "Btn" && b.p === 0 && /^Check Box 1[2-7]$/.test(trim(b.name))).sort((a, b) => b.y - a.y || a.x - b.x);
   death.forEach((b, i) => sink.check(b, i < 3 ? i < d.deathSuccess : i - 3 < d.deathFail));

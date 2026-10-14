@@ -8,3 +8,4 @@ runs. Newest ideas at the bottom.
 |---|---|---|
 | DeepSeek (open model) as a translation option | 2026-10 | Offered earlier; waiting for a go-ahead. |
 | Higgsfield for portraits or app art | 2026-10 | Offered earlier; waiting for a go-ahead. |
+| A visual marker on each class's primary abilities in the ability scores section | 2026-10-14 | Parked under the freeze. |

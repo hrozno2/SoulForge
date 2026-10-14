@@ -88,6 +88,8 @@ export interface SheetData {
   hitDice: { die: number; count: number; classId: string; name: string }[];
   casting: CastingLine[];
   proficiencies: { armor: string[]; weapons: string[]; tools: string[]; languages: string[]; other: string[] };
+  /** Damage resistances, immunities and vulnerabilities from any source (species, feats, features, items). */
+  defenses: { resistances: string[]; immunities: string[]; vulnerabilities: string[] };
   features: FeatureLine[];
   attacks: AttackLine[];
   /** Every attack including ones the player hid, for the editing list. */
@@ -171,6 +173,11 @@ function castingOf(r: Resolved, p: SpellPick): string | undefined {
   if (p.casting && r.spellcasting.has(lc(p.casting))) return lc(p.casting);
   const tokens = hintTokens(p.hint);
   for (const e of r.spellcasting.values()) if (e.lists.some((l) => tokens.includes(lc(l)))) return lc(e.name);
+  // A spell a feature grants without naming the spellcasting: a class whose list has it (a domain spell), or none.
+  if (p.granted && !p.casting) {
+    const supports = (r.reg.get(p.id)?.supports ?? []).map(lc);
+    for (const e of r.spellcasting.values()) if (e.lists.some((l) => supports.includes(lc(l)))) return lc(e.name);
+  }
   return undefined;
 }
 
@@ -190,12 +197,15 @@ function buildCasting(r: Resolved): CastingLine[] {
     if (child) return lc(child.el.name);
     const texts = [r.reg.get(fromId), ...r.active.filter((a) => a.from === fromId).map((a) => a.el)].map((x) => `${x?.description ?? ""} ${x?.sheet?.descriptions.map((d) => d.text).join(" ") ?? ""}`);
     for (const t of texts) {
-      const m = /spellcasting ability for (?:th(?:is|ese)[^.]*?|it)\s+is\s+(intelligence|wisdom|charisma)/i.exec(t);
+      // Both ways the books write it: "your spellcasting ability for it is Charisma" and "Charisma is your
+      // spellcasting ability for it" (the 2024 Player's Handbook).
+      const m = /spellcasting ability for (?:th(?:is|ese)[^.]*?|it)\s+is\s+(intelligence|wisdom|charisma)/i.exec(t) ?? /(intelligence|wisdom|charisma) is your spellcasting ability/i.exec(t);
       if (m) return lc(m[1]);
     }
     return undefined;
   };
-  const orphans = r.spellPicks.filter((p) => !castingOf(r, p) && (!entries.length || (p.from && abilityOf(p.from))));
+  // Granted spells that no class line takes (Light Bearer's Light on a Paladin) always get a line of their own.
+  const orphans = r.spellPicks.filter((p) => !castingOf(r, p) && (!entries.length || (p.from && abilityOf(p.from)) || (p.granted && !p.casting)));
   const orphanIds = new Set(orphans.map((p) => p.id));
   const bySource = new Map<string, SpellPick[]>();
   for (const p of orphans) {
@@ -347,6 +357,9 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     if (edit?.hidden) line.hiddenByEdit = true;
     out.push(line);
   }
+  // Everyone can make an unarmed strike (proficient): 1 + Strength bludgeoning, or a die from Martial Arts, the
+  // Unarmed Fighting style or Tavern Brawler; a monk may use Dexterity. Bonuses to unarmed and melee attacks apply.
+  if (!carried && !out.some((o) => /unarmed strike/i.test(o.name))) out.push(unarmedStrike(r));
   for (const c of r.character.attacks) {
     const m = mods(c.ability);
     out.push({
@@ -433,6 +446,7 @@ export function buildSheet(r: Resolved): SheetData {
     hitDice,
     casting: buildCasting(r),
     proficiencies: proficiencyGroups(r),
+    defenses: defensesOf(r),
     features,
     attacks: buildAttacks(r).filter((a) => !a.hiddenByEdit),
     attacksAll: buildAttacks(r),
@@ -503,4 +517,40 @@ export function preparePool(r: Resolved, line: CastingLine): AElement[] {
   }
   for (const k of known) if (!byName.has(k.name.toLowerCase())) byName.set(k.name.toLowerCase(), k);
   return [...byName.values()];
+}
+
+/** The content grants damage defenses as markers (ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_FIRE and the like). */
+export function defensesOf(r: Resolved): SheetData["defenses"] {
+  const of = (kind: string) => [...new Set([...r.ids].map((id) => new RegExp(`^ID_INTERNAL_CONDITION_DAMAGE_${kind}_([A-Z]+)$`).exec(id)?.[1]?.toLowerCase()).filter((x): x is string => !!x))].sort();
+  return { resistances: of("RESISTANCE"), immunities: of("IMMUNITY"), vulnerabilities: of("VULNERABILITY") };
+}
+
+/** The unarmed strike as the character makes it, from the content's stats (Martial Arts die, Unarmed Fighting). */
+function unarmedStrike(r: Resolved): AttackLine {
+  const s = r.stats;
+  const has = (re: RegExp) => r.active.some((a) => re.test(a.el.name.replace(/^level \d+: /i, "")));
+  const martial = s.get("martial arts:dice");
+  const fighting = s.get("unarmed fighting:size");
+  const brawler = has(/^tavern brawler$/i) ? 4 : 0;
+  const die = Math.max(martial, fighting, brawler);
+  const str = s.get("strength:modifier");
+  const dex = s.get("dexterity:modifier");
+  const mod = martial > 0 ? Math.max(str, dex) : str;
+  const bonus = mod + s.get("proficiency") + s.get("unarmed:attack") + s.get("unarmed strike:attack") + s.get("melee:attack") + s.get("attack");
+  const extra = mod + s.get("unarmed:damage") + s.get("unarmed strike:damage") + s.get("melee:damage") + s.get("damage");
+  const notes: string[] = [];
+  if (martial > 0) notes.push(`Martial Arts d${martial}${dex > str ? ", Dexterity" : ""}; bonus action strike`);
+  if (has(/^(ki-empowered strikes|empowered strikes)$/i)) notes.push(has(/^empowered strikes$/i) ? "can deal force damage" : "counts as magical");
+  if (fighting > 0) notes.push("Unarmed Fighting");
+  if (brawler && die === brawler) notes.push("Tavern Brawler");
+  return {
+    id: "unarmed-strike",
+    auto: true,
+    name: "Unarmed Strike",
+    bonus,
+    damage: die > 0 ? `1d${die}${extra ? signed(extra) : ""}` : String(Math.max(1, 1 + extra)),
+    damageType: "bludgeoning",
+    properties: "",
+    notes: notes.join("; "),
+  };
 }

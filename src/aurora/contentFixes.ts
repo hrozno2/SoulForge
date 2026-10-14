@@ -15,6 +15,8 @@ export const ID_TYPOS: Record<string, string> = {
   // "ARCANA_EYE": the Theurgy wizard's Arcana Domain spell is Arcane Eye.
   ID_PHB_SPELL_ARCANA_EYE: "ID_PHB_SPELL_ARCANE_EYE",
   ID_WOTC_PHB24_SPELL_ARCANA_EYE: "ID_WOTC_PHB24_SPELL_ARCANE_EYE",
+  // "VULNERAILITY": a damage vulnerability that never showed.
+  ID_INTERNAL_CONDITION_DAMAGE_VULNERAILITY_BLUDGEONING: "ID_INTERNAL_CONDITION_DAMAGE_VULNERABILITY_BLUDGEONING",
   // "WOCT": the Initiate background's dissenter variant.
   ID_WOCT_PSA_BACKGROUND_FEATURE_DISSENTER_SHELTER_OF_DISSENTERS: "ID_WOTC_PSA_BACKGROUND_FEATURE_DISSENTER_SHELTER_OF_DISSENTERS",
 };
@@ -37,11 +39,16 @@ export const REQUIREMENTS_SET: Record<string, string> = {
   ID_PHB_FEAT_WARCASTER: "([type:spell],!ID_WOTC_PHB24_FEAT_WAR_CASTER)||ID_WOTC_PHB_GRANTS_FEAT_UNLOCKER",
 };
 
-/** Markers the content forgets on some elements: the artificer's Spellcasting is a Spellcasting feature too. */
-export const GRANTS_ADD: Record<string, string[]> = {
-  ID_WOTC_ERLW_CLASS_FEATURE_ARTIFICER_SPELLCASTING: ["ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE"],
-  ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_SPELLCASTING: ["ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE"],
-  ID_WOTC_UA_CLASS_FEATURE_ARTIFICER_SPELLCASTING: ["ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE"],
+/**
+ * Grants the content forgets: the artificer's Spellcasting is a Spellcasting feature too (a marker other rules ask
+ * for), and the 2024 druid is trained in the Herbalism Kit (PHB 2024 p.78; the class text says so, no rule gives it;
+ * found by the class training cross-check).
+ */
+export const GRANTS_ADD: Record<string, { type: string; id: string; requirements?: string }[]> = {
+  ID_WOTC_ERLW_CLASS_FEATURE_ARTIFICER_SPELLCASTING: [{ type: "Grants", id: "ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE" }],
+  ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_SPELLCASTING: [{ type: "Grants", id: "ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE" }],
+  ID_WOTC_UA_CLASS_FEATURE_ARTIFICER_SPELLCASTING: [{ type: "Grants", id: "ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE" }],
+  ID_WOTC_PHB24_CLASS_DRUID: [{ type: "Proficiency", id: "ID_PROFICIENCY_TOOL_PROFICIENCY_HERBALISM_KIT", requirements: "!ID_WOTC_PHB24_MULTICLASS_DRUID" }],
 };
 
 /** Linter findings that are right as they are (a requirement ruling out content that is not part of AuroraLegacy). */
@@ -56,8 +63,10 @@ const fixReq = (req: string | undefined) => (req ? req.replace(/ID_[A-Z0-9_]+/g,
 /** Applies the corrections to one element, in place. */
 export function applyContentFixes(el: AElement): void {
   el.requirements = fixReq(el.requirements);
+  // Mistyped IDs in grants too (a damage vulnerability spelled "VULNERAILITY").
+  if (el.rules.some((r) => r.kind === "grant" && ID_TYPOS[r.id])) el.rules = el.rules.map((r) => (r.kind === "grant" && ID_TYPOS[r.id] ? { ...r, id: ID_TYPOS[r.id] } : r));
   if (REQUIREMENTS_SET[el.id]) el.requirements = REQUIREMENTS_SET[el.id];
-  for (const id of GRANTS_ADD[el.id] ?? []) if (!el.rules.some((r) => r.kind === "grant" && r.id === id)) el.rules = [...el.rules, { kind: "grant", type: "Grants", id }];
+  for (const g of GRANTS_ADD[el.id] ?? []) if (!el.rules.some((r) => r.kind === "grant" && r.id === g.id)) el.rules = [...el.rules, { kind: "grant", ...g }];
   const add = SPELL_LIST_ADD[el.id];
   if (add) el.supports = [...el.supports, ...add.filter((c) => !el.supports.includes(c))];
   el.rules = el.rules.map((r) => ("requirements" in r && r.requirements ? { ...r, requirements: fixReq(r.requirements) } : r));

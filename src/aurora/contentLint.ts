@@ -4,6 +4,7 @@
  */
 import type { ARegistry } from "./registry";
 import type { AElement } from "./types";
+import { ID_TYPOS } from "./contentFixes";
 
 export interface LintFinding {
   /** What kind of problem: "missing grant", "empty choice", "missing requirement". */
@@ -12,6 +13,8 @@ export interface LintFinding {
   name: string;
   detail: string;
 }
+
+const DEFENSE = /^ID_INTERNAL_CONDITION_DAMAGE_(RESISTANCE|IMMUNITY|VULNERABILITY)_(ACID|BLUDGEONING|COLD|FIRE|FORCE|LIGHTNING|NECROTIC|PIERCING|POISON|PSYCHIC|RADIANT|SLASHING|THUNDER)(_[A-Z_]+)?$/;
 
 /** IDs the content grants as markers on purpose, with no element behind them. */
 const MARKER = /^ID_(INTERNAL|SIZE)_|_MULTICLASS|_GRANTS_|_OPTION_/;
@@ -34,6 +37,8 @@ export function lintContent(reg: ARegistry): LintFinding[] {
         // other rules ask whether the character has them.
         if (!r.id) add("empty grant", e, `grants a ${r.type} without saying which${r.name ? ` ("${r.name}")` : ""}`);
         else if (!reg.get(r.id) && !MARKER.test(r.id)) add("missing grant", e, `grants ${r.type} ${r.id}, which is not in the content`);
+        // Damage defense markers have a fixed shape; a misspelt one never shows on a sheet.
+        else if (/^ID_INTERNAL_CONDITION_DAMAGE_/.test(r.id) && !DEFENSE.test(r.id) && !ID_TYPOS[r.id]) add("malformed marker", e, `grants ${r.id}, not a damage resistance, immunity or vulnerability`);
       } else if (r.kind === "select") {
         // A choice whose options depend on the character ("$(spellcasting:list)") is judged with a character.
         if (r.type === "List" || /\$\(/.test(r.supports)) continue;

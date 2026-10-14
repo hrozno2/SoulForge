@@ -29,6 +29,10 @@ export interface RefClass {
   pact: { slots: number[]; level: number[] } | null;
   features: RefFeature[];
   subclassLevel: number | null;
+  /** What the class trains at first level (5e.tools startingProficiencies). */
+  startArmor?: string[];
+  startWeapons?: string[];
+  startTools?: string[];
   asiLevels: number[];
   epicBoon: number | null;
   multiclass: Partial<Record<AbilityId, number>> | null;
@@ -143,6 +147,16 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
       const want = first.saves.includes(a.id) || extra.has(a.id);
       if (a.saveProficient && !want) add("Saving throw proficiency without a rule giving it", `${a.id} (first class ${first.name} gives ${first.saves.join(" and ")})`);
       if (!a.saveProficient && first.saves.includes(a.id)) add("Missing saving throw proficiency", `${a.id} from ${first.name}`);
+    }
+    // The first class's training (a multiclass gains less, so only the first class is checked): armor, weapon
+    // categories and named tools, as the class table gives them.
+    const tight = (x: string) => x.toLowerCase().replace(/[^a-z]/g, "");
+    const own = (list: string[], want: string) => list.some((x) => tight(x).includes(tight(want)));
+    const ARMOR_NAME: Record<string, string> = { light: "light armor", medium: "medium armor", heavy: "heavy armor", shield: "shield" };
+    for (const a of first.startArmor ?? []) if (!own(sh.proficiencies.armor, ARMOR_NAME[a])) add("Missing class training", `${ARMOR_NAME[a]} from ${first.name}`);
+    for (const w of first.startWeapons ?? []) if (!own(sh.proficiencies.weapons, `${w} weapons`)) add("Missing class training", `${w} weapons from ${first.name}`);
+    for (const t of first.startTools ?? []) if (!own(sh.proficiencies.tools, t)) add("Missing class training", `${t} from ${first.name}`);
+    {
     }
   }
 

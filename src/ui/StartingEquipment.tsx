@@ -93,7 +93,7 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
           <h2>Starting equipment</h2>
           <span className="done-mark">✓ Added</span>
           <button onClick={() => setShow(true)}>Add more...</button>
-          <button className="more" title="Forget what was added so the dialog starts fresh" onClick={() => set((c) => ({ ...c, equipmentAdded: [] }))}>Reset</button>
+          <button className="more" title="Take the starting gear and gold back out and start the choice again" onClick={() => set((c) => ({ ...removeAdded(c, c.equipmentAdded ?? []), equipmentAdded: [] }))}>Start over</button>
         </div>
         <p className="muted small-text">{added.join(" · ")}. Edit or remove items in the list below; open "Add more" for other packs, gear or the starting options again.</p>
       </section>

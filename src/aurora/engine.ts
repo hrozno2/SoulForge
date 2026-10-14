@@ -228,8 +228,11 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
           if (!QUIET_TYPES.has(rule.type) && !rule.id.startsWith("ID_INTERNAL_")) warnings.push(`Missing ${rule.type} "${rule.id}" (from ${el.name})`);
           return;
         }
-        if (rule.spellcasting && rule.type === "Spell") {
-          spellPicks.push({ id: rule.id, casting: rule.spellcasting, granted: true, prepared: true, from: el.id });
+        // A granted spell is always known and prepared. When the grant does not name its spellcasting (Light Bearer,
+        // Telekinetic, some domain and oath spell lists), the sheet places it: on the class whose list has it, or on
+        // a line of its own with the ability the feature names.
+        if (rule.type === "Spell") {
+          spellPicks.push({ id: rule.id, casting: rule.spellcasting ?? "", granted: true, prepared: true, from: el.id });
         }
         if (!meets(target.requirements, makeCtx(prev, ownerLevel, ch, reg, empty))) return;
         visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0));

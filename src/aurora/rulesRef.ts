@@ -26,6 +26,17 @@ function feat(f: string | Json): { name: string; optional: boolean; level: numbe
   return { name: strip(p[0]), optional, level: Number(/^\d+$/.test(last) ? last : p.find((x, i) => i > 0 && /^\d+$/.test(x))), subclass: typeof f === "object" && !!f.gainSubclassFeature };
 }
 
+/**
+ * Armor or weapon categories a class trains, from either way 5e.tools writes them: the structured
+ * "armorProficiencies" (2024) or the words in "armor" ("light", "{@item shield|phb|shields}") in the older files.
+ */
+function startList(sp: Json | undefined, kind: "armor" | "weapon", allowed: string[]): string[] {
+  if (!sp) return [];
+  const keys = Object.keys(Object.assign({}, ...((sp[`${kind}Proficiencies`] ?? []) as Json[])));
+  const words = ((sp[kind === "armor" ? "armor" : "weapons"] ?? []) as unknown[]).map((w) => strip(typeof w === "string" ? w : (w as Json).proficiency ?? "").toLowerCase().replace(/s$/, ""));
+  return allowed.filter((a) => keys.includes(a) || words.includes(a));
+}
+
 /** One 5e.tools class file (data/class/class-*.json) to the reference entries for its classes. */
 export function condenseClassFile(file: Json): Json[] {
   const out: Json[] = [];
@@ -59,6 +70,10 @@ export function condenseClassFile(file: Json): Json[] {
       multiclass: req ? Object.fromEntries(Object.entries(req).filter(([k]) => AB[k]).map(([k, v]) => [AB[k], v])) : null,
       multiclassOr: req?.or ? (req.or as Json[]).map((o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [AB[k], v]))) : null,
       primaryAbility: c.primaryAbility ? (c.primaryAbility as Json[]).map((o) => Object.keys(o).map((k) => AB[k])) : null,
+      // What the class itself trains (a first-level character): armor and weapon categories, named tools.
+      startArmor: startList(c.startingProficiencies, "armor", ["light", "medium", "heavy", "shield"]),
+      startWeapons: startList(c.startingProficiencies, "weapon", ["simple", "martial"]),
+      startTools: Object.entries(Object.assign({}, ...((c.startingProficiencies?.toolProficiencies ?? []) as Json[]))).filter(([k, v]) => v === true && !/^any/.test(k)).map(([k]) => k),
       subclasses: ((file.subclass ?? []) as Json[]).filter((s) => s.className === c.name && s.classSource === c.source).map((s) => ({ name: s.name, shortName: s.shortName, source: s.source, caster: s.casterProgression ?? null, features: ((s.subclassFeatures ?? []) as (string | Json)[]).map(feat) })),
     });
   }

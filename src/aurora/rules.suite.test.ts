@@ -38,6 +38,8 @@ const OUT = process.env.RULES_OUT;
 const SEED = Number(process.env.RULES_SEED) || Date.now() % 2147483647;
 /** The number of characters in the big run; 0 (the default) skips it. */
 const BIG = Number(process.env.RULES_BIG) || 0;
+/** Time allowed per test. A slow or busy machine is not a rules finding, so the limit only catches a hang. */
+const LIMIT = 4 * 3600000;
 
 /** What an imported character became, in a form that is easy to read and compare. */
 function importSnapshot(res: ReturnType<typeof importForeignCharacter>) {

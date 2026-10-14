@@ -74,7 +74,12 @@ describe.skipIf(!SHEETS || !CONTENT)("DLDM 5E24 sheets", () => {
     // The sheet's three spellcasting fields are named one box off; the DC goes in the middle box, whatever its name.
     expect(text("SPELLCASTING MOD24")).toBe(String(sheet.casting[0].dc));
     expect(form.getCheckBox("CB-INTSAVE").isChecked()).toBe(true);
+    // The blank sheet comes with attunement boxes 6 to 10 ticked; with no magic items they must come out clear.
+    for (let i = 1; i <= 10; i++) expect(form.getCheckBox(`CB-ATTUNE${i}`).isChecked()).toBe(false);
     expect(text("COIN9")).toBe("25");
+    // Filling only the first page still clears the boxes the blank sheet came with ticked.
+    const one = await PDFDocument.load((await fillDldm(readFileSync(`${SHEETS}/DLDM - 5E24 CHARACTER SHEET - 5pg - Updated Form Fields.pdf`), data, { pages: ["p1a"], font })).bytes);
+    for (let i = 6; i <= 10; i++) expect(one.getForm().getCheckBox(`CB-ATTUNE${i}`).isChecked()).toBe(false);
     void ABILITY_IDS;
   });
 

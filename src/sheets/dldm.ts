@@ -153,7 +153,7 @@ function setBoxWidget(w: Widget, on: boolean): void {
   const state = on ? onState(w.dict) : "Off";
   w.dict.set(PDFName.of("AS"), PDFName.of(state));
   const parent = w.dict.lookup(PDFName.of("Parent"));
-  if (on && parent instanceof PDFDict && parent.lookup(PDFName.of("T"))) parent.set(PDFName.of("V"), PDFName.of(state));
+  if (parent instanceof PDFDict && parent.lookup(PDFName.of("T")) && (on || parent.lookup(PDFName.of("V")))) parent.set(PDFName.of("V"), PDFName.of(on ? state : "Off"));
   if (on) w.dict.set(PDFName.of("V"), PDFName.of(state));
   else w.dict.delete(PDFName.of("V"));
 }
@@ -553,6 +553,16 @@ export async function fillDldm(template: Uint8Array | ArrayBuffer, data: FillDat
   const c: Ctx = { doc, form: doc.getForm(), widgets, missing: [], alias, rich: bold ? { r: font, b: bold } : undefined };
   const notes: string[] = [];
   const want = new Set(opts.pages);
+  // A blank sheet starts with nothing ticked. DLDM's comes with attunement boxes 6 to 10 ticked, and a page that is
+  // not filled would keep them; every check box is cleared first, and filling ticks what the character has.
+  const flags = (w: Widget) => {
+    const own = w.dict.lookup(PDFName.of("Ff"));
+    const parent = w.dict.lookup(PDFName.of("Parent"));
+    const up = parent instanceof PDFDict ? parent.lookup(PDFName.of("Ff")) : undefined;
+    return Number((own ?? up)?.toString() ?? 0);
+  };
+  // Check boxes only: push buttons (the portrait) and radio groups keep what they have.
+  for (const w of widgets) if (w.type === "Btn" && !(flags(w) & (65536 | 32768))) setBoxWidget(w, false);
   // Spells fill page 2, then the spell list page, then pages added at the end.
   const next = { at: 0 };
 

@@ -431,6 +431,8 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const [dropOver, setDropOver] = useState<Kind | null>(null);
   /** On a narrow window the three columns are tabs; this is the one showing. */
   const [pane, setPane] = useState<"lists" | "board" | "stats">("lists");
+  /** Change on the class card: the next class picked replaces the starting class instead of adding a multiclass. */
+  const [replacing, setReplacing] = useState(false);
   const lastRow = useRef<DOMRect | null>(null);
   const lastName = useRef("");
   const sheet = useMemo(() => buildSheet(r), [r]);
@@ -459,8 +461,15 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     if (kind === "race") set((c) => ({ ...c, race: el.id }));
     else if (kind === "background") set((c) => ({ ...c, background: el.id }));
     else if (kind === "class") {
-      if (have.has(el.id) || classLock(el)) return;
-      set((c) => ({ ...c, classes: [...c.classes, { classId: el.id, level: 1 }] }));
+      if (replacing && ch.classes.length) {
+        // The starting class swaps, keeping its level; a class already taken further down is not doubled.
+        if (have.has(el.id)) return;
+        set((c) => ({ ...c, classes: c.classes.map((k, i) => (i === 0 ? { ...k, classId: el.id } : k)) }));
+        setReplacing(false);
+      } else {
+        if (have.has(el.id) || classLock(el)) return;
+        set((c) => ({ ...c, classes: [...c.classes, { classId: el.id, level: 1 }] }));
+      }
     } else if (kind === "equipment") addItem(set, el);
     // Filling one of the three core spaces moves the lists on to the next empty one.
     const core: Kind[] = ["race", "class", "background"];
@@ -545,7 +554,12 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
 
   const libList: Record<Kind, React.ReactNode> = {
     race: <Browse items={races} type="Race" chosen={ch.race ? [ch.race] : []} onPick={pick("race")} onSwap={(_, to) => pick("race")(to)} defaultView="list" allowCards={false} perPage={300} draggable />,
-    class: <Browse items={classes} type="Class" chosen={ch.classes.map((c) => c.classId)} onPick={pick("class")} defaultView="list" allowCards={false} perPage={300} draggable disabledReason={ch.classes.length ? classLock : undefined} />,
+    class: (
+      <>
+        {replacing && ch.classes.length > 0 && <p className="board-replace">Pick the class to replace {r.reg.get(ch.classes[0].classId)?.name}. <button className="linkish" onClick={() => setReplacing(false)}>Add a class instead</button></p>}
+        <Browse items={classes} type="Class" chosen={ch.classes.map((c) => c.classId)} onPick={pick("class")} defaultView="list" allowCards={false} perPage={300} draggable disabledReason={ch.classes.length && !replacing ? classLock : undefined} />
+      </>
+    ),
     background: <Browse items={backgrounds} type="Background" chosen={ch.background ? [ch.background] : []} onPick={pick("background")} onSwap={(_, to) => pick("background")(to)} defaultView="list" allowCards={false} perPage={300} draggable />,
     magic: caster ? <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} /> : <p className="muted pad">No spellcasting yet. It appears when a class, species or feat grants it.</p>,
     equipment: <Browse items={items} type="Item" chosen={[]} onPick={pick("equipment")} defaultView="list" allowCards={false} perPage={80} draggable pickLabel={() => "Add"} />,
@@ -576,8 +590,9 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
             <span className="board-card-actions" onClick={(e) => e.stopPropagation()}>
               {(() => { const g = groupOf(el); return g && <VariantChips short g={g} activeId={el.id} chosen={new Set([el.id])} onActive={() => undefined} onSwitch={(from, to) => switchVersion(kind, from, to)} />; })()}
               <button className="ghost" onClick={() => learn(el)}>Learn more</button>
-              {kind !== "class" && <button className="ghost" onClick={() => clear(kind)}>Remove</button>}
-              <button className={`pick-select ${isOpen ? "is-on" : ""}`} onClick={() => { setOpen(isOpen ? null : kind); setFocus(kind); }}>{kind === "class" ? "Add a class" : "Change"}</button>
+              <button className="ghost" onClick={() => (kind === "class" ? set((c) => ({ ...c, classes: c.classes.slice(1) })) : clear(kind))}>Remove</button>
+              {kind === "class" && <button className={`ghost ${isOpen && replacing ? "is-on" : ""}`} onClick={() => { setReplacing(true); setOpen("class"); setFocus("class"); }}>Change</button>}
+              <button className={`pick-select ${isOpen && !replacing ? "is-on" : ""}`} onClick={() => { if (kind === "class") setReplacing(false); setOpen(isOpen && !(kind === "class" && replacing) ? null : kind); setFocus(kind); }}>{kind === "class" ? "Add a class" : "Change"}</button>
             </span>
           </ChosenBanner>
         </div>

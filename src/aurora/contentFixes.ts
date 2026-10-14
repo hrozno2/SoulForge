@@ -19,6 +19,12 @@ export const ID_TYPOS: Record<string, string> = {
   ID_WOCT_PSA_BACKGROUND_FEATURE_DISSENTER_SHELTER_OF_DISSENTERS: "ID_WOTC_PSA_BACKGROUND_FEATURE_DISSENTER_SHELTER_OF_DISSENTERS",
 };
 
+/** Class spell lists missing a class the rules give (found by the 5e.tools spell list cross-check). */
+export const SPELL_LIST_ADD: Record<string, string[]> = {
+  // Tasha's artificer spell list includes Frostbite (Xanathar's); the other Xanathar's cantrips already have it.
+  ID_XGTE_SPELL_FROSTBITE: ["Artificer"],
+};
+
 /** Linter findings that are right as they are (a requirement ruling out content that is not part of AuroraLegacy). */
 export const LINT_ACCEPTED = [
   "ID_KBP_DMBD_CLASS_FEATURE_ANTIPALADIN_UNHOLY_SMITE", // homebrew Antipaladin, ruled out by Divine Smite
@@ -31,5 +37,7 @@ const fixReq = (req: string | undefined) => (req ? req.replace(/ID_[A-Z0-9_]+/g,
 /** Applies the corrections to one element, in place. */
 export function applyContentFixes(el: AElement): void {
   el.requirements = fixReq(el.requirements);
+  const add = SPELL_LIST_ADD[el.id];
+  if (add) el.supports = [...el.supports, ...add.filter((c) => !el.supports.includes(c))];
   el.rules = el.rules.map((r) => ("requirements" in r && r.requirements ? { ...r, requirements: fixReq(r.requirements) } : r));
 }

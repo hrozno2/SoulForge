@@ -29,6 +29,7 @@ import { BUILDS } from "./builds";
 import { importForeignCharacter } from "./foreign";
 import { lintContent } from "./contentLint";
 import { LINT_ACCEPTED } from "./contentFixes";
+import { isModern } from "./edition";
 import type { ARegistry } from "./registry";
 
 const CACHE = process.env.SOULFORGE_RULES;
@@ -313,6 +314,34 @@ describe.skipIf(!CACHE)("rules", () => {
     const found = lintContent(reg).filter((f) => !LINT_ACCEPTED.some((id) => f.detail.includes(id)));
     report.push(`\n### content linter\n${found.length ? found.map((f) => `- ${f.kind}: ${f.name} (${f.id}): ${f.detail}`).join("\n") : "- no findings"}`);
     expect(found.map((f) => `${f.name}: ${f.detail}`)).toEqual([]);
+  });
+
+  // Spell lists: every spell of the 2014 Player's Handbook, Xanathar's, Tasha's and the 2024 Player's Handbook has
+  // the classes 5e.tools gives it (the base lists, not Tasha's optional expanded lists).
+  it("spell lists match 5e.tools", () => {
+    const file = join(CACHE ?? "", "spell-lists.json");
+    if (!existsSync(file)) return;
+    const src = JSON.parse(readFileSync(file, "utf8"));
+    const CLASSES = ["Artificer", "Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"];
+    const BOOK: Record<string, RegExp> = { PHB: /^Player’s Handbook$/, XGE: /^Xanathar/, TCE: /^Tasha/, XPHB: /^Player’s Handbook \(2024\)$/ };
+    const norm = (x: string) => x.toLowerCase().replace(/[’']/g, "'");
+    const found: string[] = [];
+    for (const [book, modern] of [["PHB", false], ["XGE", false], ["TCE", false], ["XPHB", true]] as const) {
+      const ed = modern ? ["XPHB"] : ["PHB", "TCE"];
+      for (const [name, v] of Object.entries<{ class?: { name: string; source: string }[]; classVariant?: { name: string; source: string; definedInSource?: string }[] }>(src[book] ?? {})) {
+        // The 2024 Artificer (Eberron: Forge of the Artificer) is not in the content, so its lists are not compared.
+        const want = new Set([...(v.class ?? []).filter((c) => ed.includes(c.source)), ...(v.classVariant ?? []).filter((c) => ed.includes(c.source) && (c.definedInSource !== "TCE" || book === "TCE"))].map((c) => c.name).filter((c) => CLASSES.includes(c) && !(modern && c === "Artificer")));
+        const same = reg.ofType("Spell").filter((e) => norm(e.name) === norm(name) && isModern(e) === modern);
+        const el = same.find((e) => BOOK[book].test(e.source)) ?? same[0];
+        if (!el) { found.push(`${book} ${name}: not in the content`); continue; }
+        const have = new Set(el.supports.filter((x) => CLASSES.includes(x) && !(modern && x === "Artificer")));
+        const miss = [...want].filter((c) => !have.has(c));
+        const extra = [...have].filter((c) => !want.has(c));
+        if (miss.length || extra.length) found.push(`${book} ${name}: missing ${miss.join(", ") || "none"}, extra ${extra.join(", ") || "none"}`);
+      }
+    }
+    report.push(`\n### spell lists against 5e.tools\n${found.length ? found.map((f) => `- ${f}`).join("\n") : "- no differences"}`);
+    expect(found).toEqual([]);
   });
 
   it("writes the report", () => {

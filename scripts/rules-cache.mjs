@@ -50,6 +50,12 @@ export async function ensureCache() {
     const all = await downloadRulesRef(async (url) => (await get(url)).json());
     writeFileSync(ref, JSON.stringify(all));
   }
+  // The 5e.tools spell lists by class (test-only reference, for the spell list cross-check).
+  const spells = join(CACHE, "spell-lists.json");
+  if (refresh || !existsSync(spells)) {
+    console.log("Downloading the 5e.tools spell lists...");
+    writeFileSync(spells, Buffer.from(await (await get("https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/spells/sources.json")).arrayBuffer()));
+  }
   // Blank sheets for the export checks, from their makers' own addresses (the same links the app offers).
   const sheets = join(CACHE, "sheets");
   mkdirSync(sheets, { recursive: true });

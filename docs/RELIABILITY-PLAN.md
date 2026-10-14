@@ -280,3 +280,16 @@ Second pass, for things that have not gone wrong yet but would under this plan's
 - Too many attuned items or an over-encumbered character → checker modules (3.2).
 - A sheet updated by its maker (new field names) → position audit fails loudly (3.4).
 - Files that break rules or are homebrew → reconciliation buckets and section 6.
+
+---
+
+## 9. Progress (2026-10-14)
+
+| Phase | Done | Still to do |
+|---|---|---|
+| 0. Freeze and baseline | Feature freeze, `docs/FEATURES-LATER.md`; snapshots of what each corpus file imports to (36 files), reviewed on every change. | |
+| 1. Content layer | One edition rule (`edition.ts`); pinned AuroraLegacy commit; content linter in the rules suite; `contentFixes.ts` (mistyped IDs, grants written in the name attribute, missing prerequisites and training, a spell list gap); 5e.tools cross-checks of spell lists (868 spells), feat prerequisites (137 feats) and class starting training (26 classes). | One shared name and alias index used everywhere (the importer has most of it). |
+| 2. Checker in the app | Rules reference downloaded at run time (never bundled); Rules check bar on Build; rule problems in the import report and notes; warning on the Sheet tab. | Splitting the checker into modules that cite their rule; 1,000+ characters nightly. |
+| 3. Importer v2 | Unsettled choices left open as a to-do list (D1); answer keys: Roll20's stored numbers and Foundry's recorded proficiencies compared with every import (all four Roll20 files match exactly); choices filled from the source that made them (Foundry records it per class, species, background, feat, subclass and kind); per-item edition from Foundry compendia; repeatable feats limited to the file's count; whole class lists of prepared casters not added; Roll20 item and typed-in bonuses. | Foundry compendium ID maps; Aurora `.dnd5e` import; a full assignment solver (today: source matching, narrowest choice first, deferral). |
+| 4. Export v2 | Read-back of the 2024 and Soul Forge sheets (name, AC, HP, scores, proficiency, every DC, first weapon, every spell); continuation pages for spells on the 2024, 2014 and DLtheDM sheets; full spell list to prepare from; damage defenses and unarmed strikes on every sheet; feat spellcasting DCs. | Position audit of field names; golden images for approval. |
+| 5. Keep it that way | Release gate runs the full check on a fresh seed; corpus grows with every file sent. | Nightly scheduled run (needs your go-ahead: it adds a scheduled job on this Mac). |

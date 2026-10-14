@@ -3,6 +3,7 @@ import type { ARegistry } from "./registry";
 import { meets, type ReqCtx } from "./requirements";
 import { StatBook, type StatInputs } from "./stats";
 import { ABILITY_IDS, totalLevel, type AbilityId, type Character } from "./character";
+import { isModern } from "./edition";
 
 export interface ActiveElement {
   el: AElement;
@@ -371,7 +372,7 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
   for (const e of byOwner.values()) {
     const cls = reg?.get(e.owner);
     const name = lc(cls?.name ?? (e.owner.match(/CLASS_([A-Z]+)$/i)?.[1] ?? e.name));
-    const modern = /PHB24|XPHB|2024/i.test(`${e.owner} ${cls?.source ?? ""}`);
+    const modern = isModern({ id: e.owner, source: cls?.source ?? "" });
     if (FULL_CASTERS.has(name)) total += e.level;
     else if (HALF_CASTERS.has(name)) total += name === "artificer" || modern ? Math.ceil(e.level / 2) : Math.floor(e.level / 2);
     else if (name === "fighter" || name === "rogue") total += Math.floor(e.level / 3);

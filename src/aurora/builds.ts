@@ -5,9 +5,9 @@
  * The rules tests build each one and check it.
  */
 import type { ARegistry } from "./registry";
-import type { AElement } from "./types";
 import type { Character } from "./character";
 import { randomCharacter } from "./randomCharacter";
+import { isModern as modern } from "./edition";
 
 interface BuildSpec {
   name: string;
@@ -41,7 +41,6 @@ const SPECS: BuildSpec[] = [
   { name: "Life cleric healer", edition: "2024", species: "Dwarf", background: "Acolyte", classes: [["Cleric", 12]], prefer: ["Life Domain", "Healer"] },
 ];
 
-const modern = (e: AElement) => /PHB24|XPHB|2024/i.test(`${e.id} ${e.source}`);
 const find = (reg: ARegistry, type: string, name: string, edition: "2014" | "2024") => {
   const all = reg.ofType(type).filter((e) => e.name.toLowerCase() === name.toLowerCase() && !/unearthed|playtest/i.test(e.source));
   return all.find((e) => modern(e) === (edition === "2024")) ?? all[0];

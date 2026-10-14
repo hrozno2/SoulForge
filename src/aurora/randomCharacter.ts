@@ -7,9 +7,9 @@ import { BookIndex, hiddenBy, type ContentFilters } from "./books";
 import type { ARegistry } from "./registry";
 import type { AElement } from "./types";
 import { ItemIndex, addToInventory, anyWeaponKind, resolveChosenTools, autoEquip, ledgerOf, startingPlans, variantItems, weaponChoices } from "./startingEquipment";
+import { isModern as modern } from "./edition";
 
 const SHORT: Record<string, AbilityId> = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" };
-const modern = (e?: AElement) => !!e && /PHB24|2024|XPHB/i.test(`${e.id} ${e.source}`);
 
 /** The abilities a class leans on, most important first: its multiclass prerequisite, then its saving throws, then Constitution and Dexterity. */
 export function classPriorities(cls: AElement): AbilityId[] {

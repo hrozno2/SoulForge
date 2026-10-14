@@ -10,6 +10,7 @@ import type { ARegistry } from "./registry";
 import { hitDieOf, resolve } from "./engine";
 import { buildSheet, preparePool } from "./sheet";
 import { ItemIndex, resolveChosenTools } from "./startingEquipment";
+import { isModern, isPlaytest } from "./edition";
 
 type Json = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -38,7 +39,6 @@ const normalize = (s: string) =>
 const normalizeFull = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 export type Edition = "2014" | "2024";
-const isModern = (e: AElement) => /PHB24|XPHB|2024|DMG24|MM25/i.test(`${e.id} ${e.source}`);
 
 /** Every element with this name, by the closest match first: exact, then without parentheses, then without spaces. */
 function findAllByName(reg: ARegistry, types: string[], name: string): AElement[] {
@@ -92,7 +92,6 @@ function raceByTraits(reg: ARegistry, candidates: AElement[], traitNames: Set<st
   return [...candidates].sort((a, b) => score(b) - score(a))[0];
 }
 
-const isPlaytest = (e: AElement) => /unearthed|playtest/i.test(e.source) || /_UA\d|_UA_/.test(e.id);
 
 /**
  * Of the versions of a class (2014, 2024, playtest), the one whose own features the file lists. The class features

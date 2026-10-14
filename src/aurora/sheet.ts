@@ -1,6 +1,7 @@
 import type { AElement } from "./types";
 import { FULL_CASTER_SLOTS, itemWeight, multiclassCasterLevel, sharedSlotLevel, type ActiveElement, type Resolved, type SpellPick } from "./engine";
 import { ABILITY_IDS, SKILL_ABILITY, itemLabel, type AbilityId } from "./character";
+import { isModern as modern } from "./edition";
 
 const lc = (s: string) => s.toLowerCase();
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
@@ -493,7 +494,6 @@ export function preparePool(r: Resolved, line: CastingLine): AElement[] {
   const levels = Array.from({ length: Math.max(1, line.maxSpellLevel) }, (_, i) => i + 1).join("||");
   const all = r.reg.find("Spell", `(${entry.lists.join("||")}),(${levels})`);
   // One version of each spell, from the class's own edition where both exist (the 2024 Fireball for a 2024 class).
-  const modern = (e?: AElement) => !!e && /PHB24|2024|XPHB/i.test(`${e.id} ${e.source}`);
   const want = modern(r.reg.get(entry.owner));
   const byName = new Map<string, AElement>();
   for (const x of all) {

@@ -1,0 +1,5 @@
+{
+  "aurora": "c28ce6cd77ff92f7e0c99c5617a76cbe8371e35d",
+  "auroraDate": "2026-09-19",
+  "note": "The AuroraLegacy commit the rules tests run against. Move it with: node scripts/rules-cache.mjs --update-pin (then run the full rules check and review the differences)."
+}

@@ -7,7 +7,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 // The same condensing code the app uses (it has no imports, so Node loads the TypeScript directly).
 import { downloadRulesRef } from "../src/aurora/rulesRef.ts";
@@ -24,11 +24,25 @@ async function get(url) {
 export async function ensureCache() {
   mkdirSync(CACHE, { recursive: true });
   const elements = join(CACHE, "elements-master");
-  if (refresh || !existsSync(elements)) {
-    console.log("Downloading the AuroraLegacy content...");
+  // The content is pinned to one AuroraLegacy commit (scripts/content-pin.json), so a change upstream never changes
+  // the test results unnoticed. --update-pin moves the pin to the newest commit.
+  const pinFile = join(dirname(fileURLToPath(import.meta.url)), "content-pin.json");
+  const pin = JSON.parse(readFileSync(pinFile, "utf8"));
+  if (process.argv.includes("--update-pin")) {
+    const latest = await (await get("https://api.github.com/repos/AuroraLegacy/elements/commits/master")).json();
+    pin.aurora = latest.sha;
+    pin.auroraDate = String(latest.commit?.committer?.date ?? "").slice(0, 10);
+    writeFileSync(pinFile, `${JSON.stringify(pin, null, 2)}\n`);
+    console.log(`Pinned AuroraLegacy ${pin.aurora} (${pin.auroraDate}).`);
+  }
+  const marker = join(elements, ".pin");
+  const have = existsSync(marker) ? readFileSync(marker, "utf8").trim() : "";
+  if (refresh || !existsSync(elements) || have !== pin.aurora) {
+    console.log(`Downloading the AuroraLegacy content at ${pin.aurora.slice(0, 7)}...`);
     const zip = join(CACHE, "elements.zip");
-    writeFileSync(zip, Buffer.from(await (await get("https://github.com/AuroraLegacy/elements/archive/refs/heads/master.zip")).arrayBuffer()));
-    execSync(`rm -rf "${elements}" && unzip -q "${zip}" -d "${CACHE}"`);
+    writeFileSync(zip, Buffer.from(await (await get(`https://github.com/AuroraLegacy/elements/archive/${pin.aurora}.zip`)).arrayBuffer()));
+    execSync(`rm -rf "${elements}" "${join(CACHE, `elements-${pin.aurora}`)}" && unzip -q "${zip}" -d "${CACHE}" && mv "${join(CACHE, `elements-${pin.aurora}`)}" "${elements}"`);
+    writeFileSync(marker, pin.aurora);
   }
   const ref = join(CACHE, "rules-ref.json");
   if (refresh || !existsSync(ref)) {

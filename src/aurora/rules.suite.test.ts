@@ -27,6 +27,8 @@ import { fillDldm } from "../sheets/dldm";
 import { buildPdf, DEFAULT_PDF_OPTIONS } from "../pdf/exportPdf";
 import { BUILDS } from "./builds";
 import { importForeignCharacter } from "./foreign";
+import { lintContent } from "./contentLint";
+import { LINT_ACCEPTED } from "./contentFixes";
 import type { ARegistry } from "./registry";
 
 const CACHE = process.env.SOULFORGE_RULES;
@@ -304,6 +306,14 @@ describe.skipIf(!CACHE)("rules", () => {
     if (!existsSync(basePath) || process.env.IMPORT_BASELINE) writeFileSync(basePath, JSON.stringify(now, null, 2));
     expect(worse, worse.join("\n")).toEqual([]);
   }, 600000);
+
+  // The content linter: problems in the content itself. Each is either corrected in contentFixes.ts or accepted
+  // there with a reason; anything else fails.
+  it("content linter", () => {
+    const found = lintContent(reg).filter((f) => !LINT_ACCEPTED.some((id) => f.detail.includes(id)));
+    report.push(`\n### content linter\n${found.length ? found.map((f) => `- ${f.kind}: ${f.name} (${f.id}): ${f.detail}`).join("\n") : "- no findings"}`);
+    expect(found.map((f) => `${f.name}: ${f.detail}`)).toEqual([]);
+  });
 
   it("writes the report", () => {
     writeReport();

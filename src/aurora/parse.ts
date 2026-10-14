@@ -52,8 +52,10 @@ function parseRules(rulesEl: Element | undefined): ARule[] {
   for (const r of kids(rulesEl)) {
     const name = r.nodeName;
     if (name === "grant") {
-      const id = attr(r, "id");
-      if (!id && !attr(r, "name")) continue;
+      // Some content writes the ID in the name attribute (Githyanki Psionics: name="ID_PHB_SPELL_MAGE_HAND").
+      const nameAttr = attr(r, "name");
+      const id = attr(r, "id") ?? (nameAttr && /^ID_[A-Z0-9_]+$/.test(nameAttr.trim()) ? nameAttr.trim() : undefined);
+      if (!id && !nameAttr) continue;
       out.push({
         kind: "grant",
         type: attr(r, "type") ?? "",

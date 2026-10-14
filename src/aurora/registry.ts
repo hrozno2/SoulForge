@@ -1,4 +1,5 @@
 import type { AAppend, AElement, ParsedFile } from "./types";
+import { applyContentFixes } from "./contentFixes";
 
 /** A `supports` filter: `A,B` is AND, `A||B` is OR, `A|B` is any of these ids, `!A` is NOT, parentheses group. */
 type SNode = { t: "and" | "or"; a: SNode[] } | { t: "any"; words: string[] } | { t: "not"; n: SNode };
@@ -130,7 +131,11 @@ export class ARegistry {
     this.byId.clear();
     this.byType.clear();
     this.queryCache.clear();
-    for (const el of this.raw) this.byId.set(el.id, { ...el, rules: [...el.rules] });
+    for (const el of this.raw) {
+      const copy = { ...el, rules: [...el.rules] };
+      applyContentFixes(copy);
+      this.byId.set(el.id, copy);
+    }
     for (const ap of this.appends) {
       const target = this.byId.get(ap.id);
       if (!target) continue;

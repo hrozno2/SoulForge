@@ -11,6 +11,7 @@ import type { AElement } from "./types";
 import { ABILITY_IDS, type AbilityId } from "./character";
 import { meets } from "./requirements";
 import { reqCtx } from "./engine";
+import { isModern } from "./edition";
 
 export interface RefFeature { name: string; level: number; optional?: boolean; subclass?: boolean }
 export interface RefClass {
@@ -40,7 +41,6 @@ export interface Finding { rule: string; detail: string }
 
 const lc = (s: string) => s.toLowerCase();
 const norm = (s: string) => lc(s).replace(/^\s*level\s+\d+\s*:\s*/, "").replace(/\s*\(.*?\)\s*/g, " ").replace(/[’']/g, "'").replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
-const isModern = (e: AElement) => /PHB24|XPHB|2024|EFA/i.test(`${e.id} ${e.source}`);
 const FULL = [[], [2], [3], [4, 2], [4, 3], [4, 3, 2], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 2], [4, 3, 3, 3, 1], [4, 3, 3, 3, 2], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1, 1], [4, 3, 3, 3, 3, 1, 1, 1, 1], [4, 3, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 3, 2, 2, 1, 1]];
 /** Eldritch Knight and Arcane Trickster slots by class level (their own table, not the full caster one). */
 const THIRD: number[][] = [[], [], [], [2], [3], [3], [3], [4, 2], [4, 2], [4, 2], [4, 3], [4, 3], [4, 3], [4, 3, 2], [4, 3, 2], [4, 3, 2], [4, 3, 3], [4, 3, 3], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 1]];
@@ -321,7 +321,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (has(/^unarmored defense/i) && refs.some((x) => /barbarian/i.test(x.el.name))) opts.push(10 + dex + mod("constitution"));
     if (has(/^unarmored defense/i) && refs.some((x) => /monk/i.test(x.el.name)) && !shield) opts.push(10 + dex + mod("wisdom"));
     // Draconic Resilience: 13 + Dex in 2014, 10 + Dex + Cha in 2024.
-    if (has(/draconic resilience/i)) opts.push(r.active.some((a) => /draconic resilience/i.test(a.el.name) && /PHB24|2024/i.test(`${a.el.id} ${a.el.source}`)) ? 10 + dex + mod("charisma") : 13 + dex);
+    if (has(/draconic resilience/i)) opts.push(r.active.some((a) => /draconic resilience/i.test(a.el.name) && isModern(a.el)) ? 10 + dex + mod("charisma") : 13 + dex);
     if (has(/^dazzling footwork/i) && !shield) opts.push(10 + dex + mod("charisma"));
     // Dragon Hide (feat): 13 + Dex without armor.
     if (has(/^dragon hide$/i)) opts.push(13 + dex);

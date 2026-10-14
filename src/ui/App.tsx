@@ -169,17 +169,19 @@ export function App() {
   const hasMagic = r.spellcasting.size > 0 || r.spellPicks.length > 0;
   // When the last open choice on Build is made, go on to Magic (casters) or Equipment; when the last spell is
   // chosen on Magic, go on to Equipment. Only on the change itself, so opening a finished character moves nothing.
+  const settings = useSettings();
+  const board = testToolsEnabled && settings.buildLayout !== "tabs";
+  // The build board holds spells and equipment too, so their own tabs go and Build counts what they had open.
+  useEffect(() => { if (board && (tab === "magic" || tab === "equipment")) setTab("build"); }, [board, tab]);
   const prevOpen = useRef({ build: pending, magic: magicList.length, id });
   useEffect(() => {
     const prev = prevOpen.current;
     prevOpen.current = { build: pending, magic: magicList.length, id };
-    if (prev.id !== id) return;
+    if (prev.id !== id || board) return;
     if (tab === "build" && prev.build > 0 && pending === 0) setTab(hasMagic ? "magic" : "equipment");
     else if (tab === "magic" && prev.magic > 0 && magicList.length === 0 && pending === 0) setTab("equipment");
   }, [pending, magicList.length, id]); // eslint-disable-line react-hooks/exhaustive-deps
   const tip = (where: string, list: string[]) => `Still to choose on the ${where} tab:\n${list.slice(0, 12).join("\n")}${list.length > 12 ? `\n...and ${list.length - 12} more` : ""}`;
-  const settings = useSettings();
-  const board = testToolsEnabled && settings.buildLayout !== "tabs";
   // The build board has no description panel: its lists open descriptions with Learn more.
   const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play" && !(tab === "build" && board);
 
@@ -192,13 +194,12 @@ export function App() {
           Soul Forge
         </strong>
         <GroupNav current={tab} onPick={setTab} groups={(() => {
-          const defs = TABS.map(([key, label]) => ({ key, label: t(label), icon: (() => { const I = TAB_ICONS[key]; return I ? <I size={15} /> : undefined; })(), badge: key === "build" ? pending : key === "magic" ? magicList.length : key === "equipment" ? (equipPending ? 1 : undefined) : undefined, badgeTitle: key === "build" && pending ? tip("Build", pendingList) : key === "magic" && magicList.length ? tip("Magic", magicList) : key === "equipment" && equipPending ? "Starting equipment is not chosen yet" : undefined }));
+          const defs = TABS.map(([key, label]) => ({ key, label: t(label), icon: (() => { const I = TAB_ICONS[key]; return I ? <I size={15} /> : undefined; })(), badge: key === "build" ? pending + (board ? magicList.length + (equipPending ? 1 : 0) : 0) : key === "magic" ? magicList.length : key === "equipment" ? (equipPending ? 1 : undefined) : undefined, badgeTitle: key === "build" && (pending || (board && magicList.length)) ? tip("Build", board ? [...pendingList, ...magicList] : pendingList) : key === "magic" && magicList.length ? tip("Magic", magicList) : key === "equipment" && equipPending ? "Starting equipment is not chosen yet" : undefined }));
           const pick = (...keys: Tab[]) => keys.map((k) => defs.find((d) => d.key === k)!).filter(Boolean);
           return [
             { key: "home", label: t("Home"), items: pick("start") },
             { key: "build", label: t("Build"), items: pick("build") },
-            { key: "magic", label: t("Magic"), items: pick("magic") },
-            { key: "equipment", label: t("Equipment"), items: pick("equipment") },
+            ...(board ? [] : [{ key: "magic", label: t("Magic"), items: pick("magic") }, { key: "equipment", label: t("Equipment"), items: pick("equipment") }]),
             { key: "manage", label: t("Manage"), icon: defs.find((d) => d.key === "manage")?.icon, items: pick("manage", "content") },
             { key: "sheet", label: t("Sheet"), icon: defs.find((d) => d.key === "sheet")?.icon, items: pick("play", "sheet") },
           ];
@@ -256,7 +257,7 @@ export function App() {
           {tab === "start" && <StartTab currentId={id} onOpen={open} onNew={() => open(uid(), newCharacter())} onRandom={random} contentReady={content.ready} sourceCount={content.sources.length} goContent={() => setTab("content")} onImportForeign={importForeign} reg={content.reg} />}
           {tab === "build" && (
             <>
-              <div className="namebar"><input placeholder="Character name" value={character.name} onChange={(e) => set((c) => ({ ...c, name: e.target.value }))} /></div>
+              {!board && <div className="namebar"><input placeholder="Character name" value={character.name} onChange={(e) => set((c) => ({ ...c, name: e.target.value }))} /></div>}
               {board ? <BuildBoard r={r} ch={character} set={set} /> : <BuildTab r={r} ch={character} set={set} onDetail={setDetail} />}
             </>
           )}

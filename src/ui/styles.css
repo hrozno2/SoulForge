@@ -1331,7 +1331,7 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 
 /* ================= Build board (on trial in the test app) ================= */
 main.wide { max-width: 1900px; }
-.board { display: grid; grid-template-columns: 410px minmax(0, 1fr) 330px; gap: 18px; align-items: start; }
+.board { display: grid; grid-template-columns: clamp(320px, 22vw, 410px) minmax(0, 1fr) clamp(290px, 18vw, 330px); gap: 18px; align-items: start; }
 
 /* Lists on the left, each opening in place */
 .board-lib { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 70px; max-height: calc(100vh - 86px); overflow: auto; padding-right: 2px; }
@@ -1493,17 +1493,14 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 /* The spellbook and backpack on the board: they grow, fill, shrink and empty as choices change */
 .board-art-live { opacity: 1 !important; right: 6px; top: 6px; color: inherit; transform: none !important; }
 .board-book, .board-pack { width: 128px; height: 128px; overflow: visible; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); }
-.board-book-body { transform-origin: 60px 64px; transition: transform .7s cubic-bezier(.3,1.5,.5,1); }
 .board-pack-body { transform-origin: 60px 100px; transition: transform .6s cubic-bezier(.3,1.5,.5,1); }
-.board-pack-fill { transition: transform .7s cubic-bezier(.3,1.3,.5,1); }
-.board-pack-roll, .board-pack-sword { animation: board-pop .45s cubic-bezier(.3,1.6,.5,1); transform-origin: 60px 30px; }
 .board-sparks circle { animation: board-twinkle 1.6s ease-in-out infinite alternate; }
 .board-sparks circle:nth-child(2) { animation-delay: .4s; } .board-sparks circle:nth-child(3) { animation-delay: .8s; } .board-sparks circle:nth-child(4) { animation-delay: 1.2s; }
 @keyframes board-pop { from { transform: scale(.2) translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes board-twinkle { from { opacity: .2; } to { opacity: 1; } }
 .board-space.disabled .board-art-live { opacity: .35 !important; }
-.reduce-motion .board-book-body, .reduce-motion .board-pack-body, .reduce-motion .board-pack-fill { transition: none; }
-.reduce-motion .board-pack-roll, .reduce-motion .board-pack-sword, .reduce-motion .board-sparks circle { animation: none; }
+.reduce-motion .board-book-block, .reduce-motion .board-book-cover, .reduce-motion .board-pack-body { transition: none; }
+.reduce-motion .board-item, .reduce-motion .board-book-ribbon, .reduce-motion .board-sparks circle { animation: none; }
 .board-space-text, .board-space-actions { z-index: 1; }
 .board-space-text { text-shadow: 0 1px 8px rgba(0,0,0,.85); }
 .board-art-live { top: 2px; right: 2px; }
@@ -1511,7 +1508,10 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 /* Lists on the board leave the books out; the version is chosen on the card, sources by the filters */
 .board-lib .vchips { display: none; }
 .board-space.has-card .pick-foot > .vchip.static { display: none; }
-.board-card-actions .vchips { display: inline-flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-right: auto; }
+.board-card-actions .vchips { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; flex-basis: 100%; justify-content: flex-end; margin-bottom: 2px; }
+.board-space.has-card .pick-actions { flex: 1; }
+.board-space.has-card .pick-foot { align-items: flex-end; }
+.board-background.has-card .board-card-actions button { padding: 5px 9px; font-size: 11px; }
 
 /* The card that carries a species, class or background onto the board */
 .board-flycard { position: fixed; z-index: 300; pointer-events: none; transform-origin: 0 0; perspective: 900px; backface-visibility: visible;
@@ -1533,3 +1533,24 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
   75% { transform: translateX(-1px); }
   100% { transform: none; filter: none; }
 }
+/* The portrait at the top of the right column */
+.board-who { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.board-arch { flex: none; width: 92px; height: 116px; padding: 0; border-radius: 46px 46px 6px 6px; overflow: hidden; border: 2px solid var(--gold); background: var(--bg2); box-shadow: inset 0 0 0 3px var(--panel), 0 4px 14px rgba(0,0,0,.4); cursor: pointer; transition: transform .2s, box-shadow .2s; }
+.board-arch:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 3px var(--panel), 0 0 16px color-mix(in srgb, var(--gold) 45%, transparent); }
+.board-arch img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.board-arch-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--muted); gap: 4px; }
+.board-arch-empty small { font: 600 10px var(--body); letter-spacing: .08em; text-transform: uppercase; }
+.board-who-text { min-width: 0; }
+.board-name { width: 100%; font: 700 20px var(--display); padding: 4px 6px; background: transparent; border: 1px dashed transparent; color: var(--text); }
+.board-name:hover, .board-name:focus { border-color: var(--gold); background: var(--bg2); }
+.board-who-text { flex: 1; }
+.board-who-text small { color: var(--muted); font-size: 12.5px; }
+
+.board-book-block { transform-origin: 0 100px; transition: transform .7s cubic-bezier(.3,1.4,.5,1); }
+.board-book-cover { transition: transform .7s cubic-bezier(.3,1.4,.5,1); }
+.board-book-ribbon, .board-item { animation: board-pop .5s cubic-bezier(.3,1.6,.5,1); transform-box: fill-box; transform-origin: 50% 100%; }
+.board-incr { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0; font-size: 12.5px; }
+/* The spellbook and backpack sit above the text in their space, never over it */
+.board-art.board-art-live { position: static; align-self: center; margin: -6px 0 2px; display: flex; justify-content: center; }
+.board-art-live .board-book, .board-art-live .board-pack { width: 112px; height: 112px; }
+.board-magic .board-space-text, .board-equipment .board-space-text { text-shadow: none; }

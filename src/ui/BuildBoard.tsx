@@ -25,6 +25,7 @@ import { requestRoll } from "./Dice";
 import { startingPlans } from "../aurora/startingEquipment";
 import { useUi } from "./Learn";
 import { useSettings } from "./Settings";
+import { PortraitCropper, PortraitPicker } from "./Portrait";
 import { D20, Head, Pack, Scroll, Sword, Wand } from "./icons";
 
 type Kind = "race" | "class" | "background" | "magic" | "equipment";
@@ -135,56 +136,84 @@ function epicFly(from: DOMRect | null, label: string, kind: Kind, target: HTMLEl
   };
 }
 
-/** A spellbook that grows with the spells chosen: small and plain when empty, full size and glowing when every spell is picked. */
+/**
+ * A spellbook that thickens as spells are chosen: the spine and the page edges grow and the cover rises with them,
+ * ribbons appear, and the rune on the cover lights up when every spell is picked. Transforms only, so it animates in
+ * WebKit as well.
+ */
 function SpellBook({ f }: { f: number }) {
-  const pages = 4 + Math.round(f * 14);
+  const t = 0.1 + 0.9 * f; // share of the full thickness
+  const H = 34; // the full thickness, in the drawing's units
   return (
-    <svg className="board-book" viewBox="0 0 120 120" style={{ ["--f" as string]: f }} role="img" aria-label={`Spellbook ${Math.round(f * 100)}% full`}>
+    <svg className="board-book" viewBox="0 0 120 120" role="img" aria-label={`Spellbook ${Math.round(f * 100)}% full`}>
       <defs>
-        <radialGradient id="bookGlow"><stop offset="0" stopColor="var(--gold2)" stopOpacity=".8" /><stop offset="1" stopColor="var(--gold2)" stopOpacity="0" /></radialGradient>
+        <radialGradient id="bookGlow"><stop offset="0" stopColor="#ffd98a" stopOpacity=".9" /><stop offset="1" stopColor="#ffd98a" stopOpacity="0" /></radialGradient>
+        <linearGradient id="bookLeather" x1="0" x2="1"><stop offset="0" stopColor="#6e2a1d" /><stop offset="1" stopColor="#4a1912" /></linearGradient>
       </defs>
-      <g className="board-book-body" style={{ transform: `scale(${0.45 + 0.55 * f})` }}>
-        <circle cx="60" cy="60" r="56" fill="url(#bookGlow)" opacity={f * 0.7} />
-        {/* the page block thickens as spells go in */}
-        <rect x="30" y={84 - pages} width="64" height={pages + 8} rx="3" fill="#efe3c4" stroke="#8a6a3a" strokeWidth="1.2" />
-        {Array.from({ length: Math.min(6, Math.ceil(pages / 3)) }, (_, i) => <line key={i} x1="34" x2="90" y1={86 - i * 3} y2={86 - i * 3} stroke="#c9b48a" strokeWidth=".6" />)}
-        <path d={`M26 ${30 - f * 6} h62 a6 6 0 0 1 6 6 v${48 - pages + f * 6} h-62 a6 6 0 0 1 -6 -6z`} fill="#5b2a1e" stroke="var(--gold)" strokeWidth="1.6" />
-        <rect x="30" y={34 - f * 6} width="54" height={40 - pages + f * 6} rx="3" fill="none" stroke="var(--gold)" strokeWidth=".8" opacity=".7" />
-        <g transform={`translate(57 ${54 - pages / 2 - f * 3})`} opacity={0.35 + f * 0.65}>
-          <circle r="9" fill="none" stroke="var(--gold2)" strokeWidth="1.4" />
-          <path d="M0-6 1.8-1.8 6 0 1.8 1.8 0 6-1.8 1.8-6 0-1.8-1.8z" fill="var(--gold2)" />
-        </g>
-        <rect x="92" y={44 - pages / 2} width="6" height="14" rx="2" fill="var(--gold)" />
+      {f >= 1 && <ellipse cx="60" cy="70" rx="56" ry="40" fill="url(#bookGlow)" opacity=".55" />}
+      {/* back cover */}
+      <path d="M8 100 L80 100 L108 86 L36 86 Z" fill="#3e140e" />
+      <path d="M8 100 L80 100 L80 104 L8 104 Z M80 100 L108 86 L108 90 L80 104 Z" fill="#2a0d09" />
+      {/* spine and page edges: drawn at full thickness, squeezed to the current one */}
+      <g className="board-book-block" style={{ transform: `scaleY(${t})` }}>
+        <rect x="8" y={100 - H} width="72" height={H} fill="url(#bookLeather)" stroke="#2a0d09" strokeWidth=".8" />
+        {[0.2, 0.5, 0.8].map((k) => <rect key={k} x="8" y={100 - H * (1 - k) - 1.5} width="72" height="3" fill="#c9a45c" opacity=".85" />)}
+        <path d={`M80 ${100 - H} L106 ${86 - H} L106 86 L80 100 Z`} fill="#f1e6c8" stroke="#a88c5a" strokeWidth=".6" />
+        {Array.from({ length: 9 }, (_, k) => { const y = 100 - (H * (k + 1)) / 10; return <path key={k} d={`M80 ${y} L106 ${y - 14}`} stroke="#c8b48a" strokeWidth=".5" />; })}
       </g>
-      {f >= 1 && <g className="board-sparks" fill="var(--gold2)"><circle cx="18" cy="26" r="2" /><circle cx="104" cy="20" r="1.6" /><circle cx="108" cy="70" r="2.2" /><circle cx="14" cy="80" r="1.4" /></g>}
+      {/* ribbons hanging from the pages */}
+      {f > 0.4 && <path className="board-book-ribbon" d="M92 94 l0 14 l3 -3 l3 3 l0 -16 z" fill="#8a1f2a" />}
+      {f > 0.8 && <path className="board-book-ribbon" d="M100 90 l0 12 l3 -3 l3 3 l0 -14 z" fill="#1f4f8a" />}
+      {/* front cover, lifted by the thickness */}
+      <g className="board-book-cover" style={{ transform: `translateY(${-H * t}px)` }}>
+        <path d="M8 100 L80 100 L80 103 L8 103 Z M80 100 L108 86 L108 89 L80 103 Z" fill="#3e140e" />
+        <path d="M8 100 L80 100 L108 86 L36 86 Z" fill="url(#bookLeather)" stroke="#c9a45c" strokeWidth="1.2" />
+        <path d="M17 97.5 L76 97.5 L97 87.5 L39 87.5 Z" fill="none" stroke="#c9a45c" strokeWidth=".7" opacity=".8" />
+        <g transform="translate(57 92.5) scale(1 .45)" opacity={0.4 + f * 0.6}>
+          <circle r="9" fill="none" stroke="#ffd98a" strokeWidth="1.6" />
+          <path d="M0-7 2-2 7 0 2 2 0 7-2 2-7 0-2-2z" fill="#ffd98a" />
+        </g>
+        {/* the clasp */}
+        <path d="M78 96 l6 -3 l0 6 l-6 3z" fill="#c9a45c" />
+      </g>
+      {f >= 1 && <g className="board-sparks" fill="#ffe8b0"><circle cx="20" cy="40" r="2" /><circle cx="104" cy="34" r="1.6" /><circle cx="112" cy="70" r="2.2" /><circle cx="10" cy="76" r="1.4" /></g>}
     </svg>
   );
 }
 
-/** A backpack that fills as the starting gear goes in, and empties again as it comes out. */
+/**
+ * A backpack that fills with gear: papers, rope, a bedroll, a sword, food, a torch and a map appear out of its
+ * pockets as the starting equipment goes in, and go back as it comes out.
+ */
 function Backpack({ f }: { f: number }) {
-  const top = 98 - f * 62; // the level the contents reach inside the bag
+  const has = (at: number) => f > at - 1e-9 && f > 0;
   return (
-    <svg className="board-pack" viewBox="0 0 120 120" style={{ ["--f" as string]: f }} role="img" aria-label={`Backpack ${Math.round(f * 100)}% full`}>
-      <defs>
-        <clipPath id="packInside"><path d="M30 44 q0-14 30-14 q30 0 30 14 v50 q0 8-8 8 h-44 q-8 0-8-8z" /></clipPath>
-      </defs>
-      <g className="board-pack-body" style={{ transform: `scaleX(${0.86 + f * 0.14})` }}>
-        {/* things poking out of the top once the bag is well filled */}
-        {f > 0.55 && <rect className="board-pack-roll" x="34" y="20" width="52" height="13" rx="6.5" fill="#6d7d4a" stroke="#2c331c" strokeWidth="1.2" />}
-        {f >= 1 && <g className="board-pack-sword"><path d="M86 6 l3 3-10 22-3-1z" fill="#cfd4da" stroke="#555" strokeWidth=".8" /><path d="M72 28 l10 4" stroke="var(--gold)" strokeWidth="3" strokeLinecap="round" /></g>}
-        <path d="M30 44 q0-14 30-14 q30 0 30 14 v50 q0 8-8 8 h-44 q-8 0-8-8z" fill="#5a4026" stroke="#2b1d10" strokeWidth="1.6" />
-        <g clipPath="url(#packInside)">
-          <g className="board-pack-fill" style={{ transform: `translateY(${top - 36}px)` }}>
-            <rect x="28" y="36" width="64" height="80" fill="#8a6239" />
-            <path d="M28 36 q16 -5 32 0 t32 0" fill="none" stroke="#b08452" strokeWidth="1.4" />
-            <circle cx="44" cy="44" r="3" fill="#a77b4a" /><rect x="62" y="41" width="12" height="6" rx="2" fill="#a77b4a" />
-          </g>
-        </g>
-        <path d="M30 44 q30 12 60 0" fill="none" stroke="#2b1d10" strokeWidth="1.6" />
-        <rect x="46" y="58" width="28" height="22" rx="4" fill="#6b4c2c" stroke="#2b1d10" strokeWidth="1.2" />
-        <rect x="56" y="54" width="8" height="10" rx="2" fill="var(--gold)" />
-        <path d="M34 50 q-8 20 -2 44 M86 50 q8 20 2 44" fill="none" stroke="#3b2915" strokeWidth="3" strokeLinecap="round" />
+    <svg className="board-pack" viewBox="0 0 120 120" role="img" aria-label={`Backpack ${Math.round(f * 100)}% full`}>
+      <g className="board-pack-body" style={{ transform: `scale(${0.92 + f * 0.08}, ${0.96 + f * 0.04})` }}>
+        {/* behind the bag: the sword's hilt, the torch, the map */}
+        {has(0.55) && <g className="board-item"><path d="M33 40 L27 10" stroke="#9aa3ad" strokeWidth="4" strokeLinecap="round" /><path d="M23 19 L37 15" stroke="#c9a45c" strokeWidth="3.2" strokeLinecap="round" /><path d="M27 10 L25.6 3" stroke="#5a3b1f" strokeWidth="3.4" strokeLinecap="round" /><circle cx="25.3" cy="2.5" r="2.4" fill="#c9a45c" /></g>}
+        {has(0.85) && <g className="board-item"><path d="M96 70 L101 36" stroke="#6b4a2b" strokeWidth="3.4" strokeLinecap="round" /><path d="M101 36 q-6 -6 -1 -14 q2 6 5 5 q3 5 -4 9z" fill="#f08a24" /><path d="M101 33 q-2 -3 0 -7 q2 4 2 4z" fill="#ffd36a" /></g>}
+        {has(1) && <g className="board-item"><path d="M68 30 L90 10" stroke="#e8dcb8" strokeWidth="7" strokeLinecap="round" /><path d="M68 30 L90 10" stroke="#b8a170" strokeWidth="7" strokeDasharray="1 5" strokeLinecap="round" /></g>}
+        {/* the bedroll on top */}
+        {has(0.4) && <g className="board-item"><rect x="30" y="18" width="60" height="15" rx="7.5" fill="#5f7144" stroke="#2c331c" strokeWidth="1.2" /><path d="M44 18 v15 M76 18 v15" stroke="#3b2915" strokeWidth="2.4" /><ellipse cx="30" cy="25.5" rx="3" ry="7.5" fill="#4b5a35" /></g>}
+        {/* straps and body */}
+        <path d="M46 34 q14 -14 28 0" fill="none" stroke="#3b2915" strokeWidth="4" strokeLinecap="round" />
+        <rect x="28" y="34" width="64" height="72" rx="14" fill="#6b4a2b" stroke="#2b1d10" strokeWidth="1.6" />
+        <path d="M34 40 q26 8 52 0" fill="none" stroke="#5a3d22" strokeWidth="1.2" />
+        {/* papers out of the front pocket */}
+        {has(0.1) && <g className="board-item"><rect x="44" y="62" width="15" height="18" fill="#efe3c4" stroke="#9a8256" strokeWidth=".7" transform="rotate(-9 51 71)" /><rect x="57" y="59" width="15" height="20" fill="#f6edd2" stroke="#9a8256" strokeWidth=".7" transform="rotate(7 64 69)" /><path d="M60 64 h9 M60 67 h8 M60 70 h9" stroke="#8a7650" strokeWidth=".6" transform="rotate(7 64 69)" /></g>}
+        {/* bread and cheese out of the left pocket */}
+        {has(0.7) && <g className="board-item"><ellipse cx="23" cy="66" rx="7" ry="5.5" fill="#c58b45" stroke="#6b4a2b" strokeWidth=".8" /><path d="M19 64 l3 -2 M23 63 l3 -2" stroke="#8a5a2a" strokeWidth=".8" /><path d="M26 70 l8 -6 l2 6z" fill="#f2c94c" stroke="#a4862f" strokeWidth=".6" /></g>}
+        {/* the top flap and its buckle */}
+        <path d="M28 52 q0 -20 32 -20 q32 0 32 20 v6 q-32 10 -64 0 z" fill="#7c5733" stroke="#2b1d10" strokeWidth="1.4" />
+        <rect x="56" y="55" width="8" height="10" rx="1.5" fill="#c9a45c" stroke="#7a5c22" strokeWidth=".8" />
+        {/* the pockets */}
+        <rect x="38" y="76" width="44" height="26" rx="6" fill="#5d3f22" stroke="#2b1d10" strokeWidth="1.3" />
+        <path d="M38 82 q22 6 44 0" fill="none" stroke="#2b1d10" strokeWidth="1" />
+        <rect x="16" y="68" width="15" height="32" rx="5" fill="#5d3f22" stroke="#2b1d10" strokeWidth="1.3" />
+        <rect x="89" y="68" width="15" height="32" rx="5" fill="#5d3f22" stroke="#2b1d10" strokeWidth="1.3" />
+        {/* rope hung on the side */}
+        {has(0.25) && <g className="board-item"><ellipse cx="96" cy="52" rx="9" ry="7" fill="none" stroke="#c2a26a" strokeWidth="3" /><ellipse cx="96" cy="52" rx="5.5" ry="4" fill="none" stroke="#a88a52" strokeWidth="2.4" /></g>}
       </g>
     </svg>
   );
@@ -308,8 +337,44 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
   );
 }
 
+/** The portrait in an arched frame at the top of the right column, with the name and what the character is. Click to change it. */
+function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
+  const [open, setOpen] = useState(false);
+  const [crop, setCrop] = useState<File | null>(null);
+  const race = ch.race ? r.reg.get(ch.race)?.name : "";
+  const what = [race, ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join(" / ")].filter(Boolean).join(" · ");
+  const pick = (url: string) => { set((c) => ({ ...c, portrait: url })); setOpen(false); };
+  return (
+    <div className="board-who">
+      <button className="board-arch" onClick={() => setOpen(true)} title={ch.portrait ? "Change the portrait" : "Add a portrait"} aria-label={ch.portrait ? "Change the portrait" : "Add a portrait"}>
+        {ch.portrait ? <img src={ch.portrait} alt="" /> : <span className="board-arch-empty"><Head size={44} /><small>Add portrait</small></span>}
+      </button>
+      <div className="board-who-text">
+        <input className="board-name" placeholder="Character name" aria-label="Character name" value={ch.name} onChange={(e) => set((c) => ({ ...c, name: e.target.value }))} />
+        <small>{what || "Nothing chosen yet"}</small>
+      </div>
+      {open && createPortal(
+        <div className="modal-back" onClick={() => setOpen(false)}>
+          <div className="modal-page themed board-modal" role="dialog" aria-label="Portrait" onClick={(e) => e.stopPropagation()}>
+            <button className="board-x" aria-label="Close" onClick={() => setOpen(false)}>×</button>
+            <h2>Portrait</h2>
+            <div className="row">
+              {ch.portrait && <img className="portrait small" src={ch.portrait} alt="Portrait" />}
+              <label>Your own image: <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f && f.type.startsWith("image/")) setCrop(f); }} /></label>
+              {ch.portrait && <button onClick={() => { set((c) => ({ ...c, portrait: undefined })); setOpen(false); }}>Remove</button>}
+            </div>
+            <PortraitPicker onPick={pick} />
+          </div>
+        </div>,
+        document.body,
+      )}
+      {crop && <PortraitCropper file={crop} onCancel={() => setCrop(null)} onDone={(url) => { pick(url); setCrop(null); }} />}
+    </div>
+  );
+}
+
 /** The right column: scores first, then the numbers, the open score increases and what the character is trained in. */
-function StatsPanel({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
+function StatsPanel({ r, ch, set, onIncreases }: { r: Resolved; ch: Character; set: SetCharacter; onIncreases: (root: string) => void }) {
   const sh = useMemo(() => buildSheet(r), [r]);
   const tiles: [string, string][] = [["HP", String(sh.hp)], ["AC", String(sh.ac.value)], ["Init", signed(sh.initiative)], ["Speed", `${sh.speed} ft`], ["Prof", signed(sh.proficiency)]];
   const increases = r.slots.filter((s) => tabOfSlot(s) === "abilities");
@@ -329,13 +394,14 @@ function StatsPanel({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharac
   });
   return (
     <aside className="board-stats" aria-label="Scores and training">
+      <PortraitCard r={r} ch={ch} set={set} />
       <Scores r={r} ch={ch} set={set} />
       <div className="board-tiles">{tiles.map(([k, v]) => <div key={k} className="board-tile"><small>{k}</small><b>{v}</b></div>)}</div>
-      {increases.length > 0 && (
-        <details className="board-sec" open={openIncreases > 0}>
-          <summary>Score increases from your choices {openIncreases > 0 ? <small className="warn">{openIncreases} to choose</small> : <small>{increases.length}</small>}</summary>
-          <SlotList slots={increases} r={r} set={set} onDetail={() => undefined} />
-        </details>
+      {openIncreases > 0 && (
+        <p className="board-incr">
+          <span className="warn">{openIncreases} score {openIncreases === 1 ? "increase" : "increases"} to choose</span>
+          <button className="pick-select" onClick={() => onIncreases(increases.find((s) => !s.rule.optional && s.chosen.length < s.rule.number)!.root)}>Choose</button>
+        </p>
       )}
       <p className={left.length ? "board-left warn" : "board-left ok"} title={left.join("\n")}>{left.length ? `${left.length} ${left.length === 1 ? "choice" : "choices"} left to make` : "Every choice is made"}</p>
       {section("Senses", [...sh.vision, `Passive Perception ${sh.passivePerception}`])}
@@ -453,10 +519,9 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     magic: r.slots.filter((s) => tabOfSlot(s) === "magic" && !s.rule.optional && s.chosen.length < s.rule.number).length, equipment: 0,
   };
 
-  // Choices that belong to each space: everything its species, class or background asks except score increases
-  // (on the right) and spells (under magic).
-  const ownSlots = (test: (root: string) => boolean) => r.slots.filter((s) => test(s.root) && !["abilities", "magic"].includes(tabOfSlot(s)));
-  const otherSlots = r.slots.filter((s) => s.root !== "race" && s.root !== "background" && !s.root.startsWith("class:") && !["abilities", "magic"].includes(tabOfSlot(s)));
+  // Choices that belong to each space: everything its species, class or background asks except spells (under magic).
+  const ownSlots = (test: (root: string) => boolean) => r.slots.filter((s) => test(s.root) && tabOfSlot(s) !== "magic");
+  const otherSlots = r.slots.filter((s) => s.root !== "race" && s.root !== "background" && !s.root.startsWith("class:") && tabOfSlot(s) !== "magic");
 
   const drop = (kind: Kind) => {
     const types = DROP_TYPES[kind];
@@ -508,7 +573,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         <div key={kind} data-tile={kind} className={`board-space board-${kind} filled has-card ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""}`} onClick={() => setFocus(kind)} {...drop(kind)}>
           <ChosenBanner el={el} label={label}>
             <span className="board-card-actions" onClick={(e) => e.stopPropagation()}>
-              {(() => { const g = groupOf(el); return g && <VariantChips g={g} activeId={el.id} chosen={new Set([el.id])} onActive={() => undefined} onSwitch={(from, to) => switchVersion(kind, from, to)} />; })()}
+              {(() => { const g = groupOf(el); return g && <VariantChips short g={g} activeId={el.id} chosen={new Set([el.id])} onActive={() => undefined} onSwitch={(from, to) => switchVersion(kind, from, to)} />; })()}
               <button className="ghost" onClick={() => learn(el)}>Learn more</button>
               {kind !== "class" && <button className="ghost" onClick={() => clear(kind)}>Remove</button>}
               <button className={`pick-select ${isOpen ? "is-on" : ""}`} onClick={() => { setOpen(isOpen ? null : kind); setFocus(kind); }}>{kind === "class" ? "Add a class" : "Change"}</button>
@@ -640,7 +705,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         </div>
       </section>
 
-      <StatsPanel r={r} ch={ch} set={set} />
+      <StatsPanel r={r} ch={ch} set={set} onIncreases={(root) => { setFocus(root === "race" ? "race" : root === "background" ? "background" : "class"); setPane("board"); window.setTimeout(() => document.querySelector(".board-focus")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }} />
     </div>
   );
 }

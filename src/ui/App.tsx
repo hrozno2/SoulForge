@@ -226,7 +226,7 @@ export function App() {
       {report && <ImportReport name={report.name} res={report.res} onClose={() => { setReport(null); setNotesHint(true); }} onBuild={() => setTab("build")} />}
       {notesHint && (
         <div className="notice-toast noprint" role="status">
-          <span>The import notes are saved. Read them again any time in the character's Notes (Manage, or Play, Notes).</span>
+          <span>The import notes and the to-do list are saved in the character's Notes (Manage, or Play, Notes).</span>
           <button className="primary" onClick={openNotes}>Open notes</button>
           <button className="notice-x" aria-label="Close" onClick={() => setNotesHint(false)}>×</button>
         </div>

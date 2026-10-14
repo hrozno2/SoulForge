@@ -11,7 +11,7 @@ function sorted(res: ForeignImport) {
 
 /**
  * The report as plain text for the character's notes, so it can be read again later: what was not imported, what
- * was guessed, the notes and the custom items.
+ * is left to choose, the notes and the custom items.
  */
 export function importReportText(res: ForeignImport, file: string, when = new Date()): string {
   const { items, other, notes } = sorted(res);
@@ -21,13 +21,13 @@ export function importReportText(res: ForeignImport, file: string, when = new Da
     `${res.matched.length} things matched the loaded content.`,
     "",
     ...part("Not imported (not in the loaded content)", other),
-    ...part("Guessed (the file did not say; change on the Build tab)", res.guessed),
+    ...part("To do: choices the file does not settle, left open for you", res.todo),
     ...part("Notes", notes),
     ...part("Kept as custom items", items),
   ].join("\n").trim();
 }
 
-/** What an import brought in, what it had to guess and what it could not find. Shown once, right after importing. */
+/** What an import brought in, what is left to choose and what it could not find. Shown right after importing. */
 export function ImportReport({ name, res, onClose, onBuild }: { name: string; res: ForeignImport; onClose: () => void; onBuild: () => void }) {
   useEffect(() => {
     const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -48,11 +48,11 @@ export function ImportReport({ name, res, onClose, onBuild }: { name: string; re
             <ul>{other.map((m, i) => <li key={i}>{m}</li>)}</ul>
           </section>
         )}
-        {res.guessed.length > 0 && (
+        {res.todo.length > 0 && (
           <section className="ir-group warn">
-            <h3>Guessed ({res.guessed.length})</h3>
-            <p className="muted small-text">The file did not say; Soul Forge filled these so the character follows the rules. Change them on the Build tab.</p>
-            <ul>{res.guessed.map((g, i) => <li key={i}>{g}</li>)}</ul>
+            <h3>To do: choose these ({res.todo.length})</h3>
+            <p className="muted small-text">The file does not say, so these are left open for you instead of guessed. Make them on the Build or Magic tab; the list is also in the character's notes.</p>
+            <ul>{res.todo.map((g, i) => <li key={i}>{g}</li>)}</ul>
           </section>
         )}
         {notes.length > 0 && (
@@ -68,7 +68,7 @@ export function ImportReport({ name, res, onClose, onBuild }: { name: string; re
             <ul className="ir-items">{items.map((m, i) => <li key={i}>{m}</li>)}</ul>
           </section>
         )}
-        {other.length + res.guessed.length + notes.length + items.length === 0 && <p>Everything came through. Nothing to check.</p>}
+        {other.length + res.todo.length + notes.length + items.length === 0 && <p>Everything came through. Nothing to check.</p>}
         <p className="muted small-text">This report is saved in the character's notes.</p>
         <div className="levelup-foot">
           <button onClick={onClose}>Close</button>

@@ -27,10 +27,35 @@ import { fillDldm } from "../sheets/dldm";
 import { buildPdf, DEFAULT_PDF_OPTIONS } from "../pdf/exportPdf";
 import { BUILDS } from "./builds";
 import { importForeignCharacter } from "./foreign";
+import type { ARegistry } from "./registry";
 
 const CACHE = process.env.SOULFORGE_RULES;
 const OUT = process.env.RULES_OUT;
 const SEED = Number(process.env.RULES_SEED) || Date.now() % 2147483647;
+
+/** What an imported character became, in a form that is easy to read and compare. */
+function importSnapshot(res: ReturnType<typeof importForeignCharacter>) {
+  const reg = REG!;
+  const r = resolve(res.character, reg);
+  const sh = buildSheet(r);
+  const names = (type: RegExp) => [...new Set(r.active.filter((a) => type.test(a.el.type)).map((a) => a.el.name))].sort();
+  return {
+    classes: res.character.classes.map((c) => `${reg.get(c.classId)?.name} ${c.level}`),
+    subclasses: names(/^Archetype$/),
+    species: reg.get(res.character.race ?? "")?.name ?? "",
+    background: reg.get(res.character.background ?? "")?.name ?? "",
+    feats: names(/^Feat$/),
+    spells: [...new Set(sh.casting.flatMap((l) => [...l.cantripsKnown, ...l.spells, ...l.granted]).map((p) => reg.get(p.id)?.name ?? p.id))].sort(),
+    skills: sh.skills.filter((k) => k.level !== "none").map((k) => `${k.name}${k.level === "expertise" ? " (expertise)" : ""}`).sort(),
+    languages: [...sh.proficiencies.languages].sort(),
+    tools: [...sh.proficiencies.tools].sort(),
+    numbers: { ac: sh.ac.value, hp: sh.hp, proficiency: sh.proficiency, scores: sh.abilities.map((a) => a.score), dc: sh.casting.map((l) => l.dc) },
+    items: res.character.inventory.map((i) => (i.id ? reg.get(i.id)?.name : `custom: ${i.custom?.name}`)).sort(),
+    todo: res.todo,
+    notInContent: res.missing,
+  };
+}
+let REG: ARegistry | undefined;
 
 /**
  * What a filled sheet must show, read back as text (pdftotext): the name, AC, maximum hit points, the six scores,
@@ -61,6 +86,7 @@ function sheetShows(bytes: Uint8Array, ch: Character, sh: ReturnType<typeof buil
 
 describe.skipIf(!CACHE)("rules", () => {
   const reg = CACHE ? loadRegistry(join(CACHE, "elements-master")) : undefined!;
+  REG = reg;
   const ref: RefClass[] = CACHE ? JSON.parse(readFileSync(join(CACHE, "rules-ref.json"), "utf8")) : [];
   const sheets = CACHE ? join(CACHE, "sheets") : "";
   const font = { regular: readFileSync("node_modules/dejavu-fonts-ttf/ttf/DejaVuSansCondensed.ttf"), bold: readFileSync("node_modules/dejavu-fonts-ttf/ttf/DejaVuSansCondensed-Bold.ttf") };
@@ -246,8 +272,8 @@ describe.skipIf(!CACHE)("rules", () => {
   }, 3600000);
 
   // Characters made in Roll20 and Foundry (kept in the cache's imports folder, not in this repository). Each one
-  // imports, exports, and guesses no more than it did when its baseline was written: a guess is a choice the file
-  // does not settle, so a new one means the importer lost something it used to read.
+  // imports, exports, and leaves no more choices open than when its baseline was written: an open choice is one the
+  // file does not settle, so a new one means the importer lost something it used to read.
   it("imported characters", async () => {
     if (!CACHE) return;
     const dir = join(CACHE, "imports");
@@ -259,11 +285,21 @@ describe.skipIf(!CACHE)("rules", () => {
     for (const f of readdirSync(dir).filter((x) => x.endsWith(".json") && x !== "baseline.json").sort()) {
       let res;
       try { res = importForeignCharacter(JSON.parse(readFileSync(join(dir, f), "utf8")), reg); } catch (e) { worse.push(`${f}: ${(e as Error).message}`); continue; }
-      now[f] = res.guessed.length;
-      report.push(`\n### import ${f}\n- guessed: ${res.guessed.join("; ") || "nothing"}\n- not in the content: ${res.missing.length}`);
+      now[f] = res.todo.length;
+      report.push(`\n### import ${f}\n- left to choose: ${res.todo.join("; ") || "nothing"}\n- not in the content: ${res.missing.length}`);
+      // The snapshot: what the file became. A change shows as a difference to review (IMPORT_BASELINE=1 accepts it).
+      const snap = importSnapshot(res);
+      const snapPath = join(dir, "snapshots", `${f}.snapshot.json`);
+      mkdirSync(join(dir, "snapshots"), { recursive: true });
+      if (!existsSync(snapPath) || process.env.IMPORT_BASELINE) writeFileSync(snapPath, JSON.stringify(snap, null, 2));
+      else {
+        const was = JSON.parse(readFileSync(snapPath, "utf8")) as Record<string, unknown>;
+        const changed = Object.keys({ ...was, ...snap }).filter((k) => JSON.stringify(was[k]) !== JSON.stringify((snap as Record<string, unknown>)[k]));
+        for (const k of changed) worse.push(`${f}: ${k} changed from ${JSON.stringify(was[k])} to ${JSON.stringify((snap as Record<string, unknown>)[k])}`);
+      }
       const found = (await check(`import ${f}`, res.character)).filter((x) => /export|round trip|sheet/i.test(x.rule));
       for (const x of found) worse.push(`${f}: ${x.rule}: ${x.detail}`);
-      if (baseline[f] !== undefined && res.guessed.length > baseline[f]) worse.push(`${f}: ${res.guessed.length} guesses, the baseline is ${baseline[f]}: ${res.guessed.join("; ")}`);
+      if (baseline[f] !== undefined && res.todo.length > baseline[f]) worse.push(`${f}: ${res.todo.length} choices left open, the baseline is ${baseline[f]}: ${res.todo.join("; ")}`);
     }
     if (!existsSync(basePath) || process.env.IMPORT_BASELINE) writeFileSync(basePath, JSON.stringify(now, null, 2));
     expect(worse, worse.join("\n")).toEqual([]);

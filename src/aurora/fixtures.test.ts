@@ -126,8 +126,10 @@ describe("test ruleset", () => {
     expect(b.character.classes[0]).toMatchObject({ classId: "ID_SF_CLASS_WARDEN", level: 5 });
     expect(b.character.race).toBe("ID_SF_RACE_HOLLOWFOLK");
     expect(resolve(b.character, reg).stats.get("strength")).toBe(17);
-    const open = resolve(b.character, reg).slots.filter((s) => !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length);
-    expect(open.map((s) => s.rule.name)).toEqual([]);
+    // What the file does not settle is left open, and every open choice is on the to-do list (decision D1).
+    const open = resolve(b.character, reg).slots.filter((s) => !s.rule.optional && s.chosen.length < s.rule.number && s.options.length);
+    expect(open.length).toBe(b.todo.length);
+    expect(b.todo.join()).toMatch(/Hill kin, choose 1/);
   });
 });
 

@@ -18,8 +18,8 @@ export interface ForeignImport {
   notes: string[];
   matched: string[];
   missing: string[];
-  /** Choices the file did not settle, with what was chosen for them. */
-  guessed: string[];
+  /** Choices the file did not settle, left open for the player: "Build: Skill Proficiency (Rogue), choose 2". */
+  todo: string[];
 }
 
 export function detectCharacterFormat(data: unknown): "foundry" | "roll20" | "charforge" | "unknown" {
@@ -232,7 +232,6 @@ class Importer {
   prepared = new Set<string>();
   /** Species traits the file lists, to tell versions of a species apart. */
   speciesTraits = new Set<string>();
-  private guessed = 0;
   private index?: ItemIndex;
   /** How many times the file lists each feat: a repeatable feat (Skilled, Magic Initiate) is taken no more often. */
   private featCount = new Map<string, number>();
@@ -241,10 +240,6 @@ class Importer {
   /** Spells no choice can hold yet: tried again once the other choices are made (a Magic Initiate list). */
   private deferring = false;
   private deferred: { types: string[]; name: string; label: string; alts?: string[]; from?: string }[] = [];
-  /** The background is the Custom Background standing in for one the content lacks. */
-  private customBg = false;
-  /** Each choice the file said nothing about, with what was put in, for the import report. */
-  guesses: string[] = [];
   /** What the file says the character has, used to fill open choices (skills, languages, tools, expertise, saves). */
   hints = { skills: new Set<string>(), expertise: new Set<string>(), tools: new Set<string>(), languages: new Set<string>(), saves: new Set<string>(), names: new Set<string>(), masteries: new Set<string>(), size: "", armor: new Set<string>(), weapons: new Set<string>(), spells: new Set<string>(), resist: new Set<string>() };
 
@@ -275,7 +270,6 @@ class Importer {
     const custom = this.reg.ofType("Background").find((e) => /^custom background$/i.test(e.name));
     if (!custom) return;
     this.ch.background = custom.id;
-    this.customBg = true;
     this.notes.push(`${name.replace(/ \(background\)$/, "")} is not in your loaded content, so the character has a Custom Background with the skills, tools and languages from the file.`);
   }
 
@@ -458,13 +452,16 @@ class Importer {
     return n * 30;
   }
 
-  /** Fills every open choice. Ones the file speaks to are matched; the rest take the first sensible option. */
+  /**
+   * Fills the open choices the file speaks to. A choice the file says nothing about is left open for the player
+   * (decision D1): it shows in the import report's to-do list, not filled with a guess. Ability score choices are
+   * the exception: the file's scores settle them.
+   */
   private fillOpen(start: Character, scores: Partial<Record<AbilityId, number>>, skipSpells = false): Character {
     let cur = start;
     // When the file says nothing, an option from the same books as the character beats one from elsewhere
     // (a 2024 fighter's weapon mastery is a longsword, not a firearm from the Dungeon Master's Guide).
     const own = new Set([...start.classes.map((c) => c.classId), start.race ?? "", start.background ?? ""].map((id) => this.reg.get(id)?.source).filter(Boolean) as string[]);
-    let guessed = 0;
     const skip = new Set<string>();
     for (let i = 0; i < 600; i++) {
       const r = resolve(cur, this.reg);
@@ -492,24 +489,12 @@ class Importer {
         .sort((a, b) => b.sc - a.sc);
       const best = candidates[0] ?? { o: open.options.find((o) => !taken.has(o.id)), sc: 0 };
       if (!best.o) break;
-      // A subclass the file names but the content lacks is better left open than guessed.
-      // The Custom Background stands in for a background the content lacks: what the file does not say stays open,
-      // so no feat or tool is made up for it.
-      if (best.sc <= 0.5 && this.customBg && open.root === "background") {
-        skip.add(open.key);
-        continue;
-      }
-      if (best.sc <= 0.5 && best.o.type === "Archetype") {
-        skip.add(open.key);
-        continue;
-      }
       if (best.sc <= 0.5 && !/^\s*ability score/i.test(open.rule.name)) {
-        guessed++;
-        this.guesses.push(`${open.rule.name}: ${best.o.name}`);
+        skip.add(open.key);
+        continue;
       }
       cur = { ...cur, selections: { ...cur.selections, [open.key]: [...open.chosen, best.o.id] } };
     }
-    this.guessed += guessed;
     return cur;
   }
 
@@ -704,10 +689,10 @@ class Importer {
     // Fill what is still open from the file's skills, languages, tools and scores, then with defaults. Spells the
     // file does not list are left for the player to choose rather than guessed.
     ch = this.fillOpen(ch, importedScores, true);
-    const open = resolve(ch, this.reg).slots.filter((s) => s.rule.type === "Spell" && !s.rule.optional && s.chosen.length < s.rule.number && s.options.length);
-    const openSpells = open.reduce((n, s) => n + s.rule.number - s.chosen.length, 0);
-    if (openSpells) this.notes.push(`The file lists fewer spells than the character chooses, so ${openSpells === 1 ? "1 spell choice is" : `${openSpells} spell choices are`} left open on the Magic tab: ${open.map((s) => `${s.rule.name} (${s.rule.number - s.chosen.length})`).join(", ")}.`);
-    if (this.guessed) this.notes.push(`${this.guessed} choices the file did not say anything about were filled with the first option. Check the Build tab.`);
+    // What the file leaves open, as a to-do list: spells on the Magic tab, everything else on Build.
+    const todo = resolve(ch, this.reg).slots
+      .filter((s) => !s.rule.optional && s.chosen.length < s.rule.number && s.options.length)
+      .map((s) => `${s.rule.type === "Spell" ? "Magic" : "Build"}: ${s.rule.name}, choose ${s.rule.number - s.chosen.length}`);
     // Imported scores already include species and background bonuses, so remove them to get the base.
     // Foundry keeps the scores without what magic items add (a Headband of Intellect sets 19 on top), so items are left
     // out when working out the bonus; Roll20 shows the score with everything.
@@ -753,7 +738,7 @@ class Importer {
     }
     if (this.missing.length) this.notes.push(`${this.missing.length} things were not found in your loaded content and were skipped or kept as custom items.`);
     this.notes.push(`${this.matched.length} matched.`);
-    return { character: ch, notes: this.notes, matched: this.matched, missing: this.missing, guessed: this.guesses };
+    return { character: ch, notes: this.notes, matched: this.matched, missing: this.missing, todo };
   }
 }
 

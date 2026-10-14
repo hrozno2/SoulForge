@@ -1470,10 +1470,9 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .class-row.compact b { font: 700 17px var(--display); }
 .class-row.compact .stepper { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
 
-/* Narrow windows: the three columns become tabs */
+/* Narrow windows: the three columns become tabs (no two-column step in between) */
 .board-panes { display: none; }
-@media (max-width: 1400px) and (min-width: 1101px) { .board { grid-template-columns: 360px minmax(0, 1fr); } .board-stats { grid-column: 1 / -1; position: static; max-height: none; } }
-@media (max-width: 1100px) {
+@media (max-width: 1250px) {
   .board { grid-template-columns: 1fr; }
   .board-panes { display: flex; gap: 6px; position: sticky; top: 56px; z-index: 5; background: var(--bg); padding: 6px 0; }
   .board-panes button { flex: 1; display: flex; gap: 6px; align-items: center; justify-content: center; text-transform: uppercase; letter-spacing: .08em; font: 600 13px var(--display); }

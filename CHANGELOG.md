@@ -2,6 +2,19 @@
 
 What changed in each release. Newest first.
 
+## v0.13.0 (2026-10-14)
+
+- Sheets: feats the content keeps off the sheet (Skilled and others) still appear by name in the feats list
+- Build board: calmer, more arcane animations
+- DLDM export: every check box starts clear, so boxes the blank sheet came with ticked (attunement 6 to 10) are not left ticked on pages that are not filled
+- Build board: counts include every choice a species, class or background asks (languages too); the scores panel lists what is left, each a shortcut to it
+- Build board: the class card can change or remove the starting class
+- Build board: the flying card grows in size instead of stretching, so its name keeps its shape
+- Top bar: Play and Export as their own tabs when the build board is on
+- Build board: all three columns or the three tabs, no two-column step between (tabs below 1250 px)
+- Tutorial: explains the build board when it is the layout in use
+- Build board: a still-to-choose list under the closed lists; a shorter background card; a wider scores column
+
 ## v0.12.0 (2026-10-14)
 
 - Storage: open a database a newer build raised the version of, instead of failing

@@ -11,10 +11,10 @@ import type { Resolved } from "../aurora/engine";
 import { ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, totalLevel, type AbilityId, type Character } from "../aurora/character";
 import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as pbSpent } from "../aurora/pointBuy";
 import { buildSheet } from "../aurora/sheet";
-import { hiddenBy } from "../aurora/books";
+import { groupVariants, hiddenBy } from "../aurora/books";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { ClassPanel, SUBS, todoFor } from "./BuildTab";
-import { Browse, blurb, dragMime } from "./Browse";
+import { Browse, VariantChips, blurb, dragMime } from "./Browse";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
 import { ChosenBanner, hueOf } from "./PickCards";
 import { RulesCheckBar } from "./RulesCheck";
@@ -43,16 +43,20 @@ const ORDER: Kind[] = ["race", "class", "background", "magic", "equipment"];
 const DROP_TYPES: Partial<Record<Kind, string[]>> = { race: ["Race"], class: ["Class"], background: ["Background"], equipment: ITEM_KINDS };
 
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
-const reduced = () => document.documentElement.classList.contains("reduce-motion") || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+/** The app's own Reduce motion setting (Menu, Settings) turns the board's animations off. */
+const reduced = () => document.documentElement.classList.contains("reduce-motion");
 
 /** A name flies from where it was clicked to the space it fills, which then lights up. */
 function fly(from: DOMRect | null, label: string, kind: Kind) {
   let target = document.querySelector<HTMLElement>(`[data-tile="${kind}"]`);
   // With the columns as tabs the board may be hidden: the Character tab lights up instead.
-  if (!target || !target.offsetParent) target = document.querySelector<HTMLElement>('[data-pane="board"]');
+  const hidden = !target || !target.offsetParent;
+  if (hidden) target = document.querySelector<HTMLElement>('[data-pane="board"]');
   if (!target || !target.offsetParent) return;
-  const glow = () => { target.classList.remove("board-filled-anim"); void target.offsetWidth; target.classList.add("board-filled-anim"); };
-  if (!from || reduced()) return glow();
+  const glow = (el: HTMLElement, cls = "board-filled-anim") => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+  if (reduced()) return glow(target);
+  if (!hidden && (kind === "race" || kind === "class" || kind === "background")) return epicFly(from, label, kind, target);
+  if (!from) return glow(target);
   const to = target.getBoundingClientRect();
   const ghost = document.createElement("div");
   ghost.className = "board-ghost";
@@ -67,7 +71,68 @@ function fly(from: DOMRect | null, label: string, kind: Kind) {
     [{ transform: "translate(0,0) scale(1)", opacity: 1 }, { transform: `translate(${dx * 0.6}px, ${dy * 0.6 - 40}px) scale(1.08)`, opacity: 1, offset: 0.6 }, { transform: `translate(${dx}px, ${dy}px) scale(.6)`, opacity: 0 }],
     { duration: 520, easing: "cubic-bezier(.4,.1,.3,1)" },
   );
-  anim.onfinish = () => { ghost.remove(); glow(); };
+  anim.onfinish = () => { ghost.remove(); glow(target!); };
+}
+
+/**
+ * The big choices (species, class, background) arrive as a card: it lifts out of the list, turns over as it arcs
+ * across the board, grows to the size of its space and lands with a flash, a ring and a burst of sparks.
+ */
+function epicFly(from: DOMRect | null, label: string, kind: Kind, target: HTMLElement) {
+  const to = target.getBoundingClientRect();
+  // The space stays dark until the card lands in it.
+  target.dataset.awaiting = "1";
+  window.setTimeout(() => delete target.dataset.awaiting, 2000); // never left dark if the flight is cut short
+  const start = from ?? new DOMRect(to.left + to.width / 2 - 90, window.innerHeight + 40, 180, 40);
+  const card = document.createElement("div");
+  card.className = "board-flycard";
+  card.style.setProperty("--hue", String(HUE[kind]));
+  card.innerHTML = `<small></small><b></b>`;
+  card.querySelector("small")!.textContent = TITLE[kind];
+  card.querySelector("b")!.textContent = label;
+  Object.assign(card.style, { left: `${start.left}px`, top: `${start.top}px`, width: `${start.width}px`, height: `${Math.max(start.height, 34)}px` });
+  document.body.appendChild(card);
+  const w0 = start.width, h0 = Math.max(start.height, 34);
+  const sx = to.width / w0, sy = to.height / h0;
+  const dx = to.left - start.left, dy = to.top - start.top;
+  // A high arc: up and toward the middle of the screen, turning over, then down into the space.
+  const midX = dx * 0.45, midY = Math.min(dy, 0) - 140;
+  const anim = card.animate(
+    [
+      { transform: "translate(0,0) scale(1,1) rotateY(0deg) rotateZ(0deg)", opacity: 0.9, offset: 0 },
+      { transform: "translate(-6px,-26px) scale(1.12,1.12) rotateY(0deg) rotateZ(-3deg)", opacity: 1, offset: 0.16 },
+      { transform: `translate(${midX}px, ${midY}px) scale(${1 + (sx - 1) * 0.45}, ${1 + (sy - 1) * 0.45}) rotateY(180deg) rotateZ(4deg)`, offset: 0.55 },
+      { transform: `translate(${dx}px, ${dy - 24}px) scale(${sx * 1.06}, ${sy * 1.06}) rotateY(360deg) rotateZ(0deg)`, offset: 0.86 },
+      { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy}) rotateY(360deg)`, opacity: 1, offset: 1 },
+    ],
+    { duration: 1150, easing: "cubic-bezier(.45,.05,.35,1)", fill: "forwards" },
+  );
+  anim.onfinish = () => {
+    card.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: "forwards" }).onfinish = () => card.remove();
+    delete target.dataset.awaiting;
+    delete target.dataset.impact;
+    void target.offsetWidth;
+    target.dataset.impact = "1";
+    window.setTimeout(() => delete target.dataset.impact, 800);
+    const cx = to.left + to.width / 2, cy = to.top + to.height / 2;
+    const ring = document.createElement("div");
+    ring.className = "board-ring";
+    Object.assign(ring.style, { left: `${cx}px`, top: `${cy}px` });
+    document.body.appendChild(ring);
+    ring.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 0.95 }, { transform: "translate(-50%,-50%) scale(3.2)", opacity: 0 }], { duration: 700, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => ring.remove();
+    for (let i = 0; i < 22; i++) {
+      const p = document.createElement("div");
+      p.className = "board-spark";
+      const ex = cx + (Math.random() - 0.5) * to.width * 0.9, ey = cy + (Math.random() - 0.5) * to.height * 0.7;
+      Object.assign(p.style, { left: `${ex}px`, top: `${ey}px` });
+      document.body.appendChild(p);
+      const ang = Math.random() * Math.PI * 2, dist = 60 + Math.random() * 120;
+      p.animate(
+        [{ transform: "translate(-50%,-50%) scale(1)", opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(ang) * dist}px), calc(-50% + ${Math.sin(ang) * dist - 30}px)) scale(.2)`, opacity: 0 }],
+        { duration: 600 + Math.random() * 500, easing: "cubic-bezier(.1,.8,.3,1)" },
+      ).onfinish = () => p.remove();
+    }
+  };
 }
 
 /** A spellbook that grows with the spells chosen: small and plain when empty, full size and glowing when every spell is picked. */
@@ -342,6 +407,13 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     const el = pool[Math.floor(Math.random() * pool.length)];
     if (el) place(kind, el, null);
   };
+  /** The versions (books) of a chosen option, and switching between them on its card. */
+  const groupOf = (el: AElement) => groupVariants(r.reg.ofType(el.type), books).find((g) => g.variants.some((v) => v.el.id === el.id));
+  const switchVersion = (kind: Kind, from: AElement, to: AElement) => {
+    if (kind === "race") set((c) => ({ ...c, race: to.id }));
+    else if (kind === "background") set((c) => ({ ...c, background: to.id }));
+    else if (kind === "class") set((c) => ({ ...c, classes: c.classes.map((k) => (k.classId === from.id ? { ...k, classId: to.id } : k)) }));
+  };
   const clear = (kind: Kind) => set((c) => (kind === "race" ? { ...c, race: undefined } : kind === "background" ? { ...c, background: undefined } : kind === "class" ? { ...c, classes: [] } : c));
 
   const chosenEl: Record<"race" | "background", AElement | undefined> = { race: ch.race ? r.reg.get(ch.race) : undefined, background: ch.background ? r.reg.get(ch.background) : undefined };
@@ -399,7 +471,8 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         delete document.body.dataset.dragging;
         const id = mimes.map((m) => e.dataTransfer.getData(m)).find(Boolean);
         const el = id ? r.reg.get(id) : undefined;
-        if (el) place(kind, el, null);
+        // From where it was dropped.
+        if (el) place(kind, el, new DOMRect(e.clientX - 90, e.clientY - 17, 180, 34));
       },
     };
   };
@@ -435,6 +508,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         <div key={kind} data-tile={kind} className={`board-space board-${kind} filled has-card ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""}`} onClick={() => setFocus(kind)} {...drop(kind)}>
           <ChosenBanner el={el} label={label}>
             <span className="board-card-actions" onClick={(e) => e.stopPropagation()}>
+              {(() => { const g = groupOf(el); return g && <VariantChips g={g} activeId={el.id} chosen={new Set([el.id])} onActive={() => undefined} onSwitch={(from, to) => switchVersion(kind, from, to)} />; })()}
               <button className="ghost" onClick={() => learn(el)}>Learn more</button>
               {kind !== "class" && <button className="ghost" onClick={() => clear(kind)}>Remove</button>}
               <button className={`pick-select ${isOpen ? "is-on" : ""}`} onClick={() => { setOpen(isOpen ? null : kind); setFocus(kind); }}>{kind === "class" ? "Add a class" : "Change"}</button>

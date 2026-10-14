@@ -1507,3 +1507,29 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-space-text, .board-space-actions { z-index: 1; }
 .board-space-text { text-shadow: 0 1px 8px rgba(0,0,0,.85); }
 .board-art-live { top: 2px; right: 2px; }
+
+/* Lists on the board leave the books out; the version is chosen on the card, sources by the filters */
+.board-lib .vchips { display: none; }
+.board-space.has-card .pick-foot > .vchip.static { display: none; }
+.board-card-actions .vchips { display: inline-flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-right: auto; }
+
+/* The card that carries a species, class or background onto the board */
+.board-flycard { position: fixed; z-index: 300; pointer-events: none; transform-origin: 0 0; perspective: 900px; backface-visibility: visible;
+  display: flex; flex-direction: column; justify-content: center; padding: 4px 12px; overflow: hidden; border-radius: 6px;
+  background: radial-gradient(120% 90% at 75% 10%, hsl(var(--hue) 60% 45%), hsl(var(--hue) 45% 18%) 60%, hsl(var(--hue) 35% 8%));
+  box-shadow: inset 0 0 0 2px var(--gold), 0 18px 40px rgba(0,0,0,.6), 0 0 24px color-mix(in srgb, var(--gold) 45%, transparent); }
+.board-flycard small { font: 600 9px var(--body); letter-spacing: .16em; text-transform: uppercase; color: var(--gold2); }
+.board-flycard b { font: 700 16px var(--display); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.board-ring { position: fixed; z-index: 299; pointer-events: none; width: 160px; height: 160px; border-radius: 50%; border: 3px solid var(--gold2); box-shadow: 0 0 24px var(--gold), inset 0 0 24px var(--gold); }
+.board-spark { position: fixed; z-index: 301; pointer-events: none; width: 7px; height: 7px; border-radius: 50%; background: radial-gradient(circle, #fff, var(--gold2) 45%, transparent 70%); box-shadow: 0 0 8px var(--gold2); }
+.board-space[data-awaiting] > * { opacity: 0; }
+.board-space > * { transition: opacity .15s; }
+.board-space[data-impact] { animation: board-impact .75s cubic-bezier(.2,.9,.3,1.2); }
+@keyframes board-impact {
+  0% { transform: scale(1.06) translateY(-4px); filter: brightness(2) drop-shadow(0 0 30px var(--gold)); }
+  25% { transform: scale(.97) translateY(2px); }
+  45% { transform: scale(1.015) translateX(-3px); filter: brightness(1.3) drop-shadow(0 0 18px var(--gold)); }
+  60% { transform: translateX(3px); }
+  75% { transform: translateX(-1px); }
+  100% { transform: none; filter: none; }
+}

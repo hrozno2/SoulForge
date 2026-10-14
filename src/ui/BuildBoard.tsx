@@ -93,18 +93,19 @@ function epicFly(from: DOMRect | null, label: string, kind: Kind, target: HTMLEl
   card.querySelector("b")!.textContent = label;
   Object.assign(card.style, { left: `${start.left}px`, top: `${start.top}px`, width: `${start.width}px`, height: `${Math.max(start.height, 34)}px` });
   document.body.appendChild(card);
-  const w0 = start.width, h0 = Math.max(start.height, 34);
-  const sx = to.width / w0, sy = to.height / h0;
-  const dx = to.left - start.left, dy = to.top - start.top;
-  // A high arc: up and toward the middle of the screen, turning over, then down into the space.
-  const midX = dx * 0.45, midY = Math.min(dy, 0) - 140;
+  // The card's real size and position change (not a stretch), so the name stays in proportion.
+  const h0 = Math.max(start.height, 34);
+  const box = (x: number, y: number, w: number, h: number, font: number, turn: number, tilt: number, extra: Keyframe = {}): Keyframe =>
+    ({ left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, fontSize: `${font}px`, transform: `perspective(900px) rotateY(${turn}deg) rotateZ(${tilt}deg)`, ...extra });
+  const midW = (start.width + to.width) / 2, midH = (h0 + to.height) / 2;
+  const midX = start.left + (to.left - start.left) * 0.45, midY = Math.min(start.top, to.top) - 120;
   const anim = card.animate(
     [
-      { transform: "translate(0,0) scale(1,1) rotateY(0deg) rotateZ(0deg)", opacity: 0.9, offset: 0 },
-      { transform: "translate(-6px,-26px) scale(1.12,1.12) rotateY(0deg) rotateZ(-3deg)", opacity: 1, offset: 0.16 },
-      { transform: `translate(${midX}px, ${midY}px) scale(${1 + (sx - 1) * 0.45}, ${1 + (sy - 1) * 0.45}) rotateY(180deg) rotateZ(4deg)`, offset: 0.55 },
-      { transform: `translate(${dx}px, ${dy - 24}px) scale(${sx * 1.06}, ${sy * 1.06}) rotateY(360deg) rotateZ(0deg)`, offset: 0.86 },
-      { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy}) rotateY(360deg)`, opacity: 1, offset: 1 },
+      box(start.left, start.top, start.width, h0, 14, 0, 0, { opacity: 0.9, offset: 0 }),
+      box(start.left - 6, start.top - 26, start.width * 1.08, h0 * 1.15, 15, 0, -3, { opacity: 1, offset: 0.16 }),
+      box(midX, midY, midW * 0.8, midH * 0.8, 22, 180, 4, { offset: 0.55 }),
+      box(to.left - to.width * 0.03, to.top - 24, to.width * 1.06, to.height * 1.06, 30, 360, 0, { offset: 0.86 }),
+      box(to.left, to.top, to.width, to.height, 28, 360, 0, { opacity: 1, offset: 1 }),
     ],
     { duration: 1150, easing: "cubic-bezier(.45,.05,.35,1)", fill: "forwards" },
   );

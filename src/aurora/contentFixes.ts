@@ -25,6 +25,25 @@ export const SPELL_LIST_ADD: Record<string, string[]> = {
   ID_XGTE_SPELL_FROSTBITE: ["Artificer"],
 };
 
+const SPELLCASTING_OR_PACT = "ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE||ID_INTERNAL_GRANTS_PACT_MAGIC_FEATURE";
+
+/** Feat prerequisites the content leaves out (found by the 5e.tools feat prerequisite probe). */
+export const REQUIREMENTS_SET: Record<string, string> = {
+  // Tasha's: "Prerequisite: Spellcasting or Pact Magic feature" (TCE p.79, p.80); the content has none.
+  ID_WOTC_TCOE_FEAT_ELDRITCH_ADEPT: SPELLCASTING_OR_PACT,
+  ID_WOTC_TCOE_FEAT_METAMAGIC_ADEPT: SPELLCASTING_OR_PACT,
+  // 2014 War Caster: "Prerequisite: The ability to cast at least one spell" (PHB p.170); the content had only the
+  // rule against taking both versions. [type:spell] is how the content says it for Spell Sniper.
+  ID_PHB_FEAT_WARCASTER: "([type:spell],!ID_WOTC_PHB24_FEAT_WAR_CASTER)||ID_WOTC_PHB_GRANTS_FEAT_UNLOCKER",
+};
+
+/** Markers the content forgets on some elements: the artificer's Spellcasting is a Spellcasting feature too. */
+export const GRANTS_ADD: Record<string, string[]> = {
+  ID_WOTC_ERLW_CLASS_FEATURE_ARTIFICER_SPELLCASTING: ["ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE"],
+  ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_SPELLCASTING: ["ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE"],
+  ID_WOTC_UA_CLASS_FEATURE_ARTIFICER_SPELLCASTING: ["ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE"],
+};
+
 /** Linter findings that are right as they are (a requirement ruling out content that is not part of AuroraLegacy). */
 export const LINT_ACCEPTED = [
   "ID_KBP_DMBD_CLASS_FEATURE_ANTIPALADIN_UNHOLY_SMITE", // homebrew Antipaladin, ruled out by Divine Smite
@@ -37,6 +56,8 @@ const fixReq = (req: string | undefined) => (req ? req.replace(/ID_[A-Z0-9_]+/g,
 /** Applies the corrections to one element, in place. */
 export function applyContentFixes(el: AElement): void {
   el.requirements = fixReq(el.requirements);
+  if (REQUIREMENTS_SET[el.id]) el.requirements = REQUIREMENTS_SET[el.id];
+  for (const id of GRANTS_ADD[el.id] ?? []) if (!el.rules.some((r) => r.kind === "grant" && r.id === id)) el.rules = [...el.rules, { kind: "grant", type: "Grants", id }];
   const add = SPELL_LIST_ADD[el.id];
   if (add) el.supports = [...el.supports, ...add.filter((c) => !el.supports.includes(c))];
   el.rules = el.rules.map((r) => ("requirements" in r && r.requirements ? { ...r, requirements: fixReq(r.requirements) } : r));

@@ -56,6 +56,12 @@ export async function ensureCache() {
     console.log("Downloading the 5e.tools spell lists...");
     writeFileSync(spells, Buffer.from(await (await get("https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/spells/sources.json")).arrayBuffer()));
   }
+  // The 5e.tools feats with their prerequisites (test-only reference, for the feat prerequisite probe).
+  const featsRef = join(CACHE, "feats-ref.json");
+  if (refresh || !existsSync(featsRef)) {
+    console.log("Downloading the 5e.tools feats...");
+    writeFileSync(featsRef, Buffer.from(await (await get("https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/feats.json")).arrayBuffer()));
+  }
   // Blank sheets for the export checks, from their makers' own addresses (the same links the app offers).
   const sheets = join(CACHE, "sheets");
   mkdirSync(sheets, { recursive: true });

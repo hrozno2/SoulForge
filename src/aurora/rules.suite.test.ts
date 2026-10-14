@@ -30,6 +30,7 @@ import { importForeignCharacter } from "./foreign";
 import { lintContent } from "./contentLint";
 import { LINT_ACCEPTED } from "./contentFixes";
 import { isModern } from "./edition";
+import { probeFeats } from "./featProbe";
 import type { ARegistry } from "./registry";
 
 const CACHE = process.env.SOULFORGE_RULES;
@@ -342,6 +343,15 @@ describe.skipIf(!CACHE)("rules", () => {
     }
     report.push(`\n### spell lists against 5e.tools\n${found.length ? found.map((f) => `- ${f}`).join("\n") : "- no differences"}`);
     expect(found).toEqual([]);
+  });
+
+  // Feat prerequisites: the content's requirements allow and refuse the same characters 5e.tools' prerequisites do.
+  it("feat prerequisites match 5e.tools", () => {
+    const file = join(CACHE ?? "", "feats-ref.json");
+    if (!existsSync(file)) return;
+    const res = probeFeats(reg, JSON.parse(readFileSync(file, "utf8")).feat);
+    report.push(`\n### feat prerequisites against 5e.tools\n- ${res.checked} feats probed\n${res.findings.map((f) => `- ${f}`).join("\n")}\n- not probed: ${res.notProbed.join("; ") || "none"}`);
+    expect(res.findings).toEqual([]);
   });
 
   it("writes the report", () => {

@@ -234,15 +234,16 @@ Phases 1 and 4 can run side by side; 3 depends on 1; 2 can start right away.
 
 ---
 
-## 7. Decisions for you
+## 7. Decisions (made 2026-10-14)
 
-- **D1. Unknown choices on import:** leave them open as a to-do list (recommended), or keep filling them with
-  marked suggestions?
-- **D2. Rules reference numbers in the app:** ship the class tables (numbers only) so the live Rules check is
-  complete, or keep them test-only and have the live check rely on the content alone?
-- **D3. Standard sheets:** confirm the targets: official 2024 (fillable and print), classic 2014 three-page,
-  DLtheDM 2024, Soul Forge. Any others?
-- **D4. Feature freeze** until phase 3 passes?
+- **D1. Unknown choices on import:** left open as a to-do list. The to-do list goes into the character's Notes
+  with the import report, and the notice after the report says where to find it.
+- **D2. Rules reference numbers:** not bundled. The app downloads the 5e.tools class data from GitHub when content
+  is loaded (as it does with AuroraLegacy), condenses it to numbers only, and caches it. The live Rules check uses
+  that cache; without it, the check runs on the content alone and says so.
+- **D3. Standard sheets:** official 2024 (fillable and print), classic 2014 three-page, DLtheDM 2024, Soul Forge.
+- **D4. Feature freeze:** yes. New feature ideas go to `docs/FEATURES-LATER.md` until import, build and export
+  work at least 95 percent of the time on the test corpus and the nightly runs.
 
 ---
 

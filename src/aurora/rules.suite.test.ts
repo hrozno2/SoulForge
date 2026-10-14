@@ -192,7 +192,7 @@ describe.skipIf(!CACHE)("rules", () => {
 
   it("a batch of 10 varied random characters", async () => {
     expect(await run("batch", batch.map((c) => [c.name, c]))).toEqual([]);
-  }, 1800000);
+  }, LIMIT);
 
   it("level 20 in every class, varied species, subclasses and feats", async () => {
     const books = new BookIndex(reg);
@@ -202,7 +202,7 @@ describe.skipIf(!CACHE)("rules", () => {
       return [`${c.name} (${c.source}) 20`, ch];
     });
     expect(await run("L20", chars)).toEqual([]);
-  }, 3600000);
+  }, LIMIT);
 
   it("companions and optional rules", async () => {
     const options = reg.ofType("Option").map((o) => o.id);
@@ -211,7 +211,7 @@ describe.skipIf(!CACHE)("rules", () => {
       return [`companion ${i + 1}`, ch];
     });
     expect(await run("extras", chars)).toEqual([]);
-  }, 1800000);
+  }, LIMIT);
 
   it("levelling up five characters", async () => {
     const chars: [string, Character][] = batch.filter((c) => c.classes.reduce((n, k) => n + k.level, 0) < 18).slice(0, 5).map((c) => {
@@ -225,7 +225,7 @@ describe.skipIf(!CACHE)("rules", () => {
       return [`${c.name} +${steps}`, ch];
     });
     expect(await run("levelup", chars)).toEqual([]);
-  }, 1800000);
+  }, LIMIT);
 
   it("adding a second class to five characters", async () => {
     const books = new BookIndex(reg);
@@ -241,7 +241,7 @@ describe.skipIf(!CACHE)("rules", () => {
       chars.push([`${c.name} + ${pick.name}`, ch]);
     }
     expect(await run("multiclass", chars)).toEqual([]);
-  }, 1800000);
+  }, LIMIT);
 
   it("known builds from the community", async () => {
     const chars: [string, Character][] = [];
@@ -253,7 +253,7 @@ describe.skipIf(!CACHE)("rules", () => {
     const missing = chars.filter(([, c]) => !c).map(([n]) => `${n}: could not be made from the loaded content`);
     expect([...missing, ...(await run("build", chars.filter(([, c]) => c)))]).toEqual([]);
     writeReport();
-  }, 3600000);
+  }, LIMIT);
 
   // Coverage: every subclass at a level with all its features, and on the way every species, background and feat
   // at least once, every level band and both rule sets. Only with RULES_TIER=full (it builds a few hundred).
@@ -287,7 +287,7 @@ describe.skipIf(!CACHE)("rules", () => {
     }
     report.push(`\nCoverage: ${chars.length} characters, ${classes.length} classes, ${species.length} species, ${backgrounds.length} backgrounds, ${feats.length} feats offered.`);
     expect(await run("coverage", chars)).toEqual([]);
-  }, 7200000);
+  }, LIMIT);
 
   // Every feat, species, background and subclass on its own, three ways of filling its choices each: nothing may be
   // left without options, nothing may point at missing content, every spell must be castable.
@@ -312,7 +312,7 @@ describe.skipIf(!CACHE)("rules", () => {
     }
     report.push(`\n### every element on its own\n${found.length ? found.map((f) => `- ${f}`).join("\n") : "- no findings"}`);
     expect([...new Set(found)]).toEqual([]);
-  }, 3600000);
+  }, LIMIT);
 
   // Characters made in Roll20 and Foundry (kept in the cache's imports folder, not in this repository). Each one
   // imports, exports, and leaves no more choices open than when its baseline was written: an open choice is one the
@@ -346,7 +346,7 @@ describe.skipIf(!CACHE)("rules", () => {
     }
     if (!existsSync(basePath) || process.env.IMPORT_BASELINE) writeFileSync(basePath, JSON.stringify(now, null, 2));
     expect(worse, worse.join("\n")).toEqual([]);
-  }, 600000);
+  }, LIMIT);
 
   // The content linter: problems in the content itself. Each is either corrected in contentFixes.ts or accepted
   // there with a reason; anything else fails.

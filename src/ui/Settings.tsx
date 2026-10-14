@@ -21,12 +21,12 @@ export interface AppSettings {
   showUnusual: boolean;
   /** Printed sheets list every spell the character can prepare, with blank boxes to mark each day. */
   allSpells: boolean;
-  /** The Build tab's layout: steps down the side with a summary (on trial in the test app), or tabs along the top. */
-  buildLayout: "steps" | "tabs";
+  /** The Build tab's layout: the build board (on trial in the test app), or tabs along the top. */
+  buildLayout: "board" | "tabs";
 }
 
 const KEY = "charforge.settings";
-const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true, allSpells: true, buildLayout: import.meta.env.VITE_TEST_TOOLS === "1" ? "steps" : "tabs" };
+const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true, allSpells: true, buildLayout: import.meta.env.VITE_TEST_TOOLS === "1" ? "board" : "tabs" };
 
 function read(): AppSettings {
   try {

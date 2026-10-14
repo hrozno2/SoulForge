@@ -118,9 +118,14 @@ export interface BrowseProps {
   perPage?: number;
   /** The recommended sort is the default for named choices; spells default to level. */
   defaultSort?: SortMode;
+  /** Options can be dragged (onto the build board); the drag carries the element id under dragMime(type). */
+  draggable?: boolean;
 }
 
-export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabledReason, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort }: BrowseProps) {
+/** The drag data type for an element type, so a drop target can tell what is over it before the drop. */
+export const dragMime = (type: string) => `application/x-sf-${type.toLowerCase().replace(/[^a-z]/g, "")}`;
+
+export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabledReason, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort, draggable }: BrowseProps) {
   const { books, learn } = useUi();
   const [view, setView] = useStored<"cards" | "list">(`view.${type}`, defaultView);
   const [sort, setSort] = useStored<SortMode>(`sort.${type}`, defaultSort ?? (type === "Spell" ? "level" : "recommended"));
@@ -173,6 +178,11 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
   const sorts: [SortMode, string][] = type === "Spell" ? [["level", "Level"], ...base] : base;
   const useCards = allowCards && view === "cards";
 
+  const drag = (e: AElement, why?: string, owner?: string) => (draggable && !why && !owner ? {
+    draggable: true,
+    onDragStart: (ev: React.DragEvent) => { ev.dataTransfer.setData(dragMime(e.type), e.id); ev.dataTransfer.effectAllowed = "copy"; document.body.dataset.dragging = dragMime(e.type); },
+    onDragEnd: () => { delete document.body.dataset.dragging; },
+  } : {});
   const activeOf = (g: Group): Variant => g.variants.find((v) => v.el.id === active[g.key]) ?? g.variants.find((v) => chosenSet.has(v.el.id)) ?? g.best;
 
   return (
@@ -257,7 +267,7 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
             const owner = g.variants.map((x) => ownedBy?.(x.el)).find(Boolean);
             const picked = g.variants.some((x) => chosenSet.has(x.el.id));
             return (
-              <div key={g.key} title={owner} className={`pick-card ${type === "Class" ? "is-class" : ""} ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} style={{ ["--hue" as string]: hue }} data-glyph={hasClassIcon(e.name) ? "" : e.name.charAt(0)} onMouseEnter={() => onHover?.(e)}>
+              <div key={g.key} title={owner} className={`pick-card ${type === "Class" ? "is-class" : ""} ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} style={{ ["--hue" as string]: hue }} data-glyph={hasClassIcon(e.name) ? "" : e.name.charAt(0)} onMouseEnter={() => onHover?.(e)} {...drag(e, why, owner)}>
                 {hasClassIcon(e.name) && <ClassIcon name={e.name} size={260} className="pick-watermark" />}
                 {why && !owner && <div className="lock-note" role="note"><LockIcon />{why}</div>}
                 {type === "Class" && <div className="ribbon">{hasClassIcon(e.name) ? <ClassIcon name={e.name} size={34} /> : e.name.charAt(0)}</div>}
@@ -288,7 +298,7 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
             const owner = g.variants.map((x) => ownedBy?.(x.el)).find(Boolean);
             const picked = g.variants.some((x) => chosenSet.has(x.el.id));
             return (
-              <div key={g.key} className={`opt-row ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} title={owner ?? why} onMouseEnter={() => onHover?.(e)}>
+              <div key={g.key} className={`opt-row ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} title={owner ?? why} onMouseEnter={() => onHover?.(e)} {...drag(e, why, owner)}>
                 {type === "Spell" && <span className={`lvl ${e.setters.level?.value === "0" ? "cantrip" : ""}`}>{e.setters.level?.value === "0" ? "C" : e.setters.level?.value ?? "?"}</span>}
                 <button className="opt-main" disabled={false} title={owner ?? why} aria-disabled={owner ? true : undefined} onClick={() => !owner && onPick(e)}>
                   <span className="tick">{chosenSet.has(e.id) || owner ? "✓" : ""}</span>

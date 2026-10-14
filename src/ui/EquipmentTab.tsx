@@ -14,7 +14,18 @@ const COINS = ["pp", "gp", "ep", "sp", "cp"] as const;
 const canEquip = (el?: AElement) => !!el && (el.type === "Weapon" || el.type === "Armor" || el.rules.length > 0 || !!el.setters.slot);
 const needsAttune = (el?: AElement) => !!el && (/requires attunement/i.test(el.setters.rarity?.value ?? "") || /requires attunement/i.test(el.description.slice(0, 400)));
 
-export function EquipmentTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
+export const ITEM_KINDS = ITEM_TYPES;
+
+/** Adds one of an item to the inventory, onto an unequipped stack of it when it stacks. */
+export const addItem = (set: SetCharacter, el: AElement) =>
+  set((c) => {
+    const stack = c.inventory.find((i) => i.id === el.id && !i.equipped);
+    if (stack && el.setters.stackable !== undefined) return { ...c, inventory: c.inventory.map((i) => (i === stack ? { ...i, qty: i.qty + 1 } : i)) };
+    return { ...c, inventory: [...c.inventory, { uid: uid(), id: el.id, qty: 1, equipped: false, attuned: false }] };
+  });
+
+/** `listBeside`: items are added from a list next to this (the build board), so the search here is left out. */
+export function EquipmentTab({ r, ch, set, onDetail, listBeside = false }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; listBeside?: boolean }) {
   const sheet = useMemo(() => buildSheet(r), [r]);
   const [q, setQ] = useState("");
   const [type, setType] = useState("all");
@@ -28,12 +39,7 @@ export function EquipmentTab({ r, ch, set, onDetail }: { r: Resolved; ch: Charac
   }, [q, type, r.reg]);
 
   const update = (id: string, fn: (i: InvItem) => InvItem) => set((c) => ({ ...c, inventory: c.inventory.map((i) => (i.uid === id ? fn(i) : i)) }));
-  const add = (el: AElement) =>
-    set((c) => {
-      const stack = c.inventory.find((i) => i.id === el.id && !i.equipped);
-      if (stack && el.setters.stackable !== undefined) return { ...c, inventory: c.inventory.map((i) => (i === stack ? { ...i, qty: i.qty + 1 } : i)) };
-      return { ...c, inventory: [...c.inventory, { uid: uid(), id: el.id, qty: 1, equipped: false, attuned: false }] };
-    });
+  const add = (el: AElement) => addItem(set, el);
   const remove = (id: string) => set((c) => ({ ...c, inventory: c.inventory.filter((i) => i.uid !== id).map((i) => (i.container === id ? { ...i, container: undefined } : i)) }));
   const [handsNote, setHandsNote] = useState("");
   const applyHands = (res: { inventory: InvItem[]; dropped: string[] }) => {
@@ -55,8 +61,8 @@ export function EquipmentTab({ r, ch, set, onDetail }: { r: Resolved; ch: Charac
     <div className="equip">
       <StartingEquipment r={r} ch={ch} set={set} onDetail={onDetail} />
       <section className="card">
-        <h2>Add equipment</h2>
-        <div className="row">
+        <h2>{listBeside ? "Custom items" : "Add equipment"}</h2>
+        {!listBeside && <><div className="row">
           <input placeholder="Search items, weapons, armor" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1 }} />
           <select aria-label="Filter by type" value={type} onChange={(e) => setType(e.target.value)}>
             <option value="all">All</option>
@@ -75,7 +81,7 @@ export function EquipmentTab({ r, ch, set, onDetail }: { r: Resolved; ch: Charac
             </li>
           ))}
           {q.trim() && !results.length && <li className="muted pad">No items match. Load more content on the Content tab, or add a custom item below.</li>}
-        </ul>
+        </ul></>}
         <details>
           <summary>Custom item</summary>
           <div className="row">

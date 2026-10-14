@@ -16,11 +16,12 @@ export interface RollResult {
   dropped?: number;
   /** With advantage or disadvantage: the whole roll that was not used. */
   other?: RollResult;
-  /** Each dice group with its individual dice, and flat bonuses (sides 0), for display. */
-  terms: { sides: number; sign: 1 | -1; rolls: number[]; sum: number }[];
+  /** Each dice group with its individual dice, and flat bonuses (sides 0), for display. `dropped`: positions of dice not counted ("4d6kh3"). */
+  terms: { sides: number; sign: 1 | -1; rolls: number[]; sum: number; dropped?: number[] }[];
 }
 
-export function parseDice(expr: string): { terms: { sign: 1 | -1; count: number; sides: number; flat: number }[] } | null {
+/** Dice expressions: "2d6+3", "d20 - 1", and "4d6kh3" (keep the highest 3). */
+export function parseDice(expr: string): { terms: { sign: 1 | -1; count: number; sides: number; flat: number; keep?: number }[] } | null {
   const clean = expr.replace(/\s+/g, "").toLowerCase();
   if (!clean) return null;
   const parts = clean.match(/[+-]?[^+-]+/g);
@@ -29,8 +30,8 @@ export function parseDice(expr: string): { terms: { sign: 1 | -1; count: number;
   for (const p of parts) {
     const sign: 1 | -1 = p.startsWith("-") ? -1 : 1;
     const body = p.replace(/^[+-]/, "");
-    const m = body.match(/^(\d*)d(\d+)$/);
-    if (m) terms.push({ sign, count: m[1] ? parseInt(m[1], 10) : 1, sides: parseInt(m[2], 10), flat: 0 });
+    const m = body.match(/^(\d*)d(\d+)(?:kh(\d+))?$/);
+    if (m) terms.push({ sign, count: m[1] ? parseInt(m[1], 10) : 1, sides: parseInt(m[2], 10), flat: 0, ...(m[3] ? { keep: parseInt(m[3], 10) } : {}) });
     else if (/^\d+$/.test(body)) terms.push({ sign, count: 0, sides: 0, flat: parseInt(body, 10) });
     else return null;
   }
@@ -48,10 +49,13 @@ export function rollExpression(expr: string, label = "", rng: () => number = Mat
     if (t.count > 0) {
       if (t.count > 200 || t.sides > 1000) return null;
       const r = Array.from({ length: t.count }, () => 1 + Math.floor(rng() * t.sides));
+      // Keeping the highest few: the lowest dice drop (the first of equal ones).
+      const dropped = t.keep !== undefined && t.keep < r.length ? r.map((v, i) => [v, i]).sort((a, b) => a[0] - b[0] || b[1] - a[1]).slice(0, r.length - t.keep).map(([, i]) => i) : [];
+      const sum = r.reduce((a, b, i) => a + (dropped.includes(i) ? 0 : b), 0);
       rolls.push(...r);
-      total += t.sign * r.reduce((a, b) => a + b, 0);
-      bits.push(`${t.sign < 0 ? "-" : ""}[${r.join(",")}]`);
-      shown.push({ sides: t.sides, sign: t.sign, rolls: r, sum: t.sign * r.reduce((a, b) => a + b, 0) });
+      total += t.sign * sum;
+      bits.push(`${t.sign < 0 ? "-" : ""}[${r.map((v, i) => (dropped.includes(i) ? `(${v})` : v)).join(",")}]`);
+      shown.push({ sides: t.sides, sign: t.sign, rolls: r, sum: t.sign * sum, ...(dropped.length ? { dropped } : {}) });
     } else {
       total += t.sign * t.flat;
       bits.push(`${t.sign < 0 ? "-" : "+"}${t.flat}`);
@@ -161,7 +165,8 @@ export function DieIcon({ sides, label, size = 34 }: { sides: number; label?: st
 /** The sum written out: "16 + 2 = 18", with several dice of a kind in brackets. */
 export function rollMath(r: RollResult): string {
   const parts = r.terms.filter((t) => t.sides > 0 || t.sum !== 0).map((t, i) => {
-    const body = t.sides ? (t.rolls.length > 1 ? `(${t.rolls.join(" + ")})` : String(t.rolls[0] ?? 0)) : String(Math.abs(t.sum));
+    const kept = t.rolls.filter((_, j) => !t.dropped?.includes(j));
+    const body = t.sides ? (kept.length > 1 ? `(${kept.join(" + ")})` : String(kept[0] ?? 0)) : String(Math.abs(t.sum));
     const neg = t.sign < 0;
     return i === 0 ? `${neg ? "−" : ""}${body}` : `${neg ? "−" : "+"} ${body}`;
   });
@@ -179,7 +184,7 @@ function RollBody({ r, dim }: { r: RollResult; dim?: boolean }) {
         {dice.map((t, i) => (
           <span key={i} className="roll-group" title={`${t.rolls.length}d${t.sides}`}>
             <small>{t.sign < 0 ? "−" : ""}{t.rolls.length}d{t.sides}</small>
-            {t.rolls.map((v, j) => <span key={j} className={v === t.sides ? "chip max" : v === 1 ? "chip min" : "chip"}>{v}</span>)}
+            {t.rolls.map((v, j) => <span key={j} className={t.dropped?.includes(j) ? "chip dropped" : v === t.sides ? "chip max" : v === 1 ? "chip min" : "chip"} title={t.dropped?.includes(j) ? "Dropped" : undefined}>{v}</span>)}
           </span>
         ))}
         {flat !== 0 && <span className="roll-group"><small>bonus</small><span className="chip flat">{flat > 0 ? `+${flat}` : `−${-flat}`}</span></span>}

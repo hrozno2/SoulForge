@@ -27,7 +27,7 @@ export function PickCards({
 }
 
 /** The chosen species, class or background as a wide card, with its own buttons underneath the text. */
-export function ChosenBanner({ el, label, onHover, children }: { el: AElement; label: string; onHover?: (e: AElement) => void; children?: React.ReactNode }) {
+export function ChosenBanner({ el, label, onHover, children }: { el: AElement; label: React.ReactNode; onHover?: (e: AElement) => void; children?: React.ReactNode }) {
   const isClass = el.type === "Class";
   return (
     <div className={`pick-card chosen-banner ${isClass ? "is-class" : ""}`} style={{ ["--hue" as string]: hueOf(el.name) }} data-glyph={hasClassIcon(el.name) ? "" : el.name.charAt(0)} onMouseEnter={() => onHover?.(el)}>

@@ -1372,16 +1372,19 @@ main.wide { max-width: 1900px; }
 .board-hero h2 { font: 700 34px var(--display); margin: 0; color: var(--text); }
 .board-hero p { margin: 2px 0 14px; }
 .board-spaces { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
-.board-space { grid-column: span 2; position: relative; min-height: 168px; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 14px; cursor: pointer;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--panel2) 92%, #fff 8%), var(--panel)); border: 1px solid var(--line); transition: transform .2s, border-color .2s, box-shadow .25s, filter .2s; }
+.board-space { grid-column: span 2; position: relative; min-height: 168px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer; transition: transform .2s, filter .25s; }
+/* The empty spaces and the spellbook and backpack wear the same gold-framed card as a chosen species or class */
+.pick-card.board-frame { min-height: 168px; height: 100%; padding: 22px 22px 18px; }
+.board-race .pick-card.board-frame, .board-class .pick-card.board-frame { min-height: 200px; }
+.pick-card.board-frame:hover { transform: none; }
+.board-space:not(.has-card) { justify-content: stretch; }
 .board-race, .board-class { grid-column: span 3; min-height: 200px; }
-.board-space.empty { filter: grayscale(.85); }
+.board-space.empty { filter: grayscale(.8) brightness(.8); }
 .board-space.empty h3, .board-space.empty .board-kicker { color: var(--muted); }
-.board-space:hover { transform: translateY(-2px); border-color: var(--gold); filter: none; }
-.board-space.focused { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 0 18px color-mix(in srgb, var(--gold) 25%, transparent); }
-.board-space.filled { background: linear-gradient(160deg, hsl(var(--hue, 40) 45% 26% / .85), var(--panel) 75%); }
+.board-space:hover { transform: translateY(-2px); filter: none; }
+.board-space.focused { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--gold) 50%, transparent)); }
 .board-space.disabled { opacity: .5; cursor: default; }
-.board-space.disabled:hover { transform: none; border-color: var(--line); }
+.board-space.disabled:hover { transform: none; }
 .board-art { position: absolute; right: -14px; top: -10px; color: var(--text); opacity: .09; pointer-events: none; transition: opacity .3s, transform .4s; }
 .board-space.filled .board-art { opacity: .2; color: hsl(var(--hue, 40) 70% 80%); }
 .board-space:hover .board-art { transform: rotate(-4deg) scale(1.05); }
@@ -1396,17 +1399,17 @@ main.wide { max-width: 1900px; }
 .board-see { border: 1px solid var(--gold); color: var(--text); background: color-mix(in srgb, var(--panel) 70%, transparent); clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%); padding-right: 20px; }
 .board-see.on, .board-space.empty:not(.disabled) .board-see { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .board-dice { padding: 4px 8px; display: grid; place-items: center; }
-.board-space.drop-over { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold), 0 0 30px color-mix(in srgb, var(--gold) 45%, transparent); transform: scale(1.02); filter: none; }
+.board-space.drop-over { filter: drop-shadow(0 0 16px var(--gold)); transform: scale(1.02); }
 body[data-dragging="application/x-sf-race"] .board-race,
 body[data-dragging="application/x-sf-class"] .board-class,
 body[data-dragging="application/x-sf-background"] .board-background,
 body[data-dragging="application/x-sf-item"] .board-equipment,
 body[data-dragging="application/x-sf-weapon"] .board-equipment,
 body[data-dragging="application/x-sf-armor"] .board-equipment,
-body[data-dragging="application/x-sf-magicitem"] .board-equipment { border-style: dashed; border-color: var(--gold); filter: none; animation: board-beckon 1s ease-in-out infinite alternate; }
-@keyframes board-beckon { from { box-shadow: 0 0 0 0 transparent; } to { box-shadow: 0 0 16px color-mix(in srgb, var(--gold) 40%, transparent); } }
+body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none; animation: board-beckon 1s ease-in-out infinite alternate; }
+@keyframes board-beckon { from { filter: drop-shadow(0 0 0 transparent); } to { filter: drop-shadow(0 0 12px var(--gold)); } }
 .board-filled-anim { animation: board-fill .7s cubic-bezier(.2,.9,.3,1.3); }
-@keyframes board-fill { 0% { transform: scale(.94); box-shadow: 0 0 0 0 var(--gold); } 45% { transform: scale(1.03); box-shadow: 0 0 0 3px var(--gold), 0 0 40px color-mix(in srgb, var(--gold) 60%, transparent); } 100% { transform: scale(1); } }
+@keyframes board-fill { 0% { transform: scale(.94); filter: drop-shadow(0 0 0 transparent) brightness(1.4); } 45% { transform: scale(1.03); filter: drop-shadow(0 0 22px var(--gold)) brightness(1.2); } 100% { transform: scale(1); filter: none; } }
 .board-ghost { position: fixed; z-index: 200; pointer-events: none; padding: 6px 12px; border-radius: 8px; background: var(--gold); color: #1b1408; font: 700 14px var(--display); box-shadow: 0 8px 26px rgba(0,0,0,.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .board-focus { margin-top: 16px; background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: 8px; padding: 14px 16px; animation: board-rise .3s ease; }
 @keyframes board-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -1454,11 +1457,53 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { border-style
 .board-modal { width: min(680px, 100%); }
 .board-x { position: absolute; right: 10px; top: 8px; background: none; border: 0; font-size: 22px; color: inherit; cursor: pointer; }
 
-@media (max-width: 1400px) { .board { grid-template-columns: 360px minmax(0, 1fr); } .board-stats { grid-column: 1 / -1; position: static; max-height: none; } }
-@media (max-width: 900px) {
+/* A chosen species, class or background: the full card fills its space */
+.board-space.has-card { padding: 0; background: none; border: 0; overflow: visible; filter: none; justify-content: stretch; }
+.board-space.has-card:hover { transform: none; }
+.board-space.has-card .chosen-banner { margin: 0; height: 100%; min-height: 200px; }
+.board-space.has-card.focused .chosen-banner { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--gold) 45%, transparent)); }
+.board-space.has-card .chosen-kicker { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.board-space.has-card .pick-blurb { -webkit-line-clamp: 2; }
+.board-background.has-card .chosen-banner { min-height: 168px; padding-top: 40px; }
+.board-card-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.class-row.compact { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); margin-bottom: 8px; }
+.class-row.compact b { font: 700 17px var(--display); }
+.class-row.compact .stepper { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+
+/* Narrow windows: the three columns become tabs */
+.board-panes { display: none; }
+@media (max-width: 1400px) and (min-width: 1101px) { .board { grid-template-columns: 360px minmax(0, 1fr); } .board-stats { grid-column: 1 / -1; position: static; max-height: none; } }
+@media (max-width: 1100px) {
   .board { grid-template-columns: 1fr; }
-  .board-lib { position: static; max-height: none; }
-  .board-spaces { grid-template-columns: 1fr 1fr; }
+  .board-panes { display: flex; gap: 6px; position: sticky; top: 56px; z-index: 5; background: var(--bg); padding: 6px 0; }
+  .board-panes button { flex: 1; display: flex; gap: 6px; align-items: center; justify-content: center; text-transform: uppercase; letter-spacing: .08em; font: 600 13px var(--display); }
+  .board-panes button.on { background: var(--gold); color: #1b1408; border-color: var(--gold); }
+  .board.pane-lists > :not(.board-panes):not(.board-lib),
+  .board.pane-board > :not(.board-panes):not(.board-main),
+  .board.pane-stats > :not(.board-panes):not(.board-stats) { display: none; }
+  .board-lib, .board-stats { position: static; max-height: none; }
+  .board-panes button.board-filled-anim { animation: board-fill .7s cubic-bezier(.2,.9,.3,1.3); }
+}
+@media (max-width: 700px) {
+  .board-spaces { grid-template-columns: 1fr; }
   .board-space, .board-race, .board-class { grid-column: span 1; }
+  .board-hero h2 { font-size: 26px; }
 }
 .reduce-motion .board-space, .reduce-motion .board-acc-body, .reduce-motion .board-focus, .reduce-motion .board-filled-anim { transition: none; animation: none; }
+/* The spellbook and backpack on the board: they grow, fill, shrink and empty as choices change */
+.board-art-live { opacity: 1 !important; right: 6px; top: 6px; color: inherit; transform: none !important; }
+.board-book, .board-pack { width: 128px; height: 128px; overflow: visible; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); }
+.board-book-body { transform-origin: 60px 64px; transition: transform .7s cubic-bezier(.3,1.5,.5,1); }
+.board-pack-body { transform-origin: 60px 100px; transition: transform .6s cubic-bezier(.3,1.5,.5,1); }
+.board-pack-fill { transition: transform .7s cubic-bezier(.3,1.3,.5,1); }
+.board-pack-roll, .board-pack-sword { animation: board-pop .45s cubic-bezier(.3,1.6,.5,1); transform-origin: 60px 30px; }
+.board-sparks circle { animation: board-twinkle 1.6s ease-in-out infinite alternate; }
+.board-sparks circle:nth-child(2) { animation-delay: .4s; } .board-sparks circle:nth-child(3) { animation-delay: .8s; } .board-sparks circle:nth-child(4) { animation-delay: 1.2s; }
+@keyframes board-pop { from { transform: scale(.2) translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes board-twinkle { from { opacity: .2; } to { opacity: 1; } }
+.board-space.disabled .board-art-live { opacity: .35 !important; }
+.reduce-motion .board-book-body, .reduce-motion .board-pack-body, .reduce-motion .board-pack-fill { transition: none; }
+.reduce-motion .board-pack-roll, .reduce-motion .board-pack-sword, .reduce-motion .board-sparks circle { animation: none; }
+.board-space-text, .board-space-actions { z-index: 1; }
+.board-space-text { text-shadow: 0 1px 8px rgba(0,0,0,.85); }
+.board-art-live { top: 2px; right: 2px; }

@@ -37,8 +37,11 @@ function ChosenOrCards({ kicker, title, label, items, value, onPick, onClear, on
   );
 }
 
-/** The chosen classes with their levels and choices. `picker` off leaves picking a class to the caller (the step layout lists them beside). */
-export function ClassPanel({ r, ch, set, onDetail, picker = true }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; picker?: boolean }) {
+/**
+ * The chosen classes with their levels and choices. `picker` off leaves picking a class to the caller (the build
+ * board lists them beside); `compact` shows each class as a plain row, for when its card is already on show.
+ */
+export function ClassPanel({ r, ch, set, onDetail, picker = true, compact = false }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; picker?: boolean; compact?: boolean }) {
   const classes = r.reg.ofType("Class").filter((c) => !c.compendiumHidden);
   const [adding, setAdding] = useState(false);
   const level = totalLevel(ch);
@@ -55,6 +58,19 @@ export function ClassPanel({ r, ch, set, onDetail, picker = true }: { r: Resolve
       <div className="class-list">
         {ch.classes.map((c, i) => {
           const el = r.reg.get(c.classId);
+          if (el && compact) {
+            return (
+              <div className="class-row compact" key={c.classId}>
+                <b>{el.name}</b><small className="muted">{i === 0 ? "starting class" : "multiclass"}</small>
+                <span className="stepper">
+                  <button onClick={() => setLevel(i, -1)} disabled={c.level <= 1} aria-label="Level down">−</button>
+                  <span>Level {c.level}</span>
+                  <button onClick={() => setLevel(i, 1)} disabled={c.level >= 20 || level >= 20} aria-label="Level up">+</button>
+                </span>
+                <button className="ghost" onClick={() => remove(i)}>Remove</button>
+              </div>
+            );
+          }
           return (
             el ? (
               <ChosenBanner key={c.classId} el={el} label={i === 0 ? "Starting class" : "Multiclass"} onHover={onDetail}>

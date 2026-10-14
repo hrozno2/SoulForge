@@ -78,8 +78,8 @@ function fly(from: DOMRect | null, label: string, kind: Kind) {
 }
 
 /**
- * The big choices (species, class, background) arrive as a card: it lifts out of the list, turns over as it arcs
- * across the board, grows to the size of its space and lands with a flash, a ring and a burst of sparks.
+ * The big choices (species, class, background) arrive as a card: it glides from the list to its space, growing to
+ * fit, and an arcane circle draws itself around it as it lands, with a few embers drifting up.
  */
 function epicFly(from: DOMRect | null, label: string, kind: Kind, target: HTMLElement) {
   const to = target.getBoundingClientRect();
@@ -99,42 +99,47 @@ function epicFly(from: DOMRect | null, label: string, kind: Kind, target: HTMLEl
   const h0 = Math.max(start.height, 34);
   const box = (x: number, y: number, w: number, h: number, font: number, turn: number, tilt: number, extra: Keyframe = {}): Keyframe =>
     ({ left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, fontSize: `${font}px`, transform: `perspective(900px) rotateY(${turn}deg) rotateZ(${tilt}deg)`, ...extra });
-  const midW = (start.width + to.width) / 2, midH = (h0 + to.height) / 2;
-  const midX = start.left + (to.left - start.left) * 0.45, midY = Math.min(start.top, to.top) - 120;
+  // A smooth glide on a gentle curve with a slight tilt; no flips.
+  const midX = start.left + (to.left - start.left) * 0.5, midY = Math.min(start.top, to.top) - 40;
   const anim = card.animate(
     [
-      box(start.left, start.top, start.width, h0, 14, 0, 0, { opacity: 0.9, offset: 0 }),
-      box(start.left - 6, start.top - 26, start.width * 1.08, h0 * 1.15, 15, 0, -3, { opacity: 1, offset: 0.16 }),
-      box(midX, midY, midW * 0.8, midH * 0.8, 22, 180, 4, { offset: 0.55 }),
-      box(to.left - to.width * 0.03, to.top - 24, to.width * 1.06, to.height * 1.06, 30, 360, 0, { offset: 0.86 }),
-      box(to.left, to.top, to.width, to.height, 28, 360, 0, { opacity: 1, offset: 1 }),
+      box(start.left, start.top, start.width, h0, 14, 0, 0, { opacity: 0, offset: 0 }),
+      box(start.left, start.top - 8, start.width, h0, 14, 0, -1.5, { opacity: 1, offset: 0.12 }),
+      box(midX, midY, (start.width + to.width) / 2, (h0 + to.height) / 2, 21, 0, 1, { offset: 0.55 }),
+      box(to.left, to.top, to.width, to.height, 28, 0, 0, { opacity: 1, offset: 1 }),
     ],
-    { duration: 1150, easing: "cubic-bezier(.45,.05,.35,1)", fill: "forwards" },
+    { duration: 780, easing: "cubic-bezier(.22,.8,.24,1)", fill: "forwards" },
   );
   anim.onfinish = () => {
-    card.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: "forwards" }).onfinish = () => card.remove();
+    card.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: "forwards" }).onfinish = () => card.remove();
     delete target.dataset.awaiting;
     delete target.dataset.impact;
     void target.offsetWidth;
     target.dataset.impact = "1";
-    window.setTimeout(() => delete target.dataset.impact, 800);
+    window.setTimeout(() => delete target.dataset.impact, 900);
+    // An arcane circle draws itself around the space and fades, the way a spell takes hold.
     const cx = to.left + to.width / 2, cy = to.top + to.height / 2;
-    const ring = document.createElement("div");
-    ring.className = "board-ring";
-    Object.assign(ring.style, { left: `${cx}px`, top: `${cy}px` });
-    document.body.appendChild(ring);
-    ring.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 0.95 }, { transform: "translate(-50%,-50%) scale(3.2)", opacity: 0 }], { duration: 700, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => ring.remove();
-    for (let i = 0; i < 22; i++) {
-      const p = document.createElement("div");
-      p.className = "board-spark";
-      const ex = cx + (Math.random() - 0.5) * to.width * 0.9, ey = cy + (Math.random() - 0.5) * to.height * 0.7;
-      Object.assign(p.style, { left: `${ex}px`, top: `${ey}px` });
-      document.body.appendChild(p);
-      const ang = Math.random() * Math.PI * 2, dist = 60 + Math.random() * 120;
-      p.animate(
-        [{ transform: "translate(-50%,-50%) scale(1)", opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(ang) * dist}px), calc(-50% + ${Math.sin(ang) * dist - 30}px)) scale(.2)`, opacity: 0 }],
-        { duration: 600 + Math.random() * 500, easing: "cubic-bezier(.1,.8,.3,1)" },
-      ).onfinish = () => p.remove();
+    const size = Math.max(to.width, to.height) * 1.15;
+    const ns = "http://www.w3.org/2000/svg";
+    const sigil = document.createElementNS(ns, "svg");
+    sigil.setAttribute("class", "board-sigil");
+    sigil.setAttribute("viewBox", "-50 -50 100 100");
+    Object.assign(sigil.style, { left: `${cx - size / 2}px`, top: `${cy - size / 2}px`, width: `${size}px`, height: `${size}px` });
+    const tick = Array.from({ length: 12 }, (_, k) => { const a = (k * Math.PI) / 6; return `M${(44 * Math.cos(a)).toFixed(1)} ${(44 * Math.sin(a)).toFixed(1)} L${(40 * Math.cos(a)).toFixed(1)} ${(40 * Math.sin(a)).toFixed(1)}`; }).join(" ");
+    const star = Array.from({ length: 6 }, (_, k) => { const a = (k * Math.PI) / 3 - Math.PI / 2; return `${(34 * Math.cos(a)).toFixed(1)},${(34 * Math.sin(a)).toFixed(1)}`; });
+    sigil.innerHTML = `<circle r="47" pathLength="1"/><circle r="38" pathLength="1"/><path d="${tick}" pathLength="1"/><polygon points="${star[0]} ${star[2]} ${star[4]}" pathLength="1"/><polygon points="${star[1]} ${star[3]} ${star[5]}" pathLength="1"/>`;
+    document.body.appendChild(sigil);
+    sigil.animate([{ transform: "rotate(-20deg) scale(.92)", opacity: 0 }, { transform: "rotate(0deg) scale(1)", opacity: 1, offset: 0.35 }, { transform: "rotate(12deg) scale(1.04)", opacity: 0 }], { duration: 1400, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => sigil.remove();
+    // A few embers drift up from the card's edge.
+    for (let k = 0; k < 9; k++) {
+      const e = document.createElement("div");
+      e.className = "board-ember";
+      Object.assign(e.style, { left: `${to.left + Math.random() * to.width}px`, top: `${to.top + to.height * (0.55 + Math.random() * 0.45)}px` });
+      document.body.appendChild(e);
+      e.animate(
+        [{ transform: "translate(-50%,-50%) scale(1)", opacity: 0 }, { opacity: 0.9, offset: 0.2 }, { transform: `translate(calc(-50% + ${(Math.random() - 0.5) * 30}px), calc(-50% - ${50 + Math.random() * 70}px)) scale(.4)`, opacity: 0 }],
+        { duration: 1100 + Math.random() * 700, delay: Math.random() * 200, easing: "cubic-bezier(.2,.6,.4,1)" },
+      ).onfinish = () => e.remove();
     }
   };
 }

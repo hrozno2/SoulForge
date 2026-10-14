@@ -2,6 +2,27 @@
 
 What changed in each release. Newest first.
 
+## v0.11.0 (2026-10-13)
+
+- Feat spellcasting DC on every sheet even when spells overflow
+- Multiclass slots with an artificer; no dead-end picks in automatic filling; checker knows Dragon Hide
+- Reliability plan for import, build and export
+- Sheets show the DC of feat spellcasting; rules suite reads the filled sheets back
+- Prepare list for clerics and druids with a picked spell; importer reads repeatable feats, spell origins and 2024 names
+- Import report saved in the character's notes, with a notice on where to find it
+- Test build: show the commit and build time in the test strip
+- Importer: Foundry features stored as feats, always-prepared spells, clearer subclass note
+- Rules suite: type fix for the import check
+- Importer reads much more of Roll20 and Foundry files; prepare list per edition; cleaner sheet item names
+- Test build: test buttons in a visible strip under the top bar
+- Autofill skips picks that make an earlier choice illegal; checker knows 2024 Draconic Resilience and Mariner
+- Checker: or-groups in multiclass requirements, College of Dance unarmored defense
+- Choices are judged at the level they are made: a feature the same class gains later no longer makes an earlier choice illegal (Resilient at 4 and a Monk's Disciplined Survivor at 14)
+- Test fixture: the cleric is trained in shields
+- Rules check fixes: no untrained armor put on automatically; checker knows feature replacements, Channel Divinity naming, whole-word subclass matching and Elegant Courtier
+- Rules tests: a checker against the rules (5e.tools class data for hit dice, saves, slots, cantrips, prepared and known spells, feat levels, multiclass requirements and features by level; armor, attack, hit point and hand rules from the handbooks), varied random batches, level 20 in every class, level-ups, multiclasses, companions and optional rules, community builds, coverage of every subclass, species, background and feat, every element on its own, and export checks; release runs it on a fresh seed. Fixes it found: multiclass spell choices limited to each class's own level, ability score improvements no longer block each other across levels, two-handed property spelled without a hyphen, Ritual Caster and Beast Master choices, Artificer and species ability increases the original app generated; drop area for favorites; test app buttons for 10 random characters and a test export
+- Feat and species spells without class spellcasting get their own spellcasting line (Magic Initiate on a Fighter); starting gear 'gaming set, same as above' becomes the chosen set; import report after importing; Build, Magic and Equipment in the main menu; Equipment shows when starting gear is not chosen; finishing Build moves on to Magic or Equipment, finishing Magic to Equipment; search as an icon that opens; temp HP as its own pill; compact favorites that can be removed; resources above the tabs; advantage shows the other roll beside the main one
+
 ## v0.10.0 (2026-10-12)
 
 - Printouts checked for five imported characters on three sheets: one line per spell when both editions are on a character, shared form fields emptied before drawing, generated ability improvement choices kept off the sheet; Dueling adds its +2 damage; tests follow the sheet's misnamed spellcasting fields and leave unfilled spell choices to the player; lint fixes

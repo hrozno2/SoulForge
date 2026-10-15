@@ -11,10 +11,10 @@ import type { Resolved } from "../aurora/engine";
 import { ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, totalLevel, type AbilityId, type Character } from "../aurora/character";
 import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as pbSpent } from "../aurora/pointBuy";
 import { buildSheet } from "../aurora/sheet";
-import { groupVariants, hiddenBy } from "../aurora/books";
+import { formatRelease, groupVariants, hiddenBy, type Group } from "../aurora/books";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { ClassPanel } from "./BuildTab";
-import { Browse, VariantChips, blurb, dragMime } from "./Browse";
+import { Browse, blurb, dragMime } from "./Browse";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
 import { ChosenBanner, hueOf } from "./PickCards";
 import { RulesCheckBar } from "./RulesCheck";
@@ -341,7 +341,7 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
               onDragLeave={() => setOver(null)}
               onDrop={method === "standard" ? (e) => { e.preventDefault(); setOver(null); const from = e.dataTransfer.getData(mime) as AbilityId; if (from) swap(from, a); } : undefined}
             >
-              <small>{ABILITY_LABEL[a].slice(0, 3).toUpperCase()}{line.saveProficient && <span className="board-saveprof" title="Proficient in this saving throw">●</span>}</small>
+              <small>{ABILITY_LABEL[a].slice(0, 3).toUpperCase()}{line.saveProficient && <span className="board-saveprof" title="Proficient in this saving throw">save</span>}</small>
               <b className="board-total">{line.score}</b>
               <span className="board-mod">{signed(line.mod)}</span>
               <div className="board-base">
@@ -367,6 +367,28 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
       {method === "standard" && new Set(ABILITY_IDS.map((a) => ch.abilityBase[a])).size < 6 && <p className="warn">Each number of the standard array can be used once.</p>}
       {rulesOpen && <PointBuyRules ch={ch} set={set} onClose={() => setRulesOpen(false)} />}
     </section>
+  );
+}
+
+/**
+ * The book a chosen card comes from, as one button. Hovering (or focusing) it unfolds the other books above it; a click
+ * on one switches the card to that book's version.
+ */
+function SourcePicker({ g, activeId, onPick }: { g: Group; activeId: string; onPick: (el: AElement) => void }) {
+  const active = g.variants.find((v) => v.el.id === activeId) ?? g.best;
+  const others = g.variants.filter((v) => v !== active);
+  const year = (r?: number) => (r ? String(Math.floor(r / 10000)) : "");
+  const label = (v: typeof active) => <><b>{v.book.abbr ?? v.el.source}</b><small>{year(v.book.release)}</small></>;
+  const title = (v: typeof active) => `${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`;
+  return (
+    <div className={`src-pick ${others.length ? "has-more" : ""}`}>
+      {others.length > 0 && (
+        <div className="src-more" role="group" aria-label="Other books">
+          {others.map((v) => <button key={v.el.id} title={title(v)} onClick={() => onPick(v.el)}>{label(v)}</button>)}
+        </div>
+      )}
+      <button className="src-current" title={others.length ? `${title(active)}. Hover for other books.` : title(active)} aria-haspopup={others.length ? "true" : undefined}>{label(active)}{others.length > 0 && <span className="src-count">+{others.length}</span>}</button>
+    </div>
   );
 }
 
@@ -621,8 +643,16 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     race: <Browse items={races} type="Race" chosen={ch.race ? [ch.race] : []} onPick={pick("race")} onSwap={(_, to) => pick("race")(to)} defaultView="list" allowCards={false} perPage={300} draggable />,
     class: (
       <>
-        {replacing && ch.classes.length > 0 && <p className="board-replace">Pick the class to replace {r.reg.get(ch.classes[0].classId)?.name}. <button className="linkish" onClick={() => setReplacing(false)}>Add a class instead</button></p>}
-        <Browse items={classes} type="Class" chosen={ch.classes.map((c) => c.classId)} onPick={pick("class")} defaultView="list" allowCards={false} perPage={300} draggable disabledReason={ch.classes.length && !replacing ? classLock : undefined} />
+        <Browse items={classes} type="Class" chosen={ch.classes.map((c) => c.classId)} onPick={pick("class")} defaultView="list" allowCards={false} perPage={300} draggable disabledReason={ch.classes.length && !replacing ? classLock : undefined}
+          barExtra={ch.classes.length > 0 && (
+            <div className="board-class-mode">
+              <span className="seg" role="group" aria-label="What a pick does">
+                <button className={replacing ? "on" : ""} onClick={() => setReplacing(true)}>Change base class</button>
+                <button className={!replacing ? "on" : ""} onClick={() => setReplacing(false)}>Add multiclass</button>
+              </span>
+              <small className="muted">{replacing ? `A pick replaces ${r.reg.get(ch.classes[0].classId)?.name ?? "the base class"}, keeping its level.` : "A pick adds a class at level 1."}</small>
+            </div>
+          )} />
       </>
     ),
     background: <Browse items={backgrounds} type="Background" chosen={ch.background ? [ch.background] : []} onPick={pick("background")} onSwap={(_, to) => pick("background")(to)} defaultView="list" allowCards={false} perPage={300} draggable />,
@@ -658,9 +688,8 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           </div>
           <ChosenBanner el={el} label={label}>
             <span className="board-card-actions" onClick={(e) => e.stopPropagation()}>
-              {(() => { const g = groupOf(el); return g && <VariantChips short g={g} activeId={el.id} chosen={new Set([el.id])} onActive={() => undefined} onSwitch={(from, to) => switchVersion(kind, from, to)} />; })()}
-              {kind === "class" && <button className={`ghost ${isOpen && replacing ? "is-on" : ""}`} onClick={() => { setReplacing(true); setOpen("class"); setFocus("class"); }}>Change</button>}
-              <button className={`pick-select ${isOpen && !replacing ? "is-on" : ""}`} onClick={() => { if (kind === "class") setReplacing(false); setOpen(isOpen && !(kind === "class" && replacing) ? null : kind); setFocus(kind); }}>{kind === "class" ? "Add a class" : "Change"}</button>
+              {(() => { const g = groupOf(el); return g && <SourcePicker g={g} activeId={el.id} onPick={(to) => switchVersion(kind, el, to)} />; })()}
+              <button className={`pick-select ${isOpen ? "is-on" : ""}`} onClick={() => { if (kind === "class") setReplacing(false); setOpen(isOpen ? null : kind); setFocus(kind); }}>{kind === "class" ? "Edit" : "Change"}</button>
             </span>
           </ChosenBanner>
         </div>
@@ -686,7 +715,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
               <h3>{name}</h3>
               {kind === "class" && el && CLASS_TAGS[el.name] && <div className="pick-tags">{CLASS_TAGS[el.name].map((t) => <span key={t}>{t}</span>)}</div>}
               {el && <p className="board-blurb">{blurb(el.description, 120)}</p>}
-              {kind === "magic" && <p className="board-blurb">{sheet.casting.map((c) => `${c.name}: DC ${c.dc}, ${signed(c.attack)} to hit`).join(" · ")}{spellNeed ? ` · ${spellHave} of ${spellNeed} spells picked` : ""}</p>}
+              {kind === "magic" && <p className="board-blurb">{spellNeed ? `${spellHave} of ${spellNeed} spells chosen` : "No spells to choose yet"}</p>}
               {kind === "equipment" && <p className="board-blurb">{ch.inventory.length} {ch.inventory.length === 1 ? "item" : "items"}{plans.length > 0 ? (packFill >= 1 ? " · packed for the road" : ` · starting gear ${plans.filter((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))).length} of ${plans.length}`) : ""}</p>}
             </>
           ) : (
@@ -701,7 +730,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           {el && <button className="ghost" onClick={() => learn(el)}>Learn more</button>}
           {!filled[kind] && ["race", "class", "background"].includes(kind) && <button className="board-dice" title={`Random ${TITLE[kind].toLowerCase()}`} aria-label={`Random ${TITLE[kind].toLowerCase()}`} onClick={() => random(kind)}><D20 size={16} /></button>}
           {filled[kind] && ["race", "background"].includes(kind) && <button className="ghost" onClick={() => clear(kind)}>Remove</button>}
-          {!disabled && <button className={`board-see ${isOpen ? "on" : ""}`} onClick={() => { setOpen(isOpen ? null : kind); setFocus(kind); }}>{filled[kind] ? (kind === "class" ? "Add a class" : kind === "equipment" ? "Add items" : kind === "magic" ? "Choose spells" : "Change") : "See options"}</button>}
+          {!disabled && <button className={`board-see ${isOpen ? "on" : ""}`} onClick={() => { setOpen(isOpen ? null : kind); setFocus(kind); }}>{filled[kind] ? (kind === "class" ? "Add a class" : kind === "equipment" ? "Add items" : kind === "magic" ? (spellNeed && spellHave >= spellNeed ? "Change spells" : "Choose spells") : "Change") : "See options"}</button>}
         </div>
         </div>
       </div>

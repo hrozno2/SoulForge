@@ -139,6 +139,7 @@ Tauri prerequisites: https://v2.tauri.app/start/prerequisites/
 ## Documentation
 
 - [User guide](docs/guide.md): every tab, filters, rolling, PDF export, 5etools and Plutonium import, themes.
+- [Code guide](docs/CODE-GUIDE.md): how the code and the app work, for anyone reading or auditing it.
 - [Aurora parity](docs/aurora-parity.md): what the engine supports from the Aurora element format.
 - [Usability test](docs/usability-test.md): rebuilding published pregens in the app.
 

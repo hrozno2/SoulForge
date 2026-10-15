@@ -1,5 +1,5 @@
 /**
- * The build board (on trial in the test app), after D&D Beyond's "Start your story": the lists down the left
+ * The build board (the default Build layout), after D&D Beyond's "Start your story": the lists down the left
  * (species, class, background, spells, equipment, each opening with its search and filters), the character
  * filling in on the middle board (click a list entry or drag it onto its space), and the scores, numbers and
  * training on the right. The same rules and choices as the tab layout (BuildTab), arranged differently.

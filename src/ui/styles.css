@@ -1629,3 +1629,23 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-class-mode .seg { align-self: flex-start; }
 .board-class-mode small { font-size: 11.5px; }
 .board-saveprof { font: 700 8px var(--body); letter-spacing: .08em; text-transform: uppercase; color: #1b1408; background: var(--gold); border-radius: 3px; padding: 0 3px; margin-left: 4px; vertical-align: 1px; }
+
+/* Cards size to their own width: on the narrow bottom row the title, art and buttons shrink instead of overflowing */
+.board-space { container-type: inline-size; }
+.board-space h3, .board-space .pick-card.board-frame h3, .board-space.has-card .chosen-banner h3 { font-size: clamp(16px, 10.5cqi, 34px); overflow-wrap: normal; word-break: normal; hyphens: none; }
+.board-space .chosen-kicker, .board-space .board-kicker { font-size: clamp(9.5px, 4.2cqi, 11.5px); }
+.board-space .pick-blurb, .board-space .board-blurb { font-size: clamp(12px, 5.6cqi, 15px); }
+.board-space .pick-feat { font-size: clamp(11.5px, 5.2cqi, 13px); }
+.board-art-live .board-book, .board-art-live .board-pack { width: clamp(64px, 46cqi, 112px); height: clamp(64px, 46cqi, 112px); }
+.board-space .board-see, .board-space .pick-select { white-space: nowrap; font-size: clamp(10.5px, 4.6cqi, 13px); padding-left: clamp(8px, 4cqi, 14px); max-width: 100%; }
+.board-space-actions, .board-card-actions { padding-right: 12px; min-width: 0; gap: 6px; }
+.board-space .pick-select { padding-right: clamp(14px, 7cqi, 22px); }
+.board-space .pick-card.board-frame, .board-background.has-card .chosen-banner { padding-left: clamp(12px, 7cqi, 22px); padding-right: clamp(10px, 5cqi, 20px); }
+.board-background.has-card .chosen-banner, .board-magic .pick-card.board-frame, .board-equipment .pick-card.board-frame { min-height: 0; }
+@container (max-width: 240px) {
+  .board-space .board-blurb { max-height: 1.4em; }
+  .board-space .pick-feat { margin-bottom: 4px; }
+  .src-pick button { min-width: 0; padding: 3px 7px; }
+}
+.board-space.has-card .pick-foot { padding-right: 8px; }
+@container (max-width: 240px) { .board-space.has-card .pick-select { padding-left: 8px; padding-right: 14px; letter-spacing: .04em; } }

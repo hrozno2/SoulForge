@@ -46,7 +46,7 @@ function Prepared({ line, r, ch, set, onDetail }: { line: CastingLine; r: Resolv
   return (
     <>
       <h3>Prepared spells <span className={valid.length > line.prepareMax ? "warn" : "muted"}>{valid.length} / {line.prepareMax}</span></h3>
-      <Browse items={pool} type="Spell" chosen={valid} onPick={(e) => toggle(e.id)} onHover={onDetail} defaultView="list" allowCards={false} perPage={60} />
+      <Browse items={pool} type="Spell" chosen={valid} onPick={(e) => toggle(e.id)} onHover={onDetail} defaultView="cards" perPage={60} />
     </>
   );
 }

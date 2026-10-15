@@ -905,10 +905,10 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   };
 
   const libList: Record<Kind, React.ReactNode> = {
-    race: <Browse items={races} type="Race" chosen={ch.race ? [ch.race] : []} onPick={pick("race")} onSwap={(_, to) => pick("race")(to)} defaultView="list" allowCards={false} perPage={300} draggable />,
+    race: <Browse items={races} type="Race" chosen={ch.race ? [ch.race] : []} onPick={pick("race")} onSwap={(_, to) => pick("race")(to)} defaultView="cards" mini viewKey="board.Race" perPage={300} draggable />,
     class: (
       <>
-        <Browse items={classes} type="Class" chosen={ch.classes.map((c) => c.classId)} onPick={pick("class")} defaultView="list" allowCards={false} perPage={300} draggable disabledReason={ch.classes.length && !replacing ? classLock : undefined}
+        <Browse items={classes} type="Class" chosen={ch.classes.map((c) => c.classId)} onPick={pick("class")} defaultView="cards" mini viewKey="board.Class" perPage={300} draggable disabledReason={ch.classes.length && !replacing ? classLock : undefined}
           barExtra={ch.classes.length > 0 && (
             <div className="board-class-mode">
               <span className="seg" role="group" aria-label="What a pick does">
@@ -920,7 +920,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           )} />
       </>
     ),
-    background: <Browse items={backgrounds} type="Background" chosen={ch.background ? [ch.background] : []} onPick={pick("background")} onSwap={(_, to) => pick("background")(to)} defaultView="list" allowCards={false} perPage={300} draggable />,
+    background: <Browse items={backgrounds} type="Background" chosen={ch.background ? [ch.background] : []} onPick={pick("background")} onSwap={(_, to) => pick("background")(to)} defaultView="cards" mini viewKey="board.Background" perPage={300} draggable />,
     magic: caster ? <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} prepareElsewhere /> : <p className="muted pad">No spellcasting yet. It appears when a class, species or feat grants it.</p>,
     equipment: (
       <>

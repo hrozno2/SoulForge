@@ -151,7 +151,7 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
           ) : slot.options.length === 0 ? (
             <p className="muted">Nothing matches this choice in the loaded content.</p>
           ) : (
-            <Browse items={slot.options} type={type} chosen={chosen} onPick={toggle} onSwap={swap} onHover={onDetail} disabledReason={reason} ownedBy={owned} defaultView="list" allowCards={!["Spell", "Language", "Proficiency", "Ability Score Improvement", "Companion"].includes(type)} perPage={60} />
+            <Browse items={slot.options} type={type} chosen={chosen} onPick={toggle} onSwap={swap} onHover={onDetail} disabledReason={reason} ownedBy={owned} defaultView={type === "Spell" ? "cards" : "list"} allowCards={!["Language", "Proficiency", "Ability Score Improvement", "Companion"].includes(type)} perPage={60} />
           )}
           <button className="ghost slot-done" onClick={() => setOpen(false)}>Done</button>
         </div>

@@ -2,6 +2,22 @@
 
 What changed in each release. Newest first.
 
+## v0.15.0 (2026-10-15)
+
+- Background tables (2014 personality traits, ideals, bonds and flaws) can be rolled on, shown in the dice log
+- Build board: search box never cut off in the lists; to-choose pill only on filled cards; one Done on a card's back
+- Build board: picks turn over to their back for their choices; prepared spells on the spellbook's back; score methods keep their own numbers; main abilities outlined
+- Build board: a redrawn spellbook and backpack
+- Build board: quicker landings with a flash; choices left beside the title; counts on the cards; starting gear in the left list
+- Build board on narrow windows: the lists and the scores wait at the window edges and open as floating panels over the cards
+- Build board: Hearthstone-style landings, with a flourish of its own for each class
+- Build board: cards size their title, art and buttons to their own width, so the narrow bottom row is shorter and nothing overflows its frame
+- Build board: one source button per card that unfolds the other books on hover; source left and buttons right on every card; class Edit with a Change base class / Add multiclass switch; spellbook card shows only spells chosen; saving throws tagged SAVE
+- Build board: a nicer backpack; the spellbook counts only spells picked and prepared; manual scores roll from the number; no sideways scroll in the scores
+- Imports: the report stays with the character behind an Import notes button on Build, with Add to notes
+- Build board: Learn more and Remove as icons in each card's corner; HP and hit dice bars beside the portrait; tutorial step for which rules to show
+- Test build: never offers updates, so it is not replaced by the released app
+
 ## v0.14.0 (2026-10-15)
 
 - Code guide for people reading or auditing the code (docs/CODE-GUIDE.md), linked from the README

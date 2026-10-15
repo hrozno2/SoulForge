@@ -94,3 +94,25 @@ export function ImportReport({ name, res, rules = [], onClose, onBuild }: { name
     </div>
   );
 }
+
+/** The kept import report of a character, with a button to add it to the character's notes. */
+export function ImportNotes({ text, added, onAdd, onClose }: { text: string; added: boolean; onAdd: () => void; onClose: () => void }) {
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [onClose]);
+  return (
+    <div className="modal-back" role="dialog" aria-label="Import notes" onClick={onClose}>
+      <div className="modal-page themed" onClick={(e) => e.stopPropagation()}>
+        <button className="modal-close" aria-label="Close" onClick={onClose}>×</button>
+        <h2>Import notes</h2>
+        <pre className="import-notes">{text}</pre>
+        <div className="row">
+          <button className="primary" disabled={added} onClick={onAdd}>{added ? "Already in the notes" : "Add to notes"}</button>
+          <button onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}

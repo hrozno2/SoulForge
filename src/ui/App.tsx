@@ -22,7 +22,7 @@ import { SettingsDialog, getSettings, updateSettings, useScaleShortcuts, useSett
 import { runAutoBackup } from "../aurora/backup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
-import { ImportReport, importReportText } from "./ImportReport";
+import { ImportNotes, ImportReport, importReportText } from "./ImportReport";
 import { ruleProblems } from "./RulesCheck";
 import { makeTestBatch, testExport, testToolsEnabled } from "./TestTools";
 import { listCharacters } from "../aurora/storage";
@@ -126,26 +126,27 @@ export function App() {
   };
   const [testMsg, setTestMsg] = useState("");
   const [report, setReport] = useState<{ name: string; res: ForeignImport; rules: string[] } | null>(null);
-  // After an import report closes: where to find it again.
-  const [notesHint, setNotesHint] = useState(false);
+  // A short notice after an import report closes or the report is added to the notes: where to find it.
+  const [notesHint, setNotesHint] = useState<"" | "report" | "added">("");
+  const [reportOpen, setReportOpen] = useState(false);
   useEffect(() => {
     if (!notesHint) return;
-    const t = window.setTimeout(() => setNotesHint(false), 9000);
+    const t = window.setTimeout(() => setNotesHint(""), 9000);
     return () => window.clearTimeout(t);
   }, [notesHint]);
   const [notesFocus, setNotesFocus] = useState(0);
   const openNotes = () => {
-    setNotesHint(false);
+    setNotesHint("");
     setNotesFocus((n) => n + 1);
     setTab("manage");
   };
   const importForeign = async (file: File): Promise<string> => {
     try {
       const res = importForeignCharacter(JSON.parse(await file.text()), content.reg);
-      // The report also goes into the character's notes, to read again later.
+      // The report stays with the character (Import notes, beside Level up), to read again or add to the notes.
       const rules = ruleProblems(resolve(res.character, content.reg));
       const text = importReportText(res, file.name, new Date(), rules);
-      res.character = { ...res.character, notes: [res.character.notes, text].filter(Boolean).join("\n\n") };
+      res.character = { ...res.character, importReport: text };
       open(uid(), res.character);
       setReport({ name: res.character.name, res, rules });
       return `Imported ${res.character.name || "the character"}.`;
@@ -234,13 +235,30 @@ export function App() {
         </div>
       )}
       {testMsg && <div className="test-toast" role="status" onClick={() => setTestMsg("")}>{testMsg} <small>(click to close)</small></div>}
-      {report && <ImportReport name={report.name} res={report.res} rules={report.rules} onClose={() => { setReport(null); setNotesHint(true); }} onBuild={() => setTab("build")} />}
+      {report && <ImportReport name={report.name} res={report.res} rules={report.rules} onClose={() => { setReport(null); setNotesHint("report"); }} onBuild={() => setTab("build")} />}
       {notesHint && (
         <div className="notice-toast noprint" role="status">
-          <span>The import notes and the to-do list are saved in the character's Notes (Manage, or Play, Notes).</span>
-          <button className="primary" onClick={openNotes}>Open notes</button>
-          <button className="notice-x" aria-label="Close" onClick={() => setNotesHint(false)}>×</button>
+          {notesHint === "report" ? (
+            <>
+              <span>The import report and its to-do list stay with the character: <b>Import notes</b>, next to Level up on Build. From there you can add it to the character's notes.</span>
+              <button className="primary" onClick={() => { setNotesHint(""); setTab("build"); setReportOpen(true); }}>Show import notes</button>
+            </>
+          ) : (
+            <>
+              <span>Added to the character's notes. Find them in Manage, Notes (and in Play, Notes).</span>
+              <button className="primary" onClick={openNotes}>Open notes</button>
+            </>
+          )}
+          <button className="notice-x" aria-label="Close" onClick={() => setNotesHint("")}>×</button>
         </div>
+      )}
+      {reportOpen && character.importReport && (
+        <ImportNotes
+          text={character.importReport}
+          added={character.notes.includes(character.importReport)}
+          onAdd={() => { set((c) => ({ ...c, notes: [c.notes, c.importReport].filter(Boolean).join("\n\n") })); setReportOpen(false); setNotesHint("added"); }}
+          onClose={() => setReportOpen(false)}
+        />
       )}
       {tutorialOpen && <Tutorial step={tutorialStep} setStep={setTutorialStep} minimized={tutorialMin} setMinimized={setTutorialMin} onClose={() => { setTutorialOpen(false); setTutorialMin(false); }} onGo={(t) => setTab(t as Tab)} content={content} onImportForeign={importForeign} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
@@ -254,6 +272,7 @@ export function App() {
               <button onClick={() => window.dispatchEvent(new Event("cf-levelup"))} disabled={!character.classes.length}>Level up</button>
               <button onClick={() => setTab("play")}>Play</button>
               <button onClick={() => setTab("sheet")}>Export</button>
+              {character.importReport && <button onClick={() => setReportOpen(true)} title="The report of the import that made this character">Import notes</button>}
             </div>
           )}
           <Suspense fallback={<p className="muted">Loading...</p>}>

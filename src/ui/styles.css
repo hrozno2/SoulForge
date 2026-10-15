@@ -1593,3 +1593,5 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-bar.hp span { background: linear-gradient(90deg, #7a1f1f, #b33a2e); }
 .board-bar.hd span { background: linear-gradient(90deg, #5a4520, #a8843c); }
 .board-bar b { position: relative; display: block; font: 600 10.5px var(--body); letter-spacing: .06em; text-align: center; line-height: 14px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+
+.import-notes { white-space: pre-wrap; font: 13px/1.45 var(--body); background: var(--paper2); color: var(--ink); padding: 12px 14px; border-radius: 6px; max-height: 55vh; overflow: auto; }

@@ -91,7 +91,7 @@ function particle(cls: string, x: number, y: number, dx: number, dy: number, o: 
   document.body.appendChild(e);
   e.animate(
     [{ transform: `translate(-50%,-50%) rotate(${turn0}deg) scale(1)`, opacity: 0 }, { opacity: 1, offset: 0.12 }, { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${turn0 + (o.turn ?? 0)}deg) scale(${o.scaleTo ?? 0.4})`, opacity: 0 }],
-    { duration: o.duration ?? 800, delay: o.delay ?? 0, easing: "cubic-bezier(.15,.7,.3,1)" },
+    { duration: o.duration ?? 560, delay: o.delay ?? 0, easing: "cubic-bezier(.15,.7,.3,1)" },
   ).onfinish = () => e.remove();
 }
 
@@ -99,7 +99,7 @@ const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
 /** Sparks flying out from the middle, fast and straight (steel, rage, gears). */
 function sparks(cx: number, cy: number, colors: string[], n = 22, reach = 140) {
-  for (let k = 0; k < n; k++) { const a = rnd(0, Math.PI * 2), d = rnd(reach * 0.4, reach); particle("fx-spark", cx, cy, Math.cos(a) * d, Math.sin(a) * d, { color: colors[k % colors.length], duration: rnd(380, 700) }); }
+  for (let k = 0; k < n; k++) { const a = rnd(0, Math.PI * 2), d = rnd(reach * 0.4, reach); particle("fx-spark", cx, cy, Math.cos(a) * d, Math.sin(a) * d, { color: colors[k % colors.length], duration: rnd(260, 480) }); }
 }
 
 /** A bright line across the card (a blade's slash). */
@@ -108,7 +108,7 @@ function slash(to: DOMRect, color: string, angle = -28) {
   e.className = "fx fx-slash";
   Object.assign(e.style, { left: `${to.left + to.width / 2}px`, top: `${to.top + to.height / 2}px`, width: `${to.width * 1.3}px`, background: `linear-gradient(90deg, transparent, ${color}, #fff, ${color}, transparent)` });
   document.body.appendChild(e);
-  e.animate([{ transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(0)`, opacity: 1 }, { transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(1)`, opacity: 1, offset: 0.35 }, { transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(1.05)`, opacity: 0 }], { duration: 520, easing: "ease-out" }).onfinish = () => e.remove();
+  e.animate([{ transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(0)`, opacity: 1 }, { transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(1)`, opacity: 1, offset: 0.35 }, { transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(1.05)`, opacity: 0 }], { duration: 360, easing: "ease-out" }).onfinish = () => e.remove();
 }
 
 /** Expanding rings (ki, rage). */
@@ -118,7 +118,7 @@ function rings(cx: number, cy: number, color: string, n = 3, size = 160) {
     e.className = "fx fx-ring";
     Object.assign(e.style, { left: `${cx}px`, top: `${cy}px`, width: `${size}px`, height: `${size}px`, borderColor: color, boxShadow: `0 0 18px ${color}` });
     document.body.appendChild(e);
-    e.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 0.9 }, { transform: "translate(-50%,-50%) scale(2.4)", opacity: 0 }], { duration: 700, delay: k * 140, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => e.remove();
+    e.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 0.9 }, { transform: "translate(-50%,-50%) scale(2.4)", opacity: 0 }], { duration: 460, delay: k * 80, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => e.remove();
   }
 }
 
@@ -128,7 +128,7 @@ function beam(to: DOMRect, color: string) {
   e.className = "fx fx-beam";
   Object.assign(e.style, { left: `${to.left + to.width / 2}px`, top: `${to.top + to.height / 2}px`, width: `${to.width * 0.7}px`, height: `${to.height * 2.4}px`, background: `linear-gradient(180deg, transparent, ${color} 40%, #fff 55%, ${color} 70%, transparent)` });
   document.body.appendChild(e);
-  e.animate([{ transform: "translate(-50%,-70%) scaleX(.1)", opacity: 0 }, { transform: "translate(-50%,-55%) scaleX(1)", opacity: 0.85, offset: 0.3 }, { transform: "translate(-50%,-50%) scaleX(.6)", opacity: 0 }], { duration: 1000, easing: "ease-out" }).onfinish = () => e.remove();
+  e.animate([{ transform: "translate(-50%,-70%) scaleX(.1)", opacity: 0 }, { transform: "translate(-50%,-55%) scaleX(1)", opacity: 0.85, offset: 0.3 }, { transform: "translate(-50%,-50%) scaleX(.6)", opacity: 0 }], { duration: 650, easing: "ease-out" }).onfinish = () => e.remove();
 }
 
 /** Rays turning around the card's middle (holy light). */
@@ -137,7 +137,7 @@ function rays(cx: number, cy: number, color: string, size: number) {
   e.className = "fx fx-rays";
   Object.assign(e.style, { left: `${cx}px`, top: `${cy}px`, width: `${size}px`, height: `${size}px`, background: `repeating-conic-gradient(${color} 0 6deg, transparent 6deg 22deg)` });
   document.body.appendChild(e);
-  e.animate([{ transform: "translate(-50%,-50%) rotate(0deg) scale(.3)", opacity: 0 }, { opacity: 0.7, offset: 0.25 }, { transform: "translate(-50%,-50%) rotate(40deg) scale(1.2)", opacity: 0 }], { duration: 1200, easing: "ease-out" }).onfinish = () => e.remove();
+  e.animate([{ transform: "translate(-50%,-50%) rotate(0deg) scale(.3)", opacity: 0 }, { opacity: 0.7, offset: 0.25 }, { transform: "translate(-50%,-50%) rotate(40deg) scale(1.2)", opacity: 0 }], { duration: 760, easing: "ease-out" }).onfinish = () => e.remove();
 }
 
 /** Forked lightning striking the card from above. */
@@ -152,14 +152,14 @@ function lightning(to: DOMRect, color: string) {
   svg.innerHTML = [bolt(w * 0.5, w * 0.12), bolt(w * rnd(0.3, 0.45), w * 0.1), bolt(w * rnd(0.55, 0.7), w * 0.1)].map((d, k) => `<path d="${d}" stroke="${k ? color : "#fff"}" stroke-width="${k ? 2 : 3.2}" fill="none" stroke-linejoin="round"/>`).join("");
   svg.style.filter = `drop-shadow(0 0 6px ${color}) drop-shadow(0 0 14px ${color})`;
   document.body.appendChild(svg);
-  svg.animate([{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 0.2, offset: 0.2 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }], { duration: 650, easing: "linear" }).onfinish = () => svg.remove();
+  svg.animate([{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 0.2, offset: 0.2 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }], { duration: 420, easing: "linear" }).onfinish = () => svg.remove();
 }
 
 /** Things drifting up (leaves, notes, smoke, embers). */
 function drift(to: DOMRect, cls: string, n: number, o: { colors?: string[]; texts?: string[]; size?: [number, number]; rise?: number; duration?: [number, number] } = {}) {
   for (let k = 0; k < n; k++) {
     const x = to.left + rnd(0.1, 0.9) * to.width, y = to.top + rnd(0.45, 1) * to.height;
-    particle(cls, x, y, rnd(-50, 50), -rnd(60, o.rise ?? 150), { color: o.colors?.[k % o.colors.length], text: o.texts?.[k % o.texts.length], size: o.size ? rnd(o.size[0], o.size[1]) : undefined, turn: rnd(-160, 160), duration: rnd(...(o.duration ?? [1000, 1700])), delay: rnd(0, 250), scaleTo: cls === "fx-smoke" ? 2.2 : 0.5 });
+    particle(cls, x, y, rnd(-50, 50), -rnd(60, o.rise ?? 150), { color: o.colors?.[k % o.colors.length], text: o.texts?.[k % o.texts.length], size: o.size ? rnd(o.size[0], o.size[1]) : undefined, turn: rnd(-160, 160), duration: rnd(...(o.duration ?? [700, 1100])), delay: rnd(0, 150), scaleTo: cls === "fx-smoke" ? 2.2 : 0.5 });
   }
 }
 
@@ -176,7 +176,16 @@ function sigil(to: DOMRect, color: string) {
   const star = Array.from({ length: 6 }, (_, k) => { const a = (k * Math.PI) / 3 - Math.PI / 2; return `${(34 * Math.cos(a)).toFixed(1)},${(34 * Math.sin(a)).toFixed(1)}`; });
   svg.innerHTML = `<circle r="47" pathLength="1"/><circle r="38" pathLength="1"/><path d="${tick}" pathLength="1"/><polygon points="${star[0]} ${star[2]} ${star[4]}" pathLength="1"/><polygon points="${star[1]} ${star[3]} ${star[5]}" pathLength="1"/>`;
   document.body.appendChild(svg);
-  svg.animate([{ transform: "rotate(-20deg) scale(.92)", opacity: 0 }, { transform: "rotate(0deg) scale(1)", opacity: 1, offset: 0.35 }, { transform: "rotate(12deg) scale(1.04)", opacity: 0 }], { duration: 1400, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => svg.remove();
+  svg.animate([{ transform: "rotate(-20deg) scale(.92)", opacity: 0 }, { transform: "rotate(0deg) scale(1)", opacity: 1, offset: 0.35 }, { transform: "rotate(12deg) scale(1.04)", opacity: 0 }], { duration: 950, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => svg.remove();
+}
+
+/** A bright flash over the card the moment it lands. */
+function flash(to: DOMRect) {
+  const e = document.createElement("div");
+  e.className = "fx fx-flash";
+  Object.assign(e.style, { left: `${to.left + to.width / 2}px`, top: `${to.top + to.height / 2}px`, width: `${to.width * 1.1}px`, height: `${to.height * 1.1}px` });
+  document.body.appendChild(e);
+  e.animate([{ transform: "translate(-50%,-50%) scale(.9)", opacity: 0.95 }, { transform: "translate(-50%,-50%) scale(1.15)", opacity: 0 }], { duration: 320, easing: "ease-out" }).onfinish = () => e.remove();
 }
 
 /** A low ring of dust spreading from under a card that has just landed. */
@@ -185,7 +194,7 @@ function dust(to: DOMRect) {
   e.className = "fx fx-dust";
   Object.assign(e.style, { left: `${to.left + to.width / 2}px`, top: `${to.top + to.height - 6}px`, width: `${to.width}px`, height: `${to.width * 0.22}px` });
   document.body.appendChild(e);
-  e.animate([{ transform: "translate(-50%,-50%) scale(.6)", opacity: 0.8 }, { transform: "translate(-50%,-50%) scale(1.5)", opacity: 0 }], { duration: 650, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => e.remove();
+  e.animate([{ transform: "translate(-50%,-50%) scale(.6)", opacity: 0.8 }, { transform: "translate(-50%,-50%) scale(1.5)", opacity: 0 }], { duration: 450, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => e.remove();
 }
 
 /** The flourish when a card lands in its space; `name` is the class, or empty for a species or background. */
@@ -195,18 +204,19 @@ function land(name: string, to: DOMRect, target: HTMLElement) {
   if (/barbarian/.test(n)) { rings(cx, cy, "#e0412c", 2, 140); sparks(cx, cy, ["#ff5a36", "#ffb347", "#c81e1e"], 30, 170); }
   else if (/fighter/.test(n)) { slash(to, "#ffb347"); sparks(cx, cy, ["#ffd27a", "#ff7a2e", "#fff"], 24, 150); }
   else if (/paladin/.test(n)) { beam(to, "#ffd36a"); sparks(cx, cy, ["#ffe7a3", "#fff"], 16, 120); }
-  else if (/ranger/.test(n)) { for (let k = 0; k < 3; k++) particle("fx-arrow", to.left - 120 - k * 30, cy - 30 + k * 30, to.width * 0.55 + 120, rnd(-6, 6), { duration: 360, delay: k * 90, scaleTo: 1 }); drift(to, "fx-leaf", 10, { colors: ["#6aa84f", "#8fbf4a", "#4e7a32"] }); }
-  else if (/rogue/.test(n)) { drift(to, "fx-smoke", 12, { colors: ["#1b1b24", "#2c2a3a"], size: [30, 60], rise: 60, duration: [700, 1100] }); slash(to, "#8b7bd8", 32); }
+  else if (/ranger/.test(n)) { for (let k = 0; k < 3; k++) particle("fx-arrow", to.left - 120 - k * 30, cy - 30 + k * 30, to.width * 0.55 + 120, rnd(-6, 6), { duration: 260, delay: k * 60, scaleTo: 1 }); drift(to, "fx-leaf", 10, { colors: ["#6aa84f", "#8fbf4a", "#4e7a32"] }); }
+  else if (/rogue/.test(n)) { drift(to, "fx-smoke", 12, { colors: ["#1b1b24", "#2c2a3a"], size: [30, 60], rise: 60, duration: [500, 800] }); slash(to, "#8b7bd8", 32); }
   else if (/monk/.test(n)) { rings(cx, cy, "#9fd8ff", 3, 150); drift(to, "fx-dot", 10, { colors: ["#cfeeff", "#7cc4ff"], size: [4, 7] }); }
   else if (/cleric/.test(n)) { rays(cx, cy, "rgba(255, 236, 170, .9)", Math.max(to.width, to.height) * 1.6); drift(to, "fx-dot", 12, { colors: ["#fff7d1", "#ffe08a"], size: [3, 6] }); }
   else if (/druid/.test(n)) { drift(to, "fx-leaf", 18, { colors: ["#5f9e3a", "#8cc152", "#3f7a2a", "#e3c35a"], rise: 190 }); rings(cx, cy, "#7fbf5a", 1, 170); }
   else if (/wizard/.test(n)) { sigil(to, "#8fc3ff"); drift(to, "fx-dot", 10, { colors: ["#bfe0ff", "#6ea8ff"], size: [3, 6] }); }
   else if (/sorcerer/.test(n)) { lightning(to, "#9d7bff"); sparks(cx, cy, ["#c9b6ff", "#7b5bff", "#fff"], 18, 130); }
-  else if (/warlock/.test(n)) { drift(to, "fx-smoke", 14, { colors: ["#3b1f5a", "#1f5a3b", "#5a1f4f"], size: [30, 64], rise: 110, duration: [900, 1400] }); sparks(cx, cy, ["#7dff9a", "#c27dff"], 14, 110); }
+  else if (/warlock/.test(n)) { drift(to, "fx-smoke", 14, { colors: ["#3b1f5a", "#1f5a3b", "#5a1f4f"], size: [30, 64], rise: 110, duration: [650, 950] }); sparks(cx, cy, ["#7dff9a", "#c27dff"], 14, 110); }
   else if (/bard/.test(n)) { drift(to, "fx-note", 12, { colors: ["#ffd36a", "#ff8ad8", "#8ad8ff", "#b4ff8a"], texts: ["♪", "♫", "♩", "♬"], size: [16, 26], rise: 170 }); }
   else if (/artificer/.test(n)) { drift(to, "fx-gear", 7, { colors: ["#d9a441", "#b0b8c0"], texts: ["⚙"], size: [18, 30], rise: 110 }); sparks(cx, cy, ["#ffb347", "#ffe08a"], 16, 120); }
   else { sigil(to, "#ffd98a"); drift(to, "fx-dot", 9, { colors: ["#ffcf7a"], size: [3, 5] }); }
-  // Every landing kicks up a ring of dust under the card.
+  // Every landing flashes bright on the card and kicks up a ring of dust under it.
+  flash(to);
   dust(to);
   void target;
 }
@@ -245,7 +255,7 @@ function epicFly(from: DOMRect | null, label: string, kind: Kind, target: HTMLEl
       { ...box(to.left - (to.width * (big - 1)) / 2, to.top - (to.height * (big - 1)) / 2 - 18, to.width * big, to.height * big, 30, 0, 0), offset: 0.8, easing: "cubic-bezier(.55,0,1,.45)" },
       { ...box(to.left, to.top, to.width, to.height, 28, 0, 0), opacity: 1, offset: 1 },
     ],
-    { duration: 900, easing: "cubic-bezier(.22,.8,.24,1)", fill: "forwards" },
+    { duration: 620, easing: "cubic-bezier(.22,.8,.24,1)", fill: "forwards" },
   );
   anim.onfinish = () => {
     card.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: "forwards" }).onfinish = () => card.remove();
@@ -515,7 +525,7 @@ function SourcePicker({ g, activeId, onPick }: { g: Group; activeId: string; onP
           {others.map((v) => <button key={v.el.id} title={title(v)} onClick={() => onPick(v.el)}>{label(v)}</button>)}
         </div>
       )}
-      <button className="src-current" title={others.length ? `${title(active)}. Hover for other books.` : title(active)} aria-haspopup={others.length ? "true" : undefined}>{label(active)}{others.length > 0 && <span className="src-count">+{others.length}</span>}</button>
+      <button className="src-current" title={others.length ? `${title(active)}. Hover for other books.` : title(active)} aria-haspopup={others.length ? "true" : undefined}>{label(active)}{others.length > 0 && <span className="src-more-mark" aria-hidden="true">+</span>}</button>
     </div>
   );
 }
@@ -574,7 +584,7 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
 }
 
 /** The right column: scores first, then the numbers, the open score increases and what the character is trained in. */
-function StatsPanel({ r, ch, set, onIncreases, left, onGo, onMouseLeave }: { r: Resolved; ch: Character; set: SetCharacter; onIncreases: (root: string) => void; left: LeftItem[]; onGo: (it: LeftItem) => void; onMouseLeave?: () => void }) {
+function StatsPanel({ r, ch, set, onIncreases, onMouseLeave }: { r: Resolved; ch: Character; set: SetCharacter; onIncreases: (root: string) => void; onMouseLeave?: () => void }) {
   const sh = useMemo(() => buildSheet(r), [r]);
   const tiles: [string, string][] = [["HP", String(sh.hp)], ["AC", String(sh.ac.value)], ["Init", signed(sh.initiative)], ["Speed", `${sh.speed} ft`], ["Prof", signed(sh.proficiency)]];
   const increases = r.slots.filter((s) => tabOfSlot(s) === "abilities");
@@ -602,12 +612,6 @@ function StatsPanel({ r, ch, set, onIncreases, left, onGo, onMouseLeave }: { r: 
           <button className="pick-select" onClick={() => onIncreases(increases.find((s) => !s.rule.optional && s.chosen.length < s.rule.number)!.root)}>Choose</button>
         </p>
       )}
-      {left.length ? (
-        <details className="board-sec board-left-list">
-          <summary className="warn">{left.length} {left.length === 1 ? "choice" : "choices"} left to make</summary>
-          <ul>{left.map((it, i) => <li key={i}><button onClick={() => onGo(it)}><span className="board-left-kind">{TITLE[it.kind]}</span><span>{it.text}</span></button></li>)}</ul>
-        </details>
-      ) : <p className="board-left ok">Every choice is made</p>}
       {section("Senses", [...sh.vision, `Passive Perception ${sh.passivePerception}`])}
       {section("Saving throws", sh.abilities.filter((a) => a.saveProficient).map((a) => `${ABILITY_LABEL[a.id]} ${signed(a.save)}`))}
       {section("Skills", sh.skills.filter((s) => s.level !== "none").map((s) => `${s.name} ${signed(s.bonus)}${s.level === "expertise" ? " (expertise)" : ""}`))}
@@ -687,7 +691,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     const core: Kind[] = ["race", "class", "background"];
     if (core.includes(kind) && !filled[kind]) setOpen(core.find((k) => k !== kind && !filled[k]) ?? null);
     setFocus(kind);
-    if (narrow && core.includes(kind)) { setFlyHide(true); window.setTimeout(() => setFlyHide(false), 1250); }
+    if (narrow && core.includes(kind)) { setFlyHide(true); window.setTimeout(() => setFlyHide(false), 900); }
     fly(from, el.name, kind);
   };
   const pick = (kind: Kind) => (el: AElement) => place(kind, el, lastRow.current);
@@ -795,7 +799,13 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     ),
     background: <Browse items={backgrounds} type="Background" chosen={ch.background ? [ch.background] : []} onPick={pick("background")} onSwap={(_, to) => pick("background")(to)} defaultView="list" allowCards={false} perPage={300} draggable />,
     magic: caster ? <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} /> : <p className="muted pad">No spellcasting yet. It appears when a class, species or feat grants it.</p>,
-    equipment: <Browse items={items} type="Item" chosen={[]} onPick={pick("equipment")} defaultView="list" allowCards={false} perPage={80} draggable pickLabel={() => "Add"} />,
+    equipment: (
+      <>
+        <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="adding" />
+        <h3 className="board-lib-sub">All items</h3>
+        <Browse items={items} type="Item" chosen={[]} onPick={pick("equipment")} defaultView="list" allowCards={false} perPage={80} draggable pickLabel={() => "Add"} />
+      </>
+    ),
   };
   const libValue: Record<Kind, string> = {
     race: chosenEl.race?.name ?? "", class: ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join(" / "), background: chosenEl.background?.name ?? "",
@@ -814,13 +824,13 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
       const label = (
         <>
           {kind === "class" ? `Level ${totalLevel(ch)}${ch.classes.length > 1 ? ` · ${ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join(" / ")}` : ""}` : `Your ${TITLE[kind].toLowerCase()}`}
-          {todo[kind] > 0 && <span className="board-todo">{todo[kind]} to choose</span>}
         </>
       );
       return (
         <div key={kind} data-tile={kind} className={`board-space board-${kind} filled has-card ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""}`} onClick={() => setFocus(kind)} {...drop(kind)}>
           {/* Learn more and Remove sit in the card's corner, so the card keeps its room for the text. */}
           <div className="board-corner" onClick={(e) => e.stopPropagation()}>
+            {todo[kind] > 0 && <button className="board-todo-pill" title="Choices still to make here" onClick={() => setFocus(kind)}>{todo[kind]} to choose</button>}
             <button className="board-ico" title="Learn more" aria-label={`Learn more about ${el.name}`} onClick={() => learn(el)}>i</button>
             <button className="board-ico" title="Remove" aria-label={`Remove ${el.name}`} onClick={() => (kind === "class" ? set((c) => ({ ...c, classes: c.classes.slice(1) })) : clear(kind))}>×</button>
           </div>
@@ -842,6 +852,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         onClick={() => !disabled && setFocus(kind)}
         {...drop(kind)}
       >
+        {todo[kind] > 0 && <div className="board-corner"><span className="board-todo-pill">{todo[kind]} to choose</span></div>}
         <div className="pick-card board-frame" data-glyph="" style={{ ["--hue" as string]: el ? hueOf(el.name) : HUE[kind] }}>
         {kind === "magic" ? <span className="board-art board-art-live"><SpellBook f={spellFill} /></span>
           : kind === "equipment" ? <span className="board-art board-art-live"><Backpack f={packFill} /></span>
@@ -849,7 +860,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         <div className="board-space-text">
           {filled[kind] ? (
             <>
-              <small className="board-kicker">{kind === "class" ? `Level ${totalLevel(ch)}` : TITLE[kind]}{todo[kind] > 0 && <span className="board-todo">{todo[kind]} to choose</span>}</small>
+              <small className="board-kicker">{kind === "class" ? `Level ${totalLevel(ch)}` : TITLE[kind]}</small>
               <h3>{name}</h3>
               {kind === "class" && el && CLASS_TAGS[el.name] && <div className="pick-tags">{CLASS_TAGS[el.name].map((t) => <span key={t}>{t}</span>)}</div>}
               {el && <p className="board-blurb">{blurb(el.description, 120)}</p>}
@@ -904,7 +915,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
               <button className="board-acc-head" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : kind)}>
                 <span className="board-acc-icon"><Icon size={22} /></span>
                 <span className="board-acc-title">{TITLE[kind]}<small>{libValue[kind] || (kind === "magic" && !caster ? "none yet" : "not chosen")}</small></span>
-                {todo[kind] > 0 ? <span className="board-acc-badge">{todo[kind]}</span> : filled[kind] ? <span className="board-acc-done">✓</span> : null}
+                {filled[kind] && !todo[kind] ? <span className="board-acc-done">✓</span> : null}
                 <span className="board-acc-chev">▸</span>
               </button>
               <div className="board-acc-body"><div className="board-acc-inner">{isOpen && libList[kind]}</div></div>
@@ -933,9 +944,20 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
       <section className="board-main">
         <RulesCheckBar r={r} />
         <header className="board-hero">
-          <small>Ready, set,</small>
-          <h2>Start your story...</h2>
-          <p className="muted">Your character is a species, a class and a background. Click an entry in a list or drag it onto its space.</p>
+          <div>
+            <small>Ready, set,</small>
+            <h2>Start your story...</h2>
+            <p className="muted">Your character is a species, a class and a background. Click an entry in a list or drag it onto its space.</p>
+          </div>
+          {/* What is left to choose: a count that unfolds into the list on hover, each line a shortcut to it. */}
+          <div className={`board-left-btn ${leftItems.length ? "todo" : "done"}`}>
+            <button aria-haspopup={leftItems.length ? "true" : undefined}>{leftItems.length ? `${leftItems.length} ${leftItems.length === 1 ? "choice" : "choices"} left` : "✓ Every choice is made"}</button>
+            {leftItems.length > 0 && (
+              <ul className="board-left-pop">
+                {leftItems.map((it, k) => <li key={k}><button onClick={() => goTo(it)}><span className="board-left-kind">{TITLE[it.kind]}</span><span>{it.text}</span></button></li>)}
+              </ul>
+            )}
+          </div>
         </header>
         <div className="board-spaces">
           {ORDER.map(tile)}
@@ -969,7 +991,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
               <p className="muted">Choose spells under Spells and magic on the left.</p>
             </div>
           ) : <p className="muted">This character does not cast spells yet.</p>)}
-          {focus === "equipment" && <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside />}
+          {focus === "equipment" && <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="inventory" />}
           {otherSlots.length > 0 && (
             <section>
               <h3>Other choices</h3>
@@ -979,7 +1001,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         </div>
       </section>
 
-      <StatsPanel onMouseLeave={leave("right")} r={r} ch={ch} set={set} left={leftItems} onGo={goTo} onIncreases={(root) => { setFocus(root === "race" ? "race" : root === "background" ? "background" : "class"); setSide(null); window.setTimeout(() => document.querySelector(".board-focus")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }} />
+      <StatsPanel onMouseLeave={leave("right")} r={r} ch={ch} set={set} onIncreases={(root) => { setFocus(root === "race" ? "race" : root === "background" ? "background" : "class"); setSide(null); window.setTimeout(() => document.querySelector(".board-focus")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }} />
     </div>
   );
 }

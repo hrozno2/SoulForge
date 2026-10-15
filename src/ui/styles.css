@@ -1529,7 +1529,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-flycard b { font: 700 1.15em var(--display); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .board-space[data-awaiting] > * { opacity: 0; }
 .board-space > * { transition: opacity .15s; }
-.board-space[data-impact] { animation: board-impact .9s ease-out; }
+.board-space[data-impact] { animation: board-impact .55s ease-out; }
 @keyframes board-impact {
   0% { transform: scale(.97, 1.03); filter: brightness(1.35) drop-shadow(0 0 18px color-mix(in srgb, var(--gold) 70%, transparent)); }
   35% { transform: scale(1.01, .99); }
@@ -1673,7 +1673,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .fx-beam { border-radius: 40%; filter: blur(2px); mix-blend-mode: screen; }
 .fx-rays { border-radius: 50%; mask: radial-gradient(circle, #000 20%, transparent 70%); -webkit-mask: radial-gradient(circle, #000 20%, transparent 70%); mix-blend-mode: screen; }
 .fx-bolt { overflow: visible; }
-.board-space[data-impact="heavy"] { animation: board-impact-heavy .55s cubic-bezier(.2,.9,.3,1); }
+.board-space[data-impact="heavy"] { animation: board-impact-heavy .42s cubic-bezier(.2,.9,.3,1); }
 @keyframes board-impact-heavy {
   0% { transform: scale(1.06); filter: brightness(1.5); }
   20% { transform: scale(.97) translate(-4px, 2px); }
@@ -1683,3 +1683,23 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 }
 
 .fx-dust { border-radius: 50%; background: radial-gradient(ellipse, rgba(235, 215, 170, .55), rgba(235, 215, 170, 0) 70%); filter: blur(2px); }
+
+/* Choices still to make: a pill in the card's top right, beside i and x */
+.board-space > .board-corner { z-index: 5; }
+.board-todo-pill { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 13px; background: var(--accent); color: var(--accent-ink); border: 1px solid rgba(255,255,255,.25); font: 700 11px var(--body); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; text-shadow: none; box-shadow: 0 2px 6px rgba(0,0,0,.4); cursor: pointer; }
+/* More books than the one shown: a small plus in a circle, styled like the source button */
+.src-more-mark { position: absolute; top: -8px; right: -8px; width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center; background: #15110c; border: 1px solid color-mix(in srgb, var(--gold) 70%, transparent); color: var(--gold2); font: 700 12px/1 var(--body); }
+.board-lib-sub { margin: 12px 2px 4px; font-size: 13px; }
+
+/* What is left to choose, beside the board's title */
+.board-hero { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.board-left-btn { position: relative; flex: none; margin-top: 6px; z-index: 20; }
+.board-left-btn > button { padding: 7px 14px; border-radius: 18px; font: 700 12px var(--body); letter-spacing: .08em; text-transform: uppercase; }
+.board-left-btn.todo > button { background: var(--accent); color: var(--accent-ink); border: 1px solid rgba(255,255,255,.25); }
+.board-left-btn.done > button { background: color-mix(in srgb, var(--ok) 18%, var(--panel2)); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 50%, transparent); cursor: default; }
+.board-left-pop { position: absolute; right: 0; top: 100%; width: min(380px, 80vw); max-height: 60vh; overflow: auto; list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 4px; background: var(--bg); border: 1px solid var(--gold); border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.6); opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity .15s, transform .15s; }
+.board-left-btn:hover .board-left-pop, .board-left-btn:focus-within .board-left-pop { opacity: 1; transform: none; pointer-events: auto; }
+.board-left-pop li button { width: 100%; display: flex; gap: 8px; align-items: baseline; text-align: left; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; color: var(--text); font: 400 12.5px var(--body); letter-spacing: 0; text-transform: none; }
+.board-left-pop li button:hover { border-color: var(--gold); }
+
+.fx-flash { border-radius: 14px; background: radial-gradient(ellipse, rgba(255,255,255,.95), rgba(255,240,200,.6) 40%, rgba(255,220,150,0) 70%); mix-blend-mode: screen; }

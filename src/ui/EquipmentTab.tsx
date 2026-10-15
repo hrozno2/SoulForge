@@ -24,8 +24,12 @@ export const addItem = (set: SetCharacter, el: AElement) =>
     return { ...c, inventory: [...c.inventory, { uid: uid(), id: el.id, qty: 1, equipped: false, attuned: false }] };
   });
 
-/** `listBeside`: items are added from a list next to this (the build board), so the search here is left out. */
-export function EquipmentTab({ r, ch, set, onDetail, listBeside = false }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; listBeside?: boolean }) {
+/**
+ * `listBeside`: items are added from a list next to this (the build board), so the search here is left out.
+ * `part`: the build board shows the adding part (starting equipment and custom items) in its lists and only the
+ * inventory and coins under the board.
+ */
+export function EquipmentTab({ r, ch, set, onDetail, listBeside = false, part = "all" }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; listBeside?: boolean; part?: "all" | "adding" | "inventory" }) {
   const sheet = useMemo(() => buildSheet(r), [r]);
   const [q, setQ] = useState("");
   const [type, setType] = useState("all");
@@ -59,8 +63,8 @@ export function EquipmentTab({ r, ch, set, onDetail, listBeside = false }: { r: 
 
   return (
     <div className="equip">
-      <StartingEquipment r={r} ch={ch} set={set} onDetail={onDetail} />
-      <section className="card">
+      {part !== "inventory" && <StartingEquipment r={r} ch={ch} set={set} onDetail={onDetail} />}
+      {part !== "inventory" && <section className="card">
         <h2>{listBeside ? "Custom items" : "Add equipment"}</h2>
         {!listBeside && <><div className="row">
           <input placeholder="Search items, weapons, armor" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1 }} />
@@ -92,9 +96,9 @@ export function EquipmentTab({ r, ch, set, onDetail, listBeside = false }: { r: 
             <button disabled={!custom.name.trim()} onClick={() => { set((c) => ({ ...c, inventory: [...c.inventory, { uid: uid(), id: "", qty: 1, equipped: false, attuned: false, custom: { name: custom.name.trim(), weight: Number(custom.weight) || 0, cost: custom.cost, description: custom.description } }] })); setCustom({ name: "", weight: "", cost: "", description: "" }); }}>Add</button>
           </div>
         </details>
-      </section>
+      </section>}
 
-      <section className="card">
+      {part !== "adding" && <section className="card">
         <h2>Inventory</h2>
         <div className="row summary">
           <span>Carrying <b>{sheet.weight.carried}</b> / {sheet.weight.capacity} lb</span>
@@ -144,9 +148,9 @@ export function EquipmentTab({ r, ch, set, onDetail, listBeside = false }: { r: 
             })}
           </tbody>
         </table>
-      </section>
+      </section>}
 
-      <section className="card">
+      {part !== "adding" && <section className="card">
         <h2>Coins</h2>
         <div className="row">
           {COINS.map((k) => (
@@ -156,7 +160,7 @@ export function EquipmentTab({ r, ch, set, onDetail, listBeside = false }: { r: 
             </label>
           ))}
         </div>
-      </section>
+      </section>}
     </div>
   );
 }

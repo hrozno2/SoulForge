@@ -1743,3 +1743,9 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-lib .search-box input { width: 100%; min-width: 0; }
 /* On a card's back the only Done is the card's own: a list folds from its header */
 .card-back .slot-done { display: none; }
+
+/* Rolling on a background's table */
+.slot.has-roll { position: relative; }
+.slot.has-roll > .slot-head { padding-right: 56px; }
+.slot-roll { position: absolute; right: 30px; top: 8px; z-index: 1; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border-radius: 6px; color: var(--gold); }
+.slot-roll:hover { color: var(--gold2); border-color: var(--gold); }

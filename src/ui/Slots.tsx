@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { requestRoll } from "./Dice";
+import { D20 } from "./icons";
 import { Browse } from "./Browse";
 import type { AElement } from "../aurora/types";
 import type { Resolved, SelectSlot } from "../aurora/engine";
@@ -102,8 +104,23 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
   const reason = (el: AElement): string | undefined => (slot.blocked.has(el.id) ? "requirements not met" : undefined);
   const owned = (el: AElement): string | undefined => (chosen.includes(el.id) ? undefined : ownership(r, el, slot.members ? slot.members.map((m) => m.key) : slot.key));
 
+  // A table (a 2014 background's personality traits, ideals, bonds and flaws) can be rolled on: a die per pick,
+  // shown in the dice log, a repeat rolled again.
+  const rollTable = () => {
+    const items = slot.listItems;
+    if (!items?.length) return;
+    const picked: string[] = [];
+    const one = () => requestRoll(`${rule.name}: d${items.length}`, `1d${items.length}`, (res) => {
+      const it = items[Math.max(0, Math.min(items.length - 1, res.total - 1))];
+      if (!picked.includes(it.id)) picked.push(it.id);
+      if (picked.length < Math.min(rule.number, items.length)) one();
+      else commit(picked);
+    });
+    one();
+  };
   return (
-    <div className={`slot ${full ? "done" : "todo"}`}>
+    <div className={`slot ${full ? "done" : "todo"} ${slot.listItems ? "has-roll" : ""}`}>
+      {slot.listItems && slot.listItems.length > 1 && <button className="slot-roll" title={`Roll on the table (d${slot.listItems.length})`} aria-label={`Roll ${rule.name}`} onClick={rollTable}><D20 size={16} /></button>}
       <button className="slot-head" onClick={() => setOpen(!open)}>
         <span className="slot-title">
           <span className="slot-name">{rule.name}</span>

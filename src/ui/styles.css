@@ -1703,3 +1703,9 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-left-pop li button:hover { border-color: var(--gold); }
 
 .fx-flash { border-radius: 14px; background: radial-gradient(ellipse, rgba(255,255,255,.95), rgba(255,240,200,.6) 40%, rgba(255,220,150,0) 70%); mix-blend-mode: screen; }
+
+.board-book-charged path { animation: board-crackle 1.1s steps(2) infinite; }
+.board-book-charged .board-book-smoke { animation: board-smoke 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes board-crackle { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+@keyframes board-smoke { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: .55; } 100% { opacity: 0; transform: translateY(-10px); } }
+.reduce-motion .board-book-charged path { animation: none; }

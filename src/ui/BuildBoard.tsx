@@ -270,99 +270,124 @@ function epicFly(from: DOMRect | null, label: string, kind: Kind, target: HTMLEl
 }
 
 /**
- * A spellbook that thickens as spells are chosen: the spine and the page edges grow and the cover rises with them,
- * ribbons appear, and the rune on the cover lights up when every spell is picked. Transforms only, so it animates in
- * WebKit as well.
+ * A heavy spellbook that thickens as spells are chosen: the page block grows and the cover, with its straps, clasps
+ * and brass corners, rises with it. Full, it crackles with arcane light and a wisp of smoke curls up. Transforms
+ * only, so it animates in WebKit as well.
  */
 function SpellBook({ f }: { f: number }) {
-  const t = 0.1 + 0.9 * f; // share of the full thickness
-  const H = 34; // the full thickness, in the drawing's units
+  const t = 0.12 + 0.88 * f; // share of the full thickness
+  const H = 30; // the full thickness, in the drawing's units
+  // The book lies at an angle: front edge from (10,92) to (78,104), right edge to (110,80), back to (42,68).
+  const top = (y: number) => `M10 ${92 + y} L78 ${104 + y} L110 ${80 + y} L42 ${68 + y} Z`;
   return (
     <svg className="board-book" viewBox="0 0 120 120" role="img" aria-label={`Spellbook ${Math.round(f * 100)}% full`}>
       <defs>
-        <radialGradient id="bookGlow"><stop offset="0" stopColor="#ffd98a" stopOpacity=".9" /><stop offset="1" stopColor="#ffd98a" stopOpacity="0" /></radialGradient>
-        <linearGradient id="bookLeather" x1="0" x2="1"><stop offset="0" stopColor="#6e2a1d" /><stop offset="1" stopColor="#4a1912" /></linearGradient>
+        <linearGradient id="sbCover" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#9b4632" /><stop offset=".6" stopColor="#7a3022" /><stop offset="1" stopColor="#4f1c14" /></linearGradient>
+        <linearGradient id="sbPages" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#f3e2b4" /><stop offset="1" stopColor="#c9a86a" /></linearGradient>
+        <linearGradient id="sbBrass" x1="0" x2="1"><stop offset="0" stopColor="#f6dc94" /><stop offset=".5" stopColor="#c8963c" /><stop offset="1" stopColor="#8a6020" /></linearGradient>
       </defs>
-      {f >= 1 && <ellipse cx="60" cy="70" rx="56" ry="40" fill="url(#bookGlow)" opacity=".55" />}
+      <ellipse cx="60" cy="104" rx="50" ry="9" fill="#000" opacity=".32" />
       {/* back cover */}
-      <path d="M8 100 L80 100 L108 86 L36 86 Z" fill="#3e140e" />
-      <path d="M8 100 L80 100 L80 104 L8 104 Z M80 100 L108 86 L108 90 L80 104 Z" fill="#2a0d09" />
-      {/* spine and page edges: drawn at full thickness, squeezed to the current one */}
+      <path d={top(0)} fill="#3b130d" />
+      <path d="M10 92 L78 104 L78 108 L10 96 Z M78 104 L110 80 L110 84 L78 108 Z" fill="#2a0d09" />
+      {/* the page block: drawn at full thickness, squeezed to the current one */}
       <g className="board-book-block" style={{ transform: `scaleY(${t})` }}>
-        <rect x="8" y={100 - H} width="72" height={H} fill="url(#bookLeather)" stroke="#2a0d09" strokeWidth=".8" />
-        {[0.2, 0.5, 0.8].map((k) => <rect key={k} x="8" y={100 - H * (1 - k) - 1.5} width="72" height="3" fill="#c9a45c" opacity=".85" />)}
-        <path d={`M80 ${100 - H} L106 ${86 - H} L106 86 L80 100 Z`} fill="#f1e6c8" stroke="#a88c5a" strokeWidth=".6" />
-        {Array.from({ length: 9 }, (_, k) => { const y = 100 - (H * (k + 1)) / 10; return <path key={k} d={`M80 ${y} L106 ${y - 14}`} stroke="#c8b48a" strokeWidth=".5" />; })}
+        <path d={`M10 ${92 - H} L78 ${104 - H} L78 104 L10 92 Z`} fill="url(#sbPages)" stroke="#9c7b45" strokeWidth=".6" />
+        <path d={`M78 ${104 - H} L110 ${80 - H} L110 80 L78 104 Z`} fill="#e6cf98" stroke="#9c7b45" strokeWidth=".6" />
+        {Array.from({ length: 8 }, (_, k) => { const y = (H * (k + 1)) / 9; return <path key={k} d={`M10 ${92 - y} L78 ${104 - y} L110 ${80 - y}`} fill="none" stroke="#b8975e" strokeWidth=".45" />; })}
+        {/* the spine wraps the left end */}
+        <path d={`M10 ${92 - H} L42 ${68 - H} L42 68 L10 92 Z`} fill="#5e2117" />
       </g>
-      {/* ribbons hanging from the pages */}
-      {f > 0.4 && <path className="board-book-ribbon" d="M92 94 l0 14 l3 -3 l3 3 l0 -16 z" fill="#8a1f2a" />}
-      {f > 0.8 && <path className="board-book-ribbon" d="M100 90 l0 12 l3 -3 l3 3 l0 -14 z" fill="#1f4f8a" />}
-      {/* front cover, lifted by the thickness */}
+      {/* ribbons from the pages */}
+      {f > 0.4 && <path className="board-book-ribbon" d="M52 100 l-1 12 l3 -3 l3 3 l1 -11 z" fill="#8a1f2a" />}
+      {f > 0.8 && <path className="board-book-ribbon" d="M60 102 l-1 11 l3 -3 l3 3 l1 -10 z" fill="#1f4f8a" />}
+      {/* the cover, lifted by the thickness, with its border, straps, clasps and corners */}
       <g className="board-book-cover" style={{ transform: `translateY(${-H * t}px)` }}>
-        <path d="M8 100 L80 100 L80 103 L8 103 Z M80 100 L108 86 L108 89 L80 103 Z" fill="#3e140e" />
-        <path d="M8 100 L80 100 L108 86 L36 86 Z" fill="url(#bookLeather)" stroke="#c9a45c" strokeWidth="1.2" />
-        <path d="M17 97.5 L76 97.5 L97 87.5 L39 87.5 Z" fill="none" stroke="#c9a45c" strokeWidth=".7" opacity=".8" />
-        <g transform="translate(57 92.5) scale(1 .45)" opacity={0.4 + f * 0.6}>
-          <circle r="9" fill="none" stroke="#ffd98a" strokeWidth="1.6" />
-          <path d="M0-7 2-2 7 0 2 2 0 7-2 2-7 0-2-2z" fill="#ffd98a" />
+        <path d="M10 92 L78 104 L78 107 L10 95 Z M78 104 L110 80 L110 83 L78 107 Z" fill="#4f1c14" />
+        <path d={top(0)} fill="url(#sbCover)" stroke="#2a0d09" strokeWidth="1" />
+        <path d="M19 91 L76 100.5 L101 82 L44 72.5 Z" fill="none" stroke="#c9963f" strokeWidth=".7" opacity=".7" />
+        <path d="M22 90.5 L74 99 L97 82.4 L46 74 Z" fill="none" stroke="#3b130d" strokeWidth=".6" strokeDasharray="1.5 1.5" opacity=".7" />
+        {/* two straps across the cover, over the front edge */}
+        {[0.3, 0.68].map((k) => {
+          const x0 = 10 + 32 * k, y0 = 92 - 24 * k, x1 = 78 + 32 * k, y1 = 104 - 24 * k;
+          return (
+            <g key={k}>
+              <path d={`M${x0 - 3} ${y0 + 1} L${x1 - 3} ${y1 + 1} L${x1 + 3} ${y1 - 2} L${x0 + 3} ${y0 - 2} Z`} fill="#3d2414" />
+              <path d={`M${x1 - 3} ${y1 + 1} l0 5 l6 -3 l0 -5 z`} fill="#2e1a0e" />
+              <rect x={x0 + (x1 - x0) * 0.22 - 3} y={y0 + (y1 - y0) * 0.22 - 3} width="6" height="5" rx="1.5" fill="url(#sbBrass)" />
+              <rect x={x0 + (x1 - x0) * 0.78 - 3} y={y0 + (y1 - y0) * 0.78 - 3} width="6" height="5" rx="1.5" fill="url(#sbBrass)" />
+            </g>
+          );
+        })}
+        {/* brass corners */}
+        <path d="M10 92 l10 1.8 l-3 2.4 z M78 104 l-10 -1.8 l6 -3 z M110 80 l-8 6 l-2 -3 z M42 68 l8 1.4 l-5 3 z" fill="url(#sbBrass)" />
+        <g transform="translate(60 86) scale(1 .5)" opacity={0.35 + f * 0.65}>
+          <circle r="7" fill="none" stroke="#ffd98a" strokeWidth="1.3" />
+          <path d="M0-5 1.5-1.5 5 0 1.5 1.5 0 5-1.5 1.5-5 0-1.5-1.5z" fill="#ffd98a" />
         </g>
-        {/* the clasp */}
-        <path d="M78 96 l6 -3 l0 6 l-6 3z" fill="#c9a45c" />
       </g>
-      {f >= 1 && <g className="board-sparks" fill="#ffe8b0"><circle cx="20" cy="40" r="2" /><circle cx="104" cy="34" r="1.6" /><circle cx="112" cy="70" r="2.2" /><circle cx="10" cy="76" r="1.4" /></g>}
+      {/* full: arcane crackles along the edges and a wisp of smoke */}
+      {f >= 1 && (
+        <g className="board-book-charged">
+          <path d="M14 66 l4 6 l-3 3 l5 7" fill="none" stroke="#8fd0ff" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M100 52 l-3 7 l4 2 l-3 8" fill="none" stroke="#8fd0ff" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M66 98 l4 4 l-2 4 l5 4" fill="none" stroke="#8fd0ff" strokeWidth="1.2" strokeLinejoin="round" />
+          <path className="board-book-smoke" d="M80 44 q-6 -8 2 -14 q8 -6 0 -14" fill="none" stroke="#cfcfd6" strokeWidth="2.4" strokeLinecap="round" opacity=".5" />
+        </g>
+      )}
     </svg>
   );
 }
 
 /**
- * A backpack that fills with gear as the starting equipment goes in, and empties as it comes out: papers in the
- * front pocket, rope on the side, a bedroll strapped on top, a sword, bread and cheese, a torch and a map case.
+ * A rucksack that fills with gear as the starting equipment goes in, and empties as it comes out: papers in the
+ * front pocket, rope at the side, a bedroll buckled on top, a sword, a pouch and herbs, a scroll in the side sleeve.
  */
 function Backpack({ f }: { f: number }) {
   const has = (at: number) => f > 0 && f >= at - 1e-9;
-  const stitch = { fill: "none", stroke: "#e7c98f", strokeWidth: 0.7, strokeDasharray: "2 1.6", opacity: 0.55 } as const;
+  const brass = "url(#bpBrass)";
+  const buckle = (x: number, y: number, w = 7, h = 6) => <><rect x={x - w / 2} y={y - h / 2} width={w} height={h} rx="1.2" fill="none" stroke={brass} strokeWidth="1.6" /><path d={`M${x} ${y - h / 2} v${h}`} stroke={brass} strokeWidth="1" /></>;
   return (
     <svg className="board-pack" viewBox="0 0 120 120" role="img" aria-label={`Backpack ${Math.round(f * 100)}% full`}>
       <defs>
-        <linearGradient id="packLeather" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#9a6a3c" /><stop offset=".55" stopColor="#7a4f2a" /><stop offset="1" stopColor="#4e3119" /></linearGradient>
-        <linearGradient id="packFlap" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#a87645" /><stop offset="1" stopColor="#6e4523" /></linearGradient>
-        <linearGradient id="packPocket" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#7d5230" /><stop offset="1" stopColor="#53341b" /></linearGradient>
-        <linearGradient id="packBrass" x1="0" x2="1"><stop offset="0" stopColor="#f4d68a" /><stop offset=".5" stopColor="#c99a3e" /><stop offset="1" stopColor="#8a6420" /></linearGradient>
-        <linearGradient id="packRoll" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#7f9257" /><stop offset="1" stopColor="#4c5a31" /></linearGradient>
+        <linearGradient id="bpLeather" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#8f6440" /><stop offset=".55" stopColor="#6e4a2c" /><stop offset="1" stopColor="#4a2f1a" /></linearGradient>
+        <linearGradient id="bpDark" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#6b4529" /><stop offset="1" stopColor="#3e2716" /></linearGradient>
+        <linearGradient id="bpBrass" x1="0" x2="1"><stop offset="0" stopColor="#f2d58a" /><stop offset=".5" stopColor="#c4923c" /><stop offset="1" stopColor="#86601f" /></linearGradient>
+        <linearGradient id="bpRoll" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#7d9450" /><stop offset="1" stopColor="#4a5c2c" /></linearGradient>
+        <pattern id="bpBraid" width="6" height="5" patternUnits="userSpaceOnUse"><rect width="6" height="5" fill="#c9a454" /><path d="M0 0 L3 2.5 L6 0 M0 5 L3 2.5 L6 5" stroke="#8a6a2a" strokeWidth=".8" fill="none" /></pattern>
       </defs>
-      <ellipse cx="60" cy="110" rx="36" ry="5" fill="#000" opacity=".35" />
+      <ellipse cx="58" cy="112" rx="34" ry="5" fill="#000" opacity=".32" />
       <g className="board-pack-body" style={{ transform: `scale(${0.94 + f * 0.06})` }}>
-        {/* behind the bag: the sword, the torch, the map case */}
-        {has(0.55) && <g className="board-item"><path d="M34 46 L26 12" stroke="#c7ced6" strokeWidth="3.6" strokeLinecap="round" /><path d="M34 46 L26 12" stroke="#fff" strokeWidth="1" strokeLinecap="round" opacity=".5" /><path d="M20 20 L35 15.5" stroke="url(#packBrass)" strokeWidth="3.4" strokeLinecap="round" /><path d="M26 12 L24.2 4.5" stroke="#4a2f17" strokeWidth="3.6" strokeLinecap="round" /><circle cx="23.9" cy="3.6" r="2.6" fill="url(#packBrass)" /></g>}
-        {has(0.85) && <g className="board-item"><path d="M95 66 L100 34" stroke="#5a3a1c" strokeWidth="3.6" strokeLinecap="round" /><path d="M96.5 38 h7" stroke="#2d1d0e" strokeWidth="2.4" /><path d="M100 34 q-7 -7 -1.5 -16 q2 6.5 5.5 5.5 q3.5 6 -4 10.5z" fill="#f08a24" /><path d="M100.5 31 q-2.5 -3.5 0 -8 q2.5 4.5 2.5 4.5z" fill="#ffe08a" /></g>}
-        {has(1) && <g className="board-item"><rect x="74" y="4" width="9" height="30" rx="4.5" fill="#6b4423" stroke="#2d1d0e" strokeWidth="1" transform="rotate(28 78.5 19)" /><rect x="74" y="4" width="9" height="5" rx="2.5" fill="url(#packBrass)" transform="rotate(28 78.5 19)" /></g>}
-        {/* the bedroll strapped on top */}
-        {has(0.4) && <g className="board-item"><rect x="28" y="20" width="64" height="16" rx="8" fill="url(#packRoll)" stroke="#2c331c" strokeWidth="1.2" /><path d="M32 26 q28 3 56 0" fill="none" stroke="#a2b479" strokeWidth=".9" opacity=".6" /><ellipse cx="28.5" cy="28" rx="3.6" ry="8" fill="#5f7144" stroke="#2c331c" strokeWidth="1" /><path d="M28.5 23 q2 5 0 10" fill="none" stroke="#3a4625" strokeWidth=".8" /><rect x="40" y="19" width="5" height="18" rx="1.2" fill="#3b2412" /><rect x="75" y="19" width="5" height="18" rx="1.2" fill="#3b2412" /></g>}
-        {/* the shoulder straps and the main body */}
-        <path d="M44 38 q16 -16 32 0" fill="none" stroke="#3b2412" strokeWidth="5" strokeLinecap="round" />
-        <path d="M30 46 q0 -12 30 -12 q30 0 30 12 v48 q0 12 -12 12 h-36 q-12 0 -12 -12z" fill="url(#packLeather)" stroke="#2b1a0c" strokeWidth="1.6" />
-        <path d="M35 48 q0 -9 25 -9 q25 0 25 9 v44 q0 9 -9 9 h-32 q-9 0 -9 -9z" {...stitch} />
-        <path d="M34 50 q4 -11 18 -12" fill="none" stroke="#fff" strokeWidth="1.4" opacity=".12" strokeLinecap="round" />
-        {/* papers out of the front pocket */}
-        {has(0.1) && <g className="board-item"><rect x="45" y="64" width="14" height="18" rx="1" fill="#efe3c4" stroke="#9a8256" strokeWidth=".7" transform="rotate(-10 52 73)" /><rect x="57" y="61" width="14" height="20" rx="1" fill="#f8efd6" stroke="#9a8256" strokeWidth=".7" transform="rotate(8 64 71)" /><path d="M60 66 h8 M60 69 h7 M60 72 h8" stroke="#8a7650" strokeWidth=".6" transform="rotate(8 64 71)" /></g>}
-        {/* bread and cheese out of the left pocket */}
-        {has(0.7) && <g className="board-item"><ellipse cx="22" cy="68" rx="7.5" ry="6" fill="#c98e48" stroke="#6b4a2b" strokeWidth=".8" /><path d="M17.5 66 l3 -2.5 M22 65 l3 -2.5" stroke="#8a5a2a" strokeWidth=".9" strokeLinecap="round" /><path d="M24 72 l9 -7 l2.5 7z" fill="#f2c94c" stroke="#a4862f" strokeWidth=".6" /><circle cx="29" cy="70" r=".9" fill="#c79f2c" /></g>}
-        {/* the top flap with its buckle */}
-        <path d="M30 50 q0 -18 30 -18 q30 0 30 18 v8 q-30 11 -60 0z" fill="url(#packFlap)" stroke="#2b1a0c" strokeWidth="1.4" />
-        <path d="M34 52 q0 -14 26 -14 q26 0 26 14 v4 q-26 9 -52 0z" {...stitch} />
-        <path d="M57 56 v10" stroke="#3b2412" strokeWidth="5" />
-        <rect x="54.5" y="62" width="11" height="9" rx="2" fill="none" stroke="url(#packBrass)" strokeWidth="2.2" />
-        <path d="M60 62 v9" stroke="url(#packBrass)" strokeWidth="1.2" />
-        {/* the pockets */}
-        <path d="M38 78 h44 v18 q0 7 -7 7 h-30 q-7 0 -7 -7z" fill="url(#packPocket)" stroke="#2b1a0c" strokeWidth="1.3" />
-        <path d="M41 81 h38 v14 q0 5 -5 5 h-28 q-5 0 -5 -5z" {...stitch} />
-        <path d="M38 78 q22 7 44 0 v5 q-22 7 -44 0z" fill="#6a4426" stroke="#2b1a0c" strokeWidth="1" />
-        <rect x="57" y="82" width="6" height="6" rx="1.2" fill="url(#packBrass)" />
-        <path d="M15 70 h16 v26 q0 6 -6 6 h-4 q-6 0 -6 -6z" fill="url(#packPocket)" stroke="#2b1a0c" strokeWidth="1.3" />
-        <path d="M89 70 h16 v26 q0 6 -6 6 h-4 q-6 0 -6 -6z" fill="url(#packPocket)" stroke="#2b1a0c" strokeWidth="1.3" />
-        <path d="M18 74 h10 M92 74 h10" stroke="#e7c98f" strokeWidth=".7" strokeDasharray="2 1.6" opacity=".55" />
-        {/* rope coiled on the side */}
-        {has(0.25) && <g className="board-item"><ellipse cx="97" cy="54" rx="9.5" ry="7.5" fill="none" stroke="#c9a96e" strokeWidth="3.2" /><ellipse cx="97" cy="54" rx="6" ry="4.4" fill="none" stroke="#a88a52" strokeWidth="2.6" /><path d="M89 52 q3 2 6 0 M99 49 q2 3 6 2" stroke="#7d6435" strokeWidth=".7" fill="none" /></g>}
+        {/* the shoulder strap behind, hanging to the right */}
+        <path d="M80 36 q24 4 22 40 q-1 20 -6 30" fill="none" stroke="#5a3a1e" strokeWidth="5" strokeLinecap="round" />
+        {/* behind the bag: the sword, the herbs, the rope */}
+        {has(0.55) && <g className="board-item"><path d="M34 60 L24 22" stroke="#c7ced6" strokeWidth="3.2" strokeLinecap="round" /><path d="M18 27 L30 23.5" stroke={brass} strokeWidth="3" strokeLinecap="round" /><path d="M24 22 L21.8 13" stroke="#3b2412" strokeWidth="3.4" strokeLinecap="round" /><circle cx="21.5" cy="11.8" r="2.4" fill={brass} /></g>}
+        {has(0.7) && <g className="board-item"><path d="M24 78 q-10 -6 -14 -2 q6 2 8 6 z" fill="#3f7a35" /><path d="M24 82 q-12 2 -14 8 q8 -2 12 -4 z" fill="#2f6a2a" /><circle cx="13" cy="79" r="2.4" fill="#e07a9a" /><circle cx="15" cy="86" r="2" fill="#e07a9a" /></g>}
+        {has(0.25) && <g className="board-item"><ellipse cx="22" cy="62" rx="8" ry="10" fill="none" stroke="#d9c79a" strokeWidth="3" /><ellipse cx="22" cy="62" rx="4.5" ry="6.5" fill="none" stroke="#b9a676" strokeWidth="2.4" /></g>}
+        {/* the bedroll buckled on top */}
+        {has(0.4) && <g className="board-item"><rect x="26" y="14" width="64" height="18" rx="9" fill="url(#bpRoll)" stroke="#2c331c" strokeWidth="1.2" /><path d="M30 20 q30 3 56 0" fill="none" stroke="#a2b479" strokeWidth=".9" opacity=".6" /><circle cx="88" cy="23" r="7" fill="#5f7144" stroke="#2c331c" strokeWidth="1" /><path d="M88 23 m-4 0 a4 4 0 1 1 4 4 a2.5 2.5 0 1 1 -2 -2.5" fill="none" stroke="#3a4625" strokeWidth="1" /><rect x="40" y="12" width="5" height="22" rx="1.2" fill="#4a2c16" /><rect x="70" y="12" width="5" height="22" rx="1.2" fill="#4a2c16" />{buckle(42.5, 30)}{buckle(72.5, 30)}</g>}
+        {/* the body: tall, rounded at the top */}
+        <path d="M30 40 q2 -10 28 -10 q26 0 28 10 l4 58 q0 10 -12 10 h-40 q-12 0 -12 -10 z" fill="url(#bpLeather)" stroke="#2b1a0c" strokeWidth="1.6" />
+        {/* the two braided bands down the front */}
+        <path d="M44 36 v68" stroke="url(#bpBraid)" strokeWidth="5" />
+        <path d="M72 36 v68" stroke="url(#bpBraid)" strokeWidth="5" />
+        {/* the rounded flap with coloured piping, an emblem and its buckle */}
+        <path d="M30 42 q0 -12 28 -12 q28 0 28 12 l0 12 l-28 10 l-28 -10 z" fill="url(#bpDark)" stroke="#a83a2a" strokeWidth="1.6" />
+        <path d="M52 44 l6 -5 l6 5 l-6 6 z" fill="#c9a454" opacity=".85" />
+        <path d="M58 64 v8" stroke="#3b2412" strokeWidth="5" />
+        {buckle(58, 70, 8, 7)}
+        {/* papers out of the lower pocket */}
+        {has(0.1) && <g className="board-item"><rect x="38" y="70" width="13" height="16" rx="1" fill="#efe3c4" stroke="#9a8256" strokeWidth=".7" transform="rotate(-10 44 78)" /><rect x="47" y="68" width="13" height="18" rx="1" fill="#f8efd6" stroke="#9a8256" strokeWidth=".7" transform="rotate(6 53 77)" /></g>}
+        {/* the deep lower pocket with its flap and buckle */}
+        <path d="M30 80 h56 l1 18 q0 8 -9 8 h-40 q-9 0 -9 -8 z" fill="url(#bpLeather)" stroke="#2b1a0c" strokeWidth="1.3" />
+        <path d="M30 80 h56 v6 q-28 8 -56 0 z" fill="url(#bpDark)" stroke="#a83a2a" strokeWidth="1.3" />
+        <path d="M58 86 v8" stroke="#3b2412" strokeWidth="4.5" />
+        {buckle(58, 93, 7, 6)}
+        {/* the side sleeve with a scroll, and the pouch hanging from it */}
+        <path d="M86 46 l8 2 l2 30 l-8 2 z" fill="url(#bpDark)" stroke="#2b1a0c" strokeWidth="1.1" />
+        {has(0.85) && <g className="board-item"><rect x="86" y="30" width="9" height="20" rx="4.5" fill="#ece3cf" stroke="#9a8a6a" strokeWidth=".8" transform="rotate(8 90 40)" /><path d="M86 33 a4.5 2 0 0 0 9 0" fill="none" stroke="#9a8a6a" strokeWidth=".7" transform="rotate(8 90 40)" /></g>}
+        {has(1) && <g className="board-item"><path d="M90 78 q-8 2 -8 12 q0 10 9 10 q9 0 9 -10 q0 -10 -8 -12 z" fill="#5c86a6" stroke="#2c4458" strokeWidth="1" /><path d="M86 79 q4 -4 8 0" fill="none" stroke="#3b2412" strokeWidth="1.4" /></g>}
+        <path d="M36 104 q22 3 44 0" fill="none" stroke="#e7c98f" strokeWidth=".7" strokeDasharray="2 1.6" opacity=".5" />
       </g>
     </svg>
   );

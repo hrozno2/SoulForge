@@ -971,7 +971,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         onClick={() => { if (disabled) return; if (kind === "magic" || kind === "equipment") openBack(kind); else toggleList(kind); }}
         {...drop(kind)}
       >
-        {todo[kind] > 0 && <div className="board-corner"><span className="board-todo-pill">{todo[kind]} to choose</span></div>}
+        {filled[kind] && todo[kind] > 0 && <div className="board-corner"><span className="board-todo-pill">{todo[kind]} to choose</span></div>}
         <div className="pick-card board-frame" data-glyph="" style={{ ["--hue" as string]: el ? hueOf(el.name) : HUE[kind] }}>
         {kind === "magic" ? <span className="board-art board-art-live"><SpellBook f={spellFill} /></span>
           : kind === "equipment" ? <span className="board-art board-art-live"><Backpack f={packFill} /></span>

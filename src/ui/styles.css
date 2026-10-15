@@ -1734,3 +1734,12 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 
 /* A class's main abilities: an outline in the class's colour */
 .board-score.primary { border-color: hsl(var(--hue) 70% 58%); box-shadow: inset 0 0 0 1px hsl(var(--hue) 70% 58% / .55), 0 0 10px hsl(var(--hue) 70% 50% / .25); }
+
+/* The search box takes its own row in the narrow lists, so it is never cut off */
+.board-lib .browse-bar { flex-wrap: wrap; }
+.board-lib .browse-bar .seg-group.grow { flex: 1 1 100%; min-width: 0; }
+.board-lib .search-row { display: flex; gap: 6px; width: 100%; }
+.board-lib .search-box { flex: 1; min-width: 0; }
+.board-lib .search-box input { width: 100%; min-width: 0; }
+/* On a card's back the only Done is the card's own: a list folds from its header */
+.card-back .slot-done { display: none; }

@@ -5,7 +5,7 @@ import { addSheetFiles, downloadOfficialSheet } from "../sheets/templates";
 import { isDesktop } from "../net";
 import { pickFiles } from "../store";
 import type { ContentState } from "./useContent";
-import { useSettings } from "./Settings";
+import { updateSettings, useSettings } from "./Settings";
 
 const KEY = "charforge.tutorial";
 
@@ -28,7 +28,7 @@ export function neverShowTutorial(): void {
 
 export const AURORA_LINK = "https://raw.githubusercontent.com/AuroraLegacy/elements/master/AuroraLegacy.index";
 
-export const TUTORIAL_STEPS = 6;
+export const TUTORIAL_STEPS = 7;
 
 export interface TutorialProps {
   step: number;
@@ -150,7 +150,25 @@ export function Tutorial(p: TutorialProps) {
       ),
     },
     {
-      title: "2. Import from 5e.tools or Plutonium",
+      title: "2. Which rules to show",
+      body: (
+        <>
+          <p>Choose which books the lists show. Everything you load stays loaded; this only decides what you see when you pick.</p>
+          <div className="tutorial-rules">
+            <span className="seg" role="group" aria-label="Rules">
+              <button className={!settings.showLegacy ? "on" : ""} onClick={() => updateSettings({ showLegacy: false })}>2024 rules only</button>
+              <button className={settings.showLegacy ? "on" : ""} onClick={() => updateSettings({ showLegacy: true })}>2024 and 2014 rules</button>
+            </span>
+            <label className="check"><input type="checkbox" checked={settings.showPlaytest} onChange={(e) => updateSettings({ showPlaytest: e.target.checked })} /> Unearthed Arcana and playtest material (drafts that may change)</label>
+            <label className="check"><input type="checkbox" checked={settings.showUnusual} onChange={(e) => updateSettings({ showUnusual: e.target.checked })} /> Settings and other sources (Eberron, Ravnica, Theros and other worlds, third party and homebrew books)</label>
+          </div>
+          <p>Many options exist in more than one book, such as the 2014 and the 2024 Wizard. A chosen card shows its book as a <b>source chip</b> (for example <b>XPHB 2024</b> or <b>PHB 2014</b>); click another chip on the card to switch to that book's version. Each list's <b>Filters</b> can also narrow it by source.</p>
+          <p className="muted">You can change all of this later in Menu, Settings, under Content shown in lists. What you already picked stays visible even when its book is hidden.</p>
+        </>
+      ),
+    },
+    {
+      title: "3. Import from 5e.tools or Plutonium",
       body: (
         <>
           <p>Soul Forge also reads the data format used by 5e.tools and the Plutonium module for Foundry. On the Content tab you can:</p>
@@ -164,7 +182,7 @@ export function Tutorial(p: TutorialProps) {
       ),
     },
     {
-      title: "3. Bring in characters from Foundry or Roll20",
+      title: "4. Bring in characters from Foundry or Roll20",
       body: (
         <>
           <p>Choose a character file you exported from Foundry VTT (an actor JSON, including Plutonium actors) or Roll20. Soul Forge matches names against your loaded content and tells you what it could not place.</p>
@@ -179,7 +197,7 @@ export function Tutorial(p: TutorialProps) {
       ),
     },
     {
-      title: "4. Get a character sheet",
+      title: "5. Get a character sheet",
       body: (
         <>
           <p>These sheets are filled completely: the <b>fillable 2024 sheet by DLtheDM</b> (stays editable), the <b>official Wizards of the Coast sheets</b> for 2024 and 2014, and companion sheets. Soul Forge downloads them from their makers and keeps a copy on this computer.</p>
@@ -203,7 +221,7 @@ export function Tutorial(p: TutorialProps) {
       ),
     },
     {
-      title: "5. Finding your way",
+      title: "6. Finding your way",
       body: (
         <>
           <ul className="tutorial-tour">

@@ -27,6 +27,11 @@ export function useUpdater() {
   }, []);
 
   const check = useCallback(async (manual: boolean) => {
+    // The test build installs next to the released app; an update would replace it with the release.
+    if (import.meta.env.VITE_TEST_TOOLS === "1") {
+      if (manual) flash("The test build does not update itself. Rebuild it with npm run test-app.");
+      return;
+    }
     if (!inTauri()) {
       if (manual) flash("Updates apply to the installed desktop app.");
       return;

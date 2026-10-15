@@ -316,9 +316,14 @@ test.describe("Soul Forge smoke tests", () => {
       // A step can take you where it is talking about, and the tutorial waits for you instead of vanishing.
       await page.getByRole("button", { name: "Start" }).click();
       await page.getByRole("button", { name: "Next" }).click();
+      // The rules step: a choice that applies at once and is saved in Settings.
+      await expect(page.getByRole("dialog", { name: "Tutorial" })).toContainText("Which rules to show");
+      await page.getByRole("button", { name: "2024 rules only" }).click();
+      await page.getByRole("button", { name: "2024 and 2014 rules" }).click();
+      await page.getByRole("button", { name: "Next" }).click();
       await page.getByRole("button", { name: "Open the importer" }).click();
       await expect(page.getByRole("dialog", { name: "Tutorial" })).toHaveCount(0);
-      await expect(page.getByText("Tutorial, step 3 of 6")).toBeVisible();
+      await expect(page.getByText("Tutorial, step 4 of 7")).toBeVisible();
       await page.getByRole("button", { name: "Resume" }).click();
       await expect(page.getByRole("dialog", { name: "Tutorial" })).toContainText("Import from 5e.tools");
       await page.getByRole("button", { name: "Minimize the tutorial" }).click();
@@ -412,7 +417,7 @@ test.describe("Soul Forge smoke tests", () => {
     await dialog.locator("button.primary", { hasText: "Done" }).click();
     expect(await level()).toBe(start + 1);
   });
-  test("an import report is kept in the character's notes and says where to find it", async ({ page }) => {
+  test("an import report is kept with the character and can be added to the notes", async ({ page }) => {
     const seen = watchProblems(page);
     await addTestContent(page);
     const foundry = {
@@ -430,12 +435,20 @@ test.describe("Soul Forge smoke tests", () => {
     const report = page.getByRole("dialog", { name: /import report/i });
     await expect(report).toContainText("Mystery Trinket");
     await report.getByText("Close", { exact: true }).click();
+    // The notice points to Import notes on Build, which shows the kept report and adds it to the notes.
     const notice = page.locator(".notice-toast");
-    await expect(notice).toContainText(/notes/i);
-    await page.screenshot({ path: "/tmp/zz-notice.png" });
-    await notice.getByRole("button", { name: /open notes/i }).click();
+    await expect(notice).toContainText(/Import notes/);
+    await notice.getByRole("button", { name: /show import notes/i }).click();
+    const kept = page.getByRole("dialog", { name: "Import notes" });
+    await expect(kept).toContainText("Mystery Trinket");
+    await kept.getByRole("button", { name: "Add to notes" }).click();
+    await expect(page.locator(".notice-toast")).toContainText(/Manage, Notes/);
+    await page.locator(".notice-toast").getByRole("button", { name: /open notes/i }).click();
     await expect(page.locator("#character-notes")).toHaveValue(/Import notes: ira\.json[\s\S]*Mystery Trinket/);
-    await page.screenshot({ path: "/tmp/zz-notes.png" });
+    // The button stays on Build, and the report is not added twice.
+    await tab(page, "Build");
+    await page.getByRole("toolbar", { name: "Character actions" }).getByRole("button", { name: "Import notes" }).click();
+    await expect(page.getByRole("dialog", { name: "Import notes" }).getByRole("button", { name: "Already in the notes" })).toBeDisabled();
     expect(seen.csp).toEqual([]);
     expect(seen.errors).toEqual([]);
   });

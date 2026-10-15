@@ -121,12 +121,14 @@ export interface BrowseProps {
   defaultSort?: SortMode;
   /** Options can be dragged (onto the build board); the drag carries the element id under dragMime(type). */
   draggable?: boolean;
+  /** Extra controls under the sort and search bar (the build board's class list puts its mode switch here). */
+  barExtra?: React.ReactNode;
 }
 
 /** The drag data type for an element type, so a drop target can tell what is over it before the drop. */
 export const dragMime = (type: string) => `application/x-sf-${type.toLowerCase().replace(/[^a-z]/g, "")}`;
 
-export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabledReason, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort, draggable }: BrowseProps) {
+export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabledReason, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort, draggable, barExtra }: BrowseProps) {
   const { books, learn } = useUi();
   const [view, setView] = useStored<"cards" | "list">(`view.${type}`, defaultView);
   const [sort, setSort] = useStored<SortMode>(`sort.${type}`, defaultSort ?? (type === "Spell" ? "level" : "recommended"));
@@ -239,6 +241,7 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
           </span>
         </div>
       </div>
+      {barExtra}
       <p className="muted count">{groups.length} shown{filtered.length !== groups.length ? `, ${filtered.length} versions` : ""}{hidden > 0 ? `, ${hidden} hidden by your content filters (Menu, Settings)` : ""}</p>
       {open && (
         <div className="filters">

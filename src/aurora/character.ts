@@ -210,6 +210,8 @@ export interface Character {
   attackEdits?: Record<string, AttackEdit>;
   info: CharacterInfo;
   notes: string;
+  /** The report of the import that made this character (what matched, what is missing, the to-do list), kept to read or copy into the notes. */
+  importReport?: string;
   /** Session log, newest first when shown. */
   journal?: JournalEntry[];
   /** Pinned weapons, spells, features and items. Resources always show in the same row. */

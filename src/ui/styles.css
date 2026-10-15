@@ -1523,10 +1523,11 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-space > * { transition: opacity .15s; }
 .board-space[data-impact] { animation: board-impact .9s ease-out; }
 @keyframes board-impact {
-  0% { filter: brightness(1.35) drop-shadow(0 0 18px color-mix(in srgb, var(--gold) 70%, transparent)); }
-  100% { filter: none; }
+  0% { transform: scale(.97, 1.03); filter: brightness(1.35) drop-shadow(0 0 18px color-mix(in srgb, var(--gold) 70%, transparent)); }
+  35% { transform: scale(1.01, .99); }
+  100% { transform: none; filter: none; }
 }
-.board-sigil { position: fixed; z-index: 299; pointer-events: none; overflow: visible; fill: none; stroke: var(--gold2); stroke-width: .8; filter: drop-shadow(0 0 4px var(--gold)); }
+.board-sigil { position: fixed; z-index: 299; pointer-events: none; overflow: visible; fill: none; stroke-width: .8; filter: drop-shadow(0 0 4px var(--gold)); }
 .board-sigil > * { stroke-dasharray: 1; stroke-dashoffset: 1; animation: board-draw 1s cubic-bezier(.4,0,.2,1) forwards; }
 .board-sigil > :nth-child(2) { animation-delay: .08s; } .board-sigil > :nth-child(3) { animation-delay: .16s; } .board-sigil > :nth-child(4) { animation-delay: .22s; } .board-sigil > :nth-child(5) { animation-delay: .3s; }
 @keyframes board-draw { to { stroke-dashoffset: 0; } }
@@ -1574,3 +1575,103 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-space.has-card .pick-foot { gap: 6px; }
 
 .board-replace { font-size: 12.5px; color: var(--gold2); margin: 4px 2px 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.tutorial-rules { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 12px; }
+.tutorial-rules .seg { align-self: flex-start; }
+
+/* Learn more (i) and Remove (x) in a card's top right corner */
+.board-corner { position: absolute; top: 14px; right: 16px; z-index: 4; display: flex; gap: 6px; }
+.board-ico { width: 26px; height: 26px; padding: 0; border-radius: 50%; display: grid; place-items: center; font: 700 14px var(--book); line-height: 1; color: var(--text); background: rgba(10, 8, 6, .55); border: 1px solid color-mix(in srgb, var(--gold) 70%, transparent); cursor: pointer; transition: background .15s, border-color .15s; }
+.board-ico:hover { background: var(--gold); color: #1b1408; border-color: var(--gold); }
+.board-space.has-card .chosen-kicker { padding-right: 70px; }
+.board-card-actions .vchip .newest { display: none; }
+.board-card-actions .vchips { flex-basis: auto; flex-wrap: nowrap; margin-right: auto; margin-bottom: 0; }
+.board-card-actions { flex-wrap: wrap; align-items: center; }
+/* Hit point and hit dice bars beside the portrait */
+.board-bars { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.board-bar { position: relative; height: 16px; border-radius: 8px; background: var(--bg2); border: 1px solid var(--line); overflow: hidden; }
+.board-bar span { position: absolute; inset: 0 auto 0 0; transition: width .4s ease; }
+.board-bar.hp span { background: linear-gradient(90deg, #7a1f1f, #b33a2e); }
+.board-bar.hd span { background: linear-gradient(90deg, #5a4520, #a8843c); }
+.board-bar b { position: relative; display: block; font: 600 10.5px var(--body); letter-spacing: .06em; text-align: center; line-height: 14px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+
+.import-notes { white-space: pre-wrap; font: 13px/1.45 var(--body); background: var(--paper2); color: var(--ink); padding: 12px 14px; border-radius: 6px; max-height: 55vh; overflow: auto; }
+
+/* Manual scores: the number shows a die on hover, and a click rolls it */
+.board-num.rolls { position: relative; min-width: 34px; cursor: pointer; }
+.board-num.rolls .board-num-die { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; color: var(--gold2); transition: opacity .15s; }
+.board-num.rolls:hover .board-num-value, .board-num.rolls:focus-visible .board-num-value { opacity: 0; }
+.board-num.rolls:hover .board-num-die, .board-num.rolls:focus-visible .board-num-die { opacity: 1; }
+.board-num.rolls:hover { border-color: var(--gold); border-style: solid; }
+/* The scores never scroll sideways: the boxes shrink to the panel */
+.board-stats { overflow-x: hidden; }
+.board-score { min-width: 0; padding-left: 2px; padding-right: 2px; }
+.board-base { gap: 2px; flex-wrap: nowrap; }
+.board-step { width: 20px; height: 20px; flex: none; }
+.board-num { min-width: 26px; padding: 1px 2px; }
+/* Card descriptions trimmed by height, not WebKit's line clamp, which can leave them blank after a resize until hovered */
+.board-space .pick-blurb, .board-space .board-blurb { display: block; -webkit-line-clamp: unset; overflow: hidden; max-height: calc(1.4em * 2); line-height: 1.4; }
+.board-background.has-card .pick-blurb { max-height: 1.4em; }
+
+/* A card's book: one button at the bottom left; the other books unfold above it on hover */
+.board-card-actions { width: 100%; flex-wrap: nowrap; justify-content: flex-end; gap: 8px; }
+.src-pick { position: relative; margin-right: auto; }
+.src-pick button { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 64px; padding: 4px 10px; border-radius: 6px; background: rgba(10, 8, 6, .6); border: 1px solid color-mix(in srgb, var(--gold) 70%, transparent); color: var(--text); line-height: 1.1; }
+.src-pick button b { font: 700 12px var(--display); letter-spacing: .08em; }
+.src-pick button small { font: 600 9.5px var(--body); color: var(--muted); letter-spacing: .08em; }
+.src-current { position: relative; }
+.src-count { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 16px; border-radius: 8px; background: var(--gold); color: #1b1408; font: 700 9.5px var(--body); display: grid; place-items: center; padding: 0 3px; }
+.src-more { position: absolute; left: 0; bottom: 100%; display: flex; flex-direction: column-reverse; gap: 4px; padding-bottom: 6px; opacity: 0; transform: translateY(6px); pointer-events: none; transition: opacity .15s, transform .15s; z-index: 6; }
+.src-pick.has-more:hover .src-more, .src-pick.has-more:focus-within .src-more { opacity: 1; transform: none; pointer-events: auto; }
+.src-more button { background: #15110c; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
+.src-more button:hover { border-color: var(--gold); background: #2a2014; }
+.board-space.has-card .chosen-banner { overflow: visible; }
+.board-class-mode { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 2px; }
+.board-class-mode .seg { align-self: flex-start; }
+.board-class-mode small { font-size: 11.5px; }
+.board-saveprof { font: 700 8px var(--body); letter-spacing: .08em; text-transform: uppercase; color: #1b1408; background: var(--gold); border-radius: 3px; padding: 0 3px; margin-left: 4px; vertical-align: 1px; }
+
+/* Cards size to their own width: on the narrow bottom row the title, art and buttons shrink instead of overflowing */
+.board-space { container-type: inline-size; }
+.board-space h3, .board-space .pick-card.board-frame h3, .board-space.has-card .chosen-banner h3 { font-size: clamp(16px, 10.5cqi, 34px); overflow-wrap: normal; word-break: normal; hyphens: none; }
+.board-space .chosen-kicker, .board-space .board-kicker { font-size: clamp(9.5px, 4.2cqi, 11.5px); }
+.board-space .pick-blurb, .board-space .board-blurb { font-size: clamp(12px, 5.6cqi, 15px); }
+.board-space .pick-feat { font-size: clamp(11.5px, 5.2cqi, 13px); }
+.board-art-live .board-book, .board-art-live .board-pack { width: clamp(64px, 46cqi, 112px); height: clamp(64px, 46cqi, 112px); }
+.board-space .board-see, .board-space .pick-select { white-space: nowrap; font-size: clamp(10.5px, 4.6cqi, 13px); padding-left: clamp(8px, 4cqi, 14px); max-width: 100%; }
+.board-space-actions, .board-card-actions { padding-right: 12px; min-width: 0; gap: 6px; }
+.board-space .pick-select { padding-right: clamp(14px, 7cqi, 22px); }
+.board-space .pick-card.board-frame, .board-background.has-card .chosen-banner { padding-left: clamp(12px, 7cqi, 22px); padding-right: clamp(10px, 5cqi, 20px); }
+.board-background.has-card .chosen-banner, .board-magic .pick-card.board-frame, .board-equipment .pick-card.board-frame { min-height: 0; }
+@container (max-width: 240px) {
+  .board-space .board-blurb { max-height: 1.4em; }
+  .board-space .pick-feat { margin-bottom: 4px; }
+  .src-pick button { min-width: 0; padding: 3px 7px; }
+}
+.board-space.has-card .pick-foot { padding-right: 8px; }
+@container (max-width: 240px) { .board-space.has-card .pick-select { padding-left: 8px; padding-right: 14px; letter-spacing: .04em; } }
+
+/* Landing effects */
+.fx { position: fixed; z-index: 302; pointer-events: none; will-change: transform, opacity; }
+.fx-spark { width: 14px; height: 2px; border-radius: 2px; box-shadow: 0 0 6px currentColor; }
+.fx-dot { width: 5px; height: 5px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+.fx-leaf { width: 10px; height: 6px; border-radius: 0 100% 0 100%; background: currentColor; }
+.fx-note, .fx-gear { font: 700 20px var(--body); text-shadow: 0 0 8px currentColor; }
+.fx-smoke { width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle, currentColor, transparent 70%); color: #222; filter: blur(4px); }
+.fx-arrow { width: 70px; height: 2px; background: linear-gradient(90deg, transparent, #d9c08a 30%, #f5e3b5); }
+.fx-arrow::after { content: ""; position: absolute; right: -6px; top: -4px; border: 5px solid transparent; border-left: 8px solid #e9e1cf; }
+.fx-slash { height: 4px; border-radius: 4px; box-shadow: 0 0 12px #fff; }
+.fx-ring { border: 3px solid; border-radius: 50%; }
+.fx-beam { border-radius: 40%; filter: blur(2px); mix-blend-mode: screen; }
+.fx-rays { border-radius: 50%; mask: radial-gradient(circle, #000 20%, transparent 70%); -webkit-mask: radial-gradient(circle, #000 20%, transparent 70%); mix-blend-mode: screen; }
+.fx-bolt { overflow: visible; }
+.board-space[data-impact="heavy"] { animation: board-impact-heavy .55s cubic-bezier(.2,.9,.3,1); }
+@keyframes board-impact-heavy {
+  0% { transform: scale(1.06); filter: brightness(1.5); }
+  20% { transform: scale(.97) translate(-4px, 2px); }
+  40% { transform: scale(1.01) translate(4px, -2px); }
+  60% { transform: translate(-2px, 1px); }
+  100% { transform: none; filter: none; }
+}
+
+.fx-dust { border-radius: 50%; background: radial-gradient(ellipse, rgba(235, 215, 170, .55), rgba(235, 215, 170, 0) 70%); filter: blur(2px); }

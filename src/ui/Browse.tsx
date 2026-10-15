@@ -8,6 +8,7 @@ import { hueOf } from "./PickCards";
 import { useUi } from "./Learn";
 import { SchoolIcon } from "./schoolIcons";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
+import { Pack, Shield, Sword, Wand } from "./icons";
 
 const SCHOOLS = new Set(["abjuration", "conjuration", "divination", "enchantment", "evocation", "illusion", "necromancy", "transmutation"]);
 import { updateSettings, useSettings } from "./Settings";
@@ -123,14 +124,20 @@ export interface BrowseProps {
   draggable?: boolean;
   /** Extra controls under the sort and search bar (the build board's class list puts its mode switch here). */
   barExtra?: React.ReactNode;
+  /** The card view as small cards in two columns (the build board's lists) instead of the large cards. */
+  mini?: boolean;
+  /** Where the Cards/List choice is remembered, when a list should keep it apart from the same type elsewhere. */
+  viewKey?: string;
 }
+
+const ITEM_ICON: Record<string, (p: { size?: number }) => React.ReactNode> = { Weapon: Sword, Armor: Shield, "Magic Item": Wand, Item: Pack };
 
 /** The drag data type for an element type, so a drop target can tell what is over it before the drop. */
 export const dragMime = (type: string) => `application/x-sf-${type.toLowerCase().replace(/[^a-z]/g, "")}`;
 
-export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabledReason, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort, draggable, barExtra }: BrowseProps) {
+export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabledReason, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort, draggable, barExtra, mini, viewKey }: BrowseProps) {
   const { books, learn } = useUi();
-  const [view, setView] = useStored<"cards" | "list">(`view.${type}`, defaultView);
+  const [view, setView] = useStored<"cards" | "list">(viewKey ?? `view.${type}`, defaultView);
   const [sort, setSort] = useStored<SortMode>(`sort.${type}`, defaultSort ?? (type === "Spell" ? "level" : "recommended"));
   const [lockMode, setLockMode] = useStored<"show" | "hide">(`locked.${type}`, "show");
   const [q, setQ] = useState("");
@@ -261,7 +268,47 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
 
       {groups.length === 0 && <p className="muted pad">Nothing matches. Try clearing a filter.</p>}
 
-      {useCards ? (
+      {useCards && (mini || type === "Spell") ? (
+        // Small cards for the board's lists, and spell scrolls (under level headings) for spells.
+        <div className={type === "Spell" ? "scroll-grid" : "mini-grid"}>
+          {groups.slice(0, shown).map((g, idx, all) => {
+            const v = activeOf(g);
+            const e = v.el;
+            const why = disabledReason?.(e);
+            const owner = g.variants.map((x) => ownedBy?.(x.el)).find(Boolean);
+            const picked = g.variants.some((x) => chosenSet.has(x.el.id));
+            const level = e.setters.level?.value ?? "";
+            const prevLevel = idx > 0 ? activeOf(all[idx - 1]).el.setters.level?.value ?? "" : null;
+            const heading = type === "Spell" && effSort === "level" && level !== prevLevel ? <h4 key={`h${level}`} className="scroll-level">{level === "0" ? "Cantrips" : `Level ${level}`}</h4> : null;
+            if (type === "Spell") {
+              const s = e.setters;
+              const conc = s.isConcentration?.value === "true" || /concentration/i.test(s.duration?.value ?? "");
+              return [heading,
+                <div key={g.key} className={`scroll-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} title={owner ?? why} onMouseEnter={() => onHover?.(e)} {...drag(e, why, owner)}>
+                  <button className="scroll-main" onClick={() => !owner && onPick(e)} aria-pressed={picked}>
+                    <span className="scroll-top"><span className="scroll-lvl">{level === "0" ? "C" : level || "?"}</span><SchoolIcon school={s.school?.value} size={16} /><span className="scroll-tick">{picked || owner ? "✓" : ""}</span></span>
+                    <b className="scroll-name">{e.name}</b>
+                    <small className="scroll-meta">{[shortTime(s.time?.value ?? ""), shortRange(s.range?.value ?? "")].filter(Boolean).join(" · ")}{conc ? " · C" : ""}{s.isRitual?.value === "true" ? " · R" : ""}</small>
+                    {why && !owner && <small className="scroll-why">{why}</small>}
+                  </button>
+                  <button className="board-ico scroll-learn" title="Learn more" aria-label={`Learn more about ${e.name}`} onClick={() => learn(e)}>i</button>
+                </div>];
+            }
+            return (
+              <div key={g.key} className={`mini-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} style={{ ["--hue" as string]: hueOf(e.name) }} title={owner ?? why} onMouseEnter={() => onHover?.(e)} {...drag(e, why, owner)}>
+                <button className="mini-main" onClick={() => !owner && onPick(e)} aria-pressed={picked}>
+                  {hasClassIcon(e.name) ? <ClassIcon name={e.name} size={26} className="mini-icon" /> : <span className="mini-letter">{e.name.charAt(0)}</span>}
+                  <b className="mini-name">{e.name}</b>
+                  <small className="mini-blurb">{CLASS_TAGS[e.name]?.[0] ?? blurb(e.description, 54)}</small>
+                  {why && !owner && <small className="mini-why"><LockIcon />{why}</small>}
+                  {picked && <span className="mini-tick">✓</span>}
+                </button>
+                <button className="board-ico mini-learn" title="Learn more" aria-label={`Learn more about ${e.name}`} onClick={() => learn(e)}>i</button>
+              </div>
+            );
+          })}
+        </div>
+      ) : useCards ? (
         <div className="card-grid">
           {groups.slice(0, shown).map((g) => {
             const v = activeOf(g);
@@ -306,6 +353,7 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
                 {type === "Spell" && <span className={`lvl ${e.setters.level?.value === "0" ? "cantrip" : ""}`}>{e.setters.level?.value === "0" ? "C" : e.setters.level?.value ?? "?"}</span>}
                 <button className="opt-main" disabled={false} title={owner ?? why} aria-disabled={owner ? true : undefined} onClick={() => !owner && onPick(e)}>
                   <span className="tick">{chosenSet.has(e.id) || owner ? "✓" : ""}</span>
+                  {type === "Item" && ITEM_ICON[e.type] && <span className="opt-type-ico" title={e.type}>{ITEM_ICON[e.type]({ size: 15 })}</span>}
                   <span className="opt-name">{e.name}</span>
                 </button>
                 {type === "Spell" ? <SpellCells el={e} /> : <span className="opt-blurb">{blurb(e.description, 110)}</span>}

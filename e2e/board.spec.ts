@@ -20,7 +20,7 @@ test.describe("Build board", () => {
 
     // Open the species list and pick another one: its card takes the space.
     await page.locator(".board-acc-head", { hasText: "Species" }).click();
-    const rows = page.locator(".board-acc.open .opt-row:not(.picked) .opt-name");
+    const rows = page.locator(".board-acc.open .mini-card:not(.picked) .mini-name");
     const name = (await rows.first().textContent())!.trim();
     await rows.first().click();
     // The pick turns over to its back, with its choices; Done lands it in its space.
@@ -67,14 +67,14 @@ test.describe("Build board on a narrow window", () => {
     await page.locator("[data-tile=race]").getByRole("button", { name: /see options/i }).click();
     await expect(board).toHaveClass(/side-left/);
     // A pick: the panel steps aside while the card's back is open and while it lands, then comes back as it was.
-    await page.locator(".board-acc.open .opt-row .opt-main").first().click();
+    await page.locator(".board-acc.open .mini-card .mini-main").first().click();
     await expect(board).toHaveClass(/fly-hide/);
     await page.getByRole("dialog", { name: "Species choices" }).locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
     await expect(board).not.toHaveClass(/fly-hide/, { timeout: 4000 });
     await expect(board).toHaveClass(/side-left/);
     // × on a new pick puts it back: the species space is empty again.
     await page.locator(".board-acc-head", { hasText: "Species" }).click();
-    await page.locator(".board-acc.open .opt-row:not(.picked) .opt-main").first().click();
+    await page.locator(".board-acc.open .mini-card:not(.picked) .mini-main").first().click();
     await page.getByRole("dialog", { name: "Species choices" }).getByRole("button", { name: "Put it back" }).click();
     await expect(page.getByRole("dialog", { name: "Species choices" })).toHaveCount(0);
     // Moving the mouse out over the cards closes it.

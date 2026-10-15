@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { deleteCharacterRecord, listCharacters, type CharacterRecord } from "../aurora/storage";
 import { normalizeCharacter, uid, type Character } from "../aurora/character";
 import { downloadText, pickFiles } from "../store";
@@ -6,6 +6,10 @@ import { Hint } from "./Help";
 import { t } from "../i18n";
 import { PartyView } from "./PartyView";
 import type { ARegistry } from "../aurora/registry";
+import { resolve } from "../aurora/engine";
+import { buildSheet } from "../aurora/sheet";
+import { ClassIcon, hasClassIcon } from "./classIcons";
+import { hueOf } from "./PickCards";
 
 function ago(ms: number): string {
   const m = Math.round((Date.now() - ms) / 60000);
@@ -80,24 +84,73 @@ export function StartTab({
           </div>
         )}
         {msg && <p className="notice">{msg}</p>}
-        <ul className="char-list">
+        <div className="char-cards">
           {list.map((c) => (
-            <li key={c.id} className={c.id === currentId ? "current" : ""}>
-              <button className="char-open" onClick={() => onOpen(c.id, c.data)}>
-                {c.data.portrait ? <img className="portrait-chip" src={c.data.portrait} alt="" /> : <span className="portrait-chip ph">{(c.name || "?").charAt(0)}</span>}
-                <b>{c.name || "Unnamed character"}</b>
-                <span className="muted">{c.summary || "empty"}</span>
-                <small className="muted">{ago(c.updated)}</small>
-              </button>
-              <button onClick={() => { onOpen(uid(), { ...c.data, name: `${c.data.name || "Character"} (copy)` }); }}>{t("Duplicate")}</button>
-              <button onClick={() => downloadText(`${c.name || "character"}.json`, JSON.stringify(c.data, null, 2))}>{t("Export")}</button>
-              <button onClick={async () => { if (confirm(`Delete ${c.name || "this character"}?`)) { await deleteCharacterRecord(c.id); refresh(); } }}>{t("Delete")}</button>
-            </li>
+            <CharCard key={c.id} rec={c} reg={reg} current={c.id === currentId} onOpen={() => onOpen(c.id, c.data)}
+              onDuplicate={() => onOpen(uid(), { ...c.data, name: `${c.data.name || "Character"} (copy)` })}
+              onExport={() => downloadText(`${c.name || "character"}.json`, JSON.stringify(c.data, null, 2))}
+              onDelete={async () => { if (confirm(`Delete ${c.name || "this character"}?`)) { await deleteCharacterRecord(c.id); refresh(); } }} />
           ))}
-          {!list.length && <li className="muted">No saved characters yet. Your work saves automatically.</li>}
-        </ul>
+          {!list.length && <p className="muted">No saved characters yet. Your work saves automatically.</p>}
+        </div>
       </section>
       {reg && list.length > 1 && <PartyView list={list} reg={reg} onOpen={(c) => onOpen(c.id, c.data)} />}
+    </div>
+  );
+}
+
+const SIGNED = (n: number) => (n >= 0 ? `+${n}` : String(n));
+
+/** A saved character as a card: class emblem, portrait, name, what it is, and its main numbers. Click to open. */
+function CharCard({ rec, reg, current, onOpen, onDuplicate, onExport, onDelete }: { rec: CharacterRecord; reg?: ARegistry; current: boolean; onOpen: () => void; onDuplicate: () => void; onExport: () => void; onDelete: () => void }) {
+  const ch = rec.data;
+  // The numbers need the rules content; without it the card shows the saved summary only.
+  const info = useMemo(() => {
+    if (!reg) return null;
+    try {
+      const r = resolve(ch, reg);
+      const sh = buildSheet(r);
+      const name = (id?: string) => (id ? reg.get(id)?.name : undefined);
+      return {
+        classes: ch.classes.map((k) => `${name(k.classId) ?? "?"} ${k.level}`).join(" / "),
+        firstClass: name(ch.classes[0]?.classId) ?? "",
+        species: name(ch.race) ?? "", background: name(ch.background) ?? "",
+        level: r.totalLevel, hp: sh.hp, ac: sh.ac.value, speed: sh.speed,
+        top: [...sh.abilities].sort((a, b) => b.score - a.score).slice(0, 3),
+      };
+    } catch {
+      return null;
+    }
+  }, [ch, reg]);
+  const cls = info?.firstClass ?? "";
+  const hue = cls ? hueOf(cls) : 40;
+  return (
+    <div className={`char-card ${current ? "current" : ""}`}>
+      <button className="char-card-body pick-card is-class" data-glyph="" style={{ ["--hue" as string]: hue }} onClick={onOpen} aria-label={`Open ${rec.name || "this character"}`}>
+        {cls && hasClassIcon(cls) && <ClassIcon name={cls} size={220} className="pick-watermark" />}
+        <span className="ribbon">{cls && hasClassIcon(cls) ? <ClassIcon name={cls} size={30} /> : (rec.name || "?").charAt(0)}</span>
+        {ch.portrait && <img className="char-card-portrait" src={ch.portrait} alt="" />}
+        <span className="char-card-text">
+          {current && <small className="char-card-current">Open now</small>}
+          <b className="char-card-name">{rec.name || "Unnamed character"}</b>
+          <span className="char-card-what">{info ? [info.level ? `Level ${info.level}` : "", info.species, info.classes].filter(Boolean).join(" · ") || "Nothing chosen yet" : rec.summary || "empty"}</span>
+          {info?.background && <span className="char-card-bg">{info.background}</span>}
+          {info && info.level > 0 && (
+            <span className="char-card-stats">
+              <span><small>HP</small><b>{info.hp}</b></span>
+              <span><small>AC</small><b>{info.ac}</b></span>
+              <span><small>Speed</small><b>{info.speed}</b></span>
+              {info.top.map((a) => <span key={a.id}><small>{a.id.slice(0, 3).toUpperCase()}</small><b>{a.score}</b><em>{SIGNED(a.mod)}</em></span>)}
+            </span>
+          )}
+          <small className="char-card-when">Edited {ago(rec.updated)}</small>
+        </span>
+      </button>
+      <div className="char-card-tools">
+        <button className="board-ico" title="Duplicate" aria-label={`Duplicate ${rec.name || "this character"}`} onClick={onDuplicate}>⧉</button>
+        <button className="board-ico" title="Export as a file" aria-label={`Export ${rec.name || "this character"}`} onClick={onExport}>⤓</button>
+        <button className="board-ico" title="Delete" aria-label={`Delete ${rec.name || "this character"}`} onClick={onDelete}>×</button>
+      </div>
     </div>
   );
 }

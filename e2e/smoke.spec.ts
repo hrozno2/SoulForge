@@ -316,9 +316,14 @@ test.describe("Soul Forge smoke tests", () => {
       // A step can take you where it is talking about, and the tutorial waits for you instead of vanishing.
       await page.getByRole("button", { name: "Start" }).click();
       await page.getByRole("button", { name: "Next" }).click();
+      // The rules step: a choice that applies at once and is saved in Settings.
+      await expect(page.getByRole("dialog", { name: "Tutorial" })).toContainText("Which rules to show");
+      await page.getByRole("button", { name: "2024 rules only" }).click();
+      await page.getByRole("button", { name: "2024 and 2014 rules" }).click();
+      await page.getByRole("button", { name: "Next" }).click();
       await page.getByRole("button", { name: "Open the importer" }).click();
       await expect(page.getByRole("dialog", { name: "Tutorial" })).toHaveCount(0);
-      await expect(page.getByText("Tutorial, step 3 of 6")).toBeVisible();
+      await expect(page.getByText("Tutorial, step 4 of 7")).toBeVisible();
       await page.getByRole("button", { name: "Resume" }).click();
       await expect(page.getByRole("dialog", { name: "Tutorial" })).toContainText("Import from 5e.tools");
       await page.getByRole("button", { name: "Minimize the tutorial" }).click();

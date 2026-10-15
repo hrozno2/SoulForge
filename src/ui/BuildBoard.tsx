@@ -348,6 +348,11 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
 /** The portrait in an arched frame at the top of the right column, with the name and what the character is. Click to change it. */
 function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
   const [open, setOpen] = useState(false);
+  const sh = useMemo(() => buildSheet(r), [r]);
+  const hp = Math.max(0, Math.min(sh.hp, ch.play.hp ?? sh.hp));
+  const dice = sh.hitDice.reduce((n, h) => n + h.count, 0);
+  const diceLeft = Math.max(0, dice - (ch.play.hitDiceUsed ?? 0));
+  const dieNames = sh.hitDice.map((h) => `d${h.die}`).join("+");
   const [crop, setCrop] = useState<File | null>(null);
   const race = ch.race ? r.reg.get(ch.race)?.name : "";
   const what = [race, ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join(" / ")].filter(Boolean).join(" · ");
@@ -360,6 +365,18 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
       <div className="board-who-text">
         <input className="board-name" placeholder="Character name" aria-label="Character name" value={ch.name} onChange={(e) => set((c) => ({ ...c, name: e.target.value }))} />
         <small>{what || "Nothing chosen yet"}</small>
+        {sh.hp > 0 && (
+          <div className="board-bars">
+            <div className="board-bar hp" title={`Hit points ${hp} of ${sh.hp}${ch.play.tempHp ? `, ${ch.play.tempHp} temporary` : ""}`}>
+              <span style={{ width: `${(100 * hp) / sh.hp}%` }} /><b>HP {hp}/{sh.hp}{ch.play.tempHp ? ` +${ch.play.tempHp}` : ""}</b>
+            </div>
+            {dice > 0 && (
+              <div className="board-bar hd" title={`Hit dice ${diceLeft} of ${dice} (${dieNames})`}>
+                <span style={{ width: `${(100 * diceLeft) / dice}%` }} /><b>Hit dice {diceLeft}/{dice} {dieNames}</b>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       {open && createPortal(
         <div className="modal-back" onClick={() => setOpen(false)}>
@@ -605,11 +622,14 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
       );
       return (
         <div key={kind} data-tile={kind} className={`board-space board-${kind} filled has-card ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""}`} onClick={() => setFocus(kind)} {...drop(kind)}>
+          {/* Learn more and Remove sit in the card's corner, so the card keeps its room for the text. */}
+          <div className="board-corner" onClick={(e) => e.stopPropagation()}>
+            <button className="board-ico" title="Learn more" aria-label={`Learn more about ${el.name}`} onClick={() => learn(el)}>i</button>
+            <button className="board-ico" title="Remove" aria-label={`Remove ${el.name}`} onClick={() => (kind === "class" ? set((c) => ({ ...c, classes: c.classes.slice(1) })) : clear(kind))}>×</button>
+          </div>
           <ChosenBanner el={el} label={label}>
             <span className="board-card-actions" onClick={(e) => e.stopPropagation()}>
               {(() => { const g = groupOf(el); return g && <VariantChips short g={g} activeId={el.id} chosen={new Set([el.id])} onActive={() => undefined} onSwitch={(from, to) => switchVersion(kind, from, to)} />; })()}
-              <button className="ghost" onClick={() => learn(el)}>Learn more</button>
-              <button className="ghost" onClick={() => (kind === "class" ? set((c) => ({ ...c, classes: c.classes.slice(1) })) : clear(kind))}>Remove</button>
               {kind === "class" && <button className={`ghost ${isOpen && replacing ? "is-on" : ""}`} onClick={() => { setReplacing(true); setOpen("class"); setFocus("class"); }}>Change</button>}
               <button className={`pick-select ${isOpen && !replacing ? "is-on" : ""}`} onClick={() => { if (kind === "class") setReplacing(false); setOpen(isOpen && !(kind === "class" && replacing) ? null : kind); setFocus(kind); }}>{kind === "class" ? "Add a class" : "Change"}</button>
             </span>

@@ -2,6 +2,11 @@
 
 What changed in each release. Newest first.
 
+## v0.14.0 (2026-10-15)
+
+- Code guide for people reading or auditing the code (docs/CODE-GUIDE.md), linked from the README
+- Build board is the default Build layout; the older tabs are a choice in Settings
+
 ## v0.13.0 (2026-10-14)
 
 - Sheets: feats the content keeps off the sheet (Skilled and others) still appear by name in the feats list

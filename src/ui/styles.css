@@ -1709,3 +1709,28 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 @keyframes board-crackle { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
 @keyframes board-smoke { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: .55; } 100% { opacity: 0; transform: translateY(-10px); } }
 .reduce-motion .board-book-charged path { animation: none; }
+
+/* A card turned over to its back: its choices, in the middle of the window */
+.card-back-veil { position: fixed; inset: 0; z-index: 280; background: rgba(6, 5, 4, .55); backdrop-filter: blur(2px); display: grid; place-items: center; animation: back-veil .2s ease-out; perspective: 1200px; }
+@keyframes back-veil { from { opacity: 0; } }
+.card-back { width: min(680px, 92vw); height: min(82vh, 680px); display: flex; flex-direction: column; border-radius: 14px; border: 2px solid var(--gold); background: linear-gradient(180deg, hsl(var(--hue) 35% 16%), var(--panel) 30%); box-shadow: inset 0 0 0 6px rgba(0,0,0,.25), 0 30px 80px rgba(0,0,0,.7); overflow: hidden; transform-origin: 50% 50%; animation: back-in .26s cubic-bezier(.2,.8,.3,1); }
+.card-back.edit { animation-duration: .18s; }
+@keyframes back-in { from { transform: rotateY(-90deg); } to { transform: none; } }
+.card-back-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 16px 18px 10px; border-bottom: 1px solid var(--line); }
+.card-back-head small { font: 600 11px var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.card-back-head h2 { margin: 0; font: 700 28px var(--display); color: var(--text); }
+.card-back-ctl { display: flex; gap: 8px; align-items: center; }
+.card-back-body { flex: 1; overflow: auto; padding: 12px 18px 18px; }
+.card-back-sub { margin: 10px 0 4px; font: 600 12px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.chip.prep { cursor: pointer; opacity: .8; }
+.chip.prep small { color: var(--muted); margin-right: 2px; }
+.chip.prep.on { opacity: 1; background: color-mix(in srgb, var(--gold) 30%, var(--panel2)); border-color: var(--gold); }
+.chip.prep:disabled { opacity: .35; cursor: default; }
+.reduce-motion .card-back, .reduce-motion .card-back-veil { animation: none; }
+/* The sort and view buttons wrap rather than squeeze in a narrow lists panel */
+.board-lib .seg { flex-wrap: wrap; }
+.board-lib .seg button { white-space: nowrap; padding: 6px 9px; font-size: 11px; }
+.board-lib .browse-bar .seg-group { min-width: 0; max-width: 100%; }
+
+/* A class's main abilities: an outline in the class's colour */
+.board-score.primary { border-color: hsl(var(--hue) 70% 58%); box-shadow: inset 0 0 0 1px hsl(var(--hue) 70% 58% / .55), 0 0 10px hsl(var(--hue) 70% 50% / .25); }

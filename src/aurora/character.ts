@@ -181,6 +181,8 @@ export interface Character {
   classes: ClassLevel[];
   abilityBase: Record<AbilityId, number>;
   abilityMethod: "pointbuy" | "standard" | "manual";
+  /** The base scores last used with each method, so switching methods and back resumes where you were. */
+  abilityBases?: Partial<Record<"pointbuy" | "standard" | "manual", Record<AbilityId, number>>>;
   /** House rules for point buy. Missing means the standard 27 points, 8 to 15. */
   pointBuy?: { budget: number; min: number; max: number; costs: Record<number, number> };
   /** Slot key (`ownerId|ruleIndex`) to chosen element ids. */

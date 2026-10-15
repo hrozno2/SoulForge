@@ -10,7 +10,7 @@ import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, totalLevel, type AbilityId, type Character } from "../aurora/character";
 import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as pbSpent } from "../aurora/pointBuy";
-import { buildSheet } from "../aurora/sheet";
+import { buildSheet, preparePool } from "../aurora/sheet";
 import { formatRelease, groupVariants, hiddenBy, type Group } from "../aurora/books";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { ClassPanel } from "./BuildTab";
@@ -27,6 +27,9 @@ import { useUi } from "./Learn";
 import { useSettings } from "./Settings";
 import { PortraitCropper, PortraitPicker } from "./Portrait";
 import { D20, Head, Pack, Scroll, Sword, Wand } from "./icons";
+
+/** A card turned over: `snap` is the character before it turned, for ×. */
+type Back = { kind: Kind; mode: "new" | "edit"; snap: Character; from: DOMRect | null; name: string; phase: "flying" | "open" };
 
 /** One thing still to choose, and where it is chosen. */
 type LeftItem = { kind: Kind; text: string; list: boolean };
@@ -219,6 +222,53 @@ function land(name: string, to: DOMRect, target: HTMLElement) {
   flash(to);
   dust(to);
   void target;
+}
+
+/** Where a turned-over card sits: the middle of the window. Matches .card-back in the styles. */
+function backRect(): DOMRect {
+  const w = Math.min(680, window.innerWidth * 0.92), h = Math.min(window.innerHeight * 0.82, 680);
+  return new DOMRect((window.innerWidth - w) / 2, (window.innerHeight - h) / 2, w, h);
+}
+
+/** A picked card flies up to the middle and turns edge-on; its back (the choices) then turns the rest of the way. */
+function flyToBack(from: DOMRect | null, label: string, kind: Kind, to: DOMRect, done: () => void) {
+  const start = from ?? new DOMRect(to.left + to.width / 2 - 90, window.innerHeight + 40, 180, 40);
+  const card = document.createElement("div");
+  card.className = "board-flycard";
+  card.style.setProperty("--hue", String(HUE[kind]));
+  card.innerHTML = "<small></small><b></b>";
+  card.querySelector("small")!.textContent = TITLE[kind];
+  card.querySelector("b")!.textContent = label;
+  document.body.appendChild(card);
+  const at = (x: number, y: number, w: number, h: number, font: number, turn: number): Keyframe => ({ left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, fontSize: `${font}px`, transform: `perspective(1200px) rotateY(${turn}deg)` });
+  const h0 = Math.max(start.height, 34);
+  card.animate(
+    [
+      { ...at(start.left, start.top, start.width, h0, 14, 0), opacity: 0 },
+      { ...at(start.left, start.top - 12, start.width, h0, 14, 0), opacity: 1, offset: 0.15 },
+      { ...at(to.left, to.top, to.width, to.height, 34, 0), offset: 0.72 },
+      { ...at(to.left, to.top, to.width, to.height, 34, 90), opacity: 1, offset: 1 },
+    ],
+    { duration: 560, easing: "cubic-bezier(.3,.7,.3,1)", fill: "forwards" },
+  ).onfinish = () => { card.remove(); done(); };
+}
+
+/** × on a new pick: the card shrinks back toward the list it came from. */
+function flyHome(from: DOMRect, to: DOMRect, label: string, kind: Kind) {
+  const card = document.createElement("div");
+  card.className = "board-flycard";
+  card.style.setProperty("--hue", String(HUE[kind]));
+  card.innerHTML = "<small></small><b></b>";
+  card.querySelector("small")!.textContent = TITLE[kind];
+  card.querySelector("b")!.textContent = label;
+  document.body.appendChild(card);
+  card.animate(
+    [
+      { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px`, fontSize: "30px", opacity: 1 },
+      { left: `${to.left}px`, top: `${to.top}px`, width: `${to.width}px`, height: `${Math.max(to.height, 30)}px`, fontSize: "13px", opacity: 0 },
+    ],
+    { duration: 380, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" },
+  ).onfinish = () => card.remove();
 }
 
 /**
@@ -467,17 +517,27 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
   const method = ch.abilityMethod;
   const setBase = (a: AbilityId, v: number) => set((c) => ({ ...c, abilityBase: { ...c.abilityBase, [a]: v } }));
   const swap = (a: AbilityId, b: AbilityId) => a !== b && set((c) => ({ ...c, abilityBase: { ...c.abilityBase, [a]: c.abilityBase[b], [b]: c.abilityBase[a] } }));
+  // Each method keeps its own numbers: switching away and back picks up where they were.
   const setMethod = (m: Character["abilityMethod"]) =>
-    set((c) => ({
+    set((c) => (m === c.abilityMethod ? c : {
       ...c,
       abilityMethod: m,
-      abilityBase: m === "pointbuy" ? (() => { const lo = normalizeRules(c.pointBuy).min; return { strength: lo, dexterity: lo, constitution: lo, intelligence: lo, wisdom: lo, charisma: lo }; })()
+      abilityBases: { ...c.abilityBases, [c.abilityMethod]: c.abilityBase },
+      abilityBase: c.abilityBases?.[m] ? c.abilityBases[m]! : m === "pointbuy" ? (() => { const lo = normalizeRules(c.pointBuy).min; return { strength: lo, dexterity: lo, constitution: lo, intelligence: lo, wisdom: lo, charisma: lo }; })()
         : m === "standard" ? (STANDARD_ARRAY.every((n) => Object.values(c.abilityBase).includes(n)) ? c.abilityBase : { strength: 15, dexterity: 14, constitution: 13, intelligence: 12, wisdom: 10, charisma: 8 })
         : c.abilityBase,
     }));
   const roll = (a: AbilityId) => requestRoll(`${ABILITY_LABEL[a]}: 4d6, the lowest die dropped`, "4d6kh3", (res) => setBase(a, res.total));
   const bonusText = (a: AbilityId) => r.stats.contributions(a).filter((x) => !x.inline).map((b) => `${b.value.startsWith("-") ? "" : "+"}${b.value} ${b.from}`).join(", ");
   const mime = "application/x-sf-score";
+  // The main abilities of each class (its card tag, such as "Str and Cha"), outlined in that class's colour.
+  const SHORT: Record<string, AbilityId> = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" };
+  const primary = new Map<AbilityId, { cls: string; hue: number }>();
+  for (const k of ch.classes) {
+    const name = r.reg.get(k.classId)?.name ?? "";
+    const tag = CLASS_TAGS[name]?.[1] ?? "";
+    for (const word of tag.toLowerCase().split(/\W+/)) { const a = SHORT[word.slice(0, 3)]; if (a && !primary.has(a)) primary.set(a, { cls: name, hue: hueOf(name) }); }
+  }
   return (
     <section className="board-scores" aria-label="Ability scores">
       <div className="seg board-method" role="group" aria-label="How scores are made">
@@ -498,8 +558,9 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
           return (
             <div
               key={a}
-              className={`board-score ${over === a ? "over" : ""} ${held === a ? "held" : ""}`}
-              title={[`${ABILITY_LABEL[a]}: base ${base}`, bonusText(a), `save ${signed(line.save)}${line.saveProficient ? " (proficient)" : ""}`].filter(Boolean).join("\n")}
+              className={`board-score ${over === a ? "over" : ""} ${held === a ? "held" : ""} ${primary.has(a) ? "primary" : ""}`}
+              style={primary.has(a) ? { ["--hue" as string]: primary.get(a)!.hue } : undefined}
+              title={[`${ABILITY_LABEL[a]}: base ${base}`, primary.has(a) ? `A main ability of the ${primary.get(a)!.cls}` : "", bonusText(a), `save ${signed(line.save)}${line.saveProficient ? " (proficient)" : ""}`].filter(Boolean).join("\n")}
               onDragOver={method === "standard" ? (e) => { if (e.dataTransfer.types.includes(mime)) { e.preventDefault(); setOver(a); } } : undefined}
               onDragLeave={() => setOver(null)}
               onDrop={method === "standard" ? (e) => { e.preventDefault(); setOver(null); const from = e.dataTransfer.getData(mime) as AbilityId; if (from) swap(from, a); } : undefined}
@@ -667,6 +728,33 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const narrow = useNarrow();
   const [side, setSide] = useState<"left" | "right" | null>(null);
   const [flyHide, setFlyHide] = useState(false);
+  /** The card turned over to its back (its choices): a new pick waiting for Done, or a card opened to edit. */
+  const [back, setBack] = useState<Back | null>(null);
+  /** Turns a filled card over to edit its choices (quickly; Done turns it back). */
+  const openBack = (kind: Kind) => { setFocus(kind); setBack({ kind, mode: "edit", snap: ch, from: null, name: "", phase: "open" }); };
+  /** Done (keep) or × (undo everything since the card turned over). */
+  const finish = (keep: boolean) => {
+    const b = back;
+    if (!b) return;
+    const rect = backRect();
+    setBack(null);
+    if (!keep) {
+      set(() => b.snap);
+      if (b.mode === "new" && b.from && !reduced()) flyHome(rect, b.from, b.name, b.kind);
+      return;
+    }
+    const tileEl = document.querySelector<HTMLElement>(`[data-tile="${b.kind}"]`);
+    if (b.mode === "new" && tileEl && !reduced()) {
+      if (narrow) { setFlyHide(true); window.setTimeout(() => setFlyHide(false), 900); }
+      epicFly(rect, b.name, b.kind, tileEl);
+    } else if (tileEl) { tileEl.classList.remove("board-filled-anim"); void tileEl.offsetWidth; tileEl.classList.add("board-filled-anim"); }
+  };
+  useEffect(() => {
+    if (!back) return;
+    const key = (e: KeyboardEvent) => { if (e.key === "Escape") finish(true); };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  });
   /** Opens a list; on a narrow window it also brings out the lists panel (a click there never just closes it). */
   const toggleList = (kind: Kind) => {
     if (narrow && side !== "left") { setOpen(kind); setSide("left"); return; }
@@ -716,7 +804,13 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     const core: Kind[] = ["race", "class", "background"];
     if (core.includes(kind) && !filled[kind]) setOpen(core.find((k) => k !== kind && !filled[k]) ?? null);
     setFocus(kind);
-    if (narrow && core.includes(kind)) { setFlyHide(true); window.setTimeout(() => setFlyHide(false), 900); }
+    if (core.includes(kind)) {
+      // A big choice flies up and turns over: its back holds its choices, and Done lands it (× takes it back).
+      const b: Back = { kind, mode: "new", snap: ch, from, name: el.name, phase: reduced() ? "open" : "flying" };
+      setBack(b);
+      if (!reduced()) flyToBack(from, el.name, kind, backRect(), () => setBack((cur) => (cur && cur.phase === "flying" ? { ...cur, phase: "open" } : cur)));
+      return;
+    }
     fly(from, el.name, kind);
   };
   const pick = (kind: Kind) => (el: AElement) => place(kind, el, lastRow.current);
@@ -823,7 +917,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
       </>
     ),
     background: <Browse items={backgrounds} type="Background" chosen={ch.background ? [ch.background] : []} onPick={pick("background")} onSwap={(_, to) => pick("background")(to)} defaultView="list" allowCards={false} perPage={300} draggable />,
-    magic: caster ? <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} /> : <p className="muted pad">No spellcasting yet. It appears when a class, species or feat grants it.</p>,
+    magic: caster ? <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} prepareElsewhere /> : <p className="muted pad">No spellcasting yet. It appears when a class, species or feat grants it.</p>,
     equipment: (
       <>
         <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="adding" />
@@ -852,7 +946,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         </>
       );
       return (
-        <div key={kind} data-tile={kind} className={`board-space board-${kind} filled has-card ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""}`} onClick={() => setFocus(kind)} {...drop(kind)}>
+        <div key={kind} data-tile={kind} className={`board-space board-${kind} filled has-card ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""}`} onClick={() => openBack(kind)} {...drop(kind)}>
           {/* Learn more and Remove sit in the card's corner, so the card keeps its room for the text. */}
           <div className="board-corner" onClick={(e) => e.stopPropagation()}>
             {todo[kind] > 0 && <button className="board-todo-pill" title="Choices still to make here" onClick={() => setFocus(kind)}>{todo[kind]} to choose</button>}
@@ -874,7 +968,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         data-tile={kind}
         className={`board-space board-${kind} ${filled[kind] ? "filled" : "empty"} ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""} ${disabled ? "disabled" : ""}`}
         data-accepts={(DROP_TYPES[kind] ?? []).map(dragMime).join(" ")}
-        onClick={() => !disabled && setFocus(kind)}
+        onClick={() => { if (disabled) return; if (kind === "magic" || kind === "equipment") openBack(kind); else toggleList(kind); }}
         {...drop(kind)}
       >
         {todo[kind] > 0 && <div className="board-corner"><span className="board-todo-pill">{todo[kind]} to choose</span></div>}
@@ -913,16 +1007,74 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
 
   /** Takes you to one thing still to choose: its list opens (spells, or a missing pick) and its space is shown. */
   const goTo = (it: { kind: Kind; list: boolean }) => {
-    if (it.list) setOpen(it.kind);
-    setFocus(it.kind);
-    setSide(it.list ? "left" : null);
+    if (it.list) { setOpen(it.kind); setFocus(it.kind); setSide("left"); }
+    else { setSide(null); openBack(it.kind); }
     window.setTimeout(() => (it.list ? document.querySelector(".board-acc.open") : document.querySelector(".board-focus"))?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
+  /** A card's back: the choices its species, class or background asks for, the spells, or the inventory. */
+  const choicesFor = (kind: Kind) => (
+    <>
+          {kind === "race" && (chosenEl.race ? <SlotList slots={ownSlots((root) => root === "race")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your species." /> : <p className="muted">Choose a species from the list on the left, or drag one onto its space.</p>)}
+          {kind === "class" && (ch.classes.length ? (
+            <>
+              <ClassPanel r={r} ch={ch} set={set} onDetail={() => undefined} picker={false} compact />
+              {ch.classes.map((c) => {
+                const extra = ownSlots((root) => root === `class:${c.classId}`).filter((s) => tabOfSlot(s) !== "class");
+                return extra.length > 0 && (
+                  <section key={c.classId}>
+                    <h3>{r.reg.get(c.classId)?.name} training and feats</h3>
+                    <SlotList slots={extra} r={r} set={set} onDetail={() => undefined} />
+                  </section>
+                );
+              })}
+            </>
+          ) : <p className="muted">Choose a class from the list on the left, or drag one onto its space. Adding another class later makes a multiclass.</p>)}
+          {kind === "background" && (chosenEl.background ? <SlotList slots={ownSlots((root) => root === "background")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your background." /> : <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>)}
+          {kind === "magic" && (caster ? (
+            <div className="board-magic">
+              {sheet.casting.map((c) => (
+                <div key={c.name} className="board-cast">
+                  <b>{c.name}</b> <span className="muted">DC {c.dc} · {signed(c.attack)} to hit{c.prepare ? ` · prepares ${c.prepareMax}` : ""}</span>
+                  {(() => {
+                    const el = (id: string) => r.reg.get(id);
+                    const chip = (id: string) => el(id) && <button key={id} className="chip" onClick={() => learn(el(id)!)}>{el(id)!.name}</button>;
+                    if (!c.prepare) return <div className="chips">{[...c.cantripsKnown, ...c.spells, ...c.granted].map((p) => chip(p.id))}</div>;
+                    // A preparing caster ticks today's spells here; learning new ones is in the list on the left.
+                    const pool = preparePool(r, c);
+                    const chosen = ch.prepared[c.name] ?? [];
+                    const count = chosen.filter((id) => pool.some((p) => p.id === id)).length;
+                    const toggle = (id: string) => set((cc) => {
+                      const cur = cc.prepared[c.name] ?? [];
+                      return { ...cc, prepared: { ...cc.prepared, [c.name]: cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id] } };
+                    });
+                    const byLevel = [...pool].sort((a, b) => Number(a.setters.level?.value ?? 0) - Number(b.setters.level?.value ?? 0) || a.name.localeCompare(b.name));
+                    return (
+                      <>
+                        {c.cantripsKnown.length > 0 && <><h4 className="card-back-sub">Cantrips</h4><div className="chips">{c.cantripsKnown.map((p) => chip(p.id))}</div></>}
+                        {c.granted.length > 0 && <><h4 className="card-back-sub">Always prepared</h4><div className="chips">{c.granted.map((p) => chip(p.id))}</div></>}
+                        <h4 className="card-back-sub">Prepared today <span className={count > c.prepareMax ? "warn" : "muted"}>{count} / {c.prepareMax}</span></h4>
+                        <div className="chips prep-chips">
+                          {byLevel.map((sp) => {
+                            const on = chosen.includes(sp.id);
+                            return <button key={sp.id} className={`chip prep ${on ? "on" : ""}`} aria-pressed={on} title={on ? "Prepared: click to unprepare" : "Click to prepare"} disabled={!on && count >= c.prepareMax} onClick={() => toggle(sp.id)}><small>{sp.setters.level?.value ?? "?"}</small> {sp.name}</button>;
+                          })}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              ))}
+              <button className="pick-select" onClick={() => { setBack(null); toggleList("magic"); }}>Learn spells in the list</button>
+            </div>
+          ) : <p className="muted">This character does not cast spells yet.</p>)}
+          {kind === "equipment" && <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="inventory" />}
+    </>
+  );
   const scoresLeft = r.slots.filter((s) => tabOfSlot(s) === "abilities" && !s.rule.optional && s.chosen.length < s.rule.number).length;
   // A side panel closes when the mouse leaves it, except while a big choice is landing.
-  const leave = (which: "left" | "right") => () => { if (narrow && !flyHide && side === which) setSide(null); };
+  const leave = (which: "left" | "right") => () => { if (narrow && !flyHide && !back && side === which) setSide(null); };
   return (
-    <div className={`board ${side ? `side-${side}` : ""} ${flyHide ? "fly-hide" : ""}`}>
+    <div className={`board ${side ? `side-${side}` : ""} ${flyHide || back ? "fly-hide" : ""}`}>
       <button className="board-handle left" aria-label="Show the lists" aria-expanded={side === "left"} onClick={() => setSide(side === "left" ? null : "left")}>
         <span className="board-handle-plus">+</span><span className="board-handle-label">Lists</span>
         {leftItems.length > 0 && <span className="board-acc-badge">{leftItems.length}</span>}
@@ -987,46 +1139,33 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         <div className="board-spaces">
           {ORDER.map(tile)}
         </div>
-        <div className="board-focus" key={focus}>
-          <h3 className="board-focus-title">{TITLE[focus]}</h3>
-          {focus === "race" && (chosenEl.race ? <SlotList slots={ownSlots((root) => root === "race")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your species." /> : <p className="muted">Choose a species from the list on the left, or drag one onto its space.</p>)}
-          {focus === "class" && (ch.classes.length ? (
-            <>
-              <ClassPanel r={r} ch={ch} set={set} onDetail={() => undefined} picker={false} compact />
-              {ch.classes.map((c) => {
-                const extra = ownSlots((root) => root === `class:${c.classId}`).filter((s) => tabOfSlot(s) !== "class");
-                return extra.length > 0 && (
-                  <section key={c.classId}>
-                    <h3>{r.reg.get(c.classId)?.name} training and feats</h3>
-                    <SlotList slots={extra} r={r} set={set} onDetail={() => undefined} />
-                  </section>
-                );
-              })}
-            </>
-          ) : <p className="muted">Choose a class from the list on the left, or drag one onto its space. Adding another class later makes a multiclass.</p>)}
-          {focus === "background" && (chosenEl.background ? <SlotList slots={ownSlots((root) => root === "background")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your background." /> : <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>)}
-          {focus === "magic" && (caster ? (
-            <div className="board-magic">
-              {sheet.casting.map((c) => (
-                <div key={c.name} className="board-cast">
-                  <b>{c.name}</b> <span className="muted">DC {c.dc} · {signed(c.attack)} to hit{c.prepare ? ` · prepares ${c.prepareMax}` : ""}</span>
-                  <div className="chips">{[...c.cantripsKnown, ...c.spells, ...c.granted].map((p) => r.reg.get(p.id)).filter(Boolean).map((sp) => <button key={sp!.id} className="chip" onClick={() => learn(sp!)}>{sp!.name}</button>)}</div>
+        {otherSlots.length > 0 && (
+          <div className="board-focus">
+            <h3 className="board-focus-title">Other choices</h3>
+            <SlotList slots={otherSlots} r={r} set={set} onDetail={() => undefined} />
+          </div>
+        )}
+        {back && back.phase === "open" && createPortal(
+          <div className="card-back-veil">
+            <div className={`card-back ${back.mode}`} role="dialog" aria-label={`${TITLE[back.kind]} choices`} style={{ ["--hue" as string]: HUE[back.kind] }}>
+              <header className="card-back-head">
+                <div>
+                  <small>{TITLE[back.kind]}</small>
+                  <h2>{back.kind === "class" ? firstClass?.name : back.kind === "race" ? chosenEl.race?.name : back.kind === "background" ? chosenEl.background?.name : back.kind === "magic" ? "Your spells" : "Your inventory"}</h2>
                 </div>
-              ))}
-              <p className="muted">Choose spells under Spells and magic on the left.</p>
+                <div className="card-back-ctl">
+                  <button className="primary" onClick={() => finish(true)}>Done</button>
+                  <button className="board-ico" title={back.mode === "new" ? "Put it back" : "Undo the changes"} aria-label={back.mode === "new" ? "Put it back" : "Undo the changes"} onClick={() => finish(false)}>×</button>
+                </div>
+              </header>
+              <div className="card-back-body">{choicesFor(back.kind)}</div>
             </div>
-          ) : <p className="muted">This character does not cast spells yet.</p>)}
-          {focus === "equipment" && <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="inventory" />}
-          {otherSlots.length > 0 && (
-            <section>
-              <h3>Other choices</h3>
-              <SlotList slots={otherSlots} r={r} set={set} onDetail={() => undefined} />
-            </section>
-          )}
-        </div>
+          </div>,
+          document.body,
+        )}
       </section>
 
-      <StatsPanel onMouseLeave={leave("right")} r={r} ch={ch} set={set} onIncreases={(root) => { setFocus(root === "race" ? "race" : root === "background" ? "background" : "class"); setSide(null); window.setTimeout(() => document.querySelector(".board-focus")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }} />
+      <StatsPanel onMouseLeave={leave("right")} r={r} ch={ch} set={set} onIncreases={(root) => { setSide(null); openBack(root === "race" ? "race" : root === "background" ? "background" : "class"); }} />
     </div>
   );
 }

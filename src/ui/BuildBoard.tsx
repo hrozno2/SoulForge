@@ -52,9 +52,7 @@ const reduced = () => document.documentElement.classList.contains("reduce-motion
 /** A name flies from where it was clicked to the space it fills, which then lights up. */
 function fly(from: DOMRect | null, label: string, kind: Kind) {
   let target = document.querySelector<HTMLElement>(`[data-tile="${kind}"]`);
-  // With the columns as tabs the board may be hidden: the Character tab lights up instead.
   const hidden = !target || !target.offsetParent;
-  if (hidden) target = document.querySelector<HTMLElement>('[data-pane="board"]');
   if (!target || !target.offsetParent) return;
   const glow = (el: HTMLElement, cls = "board-filled-anim") => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
   if (reduced()) return glow(target);
@@ -360,6 +358,19 @@ function Backpack({ f }: { f: number }) {
   );
 }
 
+/** Whether the window is too narrow for the three columns (the sides become floating panels). */
+function useNarrow(): boolean {
+  const q = "(max-width: 1250px)";
+  const [n, setN] = useState(() => typeof window !== "undefined" && window.matchMedia(q).matches);
+  useEffect(() => {
+    const m = window.matchMedia(q);
+    const on = () => setN(m.matches);
+    m.addEventListener("change", on);
+    return () => m.removeEventListener("change", on);
+  }, []);
+  return n;
+}
+
 /**
  * A score's number. Normally a click turns it into a box to type in; with `onRoll` (manual scores) the number shows a
  * die on hover and a click rolls it, and typing a digit on it still lets you enter a number.
@@ -563,7 +574,7 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
 }
 
 /** The right column: scores first, then the numbers, the open score increases and what the character is trained in. */
-function StatsPanel({ r, ch, set, onIncreases, left, onGo }: { r: Resolved; ch: Character; set: SetCharacter; onIncreases: (root: string) => void; left: LeftItem[]; onGo: (it: LeftItem) => void }) {
+function StatsPanel({ r, ch, set, onIncreases, left, onGo, onMouseLeave }: { r: Resolved; ch: Character; set: SetCharacter; onIncreases: (root: string) => void; left: LeftItem[]; onGo: (it: LeftItem) => void; onMouseLeave?: () => void }) {
   const sh = useMemo(() => buildSheet(r), [r]);
   const tiles: [string, string][] = [["HP", String(sh.hp)], ["AC", String(sh.ac.value)], ["Init", signed(sh.initiative)], ["Speed", `${sh.speed} ft`], ["Prof", signed(sh.proficiency)]];
   const increases = r.slots.filter((s) => tabOfSlot(s) === "abilities");
@@ -581,7 +592,7 @@ function StatsPanel({ r, ch, set, onIncreases, left, onGo }: { r: Resolved; ch: 
     return { ...c, customStats: v ? [...rest, { id: `ability-${a}`, stat: a, value: v, note: "Custom bonus" }] : rest };
   });
   return (
-    <aside className="board-stats" aria-label="Scores and training">
+    <aside className="board-stats" aria-label="Scores and training" onMouseLeave={onMouseLeave}>
       <PortraitCard r={r} ch={ch} set={set} />
       <Scores r={r} ch={ch} set={set} />
       <div className="board-tiles">{tiles.map(([k, v]) => <div key={k} className="board-tile"><small>{k}</small><b>{v}</b></div>)}</div>
@@ -622,7 +633,16 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const [focus, setFocus] = useState<Kind>("race");
   const [dropOver, setDropOver] = useState<Kind | null>(null);
   /** On a narrow window the three columns are tabs; this is the one showing. */
-  const [pane, setPane] = useState<"lists" | "board" | "stats">("lists");
+  // On a narrow window the lists and the scores sit at the sides as floating panels: `side` is the one showing, and
+  // `flyHide` puts it aside while a big choice lands, then it comes back.
+  const narrow = useNarrow();
+  const [side, setSide] = useState<"left" | "right" | null>(null);
+  const [flyHide, setFlyHide] = useState(false);
+  /** Opens a list; on a narrow window it also brings out the lists panel (a click there never just closes it). */
+  const toggleList = (kind: Kind) => {
+    if (narrow && side !== "left") { setOpen(kind); setSide("left"); return; }
+    setOpen(open === kind ? null : kind);
+  };
   /** Change on the class card: the next class picked replaces the starting class instead of adding a multiclass. */
   const [replacing, setReplacing] = useState(false);
   const lastRow = useRef<DOMRect | null>(null);
@@ -667,6 +687,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     const core: Kind[] = ["race", "class", "background"];
     if (core.includes(kind) && !filled[kind]) setOpen(core.find((k) => k !== kind && !filled[k]) ?? null);
     setFocus(kind);
+    if (narrow && core.includes(kind)) { setFlyHide(true); window.setTimeout(() => setFlyHide(false), 1250); }
     fly(from, el.name, kind);
   };
   const pick = (kind: Kind) => (el: AElement) => place(kind, el, lastRow.current);
@@ -806,7 +827,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           <ChosenBanner el={el} label={label}>
             <span className="board-card-actions" onClick={(e) => e.stopPropagation()}>
               {(() => { const g = groupOf(el); return g && <SourcePicker g={g} activeId={el.id} onPick={(to) => switchVersion(kind, el, to)} />; })()}
-              <button className={`pick-select ${isOpen ? "is-on" : ""}`} onClick={() => { if (kind === "class") setReplacing(false); setOpen(isOpen ? null : kind); setFocus(kind); }}>{kind === "class" ? "Edit" : "Change"}</button>
+              <button className={`pick-select ${isOpen ? "is-on" : ""}`} onClick={() => { if (kind === "class") setReplacing(false); toggleList(kind); setFocus(kind); }}>{kind === "class" ? "Edit" : "Change"}</button>
             </span>
           </ChosenBanner>
         </div>
@@ -847,7 +868,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           {el && <button className="ghost" onClick={() => learn(el)}>Learn more</button>}
           {!filled[kind] && ["race", "class", "background"].includes(kind) && <button className="board-dice" title={`Random ${TITLE[kind].toLowerCase()}`} aria-label={`Random ${TITLE[kind].toLowerCase()}`} onClick={() => random(kind)}><D20 size={16} /></button>}
           {filled[kind] && ["race", "background"].includes(kind) && <button className="ghost" onClick={() => clear(kind)}>Remove</button>}
-          {!disabled && <button className={`board-see ${isOpen ? "on" : ""}`} onClick={() => { setOpen(isOpen ? null : kind); setFocus(kind); }}>{filled[kind] ? (kind === "class" ? "Add a class" : kind === "equipment" ? "Add items" : kind === "magic" ? (spellNeed && spellHave >= spellNeed ? "Change spells" : "Choose spells") : "Change") : "See options"}</button>}
+          {!disabled && <button className={`board-see ${isOpen ? "on" : ""}`} onClick={() => { toggleList(kind); setFocus(kind); }}>{filled[kind] ? (kind === "class" ? "Add a class" : kind === "equipment" ? "Add items" : kind === "magic" ? (spellNeed && spellHave >= spellNeed ? "Change spells" : "Choose spells") : "Change") : "See options"}</button>}
         </div>
         </div>
       </div>
@@ -858,24 +879,23 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const goTo = (it: { kind: Kind; list: boolean }) => {
     if (it.list) setOpen(it.kind);
     setFocus(it.kind);
-    setPane(it.list ? "lists" : "board");
+    setSide(it.list ? "left" : null);
     window.setTimeout(() => (it.list ? document.querySelector(".board-acc.open") : document.querySelector(".board-focus"))?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
-  const panes: ["lists" | "board" | "stats", string, number][] = [
-    ["lists", "Lists", 0],
-    ["board", "Character", ORDER.reduce((n, k) => n + todo[k], 0)],
-    ["stats", "Scores", r.slots.filter((s) => tabOfSlot(s) === "abilities" && !s.rule.optional && s.chosen.length < s.rule.number).length],
-  ];
+  const scoresLeft = r.slots.filter((s) => tabOfSlot(s) === "abilities" && !s.rule.optional && s.chosen.length < s.rule.number).length;
+  // A side panel closes when the mouse leaves it, except while a big choice is landing.
+  const leave = (which: "left" | "right") => () => { if (narrow && !flyHide && side === which) setSide(null); };
   return (
-    <div className={`board pane-${pane}`}>
-      <div className="board-panes" role="tablist" aria-label="Build sections">
-        {panes.map(([k, label, n]) => (
-          <button key={k} role="tab" aria-selected={pane === k} data-pane={k} className={pane === k ? "on" : ""} onClick={() => setPane(k)}>
-            {label}{n > 0 && <span className="board-acc-badge">{n}</span>}
-          </button>
-        ))}
-      </div>
-      <nav className="board-lib" aria-label="Lists">
+    <div className={`board ${side ? `side-${side}` : ""} ${flyHide ? "fly-hide" : ""}`}>
+      <button className="board-handle left" aria-label="Show the lists" aria-expanded={side === "left"} onClick={() => setSide(side === "left" ? null : "left")}>
+        <span className="board-handle-plus">+</span><span className="board-handle-label">Lists</span>
+        {leftItems.length > 0 && <span className="board-acc-badge">{leftItems.length}</span>}
+      </button>
+      <button className="board-handle right" aria-label="Show the scores" aria-expanded={side === "right"} onClick={() => setSide(side === "right" ? null : "right")}>
+        <span className="board-handle-plus">+</span><span className="board-handle-label">Scores</span>
+        {scoresLeft > 0 && <span className="board-acc-badge">{scoresLeft}</span>}
+      </button>
+      <nav className="board-lib" aria-label="Lists" onMouseLeave={leave("left")}>
         {ORDER.map((kind) => {
           const Icon = ICON[kind];
           const isOpen = open === kind;
@@ -959,7 +979,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         </div>
       </section>
 
-      <StatsPanel r={r} ch={ch} set={set} left={leftItems} onGo={goTo} onIncreases={(root) => { setFocus(root === "race" ? "race" : root === "background" ? "background" : "class"); setPane("board"); window.setTimeout(() => document.querySelector(".board-focus")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }} />
+      <StatsPanel onMouseLeave={leave("right")} r={r} ch={ch} set={set} left={leftItems} onGo={goTo} onIncreases={(root) => { setFocus(root === "race" ? "race" : root === "background" ? "background" : "class"); setSide(null); window.setTimeout(() => document.querySelector(".board-focus")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }} />
     </div>
   );
 }

@@ -1470,18 +1470,26 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .class-row.compact b { font: 700 17px var(--display); }
 .class-row.compact .stepper { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
 
-/* Narrow windows: the three columns become tabs (no two-column step in between) */
-.board-panes { display: none; }
+/* Narrow windows: the board takes the whole width; the lists (left) and the scores (right) wait at the edges and
+   open as floating panels over the cards. */
+.board-handle { display: none; }
 @media (max-width: 1250px) {
   .board { grid-template-columns: 1fr; }
-  .board-panes { display: flex; gap: 6px; position: sticky; top: 56px; z-index: 5; background: var(--bg); padding: 6px 0; }
-  .board-panes button { flex: 1; display: flex; gap: 6px; align-items: center; justify-content: center; text-transform: uppercase; letter-spacing: .08em; font: 600 13px var(--display); }
-  .board-panes button.on { background: var(--gold); color: #1b1408; border-color: var(--gold); }
-  .board.pane-lists > :not(.board-panes):not(.board-lib),
-  .board.pane-board > :not(.board-panes):not(.board-main),
-  .board.pane-stats > :not(.board-panes):not(.board-stats) { display: none; }
-  .board-lib, .board-stats { position: static; max-height: none; }
-  .board-panes button.board-filled-anim { animation: board-fill .8s ease-out; }
+  .board-handle { display: flex; position: fixed; top: 50%; z-index: 45; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; transform: translateY(-50%); background: var(--panel2); border: 1px solid var(--gold); color: var(--text); box-shadow: 0 6px 18px rgba(0,0,0,.45); cursor: pointer; transition: background .15s, opacity .2s; }
+  .board-handle:hover { background: color-mix(in srgb, var(--gold) 25%, var(--panel2)); }
+  .board-handle.left { left: 0; border-left: 0; border-radius: 0 10px 10px 0; }
+  .board-handle.right { right: 0; border-right: 0; border-radius: 10px 0 0 10px; }
+  .board-handle-plus { font: 700 20px var(--display); color: var(--gold); line-height: 1; }
+  .board-handle-label { writing-mode: vertical-rl; font: 600 11px var(--body); letter-spacing: .14em; text-transform: uppercase; }
+  .board-lib, .board-stats { position: fixed; top: 64px; bottom: 12px; z-index: 46; width: min(400px, 88vw); max-height: none; overflow: auto; padding: 10px; background: var(--bg); border: 1px solid var(--gold); box-shadow: 0 16px 50px rgba(0,0,0,.65); transition: transform .28s cubic-bezier(.22,.8,.24,1), opacity .2s; }
+  .board-lib { left: 0; border-left: 0; border-radius: 0 12px 12px 0; transform: translateX(-105%); }
+  .board-stats { right: 0; border-right: 0; border-radius: 12px 0 0 12px; transform: translateX(105%); }
+  .board.side-left .board-lib, .board.side-right .board-stats { transform: none; }
+  .board.side-left .board-handle.left, .board.side-right .board-handle.right { opacity: 0; pointer-events: none; }
+  /* While a big choice lands, an open panel steps aside and comes back after. */
+  .board.fly-hide .board-lib, .board.fly-hide .board-stats { opacity: 0; pointer-events: none; }
+  .board.fly-hide.side-left .board-lib { transform: translateX(-40px); }
+  .board.fly-hide.side-right .board-stats { transform: translateX(40px); }
 }
 @media (max-width: 700px) {
   .board-spaces { grid-template-columns: 1fr; }

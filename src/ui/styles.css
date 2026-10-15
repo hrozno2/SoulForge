@@ -1555,7 +1555,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-method button { padding-left: 4px; padding-right: 4px; }
 .board-who-text small { color: var(--muted); font-size: 12.5px; }
 
-.board-book-block { transform-origin: 0 100px; transition: transform .6s cubic-bezier(.22,.8,.24,1); }
+.board-book-block { transform-box: fill-box; transform-origin: 0% 100%; transition: transform .6s cubic-bezier(.22,.8,.24,1); }
 .board-book-cover { transition: transform .6s cubic-bezier(.22,.8,.24,1); }
 .board-book-ribbon, .board-item { animation: board-pop .45s cubic-bezier(.22,.8,.24,1); transform-box: fill-box; transform-origin: 50% 100%; }
 .board-incr { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0; font-size: 12.5px; }
@@ -1732,8 +1732,8 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-lib .seg button { white-space: nowrap; padding: 6px 9px; font-size: 11px; }
 .board-lib .browse-bar .seg-group { min-width: 0; max-width: 100%; }
 
-/* A class's main abilities: an outline in the class's colour */
-.board-score.primary { border-color: hsl(var(--hue) 70% 58%); box-shadow: inset 0 0 0 1px hsl(var(--hue) 70% 58% / .55), 0 0 10px hsl(var(--hue) 70% 50% / .25); }
+/* A class's main abilities: an outline in the theme's accent */
+.board-score.primary { border-color: var(--gold); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 55%, transparent), 0 0 10px color-mix(in srgb, var(--gold) 25%, transparent); }
 
 /* The search box takes its own row in the narrow lists, so it is never cut off */
 .board-lib .browse-bar { flex-wrap: wrap; }
@@ -1749,3 +1749,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .slot.has-roll > .slot-head { padding-right: 56px; }
 .slot-roll { position: absolute; right: 30px; top: 8px; z-index: 1; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border-radius: 6px; color: var(--gold); }
 .slot-roll:hover { color: var(--gold2); border-color: var(--gold); }
+
+/* The spellbook or backpack at the top of its card's back, filling as choices are made */
+.card-back-art { display: flex; justify-content: center; margin: -4px 0 6px; }
+.card-back-art .board-book, .card-back-art .board-pack { width: 150px; height: 150px; }

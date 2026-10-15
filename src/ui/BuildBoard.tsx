@@ -10,7 +10,7 @@ import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, totalLevel, type AbilityId, type Character } from "../aurora/character";
 import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as pbSpent } from "../aurora/pointBuy";
-import { buildSheet, preparePool } from "../aurora/sheet";
+import { buildSheet } from "../aurora/sheet";
 import { formatRelease, groupVariants, hiddenBy, type Group } from "../aurora/books";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { ClassPanel } from "./BuildTab";
@@ -340,13 +340,18 @@ function SpellBook({ f }: { f: number }) {
       {/* back cover */}
       <path d={top(0)} fill="#3b130d" />
       <path d="M10 92 L78 104 L78 108 L10 96 Z M78 104 L110 80 L110 84 L78 108 Z" fill="#2a0d09" />
-      {/* the page block: drawn at full thickness, squeezed to the current one */}
-      <g className="board-book-block" style={{ transform: `scaleY(${t})` }}>
-        <path d={`M10 ${92 - H} L78 ${104 - H} L78 104 L10 92 Z`} fill="url(#sbPages)" stroke="#9c7b45" strokeWidth=".6" />
-        <path d={`M78 ${104 - H} L110 ${80 - H} L110 80 L78 104 Z`} fill="#e6cf98" stroke="#9c7b45" strokeWidth=".6" />
-        {Array.from({ length: 8 }, (_, k) => { const y = (H * (k + 1)) / 9; return <path key={k} d={`M10 ${92 - y} L78 ${104 - y} L110 ${80 - y}`} fill="none" stroke="#b8975e" strokeWidth=".45" />; })}
-        {/* the spine wraps the left end */}
-        <path d={`M10 ${92 - H} L42 ${68 - H} L42 68 L10 92 Z`} fill="#5e2117" />
+      {/* the page edges, front and right: each face grows up from its own bottom edge (skewed to the book's angle) */}
+      <g transform="translate(10 92) skewY(10)">
+        <g className="board-book-block" style={{ transform: `scaleY(${t})` }}>
+          <rect x="0" y={-H} width="68" height={H} fill="url(#sbPages)" stroke="#9c7b45" strokeWidth=".6" />
+          {Array.from({ length: 8 }, (_, k) => <path key={k} d={`M0 ${(-H * (k + 1)) / 9} h68`} stroke="#b8975e" strokeWidth=".45" />)}
+        </g>
+      </g>
+      <g transform="translate(78 104) skewY(-36.87)">
+        <g className="board-book-block" style={{ transform: `scaleY(${t})` }}>
+          <rect x="0" y={-H} width="32" height={H} fill="#e6cf98" stroke="#9c7b45" strokeWidth=".6" />
+          {Array.from({ length: 8 }, (_, k) => <path key={k} d={`M0 ${(-H * (k + 1)) / 9} h32`} stroke="#b8975e" strokeWidth=".45" />)}
+        </g>
       </g>
       {/* ribbons from the pages */}
       {f > 0.4 && <path className="board-book-ribbon" d="M52 100 l-1 12 l3 -3 l3 3 l1 -11 z" fill="#8a1f2a" />}
@@ -559,8 +564,7 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
             <div
               key={a}
               className={`board-score ${over === a ? "over" : ""} ${held === a ? "held" : ""} ${primary.has(a) ? "primary" : ""}`}
-              style={primary.has(a) ? { ["--hue" as string]: primary.get(a)!.hue } : undefined}
-              title={[`${ABILITY_LABEL[a]}: base ${base}`, primary.has(a) ? `A main ability of the ${primary.get(a)!.cls}` : "", bonusText(a), `save ${signed(line.save)}${line.saveProficient ? " (proficient)" : ""}`].filter(Boolean).join("\n")}
+                            title={[`${ABILITY_LABEL[a]}: base ${base}`, primary.has(a) ? `A main ability of the ${primary.get(a)!.cls}` : "", bonusText(a), `save ${signed(line.save)}${line.saveProficient ? " (proficient)" : ""}`].filter(Boolean).join("\n")}
               onDragOver={method === "standard" ? (e) => { if (e.dataTransfer.types.includes(mime)) { e.preventDefault(); setOver(a); } } : undefined}
               onDragLeave={() => setOver(null)}
               onDrop={method === "standard" ? (e) => { e.preventDefault(); setOver(null); const from = e.dataTransfer.getData(mime) as AbilityId; if (from) swap(from, a); } : undefined}
@@ -870,7 +874,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     ...(!ch.race ? [{ kind: "race" as Kind, text: "Choose a species", list: true }] : []),
     ...(!ch.classes.length ? [{ kind: "class" as Kind, text: "Choose a class", list: true }] : []),
     ...(!ch.background ? [{ kind: "background" as Kind, text: "Choose a background", list: true }] : []),
-    ...r.slots.filter((sl) => !sl.rule.optional && sl.chosen.length < sl.rule.number).map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: tabOfSlot(sl) === "magic" })),
+    ...r.slots.filter((sl) => !sl.rule.optional && sl.chosen.length < sl.rule.number).map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: false })),
     ...(plans.length && packFill < 1 && !plans.every((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))) ? [{ kind: "equipment" as Kind, text: "Starting equipment", list: false }] : []),
   ];
   // Each space's count of what is left: every choice its species, class or background asks for (languages,
@@ -998,7 +1002,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           {el && <button className="ghost" onClick={() => learn(el)}>Learn more</button>}
           {!filled[kind] && ["race", "class", "background"].includes(kind) && <button className="board-dice" title={`Random ${TITLE[kind].toLowerCase()}`} aria-label={`Random ${TITLE[kind].toLowerCase()}`} onClick={() => random(kind)}><D20 size={16} /></button>}
           {filled[kind] && ["race", "background"].includes(kind) && <button className="ghost" onClick={() => clear(kind)}>Remove</button>}
-          {!disabled && <button className={`board-see ${isOpen ? "on" : ""}`} onClick={() => { toggleList(kind); setFocus(kind); }}>{filled[kind] ? (kind === "class" ? "Add a class" : kind === "equipment" ? "Add items" : kind === "magic" ? (spellNeed && spellHave >= spellNeed ? "Change spells" : "Choose spells") : "Change") : "See options"}</button>}
+          {!disabled && <button className={`board-see ${isOpen ? "on" : ""}`} onClick={() => { if (kind === "magic" || kind === "equipment") openBack(kind); else { toggleList(kind); setFocus(kind); } }}>{filled[kind] ? (kind === "class" ? "Add a class" : kind === "equipment" ? "Add items" : kind === "magic" ? (spellNeed && spellHave >= spellNeed ? "Change spells" : "Choose spells") : "Change") : "See options"}</button>}
         </div>
         </div>
       </div>
@@ -1031,43 +1035,21 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           ) : <p className="muted">Choose a class from the list on the left, or drag one onto its space. Adding another class later makes a multiclass.</p>)}
           {kind === "background" && (chosenEl.background ? <SlotList slots={ownSlots((root) => root === "background")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your background." /> : <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>)}
           {kind === "magic" && (caster ? (
-            <div className="board-magic">
-              {sheet.casting.map((c) => (
-                <div key={c.name} className="board-cast">
-                  <b>{c.name}</b> <span className="muted">DC {c.dc} · {signed(c.attack)} to hit{c.prepare ? ` · prepares ${c.prepareMax}` : ""}</span>
-                  {(() => {
-                    const el = (id: string) => r.reg.get(id);
-                    const chip = (id: string) => el(id) && <button key={id} className="chip" onClick={() => learn(el(id)!)}>{el(id)!.name}</button>;
-                    if (!c.prepare) return <div className="chips">{[...c.cantripsKnown, ...c.spells, ...c.granted].map((p) => chip(p.id))}</div>;
-                    // A preparing caster ticks today's spells here; learning new ones is in the list on the left.
-                    const pool = preparePool(r, c);
-                    const chosen = ch.prepared[c.name] ?? [];
-                    const count = chosen.filter((id) => pool.some((p) => p.id === id)).length;
-                    const toggle = (id: string) => set((cc) => {
-                      const cur = cc.prepared[c.name] ?? [];
-                      return { ...cc, prepared: { ...cc.prepared, [c.name]: cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id] } };
-                    });
-                    const byLevel = [...pool].sort((a, b) => Number(a.setters.level?.value ?? 0) - Number(b.setters.level?.value ?? 0) || a.name.localeCompare(b.name));
-                    return (
-                      <>
-                        {c.cantripsKnown.length > 0 && <><h4 className="card-back-sub">Cantrips</h4><div className="chips">{c.cantripsKnown.map((p) => chip(p.id))}</div></>}
-                        {c.granted.length > 0 && <><h4 className="card-back-sub">Always prepared</h4><div className="chips">{c.granted.map((p) => chip(p.id))}</div></>}
-                        <h4 className="card-back-sub">Prepared today <span className={count > c.prepareMax ? "warn" : "muted"}>{count} / {c.prepareMax}</span></h4>
-                        <div className="chips prep-chips">
-                          {byLevel.map((sp) => {
-                            const on = chosen.includes(sp.id);
-                            return <button key={sp.id} className={`chip prep ${on ? "on" : ""}`} aria-pressed={on} title={on ? "Prepared: click to unprepare" : "Click to prepare"} disabled={!on && count >= c.prepareMax} onClick={() => toggle(sp.id)}><small>{sp.setters.level?.value ?? "?"}</small> {sp.name}</button>;
-                          })}
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              ))}
-              <button className="pick-select" onClick={() => { setBack(null); toggleList("magic"); }}>Learn spells in the list</button>
-            </div>
+            <>
+              <div className="card-back-art"><SpellBook f={spellFill} /></div>
+              <p className="muted card-back-count">{spellNeed ? `${spellHave} of ${spellNeed} spells chosen` : "No spells to choose yet"}</p>
+              <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} />
+            </>
           ) : <p className="muted">This character does not cast spells yet.</p>)}
-          {kind === "equipment" && <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="inventory" />}
+          {kind === "equipment" && (
+            <>
+              <div className="card-back-art"><Backpack f={packFill} /></div>
+              <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="adding" />
+              <h3 className="board-lib-sub">All items</h3>
+              <Browse items={items} type="Item" chosen={[]} onPick={(el) => addItem(set, el)} defaultView="list" allowCards={false} perPage={60} pickLabel={() => "Add"} />
+              <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="inventory" />
+            </>
+          )}
     </>
   );
   const scoresLeft = r.slots.filter((s) => tabOfSlot(s) === "abilities" && !s.rule.optional && s.chosen.length < s.rule.number).length;
@@ -1084,7 +1066,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         {scoresLeft > 0 && <span className="board-acc-badge">{scoresLeft}</span>}
       </button>
       <nav className="board-lib" aria-label="Lists" onMouseLeave={leave("left")}>
-        {ORDER.map((kind) => {
+        {(["race", "class", "background"] as Kind[]).map((kind) => {
           const Icon = ICON[kind];
           const isOpen = open === kind;
           return (

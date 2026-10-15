@@ -77,6 +77,142 @@ function fly(from: DOMRect | null, label: string, kind: Kind) {
   anim.onfinish = () => { ghost.remove(); glow(target!); };
 }
 
+// ---- Landing effects, one per class (Hearthstone-style: the card lands with weight, then its class's flourish) ----
+
+/** Classes that land with a shake. */
+const HEAVY = /barbarian|fighter|paladin/i;
+
+/** One particle: a small element that flies from (x, y) by (dx, dy), turning and fading. */
+function particle(cls: string, x: number, y: number, dx: number, dy: number, o: { color?: string; text?: string; size?: number; turn?: number; duration?: number; delay?: number; scaleTo?: number } = {}) {
+  const e = document.createElement("div");
+  e.className = `fx ${cls}`;
+  if (o.text) e.textContent = o.text;
+  Object.assign(e.style, { left: `${x}px`, top: `${y}px`, ...(o.color ? { color: o.color, background: cls === "fx-spark" || cls === "fx-dot" ? o.color : "" } : {}), ...(o.size ? { fontSize: `${o.size}px`, width: cls === "fx-dot" || cls === "fx-smoke" ? `${o.size}px` : "", height: cls === "fx-dot" || cls === "fx-smoke" ? `${o.size}px` : "" } : {}) });
+  const ang = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const turn0 = cls === "fx-spark" ? ang : 0;
+  document.body.appendChild(e);
+  e.animate(
+    [{ transform: `translate(-50%,-50%) rotate(${turn0}deg) scale(1)`, opacity: 0 }, { opacity: 1, offset: 0.12 }, { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${turn0 + (o.turn ?? 0)}deg) scale(${o.scaleTo ?? 0.4})`, opacity: 0 }],
+    { duration: o.duration ?? 800, delay: o.delay ?? 0, easing: "cubic-bezier(.15,.7,.3,1)" },
+  ).onfinish = () => e.remove();
+}
+
+const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+
+/** Sparks flying out from the middle, fast and straight (steel, rage, gears). */
+function sparks(cx: number, cy: number, colors: string[], n = 22, reach = 140) {
+  for (let k = 0; k < n; k++) { const a = rnd(0, Math.PI * 2), d = rnd(reach * 0.4, reach); particle("fx-spark", cx, cy, Math.cos(a) * d, Math.sin(a) * d, { color: colors[k % colors.length], duration: rnd(380, 700) }); }
+}
+
+/** A bright line across the card (a blade's slash). */
+function slash(to: DOMRect, color: string, angle = -28) {
+  const e = document.createElement("div");
+  e.className = "fx fx-slash";
+  Object.assign(e.style, { left: `${to.left + to.width / 2}px`, top: `${to.top + to.height / 2}px`, width: `${to.width * 1.3}px`, background: `linear-gradient(90deg, transparent, ${color}, #fff, ${color}, transparent)` });
+  document.body.appendChild(e);
+  e.animate([{ transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(0)`, opacity: 1 }, { transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(1)`, opacity: 1, offset: 0.35 }, { transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(1.05)`, opacity: 0 }], { duration: 520, easing: "ease-out" }).onfinish = () => e.remove();
+}
+
+/** Expanding rings (ki, rage). */
+function rings(cx: number, cy: number, color: string, n = 3, size = 160) {
+  for (let k = 0; k < n; k++) {
+    const e = document.createElement("div");
+    e.className = "fx fx-ring";
+    Object.assign(e.style, { left: `${cx}px`, top: `${cy}px`, width: `${size}px`, height: `${size}px`, borderColor: color, boxShadow: `0 0 18px ${color}` });
+    document.body.appendChild(e);
+    e.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 0.9 }, { transform: "translate(-50%,-50%) scale(2.4)", opacity: 0 }], { duration: 700, delay: k * 140, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => e.remove();
+  }
+}
+
+/** A column of light on the card (radiance from above). */
+function beam(to: DOMRect, color: string) {
+  const e = document.createElement("div");
+  e.className = "fx fx-beam";
+  Object.assign(e.style, { left: `${to.left + to.width / 2}px`, top: `${to.top + to.height / 2}px`, width: `${to.width * 0.7}px`, height: `${to.height * 2.4}px`, background: `linear-gradient(180deg, transparent, ${color} 40%, #fff 55%, ${color} 70%, transparent)` });
+  document.body.appendChild(e);
+  e.animate([{ transform: "translate(-50%,-70%) scaleX(.1)", opacity: 0 }, { transform: "translate(-50%,-55%) scaleX(1)", opacity: 0.85, offset: 0.3 }, { transform: "translate(-50%,-50%) scaleX(.6)", opacity: 0 }], { duration: 1000, easing: "ease-out" }).onfinish = () => e.remove();
+}
+
+/** Rays turning around the card's middle (holy light). */
+function rays(cx: number, cy: number, color: string, size: number) {
+  const e = document.createElement("div");
+  e.className = "fx fx-rays";
+  Object.assign(e.style, { left: `${cx}px`, top: `${cy}px`, width: `${size}px`, height: `${size}px`, background: `repeating-conic-gradient(${color} 0 6deg, transparent 6deg 22deg)` });
+  document.body.appendChild(e);
+  e.animate([{ transform: "translate(-50%,-50%) rotate(0deg) scale(.3)", opacity: 0 }, { opacity: 0.7, offset: 0.25 }, { transform: "translate(-50%,-50%) rotate(40deg) scale(1.2)", opacity: 0 }], { duration: 1200, easing: "ease-out" }).onfinish = () => e.remove();
+}
+
+/** Forked lightning striking the card from above. */
+function lightning(to: DOMRect, color: string) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("class", "fx fx-bolt");
+  const w = to.width, h = to.height * 1.6;
+  Object.assign(svg.style, { left: `${to.left}px`, top: `${to.top - to.height * 0.6}px`, width: `${w}px`, height: `${h}px` });
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  const bolt = (x0: number, spread: number) => { let x = x0, d = `M${x} 0`; for (let y = h / 8; y <= h * 0.85; y += h / 8) { x += rnd(-spread, spread); d += ` L${x.toFixed(1)} ${y.toFixed(1)}`; } return d; };
+  svg.innerHTML = [bolt(w * 0.5, w * 0.12), bolt(w * rnd(0.3, 0.45), w * 0.1), bolt(w * rnd(0.55, 0.7), w * 0.1)].map((d, k) => `<path d="${d}" stroke="${k ? color : "#fff"}" stroke-width="${k ? 2 : 3.2}" fill="none" stroke-linejoin="round"/>`).join("");
+  svg.style.filter = `drop-shadow(0 0 6px ${color}) drop-shadow(0 0 14px ${color})`;
+  document.body.appendChild(svg);
+  svg.animate([{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 0.2, offset: 0.2 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }], { duration: 650, easing: "linear" }).onfinish = () => svg.remove();
+}
+
+/** Things drifting up (leaves, notes, smoke, embers). */
+function drift(to: DOMRect, cls: string, n: number, o: { colors?: string[]; texts?: string[]; size?: [number, number]; rise?: number; duration?: [number, number] } = {}) {
+  for (let k = 0; k < n; k++) {
+    const x = to.left + rnd(0.1, 0.9) * to.width, y = to.top + rnd(0.45, 1) * to.height;
+    particle(cls, x, y, rnd(-50, 50), -rnd(60, o.rise ?? 150), { color: o.colors?.[k % o.colors.length], text: o.texts?.[k % o.texts.length], size: o.size ? rnd(o.size[0], o.size[1]) : undefined, turn: rnd(-160, 160), duration: rnd(...(o.duration ?? [1000, 1700])), delay: rnd(0, 250), scaleTo: cls === "fx-smoke" ? 2.2 : 0.5 });
+  }
+}
+
+/** The arcane circle that draws itself around the card (wizards, species, backgrounds). */
+function sigil(to: DOMRect, color: string) {
+  const cx = to.left + to.width / 2, cy = to.top + to.height / 2;
+  const size = Math.max(to.width, to.height) * 1.15;
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("class", "board-sigil");
+  svg.setAttribute("viewBox", "-50 -50 100 100");
+  Object.assign(svg.style, { left: `${cx - size / 2}px`, top: `${cy - size / 2}px`, width: `${size}px`, height: `${size}px`, stroke: color });
+  const tick = Array.from({ length: 12 }, (_, k) => { const a = (k * Math.PI) / 6; return `M${(44 * Math.cos(a)).toFixed(1)} ${(44 * Math.sin(a)).toFixed(1)} L${(40 * Math.cos(a)).toFixed(1)} ${(40 * Math.sin(a)).toFixed(1)}`; }).join(" ");
+  const star = Array.from({ length: 6 }, (_, k) => { const a = (k * Math.PI) / 3 - Math.PI / 2; return `${(34 * Math.cos(a)).toFixed(1)},${(34 * Math.sin(a)).toFixed(1)}`; });
+  svg.innerHTML = `<circle r="47" pathLength="1"/><circle r="38" pathLength="1"/><path d="${tick}" pathLength="1"/><polygon points="${star[0]} ${star[2]} ${star[4]}" pathLength="1"/><polygon points="${star[1]} ${star[3]} ${star[5]}" pathLength="1"/>`;
+  document.body.appendChild(svg);
+  svg.animate([{ transform: "rotate(-20deg) scale(.92)", opacity: 0 }, { transform: "rotate(0deg) scale(1)", opacity: 1, offset: 0.35 }, { transform: "rotate(12deg) scale(1.04)", opacity: 0 }], { duration: 1400, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => svg.remove();
+}
+
+/** A low ring of dust spreading from under a card that has just landed. */
+function dust(to: DOMRect) {
+  const e = document.createElement("div");
+  e.className = "fx fx-dust";
+  Object.assign(e.style, { left: `${to.left + to.width / 2}px`, top: `${to.top + to.height - 6}px`, width: `${to.width}px`, height: `${to.width * 0.22}px` });
+  document.body.appendChild(e);
+  e.animate([{ transform: "translate(-50%,-50%) scale(.6)", opacity: 0.8 }, { transform: "translate(-50%,-50%) scale(1.5)", opacity: 0 }], { duration: 650, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => e.remove();
+}
+
+/** The flourish when a card lands in its space; `name` is the class, or empty for a species or background. */
+function land(name: string, to: DOMRect, target: HTMLElement) {
+  const cx = to.left + to.width / 2, cy = to.top + to.height / 2;
+  const n = name.toLowerCase();
+  if (/barbarian/.test(n)) { rings(cx, cy, "#e0412c", 2, 140); sparks(cx, cy, ["#ff5a36", "#ffb347", "#c81e1e"], 30, 170); }
+  else if (/fighter/.test(n)) { slash(to, "#ffb347"); sparks(cx, cy, ["#ffd27a", "#ff7a2e", "#fff"], 24, 150); }
+  else if (/paladin/.test(n)) { beam(to, "#ffd36a"); sparks(cx, cy, ["#ffe7a3", "#fff"], 16, 120); }
+  else if (/ranger/.test(n)) { for (let k = 0; k < 3; k++) particle("fx-arrow", to.left - 120 - k * 30, cy - 30 + k * 30, to.width * 0.55 + 120, rnd(-6, 6), { duration: 360, delay: k * 90, scaleTo: 1 }); drift(to, "fx-leaf", 10, { colors: ["#6aa84f", "#8fbf4a", "#4e7a32"] }); }
+  else if (/rogue/.test(n)) { drift(to, "fx-smoke", 12, { colors: ["#1b1b24", "#2c2a3a"], size: [30, 60], rise: 60, duration: [700, 1100] }); slash(to, "#8b7bd8", 32); }
+  else if (/monk/.test(n)) { rings(cx, cy, "#9fd8ff", 3, 150); drift(to, "fx-dot", 10, { colors: ["#cfeeff", "#7cc4ff"], size: [4, 7] }); }
+  else if (/cleric/.test(n)) { rays(cx, cy, "rgba(255, 236, 170, .9)", Math.max(to.width, to.height) * 1.6); drift(to, "fx-dot", 12, { colors: ["#fff7d1", "#ffe08a"], size: [3, 6] }); }
+  else if (/druid/.test(n)) { drift(to, "fx-leaf", 18, { colors: ["#5f9e3a", "#8cc152", "#3f7a2a", "#e3c35a"], rise: 190 }); rings(cx, cy, "#7fbf5a", 1, 170); }
+  else if (/wizard/.test(n)) { sigil(to, "#8fc3ff"); drift(to, "fx-dot", 10, { colors: ["#bfe0ff", "#6ea8ff"], size: [3, 6] }); }
+  else if (/sorcerer/.test(n)) { lightning(to, "#9d7bff"); sparks(cx, cy, ["#c9b6ff", "#7b5bff", "#fff"], 18, 130); }
+  else if (/warlock/.test(n)) { drift(to, "fx-smoke", 14, { colors: ["#3b1f5a", "#1f5a3b", "#5a1f4f"], size: [30, 64], rise: 110, duration: [900, 1400] }); sparks(cx, cy, ["#7dff9a", "#c27dff"], 14, 110); }
+  else if (/bard/.test(n)) { drift(to, "fx-note", 12, { colors: ["#ffd36a", "#ff8ad8", "#8ad8ff", "#b4ff8a"], texts: ["♪", "♫", "♩", "♬"], size: [16, 26], rise: 170 }); }
+  else if (/artificer/.test(n)) { drift(to, "fx-gear", 7, { colors: ["#d9a441", "#b0b8c0"], texts: ["⚙"], size: [18, 30], rise: 110 }); sparks(cx, cy, ["#ffb347", "#ffe08a"], 16, 120); }
+  else { sigil(to, "#ffd98a"); drift(to, "fx-dot", 9, { colors: ["#ffcf7a"], size: [3, 5] }); }
+  // Every landing kicks up a ring of dust under the card.
+  dust(to);
+  void target;
+}
+
 /**
  * The big choices (species, class, background) arrive as a card: it glides from the list to its space, growing to
  * fit, and an arcane circle draws itself around it as it lands, with a few embers drifting up.
@@ -99,48 +235,29 @@ function epicFly(from: DOMRect | null, label: string, kind: Kind, target: HTMLEl
   const h0 = Math.max(start.height, 34);
   const box = (x: number, y: number, w: number, h: number, font: number, turn: number, tilt: number, extra: Keyframe = {}): Keyframe =>
     ({ left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, fontSize: `${font}px`, transform: `perspective(900px) rotateY(${turn}deg) rotateZ(${tilt}deg)`, ...extra });
-  // A smooth glide on a gentle curve with a slight tilt; no flips.
-  const midX = start.left + (to.left - start.left) * 0.5, midY = Math.min(start.top, to.top) - 40;
+  // Hearthstone-style: the card lifts toward you as it travels, hangs just above its space a little larger, then
+  // slams down into it.
+  const midX = start.left + (to.left - start.left) * 0.5, midY = Math.min(start.top, to.top) - 50;
+  const big = 1.12;
   const anim = card.animate(
     [
-      box(start.left, start.top, start.width, h0, 14, 0, 0, { opacity: 0, offset: 0 }),
-      box(start.left, start.top - 8, start.width, h0, 14, 0, -1.5, { opacity: 1, offset: 0.12 }),
-      box(midX, midY, (start.width + to.width) / 2, (h0 + to.height) / 2, 21, 0, 1, { offset: 0.55 }),
-      box(to.left, to.top, to.width, to.height, 28, 0, 0, { opacity: 1, offset: 1 }),
+      { ...box(start.left, start.top, start.width, h0, 14, 0, 0), opacity: 0, offset: 0 },
+      { ...box(start.left, start.top - 10, start.width, h0, 14, 0, -2), opacity: 1, offset: 0.12 },
+      { ...box(midX - (to.width * (big - 1)) / 2, midY, ((start.width + to.width) / 2) * 1.05, ((h0 + to.height) / 2) * 1.05, 22, 0, 2), offset: 0.5 },
+      { ...box(to.left - (to.width * (big - 1)) / 2, to.top - (to.height * (big - 1)) / 2 - 18, to.width * big, to.height * big, 30, 0, 0), offset: 0.8, easing: "cubic-bezier(.55,0,1,.45)" },
+      { ...box(to.left, to.top, to.width, to.height, 28, 0, 0), opacity: 1, offset: 1 },
     ],
-    { duration: 780, easing: "cubic-bezier(.22,.8,.24,1)", fill: "forwards" },
+    { duration: 900, easing: "cubic-bezier(.22,.8,.24,1)", fill: "forwards" },
   );
   anim.onfinish = () => {
     card.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: "forwards" }).onfinish = () => card.remove();
     delete target.dataset.awaiting;
     delete target.dataset.impact;
     void target.offsetWidth;
-    target.dataset.impact = "1";
+    target.dataset.impact = kind === "class" && HEAVY.test(label) ? "heavy" : "1";
     window.setTimeout(() => delete target.dataset.impact, 900);
-    // An arcane circle draws itself around the space and fades, the way a spell takes hold.
-    const cx = to.left + to.width / 2, cy = to.top + to.height / 2;
-    const size = Math.max(to.width, to.height) * 1.15;
-    const ns = "http://www.w3.org/2000/svg";
-    const sigil = document.createElementNS(ns, "svg");
-    sigil.setAttribute("class", "board-sigil");
-    sigil.setAttribute("viewBox", "-50 -50 100 100");
-    Object.assign(sigil.style, { left: `${cx - size / 2}px`, top: `${cy - size / 2}px`, width: `${size}px`, height: `${size}px` });
-    const tick = Array.from({ length: 12 }, (_, k) => { const a = (k * Math.PI) / 6; return `M${(44 * Math.cos(a)).toFixed(1)} ${(44 * Math.sin(a)).toFixed(1)} L${(40 * Math.cos(a)).toFixed(1)} ${(40 * Math.sin(a)).toFixed(1)}`; }).join(" ");
-    const star = Array.from({ length: 6 }, (_, k) => { const a = (k * Math.PI) / 3 - Math.PI / 2; return `${(34 * Math.cos(a)).toFixed(1)},${(34 * Math.sin(a)).toFixed(1)}`; });
-    sigil.innerHTML = `<circle r="47" pathLength="1"/><circle r="38" pathLength="1"/><path d="${tick}" pathLength="1"/><polygon points="${star[0]} ${star[2]} ${star[4]}" pathLength="1"/><polygon points="${star[1]} ${star[3]} ${star[5]}" pathLength="1"/>`;
-    document.body.appendChild(sigil);
-    sigil.animate([{ transform: "rotate(-20deg) scale(.92)", opacity: 0 }, { transform: "rotate(0deg) scale(1)", opacity: 1, offset: 0.35 }, { transform: "rotate(12deg) scale(1.04)", opacity: 0 }], { duration: 1400, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => sigil.remove();
-    // A few embers drift up from the card's edge.
-    for (let k = 0; k < 9; k++) {
-      const e = document.createElement("div");
-      e.className = "board-ember";
-      Object.assign(e.style, { left: `${to.left + Math.random() * to.width}px`, top: `${to.top + to.height * (0.55 + Math.random() * 0.45)}px` });
-      document.body.appendChild(e);
-      e.animate(
-        [{ transform: "translate(-50%,-50%) scale(1)", opacity: 0 }, { opacity: 0.9, offset: 0.2 }, { transform: `translate(calc(-50% + ${(Math.random() - 0.5) * 30}px), calc(-50% - ${50 + Math.random() * 70}px)) scale(.4)`, opacity: 0 }],
-        { duration: 1100 + Math.random() * 700, delay: Math.random() * 200, easing: "cubic-bezier(.2,.6,.4,1)" },
-      ).onfinish = () => e.remove();
-    }
+    // The landing: a class lands with its own effect, a species or background with the arcane circle.
+    land(kind === "class" ? label : "", to, target);
   };
 }
 

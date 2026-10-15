@@ -1523,10 +1523,11 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-space > * { transition: opacity .15s; }
 .board-space[data-impact] { animation: board-impact .9s ease-out; }
 @keyframes board-impact {
-  0% { filter: brightness(1.35) drop-shadow(0 0 18px color-mix(in srgb, var(--gold) 70%, transparent)); }
-  100% { filter: none; }
+  0% { transform: scale(.97, 1.03); filter: brightness(1.35) drop-shadow(0 0 18px color-mix(in srgb, var(--gold) 70%, transparent)); }
+  35% { transform: scale(1.01, .99); }
+  100% { transform: none; filter: none; }
 }
-.board-sigil { position: fixed; z-index: 299; pointer-events: none; overflow: visible; fill: none; stroke: var(--gold2); stroke-width: .8; filter: drop-shadow(0 0 4px var(--gold)); }
+.board-sigil { position: fixed; z-index: 299; pointer-events: none; overflow: visible; fill: none; stroke-width: .8; filter: drop-shadow(0 0 4px var(--gold)); }
 .board-sigil > * { stroke-dasharray: 1; stroke-dashoffset: 1; animation: board-draw 1s cubic-bezier(.4,0,.2,1) forwards; }
 .board-sigil > :nth-child(2) { animation-delay: .08s; } .board-sigil > :nth-child(3) { animation-delay: .16s; } .board-sigil > :nth-child(4) { animation-delay: .22s; } .board-sigil > :nth-child(5) { animation-delay: .3s; }
 @keyframes board-draw { to { stroke-dashoffset: 0; } }
@@ -1649,3 +1650,28 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 }
 .board-space.has-card .pick-foot { padding-right: 8px; }
 @container (max-width: 240px) { .board-space.has-card .pick-select { padding-left: 8px; padding-right: 14px; letter-spacing: .04em; } }
+
+/* Landing effects */
+.fx { position: fixed; z-index: 302; pointer-events: none; will-change: transform, opacity; }
+.fx-spark { width: 14px; height: 2px; border-radius: 2px; box-shadow: 0 0 6px currentColor; }
+.fx-dot { width: 5px; height: 5px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+.fx-leaf { width: 10px; height: 6px; border-radius: 0 100% 0 100%; background: currentColor; }
+.fx-note, .fx-gear { font: 700 20px var(--body); text-shadow: 0 0 8px currentColor; }
+.fx-smoke { width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle, currentColor, transparent 70%); color: #222; filter: blur(4px); }
+.fx-arrow { width: 70px; height: 2px; background: linear-gradient(90deg, transparent, #d9c08a 30%, #f5e3b5); }
+.fx-arrow::after { content: ""; position: absolute; right: -6px; top: -4px; border: 5px solid transparent; border-left: 8px solid #e9e1cf; }
+.fx-slash { height: 4px; border-radius: 4px; box-shadow: 0 0 12px #fff; }
+.fx-ring { border: 3px solid; border-radius: 50%; }
+.fx-beam { border-radius: 40%; filter: blur(2px); mix-blend-mode: screen; }
+.fx-rays { border-radius: 50%; mask: radial-gradient(circle, #000 20%, transparent 70%); -webkit-mask: radial-gradient(circle, #000 20%, transparent 70%); mix-blend-mode: screen; }
+.fx-bolt { overflow: visible; }
+.board-space[data-impact="heavy"] { animation: board-impact-heavy .55s cubic-bezier(.2,.9,.3,1); }
+@keyframes board-impact-heavy {
+  0% { transform: scale(1.06); filter: brightness(1.5); }
+  20% { transform: scale(.97) translate(-4px, 2px); }
+  40% { transform: scale(1.01) translate(4px, -2px); }
+  60% { transform: translate(-2px, 1px); }
+  100% { transform: none; filter: none; }
+}
+
+.fx-dust { border-radius: 50%; background: radial-gradient(ellipse, rgba(235, 215, 170, .55), rgba(235, 215, 170, 0) 70%); filter: blur(2px); }

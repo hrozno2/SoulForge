@@ -5,6 +5,7 @@ import { downloadText, pickFiles } from "../store";
 import { Hint } from "./Help";
 import { t } from "../i18n";
 import { PartyView } from "./PartyView";
+import { askConfirm } from "./Confirm";
 import type { ARegistry } from "../aurora/registry";
 import { resolve } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
@@ -89,7 +90,7 @@ export function StartTab({
             <CharCard key={c.id} rec={c} reg={reg} current={c.id === currentId} onOpen={() => onOpen(c.id, c.data)}
               onDuplicate={() => onOpen(uid(), { ...c.data, name: `${c.data.name || "Character"} (copy)` })}
               onExport={() => downloadText(`${c.name || "character"}.json`, JSON.stringify(c.data, null, 2))}
-              onDelete={async () => { if (confirm(`Delete ${c.name || "this character"}?`)) { await deleteCharacterRecord(c.id); refresh(); } }} />
+              onDelete={async () => { if (await askConfirm({ title: `Delete ${c.name || "this character"}?`, message: "The character and everything saved with it will be removed from this computer. This cannot be undone; export it first if you might want it back.", confirmLabel: "Delete character" })) { await deleteCharacterRecord(c.id); refresh(); } }} />
           ))}
           {!list.length && <p className="muted">No saved characters yet. Your work saves automatically.</p>}
         </div>

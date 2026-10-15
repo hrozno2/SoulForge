@@ -1816,3 +1816,10 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .mini-badge { align-self: flex-start; padding: 1px 7px; border-radius: 9px; background: rgba(10, 8, 6, .6); border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent); color: var(--gold2); font: 700 9.5px var(--body); letter-spacing: .1em; text-transform: uppercase; }
 .mini-name { font-size: 15px; }
 .scroll-lvl { min-width: 0; width: auto; height: 17px; border-radius: 9px; padding: 0 7px; font: 700 9.5px var(--body); letter-spacing: .08em; text-transform: uppercase; }
+
+/* Confirmation before deleting */
+.confirm-box { width: min(440px, 92vw); }
+.confirm-box h2 { margin-top: 0; }
+.confirm-actions { justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.confirm-box button.danger { background: #8a2323; color: #fff; border-color: #8a2323; }
+.confirm-box button.danger:hover { background: #a62b2b; }

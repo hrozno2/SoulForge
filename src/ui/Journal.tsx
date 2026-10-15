@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { askConfirm } from "./Confirm";
 import { uid, type Character, type JournalEntry } from "../aurora/character";
 
 type SetCharacter = (fn: (c: Character) => Character) => void;
@@ -40,7 +41,7 @@ export function Journal({ ch, set }: { ch: Character; set: SetCharacter }) {
                   <div className="row">
                     <input type="date" aria-label="Session date" value={e.date} onChange={(ev) => edit(e.uid, { date: ev.target.value })} />
                     <input aria-label="Entry title" placeholder="Title" value={e.title} onChange={(ev) => edit(e.uid, { title: ev.target.value })} />
-                    <button onClick={() => { if (!e.text.trim() || confirm("Delete this entry?")) set((c) => ({ ...c, journal: (c.journal ?? []).filter((x) => x.uid !== e.uid) })); }}>Delete</button>
+                    <button onClick={async () => { if (!e.text.trim() || (await askConfirm({ title: "Delete this journal entry?", message: "This cannot be undone." }))) set((c) => ({ ...c, journal: (c.journal ?? []).filter((x) => x.uid !== e.uid) })); }}>Delete</button>
                   </div>
                   <textarea rows={8} aria-label="Entry text" value={e.text} onChange={(ev) => edit(e.uid, { text: ev.target.value })} />
                 </div>

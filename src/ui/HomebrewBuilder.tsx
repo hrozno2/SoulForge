@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { askConfirm } from "./Confirm";
 import { ABILITY_NAMES, DAMAGE_TYPES, EFFECTS, HB_KINDS, SCHOOLS, SKILL_NAMES, WEAPON_PROPERTIES, entryXml, newEntry, toXml, validate, type HbEffect, type HbEntry } from "../aurora/homebrew";
 import { idbFileCache } from "../aurora/storage";
 import type { IndexNode } from "../aurora/sources";
@@ -54,7 +55,7 @@ export function HomebrewBuilder({ content, classNames }: { content: ContentState
     setEditing(null);
   };
   const remove = async (e: HbEntry) => {
-    if (!confirm(`Delete ${e.name || "this entry"}?`)) return;
+    if (!(await askConfirm({ title: `Delete ${e.name || "this entry"}?`, message: "It is removed from your homebrew content. Characters that use it will show it as missing." }))) return;
     await persist(entries.filter((x) => x.id !== e.id));
     setMsg(`Deleted ${e.name}.`);
   };

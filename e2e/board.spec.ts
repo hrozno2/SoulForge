@@ -85,3 +85,23 @@ test.describe("Build board on a narrow window", () => {
     expect(seen.errors).toEqual([]);
   });
 });
+
+test("deleting a character asks first, in the app's own dialog", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /new character/i }).click();
+  await tab(page, "Build");
+  await page.getByLabel("Character name").fill("Doomed Dave");
+  await tab(page, "Home");
+  const cards = page.locator(".char-card", { hasText: "Doomed Dave" });
+  await expect(cards).toHaveCount(1);
+  await cards.first().hover();
+  await page.getByRole("button", { name: /^Delete / }).click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toContainText("cannot be undone");
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(cards).toHaveCount(1);
+  await cards.first().hover();
+  await page.getByRole("button", { name: /^Delete / }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Delete character" }).click();
+  await expect(cards).toHaveCount(0);
+});

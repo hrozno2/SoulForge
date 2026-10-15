@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ConfirmHost } from "./Confirm";
 import { t } from "../i18n";
 import { tabOfSlot } from "./Slots";
 import { TAB_ICONS } from "./icons";
@@ -294,6 +295,7 @@ export function App() {
         {showDetail && <DetailPanel el={detail} />}
       </main>
       <DicePanel />
+      <ConfirmHost />
     </div>
     </UiProvider>
   );

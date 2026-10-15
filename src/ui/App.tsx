@@ -170,7 +170,7 @@ export function App() {
   // When the last open choice on Build is made, go on to Magic (casters) or Equipment; when the last spell is
   // chosen on Magic, go on to Equipment. Only on the change itself, so opening a finished character moves nothing.
   const settings = useSettings();
-  const board = testToolsEnabled && settings.buildLayout !== "tabs";
+  const board = settings.buildLayout !== "tabs";
   // The build board holds spells and equipment too, so their own tabs go and Build counts what they had open.
   useEffect(() => { if (board && (tab === "magic" || tab === "equipment")) setTab("build"); }, [board, tab]);
   const prevOpen = useRef({ build: pending, magic: magicList.length, id });

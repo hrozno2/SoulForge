@@ -15,8 +15,9 @@ export default defineConfig({
     viewport: { width: 1280, height: 800 },
     acceptDownloads: true,
     trace: "retain-on-failure",
-    // The tutorial opens for everyone until they say never; most tests are about something else.
-    storageState: { cookies: [], origins: [{ origin: "http://localhost:4173", localStorage: [{ name: "charforge.tutorial", value: "never" }] }] },
+    // The tutorial opens for everyone until they say never; most tests are about something else. They were written
+    // for the tabs layout of Build; the board has tests of its own (board.spec.ts).
+    storageState: { cookies: [], origins: [{ origin: "http://localhost:4173", localStorage: [{ name: "charforge.tutorial", value: "never" }, { name: "charforge.settings", value: JSON.stringify({ buildLayout: "tabs" }) }] }] },
   },
   webServer: {
     command: "npm run build && npx vite preview",

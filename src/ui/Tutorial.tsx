@@ -6,7 +6,6 @@ import { isDesktop } from "../net";
 import { pickFiles } from "../store";
 import type { ContentState } from "./useContent";
 import { useSettings } from "./Settings";
-import { testToolsEnabled } from "./TestTools";
 
 const KEY = "charforge.tutorial";
 
@@ -120,8 +119,8 @@ export function Tutorial(p: TutorialProps) {
   }
 
   const aurora = content.sources.length > 0;
-  // The build board (the test app's layout) is explained in its own words.
-  const board = testToolsEnabled && settings.buildLayout !== "tabs";
+  // The build board is explained in its own words; the older tabs layout keeps its own line.
+  const board = settings.buildLayout !== "tabs";
   const steps: { title: string; body: React.ReactNode }[] = [
     {
       title: "Welcome to Soul Forge",

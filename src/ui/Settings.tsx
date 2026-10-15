@@ -21,12 +21,12 @@ export interface AppSettings {
   showUnusual: boolean;
   /** Printed sheets list every spell the character can prepare, with blank boxes to mark each day. */
   allSpells: boolean;
-  /** The Build tab's layout: the build board (on trial in the test app), or tabs along the top. */
+  /** The Build tab's layout: the build board (lists, board and scores side by side), or the older tabs along the top. */
   buildLayout: "board" | "tabs";
 }
 
 const KEY = "charforge.settings";
-const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true, allSpells: true, buildLayout: import.meta.env.VITE_TEST_TOOLS === "1" ? "board" : "tabs" };
+const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true, allSpells: true, buildLayout: "board" };
 
 function read(): AppSettings {
   try {
@@ -152,6 +152,12 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           <span><b>Reduce motion</b><small className="muted"> Turns off animations and transitions</small></span>
           <input type="checkbox" checked={s.reduceMotion} onChange={(e) => updateSettings({ reduceMotion: e.target.checked })} />
         </label>
+        <div className="set-row">
+          <span><b>Build layout</b><small className="muted"> The board, or the older tabs (with Magic and Equipment as their own tabs)</small></span>
+          <span className="set-ctl">
+            {(["board", "tabs"] as const).map((l) => <button key={l} className={s.buildLayout === l ? "pill active" : "pill"} onClick={() => updateSettings({ buildLayout: l })}>{l === "board" ? "Board" : "Tabs"}</button>)}
+          </span>
+        </div>
         <div className="set-row">
           <span><b>Paper size for PDFs</b></span>
           <span className="set-ctl">

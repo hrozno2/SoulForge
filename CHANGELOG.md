@@ -2,6 +2,12 @@
 
 What changed in each release. Newest first.
 
+## v0.16.0 (2026-10-15)
+
+- Choices every option of which the rules rule out ask for nothing: never filled with a blocked option, never counted as left to do or as a mistake
+- Lists as cards: small two-column cards for species, class and background; spell scrolls under level headings; type icons in the item list
+- Home: saved characters as cards with the class emblem and colour, portrait, level, species, classes, background, HP, AC, speed and top scores
+
 ## v0.15.0 (2026-10-15)
 
 - Background tables (2014 personality traits, ideals, bonds and flaws) can be rolled on, shown in the dice log

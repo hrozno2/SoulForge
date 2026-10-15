@@ -1811,3 +1811,8 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .scroll-learn { position: absolute; top: 5px; right: 5px; width: 20px; height: 20px; font-size: 11px; background: rgba(60, 40, 20, .75); }
 /* Item type icons in the item list */
 .opt-type-ico { display: inline-grid; place-items: center; color: var(--gold); margin-right: 4px; }
+
+/* Card badges: an item's category; a spell scroll's level in words */
+.mini-badge { align-self: flex-start; padding: 1px 7px; border-radius: 9px; background: rgba(10, 8, 6, .6); border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent); color: var(--gold2); font: 700 9.5px var(--body); letter-spacing: .1em; text-transform: uppercase; }
+.mini-name { font-size: 15px; }
+.scroll-lvl { min-width: 0; width: auto; height: 17px; border-radius: 9px; padding: 0 7px; font: 700 9.5px var(--body); letter-spacing: .08em; text-transform: uppercase; }

@@ -1046,7 +1046,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
               <div className="card-back-art"><Backpack f={packFill} /></div>
               <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="adding" />
               <h3 className="board-lib-sub">All items</h3>
-              <Browse items={items} type="Item" chosen={[]} onPick={(el) => addItem(set, el)} defaultView="list" allowCards={false} perPage={60} pickLabel={() => "Add"} />
+              <Browse items={items} type="Item" chosen={[]} onPick={(el) => addItem(set, el)} defaultView="cards" mini viewKey="board.Item" perPage={60} pickLabel={() => "Add"} />
               <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="inventory" />
             </>
           )}

@@ -130,6 +130,15 @@ export interface BrowseProps {
   viewKey?: string;
 }
 
+/** An item's category as a short badge (Weapon, Armor, Gear, Tool, Pack, Focus...), or its rarity for a magic item. */
+const CATEGORY: Record<string, string> = { weapons: "Weapon", armor: "Armor", "adventuring gear": "Gear", tools: "Tool", "equipment packs": "Pack", "spellcasting focus": "Focus", "musical instruments": "Instrument", ammunition: "Ammo", "mounts & vehicles": "Mount", trinkets: "Trinket", trinket: "Trinket", poisons: "Poison", potions: "Potion" };
+function itemBadge(e: AElement): string {
+  if (!["Item", "Weapon", "Armor", "Magic Item"].includes(e.type)) return "";
+  const cat = (e.setters.category?.value ?? "").toLowerCase().trim();
+  if (e.type === "Magic Item") return (e.setters.rarity?.value ?? "Magic").replace(/\s*\(.*$/, "").replace(/^\w/, (c) => c.toUpperCase());
+  return CATEGORY[cat] ?? (cat ? cat.replace(/s$/, "").replace(/^\w/, (c) => c.toUpperCase()) : e.type === "Item" ? "Gear" : e.type);
+}
+
 const ITEM_ICON: Record<string, (p: { size?: number }) => React.ReactNode> = { Weapon: Sword, Armor: Shield, "Magic Item": Wand, Item: Pack };
 
 /** The drag data type for an element type, so a drop target can tell what is over it before the drop. */
@@ -286,7 +295,7 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
               return [heading,
                 <div key={g.key} className={`scroll-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} title={owner ?? why} onMouseEnter={() => onHover?.(e)} {...drag(e, why, owner)}>
                   <button className="scroll-main" onClick={() => !owner && onPick(e)} aria-pressed={picked}>
-                    <span className="scroll-top"><span className="scroll-lvl">{level === "0" ? "C" : level || "?"}</span><SchoolIcon school={s.school?.value} size={16} /><span className="scroll-tick">{picked || owner ? "✓" : ""}</span></span>
+                    <span className="scroll-top"><span className="scroll-lvl">{level === "0" ? "Cantrip" : level ? `Level ${level}` : "Spell"}</span><SchoolIcon school={s.school?.value} size={16} /><span className="scroll-tick">{picked || owner ? "✓" : ""}</span></span>
                     <b className="scroll-name">{e.name}</b>
                     <small className="scroll-meta">{[shortTime(s.time?.value ?? ""), shortRange(s.range?.value ?? "")].filter(Boolean).join(" · ")}{conc ? " · C" : ""}{s.isRitual?.value === "true" ? " · R" : ""}</small>
                     {why && !owner && <small className="scroll-why">{why}</small>}
@@ -297,7 +306,8 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
             return (
               <div key={g.key} className={`mini-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} style={{ ["--hue" as string]: hueOf(e.name) }} title={owner ?? why} onMouseEnter={() => onHover?.(e)} {...drag(e, why, owner)}>
                 <button className="mini-main" onClick={() => !owner && onPick(e)} aria-pressed={picked}>
-                  {hasClassIcon(e.name) ? <ClassIcon name={e.name} size={26} className="mini-icon" /> : <span className="mini-letter">{e.name.charAt(0)}</span>}
+                  {hasClassIcon(e.name) && <ClassIcon name={e.name} size={26} className="mini-icon" />}
+                  {itemBadge(e) && <span className="mini-badge">{itemBadge(e)}</span>}
                   <b className="mini-name">{e.name}</b>
                   <small className="mini-blurb">{CLASS_TAGS[e.name]?.[0] ?? blurb(e.description, 54)}</small>
                   {why && !owner && <small className="mini-why"><LockIcon />{why}</small>}

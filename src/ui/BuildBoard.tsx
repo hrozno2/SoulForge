@@ -190,46 +190,72 @@ function SpellBook({ f }: { f: number }) {
 }
 
 /**
- * A backpack that fills with gear: papers, rope, a bedroll, a sword, food, a torch and a map appear out of its
- * pockets as the starting equipment goes in, and go back as it comes out.
+ * A backpack that fills with gear as the starting equipment goes in, and empties as it comes out: papers in the
+ * front pocket, rope on the side, a bedroll strapped on top, a sword, bread and cheese, a torch and a map case.
  */
 function Backpack({ f }: { f: number }) {
-  const has = (at: number) => f > at - 1e-9 && f > 0;
+  const has = (at: number) => f > 0 && f >= at - 1e-9;
+  const stitch = { fill: "none", stroke: "#e7c98f", strokeWidth: 0.7, strokeDasharray: "2 1.6", opacity: 0.55 } as const;
   return (
     <svg className="board-pack" viewBox="0 0 120 120" role="img" aria-label={`Backpack ${Math.round(f * 100)}% full`}>
-      <g className="board-pack-body" style={{ transform: `scale(${0.92 + f * 0.08}, ${0.96 + f * 0.04})` }}>
-        {/* behind the bag: the sword's hilt, the torch, the map */}
-        {has(0.55) && <g className="board-item"><path d="M33 40 L27 10" stroke="#9aa3ad" strokeWidth="4" strokeLinecap="round" /><path d="M23 19 L37 15" stroke="#c9a45c" strokeWidth="3.2" strokeLinecap="round" /><path d="M27 10 L25.6 3" stroke="#5a3b1f" strokeWidth="3.4" strokeLinecap="round" /><circle cx="25.3" cy="2.5" r="2.4" fill="#c9a45c" /></g>}
-        {has(0.85) && <g className="board-item"><path d="M96 70 L101 36" stroke="#6b4a2b" strokeWidth="3.4" strokeLinecap="round" /><path d="M101 36 q-6 -6 -1 -14 q2 6 5 5 q3 5 -4 9z" fill="#f08a24" /><path d="M101 33 q-2 -3 0 -7 q2 4 2 4z" fill="#ffd36a" /></g>}
-        {has(1) && <g className="board-item"><path d="M68 30 L90 10" stroke="#e8dcb8" strokeWidth="7" strokeLinecap="round" /><path d="M68 30 L90 10" stroke="#b8a170" strokeWidth="7" strokeDasharray="1 5" strokeLinecap="round" /></g>}
-        {/* the bedroll on top */}
-        {has(0.4) && <g className="board-item"><rect x="30" y="18" width="60" height="15" rx="7.5" fill="#5f7144" stroke="#2c331c" strokeWidth="1.2" /><path d="M44 18 v15 M76 18 v15" stroke="#3b2915" strokeWidth="2.4" /><ellipse cx="30" cy="25.5" rx="3" ry="7.5" fill="#4b5a35" /></g>}
-        {/* straps and body */}
-        <path d="M46 34 q14 -14 28 0" fill="none" stroke="#3b2915" strokeWidth="4" strokeLinecap="round" />
-        <rect x="28" y="34" width="64" height="72" rx="14" fill="#6b4a2b" stroke="#2b1d10" strokeWidth="1.6" />
-        <path d="M34 40 q26 8 52 0" fill="none" stroke="#5a3d22" strokeWidth="1.2" />
+      <defs>
+        <linearGradient id="packLeather" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#9a6a3c" /><stop offset=".55" stopColor="#7a4f2a" /><stop offset="1" stopColor="#4e3119" /></linearGradient>
+        <linearGradient id="packFlap" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#a87645" /><stop offset="1" stopColor="#6e4523" /></linearGradient>
+        <linearGradient id="packPocket" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#7d5230" /><stop offset="1" stopColor="#53341b" /></linearGradient>
+        <linearGradient id="packBrass" x1="0" x2="1"><stop offset="0" stopColor="#f4d68a" /><stop offset=".5" stopColor="#c99a3e" /><stop offset="1" stopColor="#8a6420" /></linearGradient>
+        <linearGradient id="packRoll" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#7f9257" /><stop offset="1" stopColor="#4c5a31" /></linearGradient>
+      </defs>
+      <ellipse cx="60" cy="110" rx="36" ry="5" fill="#000" opacity=".35" />
+      <g className="board-pack-body" style={{ transform: `scale(${0.94 + f * 0.06})` }}>
+        {/* behind the bag: the sword, the torch, the map case */}
+        {has(0.55) && <g className="board-item"><path d="M34 46 L26 12" stroke="#c7ced6" strokeWidth="3.6" strokeLinecap="round" /><path d="M34 46 L26 12" stroke="#fff" strokeWidth="1" strokeLinecap="round" opacity=".5" /><path d="M20 20 L35 15.5" stroke="url(#packBrass)" strokeWidth="3.4" strokeLinecap="round" /><path d="M26 12 L24.2 4.5" stroke="#4a2f17" strokeWidth="3.6" strokeLinecap="round" /><circle cx="23.9" cy="3.6" r="2.6" fill="url(#packBrass)" /></g>}
+        {has(0.85) && <g className="board-item"><path d="M95 66 L100 34" stroke="#5a3a1c" strokeWidth="3.6" strokeLinecap="round" /><path d="M96.5 38 h7" stroke="#2d1d0e" strokeWidth="2.4" /><path d="M100 34 q-7 -7 -1.5 -16 q2 6.5 5.5 5.5 q3.5 6 -4 10.5z" fill="#f08a24" /><path d="M100.5 31 q-2.5 -3.5 0 -8 q2.5 4.5 2.5 4.5z" fill="#ffe08a" /></g>}
+        {has(1) && <g className="board-item"><rect x="74" y="4" width="9" height="30" rx="4.5" fill="#6b4423" stroke="#2d1d0e" strokeWidth="1" transform="rotate(28 78.5 19)" /><rect x="74" y="4" width="9" height="5" rx="2.5" fill="url(#packBrass)" transform="rotate(28 78.5 19)" /></g>}
+        {/* the bedroll strapped on top */}
+        {has(0.4) && <g className="board-item"><rect x="28" y="20" width="64" height="16" rx="8" fill="url(#packRoll)" stroke="#2c331c" strokeWidth="1.2" /><path d="M32 26 q28 3 56 0" fill="none" stroke="#a2b479" strokeWidth=".9" opacity=".6" /><ellipse cx="28.5" cy="28" rx="3.6" ry="8" fill="#5f7144" stroke="#2c331c" strokeWidth="1" /><path d="M28.5 23 q2 5 0 10" fill="none" stroke="#3a4625" strokeWidth=".8" /><rect x="40" y="19" width="5" height="18" rx="1.2" fill="#3b2412" /><rect x="75" y="19" width="5" height="18" rx="1.2" fill="#3b2412" /></g>}
+        {/* the shoulder straps and the main body */}
+        <path d="M44 38 q16 -16 32 0" fill="none" stroke="#3b2412" strokeWidth="5" strokeLinecap="round" />
+        <path d="M30 46 q0 -12 30 -12 q30 0 30 12 v48 q0 12 -12 12 h-36 q-12 0 -12 -12z" fill="url(#packLeather)" stroke="#2b1a0c" strokeWidth="1.6" />
+        <path d="M35 48 q0 -9 25 -9 q25 0 25 9 v44 q0 9 -9 9 h-32 q-9 0 -9 -9z" {...stitch} />
+        <path d="M34 50 q4 -11 18 -12" fill="none" stroke="#fff" strokeWidth="1.4" opacity=".12" strokeLinecap="round" />
         {/* papers out of the front pocket */}
-        {has(0.1) && <g className="board-item"><rect x="44" y="62" width="15" height="18" fill="#efe3c4" stroke="#9a8256" strokeWidth=".7" transform="rotate(-9 51 71)" /><rect x="57" y="59" width="15" height="20" fill="#f6edd2" stroke="#9a8256" strokeWidth=".7" transform="rotate(7 64 69)" /><path d="M60 64 h9 M60 67 h8 M60 70 h9" stroke="#8a7650" strokeWidth=".6" transform="rotate(7 64 69)" /></g>}
+        {has(0.1) && <g className="board-item"><rect x="45" y="64" width="14" height="18" rx="1" fill="#efe3c4" stroke="#9a8256" strokeWidth=".7" transform="rotate(-10 52 73)" /><rect x="57" y="61" width="14" height="20" rx="1" fill="#f8efd6" stroke="#9a8256" strokeWidth=".7" transform="rotate(8 64 71)" /><path d="M60 66 h8 M60 69 h7 M60 72 h8" stroke="#8a7650" strokeWidth=".6" transform="rotate(8 64 71)" /></g>}
         {/* bread and cheese out of the left pocket */}
-        {has(0.7) && <g className="board-item"><ellipse cx="23" cy="66" rx="7" ry="5.5" fill="#c58b45" stroke="#6b4a2b" strokeWidth=".8" /><path d="M19 64 l3 -2 M23 63 l3 -2" stroke="#8a5a2a" strokeWidth=".8" /><path d="M26 70 l8 -6 l2 6z" fill="#f2c94c" stroke="#a4862f" strokeWidth=".6" /></g>}
-        {/* the top flap and its buckle */}
-        <path d="M28 52 q0 -20 32 -20 q32 0 32 20 v6 q-32 10 -64 0 z" fill="#7c5733" stroke="#2b1d10" strokeWidth="1.4" />
-        <rect x="56" y="55" width="8" height="10" rx="1.5" fill="#c9a45c" stroke="#7a5c22" strokeWidth=".8" />
+        {has(0.7) && <g className="board-item"><ellipse cx="22" cy="68" rx="7.5" ry="6" fill="#c98e48" stroke="#6b4a2b" strokeWidth=".8" /><path d="M17.5 66 l3 -2.5 M22 65 l3 -2.5" stroke="#8a5a2a" strokeWidth=".9" strokeLinecap="round" /><path d="M24 72 l9 -7 l2.5 7z" fill="#f2c94c" stroke="#a4862f" strokeWidth=".6" /><circle cx="29" cy="70" r=".9" fill="#c79f2c" /></g>}
+        {/* the top flap with its buckle */}
+        <path d="M30 50 q0 -18 30 -18 q30 0 30 18 v8 q-30 11 -60 0z" fill="url(#packFlap)" stroke="#2b1a0c" strokeWidth="1.4" />
+        <path d="M34 52 q0 -14 26 -14 q26 0 26 14 v4 q-26 9 -52 0z" {...stitch} />
+        <path d="M57 56 v10" stroke="#3b2412" strokeWidth="5" />
+        <rect x="54.5" y="62" width="11" height="9" rx="2" fill="none" stroke="url(#packBrass)" strokeWidth="2.2" />
+        <path d="M60 62 v9" stroke="url(#packBrass)" strokeWidth="1.2" />
         {/* the pockets */}
-        <rect x="38" y="76" width="44" height="26" rx="6" fill="#5d3f22" stroke="#2b1d10" strokeWidth="1.3" />
-        <path d="M38 82 q22 6 44 0" fill="none" stroke="#2b1d10" strokeWidth="1" />
-        <rect x="16" y="68" width="15" height="32" rx="5" fill="#5d3f22" stroke="#2b1d10" strokeWidth="1.3" />
-        <rect x="89" y="68" width="15" height="32" rx="5" fill="#5d3f22" stroke="#2b1d10" strokeWidth="1.3" />
-        {/* rope hung on the side */}
-        {has(0.25) && <g className="board-item"><ellipse cx="96" cy="52" rx="9" ry="7" fill="none" stroke="#c2a26a" strokeWidth="3" /><ellipse cx="96" cy="52" rx="5.5" ry="4" fill="none" stroke="#a88a52" strokeWidth="2.4" /></g>}
+        <path d="M38 78 h44 v18 q0 7 -7 7 h-30 q-7 0 -7 -7z" fill="url(#packPocket)" stroke="#2b1a0c" strokeWidth="1.3" />
+        <path d="M41 81 h38 v14 q0 5 -5 5 h-28 q-5 0 -5 -5z" {...stitch} />
+        <path d="M38 78 q22 7 44 0 v5 q-22 7 -44 0z" fill="#6a4426" stroke="#2b1a0c" strokeWidth="1" />
+        <rect x="57" y="82" width="6" height="6" rx="1.2" fill="url(#packBrass)" />
+        <path d="M15 70 h16 v26 q0 6 -6 6 h-4 q-6 0 -6 -6z" fill="url(#packPocket)" stroke="#2b1a0c" strokeWidth="1.3" />
+        <path d="M89 70 h16 v26 q0 6 -6 6 h-4 q-6 0 -6 -6z" fill="url(#packPocket)" stroke="#2b1a0c" strokeWidth="1.3" />
+        <path d="M18 74 h10 M92 74 h10" stroke="#e7c98f" strokeWidth=".7" strokeDasharray="2 1.6" opacity=".55" />
+        {/* rope coiled on the side */}
+        {has(0.25) && <g className="board-item"><ellipse cx="97" cy="54" rx="9.5" ry="7.5" fill="none" stroke="#c9a96e" strokeWidth="3.2" /><ellipse cx="97" cy="54" rx="6" ry="4.4" fill="none" stroke="#a88a52" strokeWidth="2.6" /><path d="M89 52 q3 2 6 0 M99 49 q2 3 6 2" stroke="#7d6435" strokeWidth=".7" fill="none" /></g>}
       </g>
     </svg>
   );
 }
 
-/** A number that turns into a box to type in when clicked. */
-function EditNum({ value, onSet, min, max, label }: { value: number; onSet: (n: number) => void; min: number; max: number; label: string }) {
+/**
+ * A score's number. Normally a click turns it into a box to type in; with `onRoll` (manual scores) the number shows a
+ * die on hover and a click rolls it, and typing a digit on it still lets you enter a number.
+ */
+function EditNum({ value, onSet, min, max, label, onRoll }: { value: number; onSet: (n: number) => void; min: number; max: number; label: string; onRoll?: () => void }) {
   const [edit, setEdit] = useState<string | null>(null);
+  if (edit === null && onRoll) {
+    return (
+      <button className="board-num rolls" title="Click to roll 4d6 and drop the lowest (shown in the dice log). Type a number to set it." aria-label={`${label} base score ${value}. Click to roll, or type a number`} onClick={onRoll} onKeyDown={(e) => { if (/^[0-9]$/.test(e.key)) { e.preventDefault(); setEdit(e.key); } }}>
+        <span className="board-num-value">{value}</span><span className="board-num-die" aria-hidden="true"><D20 size={16} /></span>
+      </button>
+    );
+  }
   if (edit === null) return <button className="board-num" title="Click to type a number" aria-label={`${label} base score ${value}, click to type`} onClick={() => setEdit(String(value))}>{value}</button>;
   const done = () => { const n = Number(edit); if (edit.trim() && Number.isFinite(n)) onSet(Math.max(min, Math.min(max, Math.round(n)))); setEdit(null); };
   return <input className="board-num-in" autoFocus type="number" aria-label={`${label} base score`} value={edit} min={min} max={max} onChange={(e) => setEdit(e.target.value)} onBlur={done} onKeyDown={(e) => { if (e.key === "Enter") done(); if (e.key === "Escape") setEdit(null); }} />;
@@ -299,7 +325,7 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
       <p className="board-method-note">
         {method === "pointbuy" && <><span className={spent > rules.budget ? "warn" : ""}><b>{rules.budget - spent}</b> of {rules.budget} points left</span><button className="linkish" onClick={() => setRulesOpen(true)}>Custom rules{JSON.stringify(rules) === JSON.stringify(STANDARD_RULES) ? "" : " (on)"}</button></>}
         {method === "standard" && <span>Drag a number onto another score to swap them, or click two in turn.</span>}
-        {method === "manual" && <span>Click a number to type it, or roll 4d6 and drop the lowest.</span>}
+        {method === "manual" && <span>Click a score to roll 4d6 and drop the lowest, or type a number on it.</span>}
       </p>
       <div className="board-score-grid">
         {ABILITY_IDS.map((a) => {
@@ -328,9 +354,8 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
                 ) : (
                   <>
                     <button className="board-step" aria-label={`Lower ${ABILITY_LABEL[a]}`} disabled={method === "pointbuy" ? !canLower(rules, ch.abilityBase, a) : base <= 1} onClick={() => setBase(a, base - 1)}>−</button>
-                    <EditNum value={base} label={ABILITY_LABEL[a]} min={method === "pointbuy" ? rules.min : 1} max={method === "pointbuy" ? rules.max : 30} onSet={(n) => setBase(a, n)} />
+                    <EditNum value={base} label={ABILITY_LABEL[a]} min={method === "pointbuy" ? rules.min : 1} max={method === "pointbuy" ? rules.max : 30} onSet={(n) => setBase(a, n)} onRoll={method === "manual" ? () => roll(a) : undefined} />
                     <button className="board-step" aria-label={`Raise ${ABILITY_LABEL[a]}`} disabled={method === "pointbuy" ? !canRaise(rules, ch.abilityBase, a) : base >= 30} onClick={() => setBase(a, base + 1)}>+</button>
-                    {method === "manual" && <button className="board-roll" title="Roll 4d6 and drop the lowest (shows in the dice log)" aria-label={`Roll ${ABILITY_LABEL[a]}`} onClick={() => roll(a)}><D20 size={15} /></button>}
                   </>
                 )}
               </div>
@@ -532,9 +557,13 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   }, [spellCount]);
   // How far along the spells and the starting gear are, 0 to 1, for the book and the backpack.
   const magicSlots = r.slots.filter((s) => tabOfSlot(s) === "magic" && !s.rule.optional);
-  const spellNeed = magicSlots.reduce((n, s) => n + s.rule.number, 0);
-  const spellHave = magicSlots.reduce((n, s) => n + Math.min(s.chosen.length, s.rule.number), 0);
-  const spellFill = spellNeed ? spellHave / spellNeed : spellCount ? 1 : 0;
+  // The spellbook fills with what the player has picked: spells and cantrips to learn (a choice the content filled
+  // in by default does not count), and the spells prepared, out of what each allows. Nothing to pick leaves it thin.
+  const preparing = sheet.casting.filter((c) => c.prepare && c.prepareMax > 0);
+  const preparedOf = (c: (typeof sheet.casting)[number]) => Math.min(c.prepareMax, (ch.prepared[c.name] ?? []).length);
+  const spellNeed = magicSlots.reduce((n, s) => n + s.rule.number, 0) + preparing.reduce((n, c) => n + c.prepareMax, 0);
+  const spellHave = magicSlots.reduce((n, s) => n + (s.defaulted ? 0 : Math.min(s.chosen.length, s.rule.number)), 0) + preparing.reduce((n, c) => n + preparedOf(c), 0);
+  const spellFill = spellNeed ? spellHave / spellNeed : 0;
   const plans = useMemo(() => startingPlans(ch, r.reg), [ch, r.reg]);
   const packFill = useMemo(() => {
     const added = ch.equipmentAdded ?? [];
@@ -657,7 +686,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
               <h3>{name}</h3>
               {kind === "class" && el && CLASS_TAGS[el.name] && <div className="pick-tags">{CLASS_TAGS[el.name].map((t) => <span key={t}>{t}</span>)}</div>}
               {el && <p className="board-blurb">{blurb(el.description, 120)}</p>}
-              {kind === "magic" && <p className="board-blurb">{sheet.casting.map((c) => `${c.name}: DC ${c.dc}, ${signed(c.attack)} to hit`).join(" · ")}{spellNeed ? ` · ${spellHave} of ${spellNeed} spells chosen` : ""}</p>}
+              {kind === "magic" && <p className="board-blurb">{sheet.casting.map((c) => `${c.name}: DC ${c.dc}, ${signed(c.attack)} to hit`).join(" · ")}{spellNeed ? ` · ${spellHave} of ${spellNeed} spells picked` : ""}</p>}
               {kind === "equipment" && <p className="board-blurb">{ch.inventory.length} {ch.inventory.length === 1 ? "item" : "items"}{plans.length > 0 ? (packFill >= 1 ? " · packed for the road" : ` · starting gear ${plans.filter((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))).length} of ${plans.length}`) : ""}</p>}
             </>
           ) : (

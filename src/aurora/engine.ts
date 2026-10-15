@@ -406,6 +406,16 @@ export const FULL_CASTER_SLOTS: number[][] = [
   [4, 3, 3, 3, 3, 1, 1, 1, 1], [4, 3, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 3, 2, 2, 1, 1],
 ];
 
+/**
+ * A required choice still waiting for a pick the rules allow. One whose every option is ruled out (a Wizard's Scholar
+ * expertise for someone proficient in none of its skills) asks for nothing: by the rules the feature then does nothing, so it is never counted as left to do or as a mistake.
+ */
+export function stillToChoose(s: SelectSlot, _r?: unknown): boolean {
+  // Only options the rules block are ruled out; one the character already has can be a fair pick (a choice made from
+  // known spells).
+  return !s.rule.optional && s.chosen.length < s.rule.number && s.options.some((o) => !s.chosen.includes(o.id) && !s.blocked.has(o.id));
+}
+
 export function resolve(ch: Character, reg: ARegistry): Resolved {
   let prev: Pass | null = null;
   let pass = walk(ch, reg, null);

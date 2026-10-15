@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Resolved } from "../aurora/engine";
-import { hitDieOf, resolve } from "../aurora/engine";
+import { hitDieOf, resolve, stillToChoose } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
 import { totalLevel, type Character } from "../aurora/character";
 import type { AElement } from "../aurora/types";
@@ -52,7 +52,7 @@ export function LevelUp({ r, ch, set, onDetail, onClose }: { r: Resolved; ch: Ch
 
   const newFeatures = applied ? sheet.features.filter((f) => !oldSheet.features.some((o) => o.id === f.id)) : [];
   const hpGain = applied ? r.stats.get("hp") - oldResolved.stats.get("hp") : 0;
-  const open = applied ? r.slots.filter((s) => !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length) : [];
+  const open = applied ? r.slots.filter((s) => !s.defaulted && stillToChoose(s, r)) : [];
   const leveled = applied ? r.reg.get(applied) : undefined;
   const swappable = applied ? r.slots.filter((s) => s.rule.type === "Spell" && s.chosen.length > 0 && s.root === `class:${applied}` && !/cantrip/i.test(s.rule.name)) : [];
   const die = applied ? hitDieOf(r.reg.get(applied)) : 0;

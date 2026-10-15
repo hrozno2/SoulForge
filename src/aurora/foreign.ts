@@ -7,7 +7,7 @@
 import { ABILITY_IDS, newCharacter, uid, type AbilityId, type Character } from "./character";
 import type { AElement } from "./types";
 import type { ARegistry } from "./registry";
-import { hitDieOf, resolve } from "./engine";
+import { hitDieOf, resolve, stillToChoose } from "./engine";
 import { buildSheet, preparePool } from "./sheet";
 import { ItemIndex, resolveChosenTools } from "./startingEquipment";
 import { isModern, isPlaytest } from "./edition";
@@ -851,8 +851,9 @@ class Importer {
     // file does not list are left for the player to choose rather than guessed.
     ch = this.fillOpen(ch, importedScores, true);
     // What the file leaves open, as a to-do list: spells on the Magic tab, everything else on Build.
-    const todo = resolve(ch, this.reg).slots
-      .filter((s) => !s.rule.optional && s.chosen.length < s.rule.number && s.options.length)
+    const done = resolve(ch, this.reg);
+    const todo = done.slots
+      .filter((s) => stillToChoose(s, done))
       .map((s) => `${s.rule.type === "Spell" ? "Magic" : "Build"}: ${s.rule.name}, choose ${s.rule.number - s.chosen.length}`);
     // Imported scores already include species and background bonuses, so remove them to get the base.
     // Foundry keeps the scores without what magic items add (a Headband of Intellect sets 19 on top), so items are left

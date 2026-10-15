@@ -2,7 +2,7 @@ import { RulesCheckBar } from "./RulesCheck";
 import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as pbSpent } from "../aurora/pointBuy";
 import { useMemo, useState } from "react";
 import type { AElement } from "../aurora/types";
-import type { Resolved } from "../aurora/engine";
+import { stillToChoose, type Resolved } from "../aurora/engine";
 import {
   ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, totalLevel, type AbilityId, type Character,
 } from "../aurora/character";
@@ -216,7 +216,7 @@ export function todoFor(r: Resolved, ch: Character, s: Sub): string[] {
   if (s === "race" && !ch.race) lines.push("Choose a species");
   if (s === "class" && !ch.classes.length) lines.push("Choose a class");
   if (s === "background" && !ch.background) lines.push("Choose a background");
-  for (const x of r.slots.filter((x) => tabOfSlot(x) === s && !x.rule.optional && x.chosen.length < x.rule.number)) lines.push(`${x.rule.name}: ${x.rule.number - x.chosen.length} more to choose${x.rule.number > 1 ? ` (${x.chosen.length}/${x.rule.number})` : ""}`);
+  for (const x of r.slots.filter((x) => tabOfSlot(x) === s && stillToChoose(x, r))) lines.push(`${x.rule.name}: ${x.rule.number - x.chosen.length} more to choose${x.rule.number > 1 ? ` (${x.chosen.length}/${x.rule.number})` : ""}`);
   return lines;
 }
 

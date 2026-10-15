@@ -3,7 +3,7 @@ import { t } from "../i18n";
 import { tabOfSlot } from "./Slots";
 import { TAB_ICONS } from "./icons";
 import { newCharacter, normalizeCharacter, uid, type Character } from "../aurora/character";
-import { resolve } from "../aurora/engine";
+import { resolve, stillToChoose } from "../aurora/engine";
 import { randomCharacter } from "../aurora/randomCharacter";
 import { saveCharacterRecord } from "../aurora/storage";
 import type { AElement } from "../aurora/types";
@@ -155,7 +155,7 @@ export function App() {
     }
   };
 
-  const unfilled = r.slots.filter((s) => !s.rule.optional && s.chosen.length < s.rule.number && s.options.length);
+  const unfilled = r.slots.filter((s) => stillToChoose(s, r));
   const describe = (s: (typeof unfilled)[number]) => `${s.rule.name}: ${s.rule.number - s.chosen.length} to choose`;
   // Spell choices belong to the Magic tab, everything else to Build.
   const pendingList = [

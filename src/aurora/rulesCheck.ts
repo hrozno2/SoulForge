@@ -10,7 +10,7 @@ import { preparePool, type SheetData } from "./sheet";
 import type { AElement } from "./types";
 import { ABILITY_IDS, type AbilityId } from "./character";
 import { meets } from "./requirements";
-import { reqCtx } from "./engine";
+import { reqCtx, stillToChoose } from "./engine";
 import { isModern } from "./edition";
 
 export interface RefFeature { name: string; level: number; optional?: boolean; subclass?: boolean }
@@ -97,7 +97,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   for (const s of r.slots) {
     if (s.rule.optional) continue;
     if (!s.options.length) add("A required choice has no options", `${s.rule.name} [${s.rule.type}]`);
-    else if (s.chosen.length < s.rule.number) add("A required choice is not made", `${s.rule.name}: ${s.chosen.length} of ${s.rule.number}`);
+    else if (stillToChoose(s, r)) add("A required choice is not made", `${s.rule.name}: ${s.chosen.length} of ${s.rule.number}`);
     for (const id of s.chosen) if (s.blocked.has(id)) add("A choice does not meet its requirements", `${s.rule.name}: ${reg.get(id)?.name}`);
   }
   for (const w of r.warnings) add("Content refers to something missing", w);

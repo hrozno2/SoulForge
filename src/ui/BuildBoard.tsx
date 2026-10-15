@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { AElement } from "../aurora/types";
-import type { Resolved } from "../aurora/engine";
+import { stillToChoose, type Resolved } from "../aurora/engine";
 import { ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, totalLevel, type AbilityId, type Character } from "../aurora/character";
 import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as pbSpent } from "../aurora/pointBuy";
 import { buildSheet } from "../aurora/sheet";
@@ -678,7 +678,7 @@ function StatsPanel({ r, ch, set, onIncreases, onMouseLeave }: { r: Resolved; ch
   const sh = useMemo(() => buildSheet(r), [r]);
   const tiles: [string, string][] = [["HP", String(sh.hp)], ["AC", String(sh.ac.value)], ["Init", signed(sh.initiative)], ["Speed", `${sh.speed} ft`], ["Prof", signed(sh.proficiency)]];
   const increases = r.slots.filter((s) => tabOfSlot(s) === "abilities");
-  const openIncreases = increases.filter((s) => !s.rule.optional && s.chosen.length < s.rule.number).length;
+  const openIncreases = increases.filter((s) => stillToChoose(s, r)).length;
   const defenses = [...sh.defenses.resistances.map((d) => `Resists ${d}`), ...sh.defenses.immunities.map((d) => `Immune to ${d}`), ...sh.defenses.vulnerabilities.map((d) => `Vulnerable to ${d}`)];
   const section = (title: string, items: string[]) => items.length > 0 && (
     <details className="board-sec">
@@ -699,7 +699,7 @@ function StatsPanel({ r, ch, set, onIncreases, onMouseLeave }: { r: Resolved; ch
       {openIncreases > 0 && (
         <p className="board-incr">
           <span className="warn">{openIncreases} score {openIncreases === 1 ? "increase" : "increases"} to choose</span>
-          <button className="pick-select" onClick={() => onIncreases(increases.find((s) => !s.rule.optional && s.chosen.length < s.rule.number)!.root)}>Choose</button>
+          <button className="pick-select" onClick={() => onIncreases(increases.find((s) => stillToChoose(s, r))!.root)}>Choose</button>
         </p>
       )}
       {section("Senses", [...sh.vision, `Passive Perception ${sh.passivePerception}`])}
@@ -874,7 +874,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     ...(!ch.race ? [{ kind: "race" as Kind, text: "Choose a species", list: true }] : []),
     ...(!ch.classes.length ? [{ kind: "class" as Kind, text: "Choose a class", list: true }] : []),
     ...(!ch.background ? [{ kind: "background" as Kind, text: "Choose a background", list: true }] : []),
-    ...r.slots.filter((sl) => !sl.rule.optional && sl.chosen.length < sl.rule.number).map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: false })),
+    ...r.slots.filter((sl) => stillToChoose(sl, r)).map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: false })),
     ...(plans.length && packFill < 1 && !plans.every((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))) ? [{ kind: "equipment" as Kind, text: "Starting equipment", list: false }] : []),
   ];
   // Each space's count of what is left: every choice its species, class or background asks for (languages,
@@ -1052,7 +1052,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           )}
     </>
   );
-  const scoresLeft = r.slots.filter((s) => tabOfSlot(s) === "abilities" && !s.rule.optional && s.chosen.length < s.rule.number).length;
+  const scoresLeft = r.slots.filter((s) => tabOfSlot(s) === "abilities" && stillToChoose(s, r)).length;
   // A side panel closes when the mouse leaves it, except while a big choice is landing.
   const leave = (which: "left" | "right") => () => { if (narrow && !flyHide && !back && side === which) setSide(null); };
   return (

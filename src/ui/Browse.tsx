@@ -4,7 +4,7 @@ import { formatRelease, groupVariants, hasRecommendation, hiddenBy, sortGroups, 
 import { applyFacets, facetCounts, facetsFor, type Selected } from "../aurora/facets";
 import { stripHtml } from "../aurora/sheet";
 import { shortRange, shortTime } from "../sheets/data";
-import { hueOf } from "./PickCards";
+import { Emblem, hueOf } from "./PickCards";
 import { useUi } from "./Learn";
 import { SchoolIcon } from "./schoolIcons";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
@@ -306,7 +306,7 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
             return (
               <div key={g.key} className={`mini-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} style={{ ["--hue" as string]: hueOf(e.name) }} title={owner ?? why} onMouseEnter={() => onHover?.(e)} {...drag(e, why, owner)}>
                 <button className="mini-main" onClick={() => !owner && onPick(e)} aria-pressed={picked}>
-                  {hasClassIcon(e.name) && <ClassIcon name={e.name} size={26} className="mini-icon" />}
+                  <span className="mini-icon"><Emblem el={e} size={24} /></span>
                   {itemBadge(e) && <span className="mini-badge">{itemBadge(e)}</span>}
                   <b className="mini-name">{e.name}</b>
                   <small className="mini-blurb">{CLASS_TAGS[e.name]?.[0] ?? blurb(e.description, 54)}</small>

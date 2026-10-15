@@ -1,6 +1,7 @@
 import type { AElement } from "../aurora/types";
 import { Browse, blurb, featOf } from "./Browse";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
+import { Head, Scroll } from "./icons";
 
 const CLASS_HUE: Record<string, number> = {
   barbarian: 22, bard: 305, cleric: 44, druid: 112, fighter: 8, monk: 190, paladin: 52, ranger: 135, rogue: 232, sorcerer: 352, warlock: 278, wizard: 214, artificer: 28,
@@ -26,13 +27,23 @@ export function PickCards({
   );
 }
 
+/** The emblem of a card: the class's own, or one for species and backgrounds, which have none of their own. */
+export function Emblem({ el, size }: { el: AElement; size: number }) {
+  if (hasClassIcon(el.name)) return <ClassIcon name={el.name} size={size} />;
+  if (el.type === "Race") return <Head size={size} />;
+  if (el.type === "Background") return <Scroll size={size} />;
+  return null;
+}
+
 /** The chosen species, class or background as a wide card, with its own buttons underneath the text. */
 export function ChosenBanner({ el, label, onHover, children }: { el: AElement; label: React.ReactNode; onHover?: (e: AElement) => void; children?: React.ReactNode }) {
   const isClass = el.type === "Class";
+  // Species and backgrounds wear the same ribbon and watermark as a class, with an emblem of their kind.
+  const ribbon = isClass || el.type === "Race" || el.type === "Background";
   return (
-    <div className={`pick-card chosen-banner ${isClass ? "is-class" : ""}`} style={{ ["--hue" as string]: hueOf(el.name) }} data-glyph={hasClassIcon(el.name) ? "" : el.name.charAt(0)} onMouseEnter={() => onHover?.(el)}>
-      {hasClassIcon(el.name) && <ClassIcon name={el.name} size={240} className="pick-watermark" />}
-      {isClass && <div className="ribbon">{hasClassIcon(el.name) ? <ClassIcon name={el.name} size={34} /> : el.name.charAt(0)}</div>}
+    <div className={`pick-card chosen-banner ${ribbon ? "is-class" : ""} ${isClass ? "" : "kind-emblem"}`} style={{ ["--hue" as string]: hueOf(el.name) }} data-glyph="" onMouseEnter={() => onHover?.(el)}>
+      <span className="pick-watermark"><Emblem el={el} size={240} /></span>
+      {ribbon && <div className="ribbon"><Emblem el={el} size={34} /></div>}
       <div className="chosen-kicker">{label}</div>
       <h3>{el.name}</h3>
       {isClass && CLASS_TAGS[el.name] && <div className="pick-tags">{CLASS_TAGS[el.name].map((t) => <span key={t}>{t}</span>)}</div>}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { requestRoll } from "./Dice";
 import { D20 } from "./icons";
 import { Browse } from "./Browse";
@@ -160,15 +160,41 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
   );
 }
 
+/**
+ * A list of choices. Finished ones move below the open ones, like ticking off a shopping list, and slide to their
+ * new place rather than jumping (each keeps its spot when nothing changed).
+ */
 export function SlotList({ slots: given, r, set, onDetail, empty, merge = true }: { slots: SelectSlot[]; r: Resolved; set: SetCharacter; onDetail: (e: AElement) => void; empty?: string; merge?: boolean }) {
-  const slots: MergedSlot[] = merge ? mergeSlots(given) : given;
+  const merged: MergedSlot[] = merge ? mergeSlots(given) : given;
+  const full = (s: MergedSlot) => s.rule.optional ? s.chosen.length > 0 : s.chosen.length >= s.rule.number;
+  const slots = [...merged.filter((s) => !full(s)), ...merged.filter(full)];
+  const box = useRef<HTMLDivElement>(null);
+  const before = useRef(new Map<string, number>());
+  const order = slots.map((s) => s.key).join("|");
+  // Where each choice was, so a move can play from there: measured before the browser paints the new order.
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const now = new Map<string, number>();
+    for (const c of Array.from(el.children) as HTMLElement[]) if (c.dataset.slot) now.set(c.dataset.slot, c.getBoundingClientRect().top);
+    if (!document.documentElement.classList.contains("reduce-motion")) {
+      for (const c of Array.from(el.children) as HTMLElement[]) {
+        const was = before.current.get(c.dataset.slot ?? "");
+        const is = now.get(c.dataset.slot ?? "");
+        if (was !== undefined && is !== undefined && Math.abs(was - is) > 2) c.animate([{ transform: `translateY(${was - is}px)` }, { transform: "none" }], { duration: 380, easing: "cubic-bezier(.22,.8,.24,1)" });
+      }
+    }
+    before.current = now;
+  }, [order]);
   if (!slots.length) return empty ? <p className="muted">{empty}</p> : null;
   return (
-    <>
+    <div className="slot-list" ref={box}>
       {slots.map((s) => (
-        <Slot key={s.key} slot={s} r={r} set={set} onDetail={onDetail} />
+        <div key={s.key} data-slot={s.key}>
+          <Slot slot={s} r={r} set={set} onDetail={onDetail} />
+        </div>
       ))}
-    </>
+    </div>
   );
 }
 

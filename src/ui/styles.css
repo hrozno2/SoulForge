@@ -1396,8 +1396,12 @@ main.wide { max-width: 1900px; }
 .board-blurb { font-size: 13px; color: var(--muted); margin: 0 0 8px; max-width: 46ch; }
 .board-space.filled .board-blurb { color: color-mix(in srgb, var(--text) 80%, transparent); }
 .board-space-actions { position: relative; display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
-.board-see { border: 1px solid var(--gold); color: var(--text); background: color-mix(in srgb, var(--panel) 70%, transparent); clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%); padding-right: 20px; }
-.board-see.on, .board-space.empty:not(.disabled) .board-see { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+/* An arrow-shaped button whose outline follows the arrow: the outline colour is the button, the fill a layer inside it */
+.board-see { position: relative; isolation: isolate; border: 0 !important; border-radius: 0; padding-right: 22px; color: var(--text); background: var(--gold); clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 50%, calc(100% - 11px) 100%, 0 100%); }
+.board-see::before { content: ""; position: absolute; inset: 1px; z-index: -1; background: #17120d; clip-path: polygon(0 0, calc(100% - 10.5px) 0, 100% 50%, calc(100% - 10.5px) 100%, 0 100%); transition: background .15s; }
+.board-see:hover::before { background: #3a2c14; }
+.board-see.on, .board-space.empty:not(.disabled) .board-see { background: var(--accent); color: var(--accent-ink); }
+.board-see.on::before, .board-space.empty:not(.disabled) .board-see::before { background: var(--accent); }
 .board-dice { padding: 4px 8px; display: grid; place-items: center; }
 .board-space.drop-over { filter: drop-shadow(0 0 16px var(--gold)); transform: scale(1.02); }
 body[data-dragging="application/x-sf-race"] .board-race,
@@ -1823,3 +1827,20 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .confirm-actions { justify-content: flex-end; gap: 8px; margin-top: 14px; }
 .confirm-box button.danger { background: #8a2323; color: #fff; border-color: #8a2323; }
 .confirm-box button.danger:hover { background: #a62b2b; }
+
+/* The spellbook or backpack stays pinned at the top of its card's back, so it is seen filling while you choose */
+.card-back-art { position: sticky; top: -12px; z-index: 3; margin: -12px -18px 8px; padding: 6px 0 4px; background: linear-gradient(180deg, var(--panel) 75%, transparent); align-items: center; gap: 10px; }
+.card-back-art .board-book, .card-back-art .board-pack { width: 104px; height: 104px; }
+.card-back-art span { font: 700 12px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--gold2); }
+.card-back-count { display: none; }
+/* Species and background emblems (line drawings) as ribbon and watermark */
+.chosen-banner.kind-emblem .pick-watermark { color: hsl(var(--hue) 60% 75% / .14); position: absolute; right: -20px; top: -10px; }
+.chosen-banner.kind-emblem .pick-watermark svg { stroke-width: 1; }
+.chosen-banner.kind-emblem .ribbon svg { stroke: #fff; stroke-width: 1.8; }
+.mini-icon { display: inline-grid; color: #fff; }
+.mini-icon svg { stroke-width: 1.8; }
+/* On a narrow board card the ribbon sits above the text instead of beside it */
+@container (max-width: 300px) {
+  .board-space .chosen-banner.is-class { padding-left: clamp(12px, 7cqi, 22px); padding-top: 74px; }
+  .board-space .chosen-banner .ribbon { left: 14px; width: 44px; height: 64px; padding-top: 9px; }
+}

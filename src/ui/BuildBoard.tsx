@@ -1036,7 +1036,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           {kind === "background" && (chosenEl.background ? <SlotList slots={ownSlots((root) => root === "background")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your background." /> : <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>)}
           {kind === "magic" && (caster ? (
             <>
-              <div className="card-back-art"><SpellBook f={spellFill} /></div>
+              <div className="card-back-art"><SpellBook f={spellFill} /><span>{spellNeed ? `${spellHave} of ${spellNeed}` : ""}</span></div>
               <p className="muted card-back-count">{spellNeed ? `${spellHave} of ${spellNeed} spells chosen` : "No spells to choose yet"}</p>
               <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} />
             </>

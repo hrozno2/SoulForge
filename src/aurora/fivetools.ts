@@ -374,7 +374,9 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const size = Array.isArray(r.size) ? r.size[0] : r.size;
   const sizeName = ({ T: "Tiny", S: "Small", M: "Medium", L: "Large" } as Record<string, string>)[size] ?? "";
   if (sizeName) {
-    const sid = `ID_INTERNAL_RACIAL_TRAIT_${sizeName.toUpperCase()}`;
+    // Its own id: Aurora's ID_INTERNAL_RACIAL_TRAIT_* are a different kind of entry (a size choice), and loading this
+    // after Aurora replaced them (the 2024 Aasimar's size choice lost its options).
+    const sid = `ID_5ET_SIZE_${sizeName.toUpperCase()}`;
     if (!out.some((o) => o.id === sid)) out.push(base(sid, sizeName, "Size", srcName(ctx, r.source), { compendiumHidden: true }));
     rules.push({ kind: "grant", type: "Size", id: sid });
   }

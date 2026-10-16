@@ -108,13 +108,16 @@ const SHEET_TYPES = ["Racial Trait", "Class Feature", "Archetype Feature", "Feat
 
 /** Replace {{stat}} placeholders in sheet text with computed values. */
 export function fillTemplate(text: string, r: Resolved): string {
-  return text.replace(/\{\{([^}]+)\}\}/g, (_m, raw: string) => {
+  const MARK = "\u0000";
+  const filled = text.replace(/\{\{([^}]+)\}\}/g, (_m, raw: string) => {
     const name = raw.trim().toLowerCase();
     const inline = r.stats.text(name);
     if (inline !== undefined) return inline;
     const v = r.stats.get(name);
-    return name.endsWith(":modifier") || name.endsWith("modifier") ? signed(v) : String(v);
+    return MARK + (name.endsWith(":modifier") || name.endsWith("modifier") ? signed(v) : String(v));
   });
+  // "1d8+{{wisdom:modifier}}" gives one sign, not "1d8++4" or "1d8+-1".
+  return filled.replace(/\+\u0000([+-])/g, "$1").replace(/-\u0000\+/g, "-").replace(/-\u0000-/g, "+").replace(/\u0000/g, "");
 }
 
 export const stripHtml = (s: string): string =>
@@ -273,6 +276,15 @@ function buildCasting(r: Resolved): CastingLine[] {
       if (lvl === 0) cantrips.push(entry);
       else if (!p.granted) spells.push(entry);
     }
+    // A class that prepares from its whole list (a Cleric, every 2024 class) has no picks for its spells: the ones
+    // prepared in Magic are the line's spells.
+    for (const id of prepared) {
+      if (seen.has(id) || granted.some((g) => g.id === id)) continue;
+      const lvl = parseInt(r.reg.get(id)?.setters.level?.value ?? "0", 10) || 0;
+      if (!r.reg.get(id) || lvl === 0) continue;
+      seen.add(id);
+      spells.push({ id, casting: e.name, granted: false, prepared: true });
+    }
     const maxLevel = slots.length ? slots[slots.length - 1].level : 0;
     return {
       name: e.name,
@@ -339,6 +351,7 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
   const dueling = r.active.some((a) => /^dueling$/i.test(a.el.name) && /feature|feat/i.test(a.el.type));
   const weaponsHeld = r.character.inventory.filter((i) => i.equipped && i.id && r.reg.get(i.id)?.type === "Weapon").length;
   // Weapons mastered: the chosen Weapon Mastery options, named "Longbow (Slow)".
+  const crossbowExpert = r.active.some((a) => a.el.type === "Feat" && /^crossbow expert$/i.test(a.el.name));
   const mastered = new Set(r.active.filter((a) => a.el.supports.includes("Weapon Mastery")).map((a) => a.el.name.replace(/\s*\(.*$/, "").toLowerCase()));
   for (const it of r.character.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;
@@ -360,8 +373,10 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     const dmg = it.twoHanded && el.setters.versatile ? { value: el.setters.versatile.value, attrs: el.setters.damage?.attrs ?? {} } : el.setters.damage;
     // A 2024 weapon's mastery property applies only when the character has mastered that weapon (issue #3).
     const isMastery = (t: string) => /^ID_WOTC_PHB24_WEAPON_PROPERTY_/.test(t);
+    // Crossbow Expert (both editions): crossbows lose the Loading property.
+    const noLoading = crossbowExpert && /crossbow/i.test(el.name);
     const props = el.supports
-      .filter((t) => /WEAPON_PROPERTY/.test(t) && (!isMastery(t) || mastered.has(el.name.toLowerCase())))
+      .filter((t) => /WEAPON_PROPERTY/.test(t) && (!isMastery(t) || mastered.has(el.name.toLowerCase())) && !(noLoading && /LOADING$/.test(t)))
       .map((t) => (isMastery(t) ? "mastery: " : "") + t.replace(/^ID_(INTERNAL|WOTC_PHB24|WOTC_PHB)_WEAPON_PROPERTY_/, "").replace(/_/g, " ").toLowerCase());
     const versatile = el.setters.versatile?.value;
     const edit = r.character.attackEdits?.[it.uid];
@@ -373,7 +388,7 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
       bonus: mods(ability) + (proficient ? prof : 0) + atkExtra + (edit?.bonusAdjust ?? 0),
       damage: edit?.damage?.trim() || (dmg ? `${dmg.value}${mods(ability) + dmgExtra ? signed(mods(ability) + dmgExtra) : ""}` : ""),
       damageType: edit?.damageType ?? dmg?.attrs.type ?? "",
-      properties: [...props, versatile && !it.twoHanded ? `versatile (${versatile})` : "", it.twoHanded ? "two-handed" : ""].filter(Boolean).join(", "),
+      properties: [...props.filter((x) => !(versatile && x === "versatile")), versatile && !it.twoHanded ? `versatile (${versatile})` : "", it.twoHanded ? "two-handed" : ""].filter(Boolean).join(", "),
       notes: edit?.notes ?? (proficient ? "" : "not proficient"),
     };
     if (edit?.hidden) line.hiddenByEdit = true;
@@ -430,8 +445,18 @@ export function buildSheet(r: Resolved): SheetData {
     .filter((x) => x.value > 0);
 
   const features: FeatureLine[] = [];
+  // A class or subclass option the player chose (the 2024 Cleric's Divine Order: Thaumaturge) shows even when the
+  // content hides it from the sheet, named after the choice it was made in.
+  const chosenIn = new Map<string, string>();
+  for (const sl of r.slots) if (/^(Class|Archetype) Feature$/.test(sl.rule.type)) for (const id of sl.chosen) chosenIn.set(id, (sl.owner.sheet?.alt ?? sl.owner.name).replace(/^Level \d+:\s*/, ""));
   for (const a of r.active) {
     if (!SHEET_TYPES.includes(a.el.type)) continue;
+    if (a.el.sheet && !a.el.sheet.display && a.el.type !== "Feat" && chosenIn.has(a.el.id)) {
+      const text = stripHtml(fillTemplate(a.el.description, r)).trim();
+      const owner = chosenIn.get(a.el.id)!;
+      if (text) features.push({ id: a.el.id, name: owner && owner !== a.el.name ? `${owner}: ${a.el.name}` : a.el.name, type: a.el.type, source: a.el.source, text, level: a.ownerLevel });
+      continue;
+    }
     // "Not on the sheet" hides a feature's text. A feat still belongs in the sheet's list of feats by name (Skilled,
     // whose skills already show, is marked that way), so it stays, without its text.
     const hidden = !!a.el.sheet && !a.el.sheet.display;
@@ -460,7 +485,7 @@ export function buildSheet(r: Resolved): SheetData {
     r.character.inventory.reduce((n, i) => n + itemWeight(i.id ? r.reg.get(i.id) : undefined) * i.qty + (i.custom?.weight ?? 0) * i.qty, 0) +
     Object.values(r.character.coins).reduce((n, c) => n + c, 0) / 50;
 
-  const sizeEl = r.active.find((a) => /^ID_INTERNAL_RACIAL_TRAIT_(SMALL|MEDIUM|LARGE|TINY)$/.test(a.el.id));
+  const sizeEl = r.active.find((a) => /^(ID_INTERNAL_RACIAL_TRAIT|ID_5ET_SIZE)_(SMALL|MEDIUM|LARGE|TINY)$/.test(a.el.id));
 
   return {
     name: r.character.name,

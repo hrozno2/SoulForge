@@ -197,7 +197,10 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
   const toolList = [...sh.proficiencies.tools.map((t) => t.replace(/^Tool Proficiency \((.*)\)$/, "$1")), ...sh.proficiencies.other];
   const other = [...specificWeapons, ...toolList];
 
-  const feat = (types: string[]) => sh.features.filter((f) => types.includes(f.type));
+  // A background feature that only offers a feat in its place (the 2024 "Origin Feat" option) is not a feat itself:
+  // the feat chosen through it is listed instead.
+  const onlyOffersFeat = (id?: string) => { const el = id ? r.reg.get(id) : undefined; return !!el && el.type === "Background Feature" && el.rules.some((x) => x.kind === "select" && x.type === "Feat"); };
+  const feat = (types: string[]) => sh.features.filter((f) => types.includes(f.type) && !onlyOffersFeat(f.id));
   const line = (f: { name: string; usage?: string; text: string }, max: number) => `${f.name}${f.usage ? ` (${f.usage})` : ""}${f.text ? `: ${sentence(f.text, max)}` : ""}`;
 
   // Spells: cantrips first, then by level. Prepare casters list what is prepared plus what is always prepared
@@ -239,7 +242,7 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     for (const p of byGrantFirst) {
       if (seen.has(nameOf(p.id))) continue;
       seen.add(nameOf(p.id));
-      const x = row(p, !!p.granted || !c.prepare || (!opts.allSpells && !!(p as { prepared?: boolean }).prepared));
+      const x = row(p, !!p.granted || !c.prepare || !!(p as { prepared?: boolean }).prepared);
       if (x && ownDc(c)) x.notes = [ownDc(c), x.notes].filter(Boolean).join(", ");
       if (x) spells.push(x);
     }
@@ -256,7 +259,7 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     for (const p of [...c.cantripsKnown, ...c.granted, ...c.spells, ...pool]) {
       if (seenBook.has(nameOf(p.id))) continue;
       seenBook.add(nameOf(p.id));
-      const x = row(p, !!p.granted || !c.prepare || (!opts.allSpells && !!(p as { prepared?: boolean }).prepared));
+      const x = row(p, !!p.granted || !c.prepare || !!(p as { prepared?: boolean }).prepared);
       if (x) spellbook.push(x);
     }
   }

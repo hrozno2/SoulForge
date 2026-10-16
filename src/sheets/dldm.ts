@@ -485,7 +485,8 @@ function page2a(c: Ctx, d: FillData, page: number, next: { at: number }): void {
   multiBox(c, "WEAPONS1", d.weaponsText); multiBox(c, "EQUIPMENT1", d.otherGear);
   magicItems(c, d, ["CB-ATTUNE1", "CB-ATTUNE2", "CB-ATTUNE3", "CB-ATTUNE4", "CB-ATTUNE5"], ["MAGIC ITEM1", "MAGIC ITEM2", "MAGIC ITEM3", "MAGIC ITEM4", "MAGIC ITEM5"]);
   coins(c, d, ["COIN6", "COIN7", "COIN8", "COIN9", "COIN10"]);
-  multiBox(c, "Text Field114", [d.personality, d.backstory].filter(Boolean).join("\n\n"));
+  // This page has no notes box (style B does), so the player's notes follow the backstory.
+  multiBox(c, "Text Field114", [d.personality, d.backstory, d.notes ? `Notes: ${d.notes}` : ""].filter(Boolean).join("\n\n"));
 }
 
 function page2b(c: Ctx, d: FillData): void {

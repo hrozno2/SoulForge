@@ -354,10 +354,14 @@ export function variantItems(v: EquipVariant, picks: number[], idx: ItemIndex, p
   if (v.packId && reg.get(v.packId)) {
     out.push(...expandPack(reg.get(v.packId)!, reg));
     // The ready-made pack can leave something out (armor, for one); anything the text lists that it lacks is added.
-    const have = new Set(out.map((i) => i.el?.id).filter(Boolean));
+    // The same item from another book ("Clothes, Traveler's" in the pack, "Traveler's Clothes" from 5e.tools) counts
+    // as the one in the pack: by id, or by its words in any order.
+    const words = (n: string) => norm(n).split(/[\s,]+/).filter(Boolean).sort().join(" ");
+    const have = new Set(out.flatMap((i) => (i.el ? [i.el.id, words(i.el.name)] : [words(i.name)])));
+    const isIn = (x: ResolvedItem) => !!x.el && (have.has(x.el.id) || have.has(words(x.el.name)));
     for (const ref of v.fixed) {
       const r = resolveRef(ref, idx, prefer);
-      const inside = r.el?.extract?.length ? expandPack(r.el, reg, r.qty).every((x) => x.el && have.has(x.el.id)) : r.el && have.has(r.el.id);
+      const inside = r.el?.extract?.length ? expandPack(r.el, reg, r.qty).every(isIn) : isIn(r);
       if (!inside) add(r);
     }
   } else for (const ref of v.fixed) add(resolveRef(ref, idx, prefer));

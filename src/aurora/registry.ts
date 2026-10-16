@@ -134,6 +134,9 @@ export class ARegistry {
     for (const el of this.raw) {
       const copy = { ...el, rules: [...el.rules] };
       applyContentFixes(copy);
+      // A converted 5e.tools entry never replaces one from other content with the same id.
+      const had = this.byId.get(el.id);
+      if (had && el.origin === "5etools" && had.origin !== "5etools") continue;
       this.byId.set(el.id, copy);
     }
     for (const ap of this.appends) {

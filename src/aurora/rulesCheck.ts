@@ -137,7 +137,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     }
   }
   const toughness = (has(/^tough$/i) ? 2 * level : 0) + (has(/dwarven toughness/i) ? level : 0) + (has(/^boon of fortitude$/i) ? 40 : 0)
-    + (has(/draconic resilience/i) ? (refs.find((x) => /sorcerer/i.test(x.el.name))?.c.level ?? 0) : 0);
+    + (has(/draconic resilience|^jotun resilience$/i) ? (refs.find((x) => /sorcerer/i.test(x.el.name))?.c.level ?? 0) : 0);
   if (refs.every((x) => x.ref) && sh.hp !== hp + toughness) add("Hit points", `${sh.hp}, the rules give ${hp + toughness} (${hp} from hit dice and Constitution${toughness ? ` + ${toughness} from features` : ""})`);
 
   // Saving throws: the first class gives two; multiclassing gives none. Features that add more are listed.
@@ -340,7 +340,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const row = ARMOR.find(([re]) => re.test(body.el.name.replace(/^\+\d\s*/, "")));
     if (row) {
       const [, base, cap, str] = row;
-      ac = base + (cap === undefined ? dex : Math.min(cap, dex)) + (body.i.magic ?? 0) + (Number(body.el.setters.armorClassBonus?.value) || 0);
+      ac = base + (cap === undefined ? dex : cap === 0 ? 0 : Math.min(cap, dex)) + (body.i.magic ?? 0) + (Number(body.el.setters.armorClassBonus?.value) || 0);
       if (str && score("strength").score < str) {
         const want = (sh.speed + 10);
         void want;

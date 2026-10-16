@@ -33,6 +33,14 @@ export const TEXT_FIXES: Record<string, [string, string][]> = {
   ID_WOTC_PHB24_BACKGROUND_HERMIT: [["Traveler's Clothes, 16 CP;", "Traveler's Clothes, 16 GP;"]],
 };
 
+/**
+ * Wrong stat values: [stat name, what the content says, what the rules say]. The Giant Soul Sorcerer's Jotun
+ * Resilience adds 1 hit point per sorcerer level, the content adds the total level.
+ */
+export const STAT_FIXES: Record<string, [string, string, string][]> = {
+  ID_WOTC_UA_ARCHETYPE_FEATURE_GIANT_SOUL_JOTUN_RESILIENCE: [["hp", "level", "level:sorcerer"]],
+};
+
 export const SPELL_LIST_ADD: Record<string, string[]> = {
   // Tasha's artificer spell list includes Frostbite (Xanathar's); the other Xanathar's cantrips already have it.
   ID_XGTE_SPELL_FROSTBITE: ["Artificer"],
@@ -78,6 +86,7 @@ export function applyContentFixes(el: AElement): void {
   if (el.rules.some((r) => r.kind === "grant" && ID_TYPOS[r.id])) el.rules = el.rules.map((r) => (r.kind === "grant" && ID_TYPOS[r.id] ? { ...r, id: ID_TYPOS[r.id] } : r));
   if (REQUIREMENTS_SET[el.id]) el.requirements = REQUIREMENTS_SET[el.id];
   for (const [from, to] of TEXT_FIXES[el.id] ?? []) el.description = el.description.split(from).join(to);
+  for (const [name, from, to] of STAT_FIXES[el.id] ?? []) el.rules = el.rules.map((r) => (r.kind === "stat" && r.name === name && r.value === from ? { ...r, value: to } : r));
   for (const g of GRANTS_ADD[el.id] ?? []) if (!el.rules.some((r) => r.kind === "grant" && r.id === g.id)) el.rules = [...el.rules, { kind: "grant", ...g }];
   const add = SPELL_LIST_ADD[el.id];
   if (add) el.supports = [...el.supports, ...add.filter((c) => !el.supports.includes(c))];

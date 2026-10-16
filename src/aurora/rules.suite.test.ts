@@ -7,6 +7,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -437,7 +438,8 @@ describe.skipIf(!CACHE)("rules", () => {
     };
     if (existsSync(corpus)) walk(corpus, 0);
     const mine = (f: string) => [...f].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % shards === shard;
-    const version = (() => { try { return execFileSync("git", ["rev-parse", "HEAD:src/aurora"], { encoding: "utf8" }).trim(); } catch { return "dev"; } })();
+    // Only the code that decides what is offered: the engine, its requirement checks, the content loader and fixes.
+    const version = createHash("sha1").update(["engine", "requirements", "registry", "contentFixes", "character", "books", "stats", "edition", "fixture"].map((f) => `src/aurora/${f}.ts`).filter(existsSync).map((f) => readFileSync(f, "utf8")).join("\0")).digest("hex").slice(0, 16);
     const scanDir = join(CACHE!, "options-scan", version);
     mkdirSync(scanDir, { recursive: true });
     const cacheFile = (i: number) => join(scanDir, `${i}-of-${shards}.json`);

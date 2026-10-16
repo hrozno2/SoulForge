@@ -381,7 +381,7 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
   }
   // Everyone can make an unarmed strike (proficient): 1 + Strength bludgeoning, or a die from Martial Arts, the
   // Unarmed Fighting style or Tavern Brawler; a monk may use Dexterity. Bonuses to unarmed and melee attacks apply.
-  if (!carried && !out.some((o) => /unarmed strike/i.test(o.name))) out.push(unarmedStrike(r));
+  if (!out.some((o) => /unarmed strike/i.test(o.name))) out.push(unarmedStrike(r));
   for (const c of r.character.attacks) {
     const m = mods(c.ability);
     out.push({

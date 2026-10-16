@@ -2,6 +2,22 @@
 
 What changed in each release. Newest first.
 
+## v0.17.0 (2026-10-16)
+
+- Rules check runs its test groups side by side; release runs the full coverage check only Monday to Thursday, 9 to 17
+- Jotun Resilience adds sorcerer level to HP (content fix); AC check: heavy armor ignores a negative Dex
+- Rules: a default already had elsewhere opens the choice (Battle Smith tools); Iron Mind Int/Cha saves; 2024 Improved Flare name; options tier keeps prerequisites
+- Test build: a switch to hide the test controls (bar button, menu, Settings); options-never-picked rules tier
+- Rules check: a repeated proficiency only counts when something new was left to pick (Weapon Master for a Fighter)
+- Resume note: v0.17.0 blocked on Weapon Master repeat picks
+- Sheets: Unarmed Strike stays on the weapons list when weapons are listed from the pack
+- DeepSeek translation back in (allowed); Higgsfield portraits stay declined: no AI-generated images
+- No generative AI in Soul Forge: DeepSeek translation removed; Higgsfield portraits declined
+- Linux and GitHub issue fixes, Report a bug, species symbols, DeepSeek translation
+- Species and backgrounds wear emblems like classes; the spellbook stays in view while choosing; finished choices slide to the bottom; arrow buttons keep their outline
+- Deleting a character (and a homebrew or journal entry) asks first in the app's own dialog
+- Cards: spell scrolls say Cantrip or Level N; items as small cards with a category badge (Weapon, Armor, Gear, Tool, Pack, Focus, or a magic item's rarity); other cards title with the full name, no lettered seal
+
 ## v0.16.0 (2026-10-15)
 
 - Choices every option of which the rules rule out ask for nothing: never filled with a blocked option, never counted as left to do or as a mistake

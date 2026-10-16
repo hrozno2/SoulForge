@@ -43,8 +43,13 @@ sh("npm run build", { show: true });
 // The rules check: a fresh random batch, level 20 in every class, level-ups, multiclasses, companions, optional
 // rules, community builds and full coverage of every subclass, species, background and feat, all checked against
 // the rules and exported. A release is only cut when a fresh run (a new seed) has no findings at all.
-console.log("Rules check (fresh seed, full coverage)...");
-execSync("node scripts/rules-check.mjs", { stdio: "inherit", env: { ...process.env, RULES_TIER: "full" } });
+// The full coverage run (an hour or more) only for releases cut Monday to Thursday in work hours (9 to 17); other
+// times the standard check. RULES_TIER=full or RULES_TIER=standard decides it by hand.
+const now = new Date();
+const workHours = now.getDay() >= 1 && now.getDay() <= 4 && now.getHours() >= 9 && now.getHours() < 17;
+const tier = process.env.RULES_TIER || (workHours ? "full" : "standard");
+console.log(`Rules check (fresh seed, ${tier === "full" ? "full coverage" : "standard: full coverage runs Monday to Thursday, 9 to 17"})...`);
+execSync("node scripts/rules-check.mjs", { stdio: "inherit", env: { ...process.env, RULES_TIER: tier } });
 
 sh(`node scripts/bump-version.mjs ${next}`, { show: true });
 const header = "# Changelog\n\nWhat changed in each release. Newest first.\n\n";

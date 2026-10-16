@@ -240,7 +240,10 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         const key = `${el.id}|${idx}`;
         let chosen = (ch.selections[key] ?? []).slice(0, rule.number);
         let defaulted = false;
-        if (!chosen.length && rule.default && reg.get(rule.default)) {
+        // A default the character already has from elsewhere is not given again: the choice opens instead (Battle Smith's
+        // smith's tools for an Artificer who has them: choose another artisan's tool).
+        const hadElsewhere = !!rule.default && !!prev?.active.some((a) => a.el.id === rule.default && a.from !== el.id);
+        if (!chosen.length && rule.default && reg.get(rule.default) && !hadElsewhere) {
           chosen = [rule.default];
           defaulted = true;
         }

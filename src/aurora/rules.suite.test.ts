@@ -400,7 +400,7 @@ describe.skipIf(!CACHE)("rules", () => {
   it.skipIf(process.env.RULES_TIER !== "options")("options never picked, built and checked", async () => {
     const books = new BookIndex(reg);
     const shown = (e: { source: string; compendiumHidden: boolean; name: string }) => !e.compendiumHidden && !/^custom\b/i.test(e.name) && !hiddenBy(books.info(e.source), e.source, filters);
-    type Ctx = { classes: { classId: string; level: number }[]; race?: string; background?: string; subs: string[]; slot: string };
+    type Ctx = { ch: Character; key: string; chosen: string[]; number: number; classes: { classId: string; level: number }[]; race?: string; background?: string; subs: string[]; slot: string };
     const offered = new Map<string, Ctx>();
     const picked = new Set<string>();
     const look = (ch: Character) => {
@@ -410,9 +410,11 @@ describe.skipIf(!CACHE)("rules", () => {
       for (const sl of r.slots) {
         if (/^Spell$/i.test(sl.rule.type) || sl.rule.type === "List") continue;
         for (const id of sl.chosen) picked.add(id);
+        // A choice the content settles by default opens only when the default is had elsewhere (Iron Mind's Wisdom).
+        if (sl.defaulted) continue;
         for (const o of sl.options) {
           if (offered.has(o.id) || sl.blocked.has(o.id) || r.ids.has(o.id) || !shown(o)) continue;
-          offered.set(o.id, { classes: ch.classes.map((c) => ({ classId: c.classId, level: c.level })), race: ch.race, background: ch.background, subs, slot: sl.rule.name });
+          offered.set(o.id, { ch, key: sl.key, chosen: sl.defaulted ? [] : sl.chosen, number: sl.rule.number, classes: ch.classes.map((c) => ({ classId: c.classId, level: c.level })), race: ch.race, background: ch.background, subs, slot: sl.rule.name });
         }
       }
     };
@@ -435,13 +437,25 @@ describe.skipIf(!CACHE)("rules", () => {
     const unbuilt: string[] = [];
     for (const [id, c] of missed) {
       const el = reg.get(id)!;
+      // First the character it was offered to, with this option in place of its last pick there (so the picks that
+      // lead to the choice stay); then a new character that prefers it.
+      // Each earlier pick in turn is the one replaced, so one the option needs (Thirsting Blade for Devouring Blade) can stay.
+      const tries = c.chosen.length < c.number ? [[...c.chosen, id]] : c.chosen.map((_, j) => c.chosen.map((x, k) => (k === c.chosen.length - 1 - j ? id : x)));
+      let built: Character | undefined;
+      for (const sel of tries) {
+        const sw = autoFill({ ...c.ch, selections: { ...c.ch.selections, [c.key]: sel } }, reg);
+        const rr = resolve(sw, reg);
+        if (rr.ids.has(id) && !rr.slots.some((x) => x.key === c.key && x.blocked.has(id))) { built = sw; break; }
+      }
+      if (built) { chars.push([`${el.name} (${el.type}, ${c.slot})`, built]); continue; }
       const [first, second] = c.classes;
       const total = c.classes.reduce((n, x) => n + x.level, 0);
       const ch = randomCharacter(reg, total, filters, rng, {
         classId: first.classId, raceId: c.race, backgroundId: c.background, prefer: [...c.subs, el.name], randomGear: true,
         ...(second ? { multiclass: { classId: second.classId, level: second.level } } : {}),
       });
-      if (!resolve(ch, reg).ids.has(id)) { unbuilt.push(`${el.name} (${el.type}, ${c.slot})`); continue; }
+      const rc = resolve(ch, reg);
+      if (!rc.ids.has(id) || rc.slots.some((x) => x.chosen.includes(id) && x.blocked.has(id))) { unbuilt.push(`${el.name} (${el.type}, ${c.slot})`); continue; }
       chars.push([`${el.name} (${el.type}, ${c.slot})`, ch]);
     }
     report.push(`\nOptions: ${seen} earlier characters read, ${offered.size} options offered, ${missed.length} never picked, ${chars.length} built.`);

@@ -82,8 +82,10 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   // feature with its own version ("Wild Shape Feature Replacement", "Animal and Nature Speaker"), which counts too.
   const cd = (x: string) => x.replace(/^channel divinity /, "");
   const short = new Set([...names].map(cd));
+  // Features the content names differently from 5e.tools (the 2024 Light Domain's "Improved Flare").
+  const ALIAS: Record<string, string> = { [cd("Improved Warding Flare")]: cd("Improved Flare") };
   const near = (want0: string) => {
-    const want = cd(want0);
+    const want = ALIAS[cd(want0)] ?? cd(want0);
     if (short.has(want)) return true;
     if ([...short].some((n) => Math.abs(n.length - want.length) <= 2 && edits(n, want) <= 2)) return true;
     if (want.length >= 8 && [...short].some((n) => n.includes(want) || n === `${want} feature replacement`)) return true;
@@ -150,7 +152,11 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (lvlOf(/rogue/i) >= 15) { extra.add("wisdom"); if (first.edition === "one" || isModern(refs.find((x) => /rogue/i.test(x.el.name))!.el)) extra.add("charisma"); }
     // Samurai's Elegant Courtier: Wisdom, or Intelligence or Charisma if already proficient in Wisdom.
     if (has(/^elegant courtier$/i)) { extra.add("wisdom"); extra.add("intelligence"); extra.add("charisma"); }
-    if (has(/^(iron mind|mind of steel)$/i) || (lvlOf(/ranger/i) >= 7 && has(/iron mind/i))) extra.add("wisdom");
+    // Gloom Stalker's Iron Mind: Wisdom, or Intelligence or Charisma when Wisdom comes from somewhere else.
+    if (has(/^(iron mind|mind of steel)$/i) || (lvlOf(/ranger/i) >= 7 && has(/iron mind/i))) {
+      if (first.saves.includes("wisdom") || extra.has("wisdom")) { extra.add("intelligence"); extra.add("charisma"); }
+      extra.add("wisdom");
+    }
     if (has(/^(stalwart|aura of protection|diamond soul|disciplined survivor|slippery mind)$/i)) { /* covered above or a bonus, not a proficiency */ }
     if (has(/^(battle hardened|unwavering|steady mind)/i)) { /* subclass features handled by name below */ }
     for (const a of sh.abilities) {

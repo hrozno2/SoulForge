@@ -69,17 +69,15 @@ export function TranslateOptions({ tr }: { tr: Translation }) {
               <option value="gfree">Google Translate, free (no key)</option>
               <option value="libre">LibreTranslate (open source, free if you host it)</option>
               <option value="deepl">DeepL (your API key, desktop app)</option>
-              <option value="deepseek">DeepSeek (your API key, desktop app)</option>
               <option value="google">Google Cloud Translation (your API key)</option>
             </select>
           </div>
           {cfg.provider === "deepl" && <p className="muted">Usually the best quality for European languages. Get a free key at deepl.com/pro-api (a key ending in :fx is the free plan, with a monthly character allowance). DeepL does not accept requests from web pages, so this works in the desktop app. Your terms below are sent along as a DeepL glossary.</p>}
-          {cfg.provider === "deepseek" && <p className="muted">An AI model that translates the sheet with your terms below, and knows D&D wording well. Get a key at platform.deepseek.com (paid by use, a few cents per sheet). Works in the desktop app.</p>}
           {cfg.provider === "gfree" && <p className="muted">Uses the same public service as translate.google.com. No account or key. It is unofficial: Google can slow it down or block it, and long sheets take a minute. If that happens, switch to an API key or LibreTranslate.</p>}
           {cfg.provider === "libre" && (
             <div className="row"><input style={{ flex: 1 }} value={cfg.url} onChange={(e) => set({ lang, cfg: { ...cfg, url: e.target.value } })} placeholder="https://libretranslate.com or your own server" aria-label="Server address" /></div>
           )}
-          {cfg.provider !== "gfree" && <div className="row"><input style={{ flex: 1 }} type="password" value={cfg.key} onChange={(e) => set({ lang, cfg: { ...cfg, key: e.target.value } })} placeholder={cfg.provider === "google" || cfg.provider === "deepl" || cfg.provider === "deepseek" ? "API key (required)" : "API key (if the server needs one)"} aria-label="API key" autoComplete="off" /></div>}
+          {cfg.provider !== "gfree" && <div className="row"><input style={{ flex: 1 }} type="password" value={cfg.key} onChange={(e) => set({ lang, cfg: { ...cfg, key: e.target.value } })} placeholder={cfg.provider === "google" || cfg.provider === "deepl" ? "API key (required)" : "API key (if the server needs one)"} aria-label="API key" autoComplete="off" /></div>}
           <p className="muted">
             Only the text that will be printed is sent to the service you choose, never your character file. Results are cached on this computer, so a second export of the same text costs nothing.
             The key is stored on this computer in plain text. It translates the Soul Forge style PDF, the cards, the play tips and the values written into your own sheet PDFs. The printed labels of a sheet you loaded stay as that PDF has them.

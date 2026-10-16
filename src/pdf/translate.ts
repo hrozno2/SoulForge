@@ -29,7 +29,7 @@ export const LANGUAGES: Language[] = [
   { code: "el", name: "Greek" },
 ];
 
-export type Provider = "gfree" | "google" | "libre" | "deepl";
+export type Provider = "gfree" | "google" | "libre" | "deepl" | "deepseek";
 
 export interface TranslatorConfig {
   provider: Provider;
@@ -126,6 +126,33 @@ export function makeTranslator(cfg: TranslatorConfig, fetcher: typeof fetch = fe
         }
       }));
       return out;
+    };
+  }
+  if (cfg.provider === "deepseek") {
+    // DeepSeek's chat model, asked for one translation per string in order, with the player's terms as a word list.
+    const key = cfg.key.trim();
+    return async (texts, target) => {
+      if (!key) throw new Error("Add your DeepSeek API key first.");
+      const terms = glossary ? Object.entries(glossary).slice(0, 300).map(([en, tr]) => `${en} = ${tr}`).join("\n") : "";
+      const system = [
+        `You translate text from a Dungeons & Dragons 5e character sheet from English into the language with the code "${target}".`,
+        "Use the terms of the official D&D translation where one exists. Keep names, numbers, dice (1d8+2) and abbreviations (AC, HP, DC) as they are.",
+        terms ? `Always translate these terms this way:\n${terms}` : "",
+        'Answer with a JSON object {"t": [...]} holding exactly one translation for each input string, in the same order.',
+      ].filter(Boolean).join("\n");
+      const f = fetcher === fetch ? await desktopFetch() : fetcher;
+      const res = await f("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "deepseek-chat", temperature: 0, response_format: { type: "json_object" }, messages: [{ role: "system", content: system }, { role: "user", content: JSON.stringify(texts) }] }),
+      });
+      if (res.status === 401) throw new Error("DeepSeek did not accept the key. Check it at platform.deepseek.com.");
+      if (res.status === 402) throw new Error("Your DeepSeek balance is used up.");
+      if (!res.ok) throw new Error(`DeepSeek answered ${res.status}.`);
+      const json = (await res.json()) as { choices: { message: { content: string } }[] };
+      const out = (JSON.parse(json.choices[0]?.message.content ?? "{}") as { t?: unknown[] }).t;
+      if (!Array.isArray(out) || out.length !== texts.length) throw new Error("DeepSeek's answer did not match the text sent. Try again.");
+      return out.map(String);
     };
   }
   if (cfg.provider === "google") {

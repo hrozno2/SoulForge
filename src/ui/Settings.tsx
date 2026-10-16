@@ -132,6 +132,10 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
       <div className="modal-page themed settings" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" aria-label="Close" onClick={onClose}>×</button>
         <h2>{t("Settings")}</h2>
+        <div className="set-row bug-row">
+          <span><b>Something wrong?</b><small className="muted"> Checks the current character against the rules and gathers what a bug report needs, for you to send to GitHub or save</small></span>
+          <button onClick={() => { onClose(); window.dispatchEvent(new Event("cf-report-bug")); }}>Report a bug...</button>
+        </div>
         <label className="set-row">
           <span><b>{t("Language")}</b><small className="muted"> Buttons and menus. Rules text keeps its own language.</small></span>
           <select aria-label="Language" value={s.language} onChange={(e) => updateSettings({ language: e.target.value as Lang })}>{LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}</select>

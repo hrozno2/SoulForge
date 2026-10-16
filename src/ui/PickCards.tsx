@@ -1,7 +1,7 @@
 import type { AElement } from "../aurora/types";
 import { Browse, blurb, featOf } from "./Browse";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
-import { Head, Scroll } from "./icons";
+import { Scroll, SpeciesIcon } from "./icons";
 
 const CLASS_HUE: Record<string, number> = {
   barbarian: 22, bard: 305, cleric: 44, druid: 112, fighter: 8, monk: 190, paladin: 52, ranger: 135, rogue: 232, sorcerer: 352, warlock: 278, wizard: 214, artificer: 28,
@@ -30,7 +30,7 @@ export function PickCards({
 /** The emblem of a card: the class's own, or one for species and backgrounds, which have none of their own. */
 export function Emblem({ el, size }: { el: AElement; size: number }) {
   if (hasClassIcon(el.name)) return <ClassIcon name={el.name} size={size} />;
-  if (el.type === "Race") return <Head size={size} />;
+  if (el.type === "Race") return <SpeciesIcon name={el.name} size={size} />;
   if (el.type === "Background") return <Scroll size={size} />;
   return null;
 }

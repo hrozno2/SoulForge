@@ -1,0 +1,9 @@
+[Desktop Entry]
+Categories={{categories}}
+Comment={{comment}}
+Exec={{exec}}
+StartupWMClass=charforge
+Icon={{icon}}
+Name=Soul Forge
+Terminal=false
+Type=Application

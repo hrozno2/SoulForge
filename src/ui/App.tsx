@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ConfirmHost } from "./Confirm";
+import { BugReport } from "./BugReport";
 import { t } from "../i18n";
 import { tabOfSlot } from "./Slots";
 import { TAB_ICONS } from "./icons";
@@ -31,8 +32,9 @@ import { Tutorial, tutorialWanted } from "./Tutorial";
 import { CompendiumSearch } from "./CompendiumSearch";
 
 // The tabs that are not needed at start-up load on first use, which keeps the first screen quick.
-const MagicTab = lazy(() => import("./MagicTab").then((m) => ({ default: m.MagicTab })));
-const EquipmentTab = lazy(() => import("./EquipmentTab").then((m) => ({ default: m.EquipmentTab })));
+// Magic and Equipment are part of the build board, so they load with it rather than on their own (issue #2).
+import { MagicTab } from "./MagicTab";
+import { EquipmentTab } from "./EquipmentTab";
 const ManageTab = lazy(() => import("./ManageTab").then((m) => ({ default: m.ManageTab })));
 const SheetTab = lazy(() => import("./SheetTab").then((m) => ({ default: m.SheetTab })));
 const PlayTab = lazy(() => import("./PlayTab").then((m) => ({ default: m.PlayTab })));
@@ -136,6 +138,13 @@ export function App() {
     return () => window.clearTimeout(t);
   }, [notesHint]);
   const [notesFocus, setNotesFocus] = useState(0);
+  // Report a bug, from the menu or from Settings.
+  const [bugOpen, setBugOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setBugOpen(true);
+    window.addEventListener("cf-report-bug", open);
+    return () => window.removeEventListener("cf-report-bug", open);
+  }, []);
   const openNotes = () => {
     setNotesHint("");
     setNotesFocus((n) => n + 1);
@@ -224,6 +233,7 @@ export function App() {
           <button className="menu-item" onClick={() => setSettingsOpen(true)}>Settings...</button>
           <button className="menu-item" onClick={() => { setTutorialStep(0); setTutorialMin(false); setTutorialOpen(true); }}>Show the tutorial</button>
           <button className="menu-item" onClick={() => updater.check(true)}>Check for updates</button>
+          <button className="menu-item" onClick={() => setBugOpen(true)}>Report a bug...</button>
         </AppMenu>
       </header>
       {testToolsEnabled && (
@@ -296,6 +306,7 @@ export function App() {
       </main>
       <DicePanel />
       <ConfirmHost />
+      {bugOpen && <BugReport r={r} sources={content.sources} onClose={() => setBugOpen(false)} />}
     </div>
     </UiProvider>
   );

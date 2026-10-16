@@ -23,4 +23,10 @@ package() {
   cd "${srcdir}/deb"
   bsdtar -xf "${deb}"
   bsdtar -xf data.tar.* -C "${pkgdir}"
+  # The menu entry is named after the window's app id (charforge), so the taskbar matches it, and is called
+  # "Soul Forge"; a soulforge command sits beside charforge (GitHub issue #2).
+  local apps="${pkgdir}/usr/share/applications"
+  if [ -f "${apps}/SoulForge.desktop" ]; then mv "${apps}/SoulForge.desktop" "${apps}/charforge.desktop"; fi
+  if [ -f "${apps}/charforge.desktop" ]; then sed -i 's/^Name=.*/Name=Soul Forge/' "${apps}/charforge.desktop"; fi
+  ln -sf charforge "${pkgdir}/usr/bin/soulforge"
 }

@@ -49,6 +49,9 @@ export function lintContent(reg: ARegistry): LintFinding[] {
       const req = (r as { requirements?: string }).requirements;
       if (req) for (const id of requirementIds(req)) if (!reg.get(id) && !MARKER.test(id) && !granted.has(id)) add("missing requirement", e, `a rule needs ${id}, which nothing in the content gives`);
     }
+    // Starting gold in copper or silver: the books give gold; a slip puts pennies on the sheet (issue #3).
+    const coin = e.description.match(/\((?:A|B|C)\)[^<]*?\b(\d+) (CP|SP)\b/);
+    if (coin && (e.type === "Class" || e.type === "Background")) add("starting gold in copper", e, `the starting equipment gives ${coin[1]} ${coin[2]}, where the books give gold`);
     if (e.requirements) for (const id of requirementIds(e.requirements)) if (!reg.get(id) && !MARKER.test(id) && !granted.has(id)) add("missing requirement", e, `needs ${id}, which nothing in the content gives`);
   }
   return out;

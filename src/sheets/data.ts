@@ -1,3 +1,4 @@
+import { isModern } from "../aurora/edition";
 import { companionHtml } from "../aurora/companion";
 import type { Resolved } from "../aurora/engine";
 import { headerInfo, preparePool, type SheetData } from "../aurora/sheet";
@@ -202,6 +203,9 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
   // Spells: cantrips first, then by level. Prepare casters list what is prepared plus what is always prepared
   // (or everything they know when nothing is prepared yet); `spellbook` has every known spell, prepared or not,
   // for sheets that mark prepared spells with a bubble.
+  // A line that does not prepare: a feat's or species' spells are always prepared; a class that knows its spells
+  // (a 2014 Bard) has nothing to prepare, so neither says "prepared" (issue #3: Magic Initiate's Ice Knife).
+  let fixedLine: "always" | "known" | null = null;
   const row = (p: { id: string; granted?: boolean }, prepared: boolean): SpellRow | undefined => {
     const el = r.reg.get(p.id);
     if (!el) return undefined;
@@ -212,7 +216,7 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
       level: set("level") || "0", name: el.name, school: set("school").slice(0, 4), time: shortTime(set("time")), range: shortRange(set("range")),
       duration: dur.text, concentration: dur.conc || set("isConcentration") === "true", ritual: set("isRitual") === "true",
       v: set("hasVerbalComponent") === "true", s: set("hasSomaticComponent") === "true", m: set("hasMaterialComponent") === "true",
-      notes: cantrip ? "" : p.granted ? "always prepared" : prepared ? "prepared" : "",
+      notes: cantrip ? "" : p.granted || fixedLine === "always" ? "always prepared" : fixedLine === "known" ? "" : prepared ? "prepared" : "",
       prepared: !cantrip && prepared,
     };
   };
@@ -224,6 +228,9 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
   // A line with its own DC (a feat's spells cast with another ability) says so on each of its spells.
   const ownDc = (c: (typeof sh.casting)[number]) => (main && c !== main && (c.dc !== main.dc || c.attack !== main.attack) ? `DC ${c.dc}` : "");
   for (const c of sh.casting) {
+    // 2024 classes all prepare spells, whether or not the content says so.
+    const lineClass = ch.classes.map((k) => r.reg.get(k.classId)).find((e) => e?.name === c.name);
+    fixedLine = c.prepare || (lineClass && isModern(lineClass)) ? null : lineClass ? "known" : "always";
     const anyPrepared = c.spells.some((s) => s.prepared);
     const list = [...c.cantripsKnown, ...(c.prepare && anyPrepared ? [...c.granted, ...c.spells.filter((s) => s.prepared)] : [...c.spells, ...c.granted])];
     // One line per spell name: the 2014 and 2024 versions of a spell (one from a domain, one chosen) are the same spell.
@@ -289,8 +296,10 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     hdMax: sh.hitDice.map((h) => `${h.count}d${h.die}`).join("+"), speed: String(sh.speed), size: head.size, darkvision: (() => {
       const v = r.active.find((a) => a.el.type === "Vision" && /darkvision/i.test(a.el.name));
       if (!v) return "";
+      const ft = r.stats.get("darkvision:range");
+      if (ft > 0) return `${ft} ft`;
       const m = `${v.el.name} ${v.el.description}`.match(/(\d+)\s*(?:ft|feet)/i);
-      return m ? `${m[1]} ft` : "yes";
+      return m ? `${m[1]} ft` : "60 ft";
     })(),
     inspiration: ch.play.inspiration, conditions: ch.play.conditions.join(", "), exhaustion: ch.play.conditions.find((c) => /exhaustion/i.test(c)) ? "1" : "",
     deathSuccess: ch.play.deathSaves.success, deathFail: ch.play.deathSaves.fail,
@@ -299,7 +308,8 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     traits: feat(["Racial Trait"]).map((f) => line(f, 160)), feats: feat(["Feat", "Feat Feature", "Background Feature"]).map((f) => line(f, 160)),
     classFeatures: feat(["Class Feature", "Archetype Feature"]).map((f) => line(f, 260)),
     // With nothing equipped, the sheet lists what the character carries rather than an empty table.
-    weapons: (sh.attacks.some((a) => a.auto) ? sh.attacks : sh.attacksCarried).map((a) => ({ name: a.name, bonus: signed(a.bonus), damage: `${a.damage} ${a.damageType}`.trim(), notes: [a.properties, a.notes].filter(Boolean).join("; ") })),
+    // Every weapon the character carries, equipped or not (a Longbow on the back is still an attack, issue #3).
+    weapons: sh.attacksCarried.map((a) => ({ name: a.name, bonus: signed(a.bonus), damage: `${a.damage} ${a.damageType}`.trim(), notes: [a.properties, a.notes].filter(Boolean).join("; ") })),
     defenses: [sh.defenses.resistances.length && `Resistances: ${sh.defenses.resistances.join(", ")}.`, sh.defenses.immunities.length && `Immunities: ${sh.defenses.immunities.join(", ")}.`, sh.defenses.vulnerabilities.length && `Vulnerabilities: ${sh.defenses.vulnerabilities.join(", ")}.`].filter(Boolean).join(" "),
     casting, otherCasting: sh.casting.slice(1).filter((c) => main && (c.dc !== main.dc || c.attack !== main.attack)).map((c) => `${c.name}: save DC ${c.dc}, attack ${signed(c.attack)}${c.ability ? ` (${c.ability.charAt(0).toUpperCase()}${c.ability.slice(1)})` : ""}`), spells, spellbook, armorWorn: armor?.el?.name ?? "", weaponsText, otherGear: gear, magicItems: magic,
     coins: { cp: String(ch.coins.cp), sp: String(ch.coins.sp), ep: String(ch.coins.ep), gp: String(ch.coins.gp), pp: String(ch.coins.pp) },

@@ -37,7 +37,39 @@ fn selftest_finish(report: String) {
     }
 }
 
+/// What a bug report needs to know about the system (GitHub issue #4): the OS, and on Linux the session, desktop,
+/// distribution and NVIDIA driver, which decide whether WebKitGTK starts. No user names or paths.
+#[tauri::command]
+fn diagnostics() -> String {
+    let mut out = vec![format!("os: {} {}", std::env::consts::OS, std::env::consts::ARCH)];
+    for k in ["XDG_SESSION_TYPE", "XDG_CURRENT_DESKTOP", "DESKTOP_SESSION", "WEBKIT_DISABLE_DMABUF_RENDERER", "WEBKIT_DISABLE_COMPOSITING_MODE"] {
+        if let Ok(v) = std::env::var(k) {
+            out.push(format!("{}: {}", k, v));
+        }
+    }
+    if std::env::var_os("WAYLAND_DISPLAY").is_some() {
+        out.push("WAYLAND_DISPLAY: set".into());
+    }
+    if let Ok(s) = std::fs::read_to_string("/etc/os-release") {
+        if let Some(l) = s.lines().find(|l| l.starts_with("PRETTY_NAME=")) {
+            out.push(format!("distribution: {}", l.trim_start_matches("PRETTY_NAME=").trim_matches('"')));
+        }
+    }
+    if let Ok(s) = std::fs::read_to_string("/proc/driver/nvidia/version") {
+        if let Some(l) = s.lines().next() {
+            out.push(format!("nvidia: {}", l.trim()));
+        }
+    }
+    out.join("\n")
+}
+
 fn main() {
+    // WebKitGTK's DMA-BUF renderer fails on NVIDIA's driver under Wayland and the app quits before a window shows
+    // (GitHub issue #1). Turned off on Linux unless the user has set the variable themselves.
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    }
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -45,7 +77,7 @@ fn main() {
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![install_kind, selftest_path, selftest_finish])
+        .invoke_handler(tauri::generate_handler![install_kind, selftest_path, selftest_finish, diagnostics])
         .run(tauri::generate_context!())
         .expect("error while running Soul Forge");
 }

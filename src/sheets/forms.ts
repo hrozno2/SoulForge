@@ -7,6 +7,7 @@ import type { SpellRow } from "./data";
 import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString, PDFTextField, TextAlignment, type PDFFont, type PDFPage, rgb } from "pdf-lib";
 import { splitPersonality, type FillData } from "./data";
 import { readWidgets, type Widget } from "./widgets";
+import { attachLabels, autoFill, type AutoField } from "./automap";
 
 /** A field on the sheet: where it is and what kind. Positions are PDF points from the bottom left. */
 export interface W {
@@ -461,7 +462,7 @@ export interface FormFillResult {
 }
 
 /** Every field of a PDF as the automatic matcher wants it, with its tooltip. */
-export function autoFields(doc: PDFDocument): import("./automap").AutoField[] {
+export function autoFields(doc: PDFDocument): AutoField[] {
   return readWidgets(doc).map((w) => {
     let tip = "";
     let cur: PDFDict | undefined = w.dict;
@@ -491,7 +492,6 @@ export async function fillAuto(template: Uint8Array | ArrayBuffer, data: FillDat
   doc.registerFontkit(fontkit);
   const f = await doc.embedFont(font.regular, { subset: true });
   const sink = formSink(doc, f);
-  const { autoFill, attachLabels } = await import("./automap");
   let fields = autoFields(doc);
   // Names like "Text Field12" say nothing, so read the printed words around the fields and use them as clues.
   if (fields.some((f) => /^(text ?field|check ?box|button)[\s_.-]*\d*$/i.test(f.name.trim()))) {

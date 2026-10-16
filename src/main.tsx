@@ -1,5 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { startLogbook } from "./logbook";
 import "@fontsource/cinzel/600.css";
 import "@fontsource/cinzel/700.css";
 import "@fontsource/roboto-condensed/400.css";
@@ -38,6 +39,7 @@ document.addEventListener("auxclick", (e) => {
   void openExternal(a.href);
 });
 
+startLogbook();
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />

@@ -105,3 +105,16 @@ test("deleting a character asks first, in the app's own dialog", async ({ page }
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete character" }).click();
   await expect(cards).toHaveCount(0);
 });
+
+test("Report a bug shows what would be sent, with each part optional", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /^menu/i }).click();
+  await page.getByRole("button", { name: /report a bug/i }).click();
+  const dialog = page.getByRole("dialog", { name: "Report a bug" });
+  await expect(dialog).toContainText("Rules check of the current character");
+  await expect(dialog).toContainText("App version and system");
+  await dialog.getByRole("textbox").fill("The longbow is missing from my attacks.");
+  await expect(dialog.getByRole("button", { name: "Open a GitHub issue" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Save report to file" })).toBeVisible();
+  await expect(dialog).not.toContainText("/Users/");
+});

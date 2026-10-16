@@ -133,7 +133,7 @@ export const stripHtml = (s: string): string =>
 
 function sheetText(a: ActiveElement, r: Resolved): { text: string; usage?: string; action?: string } {
   const sh = a.el.sheet;
-  if (!sh || !sh.descriptions.length) return { text: stripHtml(a.el.description) };
+  if (!sh || !sh.descriptions.length) return { text: withSenses(a, r, stripHtml(a.el.description)) };
   // The description whose level is the highest not above the owner's level, plus level-less ones.
   const plain = sh.descriptions.filter((d) => d.level === undefined);
   const leveled = sh.descriptions.filter((d) => d.level !== undefined && d.level <= a.ownerLevel).sort((x, y) => x.level! - y.level!);
@@ -141,8 +141,26 @@ function sheetText(a: ActiveElement, r: Resolved): { text: string; usage?: strin
   const usage = best?.usage ?? sh.usage;
   const action = best?.action ?? sh.action;
   const body = [...(leveled.length ? [] : plain), ...(leveled.length ? [best] : [])].filter(Boolean);
-  const text = body.map((d) => stripHtml(fillTemplate(d!.text, r))).join("\n");
-  return { text, usage: usage ? fillTemplate(usage, r) : undefined, action };
+  let text = body.map((d) => stripHtml(fillTemplate(d!.text, r))).join("\n");
+  // A sheet text that ends "...the following benefits:" leaves its list in the description. The items that are not
+  // features of their own (Dread Ambusher's Initiative Bonus) are added, so nothing it does goes missing.
+  if (/:\s*$/.test(text)) {
+    const names = new Set(r.active.map((x) => (x.el.sheet?.alt ?? x.el.name).toLowerCase().replace(/^level \d+: /, "")));
+    const items = [...a.el.description.matchAll(/<p[^>]*>\s*<b>\s*<i>([^<]+?)\.?<\/i>\s*<\/b>([\s\S]*?)<\/p>/g)]
+      .filter((m) => !names.has(m[1].trim().toLowerCase()))
+      .map((m) => `${m[1].trim()}. ${stripHtml(m[2]).trim()}`);
+    if (items.length) text = `${text}\n${items.join("\n")}`;
+  }
+  return { text: withSenses(a, r, text), usage: usage ? fillTemplate(usage, r) : undefined, action };
+}
+
+/** A feature that grants darkvision says so, with its range (Umbral Sight's text is only about being unseen). */
+function withSenses(a: ActiveElement, r: Resolved, text: string): string {
+  const range = a.el.rules.find((x) => x.kind === "stat" && (x as { name?: string }).name === "darkvision:range");
+  const grantsVision = a.el.rules.some((x) => x.kind === "grant" && x.type === "Vision");
+  if (!range || !grantsVision || /(you have|you gain|grants?) darkvision|darkvision (of |out to )?\d+/i.test(text)) return text;
+  const ft = r.stats.get("darkvision:range");
+  return ft > 0 ? `You have Darkvision ${ft} ft.${text ? ` ${text}` : ""}` : text;
 }
 
 function proficiencyGroups(r: Resolved) {
@@ -320,6 +338,8 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
   // Dueling: +2 damage with a melee weapon held in one hand and no other weapon. The content leaves this to the app.
   const dueling = r.active.some((a) => /^dueling$/i.test(a.el.name) && /feature|feat/i.test(a.el.type));
   const weaponsHeld = r.character.inventory.filter((i) => i.equipped && i.id && r.reg.get(i.id)?.type === "Weapon").length;
+  // Weapons mastered: the chosen Weapon Mastery options, named "Longbow (Slow)".
+  const mastered = new Set(r.active.filter((a) => a.el.supports.includes("Weapon Mastery")).map((a) => a.el.name.replace(/\s*\(.*$/, "").toLowerCase()));
   for (const it of r.character.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;
     if ((!it.equipped && !carried) || !el || el.type !== "Weapon") continue;
@@ -338,9 +358,11 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     const duel = dueling && kind === "melee" && !twoHandedWeapon && weaponsHeld <= 1 ? 2 : 0;
     const dmgExtra = s.get(`${kind}:damage`) + s.get("damage") + magicDmg + duel;
     const dmg = it.twoHanded && el.setters.versatile ? { value: el.setters.versatile.value, attrs: el.setters.damage?.attrs ?? {} } : el.setters.damage;
+    // A 2024 weapon's mastery property applies only when the character has mastered that weapon (issue #3).
+    const isMastery = (t: string) => /^ID_WOTC_PHB24_WEAPON_PROPERTY_/.test(t);
     const props = el.supports
-      .filter((t) => /WEAPON_PROPERTY/.test(t))
-      .map((t) => t.replace(/^ID_(INTERNAL|WOTC_PHB24|WOTC_PHB)_WEAPON_PROPERTY_/, "").replace(/_/g, " ").toLowerCase());
+      .filter((t) => /WEAPON_PROPERTY/.test(t) && (!isMastery(t) || mastered.has(el.name.toLowerCase())))
+      .map((t) => (isMastery(t) ? "mastery: " : "") + t.replace(/^ID_(INTERNAL|WOTC_PHB24|WOTC_PHB)_WEAPON_PROPERTY_/, "").replace(/_/g, " ").toLowerCase());
     const versatile = el.setters.versatile?.value;
     const edit = r.character.attackEdits?.[it.uid];
     const line: AttackLine = {
@@ -415,7 +437,9 @@ export function buildSheet(r: Resolved): SheetData {
     const hidden = !!a.el.sheet && !a.el.sheet.display;
     if (hidden && a.el.type !== "Feat") continue;
     if (hidden) {
-      if (!features.some((f) => f.name === a.el.name && f.type === "Feat")) features.push({ id: a.el.id, name: a.el.name, type: a.el.type, source: a.el.source, text: "", level: a.ownerLevel });
+      // Its effect in a sentence, from the description (Archery: +2 to attack rolls with Ranged weapons).
+      const summary = stripHtml(a.el.description).replace(/^(Origin|General|Fighting Style|Epic Boon) Feat( \([^)]*\))?\s*/i, "").trim();
+      if (!features.some((f) => f.name === a.el.name && f.type === "Feat")) features.push({ id: a.el.id, name: a.el.name, type: a.el.type, source: a.el.source, text: summary, level: a.ownerLevel });
       continue;
     }
     const t = sheetText(a, r);
@@ -461,7 +485,7 @@ export function buildSheet(r: Resolved): SheetData {
     weight: { carried: Math.round(carried * 10) / 10, capacity: s.get("strength") * 15 },
     attunement: { current: s.get("attunement:current"), max: s.get("attunement:max") },
     size: sizeEl?.el.name,
-    vision: r.active.filter((a) => a.el.type === "Vision").map((a) => a.el.name),
+    vision: r.active.filter((a) => a.el.type === "Vision").map((a) => (/darkvision/i.test(a.el.name) && r.stats.get("darkvision:range") > 0 ? `Darkvision ${r.stats.get("darkvision:range")} ft` : a.el.name)),
     lists: r.slots
       .filter((x) => x.listItems && x.chosen.length)
       .map((x) => ({ name: x.rule.name, texts: x.chosen.map((id) => x.listItems!.find((i) => i.id === id)?.text).filter((t): t is string => !!t) })),

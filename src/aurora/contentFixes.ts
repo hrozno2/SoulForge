@@ -22,6 +22,17 @@ export const ID_TYPOS: Record<string, string> = {
 };
 
 /** Class spell lists missing a class the rules give (found by the 5e.tools spell list cross-check). */
+/**
+ * Wrong words in a description, fixed in place: [what the content says, what the book says]. The 2024 Ranger's,
+ * Criminal's and Hermit's starting gold is in GP in the Player's Handbook; the content has CP, which put 7 copper on
+ * the sheet where 7 gold belongs (GitHub issue #3).
+ */
+export const TEXT_FIXES: Record<string, [string, string][]> = {
+  ID_WOTC_PHB24_CLASS_RANGER: [["Explorer's Pack, and 7 CP;", "Explorer's Pack, and 7 GP;"]],
+  ID_WOTC_PHB24_BACKGROUND_CRIMINAL: [["Traveler's Clothes, 16 CP;", "Traveler's Clothes, 16 GP;"]],
+  ID_WOTC_PHB24_BACKGROUND_HERMIT: [["Traveler's Clothes, 16 CP;", "Traveler's Clothes, 16 GP;"]],
+};
+
 export const SPELL_LIST_ADD: Record<string, string[]> = {
   // Tasha's artificer spell list includes Frostbite (Xanathar's); the other Xanathar's cantrips already have it.
   ID_XGTE_SPELL_FROSTBITE: ["Artificer"],
@@ -66,6 +77,7 @@ export function applyContentFixes(el: AElement): void {
   // Mistyped IDs in grants too (a damage vulnerability spelled "VULNERAILITY").
   if (el.rules.some((r) => r.kind === "grant" && ID_TYPOS[r.id])) el.rules = el.rules.map((r) => (r.kind === "grant" && ID_TYPOS[r.id] ? { ...r, id: ID_TYPOS[r.id] } : r));
   if (REQUIREMENTS_SET[el.id]) el.requirements = REQUIREMENTS_SET[el.id];
+  for (const [from, to] of TEXT_FIXES[el.id] ?? []) el.description = el.description.split(from).join(to);
   for (const g of GRANTS_ADD[el.id] ?? []) if (!el.rules.some((r) => r.kind === "grant" && r.id === g.id)) el.rules = [...el.rules, { kind: "grant", ...g }];
   const add = SPELL_LIST_ADD[el.id];
   if (add) el.supports = [...el.supports, ...add.filter((c) => !el.supports.includes(c))];

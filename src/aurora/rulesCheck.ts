@@ -99,6 +99,14 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (!s.options.length) add("A required choice has no options", `${s.rule.name} [${s.rule.type}]`);
     else if (stillToChoose(s, r)) add("A required choice is not made", `${s.rule.name}: ${s.chosen.length} of ${s.rule.number}`);
     for (const id of s.chosen) if (s.blocked.has(id)) add("A choice does not meet its requirements", `${s.rule.name}: ${reg.get(id)?.name}`);
+    // A skill, tool or language picked here that the character already has from elsewhere counts once: the pick
+    // is wasted and the character ends up a proficiency short (issue #3: Perception from Skillful and the Ranger).
+    if (s.rule.type === "Proficiency" || s.rule.type === "Language") {
+      for (const id of s.chosen) {
+        const got = r.active.find((a) => a.el.id === id);
+        if (got && got.from && got.from !== s.owner.id) add("A choice repeats something the character already has", `${s.rule.name}: ${reg.get(id)?.name} (already from ${reg.get(got.from)?.name ?? "another choice"}); choose another`);
+      }
+    }
   }
   for (const w of r.warnings) add("Content refers to something missing", w);
   const inLines = new Set(sh.casting.flatMap((l) => [...l.cantripsKnown, ...l.spells, ...l.granted].map((p) => p.id)));

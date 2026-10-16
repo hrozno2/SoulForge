@@ -22,12 +22,14 @@ const groups = [
   ["reference", "content linter|spell lists match|feat prerequisites match"],
 ];
 if (process.env.RULES_TIER === "full") groups.push(["coverage", "coverage: every subclass"]);
-if (process.env.RULES_TIER === "options") groups.push(["options", "options never picked"]);
+// The options tier: the never-picked options in five parts side by side (RULES_SHARD), sharing one scan cache.
+const SHARDS = 5;
+if (process.env.RULES_TIER === "options") for (let i = 0; i < SHARDS; i++) groups.push([`options-${i}`, "options never picked", { RULES_SHARD: `${i}/${SHARDS}` }]);
 
-const runGroup = ([name, pattern]) => new Promise((done) => {
+const runGroup = ([name, pattern, extra = {}]) => new Promise((done) => {
   const dir = join(out, name);
   mkdirSync(dir, { recursive: true });
-  const env = { ...process.env, SOULFORGE_RULES: CACHE, RULES_SEED: seed, RULES_OUT: dir };
+  const env = { ...process.env, ...extra, SOULFORGE_RULES: CACHE, RULES_SEED: seed, RULES_OUT: dir, RULES_RUN: out.split("/").pop() };
   const p = spawn("npx", ["vitest", "run", "src/aurora/rules.suite.test.ts", "-t", `${pattern}|writes the report`], { env, stdio: ["ignore", "pipe", "pipe"] });
   let log = "";
   p.stdout.on("data", (d) => (log += d));

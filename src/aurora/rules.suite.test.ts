@@ -5,7 +5,7 @@
  *   SOULFORGE_RULES=<cache folder>   RULES_SEED=<number, optional>   RULES_OUT=<folder for the files, optional>
  * A run passes only when a fresh batch comes out with no findings at all.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -400,39 +400,82 @@ describe.skipIf(!CACHE)("rules", () => {
   it.skipIf(process.env.RULES_TIER !== "options")("options never picked, built and checked", async () => {
     const books = new BookIndex(reg);
     const shown = (e: { source: string; compendiumHidden: boolean; name: string }) => !e.compendiumHidden && !/^custom\b/i.test(e.name) && !hiddenBy(books.info(e.source), e.source, filters);
-    type Ctx = { ch: Character; key: string; chosen: string[]; number: number; classes: { classId: string; level: number }[]; race?: string; background?: string; subs: string[]; slot: string };
-    const offered = new Map<string, Ctx>();
-    const picked = new Set<string>();
-    const look = (ch: Character) => {
+    // A saved character's options, kept by file so later runs read only new files: the cache is per version of
+    // the rules code (a change there can change what is offered) and split into parts (RULES_SHARD=i/n) that run
+    // side by side; each part scans its share, waits for the others, then builds every n-th never-picked option.
+    type Ctx = { file?: string; ch?: Character; key: string; chosen: string[]; number: number; classes: { classId: string; level: number }[]; race?: string; background?: string; subs: string[]; slot: string };
+    type Scan = { picked: string[]; offered: [string, Ctx][] };
+    const [shard, shards] = (process.env.RULES_SHARD ?? "0/1").split("/").map(Number);
+    const scan = (ch: Character, file?: string): Scan => {
+      const out: Scan = { picked: [], offered: [] };
       let r;
-      try { r = resolve(ch, reg); } catch { return; }
+      try { r = resolve(ch, reg); } catch { return out; }
       const subs = r.active.filter((a) => a.el.type === "Archetype").map((a) => a.el.name);
+      const seenHere = new Set<string>();
       for (const sl of r.slots) {
         if (/^Spell$/i.test(sl.rule.type) || sl.rule.type === "List") continue;
-        for (const id of sl.chosen) picked.add(id);
+        out.picked.push(...sl.chosen);
         // A choice the content settles by default opens only when the default is had elsewhere (Iron Mind's Wisdom).
         if (sl.defaulted) continue;
         for (const o of sl.options) {
-          if (offered.has(o.id) || sl.blocked.has(o.id) || r.ids.has(o.id) || !shown(o)) continue;
-          offered.set(o.id, { ch, key: sl.key, chosen: sl.defaulted ? [] : sl.chosen, number: sl.rule.number, classes: ch.classes.map((c) => ({ classId: c.classId, level: c.level })), race: ch.race, background: ch.background, subs, slot: sl.rule.name });
+          if (seenHere.has(o.id) || sl.blocked.has(o.id) || r.ids.has(o.id) || !shown(o)) continue;
+          seenHere.add(o.id);
+          out.offered.push([o.id, { file, ch: file ? undefined : ch, key: sl.key, chosen: sl.chosen, number: sl.rule.number, classes: ch.classes.map((c) => ({ classId: c.classId, level: c.level })), race: ch.race, background: ch.background, subs, slot: sl.rule.name }]);
         }
       }
+      return out;
     };
     const corpus = process.env.RULES_CORPUS ?? join(CACHE!, "runs");
-    let seen = 0;
-    if (existsSync(corpus)) for (const d of readdirSync(corpus)) {
-      const dir = join(corpus, d);
-      let files: string[] = [];
-      try { files = readdirSync(dir).filter((f) => f.endsWith("-character.json") && !f.startsWith("import_")); } catch { continue; }
-      for (const f of files) { try { look(normalizeCharacter(JSON.parse(readFileSync(join(dir, f), "utf8")))); seen++; } catch { /* a broken file is not a finding here */ } }
+    const files: string[] = [];
+    const walk = (dir: string, depth: number) => {
+      let names: string[] = [];
+      try { names = readdirSync(dir); } catch { return; }
+      for (const n of names) {
+        if (n.endsWith("-character.json")) { if (!n.startsWith("import_")) files.push(join(dir, n)); }
+        else if (depth < 2 && !n.includes(".")) walk(join(dir, n), depth + 1);
+      }
+    };
+    if (existsSync(corpus)) walk(corpus, 0);
+    const mine = (f: string) => [...f].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % shards === shard;
+    const version = (() => { try { return execFileSync("git", ["rev-parse", "HEAD:src/aurora"], { encoding: "utf8" }).trim(); } catch { return "dev"; } })();
+    const scanDir = join(CACHE!, "options-scan", version);
+    mkdirSync(scanDir, { recursive: true });
+    const cacheFile = (i: number) => join(scanDir, `${i}-of-${shards}.json`);
+    const cache: Record<string, Scan> = existsSync(cacheFile(shard)) ? JSON.parse(readFileSync(cacheFile(shard), "utf8")) : {};
+    for (const f of files.filter(mine)) {
+      if (cache[f]) continue;
+      try { cache[f] = scan(normalizeCharacter(JSON.parse(readFileSync(f, "utf8"))), f); } catch { cache[f] = { picked: [], offered: [] }; }
     }
-    // Every subclass at 20, so options only a high level or a subclass opens are offered too.
+    writeFileSync(`${cacheFile(shard)}.tmp`, JSON.stringify(cache));
+    renameSync(`${cacheFile(shard)}.tmp`, cacheFile(shard));
+    // The other parts' scans: each part marks its scan done for this run (RULES_RUN, set by rules-check.mjs).
+    const runId = process.env.RULES_RUN ?? String(process.pid);
+    const done = (i: number) => join(scanDir, `${i}-of-${shards}.${runId}.done`);
+    writeFileSync(done(shard), "");
+    const scans: Record<string, Scan>[] = [cache];
+    const t0 = Date.now();
+    for (let i = 0; i < shards; i++) {
+      if (i === shard) continue;
+      while (!existsSync(done(i)) && Date.now() - t0 < 1200000) await new Promise((ok) => setTimeout(ok, 2000));
+      if (existsSync(cacheFile(i))) scans.push(JSON.parse(readFileSync(cacheFile(i), "utf8")));
+    }
+    const offered = new Map<string, Ctx>();
+    const picked = new Set<string>();
+    const add = (sc: Scan) => { for (const id of sc.picked) picked.add(id); for (const [id, c] of sc.offered) if (!offered.has(id)) offered.set(id, c); };
+    const live = new Set(files);
+    for (const part of scans) for (const [f, sc] of Object.entries(part)) if (live.has(f)) add(sc);
+    const seen = files.length;
+    // Every subclass at 20, so options only a high level or a subclass opens are offered too (the same in every
+    // part: a fixed seed for these).
+    let s2 = 12345;
+    const rng2 = () => ((s2 = (s2 * 16807) % 2147483647) / 2147483647);
     for (const cls of reg.ofType("Class").filter(shown)) {
-      const probe = resolve({ ...randomCharacter(reg, 20, filters, rng, { classId: cls.id }), name: "probe" }, reg);
+      const probe = resolve({ ...randomCharacter(reg, 20, filters, rng2, { classId: cls.id }), name: "probe" }, reg);
       const subSlot = probe.slots.find((sl) => sl.rule.type === "Archetype" && sl.root === `class:${cls.id}`);
-      for (const sub of (subSlot?.options ?? []).filter(shown)) look(randomCharacter(reg, 20, filters, rng, { classId: cls.id, prefer: [sub.name] }));
+      for (const sub of (subSlot?.options ?? []).filter(shown)) add(scan(randomCharacter(reg, 20, filters, rng2, { classId: cls.id, prefer: [sub.name] })));
     }
-    const missed = [...offered].filter(([id]) => !picked.has(id));
+    const allMissed = [...offered].filter(([id]) => !picked.has(id)).sort(([a], [b]) => (a < b ? -1 : 1));
+    const missed = allMissed.filter((_, k) => k % shards === shard);
     const chars: [string, Character][] = [];
     const unbuilt: string[] = [];
     for (const [id, c] of missed) {
@@ -440,10 +483,11 @@ describe.skipIf(!CACHE)("rules", () => {
       // First the character it was offered to, with this option in place of its last pick there (so the picks that
       // lead to the choice stay); then a new character that prefers it.
       // Each earlier pick in turn is the one replaced, so one the option needs (Thirsting Blade for Devouring Blade) can stay.
+      const base = c.ch ?? normalizeCharacter(JSON.parse(readFileSync(c.file!, "utf8")));
       const tries = c.chosen.length < c.number ? [[...c.chosen, id]] : c.chosen.map((_, j) => c.chosen.map((x, k) => (k === c.chosen.length - 1 - j ? id : x)));
       let built: Character | undefined;
       for (const sel of tries) {
-        const sw = autoFill({ ...c.ch, selections: { ...c.ch.selections, [c.key]: sel } }, reg);
+        const sw = autoFill({ ...base, selections: { ...base.selections, [c.key]: sel } }, reg);
         const rr = resolve(sw, reg);
         if (rr.ids.has(id) && !rr.slots.some((x) => x.key === c.key && x.blocked.has(id))) { built = sw; break; }
       }

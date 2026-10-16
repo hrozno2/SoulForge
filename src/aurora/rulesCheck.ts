@@ -83,7 +83,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   const cd = (x: string) => x.replace(/^channel divinity /, "");
   const short = new Set([...names].map(cd));
   // Features the content names differently from 5e.tools (the 2024 Light Domain's "Improved Flare").
-  const ALIAS: Record<string, string> = { [cd("Improved Warding Flare")]: cd("Improved Flare") };
+  const ALIAS: Record<string, string> = { [norm("Improved Warding Flare")]: norm("Improved Flare") };
   const near = (want0: string) => {
     const want = ALIAS[cd(want0)] ?? cd(want0);
     if (short.has(want)) return true;

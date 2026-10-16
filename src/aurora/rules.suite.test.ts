@@ -487,9 +487,18 @@ describe.skipIf(!CACHE)("rules", () => {
       const tries = c.chosen.length < c.number ? [[...c.chosen, id]] : c.chosen.map((_, j) => c.chosen.map((x, k) => (k === c.chosen.length - 1 - j ? id : x)));
       let built: Character | undefined;
       for (const sel of tries) {
-        const sw = autoFill({ ...base, selections: { ...base.selections, [c.key]: sel } }, reg);
+        let sw = autoFill({ ...base, selections: { ...base.selections, [c.key]: sel } }, reg);
+        // A later pick the swap made illegal (an Expertise skill no longer proficient) is picked again, as a player would.
+        for (let k = 0; k < 4; k++) {
+          const rk = resolve(sw, reg);
+          const bad = rk.slots.filter((x) => x.key !== c.key && x.chosen.some((y) => x.blocked.has(y)));
+          if (!bad.length) break;
+          const selections = { ...sw.selections };
+          for (const x of bad) selections[x.key] = x.chosen.filter((y) => !x.blocked.has(y));
+          sw = autoFill({ ...sw, selections }, reg);
+        }
         const rr = resolve(sw, reg);
-        if (rr.ids.has(id) && !rr.slots.some((x) => x.key === c.key && x.blocked.has(id))) { built = sw; break; }
+        if (rr.ids.has(id) && !rr.slots.some((x) => x.chosen.some((y) => x.blocked.has(y)))) { built = sw; break; }
       }
       if (built) { chars.push([`${el.name} (${el.type}, ${c.slot})`, built]); continue; }
       const [first, second] = c.classes;
@@ -502,7 +511,7 @@ describe.skipIf(!CACHE)("rules", () => {
       if (!rc.ids.has(id) || rc.slots.some((x) => x.chosen.includes(id) && x.blocked.has(id))) { unbuilt.push(`${el.name} (${el.type}, ${c.slot})`); continue; }
       chars.push([`${el.name} (${el.type}, ${c.slot})`, ch]);
     }
-    report.push(`\nOptions: ${seen} earlier characters read, ${offered.size} options offered, ${missed.length} never picked, ${chars.length} built.`);
+    report.push(`\nOptions: ${seen} earlier characters read, ${offered.size} options offered, ${allMissed.length} never picked, ${missed.length} in this part (${shard + 1} of ${shards}), ${chars.length} built.`);
     if (unbuilt.length) report.push(`\n### options that could not be built\n${unbuilt.map((u) => `- ${u}`).join("\n")}`);
     expect(await run("option", chars)).toEqual([]);
   }, LIMIT);

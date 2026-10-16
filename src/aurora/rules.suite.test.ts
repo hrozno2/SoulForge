@@ -393,6 +393,62 @@ describe.skipIf(!CACHE)("rules", () => {
     expect(res.findings).toEqual([]);
   });
 
+  // Options never picked: every choice offered to the characters of earlier runs (RULES_CORPUS, default the cache's
+  // runs folder) and to a level 20 of every subclass, minus what those characters chose, is built into a character
+  // of its own that takes it, and checked. Spells are left out (their lists are checked against 5e.tools). Only with
+  // RULES_TIER=options.
+  it.skipIf(process.env.RULES_TIER !== "options")("options never picked, built and checked", async () => {
+    const books = new BookIndex(reg);
+    const shown = (e: { source: string; compendiumHidden: boolean; name: string }) => !e.compendiumHidden && !/^custom\b/i.test(e.name) && !hiddenBy(books.info(e.source), e.source, filters);
+    type Ctx = { classes: { classId: string; level: number }[]; race?: string; background?: string; subs: string[]; slot: string };
+    const offered = new Map<string, Ctx>();
+    const picked = new Set<string>();
+    const look = (ch: Character) => {
+      let r;
+      try { r = resolve(ch, reg); } catch { return; }
+      const subs = r.active.filter((a) => a.el.type === "Archetype").map((a) => a.el.name);
+      for (const sl of r.slots) {
+        if (/^Spell$/i.test(sl.rule.type) || sl.rule.type === "List") continue;
+        for (const id of sl.chosen) picked.add(id);
+        for (const o of sl.options) {
+          if (offered.has(o.id) || sl.blocked.has(o.id) || r.ids.has(o.id) || !shown(o)) continue;
+          offered.set(o.id, { classes: ch.classes.map((c) => ({ classId: c.classId, level: c.level })), race: ch.race, background: ch.background, subs, slot: sl.rule.name });
+        }
+      }
+    };
+    const corpus = process.env.RULES_CORPUS ?? join(CACHE!, "runs");
+    let seen = 0;
+    if (existsSync(corpus)) for (const d of readdirSync(corpus)) {
+      const dir = join(corpus, d);
+      let files: string[] = [];
+      try { files = readdirSync(dir).filter((f) => f.endsWith("-character.json") && !f.startsWith("import_")); } catch { continue; }
+      for (const f of files) { try { look(normalizeCharacter(JSON.parse(readFileSync(join(dir, f), "utf8")))); seen++; } catch { /* a broken file is not a finding here */ } }
+    }
+    // Every subclass at 20, so options only a high level or a subclass opens are offered too.
+    for (const cls of reg.ofType("Class").filter(shown)) {
+      const probe = resolve({ ...randomCharacter(reg, 20, filters, rng, { classId: cls.id }), name: "probe" }, reg);
+      const subSlot = probe.slots.find((sl) => sl.rule.type === "Archetype" && sl.root === `class:${cls.id}`);
+      for (const sub of (subSlot?.options ?? []).filter(shown)) look(randomCharacter(reg, 20, filters, rng, { classId: cls.id, prefer: [sub.name] }));
+    }
+    const missed = [...offered].filter(([id]) => !picked.has(id));
+    const chars: [string, Character][] = [];
+    const unbuilt: string[] = [];
+    for (const [id, c] of missed) {
+      const el = reg.get(id)!;
+      const [first, second] = c.classes;
+      const total = c.classes.reduce((n, x) => n + x.level, 0);
+      const ch = randomCharacter(reg, total, filters, rng, {
+        classId: first.classId, raceId: c.race, backgroundId: c.background, prefer: [...c.subs, el.name], randomGear: true,
+        ...(second ? { multiclass: { classId: second.classId, level: second.level } } : {}),
+      });
+      if (!resolve(ch, reg).ids.has(id)) { unbuilt.push(`${el.name} (${el.type}, ${c.slot})`); continue; }
+      chars.push([`${el.name} (${el.type}, ${c.slot})`, ch]);
+    }
+    report.push(`\nOptions: ${seen} earlier characters read, ${offered.size} options offered, ${missed.length} never picked, ${chars.length} built.`);
+    if (unbuilt.length) report.push(`\n### options that could not be built\n${unbuilt.map((u) => `- ${u}`).join("\n")}`);
+    expect(await run("option", chars)).toEqual([]);
+  }, LIMIT);
+
   it("writes the report", () => {
     writeReport();
     void ALL_CONTENT;

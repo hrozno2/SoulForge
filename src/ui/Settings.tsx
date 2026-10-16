@@ -23,10 +23,12 @@ export interface AppSettings {
   allSpells: boolean;
   /** The Build tab's layout: the build board (lists, board and scores side by side), or the older tabs along the top. */
   buildLayout: "board" | "tabs";
+  /** The test build only: hide the test bar so the app looks like the released one. */
+  hideTestTools: boolean;
 }
 
 const KEY = "charforge.settings";
-const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true, allSpells: true, buildLayout: "board" };
+const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true, allSpells: true, buildLayout: "board", hideTestTools: false };
 
 function read(): AppSettings {
   try {
@@ -184,6 +186,12 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           </label>
           <p className="muted">What you already picked stays visible even when its book is hidden here.</p>
         </fieldset>
+        {import.meta.env.VITE_TEST_TOOLS === "1" && (
+          <label className="set-row">
+            <span><b>Show the test controls</b><small className="muted"> The test build's bar at the top; off makes it look like the released app</small></span>
+            <input type="checkbox" checked={!s.hideTestTools} onChange={(e) => updateSettings({ hideTestTools: !e.target.checked })} />
+          </label>
+        )}
         <div className="set-row">
           <span><b>Backups</b><small className="muted"> Every character in one file</small></span>
           <span className="set-ctl">

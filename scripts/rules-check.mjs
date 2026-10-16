@@ -4,7 +4,7 @@
 // The tests run in groups side by side (one process each), so a run uses the whole machine; each group writes its
 // files to a folder of its own and the reports are joined into one.
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ensureCache, CACHE } from "./rules-cache.mjs";
 
@@ -39,7 +39,21 @@ const runGroup = ([name, pattern]) => new Promise((done) => {
   });
 });
 
-const results = await Promise.all(groups.map(runGroup));
+// Progress: characters written per group, against how many the last run wrote (rough, as the groups vary a little).
+const countsPath = join(CACHE, "runs", "last-counts.json");
+const expected = existsSync(countsPath) ? JSON.parse(readFileSync(countsPath, "utf8")) : {};
+const finished = new Set();
+const count = (name) => { try { return readdirSync(join(out, name)).filter((f) => f.endsWith("-character.json")).length; } catch { return 0; } };
+const progress = () => groups.map(([name]) => {
+  if (finished.has(name)) return `${name} done`;
+  const n = count(name), want = expected[name];
+  if (want === 0) return `${name} running`;
+  return want ? `${name} ${Math.min(99, Math.round((100 * n) / want))}% (${n}/${want})` : `${name} ${n}`;
+}).join(" · ");
+const ticker = setInterval(() => console.log(`  ${progress()}`), 30000);
+const results = await Promise.all(groups.map((g) => runGroup(g).then((r) => (finished.add(r.name), r))));
+clearInterval(ticker);
+writeFileSync(countsPath, JSON.stringify({ ...expected, ...Object.fromEntries(groups.map(([name]) => [name, count(name)])) }, null, 2));
 const report = [`Seed ${seed}`];
 for (const r of results) {
   const f = join(r.dir, "report.md");

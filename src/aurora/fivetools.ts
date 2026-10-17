@@ -357,6 +357,12 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const rules: ARule[] = [...speedRules(r.speed), ...abilityRules(r.ability, r.name), ...skillRules(r.skillProficiencies, r.name)];
   const lang = langRules(r.languageProficiencies, r.name);
   rules.push(...lang.rules);
+  // A species that lists no languages (the Ravenloft lineages, for one) leaves them to the character's origin: under
+  // the 2024 rules, Common and two standard languages.
+  if (!r.languageProficiencies?.length) {
+    rules.push({ kind: "grant", type: "Language", id: "ID_5ET_LANGUAGE_COMMON" });
+    rules.push({ kind: "select", type: "Language", name: `${r.name} language`, supports: "standard", number: 2 });
+  }
   // Older (2014) species carry their own ability score increases. The 2024 background's would count a second time.
   if (abilityRules(r.ability, r.name).length) rules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
   if (r.darkvision) {
@@ -371,15 +377,17 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   }
   const racialSpells = additionalSpellRules(r.additionalSpells, r.name, r.source);
   rules.push(...racialSpells.rules);
-  const size = Array.isArray(r.size) ? r.size[0] : r.size;
-  const sizeName = ({ T: "Tiny", S: "Small", M: "Medium", L: "Large" } as Record<string, string>)[size] ?? "";
-  if (sizeName) {
-    // Its own id: Aurora's ID_INTERNAL_RACIAL_TRAIT_* are a different kind of entry (a size choice), and loading this
-    // after Aurora replaced them (the 2024 Aasimar's size choice lost its options).
-    const sid = `ID_5ET_SIZE_${sizeName.toUpperCase()}`;
-    if (!out.some((o) => o.id === sid)) out.push(base(sid, sizeName, "Size", srcName(ctx, r.source), { compendiumHidden: true }));
-    rules.push({ kind: "grant", type: "Size", id: sid });
-  }
+  // Its own ids: Aurora's ID_INTERNAL_RACIAL_TRAIT_* are a different kind of entry (a size choice), and loading these
+  // after Aurora replaced them (the 2024 Aasimar's size choice lost its options). A species of more than one size
+  // (the Dhampir: Small or Medium) lets the player choose.
+  const SIZE_NAMES: Record<string, string> = { T: "Tiny", S: "Small", M: "Medium", L: "Large" };
+  const sizeIds = (Array.isArray(r.size) ? r.size : [r.size]).filter((x: string) => SIZE_NAMES[x]).map((x: string) => {
+    const sid = `ID_5ET_SIZE_${SIZE_NAMES[x].toUpperCase()}`;
+    if (!out.some((o) => o.id === sid)) out.push(base(sid, SIZE_NAMES[x], "Size", "5etools", { compendiumHidden: true, supports: ["5et size"] }));
+    return sid;
+  });
+  if (sizeIds.length === 1) rules.push({ kind: "grant", type: "Size", id: sizeIds[0] });
+  else if (sizeIds.length > 1) rules.push({ kind: "select", type: "Size", name: `Size (${r.name})`, supports: sizeIds.join("|"), number: 1 });
   rules.push(...traitList(r.entries, id, ctx, r.source, out, "5et trait", "Racial Trait"));
   const mine = subs.filter((s) => s.raceName === r.name && (s.raceSource ?? r.source) === r.source);
   if (mine.length) rules.push({ kind: "select", type: "Sub Race", name: "Subrace", supports: `5et subrace of ${id}`, number: 1, optional: true });

@@ -362,7 +362,8 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     const tags = el.supports.map(lc);
     const ranged = tags.some((t) => t.includes("ranged"));
     const finesse = tags.some((t) => t.includes("finesse"));
-    const ability: AbilityId = ranged ? "dexterity" : finesse && mods("dexterity") > mods("strength") ? "dexterity" : "strength";
+    // Finesse (a dart too, which is also ranged): the better of Strength and Dexterity, for the attack and the damage.
+    const ability: AbilityId = finesse ? (mods("dexterity") > mods("strength") ? "dexterity" : "strength") : ranged ? "dexterity" : "strength";
     const proficient = (el.setters.proficiency?.value ?? "").split(",").some((id) => r.ids.has(id.trim()));
     const magicAtk = (Number(el.setters.attackBonus?.value) || 0) + (it.magic ?? 0);
     const magicDmg = (Number(el.setters.damageBonus?.value) || 0) + (it.magic ?? 0);

@@ -31,6 +31,8 @@ export const TEXT_FIXES: Record<string, [string, string][]> = {
   ID_WOTC_PHB24_CLASS_RANGER: [["Explorer's Pack, and 7 CP;", "Explorer's Pack, and 7 GP;"]],
   ID_WOTC_PHB24_BACKGROUND_CRIMINAL: [["Traveler's Clothes, 16 CP;", "Traveler's Clothes, 16 GP;"]],
   ID_WOTC_PHB24_BACKGROUND_HERMIT: [["Traveler's Clothes, 16 CP;", "Traveler's Clothes, 16 GP;"]],
+  // Tactical Shift (Fighter 5): the book says half your Speed; the content printed the whole Speed.
+  ID_WOTC_PHB24_CLASS_FEATURE_FIGHTER_SECOND_WIND: [["can move up to {{speed}} without", "can move up to half your Speed without"]],
 };
 
 /**
@@ -85,7 +87,11 @@ export function applyContentFixes(el: AElement): void {
   // Mistyped IDs in grants too (a damage vulnerability spelled "VULNERAILITY").
   if (el.rules.some((r) => r.kind === "grant" && ID_TYPOS[r.id])) el.rules = el.rules.map((r) => (r.kind === "grant" && ID_TYPOS[r.id] ? { ...r, id: ID_TYPOS[r.id] } : r));
   if (REQUIREMENTS_SET[el.id]) el.requirements = REQUIREMENTS_SET[el.id];
-  for (const [from, to] of TEXT_FIXES[el.id] ?? []) el.description = el.description.split(from).join(to);
+  for (const [from, to] of TEXT_FIXES[el.id] ?? []) {
+    el.description = el.description.split(from).join(to);
+    // The sheet's own copies of the text (one per level) get the same fix.
+    if (el.sheet?.descriptions) el.sheet = { ...el.sheet, descriptions: el.sheet.descriptions.map((d) => (d.text ? { ...d, text: d.text.split(from).join(to) } : d)) };
+  }
   for (const [name, from, to] of STAT_FIXES[el.id] ?? []) el.rules = el.rules.map((r) => (r.kind === "stat" && r.name === name && r.value === from ? { ...r, value: to } : r));
   for (const g of GRANTS_ADD[el.id] ?? []) if (!el.rules.some((r) => r.kind === "grant" && r.id === g.id)) el.rules = [...el.rules, { kind: "grant", ...g }];
   const add = SPELL_LIST_ADD[el.id];

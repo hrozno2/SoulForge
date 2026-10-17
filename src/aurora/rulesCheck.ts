@@ -389,7 +389,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const tags = el.supports.map(lc);
     const ranged = tags.some((t) => t.includes("ranged"));
     const finesse = tags.some((t) => t.includes("finesse"));
-    const m = ranged ? dex : finesse ? Math.max(dex, mod("strength")) : mod("strength");
+    const m = finesse ? Math.max(dex, mod("strength")) : ranged ? dex : mod("strength");
     const proficient = !/not proficient/.test(a.notes);
     const magic = (it?.magic ?? 0) + (Number(el.setters.attackBonus?.value) || 0);
     const archery = ranged && has(/^archery$/i) ? 2 : 0;

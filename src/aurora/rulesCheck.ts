@@ -340,7 +340,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const row = ARMOR.find(([re]) => re.test(body.el.name.replace(/^\+\d\s*/, "")));
     if (row) {
       const [, base, cap, str] = row;
-      ac = base + (cap === undefined ? dex : cap === 0 ? 0 : Math.min(cap, dex)) + (body.i.magic ?? 0) + (Number(body.el.setters.armorClassBonus?.value) || 0);
+      ac = base + (cap === undefined ? dex : cap === 0 ? 0 : Math.min(cap === 2 ? Math.max(2, r.stats.get("ac:armored:dexterity:cap")) : cap, dex)) + (body.i.magic ?? 0) + (Number(body.el.setters.armorClassBonus?.value) || 0);
       if (str && score("strength").score < str) {
         const want = (sh.speed + 10);
         void want;
@@ -368,7 +368,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (has(/integrated protection/i)) ac += 1;
     // Mariner fighting style (Unearthed Arcana): +1 without heavy armor or a shield.
     if (has(/^mariner$/i) && !shield && !/heavy/i.test(body?.el.setters.armor?.value ?? "")) ac += 1;
-    const known = has(/bladesong|warforged|integrated protection|shield of faith|ring of protection|cloak of protection|bracers of defense|soul of the forge|defensive duelist|medium armor master|dual wielder|elven accuracy/i) || ch.inventory.some((i) => i.attuned) || (ch.customStats ?? []).length > 0;
+    const known = has(/bladesong|warforged|integrated protection|shield of faith|ring of protection|cloak of protection|bracers of defense|soul of the forge|defensive duelist|dual wielder|elven accuracy/i) || ch.inventory.some((i) => i.attuned) || (ch.customStats ?? []).length > 0;
     if (sh.ac.value !== ac && !known) add("Armor class", `${sh.ac.value}, the armor tables give ${ac} (${sh.ac.parts.join(", ")})`);
   }
   if (body) {

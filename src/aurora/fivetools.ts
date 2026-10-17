@@ -90,6 +90,8 @@ export function entriesHtml(entries: J, depth = 0): string {
 
 const base = (id: string, name: string, type: string, source: string, extra: Partial<AElement> = {}): AElement => ({
   id, name, type, source, supports: [], description: "", compendiumHidden: false, setters: {}, rules: [], origin: "5etools", ...extra,
+  // A caller's "setters: undefined" must not leave an element without them (lookups read them).
+  ...(extra.setters ? {} : { setters: {} }),
 });
 
 const set = (value: string, attrs: Record<string, string> = {}): SetterValue => ({ value, attrs });
@@ -266,7 +268,7 @@ function convertItem(i: J, ctx: Ctx): AElement | null {
   const bonus = (v: unknown) => (typeof v === "string" ? parseInt(v, 10) || 0 : Number(v) || 0);
   if (m.bonusAc) rules.push({ kind: "stat", name: "ac:misc", value: String(bonus(m.bonusAc)), bonus: "magic" });
   if (m.bonusSavingThrow) for (const a of Object.values(ABIL)) rules.push({ kind: "stat", name: `${a}:save:misc`, value: String(bonus(m.bonusSavingThrow)) });
-  if (m.bonusSpellAttack) rules.push({ kind: "stat", name: "spell attack", value: String(bonus(m.bonusSpellAttack)) });
+  if (m.bonusSpellAttack) rules.push({ kind: "stat", name: "spellcasting:attack", value: String(bonus(m.bonusSpellAttack)) }); // the name Aurora content and the engine use
   if (m.ability && typeof m.ability === "object") {
     for (const [k, v] of Object.entries(m.ability.static ?? {})) rules.push({ kind: "stat", name: `${abilFull(k)}:score:set`, value: String(v) });
     for (const [k, v] of Object.entries(m.ability)) if (k in ABIL && typeof v === "number") rules.push({ kind: "stat", name: abilFull(k), value: String(v) });
@@ -408,6 +410,13 @@ function convertBackground(b: J, ctx: Ctx, out: AElement[]): void {
   const id = ftId("BG", b.name, b.source);
   const rules: ARule[] = [...skillRules(b.skillProficiencies, b.name), ...abilityRules(b.ability, "Ability score increase").map((x) => ({ ...x, requirements: x.requirements ?? `!${MARK_SPECIES_ASI}` })), ...langRules(b.languageProficiencies, b.name).rules];
   for (const f of (b.feats as J[]) ?? []) for (const k of Object.keys(f)) {
+    // "Any feat of a category" (the Haunted One's Dark Gift) is a choice limited to that category.
+    if (k === "anyFromCategory") {
+      const cats = ((f[k]?.category as string[]) ?? []).map((c) => `category ${c}`);
+      rules.push({ kind: "select", type: "Feat", name: `${b.name} feat`, supports: cats.length ? `5et feat,(${cats.join("||")})` : "5et feat", number: f[k]?.count ?? 1 });
+      continue;
+    }
+    if (k === "any") continue;
     const [fname, fsrc] = k.split("|");
     const [fbase, variant] = fname.split(";").map((x) => x.trim());
     rules.push({ kind: "grant", type: "Feat", id: ftId("FEAT", variant ? `${cap(fbase)} (${cap(variant)})` : cap(fbase), (fsrc ?? "PHB").toUpperCase()) });
@@ -577,7 +586,9 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   out.push(el);
 
   for (const s of data.sc.filter((x) => x.className === c.name && (x.classSource ?? c.source) === c.source)) {
-    const sid = ftId("SUBCLASS", `${c.name} ${s.shortName ?? s.name}`, s.source);
+    // 5e.tools lists the 2014 subclasses under the 2014 and the 2024 class alike; one id for both let the second
+    // replace the first, and the 2014 class lost its subclasses. The class's book joins the id when it differs.
+    const sid = ftId("SUBCLASS", `${c.name} ${s.shortName ?? s.name}`, s.source, c.source !== s.source ? `for ${c.source}` : "");
     const srules: ARule[] = [];
     for (const f of data.sf.filter((x) => x.className === c.name && x.subclassShortName === (s.shortName ?? s.name) && (x.subclassSource ?? s.source) === s.source && (x.classSource ?? c.source) === c.source)) {
       const fid = ftId("SF", `${s.shortName ?? s.name} ${f.name}`, f.source, `${f.level}${f.header ?? ""}`);
@@ -624,7 +635,10 @@ export function additionalSpellRules(adds: J[] | undefined, owner: string, owner
             rules.push({ kind: "grant", type: "Spell", id: `SPELLREF:${name.trim().toLowerCase()}|${(src ?? "").toLowerCase()}|${ownerSource.toLowerCase()}`, level, spellcasting: owner } as ARule);
           } else if (r && typeof (r as J).choose === "string") {
             const crit = Object.fromEntries(String((r as J).choose).split("|").map((p) => p.split("=")).filter((p) => p.length === 2)) as Record<string, string>;
-            const parts = [crit.class, crit.level].filter(Boolean) as string[];
+            // 5e.tools separates alternatives with ";" (class=Cleric;Wizard); the filter syntax here uses "||".
+            const anyOf = (v?: string) => (v ? (v.includes(";") ? `(${v.split(";").map((x) => x.trim()).filter(Boolean).join("||")})` : v.trim()) : "");
+            const school = crit.school ? crit.school.split(";").map((x) => SCHOOL[x.trim().toUpperCase()] ?? x).join(";") : "";
+            const parts = [anyOf(crit.class), anyOf(crit.level), anyOf(school)].filter(Boolean) as string[];
             rules.push({ kind: "select", type: "Spell", name: `${owner} spell`, supports: parts.join(", ") || "0", number: (r as J).count ?? 1, level, spellcasting: owner } as ARule);
           }
         }
@@ -651,7 +665,7 @@ function convertOptionalFeature(o: J, ctx: Ctx): AElement {
   return base(ftId("OPT", o.name, o.source), o.name, "Optional Feature", srcName(ctx, o.source), {
     supports: ["5et optional feature", ...types], rules, description: html,
     sheet: { display: true, descriptions: [{ text: html }] },
-    setters: lv ? { level: set(String(lv)) } : undefined,
+    setters: lv ? { level: set(String(lv)) } : {},
   });
 }
 
@@ -735,7 +749,30 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   }
   for (const c of classes) convertClass(c, { cf, sc, sf }, ctx, out);
   resolveSpellRefs(out, spellIds);
+  resolveLooseRefs(out);
   return out;
+}
+
+/**
+ * References the data makes to things it names differently: a feat given only by its base name where the data holds
+ * variants (Magic Initiate as Cleric, Druid or Wizard) becomes a choice among them; the elemental languages folded
+ * into Primordial in 2024 (Auran, Aquan, Ignan, Terran) point at Primordial when the data no longer lists them.
+ */
+function resolveLooseRefs(out: AElement[]): void {
+  const ids = new Set(out.map((e) => e.id));
+  const ELEMENTAL = /^ID_5ET_LANGUAGE_(AURAN|AQUAN|IGNAN|TERRAN)$/;
+  for (const el of out) {
+    if (!el.rules.some((r) => r.kind === "grant" && !ids.has(r.id))) continue;
+    el.rules = el.rules.map((r) => {
+      if (r.kind !== "grant" || ids.has(r.id)) return r;
+      if (r.type === "Feat") {
+        const variants = out.filter((e) => e.type === "Feat" && e.id.startsWith(`${r.id}_`)).map((e) => e.id);
+        if (variants.length) return { kind: "select", type: "Feat", name: `${variants.length > 1 ? "Feat version" : "Feat"}`, supports: variants.join("||"), number: 1, requirements: r.requirements } as ARule;
+      }
+      if (r.type === "Language" && ELEMENTAL.test(r.id) && ids.has("ID_5ET_LANGUAGE_PRIMORDIAL")) return { ...r, id: "ID_5ET_LANGUAGE_PRIMORDIAL" };
+      return r;
+    });
+  }
 }
 
 /** Turns SPELLREF placeholders into spell element ids; a spell that was not imported is dropped quietly. */

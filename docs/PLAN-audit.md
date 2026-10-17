@@ -232,6 +232,21 @@ Hárky v appke dnes:
   - druh z 5e.tools bez veľkosti a jazykov (opravené 2026-10-17);
   - náhodné postavy, ktoré nepripravujú kúzla.
 
+## Phase I: Every element against its 5e.tools equivalent (requested 2026-10-17)
+
+For every element in the software, Aurora or 5e.tools, find its counterpart in the 5e.tools data (same name and book,
+with the known renames) and compare:
+- **Mechanics:** what it grants, offers and changes, against 5e.tools' structured fields (proficiencies, ability
+  increases, speeds, senses, resistances, spells, spell lists, optional feature counts, class tables) and against
+  the rules text where 5e.tools has no structure. Every difference is either fixed (contentFixes.ts, the converter,
+  or the engine) or recorded with the reason it is right.
+- **Information:** the full rules text is there, nothing cut, the numbers in the text match the mechanics.
+- **Lore:** the 5e.tools fluff (lore text and pictures) is attached to the element and shown in the info panel and
+  on cards (see PLAN-windows.md section 7).
+
+Output: a report per element type, with a coverage figure, in docs/audit/. Aurora elements with no 5e.tools
+counterpart are listed (they are Aurora-only content or renamed).
+
 ## Poradie a odhad
 
 1. Fáza A (atlas) a regresné testy z dnešných postáv: 2–3 dni. Bez atlasu nevieme, čo je „všetko“.

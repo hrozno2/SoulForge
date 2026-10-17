@@ -82,10 +82,10 @@ function parseSupports(src: string): SNode | null {
 function offered(el: AElement): Set<string> {
   const s = new Set<string>(el.supports.map((x) => x.toLowerCase()));
   s.add(el.id.toLowerCase());
-  const lvl = el.setters.level?.value;
+  const lvl = el.setters?.level?.value;
   if (el.type === "Spell" && lvl !== undefined) s.add(lvl.trim());
   // A spell's school works as a tag too, so "Evocation" in a filter finds evocation spells.
-  if (el.type === "Spell" && el.setters.school?.value) s.add(el.setters.school.value.trim().toLowerCase());
+  if (el.type === "Spell" && el.setters?.school?.value) s.add(el.setters.school.value.trim().toLowerCase());
   // "Ritual" and "Concentration" in a filter (Ritual Caster) find spells by those properties.
   if (el.type === "Spell" && el.setters.isRitual?.value === "true") s.add("ritual");
   if (el.type === "Spell" && el.setters.isConcentration?.value === "true") s.add("concentration");

@@ -316,7 +316,9 @@ function buildAc(r: Resolved): { value: number; parts: string[] } {
   const armorBase = s.get("ac:armored:armor");
   if (armor && armorBase > 0) {
     const kind = lc(armor.setters.armor?.value ?? "");
-    const cap = kind === "heavy" ? 0 : kind === "medium" ? Math.min(2, dex) : dex;
+    // Medium armor counts Dexterity up to +2, or more where content raises the cap (Medium Armor Master: +3).
+    const mediumCap = Math.max(2, s.get("ac:armored:dexterity:cap"));
+    const cap = kind === "heavy" ? 0 : kind === "medium" ? Math.min(mediumCap, dex) : dex;
     value = armorBase + cap + s.get("ac:armored:enhancement") + s.get("ac:armored:misc");
     parts.push(`${armor.name} ${armorBase}`);
     if (cap) parts.push(`Dex ${signed(cap)}`);

@@ -136,6 +136,29 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "atlas")("the atlas of the conten
     missing, dynamic, unreadStats: unread,
   }));
 
+  // Field coverage: every field the 5e.tools data uses, per kind of entry, and whether the converter reads it at all.
+  // A field the converter never mentions is data it silently drops (the species' lineages and resistances were).
+  const fieldLines: string[] = [];
+  const dir5 = join(CACHE!, "5etools-data");
+  if (existsSync(dir5)) {
+    const conv = readFileSync("src/aurora/fivetools.ts", "utf8");
+    const reads = (k: string) => new RegExp(`[.\\[\"'\\s]${k.replace(/[$]/g, "\\$")}\\b`).test(conv);
+    const IGNORED = new Set(["name", "source", "page", "srd", "srd52", "basicRules", "basicRules2024", "otherSources", "reprintedAs", "hasFluff", "hasFluffImages", "soundClip", "hasToken", "tokenCredit", "edition", "legacy", "freeRules2024", "isReprinted", "fluff", "_copy", "_isCopy", "_isBaseVersion", "token", "foundryImg"]);
+    const kinds = new Map<string, Map<string, number>>();
+    for (const f of walk(dir5, ".json")) {
+      if (/index\.json$|bestiary|books\.json|sources\.json/.test(f)) continue;
+      const data = JSON.parse(readFileSync(f, "utf8"));
+      for (const [kind, list] of Object.entries(data)) {
+        if (!Array.isArray(list) || kind.startsWith("_")) continue;
+        const m = kinds.get(kind) ?? kinds.set(kind, new Map()).get(kind)!;
+        for (const x of list) if (x && typeof x === "object") for (const k of Object.keys(x)) m.set(k, (m.get(k) ?? 0) + 1);
+      }
+    }
+    for (const [kind, m] of [...kinds].sort()) {
+      const missingFields = [...m].filter(([k]) => !IGNORED.has(k) && !reads(k)).sort((a, b) => b[1] - a[1]);
+      if (missingFields.length) fieldLines.push(`- **${kind}** (${[...m.values()].reduce((a, b) => Math.max(a, b), 0)} entries): ${missingFields.map(([k, n]) => `\`${k}\` (${n})`).join(", ")}`);
+    }
+  }
   const lines: string[] = [
     "# Atlas: summary",
     "",
@@ -157,6 +180,12 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "atlas")("the atlas of the conten
     "## References that lead nowhere (first 80)",
     "",
     ...missing.slice(0, 80).map((m) => `- ${reg.get(m.owner)?.name ?? m.owner} (${m.owner}): ${m.kind} -> \`${m.ref}\``),
+    "",
+    "## 5e.tools fields the converter never reads",
+    "",
+    "Per kind of entry: the field, and how many entries use it. Each is data that never reaches a character. Some are display-only (art, tables); each one needs a decision.",
+    "",
+    ...fieldLines,
     "",
     "## Statistics nobody reads (most used first, first 80)",
     "",

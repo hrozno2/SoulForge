@@ -14,7 +14,29 @@ PLAN-audit.md.
 - Kids' sheet in Slovak with wild shape cards for Xelinora, and Elisabeth (files were given to the user; the
   generators are in the session scratchpad, not the repo: slovak.py, make-sk.cjs, xelinora.html, style.css).
 
-## In progress: species lineages from 5e.tools (`_versions`)
+## Done after the first note
+- Lineages from 5e.tools `_versions`: every one of the 17 species gets a required choice, Dragonborn colours
+  expanded from the template, and the base species no longer keeps the traits a lineage replaces.
+- Species, subraces and lineages get their damage resistances and immunities, and condition immunities.
+- The atlas has a new "5e.tools fields the converter never reads" section in docs/atlas/summary.md. This is the
+  systemic guard for the whole class of "converter silently drops data" bugs.
+
+## Next: close the field gaps the atlas lists, rules first
+- Backgrounds: toolProficiencies, startingEquipment.
+- Feats: savingThrowProficiencies (Resilient), toolProficiencies, armorProficiencies,
+  skillToolLanguageProficiencies, bonusSenses.
+- Classes: itemMasteries / itemMasteriesProgression (2024 weapon mastery), featProgression (fighting-style feats),
+  startingEquipment, primaryAbility.
+- Species and subraces: toolProficiencies, armorProficiencies, blindsight, `overwrite` (a subrace replaces base
+  traits).
+- Base items: mastery and firearm data.
+- Items: bonusSpellSaveDc, modifySpeed, grantsProficiency, grantsLanguage, charges, attachedSpells.
+- Spells: the tags (damageInflict, conditionInflict, savingThrow, areaTags, spellAttack, abilityCheck, miscTags,
+  affectsCreatureType) feed the 5e.tools-style filters; scalingLevelDice.
+
+Every field either gets converted or is marked display-only in the atlas's IGNORED list, with the reason.
+
+## Earlier in progress: species lineages from 5e.tools (`_versions`) (now done)
 17 species in 5e.tools keep their lineage choice in `_versions`, which the converter ignores, so there is no
 choice at all:
 - XPHB Elf (Drow, High Elf, Wood Elf), XPHB Gnome, XPHB Goliath (6 giant ancestries), XPHB Tiefling (3 legacies),

@@ -354,9 +354,64 @@ function traitList(entries: J[] | undefined, parentId: string, ctx: Ctx, source:
   return rules;
 }
 
+/** Versions written as a template (the Dragonborn colours: "_abstract" plus "_implementations"), one per implementation. */
+function expandVersions(list: J[]): J[] {
+  const out: J[] = [];
+  for (const v of list) {
+    if (!v?._abstract || !Array.isArray(v._implementations)) { out.push(v); continue; }
+    for (const impl of v._implementations as J[]) {
+      const vars = (impl._variables as Record<string, string>) ?? {};
+      const filled = JSON.parse(JSON.stringify(v._abstract).replace(/\{\{(\w+)\}\}/g, (m, k) => vars[k] ?? m));
+      const { _variables, ...rest } = impl;
+      void _variables;
+      out.push({ ...filled, ...rest });
+    }
+  }
+  return out;
+}
+
+/** Damage resistances, immunities and condition immunities, as the entries Aurora content grants for them. */
+function defenseRules(r: J): ARule[] {
+  const rules: ARule[] = [];
+  const add = (list: unknown, kind: string) => {
+    for (const x of (Array.isArray(list) ? list : []) as unknown[]) {
+      if (typeof x === "string") rules.push({ kind: "grant", type: "Condition", id: `ID_INTERNAL_CONDITION_${kind}_${slug(x)}` });
+    }
+  };
+  add(r.resist, "DAMAGE_RESISTANCE");
+  add(r.immune, "DAMAGE_IMMUNITY");
+  add(r.vulnerable, "DAMAGE_VULNERABILITY");
+  add(r.conditionImmune, "CONDITION_IMMUNITY");
+  return rules;
+}
+
+/**
+ * A species "_version" merged onto the species, the way 5e.tools does: plain fields replace the species' own, and
+ * "_mod" edits its lists ("replaceArr" swaps the entry of that name, "appendArr", "insertArr", "removeArr").
+ */
+function applyVersion(r: J, v: J): J | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const out: J = { ...r, ...v };
+  delete out._versions;
+  for (const [field, mods] of Object.entries((v._mod as J) ?? {})) {
+    let list: J[] = Array.isArray(out[field]) ? [...out[field]] : [];
+    for (const m of Array.isArray(mods) ? mods : [mods]) {
+      const items = m?.items === undefined ? [] : Array.isArray(m.items) ? m.items : [m.items];
+      const at = (name: unknown) => list.findIndex((e) => e && typeof e === "object" && e.name === name);
+      if (m?.mode === "replaceArr") { const i = at(m.replace); if (i >= 0) list.splice(i, 1, ...items); else list.push(...items); }
+      else if (m?.mode === "appendArr") list.push(...items);
+      else if (m?.mode === "insertArr") list.splice(Math.max(0, Number(m.index) || 0), 0, ...items);
+      else if (m?.mode === "removeArr") { for (const n of [].concat(m.names ?? [])) { const i = at(n); if (i >= 0) list.splice(i, 1); } }
+    }
+    out[field] = list;
+  }
+  delete out._mod;
+  return out;
+}
+
 function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const id = ftId("RACE", r.name, r.source);
-  const rules: ARule[] = [...speedRules(r.speed), ...abilityRules(r.ability, r.name), ...skillRules(r.skillProficiencies, r.name)];
+  const rules: ARule[] = [...speedRules(r.speed), ...abilityRules(r.ability, r.name), ...skillRules(r.skillProficiencies, r.name), ...defenseRules(r)];
   const lang = langRules(r.languageProficiencies, r.name);
   rules.push(...lang.rules);
   // A species that lists no languages (the Ravenloft lineages, for one) leaves them to the character's origin: under
@@ -390,13 +445,45 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   });
   if (sizeIds.length === 1) rules.push({ kind: "grant", type: "Size", id: sizeIds[0] });
   else if (sizeIds.length > 1) rules.push({ kind: "select", type: "Size", name: `Size (${r.name})`, supports: sizeIds.join("|"), number: 1 });
-  rules.push(...traitList(r.entries, id, ctx, r.source, out, "5et trait", "Racial Trait"));
+  const replacedByVersions = new Set<string>();
+  for (const v of expandVersions((r._versions as J[]) ?? [])) {
+    const mods = (v?._mod?.entries ?? v?._abstract?._mod?.entries) as J;
+    for (const m of Array.isArray(mods) ? mods : mods ? [mods] : []) {
+      if (m?.mode === "replaceArr" && typeof m.replace === "string") replacedByVersions.add(m.replace);
+      if (m?.mode === "removeArr") for (const n of [].concat(m.names ?? [])) replacedByVersions.add(n);
+    }
+  }
+  const baseEntries = ((r.entries as J[]) ?? []).filter((e) => !(e && typeof e === "object" && replacedByVersions.has(e.name)));
+  rules.push(...traitList(baseEntries, id, ctx, r.source, out, "5et trait", "Racial Trait"));
   const mine = subs.filter((s) => s.raceName === r.name && (s.raceSource ?? r.source) === r.source);
   if (mine.length) rules.push({ kind: "select", type: "Sub Race", name: "Subrace", supports: `5et subrace of ${id}`, number: 1, optional: true });
+  // Lineages, legacies and ancestries kept as "_versions" of the species (the 2024 Elf's Drow, High Elf and Wood Elf).
+  // Each becomes a required choice; it carries only what differs from the base species.
+  const versions = expandVersions((r._versions as J[]) ?? []).map((v) => applyVersion(r, v)).filter(Boolean) as J[];
+  if (versions.length) {
+    const baseIds = new Set(rules.filter((x) => x.kind !== "grant" || x.type !== "Racial Trait").map((x) => JSON.stringify(x)));
+    const baseTraits = new Set(((r.entries as J[]) ?? []).map((e) => JSON.stringify(e)));
+    rules.push({ kind: "select", type: "Sub Race", name: `${r.name} ${/legacy/i.test(versions[0].name) ? "legacy" : /ancestry/i.test(versions[0].name) ? "ancestry" : "lineage"}`, supports: `5et version of ${id}`, number: 1 });
+    for (const v of versions) {
+      const vname = String(v.name).split(";").pop()!.trim() || String(v.name);
+      const vid = ftId("RACEVERSION", `${r.name} ${vname}`, v.source ?? r.source);
+      const vrules: ARule[] = [...speedRules(v.speed), ...abilityRules(v.ability, vname), ...skillRules(v.skillProficiencies, vname), ...langRules(v.languageProficiencies, vname).rules, ...defenseRules(v)].filter((x) => !baseIds.has(JSON.stringify(x)));
+      if (v.darkvision && v.darkvision !== r.darkvision) {
+        const dv = `${vid}_DARKVISION`;
+        out.push(base(dv, `Darkvision (${v.darkvision} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));
+        vrules.push({ kind: "grant", type: "Vision", id: dv });
+      }
+      const vSpells = JSON.stringify(v.additionalSpells) !== JSON.stringify(r.additionalSpells) ? additionalSpellRules(v.additionalSpells, vname, v.source ?? r.source) : { rules: [] as ARule[], ability: undefined };
+      vrules.push(...vSpells.rules);
+      const changed = ((v.entries as J[]) ?? []).filter((e) => !baseTraits.has(JSON.stringify(e)));
+      vrules.push(...traitList(changed, vid, ctx, v.source ?? r.source, out, "5et trait", "Racial Trait"));
+      out.push(base(vid, vname, "Sub Race", srcName(ctx, v.source ?? r.source), { supports: [`5et version of ${id}`], rules: vrules, spellcasting: vSpells.rules.length ? castingFor(vname, vSpells.ability) : undefined, description: entriesHtml(changed) }));
+    }
+  }
   out.push(base(id, r.name, "Race", srcName(ctx, r.source), { rules, spellcasting: racialSpells.rules.length ? castingFor(r.name, racialSpells.ability) : undefined, description: entriesHtml(r.entries), supports: [] }));
   for (const s of mine) {
     const sid = ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source);
-    const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name), ...skillRules(s.skillProficiencies, s.name ?? r.name), ...langRules(s.languageProficiencies, s.name ?? r.name).rules];
+    const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name), ...skillRules(s.skillProficiencies, s.name ?? r.name), ...langRules(s.languageProficiencies, s.name ?? r.name).rules, ...defenseRules(s)];
     if (abilityRules(s.ability, s.name ?? r.name).length) srules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
     if (s.speed) srules.push(...speedRules(s.speed));
     srules.push(...traitList(s.entries, sid, ctx, s.source, out, "5et trait", "Racial Trait"));

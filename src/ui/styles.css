@@ -1717,7 +1717,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 /* A card turned over to its back: its choices, in the middle of the window */
 .card-back-veil { position: fixed; inset: 0; z-index: 280; background: rgba(6, 5, 4, .55); backdrop-filter: blur(2px); display: grid; place-items: center; animation: back-veil .2s ease-out; perspective: 1200px; }
 @keyframes back-veil { from { opacity: 0; } }
-.card-back { width: min(680px, 92vw); height: min(82vh, 680px); display: flex; flex-direction: column; border-radius: 14px; border: 2px solid var(--gold); background: linear-gradient(180deg, hsl(var(--hue) 35% 16%), var(--panel) 30%); box-shadow: inset 0 0 0 6px rgba(0,0,0,.25), 0 30px 80px rgba(0,0,0,.7); overflow: hidden; transform-origin: 50% 50%; animation: back-in .26s cubic-bezier(.2,.8,.3,1); }
+.card-back { width: min(860px, 94vw); height: min(92vh, 900px); display: flex; flex-direction: column; border-radius: 14px; border: 2px solid var(--gold); background: linear-gradient(180deg, hsl(var(--hue) 35% 16%), var(--panel) 30%); box-shadow: inset 0 0 0 6px rgba(0,0,0,.25), 0 30px 80px rgba(0,0,0,.7); overflow: hidden; transform-origin: 50% 50%; animation: back-in .26s cubic-bezier(.2,.8,.3,1); }
 .card-back.edit { animation-duration: .18s; }
 @keyframes back-in { from { transform: rotateY(-90deg); } to { transform: none; } }
 .card-back-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 16px 18px 10px; border-bottom: 1px solid var(--line); }

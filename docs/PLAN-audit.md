@@ -244,11 +244,17 @@ Hárky v appke dnes:
 
 Vydania sa robia priebežne po opravách, nie až na konci.
 
-## Otázky
+## Rozhodnutia (2026-10-17)
 
-1. Licencie hárkov: mám zisťovať podmienky WotC a DLDM, prípadne napísať autorovi DLDM o povolení? Dovtedy
-   zostane sťahovanie v appke.
-2. Detský hárok: odkiaľ je kresba? Ak je voľne použiteľná, pribalí sa v slovenčine aj angličtine.
-3. Kontrolovať aj zriedkavý obsah (Unearthed Arcana, tretie strany, homebrew)? Navrhujem: oficiálny obsah na
-   100 %, Unearthed Arcana len to, či sa načíta a nespadne.
-4. Bude Wild Shape cards aj pre Polymorph a pre sprievodcov rovno?
+1. **Hárky WotC a DLDM:** zostávajú na stiahnutie, nebalia sa. Ku každému sa však do appky uloží profil
+   (fáza F), aby appka presne vedela, čo kam patrí.
+2. **Detský hárok je z Etsy.** Tlačoviny z Etsy majú zvyčajne licenciu len na osobné použitie, takže ho appka
+   nebalí. Jeho vyplniteľná verzia zostáva na osobné použitie hráča. Ak by sa mal dať do appky, treba:
+   - zistiť licenciu z konkrétnej ponuky;
+   - pridať odkaz na autora;
+   - ideálne mať súhlas autora.
+3. **Rozsah obsahu:**
+   - oficiálny obsah na 100 % vo všetkom;
+   - všetko v súboroch Aurora na 100 % okrem Unearthed Arcana;
+   - tretie strany: analýza a testy, teraz nie nutne na 100 %, ale cieľom je 100 % (okrem homebrew).
+4. **Karty** sa robia pre divoké tvary, Polymorph aj sprievodcov.

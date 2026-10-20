@@ -6,6 +6,7 @@ import { ABILITY_IDS, totalLevel, type AbilityId, type Character } from "./chara
 import { isModern } from "./edition";
 import { bookKey } from "./books";
 import { conceptOf, conceptOfMarker } from "../engine/concepts";
+import { hash } from "../engine/load";
 import { resolveTimeline } from "../engine/timeline";
 
 export interface ActiveElement {
@@ -257,6 +258,27 @@ function mutualExclusions(el: AElement, reg: ARegistry): Set<string> {
   return out;
 }
 
+/**
+ * A choice's stable key (docs/ENGINE-PLAN.md 1.6): the owner's id and a fingerprint of the choice (its kind, name and
+ * level), with a count when the owner has two such choices. It does not move when content adds or reorders rules.
+ */
+const KEYS = new WeakMap<AElement, string[]>();
+export function choiceKey(el: AElement, rule: SelectRule, idx: number): string {
+  let keys = KEYS.get(el);
+  if (!keys) {
+    const seen = new Map<string, number>();
+    keys = el.rules.map((r) => {
+      if (r.kind !== "select") return "";
+      const print = hash(`${r.type}|${r.name.toLowerCase().trim()}|${r.level ?? ""}`);
+      const n = seen.get(print) ?? 0;
+      seen.set(print, n + 1);
+      return `${el.id}#${print}${n ? `.${n + 1}` : ""}`;
+    });
+    KEYS.set(el, keys);
+  }
+  return keys[idx] || `${el.id}#${hash(`${rule.type}|${rule.name.toLowerCase().trim()}|${rule.level ?? ""}`)}`;
+}
+
 /** One walk over the character's content, with requirements judged against `prev` (exported for the timeline resolver). */
 export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
   const spellAbility: Record<string, string> = {};
@@ -337,8 +359,13 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         if (!meets(target.requirements, tctx)) return;
         visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0), below);
       } else {
-        const key = `${el.id}|${idx}`;
-        let chosen = (ch.selections[key] ?? []).slice(0, rule.number);
+        const key = choiceKey(el, rule, idx);
+        const legacy = `${el.id}|${idx}`;
+        // A character saved before stable keys has its picks under the rule's position. They are read only when every
+        // pick is of this choice's kind, so a pick that now sits at another position is never taken for this one.
+        const old = ch.selections[key] === undefined ? ch.selections[legacy] : undefined;
+        const oldFits = !!old && (rule.type === "List" || old.every((id) => reg.get(id)?.type === rule.type));
+        let chosen = (ch.selections[key] ?? (oldFits ? old! : [])).slice(0, rule.number);
         let defaulted = false;
         // A default the character already has from elsewhere is not given again: the choice opens instead (Battle Smith's
         // smith's tools for an Artificer who has them: choose another artisan's tool).

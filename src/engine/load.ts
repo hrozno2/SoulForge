@@ -16,7 +16,7 @@ const isInternalRef = (id: string) => /^ID_INTERNAL_/.test(id) || /^SPELLREF:/.t
 const originOf = (e: AElement): Origin => (e.origin === "5etools" ? "5etools" : "aurora");
 
 /** A short, stable hash of a string (FNV-1a, 32 bit), as base 36. */
-function hash(s: string): string {
+export function hash(s: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);

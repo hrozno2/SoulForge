@@ -117,6 +117,20 @@ function equippedFacts(ch: Character, reg: ARegistry) {
   return { armor, shield };
 }
 
+// Asked for every rule of every element, so worked out once per walk and once per character.
+const TYPES = new WeakMap<Pass, Set<string>>();
+const NO_TYPES = new Set<string>();
+const FACTS = new WeakMap<Character, { worn: string; facts: ReturnType<typeof equippedFacts> }>();
+function typesOf(prev: Pass | null): Set<string> {
+  if (!prev) return NO_TYPES;
+  let t = TYPES.get(prev);
+  if (!t) {
+    t = new Set(prev.active.map((a) => lc(a.el.type)));
+    TYPES.set(prev, t);
+  }
+  return t;
+}
+
 export function makeCtx(prev: Pass | null, level: number, ch: Character, reg: ARegistry, empty: StatBook, self?: string): ReqCtx {
   const ids = prev?.ids ?? new Set<string>();
   // Judged for `self`: an id that reaches the character only through `self` does not count ("from elsewhere").
@@ -126,9 +140,12 @@ export function makeCtx(prev: Pass | null, level: number, ch: Character, reg: AR
     const chains = prev?.via?.get(id);
     return !chains || chains.some((c) => !c.includes(self));
   };
-  const types = new Set<string>();
-  if (prev) for (const a of prev.active) types.add(lc(a.el.type));
-  const facts = equippedFacts(ch, reg);
+  const types = typesOf(prev);
+  // Some callers equip items in place, so the cached facts are checked against what is worn now.
+  const worn = ch.inventory.map((i) => (i.equipped && i.id ? i.id : "")).join(",");
+  let cached = FACTS.get(ch);
+  if (!cached || cached.worn !== worn) FACTS.set(ch, (cached = { worn, facts: equippedFacts(ch, reg) }));
+  const facts = cached.facts;
   const stats = prev?.stats ?? empty;
   return {
     hasId: has,
@@ -182,6 +199,26 @@ export function baseHitPoints(ch: Character, reg: ARegistry, conMod: number): nu
     }
   }
   return hp;
+}
+
+/**
+ * Ids that `el` excludes and that exclude `el` back ("!B" on A and "!A" on B): the two are one thing from two books
+ * (the DMG's and the 2024 PHB's Pistol). Judged against the previous walk they switch each other off and on forever;
+ * judged within the walk, the one reached first is kept.
+ */
+const MUTUAL = new WeakMap<ARegistry, Map<string, Set<string>>>();
+function mutualExclusions(el: AElement, reg: ARegistry): Set<string> {
+  const byReg = MUTUAL.get(reg) ?? MUTUAL.set(reg, new Map()).get(reg)!;
+  let out = byReg.get(el.id);
+  if (!out) {
+    out = new Set<string>();
+    for (const m of (el.requirements ?? "").matchAll(/!\s*(ID_[A-Z0-9_]+)/g)) {
+      const other = reg.get(m[1]);
+      if (other && new RegExp(`!\\s*${el.id}\\b`).test(other.requirements ?? "")) out.add(m[1]);
+    }
+    byReg.set(el.id, out);
+  }
+  return out;
 }
 
 /** One walk over the character's content, with requirements judged against `prev` (exported for the timeline resolver). */
@@ -255,7 +292,13 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         if (rule.type === "Spell") {
           spellPicks.push({ id: rule.id, casting: rule.spellcasting ?? "", granted: true, prepared: true, from: el.id });
         }
-        if (!meets(target.requirements, makeCtx(prev, ownerLevel, ch, reg, empty, target.id))) return;
+        const tctx = makeCtx(prev, ownerLevel, ch, reg, empty, target.id);
+        const mutual = mutualExclusions(target, reg);
+        if (mutual.size) {
+          const prevHas = tctx.hasId;
+          tctx.hasId = (id) => (mutual.has(id) ? ids.has(id) : prevHas(id));
+        }
+        if (!meets(target.requirements, tctx)) return;
         visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0), below);
       } else {
         const key = `${el.id}|${idx}`;

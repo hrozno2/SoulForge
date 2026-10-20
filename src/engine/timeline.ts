@@ -119,14 +119,15 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     const st = openedAt.get(s.key) ?? timeline[timeline.length - 1];
     const then = st.pass;
     const thenSlot = then.rawSlots.find((x) => x.key === s.key) ?? s;
-    const filter = resolveSupports(s.rule.supports, s.rule.spellcasting, then, shared);
+    // A choice the rules let the character change later (spells known, invocations...) may hold what the current
+    // level allows; anything else must have been legal when it was made.
+    const changeable = replaceable(s);
+    const filter = resolveSupports(s.rule.supports, s.rule.spellcasting, changeable ? final : then, shared);
     let options = reg.find(s.rule.type, filter);
     if (restricted.size) options = options.filter((e) => !e.source || restricted.has(lc(e.source)) || s.chosen.includes(e.id));
     const ctx = makeCtx(then, thenSlot.ownerLevel, atLevel(ch, st.level), reg, then.stats);
     const blocked = new Set<string>();
-    // A choice the rules let the character change later (spells known, invocations...) may hold what the current
-    // level allows; anything else must have been legal when it was made.
-    const nowCtx = replaceable(s) ? makeCtx(final, s.ownerLevel, ch, reg, final.stats) : undefined;
+    const nowCtx = changeable ? makeCtx(final, s.ownerLevel, ch, reg, final.stats) : undefined;
     for (const e of options) if (!meets(e.requirements, ctx) && !(nowCtx && meets(e.requirements, nowCtx))) blocked.add(e.id);
     // A feat the character has from another choice or grant, at any level, is not offered again.
     if (s.rule.type === "Feat") for (const e of options) if (final.ids.has(e.id) && !s.chosen.includes(e.id)) blocked.add(e.id);

@@ -88,8 +88,11 @@ export function entriesHtml(entries: J, depth = 0): string {
 
 // ---------------------------------------------------------------- shared synthetic elements
 
+/** 5e.tools markup left in a name ("{@item Hand Crossbow|phb}") becomes its plain text. */
+const plainName = (s: string) => s.replace(/\{@\w+\s+([^|}]*)[^}]*\}?/g, "$1");
+
 const base = (id: string, name: string, type: string, source: string, extra: Partial<AElement> = {}): AElement => ({
-  id, name, type, source, supports: [], description: "", compendiumHidden: false, setters: {}, rules: [], origin: "5etools", ...extra,
+  id, name: plainName(name), type, source, supports: [], description: "", compendiumHidden: false, setters: {}, rules: [], origin: "5etools", ...extra,
   // A caller's "setters: undefined" must not leave an element without them (lookups read them).
   ...(extra.setters ? {} : { setters: {} }),
 });

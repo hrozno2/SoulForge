@@ -3,6 +3,8 @@ import type { Character } from "./character";
 import { resolve, stillToChoose } from "./engine";
 import { totalLevel } from "./character";
 import { atLevel } from "../engine/timeline";
+import { conceptOf } from "../engine/concepts";
+import { buildSheet, preparePool } from "./sheet";
 
 /**
  * Fills every open choice with the first sensible option. Used for random characters and tests.
@@ -23,7 +25,27 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
   // below it), and no choice is filled with something only a later level allows.
   const total = totalLevel(ch);
   for (let n = total === 0 ? 0 : 1; n <= total; n++) cur = fillLevel(cur, n);
-  return cur;
+  return prepareSpells(cur);
+
+  /**
+   * Prepared casters prepare up to what the rules allow, from the list they prepare from (a wizard's spellbook, a
+   * cleric's class list), keeping what is already prepared. The same order as every other pick.
+   */
+  function prepareSpells(start: Character): Character {
+    const r = resolve(start, reg);
+    let prepared = { ...start.prepared };
+    let changed = false;
+    for (const line of buildSheet(r).casting) {
+      if (!line.prepare || line.prepareMax <= 0) continue;
+      const always = new Set([...line.granted.map((g) => g.id), ...line.spells.filter((p) => p.granted).map((p) => p.id)]);
+      const have = (prepared[line.name] ?? []).filter((id) => !always.has(id));
+      if (have.length >= line.prepareMax) continue;
+      const pool = preparePool(r, line).filter((e) => !always.has(e.id) && !have.includes(e.id) && allow(e)).sort((a, b) => prefer(`Prepared (${line.name})`, b.name) - prefer(`Prepared (${line.name})`, a.name));
+      prepared = { ...prepared, [line.name]: [...have, ...pool.slice(0, line.prepareMax - have.length).map((e) => e.id)] };
+      changed = true;
+    }
+    return changed ? { ...start, prepared } : start;
+  }
 
   function fillLevel(start: Character, n: number): Character {
   let cur = start;
@@ -32,7 +54,10 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
     const open = r.slots.find((s) => !s.defaulted && stillToChoose(s, r));
     if (!open) break;
     const taken = new Set(open.chosen);
-    const free = open.options.filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !r.ids.has(o.id) && !bad.has(`${open.key} ${o.id}`));
+    // Not what the character already has, under any provider's id.
+    const hadConcepts = new Set(r.active.map((a) => conceptOf(a.el)).filter(Boolean));
+    const had = (o: (typeof open.options)[number]) => r.ids.has(o.id) || (!!conceptOf(o) && hadConcepts.has(conceptOf(o)));
+    const free = open.options.filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !had(o) && !bad.has(`${open.key} ${o.id}`));
     // Options from books the player shows come first; the others only when nothing else fits.
     const shown = free.filter(allow);
     const candidates = (shown.length ? shown : free)

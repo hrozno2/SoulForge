@@ -599,8 +599,60 @@ class Importer {
    * (decision D1): it shows in the import report's to-do list, not filled with a guess. Ability score choices are
    * the exception: the file's scores settle them.
    */
+  /**
+   * The assignment solver (docs/ENGINE-PLAN.md 3.6): the trainings the file states (skills, expertise, languages,
+   * tools) against every open choice that can hold them, matched all at once so each fact finds a place when one
+   * exists. One at a time, a broad choice could take a skill that only it could hold for another. Deterministic:
+   * facts and choices in sorted order, augmenting paths (Kuhn's algorithm).
+   */
+  private assignTrainings(start: Character): Character {
+    const r = resolve(start, this.reg);
+    const slug = (x: string) => x.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const had = new Set(r.active.map((a) => conceptOf(a.el)).filter(Boolean) as string[]);
+    const facts = [
+      ...[...this.hints.skills].map((x) => `skill:${slug(x)}`),
+      ...[...this.hints.expertise].map((x) => `expertise:${slug(x)}`),
+      ...[...this.hints.languages].map((x) => `language:${slug(x)}`),
+      ...[...this.hints.tools].map((x) => `tool:${slug(x)}`),
+    ].filter((k, i, a) => a.indexOf(k) === i && !had.has(k))
+      // A skill the file also gives expertise in goes first: the expertise needs the proficiency.
+      .sort((a, b) => Number(this.hints.expertise.has(b.replace(/^skill:/, "").replace(/-/g, " "))) - Number(this.hints.expertise.has(a.replace(/^skill:/, "").replace(/-/g, " "))) || a.localeCompare(b));
+    if (!facts.length) return start;
+    // One node per open place in a training choice.
+    const places: { key: string; options: Map<string, string> }[] = [];
+    for (const s of [...r.slots].sort((a, b) => a.key.localeCompare(b.key))) {
+      if (s.rule.optional || s.defaulted || !["Proficiency", "Language"].includes(s.rule.type)) continue;
+      const free = s.rule.number - s.chosen.length;
+      if (free <= 0) continue;
+      const options = new Map<string, string>();
+      for (const o of s.options) { const k = conceptOf(o); if (k && !s.blocked.has(o.id) && !s.chosen.includes(o.id) && !options.has(k)) options.set(k, o.id); }
+      for (let i = 0; i < free; i++) places.push({ key: s.key, options });
+    }
+    const placeOf = new Map<string, number>(); // fact -> place
+    const factAt = new Map<number, string>(); // place -> fact
+    const tryFact = (f: string, seen: Set<number>): boolean => {
+      for (let p = 0; p < places.length; p++) {
+        if (!places[p].options.has(f) || seen.has(p)) continue;
+        seen.add(p);
+        const other = factAt.get(p);
+        if (other === undefined || tryFact(other, seen)) { factAt.set(p, f); placeOf.set(f, p); return true; }
+      }
+      return false;
+    };
+    for (const f of facts) tryFact(f, new Set());
+    if (!factAt.size) return start;
+    const selections = { ...start.selections };
+    for (const [p, f] of [...factAt].sort((a, b) => a[0] - b[0])) {
+      const { key, options } = places[p];
+      const id = options.get(f)!;
+      const now = selections[key] ?? r.slots.find((s) => s.key === key)!.chosen;
+      if (!now.includes(id)) selections[key] = [...now, id];
+    }
+    return { ...start, selections };
+  }
+
   private fillOpen(start: Character, scores: Partial<Record<AbilityId, number>>, skipSpells = false): Character {
-    let cur = start;
+    let cur = this.assignTrainings(start);
     // When the file says nothing, an option from the same books as the character beats one from elsewhere
     // (a 2024 fighter's weapon mastery is a longsword, not a firearm from the Dungeon Master's Guide).
     const own = new Set([...start.classes.map((c) => c.classId), start.race ?? "", start.background ?? ""].map((id) => this.reg.get(id)?.source).filter(Boolean) as string[]);

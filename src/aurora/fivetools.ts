@@ -168,6 +168,156 @@ function langRules(list: J[] | undefined, label: string): { rules: ARule[]; lang
   return { rules, languages };
 }
 
+/** The standard tools by kind, for "any artisan's tool" style choices. */
+const TOOL_KINDS: Record<string, string[]> = {
+  artisan: ["alchemist's supplies", "brewer's supplies", "calligrapher's supplies", "carpenter's tools", "cartographer's tools", "cobbler's tools", "cook's utensils", "glassblower's tools", "jeweler's tools", "leatherworker's tools", "mason's tools", "painter's supplies", "potter's tools", "smith's tools", "tinker's tools", "weaver's tools", "woodcarver's tools"],
+  gaming: ["dice set", "dragonchess set", "playing card set", "three-dragon ante set"],
+  instrument: ["bagpipes", "drum", "dulcimer", "flute", "horn", "lute", "lyre", "pan flute", "shawm", "viol"],
+  other: ["disguise kit", "forgery kit", "herbalism kit", "navigator's tools", "poisoner's kit", "thieves' tools", "vehicles (land)", "vehicles (water)"],
+};
+const GENERIC_TOOL: Record<string, string> = { "artisan's tools": "artisan", "gaming set": "gaming", "musical instrument": "instrument" };
+
+/** The tool proficiency element for a name, made once (its name maps to the tool:x concept). */
+function toolId(name: string, out: AElement[]): string {
+  const n = plainName(name).toLowerCase();
+  const kind = Object.entries(TOOL_KINDS).find(([, l]) => l.includes(n))?.[0] ?? "other";
+  const id = `ID_5ET_TOOL_${slug(n)}`;
+  if (!out.some((o) => o.id === id)) out.push(base(id, `Tool Proficiency (${cap(n)})`, "Proficiency", "5etools", { compendiumHidden: true, supports: ["5et tool", `5et tool ${kind}`] }));
+  return id;
+}
+
+function weaponId(k: string, out: AElement[]): string | undefined {
+  const w = k.split("|")[0].toLowerCase().trim();
+  if (!w) return undefined;
+  if (w === "simple") return "ID_5ET_PROF_WEAPON_SIMPLE";
+  if (w === "martial") return "ID_5ET_PROF_WEAPON_MARTIAL";
+  const wid = ftId("PROF_WEAPON", w, "ALL");
+  if (!out.some((o) => o.id === wid)) out.push(base(wid, `Weapon Proficiency (${cap(w)})`, "Proficiency", "5etools", { compendiumHidden: true, supports: ["5et weapon"] }));
+  return wid;
+}
+
+const ARMOR_IDS: Record<string, string> = { light: "ID_5ET_PROF_ARMOR_LIGHT", medium: "ID_5ET_PROF_ARMOR_MEDIUM", heavy: "ID_5ET_PROF_ARMOR_HEAVY", shield: "ID_5ET_PROF_ARMOR_SHIELD" };
+
+/**
+ * Every proficiency-like field a 5e.tools entry can carry, read the same way for species, subraces, lineages,
+ * backgrounds, feats and class proficiencies: tools, weapons, armor, saving throws, the mixed skill/tool/language
+ * choices, expertise and senses. Skills, languages and ability scores have their own readers above.
+ */
+function profRules(e: J, label: string, out: AElement[]): ARule[] {
+  const rules: ARule[] = [];
+  const grant = (id: string | undefined) => { if (id) rules.push({ kind: "grant", type: "Proficiency", id }); };
+  const pick = (name: string, supports: string, number: number) => rules.push({ kind: "select", type: "Proficiency", name, supports, number });
+  for (const entry of (e.toolProficiencies as J[]) ?? []) for (const [k, v] of Object.entries(entry ?? {})) {
+    if (k === "choose") pick(`${label} tool`, ((v as J).from as string[] ?? []).map((t) => GENERIC_TOOL[plainName(t).toLowerCase()] ? `5et tool ${GENERIC_TOOL[plainName(t).toLowerCase()]}` : toolId(t, out)).join("|"), Number((v as J).count) || 1);
+    else if (k === "any") pick(`${label} tool`, "5et tool", Number(v) || 1);
+    else if (k === "anyArtisansTool") pick(`${label} artisan's tool`, "5et tool artisan", Number(v) || 1);
+    else if (k === "anyGamingSet") pick(`${label} gaming set`, "5et tool gaming", Number(v) || 1);
+    else if (k === "anyMusicalInstrument") pick(`${label} musical instrument`, "5et tool instrument", Number(v) || 1);
+    else if (GENERIC_TOOL[plainName(k).toLowerCase()]) pick(`${label} ${plainName(k).toLowerCase()}`, `5et tool ${GENERIC_TOOL[plainName(k).toLowerCase()]}`, 1);
+    else if (v) grant(toolId(k, out));
+  }
+  for (const entry of (e.weaponProficiencies as J[]) ?? []) for (const [k, v] of Object.entries(entry ?? {})) {
+    if (k === "choose") {
+      const c = v as J;
+      const from = ((c.fromFilter ? [] : c.from) as string[] ?? []).map((w) => weaponId(w, out)).filter(Boolean) as string[];
+      pick(`${label} weapon`, from.length ? from.join("|") : "5et weapon", Number(c.count) || 1);
+    } else if (k === "firearms" || k === "improvised") {
+      // Proficiency with firearms (an optional rule) or with improvised weapons (Tavern Brawler).
+      const wid = `ID_5ET_PROF_WEAPON_${k.toUpperCase()}`;
+      if (!out.some((o) => o.id === wid)) out.push(base(wid, `Weapon Proficiency (${k === "improvised" ? "Improvised Weapons" : "Firearms"})`, "Proficiency", "5etools", { compendiumHidden: true }));
+      grant(wid);
+    } else if (v) grant(weaponId(k, out));
+  }
+  for (const entry of (e.armorProficiencies as J[]) ?? []) for (const [k, v] of Object.entries(entry ?? {})) if (v && ARMOR_IDS[k.split("|")[0]]) grant(ARMOR_IDS[k.split("|")[0]]);
+  for (const entry of (e.savingThrowProficiencies as J[]) ?? []) for (const [k, v] of Object.entries(entry ?? {})) {
+    if (k === "choose") pick(`${label} saving throw`, ((v as J).from as string[] ?? Object.keys(ABIL)).map((a) => `ID_5ET_SAVE_${slug(abilFull(a))}`).join("|"), Number((v as J).count) || 1);
+    else if (v && k in ABIL) grant(`ID_5ET_SAVE_${slug(abilFull(k))}`);
+  }
+  for (const entry of (e.skillToolLanguageProficiencies as J[]) ?? []) {
+    for (const c of [].concat((entry as J)?.choose ?? []) as J[]) {
+      const kinds = (c.from as string[]) ?? [];
+      const sup = kinds.map((k) => (k === "anySkill" ? "5et skill" : k === "anyTool" ? "5et tool" : k === "anyLanguage" ? "5et language" : "")).filter(Boolean);
+      if (sup.includes("5et language")) rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(c.count) || 1 });
+      const other = sup.filter((x) => x !== "5et language");
+      if (other.length) pick(`${label} skill or tool`, other.join("|"), Number(c.count) || 1);
+    }
+    for (const [k, v] of Object.entries(entry ?? {})) {
+      if (k === "anyTool") pick(`${label} tool`, "5et tool", Number(v) || 1);
+      else if (k === "anyLanguage") rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(v) || 1 });
+      else if (k === "anySkill") pick(`${label} skill`, "5et skill", Number(v) || 1);
+    }
+  }
+  for (const entry of (e.expertise as J[]) ?? []) for (const [k, v] of Object.entries(entry ?? {})) {
+    if (k === "anyProficientSkill") pick(`${label} expertise`, "5et expertise", Number(v) || 1);
+    else if (v && SKILLS.includes(k)) grant(`ID_5ET_EXPERTISE_${slug(k)}`);
+  }
+  for (const f of ["senses", "bonusSenses"]) for (const entry of (e[f] as J[]) ?? []) for (const [k, v] of Object.entries(entry ?? {})) {
+    const range = typeof v === "number" ? v : Number((v as J)?.range) || 0;
+    if (!range || !/^(darkvision|blindsight|truesight|tremorsense)$/.test(k)) continue;
+    const vid = `ID_5ET_SENSE_${slug(k)}_${range}`;
+    if (!out.some((o) => o.id === vid)) out.push(base(vid, `${cap(k)} (${range} ft.)`, "Vision", "5etools", { compendiumHidden: true }));
+    rules.push({ kind: "grant", type: "Vision", id: vid });
+  }
+  return rules;
+}
+
+const NUMBER_WORDS = ["", "one", "two", "three", "four"];
+/** One option of a "choose one set" list, as the book words it: "Thieves' tools and one gaming set". */
+function describeSet(entry: J): string {
+  const parts: string[] = [];
+  const n = (v: unknown) => NUMBER_WORDS[Number(v) || 1] ?? String(v);
+  for (const [k, v] of Object.entries(entry ?? {})) {
+    if (k === "choose") parts.push(`one of ${(((v as J).from as string[]) ?? []).map((x) => plainName(x).toLowerCase()).join(", ")}`);
+    else if (k === "any" || k === "anyStandard" || k === "anyLanguage") parts.push(`${n(v)} of your choice`);
+    else if (k === "anyArtisansTool") parts.push(`${n(v)} artisan's tool${Number(v) > 1 ? "s" : ""}`);
+    else if (k === "anyGamingSet") parts.push(`${n(v)} gaming set${Number(v) > 1 ? "s" : ""}`);
+    else if (k === "anyMusicalInstrument") parts.push(`${n(v)} musical instrument${Number(v) > 1 ? "s" : ""}`);
+    else if (k === "anyTool") parts.push(`${n(v)} tool${Number(v) > 1 ? "s" : ""}`);
+    else if (v) parts.push(plainName(k.split("|")[0]));
+  }
+  const t = parts.join(" and ");
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+const TRAINING_FIELDS = ["skillProficiencies", "languageProficiencies", "toolProficiencies", "weaponProficiencies", "armorProficiencies", "savingThrowProficiencies", "skillToolLanguageProficiencies", "expertise"];
+
+/**
+ * Everything an entry trains: skills, languages, tools, weapons, armor, saves, expertise, senses. In 5e.tools a list
+ * with more than one entry is a choice between them ("Thieves' tools, or one gaming set and one musical
+ * instrument"), so each entry becomes an option of its own and the character takes one. A language given as
+ * "other" is the one the entry's text names (the Kalashtar's Quori); only when the text names none is it a choice.
+ */
+function trainingRules(e: J, label: string, out: AElement[], ctx: Ctx, idBase: string): ARule[] {
+  const rules: ARule[] = [];
+  const single: J = { ...e };
+  for (const f of TRAINING_FIELDS) {
+    const list = e[f] as J[] | undefined;
+    if (!Array.isArray(list) || list.length < 2) continue;
+    delete single[f];
+    const ids = list.map((entry, i) => {
+      const oid = `${idBase}_${slug(f)}_OPTION_${i + 1}`;
+      const optRules = trainingRules({ [f]: [entry], entries: e.entries }, label, out, ctx, oid);
+      out.push(base(oid, describeSet(entry) || `Option ${i + 1}`, "Training Option", "5etools", { compendiumHidden: true, supports: [`${idBase} ${f} options`], rules: optRules }));
+      return oid;
+    });
+    rules.push({ kind: "select", type: "Training Option", name: `${label}: ${f.replace(/Proficiencies$/, "").replace(/([A-Z])/g, " $1").toLowerCase()} (choose one set)`, supports: ids.join("|"), number: 1 });
+  }
+  rules.push(...skillRules(single.skillProficiencies, label));
+  // "other": the language the entry's own text names.
+  const langs = (single.languageProficiencies as J[] | undefined)?.map((entry) => {
+    if (!entry?.other) return entry;
+    const text = stripTags(JSON.stringify(e.entries ?? "")).toLowerCase();
+    const named = (ctx.languageNames ?? []).filter((n) => n.length > 3 && !(n in entry) && new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(text));
+    if (!named.length) return entry;
+    const { other, ...rest } = entry;
+    void other;
+    return { ...rest, ...Object.fromEntries(named.map((n) => [n, true])) };
+  });
+  rules.push(...langRules(langs, label).rules);
+  rules.push(...profRules(single, label, out));
+  return rules;
+}
+
 function abilityRules(list: J[] | undefined, label: string): ARule[] {
   const rules: ARule[] = [];
   for (const entry of list ?? []) {
@@ -192,6 +342,8 @@ function abilityRules(list: J[] | undefined, label: string): ARule[] {
 
 interface Ctx {
   books: Record<string, string>;
+  /** Every language the data lists, lower case, for "other" languages a species names only in its text. */
+  languageNames?: string[];
   spellClasses: Record<string, Record<string, string[]>>;
   /** Base items by "name|source" for items that build on one. */
   baseItems: Map<string, J>;
@@ -303,14 +455,14 @@ function featVariants(f: J, ctx: Ctx, out: AElement[]): boolean {
   return true;
 }
 
-function convertFeat(f: J, ctx: Ctx): AElement {
+function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
   const reqs: string[] = [];
   for (const p of (f.prerequisite as J[]) ?? []) {
     const ab = p.ability as J[] | undefined;
     if (ab) reqs.push(`(${ab.map((o) => Object.entries(o).map(([k, v]) => `[${k}:${v}]`).join(",")).join("||")})`);
     if (p.level) reqs.push(`[level:${typeof p.level === "object" ? p.level.level : p.level}]`);
   }
-  const rules = abilityRules(f.ability, f.name);
+  const rules = [...abilityRules(f.ability, f.name), ...trainingRules(f, f.name, out, ctx, ftId("FEAT", f.name, f.source)), ...defenseRules(f)];
   const spells = additionalSpellRules(f.additionalSpells, f.name, f.source);
   rules.push(...spells.rules);
   const html = entriesHtml(f.entries);
@@ -396,27 +548,85 @@ function applyVersion(r: J, v: J): J | undefined {
   if (!v || typeof v !== "object") return undefined;
   const out: J = { ...r, ...v };
   delete out._versions;
-  for (const [field, mods] of Object.entries((v._mod as J) ?? {})) {
-    let list: J[] = Array.isArray(out[field]) ? [...out[field]] : [];
-    for (const m of Array.isArray(mods) ? mods : [mods]) {
-      const items = m?.items === undefined ? [] : Array.isArray(m.items) ? m.items : [m.items];
-      const at = (name: unknown) => list.findIndex((e) => e && typeof e === "object" && e.name === name);
-      if (m?.mode === "replaceArr") { const i = at(m.replace); if (i >= 0) list.splice(i, 1, ...items); else list.push(...items); }
-      else if (m?.mode === "appendArr") list.push(...items);
-      else if (m?.mode === "insertArr") list.splice(Math.max(0, Number(m.index) || 0), 0, ...items);
-      else if (m?.mode === "removeArr") { for (const n of [].concat(m.names ?? [])) { const i = at(n); if (i >= 0) list.splice(i, 1); } }
-    }
-    out[field] = list;
-  }
+  applyMods(out, v._mod as J);
   delete out._mod;
   return out;
 }
 
+/**
+ * 5e.tools' "_mod" changes, applied to `out` in place: per field, arrays edited by the entry name (replaceArr,
+ * appendArr, prependArr, insertArr, removeArr) and text replaced across the field (replaceTxt). "*" applies the
+ * text replacement to every field.
+ */
+function applyMods(out: J, mods: J | undefined): void {
+  for (const [field, raw] of Object.entries(mods ?? {})) {
+    for (const m of Array.isArray(raw) ? raw : [raw]) {
+      if (m === "remove") { delete out[field]; continue; }
+      if (m?.mode === "replaceTxt") {
+        const re = new RegExp(String(m.replace ?? ""), String(m.flags ?? "g"));
+        const swap = (x: unknown): unknown => (typeof x === "string" ? x.replace(re, String(m.with ?? "")) : Array.isArray(x) ? x.map(swap) : x && typeof x === "object" ? Object.fromEntries(Object.entries(x as J).map(([k, y]) => [k, k === "name" ? y : swap(y)])) : x);
+        for (const f of field === "*" ? Object.keys(out).filter((k) => !k.startsWith("_") && k !== "name" && k !== "source") : [field]) if (out[f] !== undefined) out[f] = swap(out[f]);
+        continue;
+      }
+      let list: J[] = Array.isArray(out[field]) ? [...out[field]] : out[field] !== undefined ? [out[field]] : [];
+      const items = m?.items === undefined ? [] : Array.isArray(m.items) ? m.items : [m.items];
+      const at = (name: unknown) => list.findIndex((e) => (e && typeof e === "object" ? e.name : e) === name);
+      if (m?.mode === "replaceArr") { const i = at(m.replace); if (i >= 0) list.splice(i, 1, ...items); else list.push(...items); }
+      else if (m?.mode === "appendArr") list.push(...items);
+      else if (m?.mode === "prependArr") list.unshift(...items);
+      else if (m?.mode === "insertArr") list.splice(Math.max(0, Number(m.index) || 0), 0, ...items);
+      else if (m?.mode === "removeArr") { for (const n of [].concat(m.names ?? m.items ?? [])) { const i = at(typeof n === "object" && n ? (n as J).name : n); if (i >= 0) list.splice(i, 1); } }
+      else continue;
+      out[field] = list;
+    }
+  }
+}
+
+/** What a copy does not take from its original unless "_preserve" says so: where and how the original was published. */
+const NOT_COPIED = ["page", "srd", "srd52", "basicRules", "basicRules2024", "reprintedAs", "otherSources", "additionalSources", "hasFluff", "hasFluffImages", "_versions"];
+
+/**
+ * Resolves "_copy" everywhere in the data, before anything is converted: a reprint written as "the VGM Goblin, with
+ * these changes" (the GGR and ERLW Goblins, many subclasses, items and backgrounds) becomes a whole entry. The
+ * original is found in the same list by every identifying field the copy names (name, source, className...).
+ */
+export function resolveCopies(files: Record<string, J>): Record<string, J> {
+  const lists = new Map<string, J[]>();
+  for (const json of Object.values(files)) {
+    if (!json || typeof json !== "object" || Array.isArray(json)) continue;
+    for (const [kind, v] of Object.entries(json)) if (Array.isArray(v)) (lists.get(kind) ?? lists.set(kind, []).get(kind)!).push(...v);
+  }
+  const lc = (x: unknown) => String(x ?? "").toLowerCase();
+  const done = new Map<J, J>();
+  const resolveOne = (kind: string, e: J, depth: number): J => {
+    if (!e?._copy || depth > 8) return e;
+    const hit = done.get(e);
+    if (hit) return hit;
+    const ref = e._copy as J;
+    const keys = Object.keys(ref).filter((k) => !k.startsWith("_"));
+    const original = (lists.get(kind) ?? []).find((o) => o !== e && keys.every((k) => lc(o[k]) === lc(ref[k])));
+    if (!original) return e;
+    const base: J = JSON.parse(JSON.stringify(resolveOne(kind, original, depth + 1)));
+    const keep = (ref._preserve as J) ?? {};
+    for (const f of NOT_COPIED) if (!keep[f] && !keep["*"]) delete base[f];
+    const { _copy, ...own } = e;
+    void _copy;
+    const out: J = { ...base, ...own };
+    applyMods(out, ref._mod as J);
+    done.set(e, out);
+    return out;
+  };
+  const result: Record<string, J> = {};
+  for (const [path, json] of Object.entries(files)) {
+    if (!json || typeof json !== "object" || Array.isArray(json)) { result[path] = json; continue; }
+    result[path] = Object.fromEntries(Object.entries(json).map(([kind, v]) => [kind, Array.isArray(v) ? v.map((x) => (x && typeof x === "object" && x._copy ? resolveOne(kind, x, 0) : x)) : v]));
+  }
+  return result;
+}
+
 function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const id = ftId("RACE", r.name, r.source);
-  const rules: ARule[] = [...speedRules(r.speed), ...abilityRules(r.ability, r.name), ...skillRules(r.skillProficiencies, r.name), ...defenseRules(r)];
-  const lang = langRules(r.languageProficiencies, r.name);
-  rules.push(...lang.rules);
+  const rules: ARule[] = [...speedRules(r.speed), ...abilityRules(r.ability, r.name), ...trainingRules(r, r.name, out, ctx, id), ...defenseRules(r)];
   // A species that lists no languages (the Ravenloft lineages, for one) leaves them to the character's origin: under
   // the 2024 rules, Common and two standard languages.
   if (!r.languageProficiencies?.length) {
@@ -429,11 +639,6 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     const vid = `${id}_DARKVISION`;
     out.push(base(vid, `Darkvision (${r.darkvision} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));
     rules.push({ kind: "grant", type: "Vision", id: vid });
-  }
-  for (const w of (r.weaponProficiencies as J[]) ?? []) for (const k of Object.keys(w)) {
-    const wid = ftId("PROF_WEAPON", k.split("|")[0], "ALL");
-    if (!out.some((o) => o.id === wid)) out.push(base(wid, `Weapon Proficiency (${cap(k.split("|")[0])})`, "Proficiency", "5etools", { compendiumHidden: true }));
-    rules.push({ kind: "grant", type: "Proficiency", id: wid });
   }
   const racialSpells = additionalSpellRules(r.additionalSpells, r.name, r.source);
   rules.push(...racialSpells.rules);
@@ -459,7 +664,9 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const baseEntries = ((r.entries as J[]) ?? []).filter((e) => !(e && typeof e === "object" && replacedByVersions.has(e.name)));
   rules.push(...traitList(baseEntries, id, ctx, r.source, out, "5et trait", "Racial Trait"));
   const mine = subs.filter((s) => s.raceName === r.name && (s.raceSource ?? r.source) === r.source);
-  if (mine.length) rules.push({ kind: "select", type: "Sub Race", name: "Subrace", supports: `5et subrace of ${id}`, number: 1, optional: true });
+  // A subrace is required. A subrace without a name is, in 5e.tools, the species as it is (the standard Human next
+  // to the Variant Human); it is one of the options, "Human (standard)", so what it adds is not lost.
+  if (mine.length) rules.push({ kind: "select", type: "Sub Race", name: "Subrace", supports: `5et subrace of ${id}`, number: 1 });
   // Lineages, legacies and ancestries kept as "_versions" of the species (the 2024 Elf's Drow, High Elf and Wood Elf).
   // Each becomes a required choice; it carries only what differs from the base species.
   const versions = expandVersions((r._versions as J[]) ?? []).map((v) => applyVersion(r, v)).filter(Boolean) as J[];
@@ -470,7 +677,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     for (const v of versions) {
       const vname = String(v.name).split(";").pop()!.trim() || String(v.name);
       const vid = ftId("RACEVERSION", `${r.name} ${vname}`, v.source ?? r.source);
-      const vrules: ARule[] = [...speedRules(v.speed), ...abilityRules(v.ability, vname), ...skillRules(v.skillProficiencies, vname), ...langRules(v.languageProficiencies, vname).rules, ...defenseRules(v)].filter((x) => !baseIds.has(JSON.stringify(x)));
+      const vrules: ARule[] = [...speedRules(v.speed), ...abilityRules(v.ability, vname), ...trainingRules(v, vname, out, ctx, vid), ...defenseRules(v)].filter((x) => !baseIds.has(JSON.stringify(x)));
       if (v.darkvision && v.darkvision !== r.darkvision) {
         const dv = `${vid}_DARKVISION`;
         out.push(base(dv, `Darkvision (${v.darkvision} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));
@@ -486,19 +693,19 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   out.push(base(id, r.name, "Race", srcName(ctx, r.source), { rules, spellcasting: racialSpells.rules.length ? castingFor(r.name, racialSpells.ability) : undefined, description: entriesHtml(r.entries), supports: [] }));
   for (const s of mine) {
     const sid = ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source);
-    const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name), ...skillRules(s.skillProficiencies, s.name ?? r.name), ...langRules(s.languageProficiencies, s.name ?? r.name).rules, ...defenseRules(s)];
+    const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name), ...trainingRules(s, s.name ?? r.name, out, ctx, sid), ...defenseRules(s)];
     if (abilityRules(s.ability, s.name ?? r.name).length) srules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
     if (s.speed) srules.push(...speedRules(s.speed));
     srules.push(...traitList(s.entries, sid, ctx, s.source, out, "5et trait", "Racial Trait"));
     const subSpells = additionalSpellRules(s.additionalSpells, s.name ?? r.name, s.source);
     srules.push(...subSpells.rules);
-    out.push(base(sid, s.name ? `${s.name} ${r.name}` : r.name, "Sub Race", srcName(ctx, s.source), { spellcasting: subSpells.rules.length ? castingFor(s.name ?? r.name, subSpells.ability) : undefined, supports: [`5et subrace of ${id}`], rules: srules, description: entriesHtml(s.entries) }));
+    out.push(base(sid, s.name ? `${s.name} ${r.name}` : `${r.name} (standard)`, "Sub Race", srcName(ctx, s.source), { spellcasting: subSpells.rules.length ? castingFor(s.name ?? r.name, subSpells.ability) : undefined, supports: [`5et subrace of ${id}`], rules: srules, description: entriesHtml(s.entries) }));
   }
 }
 
 function convertBackground(b: J, ctx: Ctx, out: AElement[]): void {
   const id = ftId("BG", b.name, b.source);
-  const rules: ARule[] = [...skillRules(b.skillProficiencies, b.name), ...abilityRules(b.ability, "Ability score increase").map((x) => ({ ...x, requirements: x.requirements ?? `!${MARK_SPECIES_ASI}` })), ...langRules(b.languageProficiencies, b.name).rules];
+  const rules: ARule[] = [...trainingRules(b, b.name, out, ctx, id), ...abilityRules(b.ability, "Ability score increase").map((x) => ({ ...x, requirements: x.requirements ?? `!${MARK_SPECIES_ASI}` }))];
   for (const f of (b.feats as J[]) ?? []) for (const k of Object.keys(f)) {
     // "Any feat of a category" (the Haunted One's Dark Gift) is a choice limited to that category.
     if (k === "anyFromCategory") {
@@ -539,10 +746,21 @@ function convertMonster(m: J, ctx: Ctx): AElement {
 
 const stripTags = (s: string) => s.replace(/\{@[^}|]*\s([^}|]*)[^}]*\}/g, "$1").trim().toLowerCase();
 
+/**
+ * A class table cell as a number. 5e.tools writes cells as numbers, as text with links ("{@filter 3rd|spells|...}"),
+ * or as objects ({type: "bonus", value: 2}); "3rd", "+2" and "—" all read the way the table shows them.
+ */
+function cellNumber(v: unknown): number {
+  if (typeof v === "number") return v;
+  if (v && typeof v === "object") return cellNumber((v as J).value ?? (v as J).entry ?? (v as J).toRoll?.[0]?.number);
+  const m = /-?\d+/.exec(stripTags(String(v ?? "")));
+  return m ? Number(m[0]) : 0;
+}
+
 function tableColumn(c: J, re: RegExp): number[] | undefined {
   for (const g of (c.classTableGroups as J[]) ?? []) {
     const idx = (g.colLabels ?? []).findIndex((l: string) => re.test(stripTags(l)));
-    if (idx >= 0 && g.rows) return (g.rows as J[]).map((r) => Number(r[idx]) || 0);
+    if (idx >= 0 && g.rows) return (g.rows as J[]).map((r) => cellNumber(r[idx]));
   }
   return undefined;
 }
@@ -562,6 +780,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
 
   for (const a of (c.proficiency as string[]) ?? []) rules.push({ kind: "grant", type: "Proficiency", id: `ID_5ET_SAVE_${slug(abilFull(a))}`, ...first });
   const sp = c.startingProficiencies ?? {};
+  const mc = c.multiclassing ?? {};
   const armorGrant = (a: string): string | undefined => {
     const k = String(typeof a === "string" ? a : (a as J).proficiency ?? "").split("|")[0].toLowerCase();
     return k === "light" ? "ID_5ET_PROF_ARMOR_LIGHT" : k === "medium" ? "ID_5ET_PROF_ARMOR_MEDIUM" : k === "heavy" ? "ID_5ET_PROF_ARMOR_HEAVY" : k === "shield" ? "ID_5ET_PROF_ARMOR_SHIELD" : undefined;
@@ -577,7 +796,8 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   };
   for (const w of sp.weapons ?? []) { const g = weaponGrant(w); if (g) rules.push({ kind: "grant", type: "Proficiency", id: g, ...first }); }
   for (const r of skillRules(sp.skills, c.name)) rules.push({ ...r, ...first } as ARule);
-  const mc = c.multiclassing ?? {};
+  for (const r of profRules({ toolProficiencies: sp.toolProficiencies }, c.name, out)) rules.push({ ...r, ...first } as ARule);
+  for (const r of profRules({ toolProficiencies: mc.proficienciesGained?.toolProficiencies }, c.name, out)) gained.push(r);
   for (const a of mc.proficienciesGained?.armor ?? []) { const g = armorGrant(a); if (g) gained.push({ kind: "grant", type: "Proficiency", id: g }); }
   for (const w of mc.proficienciesGained?.weapons ?? []) { const g = weaponGrant(w); if (g) gained.push({ kind: "grant", type: "Proficiency", id: g }); }
   for (const r of skillRules(mc.proficienciesGained?.skills, c.name)) gained.push(r);
@@ -670,6 +890,8 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   const reqParts = Object.entries(reqObj).filter(([k]) => k in ABIL).map(([k, v]) => `[${k}:${v}]`);
   const el = base(id, c.name, "Class", srcName(ctx, c.source), {
     setters, rules, spellcasting,
+    // Sidekicks (Tasha's) are companions the DM runs, not classes a player character takes.
+    compendiumHidden: !!c.isSidekick,
     description: `<p>${esc(c.name)}, from ${esc(srcName(ctx, c.source))}. Hit die d${c.hd?.faces ?? "?"}.</p>`,
     multiclass: { id: mcId, requirements: reqParts.length ? `(${reqParts.join(",")})` : undefined, prerequisite: reqParts.length ? Object.entries(reqObj).filter(([k]) => k in ABIL).map(([k, v]) => `${cap(abilFull(k))} ${v}`).join(" and ") : undefined, setters: {}, rules: gained },
   });
@@ -788,7 +1010,7 @@ export interface FiveToolsInput {
 /** Converts every recognised file. Unknown files are ignored. */
 export function convertFiveTools(input: FiveToolsInput): AElement[] {
   const ctx: Ctx = { books: {}, spellClasses: {}, baseItems: new Map() };
-  const all = Object.entries(input.files);
+  const all = Object.entries(resolveCopies(input.files as Record<string, J>));
   for (const [path, json] of all) {
     if (json?.book && Array.isArray(json.book)) for (const b of json.book) if (b.id) ctx.books[b.id] = b.name;
     if (json?.adventure && Array.isArray(json.adventure)) for (const b of json.adventure) if (b.id) ctx.books[b.id] = b.name;
@@ -799,8 +1021,11 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
       }
     }
     for (const b of json?.baseitem ?? []) ctx.baseItems.set(`${b.name}|${b.source}`.toLowerCase(), b);
+    for (const l of json?.language ?? []) if (l?.name) (ctx.languageNames ??= []).push(String(l.name).toLowerCase());
   }
   const out: AElement[] = syntheticElements();
+  // Every standard tool exists, so "any musical instrument" has its options even when nothing names one.
+  for (const names of Object.values(TOOL_KINDS)) for (const n of names) toolId(n, out);
   const spellIds: Record<string, { id: string; source: string }[]> = {};
   // One Source element per book, so lists can show release dates the way the Aurora content does.
   for (const [, json] of all) {
@@ -830,7 +1055,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
     for (const s of json.spell ?? []) { out.push(convertSpell(s, ctx)); (spellIds[String(s.name).toLowerCase()] ??= []).push({ id: ftId("SPELL", s.name, s.source), source: String(s.source).toLowerCase() }); }
     for (const i of json.baseitem ?? []) { const e = convertItem(i, ctx); if (e) out.push(e); }
     for (const i of json.item ?? []) { const e = convertItem(i, ctx); if (e) out.push(e); }
-    for (const f of json.feat ?? []) if (!featVariants(f, ctx, out)) out.push(convertFeat(f, ctx));
+    for (const f of json.feat ?? []) if (!featVariants(f, ctx, out)) out.push(convertFeat(f, ctx, out));
     for (const o of json.optionalfeature ?? []) out.push(convertOptionalFeature(o, ctx));
     for (const l of json.language ?? []) out.push(languageElement(l, ctx));
     for (const r of json.race ?? []) convertRace(r, ctx, subraces, out);

@@ -16,6 +16,7 @@ import { meets } from "../aurora/requirements";
 import { totalLevel, type Character } from "../aurora/character";
 import type { ARegistry } from "../aurora/registry";
 import { replaceable } from "./replace";
+import { bookKey } from "../aurora/books";
 
 export interface LevelState {
   /** Character level after this step (0 for a character without a class). */
@@ -112,7 +113,7 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
   const openedAt = new Map<string, LevelState>();
   for (const st of timeline) for (const s of st.pass.rawSlots) if (!openedAt.has(s.key)) openedAt.set(s.key, st);
 
-  const restricted = new Set(ch.sources.map(lc));
+  const restricted = new Set(ch.sources.map(bookKey));
   const shared = sharedSlotLevel(final);
   const slots: SelectSlot[] = final.rawSlots.map((s) => {
     if (s.rule.type === "List") return { ...s, options: [], blocked: new Set<string>(), filter: "", listItems: s.rule.items ?? [] };
@@ -124,7 +125,7 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     const changeable = replaceable(s);
     const filter = resolveSupports(s.rule.supports, s.rule.spellcasting, changeable ? final : then, shared);
     let options = reg.find(s.rule.type, filter);
-    if (restricted.size) options = options.filter((e) => !e.source || restricted.has(lc(e.source)) || s.chosen.includes(e.id));
+    if (restricted.size) options = options.filter((e) => !e.source || restricted.has(bookKey(e.source)) || s.chosen.includes(e.id));
     const ctx = makeCtx(then, thenSlot.ownerLevel, atLevel(ch, st.level), reg, then.stats);
     const blocked = new Set<string>();
     const nowCtx = changeable ? makeCtx(final, s.ownerLevel, ch, reg, final.stats) : undefined;

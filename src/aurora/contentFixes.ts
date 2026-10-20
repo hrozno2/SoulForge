@@ -72,6 +72,14 @@ export const GRANTS_ADD: Record<string, { type: string; id: string; requirements
   ID_WOTC_PHB24_CLASS_DRUID: [{ type: "Proficiency", id: "ID_PROFICIENCY_TOOL_PROFICIENCY_HERBALISM_KIT", requirements: "!ID_WOTC_PHB24_MULTICLASS_DRUID" }],
 };
 
+/**
+ * Grants the content gets wrong: [what it grants, what the rules grant]. The Monsters of the Multiverse Deep Gnome
+ * is Small (MotM p.12); the content makes it Medium (found by the Aurora / 5e.tools cross-check).
+ */
+export const GRANTS_REPLACE: Record<string, [string, string][]> = {
+  ID_WOTC_MOTM_RACE_DEEP_GNOME: [["ID_SIZE_MEDIUM", "ID_SIZE_SMALL"]],
+};
+
 /** Linter findings that are right as they are (a requirement ruling out content that is not part of AuroraLegacy). */
 export const LINT_ACCEPTED = [
   "ID_KBP_DMBD_CLASS_FEATURE_ANTIPALADIN_UNHOLY_SMITE", // homebrew Antipaladin, ruled out by Divine Smite
@@ -93,6 +101,7 @@ export function applyContentFixes(el: AElement): void {
     if (el.sheet?.descriptions) el.sheet = { ...el.sheet, descriptions: el.sheet.descriptions.map((d) => (d.text ? { ...d, text: d.text.split(from).join(to) } : d)) };
   }
   for (const [name, from, to] of STAT_FIXES[el.id] ?? []) el.rules = el.rules.map((r) => (r.kind === "stat" && r.name === name && r.value === from ? { ...r, value: to } : r));
+  for (const [from, to] of GRANTS_REPLACE[el.id] ?? []) el.rules = el.rules.map((r) => (r.kind === "grant" && r.id === from ? { ...r, id: to } : r));
   for (const g of GRANTS_ADD[el.id] ?? []) if (!el.rules.some((r) => r.kind === "grant" && r.id === g.id)) el.rules = [...el.rules, { kind: "grant", ...g }];
   const add = SPELL_LIST_ADD[el.id];
   if (add) el.supports = [...el.supports, ...add.filter((c) => !el.supports.includes(c))];

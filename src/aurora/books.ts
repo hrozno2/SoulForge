@@ -17,12 +17,23 @@ export interface BookInfo {
   known?: boolean;
 }
 
-const key = (s: string) => s.toLowerCase().replace(/[’`]/g, "'").replace(/\s+/g, " ").trim();
+/**
+ * One key per book, whichever provider names it. Aurora and 5e.tools spell the same book differently: "Player’s
+ * Handbook" and "Player's Handbook (2014)", "Monsters of the Multiverse" and "Mordenkainen Presents: Monsters of the
+ * Multiverse", "Strixhaven: A Curriculum Of Chaos" and "...of Chaos". The 2014 year mark, a "X Presents:" lead-in,
+ * case, quotes and spacing do not make a different book.
+ */
+export const bookKey = (s: string) =>
+  s.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s*\(2014\)\s*$/, "").replace(/^[\w' ]+ presents:\s*/, "").replace(/\s+/g, " ").trim();
+const key = bookKey;
 
 export class BookIndex {
   private map = new Map<string, BookInfo>();
   constructor(reg: ARegistry) {
     for (const e of reg.ofType("Source")) {
+      // Both providers can describe one book; Aurora's description is kept.
+      const had = this.map.get(key(e.name));
+      if (had && e.origin === "5etools") continue;
       const rel = parseInt(e.setters.release?.value ?? "", 10);
       this.map.set(key(e.name), {
         name: e.name,

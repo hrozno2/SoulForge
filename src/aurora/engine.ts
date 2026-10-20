@@ -4,6 +4,7 @@ import { meets, type ReqCtx } from "./requirements";
 import { StatBook, type StatInputs } from "./stats";
 import { ABILITY_IDS, totalLevel, type AbilityId, type Character } from "./character";
 import { isModern } from "./edition";
+import { bookKey } from "./books";
 import { resolveTimeline } from "../engine/timeline";
 
 export interface ActiveElement {
@@ -507,13 +508,13 @@ export function resolveLegacy(ch: Character, reg: ARegistry): Resolved {
     if (pass.signature === prev.signature) break;
   }
 
-  const restricted = new Set(ch.sources.map(lc));
+  const restricted = new Set(ch.sources.map(bookKey));
   const shared = sharedSlotLevel(pass);
   const slots: SelectSlot[] = pass.rawSlots.map((s) => {
     if (s.rule.type === "List") return { ...s, options: [], blocked: new Set<string>(), filter: "", listItems: s.rule.items ?? [] };
     const filter = resolveSupports(s.rule.supports, s.rule.spellcasting, pass, shared);
     let options = reg.find(s.rule.type, filter);
-    if (restricted.size) options = options.filter((e) => !e.source || restricted.has(lc(e.source)) || s.chosen.includes(e.id));
+    if (restricted.size) options = options.filter((e) => !e.source || restricted.has(bookKey(e.source)) || s.chosen.includes(e.id));
     const base = makeCtx(pass, s.ownerLevel, ch, reg, pass.stats);
     // A choice is judged at the level it is made: what the same class gains later (a Monk's Disciplined Survivor at
     // 14) does not make a feat taken at 4 illegal. Other classes' and the species' features count as present.

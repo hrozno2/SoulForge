@@ -1,3 +1,4 @@
+import { canonicalName, effectsOfKind } from "../engine/effects";
 import type { AElement } from "./types";
 import { FULL_CASTER_SLOTS, itemWeight, multiclassCasterLevel, sharedSlotLevel, type ActiveElement, type Resolved, type SpellPick } from "./engine";
 import { ABILITY_IDS, SKILL_ABILITY, itemLabel, type AbilityId } from "./character";
@@ -53,6 +54,8 @@ export interface AttackLine {
   hiddenByEdit?: boolean;
   /** The weapon element, for weapons. */
   elId?: string;
+  /** The weapon's +1, +2 or +3. */
+  magic?: number;
   name: string;
   bonus: number;
   damage: string;
@@ -350,15 +353,16 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
   const out: AttackLine[] = [];
   const mods = (a: AbilityId) => s.get(`${a}:modifier`);
   // Dueling: +2 damage with a melee weapon held in one hand and no other weapon. The content leaves this to the app.
-  const dueling = r.active.some((a) => /^dueling$/i.test(a.el.name) && /feature|feat/i.test(a.el.type));
+  const dueling = effectsOfKind(r, "one-hand-melee-damage").reduce((m, x) => Math.max(m, x.effect.value), 0);
   const weaponsHeld = r.character.inventory.filter((i) => i.equipped && i.id && r.reg.get(i.id)?.type === "Weapon").length;
   // Weapons mastered: the chosen Weapon Mastery options, named "Longbow (Slow)".
-  const crossbowExpert = r.active.some((a) => a.el.type === "Feat" && /^crossbow expert$/i.test(a.el.name));
+  const dropped = effectsOfKind(r, "drop-property");
   const mastered = new Set(r.active.filter((a) => a.el.supports.includes("Weapon Mastery")).map((a) => a.el.name.replace(/\s*\(.*$/, "").toLowerCase()));
   for (const it of r.character.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;
     if ((!it.equipped && !carried) || !el || el.type !== "Weapon") continue;
-    if (carried && !it.equipped && out.some((o) => o.elId === el.id)) continue;
+    // Carried weapons once per kind, a +1 one apart from a plain one.
+    if (carried && !it.equipped && out.some((o) => o.elId === el.id && (o.magic ?? 0) === (it.magic ?? 0))) continue;
     const tags = el.supports.map(lc);
     const ranged = tags.some((t) => t.includes("ranged"));
     const finesse = tags.some((t) => t.includes("finesse"));
@@ -371,21 +375,22 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     // Fighting styles and similar features add to every attack of a kind.
     const atkExtra = s.get(`${kind}:attack`) + s.get("attack") + magicAtk;
     const twoHandedWeapon = tags.some((t) => /two.?handed/.test(t)) || it.twoHanded;
-    const duel = dueling && kind === "melee" && !twoHandedWeapon && weaponsHeld <= 1 ? 2 : 0;
+    const duel = dueling && kind === "melee" && !twoHandedWeapon && weaponsHeld <= 1 ? dueling : 0;
     const dmgExtra = s.get(`${kind}:damage`) + s.get("damage") + magicDmg + duel;
     const dmg = it.twoHanded && el.setters.versatile ? { value: el.setters.versatile.value, attrs: el.setters.damage?.attrs ?? {} } : el.setters.damage;
     // A 2024 weapon's mastery property applies only when the character has mastered that weapon (issue #3).
     const isMastery = (t: string) => /^ID_WOTC_PHB24_WEAPON_PROPERTY_/.test(t);
-    // Crossbow Expert (both editions): crossbows lose the Loading property.
-    const noLoading = crossbowExpert && /crossbow/i.test(el.name);
+    // Properties a feature removes (Crossbow Expert: crossbows lose Loading).
+    const lost = dropped.filter((d) => d.effect.weapons.test(el.name)).map((d) => d.effect.property.toUpperCase());
     const props = el.supports
-      .filter((t) => /WEAPON_PROPERTY/.test(t) && (!isMastery(t) || mastered.has(el.name.toLowerCase())) && !(noLoading && /LOADING$/.test(t)))
+      .filter((t) => /WEAPON_PROPERTY/.test(t) && (!isMastery(t) || mastered.has(el.name.toLowerCase())) && !lost.some((p) => t.toUpperCase().endsWith(p)))
       .map((t) => (isMastery(t) ? "mastery: " : "") + t.replace(/^ID_(INTERNAL|WOTC_PHB24|WOTC_PHB)_WEAPON_PROPERTY_/, "").replace(/_/g, " ").toLowerCase());
     const versatile = el.setters.versatile?.value;
     const edit = r.character.attackEdits?.[it.uid];
     const line: AttackLine = {
       id: it.uid,
       elId: el.id,
+      magic: it.magic ?? 0,
       auto: true,
       name: edit?.name?.trim() || itemLabel(it, el.name),
       bonus: mods(ability) + (proficient ? prof : 0) + atkExtra + (edit?.bonusAdjust ?? 0),
@@ -400,6 +405,7 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
   // Everyone can make an unarmed strike (proficient): 1 + Strength bludgeoning, or a die from Martial Arts, the
   // Unarmed Fighting style or Tavern Brawler; a monk may use Dexterity. Bonuses to unarmed and melee attacks apply.
   if (!out.some((o) => /unarmed strike/i.test(o.name))) out.push(unarmedStrike(r));
+  out.push(...featureAttacks(r));
   for (const c of r.character.attacks) {
     const m = mods(c.ability);
     out.push({
@@ -585,12 +591,40 @@ export function defensesOf(r: Resolved): SheetData["defenses"] {
 }
 
 /** The unarmed strike as the character makes it, from the content's stats (Martial Arts die, Unarmed Fighting). */
+/**
+ * Attacks features give (the mechanics table): natural weapons use the unarmed strike's ability and bonuses; a
+ * weapon of the feature's own (Psychic Blades) is finesse, so the better of Strength and Dexterity.
+ */
+function featureAttacks(r: Resolved): AttackLine[] {
+  const s = r.stats;
+  const prof = s.get("proficiency");
+  const str = s.get("strength:modifier");
+  const dex = s.get("dexterity:modifier");
+  const martial = s.get("martial arts:dice") > 0;
+  return effectsOfKind(r, "attack").map(({ effect: e, from }) => {
+    const mod = e.ability === "finesse" || martial ? Math.max(str, dex) : str;
+    const unarmed = e.ability === "unarmed";
+    const bonus = mod + prof + s.get("melee:attack") + s.get("attack") + (unarmed ? s.get("unarmed:attack") + s.get("unarmed strike:attack") : s.get(`${canonicalName(from.name)}:attack`));
+    const extra = mod + s.get("melee:damage") + s.get("damage") + (unarmed ? s.get("unarmed:damage") + s.get("unarmed strike:damage") : s.get(`${canonicalName(from.name)}:damage`));
+    return {
+      id: `feature-${from.id}-${e.name}`,
+      auto: true,
+      name: e.name,
+      bonus,
+      damage: `${e.die}${extra ? signed(extra) : ""}`,
+      damageType: e.damageType,
+      properties: e.properties ?? (unarmed ? "unarmed strike" : ""),
+      notes: [from.name, e.notes].filter(Boolean).join("; "),
+    };
+  });
+}
+
 function unarmedStrike(r: Resolved): AttackLine {
   const s = r.stats;
-  const has = (re: RegExp) => r.active.some((a) => re.test(a.el.name.replace(/^level \d+: /i, "")));
   const martial = s.get("martial arts:dice");
   const fighting = s.get("unarmed fighting:size");
-  const brawler = has(/^tavern brawler$/i) ? 4 : 0;
+  const dice = effectsOfKind(r, "unarmed-die");
+  const brawler = dice.reduce((m, x) => Math.max(m, x.effect.die), 0);
   const die = Math.max(martial, fighting, brawler);
   const str = s.get("strength:modifier");
   const dex = s.get("dexterity:modifier");
@@ -599,9 +633,9 @@ function unarmedStrike(r: Resolved): AttackLine {
   const extra = mod + s.get("unarmed:damage") + s.get("unarmed strike:damage") + s.get("melee:damage") + s.get("damage");
   const notes: string[] = [];
   if (martial > 0) notes.push(`Martial Arts d${martial}${dex > str ? ", Dexterity" : ""}; bonus action strike`);
-  if (has(/^(ki-empowered strikes|empowered strikes)$/i)) notes.push(has(/^empowered strikes$/i) ? "can deal force damage" : "counts as magical");
+  for (const x of effectsOfKind(r, "unarmed-note")) notes.push(x.effect.text);
   if (fighting > 0) notes.push("Unarmed Fighting");
-  if (brawler && die === brawler) notes.push("Tavern Brawler");
+  if (brawler && die === brawler) notes.push(dice.find((x) => x.effect.die === brawler)!.effect.note);
   return {
     id: "unarmed-strike",
     auto: true,

@@ -433,6 +433,16 @@ class Importer {
       el = findByName(this.reg, ITEM_TYPES, c, edition);
       if (el) break;
     }
+    // A magic weapon named for its base: "+1 Shortsword of Vengeance" is a shortsword (the Sword of Vengeance), so
+    // it is the base weapon with the magic item's name and bonus, and it has an attack.
+    const ofMagic = !el ? /^(?:\+(\d)\s+)?(.+?)\s+of\s+(.+)$/i.exec(name.trim()) : null;
+    if (ofMagic) {
+      const weapon = findByName(this.reg, ["Weapon"], ofMagic[2], edition);
+      if (weapon) {
+        el = weapon;
+        extra = { ...extra, magic: extra.magic || Number(ofMagic[1]) || 0 };
+      }
+    }
     // The names starting equipment uses ("Holy Symbol" is an Amulet, Emblem or Reliquary), then typos and cut-off names.
     if (!el) el = (this.index ??= new ItemIndex(this.reg)).find(name);
     for (const c of itemNameVariants(name, extra.base).slice(0, 4)) if (!el) el = fuzzyItem(this.reg, c, edition);
@@ -671,7 +681,7 @@ class Importer {
       const bare = tight(at.name.replace(/^\+\d\s*(magic\s*)?/i, ""));
       const named = (x: { name: string }) => tight(x.name.replace(/^\+\d\s*/, ""));
       const magic = /^\+\d/.test(at.name);
-      const ours = sh.attacksCarried.find((x) => named(x) === bare && /^\+\d/.test(x.name) === magic) ?? sh.attacksCarried.find((x) => named(x) === bare) ?? sh.attacksCarried.find((x) => tight(x.name).includes(bare));
+      const ours = sh.attacksCarried.find((x) => named(x).startsWith(bare) && (x.magic ?? 0) > 0 === magic) ?? sh.attacksCarried.find((x) => named(x) === bare) ?? sh.attacksCarried.find((x) => tight(x.name).includes(bare));
       if (ours) diff(`${at.name} attack`, at.bonus, ours.bonus);
       else out.push(`${at.name} attack: in the file, not on the Soul Forge sheet`);
     }
@@ -813,7 +823,17 @@ class Importer {
     }
     // Of the elements with this name, the one an open choice can take wins (a 2014 subclass for a 2014 class);
     // otherwise the one from the character's edition.
-    const fits = all.filter((e) => r.slots.some((s) => s.chosen.length < s.rule.number && s.options.some((o) => o.id === e.id)));
+    let fits = all.filter((e) => r.slots.some((s) => s.chosen.length < s.rule.number && s.options.some((o) => o.id === e.id)));
+    // Nothing open takes it by name: an open option of the same kind whose distinctive words are the wanted name's
+    // ("Abyssal" is the Abyssal Legacy, "Red Dragon" the Red ancestry, "Fire Giant" the Fire's Burn (Fire Giant)).
+    if (!fits.length && /subrace|lineage|subclass/.test(w.label)) {
+      const GENERIC = new Set(["legacy", "ancestry", "lineage", "heritage", "dragon", "giant", "the", "of"]);
+      const words = (t: string) => new Set(normalizeFull(t).split(" ").filter((x) => x && !GENERIC.has(x)));
+      const want = words(w.alts?.[0] ?? w.name);
+      const open = r.slots.filter((s) => s.chosen.length < s.rule.number && w.types.includes(s.rule.type));
+      const near = open.flatMap((s) => s.options.filter((o) => { const ow = words(o.name.replace(/^.*?\((.+)\)$/, "$1")); return ow.size > 0 && [...ow].every((x) => want.has(x)) && [...want].every((x) => ow.has(x) || [...ow].some((y) => y.startsWith(x))); }));
+      if (near.length === 1) fits = near;
+    }
     const pool = fits.length ? fits : all;
     // The item's own edition when the file says (a 2014 spell on a 2024 character), else the character's.
     const sameEd = pool.filter((e) => isModern(e) === ((w.edition ?? this.edition ?? "2024") === "2024"));

@@ -71,3 +71,27 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "diff")("old and timeline resolve
   console.log(`DIFF characters ${picked.length}; time old ${Math.round(ms.old)} ms, timeline ${Math.round(ms.neu)} ms`);
   for (const [k, n] of [...kinds].sort((x, y) => y[1] - x[1])) console.log(`DIFF ${n} ${k}`);
 }, 3600000);
+
+it.skipIf(!CACHE || process.env.RULES_TIER !== "diff")("the timeline reuses unchanged levels", () => {
+  const reg = new ARegistry();
+  for (const f of walkDir(join(CACHE!, "elements-master"), (p) => p.endsWith(".xml")).sort((a, b) => Number(/internal|ALE/.test(b)) - Number(/internal|ALE/.test(a)))) {
+    try { reg.addFile(parseElementsXml(readFileSync(f, "utf8").replace(/^﻿/, ""), nodeXml, f)); } catch { /* not content */ }
+  }
+  reg.build();
+  const f = walkDir(join(CACHE!, "runs"), (p) => /L20_Wizard_Player_s_Handbook_2024_20-character\.json$/.test(p))[0];
+  const ch = normalizeCharacter(JSON.parse(readFileSync(f, "utf8")));
+  let t = performance.now();
+  const first = resolveTimeline(ch, reg);
+  const cold = performance.now() - t;
+  // Change the last choice of the highest level: only that level and later need work.
+  const last = [...first.slots].reverse().find((s) => s.chosen.length && s.options.length > 1)!;
+  const other = last.options.find((o) => !last.chosen.includes(o.id) && !last.blocked.has(o.id))!;
+  const changed = { ...ch, selections: { ...ch.selections, [last.key]: [...last.chosen.slice(0, -1), other.id] } };
+  t = performance.now();
+  resolveTimeline(changed, reg);
+  const warm = performance.now() - t;
+  t = performance.now();
+  resolve(changed, reg);
+  const old = performance.now() - t;
+  console.log(`TIMING cold ${cold.toFixed(1)} ms, after one change ${warm.toFixed(1)} ms, old resolver ${old.toFixed(1)} ms`);
+}, 600000);

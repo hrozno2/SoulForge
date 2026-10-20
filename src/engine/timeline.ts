@@ -68,13 +68,41 @@ function settle(ch: Character, reg: ARegistry, seed: Pass | null, findings: stri
   return pass;
 }
 
+/**
+ * Settled levels, reused between calls (the UI resolves on every click). A level's result depends on the character
+ * apart from its choices, on the level before it, and on the choices that level read; a change at level 10 leaves
+ * levels 1 to 9 untouched. Entries are per content registry.
+ */
+interface Cached { used: [string, string][]; pass: Pass; findings: string[] }
+const CACHE = new WeakMap<ARegistry, Map<string, Cached[]>>();
+const CACHE_LIMIT = 400;
+
+function settleCached(chN: Character, reg: ARegistry, seed: Pass | null, findings: string[], level: number): Pass {
+  const byKey = CACHE.get(reg) ?? CACHE.set(reg, new Map()).get(reg)!;
+  const key = `${JSON.stringify({ ...chN, selections: undefined, play: undefined, info: undefined, notes: undefined, portrait: undefined })}\u0000${seed?.signature ?? ""}`;
+  const sel = (k: string) => JSON.stringify(chN.selections[k] ?? null);
+  const hit = byKey.get(key)?.find((c) => c.used.every(([k, v]) => sel(k) === v));
+  if (hit) {
+    findings.push(...hit.findings);
+    return hit.pass;
+  }
+  const own: string[] = [];
+  const pass = settle(chN, reg, seed, own, level);
+  findings.push(...own);
+  const list = byKey.get(key) ?? [];
+  list.unshift({ used: pass.rawSlots.map((r) => [r.key, sel(r.key)]), pass, findings: own });
+  byKey.set(key, list.slice(0, 4));
+  if (byKey.size > CACHE_LIMIT) byKey.delete(byKey.keys().next().value!);
+  return pass;
+}
+
 export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved {
   const findings: string[] = [];
   const total = totalLevel(ch);
   const timeline: LevelState[] = [];
   let seed: Pass | null = null;
   for (let n = total === 0 ? 0 : 1; n <= total; n++) {
-    const pass = settle(atLevel(ch, n), reg, seed, findings, n);
+    const pass = settleCached(atLevel(ch, n), reg, seed, findings, n);
     timeline.push({ level: n, pass });
     seed = pass;
   }

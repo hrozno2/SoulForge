@@ -43,6 +43,7 @@ export interface CastingLine {
   spells: SpellPick[];
   /** Always-prepared spells from features. */
   granted: SpellPick[];
+  /** The highest spell level the class may learn or prepare, by its own table (not the shared multiclass slots). */
   maxSpellLevel: number;
 }
 
@@ -289,6 +290,11 @@ function buildCasting(r: Resolved): CastingLine[] {
       spells.push({ id, casting: e.name, granted: false, prepared: true });
     }
     const maxLevel = slots.length ? slots[slots.length - 1].level : 0;
+    // What the class itself may learn and prepare: its own table, as if single-classed (PHB, Multiclassing), not the
+    // shared multiclass slots it casts with.
+    let ownLevel = 0;
+    for (let n = 1; n <= 9; n++) if (r.stats.get(`${key}:spellcasting:slots:${n}`) > 0) ownLevel = n;
+    if (isPact) ownLevel = Math.max(ownLevel, r.stats.get(`${key}:spellcasting:slot`));
     return {
       name: e.name,
       ability: e.ability,
@@ -301,7 +307,7 @@ function buildCasting(r: Resolved): CastingLine[] {
       cantripsKnown: cantrips,
       spells,
       granted,
-      maxSpellLevel: maxLevel,
+      maxSpellLevel: ownLevel || maxLevel,
     };
   }), ...extraLines];
 }

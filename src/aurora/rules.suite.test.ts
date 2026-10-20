@@ -127,6 +127,12 @@ describe.skipIf(!CACHE)("rules", () => {
     const files: [string, Uint8Array | string][] = [];
     const save = (name: string, bytes: Uint8Array | string) => files.push([name, bytes]);
     save("character.json", JSON.stringify(ch, null, 2));
+    // RULES_NOPDF=1 (for big runs): the rules and the JSON round trip only; the other tiers fill and read every sheet.
+    if (process.env.RULES_NOPDF) {
+      if (OUT && found.length) for (const [name, bytes] of files) writeFileSync(join(OUT, `${safe}-${name}`), bytes);
+      if (!BIG || found.length) report.push(`\n### ${label}\n${found.length ? found.map((f) => `- ${f.rule}: ${f.detail}`).join("\n") : "- no findings"}`);
+      return found;
+    }
     try {
       const p24 = await fillOfficialSheet(readFileSync(join(sheets, "2024-print.pdf")), "2024-print.pdf", data, font);
       save("2024.pdf", p24.bytes);

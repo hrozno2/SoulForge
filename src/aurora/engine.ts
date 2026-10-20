@@ -65,6 +65,12 @@ export interface Pass {
   rawSlots: Omit<SelectSlot, "options" | "blocked" | "filter">[];
   /** Where and at which class level each element was gained. */
   gained: Map<string, { root: string; at: number }>;
+  /**
+   * How each id came to the character: one chain of ancestors (root first) per source. A requirement such as
+   * "!ID_PROFICIENCY_SKILL_PERCEPTION" on an element that itself leads to Perception means "from elsewhere", so the
+   * element's own contribution is left out when it is judged (docs/ENGINE-PLAN.md: provenance).
+   */
+  via: Map<string, string[][]>;
   warnings: string[];
   signature: string;
 }
@@ -110,16 +116,24 @@ function equippedFacts(ch: Character, reg: ARegistry) {
   return { armor, shield };
 }
 
-function makeCtx(prev: Pass | null, level: number, ch: Character, reg: ARegistry, empty: StatBook): ReqCtx {
+export function makeCtx(prev: Pass | null, level: number, ch: Character, reg: ARegistry, empty: StatBook, self?: string): ReqCtx {
   const ids = prev?.ids ?? new Set<string>();
+  // Judged for `self`: an id that reaches the character only through `self` does not count ("from elsewhere").
+  const has = (id: string) => {
+    if (!ids.has(id)) return false;
+    if (!self) return true;
+    const chains = prev?.via?.get(id);
+    return !chains || chains.some((c) => !c.includes(self));
+  };
   const types = new Set<string>();
   if (prev) for (const a of prev.active) types.add(lc(a.el.type));
   const facts = equippedFacts(ch, reg);
   const stats = prev?.stats ?? empty;
   return {
-    hasId: (id) => ids.has(id),
+    hasId: has,
     hasType: (t) => types.has(lc(t)),
     level,
+    characterLevel: totalLevel(ch),
     stat: (n) => stats.get(n),
     equipped: (kind, value) => {
       const v = lc(value);
@@ -169,7 +183,8 @@ export function baseHitPoints(ch: Character, reg: ARegistry, conMod: number): nu
   return hp;
 }
 
-function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
+/** One walk over the character's content, with requirements judged against `prev` (exported for the timeline resolver). */
+export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
   const spellAbility: Record<string, string> = {};
   const inputs = inputsFor(ch, reg, spellAbility);
   const stats = new StatBook(inputs);
@@ -186,7 +201,10 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
 
   // The class level at which each element was gained (1 for roots), so a choice can be judged at its own level.
   const gained = new Map<string, { root: string; at: number }>();
-  const visit = (el: AElement, ownerLevel: number, from: string, root: string, classOwner?: AElement, at = 1): void => {
+  const via = new Map<string, string[][]>();
+  const record = (id: string, chain: string[]) => (via.get(id) ?? via.set(id, []).get(id)!).push(chain);
+  const visit = (el: AElement, ownerLevel: number, from: string, root: string, classOwner?: AElement, at = 1, chain: string[] = []): void => {
+    record(el.id, chain);
     if (seen.has(el.id)) return;
     seen.add(el.id);
     ids.add(el.id);
@@ -211,8 +229,9 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
       }
     }
 
+    const below = [...chain, el.id];
     el.rules.forEach((rule, idx) => {
-      const ctx = makeCtx(prev, ownerLevel, ch, reg, empty);
+      const ctx = makeCtx(prev, ownerLevel, ch, reg, empty, el.id);
       if (rule.level !== undefined && rule.level > ownerLevel) return;
       if (!meets(rule.requirements, ctx)) return;
 
@@ -225,6 +244,7 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         if (!target) {
           // Internal marker grants have no element of their own but still count as present.
           ids.add(rule.id);
+          record(rule.id, below);
           if (!QUIET_TYPES.has(rule.type) && !rule.id.startsWith("ID_INTERNAL_")) warnings.push(`Missing ${rule.type} "${rule.id}" (from ${el.name})`);
           return;
         }
@@ -234,8 +254,8 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         if (rule.type === "Spell") {
           spellPicks.push({ id: rule.id, casting: rule.spellcasting ?? "", granted: true, prepared: true, from: el.id });
         }
-        if (!meets(target.requirements, makeCtx(prev, ownerLevel, ch, reg, empty))) return;
-        visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0));
+        if (!meets(target.requirements, makeCtx(prev, ownerLevel, ch, reg, empty, target.id))) return;
+        visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0), below);
       } else {
         const key = `${el.id}|${idx}`;
         let chosen = (ch.selections[key] ?? []).slice(0, rule.number);
@@ -258,7 +278,7 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
           if (rule.type === "Spell") {
             spellPicks.push({ id, casting: rule.spellcasting ?? "", granted: false, prepared: false, hint: rule.supports, from: el.id });
           }
-          visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0));
+          visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0), below);
         }
       }
     });
@@ -332,7 +352,7 @@ function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
 
   const signature =
     [...ids].sort().join(",") + "#" + [...stats.names()].sort().map((n) => `${n}=${stats.get(n)}`).join(";") + "#" + rawSlots.length;
-  return { ids, active, stats, spellcasting, spellPicks, rawSlots, warnings, signature, gained };
+  return { ids, active, stats, spellcasting, spellPicks, rawSlots, warnings, signature, gained, via };
 }
 
 /** Replaces `$(spellcasting:list)` and `$(spellcasting:slots)` inside a supports filter. */

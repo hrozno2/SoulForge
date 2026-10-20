@@ -242,3 +242,30 @@ matched.
 4. 5e.tools loader: the 5e.tools JSON directly to IR, not through the Aurora shape. The converter becomes the
    loader.
 5. The coverage test: the counts per kind, unmapped items, duplicate merges, and concepts shared across sources.
+
+## Progress
+
+### 2026-10-20
+
+- **E1 (canonical content) started:** src/engine/concepts.ts, ir.ts and load.ts, with the test load.test.ts. On
+  the real content (Aurora and 5e.tools):
+  - 21,876 elements load;
+  - 241 merge into shared concepts, and 139 concepts are shared by both sources;
+  - 0 unmapped concepts and 0 dangling references.
+- **E2 (timeline) started:** src/engine/timeline.ts is the level-by-level resolver. It returns the same
+  `Resolved`, so it can be compared with the old one. Fixes that come with it:
+  - requirements separate character level from class level;
+  - provenance chains in the walk, so "!X" means "X from elsewhere";
+  - src/engine/replace.ts lists the choices that may change on level-up.
+- **Differential run** (`RULES_TIER=diff`, src/engine/timeline.diff.test.ts), on 300 saved characters:
+  - every element and every sheet number agree (HP, AC, abilities, skills, speed, initiative);
+  - the only differences are 43 picks the timeline rejects. All are Epic Boons taken before level 19, which the
+    old engine allowed because it judged everything at the final level. These are old bugs; the random builder
+    made them and the rules check could not see them.
+  - Requirement loops: 4 found by the timeline, then 0 once provenance was added. The old engine stopped these
+    after 6 passes, so their state depended on pass parity.
+- **Open:**
+  - The timeline is about 8× slower (about 50 ms against 6 ms per character). It needs incremental resolving
+    (reuse the levels before the first change) before the UI switches to it.
+  - The random builder and autofill must judge picks against the timeline. They now produce the Boon errors
+    above.

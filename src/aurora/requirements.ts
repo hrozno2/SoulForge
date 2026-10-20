@@ -7,8 +7,10 @@
 export interface ReqCtx {
   hasId(id: string): boolean;
   hasType(type: string): boolean;
-  /** Character level (or the level of the class the rule belongs to). */
+  /** The level of the class the rule belongs to, or the character level for species, background and the rest. */
   level: number;
+  /** The character's total level. `[character:X]` reads this; without it, `level` stands in. */
+  characterLevel?: number;
   /** Read a statistic by name, for example "strength" or "strength:max:extra". */
   stat(name: string): number;
   /** Equipment checks such as [armor:heavy] or [shield:any]. Only used by `equipped` attributes. */
@@ -123,7 +125,9 @@ function evalNode(n: Node, ctx: ReqCtx, equipment: boolean): boolean {
       const key = n.key.toLowerCase();
       if (key === "type") return ctx.hasType(n.value);
       if (key === "id") return ctx.hasId(n.value);
-      if (key === "level" || key === "character") return ctx.level >= (parseInt(n.value, 10) || 0);
+      if (key === "level") return ctx.level >= (parseInt(n.value, 10) || 0);
+      // [character:X] is the total level, also inside a class (a Rogue 3 / Fighter 1 is character level 4).
+      if (key === "character") return (ctx.characterLevel ?? ctx.level) >= (parseInt(n.value, 10) || 0);
       if (equipment || key === "armor" || key === "shield" || key === "weapon") {
         if (ctx.equipped && (equipment || ["armor", "shield", "weapon"].includes(key))) return ctx.equipped(key, n.value);
       }

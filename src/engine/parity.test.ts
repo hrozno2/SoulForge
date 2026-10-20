@@ -96,6 +96,8 @@ function profile(reg: ARegistry, el: AElement, ch: Character) {
 
 it.skipIf(!C || process.env.RULES_TIER !== "parity")("post-import audit", () => {
   const reg = load();
+  writeFileSync(join(C!, "engine", "mechanics.md"), ["# Borrowed mechanics", "", ...reg.mechanics.borrowed.map((b) => `- ${b.name} (${b.id}) from ${b.from}: ${b.rules.join(", ")}`)].join("\n"));
+  console.log(`PARITY borrowed mechanics for ${reg.mechanics.borrowed.length} features`);
   const books = new BookIndex(reg);
   const out: string[] = ["# Post-import audit", ""];
   const counts: Record<string, number> = {};

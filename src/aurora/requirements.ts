@@ -15,6 +15,8 @@ export interface ReqCtx {
   stat(name: string): number;
   /** Equipment checks such as [armor:heavy] or [shield:any]. Only used by `equipped` attributes. */
   equipped?(kind: string, value: string): boolean;
+  /** The same context judged for one element (an option of a choice): it does not count itself as had. */
+  as?(self: string): ReqCtx;
 }
 
 type Node =

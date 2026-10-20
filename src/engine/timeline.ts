@@ -129,7 +129,11 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     const ctx = makeCtx(then, thenSlot.ownerLevel, atLevel(ch, st.level), reg, then.stats);
     const blocked = new Set<string>();
     const nowCtx = changeable ? makeCtx(final, s.ownerLevel, ch, reg, final.stats) : undefined;
-    for (const e of options) if (!meets(e.requirements, ctx) && !(nowCtx && meets(e.requirements, nowCtx))) blocked.add(e.id);
+    // Each option is judged as itself: "Draconic, unless you have Draconic" is not blocked by this pick of it.
+    for (const e of options) {
+      if (!e.requirements) continue;
+      if (!meets(e.requirements, ctx.as?.(e.id) ?? ctx) && !(nowCtx && meets(e.requirements, nowCtx.as?.(e.id) ?? nowCtx))) blocked.add(e.id);
+    }
     // A feat the character has from another choice or grant, at any level, is not offered again.
     if (s.rule.type === "Feat") for (const e of options) if (final.ids.has(e.id) && !s.chosen.includes(e.id)) blocked.add(e.id);
     return { ...s, options, blocked, filter };

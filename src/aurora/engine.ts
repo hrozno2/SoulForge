@@ -5,6 +5,7 @@ import { StatBook, type StatInputs } from "./stats";
 import { ABILITY_IDS, totalLevel, type AbilityId, type Character } from "./character";
 import { isModern } from "./edition";
 import { bookKey } from "./books";
+import { conceptOf, conceptOfMarker } from "../engine/concepts";
 import { resolveTimeline } from "../engine/timeline";
 
 export interface ActiveElement {
@@ -118,6 +119,30 @@ function equippedFacts(ch: Character, reg: ARegistry) {
   return { armor, shield };
 }
 
+/** The concept an id stands for (skill, save, training, language, size, sense), or "" when none. Per registry. */
+const CONCEPT_OF = new WeakMap<ARegistry, Map<string, string>>();
+function conceptKey(reg: ARegistry, id: string): string {
+  const byReg = CONCEPT_OF.get(reg) ?? CONCEPT_OF.set(reg, new Map()).get(reg)!;
+  let k = byReg.get(id);
+  if (k === undefined) {
+    const el = reg.get(id);
+    k = (el ? conceptOf(el) : conceptOfMarker(id)) ?? "";
+    byReg.set(id, k);
+  }
+  return k;
+}
+/** The ids a walk reached, by concept. */
+const CONCEPTS = new WeakMap<Pass, Map<string, string[]>>();
+function conceptIndex(p: Pass, reg: ARegistry): Map<string, string[]> {
+  let m = CONCEPTS.get(p);
+  if (!m) {
+    m = new Map();
+    for (const id of p.ids) { const k = conceptKey(reg, id); if (k) (m.get(k) ?? m.set(k, []).get(k)!).push(id); }
+    CONCEPTS.set(p, m);
+  }
+  return m;
+}
+
 // Asked for every rule of every element, so worked out once per walk and once per character.
 const TYPES = new WeakMap<Pass, Set<string>>();
 const NO_TYPES = new Set<string>();
@@ -134,13 +159,21 @@ function typesOf(prev: Pass | null): Set<string> {
 
 export function makeCtx(prev: Pass | null, level: number, ch: Character, reg: ARegistry, empty: StatBook, self?: string): ReqCtx {
   const ids = prev?.ids ?? new Set<string>();
-  // Judged for `self`: an id that reaches the character only through `self` does not count ("from elsewhere").
-  const has = (id: string) => {
-    if (!ids.has(id)) return false;
-    if (!self) return true;
+  // Judged for `me`: an id that reaches the character only through `me` does not count ("from elsewhere").
+  const fromElsewhere = (id: string, me: string | undefined) => {
+    if (!me) return true;
     const chains = prev?.via?.get(id);
-    return !chains || chains.some((c) => !c.includes(self));
+    return !chains || chains.some((c) => !c.includes(me));
   };
+  // By concept as well: a requirement naming Aurora's Heavy Armor training is met by 5e.tools' (one concept, two ids).
+  const hasAs = (id: string, me: string | undefined) => {
+    if (ids.has(id) && id !== me) return fromElsewhere(id, me);
+    const k = conceptKey(reg, id);
+    if (!k || !prev) return id === me ? ids.has(id) : false;
+    // Never the element being judged itself: "!B" on A, where A and B are one concept, asks about B, not A.
+    return (conceptIndex(prev, reg).get(k) ?? []).some((x) => x !== me && fromElsewhere(x, me));
+  };
+  const has = (id: string) => hasAs(id, self);
   const types = typesOf(prev);
   // Some callers equip items in place, so the cached facts are checked against what is worn now.
   const worn = ch.inventory.map((i) => (i.equipped && i.id ? i.id : "")).join(",");
@@ -148,8 +181,9 @@ export function makeCtx(prev: Pass | null, level: number, ch: Character, reg: AR
   if (!cached || cached.worn !== worn) FACTS.set(ch, (cached = { worn, facts: equippedFacts(ch, reg) }));
   const facts = cached.facts;
   const stats = prev?.stats ?? empty;
-  return {
+  const ctx: ReqCtx = {
     hasId: has,
+    as: (me) => ({ ...ctx, hasId: (id: string) => hasAs(id, me) }),
     hasType: (t) => types.has(lc(t)),
     level,
     characterLevel: totalLevel(ch),
@@ -165,6 +199,7 @@ export function makeCtx(prev: Pass | null, level: number, ch: Character, reg: AR
       return false;
     },
   };
+  return ctx;
 }
 
 function inputsFor(ch: Character, reg: ARegistry, spellAbility: Record<string, string>): StatInputs {

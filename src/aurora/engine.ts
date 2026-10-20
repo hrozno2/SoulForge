@@ -4,7 +4,6 @@ import { meets, type ReqCtx } from "./requirements";
 import { StatBook, type StatInputs } from "./stats";
 import { ABILITY_IDS, totalLevel, type AbilityId, type Character } from "./character";
 import { isModern } from "./edition";
-import { bookKey } from "./books";
 import { conceptOf, conceptOfMarker } from "../engine/concepts";
 import { hash } from "../engine/load";
 import { resolveTimeline } from "../engine/timeline";
@@ -547,54 +546,12 @@ export function stillToChoose(s: SelectSlot, _r?: unknown): boolean {
 }
 
 /**
- * Which resolver the app uses. "timeline" builds the character level by level and judges each choice at the level
- * it was made (src/engine/timeline.ts, docs/ENGINE-PLAN.md); "legacy" is the old whole-character fixpoint, kept for
- * the differential tests until it is removed.
+ * Resolves a character: the timeline resolver (src/engine/timeline.ts) builds it level by level and judges each
+ * choice at the level it was made. The old whole-character fixpoint was removed once every difference between the
+ * two was an old bug (docs/ENGINE-PLAN.md, E5).
  */
-let engineMode: "timeline" | "legacy" = "timeline";
-export function setEngineMode(mode: "timeline" | "legacy"): void {
-  engineMode = mode;
-}
-
 export function resolve(ch: Character, reg: ARegistry): Resolved {
-  return engineMode === "legacy" ? resolveLegacy(ch, reg) : resolveTimeline(ch, reg);
-}
-
-/** The old resolver: re-walks the whole character until it stops changing (at most 7 walks). */
-export function resolveLegacy(ch: Character, reg: ARegistry): Resolved {
-  let prev: Pass | null = null;
-  let pass = walk(ch, reg, null);
-  for (let i = 0; i < 6; i++) {
-    prev = pass;
-    pass = walk(ch, reg, prev);
-    if (pass.signature === prev.signature) break;
-  }
-
-  const restricted = new Set(ch.sources.map(bookKey));
-  const shared = sharedSlotLevel(pass);
-  const slots: SelectSlot[] = pass.rawSlots.map((s) => {
-    if (s.rule.type === "List") return { ...s, options: [], blocked: new Set<string>(), filter: "", listItems: s.rule.items ?? [] };
-    const filter = resolveSupports(s.rule.supports, s.rule.spellcasting, pass, shared);
-    let options = reg.find(s.rule.type, filter);
-    if (restricted.size) options = options.filter((e) => !e.source || restricted.has(bookKey(e.source)) || s.chosen.includes(e.id));
-    const base = makeCtx(pass, s.ownerLevel, ch, reg, pass.stats);
-    // A choice is judged at the level it is made: what the same class gains later (a Monk's Disciplined Survivor at
-    // 14) does not make a feat taken at 4 illegal. Other classes' and the species' features count as present.
-    const at = s.at ?? 1;
-    const ctx = { ...base, hasId: (id: string) => { if (!pass.ids.has(id)) return false; const g = pass.gained.get(id); return !g || g.root !== s.root || g.at <= at; } };
-    const blocked = new Set<string>();
-    for (const e of options) if (!meets(e.requirements, ctx)) blocked.add(e.id);
-    // A feat the character already has from another choice or grant (a species feat and an origin feat, say) is not offered again.
-    if (s.rule.type === "Feat") for (const e of options) if (pass.ids.has(e.id) && !s.chosen.includes(e.id)) blocked.add(e.id);
-    return { ...s, options, blocked, filter };
-  });
-
-  const classLevels: Record<string, number> = {};
-  for (const c of ch.classes) {
-    const el = reg.get(c.classId);
-    if (el) classLevels[lc(el.name)] = (classLevels[lc(el.name)] ?? 0) + c.level;
-  }
-  return { ...pass, character: ch, slots, totalLevel: totalLevel(ch), classLevels, reg };
+  return resolveTimeline(ch, reg);
 }
 
 export type { AbilityId };

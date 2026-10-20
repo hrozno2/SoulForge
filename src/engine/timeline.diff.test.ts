@@ -1,19 +1,16 @@
 /**
- * Differential run (docs/ENGINE-PLAN.md, 4): the old resolver and the timeline resolver on saved characters, and
- * every difference that reaches a sheet. RULES_TIER=diff; RULES_DIFF_MAX caps the number of characters (default 400).
- * Output: <cache>/engine/diff.json and a summary in the test log.
+ * Saved characters as a regression gate (RULES_TIER=diff), now that the old resolver is gone (docs/ENGINE-PLAN.md,
+ * E5): every saved character in the test cache's runs resolves, and its sheet numbers are kept in a snapshot
+ * (<cache>/engine/sheets.json). A later run that changes a number lists the change; RULES_SNAPSHOT=1 accepts them.
+ * It also times the resolver on one change, the case the UI meets on every click.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
-import { it } from "vitest";
-import { nodeXml } from "../aurora/fixture";
-import { parseElementsXml } from "../aurora/parse";
-import { ARegistry } from "../aurora/registry";
-import { convertFiveTools } from "../aurora/fivetools";
+import { join } from "node:path";
+import { expect, it } from "vitest";
 import { normalizeCharacter } from "../aurora/character";
-import { resolveLegacy as resolve } from "../aurora/engine";
+import { resolve } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
-import { resolveTimeline } from "./timeline";
+import { loadTestContent } from "./testContent";
 
 const CACHE = process.env.SOULFORGE_RULES;
 const walkDir = (d: string, test: (f: string) => boolean, out: string[] = [], depth = 0): string[] => {
@@ -21,77 +18,50 @@ const walkDir = (d: string, test: (f: string) => boolean, out: string[] = [], de
   return out;
 };
 
-it.skipIf(!CACHE || process.env.RULES_TIER !== "diff")("old and timeline resolvers on saved characters", () => {
-  const reg = new ARegistry();
-  for (const f of walkDir(join(CACHE!, "elements-master"), (p) => p.endsWith(".xml")).sort((a, b) => Number(/internal|ALE/.test(b)) - Number(/internal|ALE/.test(a)))) {
-    try { reg.addFile(parseElementsXml(readFileSync(f, "utf8").replace(/^﻿/, ""), nodeXml, f)); } catch { /* not content */ }
-  }
-  const dir = join(CACHE!, "5etools-data");
-  if (existsSync(dir)) {
-    const json: Record<string, unknown> = {};
-    for (const f of walkDir(dir, (p) => p.endsWith(".json"))) { const rel = relative(dir, f); if (!/index\.json$/.test(rel) && !rel.startsWith("bestiary")) json[rel] = JSON.parse(readFileSync(f, "utf8")); }
-    reg.addElements(convertFiveTools({ files: json as never }));
-  }
-  reg.build();
+it.skipIf(!CACHE || process.env.RULES_TIER !== "diff")("saved characters keep their sheets", () => {
+  const reg = loadTestContent(CACHE!);
   const files = walkDir(join(CACHE!, "runs"), (p) => p.endsWith("-character.json") && !/import_/.test(p)).sort();
   const max = Number(process.env.RULES_DIFF_MAX) || 400;
   const step = Math.max(1, Math.floor(files.length / max));
   const picked = files.filter((_, i) => i % step === 0).slice(0, max);
-  const kinds = new Map<string, number>();
-  const examples: Record<string, string[]> = {};
-  const note = (kind: string, ex: string) => { kinds.set(kind, (kinds.get(kind) ?? 0) + 1); (examples[kind] ??= []).length < 8 && examples[kind].push(ex); };
-  let ms = { old: 0, neu: 0 };
+  const now: Record<string, unknown> = {};
+  const illegal: string[] = [];
+  let ms = 0;
   for (const f of picked) {
     let ch;
     try { ch = normalizeCharacter(JSON.parse(readFileSync(f, "utf8"))); } catch { continue; }
     const name = f.split("/").slice(-2).join("/");
-    let t = performance.now();
-    const a = resolve(ch, reg);
-    ms.old += performance.now() - t;
-    t = performance.now();
-    const b = resolveTimeline(ch, reg);
-    ms.neu += performance.now() - t;
-    if (b.findings.length) note("timeline finding", `${name}: ${b.findings.join("; ")}`);
-    const onlyA = [...a.ids].filter((x) => !b.ids.has(x)), onlyB = [...b.ids].filter((x) => !a.ids.has(x));
-    if (onlyA.length) note("element only in old", `${name}: ${onlyA.slice(0, 4).map((x) => reg.get(x)?.name ?? x).join(", ")}`);
-    if (onlyB.length) note("element only in timeline", `${name}: ${onlyB.slice(0, 4).map((x) => reg.get(x)?.name ?? x).join(", ")}`);
-    const illegal = (r: typeof a) => new Set(r.slots.flatMap((s) => s.chosen.filter((id) => s.blocked.has(id)).map((id) => `${s.rule.name}: ${reg.get(id)?.name ?? id}`)));
-    const ia = illegal(a), ib = illegal(b);
-    for (const x of ib) if (!ia.has(x)) note("pick illegal only in timeline", `${name}: ${x}`);
-    for (const x of ia) if (!ib.has(x)) note("pick illegal only in old", `${name}: ${x}`);
-    const sa = buildSheet(a), sb = buildSheet(b);
-    for (const k of ["hp", "proficiency", "speed", "initiative"] as const) if (sa[k] !== sb[k]) note(`sheet ${k} differs`, `${name}: ${sa[k]} -> ${sb[k]}`);
-    if (sa.ac.value !== sb.ac.value) note("sheet ac differs", `${name}: ${sa.ac.value} -> ${sb.ac.value}`);
-    sa.abilities.forEach((x, i) => { if (x.score !== sb.abilities[i].score) note("sheet ability differs", `${name}: ${x.id} ${x.score} -> ${sb.abilities[i].score}`); });
-    sa.skills.forEach((x, i) => { if (x.bonus !== sb.skills[i].bonus) note("sheet skill differs", `${name}: ${x.name} ${x.bonus} -> ${sb.skills[i].bonus}`); });
+    const t = performance.now();
+    const r = resolve(ch, reg);
+    ms += performance.now() - t;
+    const sh = buildSheet(r);
+    now[name] = { hp: sh.hp, ac: sh.ac.value, prof: sh.proficiency, speed: sh.speed, init: sh.initiative, scores: sh.abilities.map((a) => a.score), saves: sh.abilities.map((a) => a.save), skills: sh.skills.map((k) => k.bonus), dc: sh.casting.map((c) => c.dc) };
+    for (const s of r.slots) for (const id of s.chosen) if (s.blocked.has(id)) illegal.push(`${name}: ${s.rule.name}: ${reg.get(id)?.name ?? id}`);
   }
-  const out = join(CACHE!, "engine");
-  mkdirSync(out, { recursive: true });
-  writeFileSync(join(out, "diff.json"), JSON.stringify({ characters: picked.length, ms, kinds: Object.fromEntries(kinds), examples }, null, 2));
-  console.log(`DIFF characters ${picked.length}; time old ${Math.round(ms.old)} ms, timeline ${Math.round(ms.neu)} ms`);
-  for (const [k, n] of [...kinds].sort((x, y) => y[1] - x[1])) console.log(`DIFF ${n} ${k}`);
+  const dir = join(CACHE!, "engine");
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, "sheets.json");
+  const was: Record<string, unknown> = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : {};
+  const changed = Object.keys(now).filter((k) => k in was && JSON.stringify(was[k]) !== JSON.stringify(now[k])).map((k) => `${k}: ${JSON.stringify(was[k])} -> ${JSON.stringify(now[k])}`);
+  if (!existsSync(path) || process.env.RULES_SNAPSHOT) writeFileSync(path, JSON.stringify({ ...was, ...now }, null, 2));
+  writeFileSync(join(dir, "illegal-picks.txt"), illegal.join("\n"));
+  console.log(`DIFF characters ${picked.length}; ${Math.round(ms)} ms; sheets changed ${changed.length}; picks the rules rule out ${illegal.length}`);
+  for (const c of changed.slice(0, 20)) console.log(`DIFF changed ${c}`);
+  if (!process.env.RULES_SNAPSHOT) expect(changed).toEqual([]);
 }, 3600000);
 
 it.skipIf(!CACHE || process.env.RULES_TIER !== "diff")("the timeline reuses unchanged levels", () => {
-  const reg = new ARegistry();
-  for (const f of walkDir(join(CACHE!, "elements-master"), (p) => p.endsWith(".xml")).sort((a, b) => Number(/internal|ALE/.test(b)) - Number(/internal|ALE/.test(a)))) {
-    try { reg.addFile(parseElementsXml(readFileSync(f, "utf8").replace(/^﻿/, ""), nodeXml, f)); } catch { /* not content */ }
-  }
-  reg.build();
+  const reg = loadTestContent(CACHE!);
   const f = walkDir(join(CACHE!, "runs"), (p) => /L20_Wizard_Player_s_Handbook_2024_20-character\.json$/.test(p))[0];
   const ch = normalizeCharacter(JSON.parse(readFileSync(f, "utf8")));
   let t = performance.now();
-  const first = resolveTimeline(ch, reg);
+  const first = resolve(ch, reg);
   const cold = performance.now() - t;
   // Change the last choice of the highest level: only that level and later need work.
   const last = [...first.slots].reverse().find((s) => s.chosen.length && s.options.length > 1)!;
   const other = last.options.find((o) => !last.chosen.includes(o.id) && !last.blocked.has(o.id))!;
   const changed = { ...ch, selections: { ...ch.selections, [last.key]: [...last.chosen.slice(0, -1), other.id] } };
   t = performance.now();
-  resolveTimeline(changed, reg);
-  const warm = performance.now() - t;
-  t = performance.now();
   resolve(changed, reg);
-  const old = performance.now() - t;
-  console.log(`TIMING cold ${cold.toFixed(1)} ms, after one change ${warm.toFixed(1)} ms, old resolver ${old.toFixed(1)} ms`);
+  console.log(`TIMING cold ${cold.toFixed(1)} ms, after one change ${(performance.now() - t).toFixed(1)} ms`);
 }, 600000);

@@ -1854,3 +1854,8 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .bug-part pre { white-space: pre-wrap; font-size: 11.5px; max-height: 220px; overflow: auto; background: rgba(0,0,0,.06); padding: 6px 8px; border-radius: 4px; }
 .bug-actions { justify-content: flex-end; gap: 8px; margin-top: 10px; }
 .bug-row { border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 6px; }
+
+/* A choice's override: the whole list when the choice came up empty. */
+.slot-override { margin-right: 8px; font-size: 12px; }
+.slot-override.urgent { border-color: var(--gold); color: var(--gold); }
+.slot-override-note { margin: 6px 0; font-size: 12px; }

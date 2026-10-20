@@ -98,6 +98,11 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
     const next = chosen.includes(id) ? chosen.filter((c) => c !== id) : rule.number === 1 ? [id] : chosen.length < rule.number ? [...chosen, id] : chosen;
     commit(next);
   };
+  // The override: when the choice's own filter, its requirements or the content filters leave nothing (or not what
+  // the player needs), the whole list of that kind is offered. The rules check still flags a pick the rules forbid.
+  const [all, setAll] = useState(false);
+  const nothingLeft = !slot.listItems && (slot.options.length === 0 || slot.options.every((o) => slot.blocked.has(o.id) && !chosen.includes(o.id)));
+  const pool = all ? r.reg.ofType(rule.type).filter((e) => !e.compendiumHidden || chosen.includes(e.id)) : slot.options;
   const chosenNames = slot.listItems ? chosen.map((id) => slot.listItems!.find((i) => i.id === id)?.text ?? id) : chosen.map((id) => r.reg.get(id)?.name ?? id);
   const need = rule.number;
   const type = rule.type;
@@ -148,10 +153,19 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
                 </li>
               ))}
             </ul>
-          ) : slot.options.length === 0 ? (
+          ) : pool.length === 0 ? (
             <p className="muted">Nothing matches this choice in the loaded content.</p>
           ) : (
-            <Browse items={slot.options} type={type} chosen={chosen} onPick={toggle} onSwap={swap} onHover={onDetail} disabledReason={reason} ownedBy={owned} defaultView={type === "Spell" ? "cards" : "list"} allowCards={!["Language", "Proficiency", "Ability Score Improvement", "Companion"].includes(type)} perPage={60} />
+            <>
+              {all && <p className="notice slot-override-note">Showing every {type.toLowerCase()} in the loaded content, without this choice's own filter or your book filters. The rules check flags a pick the rules do not allow here.</p>}
+              {!all && nothingLeft && <p className="notice slot-override-note">Nothing here can be chosen right now. If that is wrong (a filter or the content hides what you need), show the whole list.</p>}
+              <Browse items={pool} type={type} chosen={chosen} onPick={toggle} onSwap={swap} onHover={onDetail} disabledReason={all ? undefined : reason} ownedBy={owned} defaultView={type === "Spell" ? "cards" : "list"} allowCards={!["Language", "Proficiency", "Ability Score Improvement", "Companion"].includes(type)} perPage={60} showAll={all} />
+            </>
+          )}
+          {!slot.listItems && (
+            <button className={`ghost slot-override ${nothingLeft && !all ? "urgent" : ""}`} title="Show every element of this kind, ignoring this choice's filter and the content filters" onClick={() => setAll(!all)}>
+              {all ? "Back to the matching options" : "Show the whole list"}
+            </button>
           )}
           <button className="ghost slot-done" onClick={() => setOpen(false)}>Done</button>
         </div>

@@ -5,10 +5,11 @@
  * rest (proficiency bonus, hit points, armor class, attack bonuses, armor and hands) are written out here from the
  * Player's Handbooks. Every finding names the rule it breaks.
  */
+import { conceptOf } from "../engine/concepts";
 import type { Resolved } from "./engine";
 import { preparePool, type SheetData } from "./sheet";
 import type { AElement } from "./types";
-import { ABILITY_IDS, type AbilityId } from "./character";
+import type { AbilityId } from "./character";
 import { meets } from "./requirements";
 import { reqCtx, stillToChoose } from "./engine";
 import { isModern } from "./edition";
@@ -76,7 +77,6 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   const ch = r.character;
   const reg = r.reg;
   const names = new Set(r.active.map((a) => norm(a.el.name)));
-  const has = (re: RegExp) => r.active.some((a) => re.test(a.el.name.replace(/^\s*level\s+\d+\s*:\s*/i, "")));
   // Content spells some names differently ("Persistant Rage"): a name one or two letters off still counts.
   // Channel Divinity options are named with or without the "Channel Divinity:" prefix. A subclass can replace a
   // feature with its own version ("Wild Shape Feature Replacement", "Animal and Nature Speaker"), which counts too.
@@ -136,33 +136,25 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
       hp += (n === 1 ? die : (roll ?? Math.floor(die / 2) + 1)) + con;
     }
   }
-  const toughness = (has(/^tough$/i) ? 2 * level : 0) + (has(/dwarven toughness/i) ? level : 0) + (has(/^boon of fortitude$/i) ? 40 : 0)
-    + (has(/draconic resilience|^jotun resilience$/i) ? (refs.find((x) => /sorcerer/i.test(x.el.name))?.c.level ?? 0) : 0);
-  if (refs.every((x) => x.ref) && sh.hp !== hp + toughness) add("Hit points", `${sh.hp}, the rules give ${hp + toughness} (${hp} from hit dice and Constitution${toughness ? ` + ${toughness} from features` : ""})`);
+  // What features add (Tough, Dwarven Toughness, Draconic Resilience, a custom bonus) comes as named parts of the
+  // stat; the hit dice and Constitution are the class table's. The sheet's number is exactly their sum.
+  const hpParts = r.stats.parts("hp");
+  const fromParts = hpParts.reduce((t, p) => t + p.value, 0);
+  if (refs.every((x) => x.ref) && sh.hp !== hp + fromParts) add("Hit points", `${sh.hp}, the rules give ${hp + fromParts} (${hp} from hit dice and Constitution${hpParts.length ? ` + ${hpParts.map((p) => `${p.value} from ${p.from}`).join(" + ")}` : ""})`);
 
   // Saving throws: the first class gives two; multiclassing gives none. Features that add more are listed.
   const first = refs[0]?.ref;
   if (first) {
-    const extra = new Set<AbilityId>();
-    for (const a of ABILITY_IDS) if (has(new RegExp(`^resilient.*${a}`, "i"))) extra.add(a);
-    // 2024 Resilient: the ability is a choice inside the feat.
-    for (const a of r.active) if (/RESILIENT/i.test(a.from) && ABILITY_IDS.includes(lc(a.el.name) as AbilityId)) extra.add(lc(a.el.name) as AbilityId);
-    const lvlOf = (re: RegExp) => refs.find((x) => re.test(x.el.name))?.c.level ?? 0;
-    if (lvlOf(/monk/i) >= 14) ABILITY_IDS.forEach((a) => extra.add(a));
-    if (lvlOf(/rogue/i) >= 15) { extra.add("wisdom"); if (first.edition === "one" || isModern(refs.find((x) => /rogue/i.test(x.el.name))!.el)) extra.add("charisma"); }
-    // Samurai's Elegant Courtier: Wisdom, or Intelligence or Charisma if already proficient in Wisdom.
-    if (has(/^elegant courtier$/i)) { extra.add("wisdom"); extra.add("intelligence"); extra.add("charisma"); }
-    // Gloom Stalker's Iron Mind: Wisdom, or Intelligence or Charisma when Wisdom comes from somewhere else.
-    if (has(/^(iron mind|mind of steel)$/i) || (lvlOf(/ranger/i) >= 7 && has(/iron mind/i))) {
-      if (first.saves.includes("wisdom") || extra.has("wisdom")) { extra.add("intelligence"); extra.add("charisma"); }
-      extra.add("wisdom");
-    }
-    if (has(/^(stalwart|aura of protection|diamond soul|disciplined survivor|slippery mind)$/i)) { /* covered above or a bonus, not a proficiency */ }
-    if (has(/^(battle hardened|unwavering|steady mind)/i)) { /* subclass features handled by name below */ }
-    for (const a of sh.abilities) {
-      const want = first.saves.includes(a.id) || extra.has(a.id);
-      if (a.saveProficient && !want) add("Saving throw proficiency without a rule giving it", `${a.id} (first class ${first.name} gives ${first.saves.join(" and ")})`);
-      if (!a.saveProficient && first.saves.includes(a.id)) add("Missing saving throw proficiency", `${a.id} from ${first.name}`);
+    // The first class gives its two saving throws (the class table). Any other proficiency comes from an element
+    // the character has (a feat, a feature, the species), which provenance shows; one granted by a later class
+    // itself is the multiclass mistake: a second class gives no saving throws.
+    for (const a of sh.abilities) if (!a.saveProficient && first.saves.includes(a.id)) add("Missing saving throw proficiency", `${a.id} from ${first.name}`);
+    const later = new Map<string, string>();
+    for (const x of refs.slice(1)) { later.set(x.c.classId, x.el.name); if (x.el.multiclass?.id) later.set(x.el.multiclass.id, x.el.name); }
+    for (const act of r.active) {
+      const k = conceptOf(act.el);
+      if (!k?.startsWith("save:") || !later.has(act.from)) continue;
+      add("Saving throw proficiency without a rule giving it", `${act.el.name} from ${later.get(act.from)} (first class ${first.name} gives ${first.saves.join(" and ")}; a second class gives none)`);
     }
     // The first class's training (a multiclass gains less, so only the first class is checked): armor, weapon
     // categories and named tools, as the class table gives them.
@@ -177,8 +169,13 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   }
 
   // Ability scores: no higher than 20 unless a feature or an item raises the limit.
-  const raised = has(/primal champion|epic boon|^boon of|belt of|headband|tome of|manual of|ioun|amulet of health/i) || ch.inventory.some((i) => i.attuned);
-  for (const a of sh.abilities) if (a.score > 20 && !raised && a.score > ch.abilityBase[a.id]) add("Ability score above 20", `${a.id} ${a.score}`);
+  // A score above 20 needs a named part that raises the maximum (Primal Champion, an Epic Boon) or sets the score (a
+  // Belt of Giant Strength); the stat book already stops increases at the maximum, so this catches a bypass.
+  for (const a of sh.abilities) {
+    const max = 20 + r.stats.parts(`${a.id}:max`).reduce((t, p) => t + p.value, 0);
+    const set = r.stats.parts(`${a.id}:score:set`).reduce((t, p) => Math.max(t, p.value), 0);
+    if (a.score > Math.max(max, set, ch.abilityBase[a.id])) add("Ability score above its maximum", `${a.id} ${a.score} (maximum ${max}${set ? `, set to ${set}` : ""})`);
+  }
   for (const a of sh.abilities) if (a.score < 1) add("Ability score below 1", `${a.id} ${a.score}`);
 
   // Multiclass requirements: 13 in the abilities each class names (2014), or in its primary ability (2024).
@@ -335,41 +332,27 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   const body = worn.find((x) => !/shield/i.test(x.el.name) && !/shield/i.test(x.el.setters.armor?.value ?? ""));
   const shield = worn.find((x) => /shield/i.test(x.el.name) || /shield/i.test(x.el.setters.armor?.value ?? ""));
   const dex = mod("dexterity");
-  let ac: number | undefined;
+  // Worn armor: its base and Dexterity cap from the armor table, not from the content. Everything else that changes
+  // AC (an unarmored defense, natural armor, a shield, a fighting style, an item) is a named part of a stat; AC above
+  // what the table gives, with no part explaining it, is the finding.
+  const misc = [...r.stats.parts("ac:misc"), ...r.stats.parts("ac")];
+  const shieldAc = shield ? 2 + (shield.i.magic ?? 0) : 0;
+  const miscSum = misc.reduce((t, p) => t + p.value, 0);
   if (body) {
     const row = ARMOR.find(([re]) => re.test(body.el.name.replace(/^\+\d\s*/, "")));
     if (row) {
-      const [, base, cap, str] = row;
-      ac = base + (cap === undefined ? dex : cap === 0 ? 0 : Math.min(cap === 2 ? Math.max(2, r.stats.get("ac:armored:dexterity:cap")) : cap, dex)) + (body.i.magic ?? 0) + (Number(body.el.setters.armorClassBonus?.value) || 0);
-      if (str && score("strength").score < str) {
-        const want = (sh.speed + 10);
-        void want;
-      }
+      const [, base, cap] = row;
+      const dexPart = cap === undefined ? dex : cap === 0 ? 0 : Math.min(cap === 2 ? Math.max(2, r.stats.get("ac:armored:dexterity:cap")) : cap, dex);
+      const want = base + dexPart + (body.i.magic ?? 0) + (Number(body.el.setters.armorClassBonus?.value) || 0) + r.stats.get("ac:armored:enhancement") + r.stats.get("ac:armored:misc") + shieldAc + miscSum;
+      if (sh.ac.value !== want) add("Armor class", `${sh.ac.value}, the armor table gives ${want} (${body.el.name} ${base}, Dex ${dexPart}${shieldAc ? `, shield ${shieldAc}` : ""}${misc.map((p) => `, ${p.from} ${p.value}`).join("")})`);
     }
   } else {
-    const opts = [10 + dex];
-    if (has(/^unarmored defense/i) && refs.some((x) => /barbarian/i.test(x.el.name))) opts.push(10 + dex + mod("constitution"));
-    if (has(/^unarmored defense/i) && refs.some((x) => /monk/i.test(x.el.name)) && !shield) opts.push(10 + dex + mod("wisdom"));
-    // Draconic Resilience: 13 + Dex in 2014, 10 + Dex + Cha in 2024.
-    if (has(/draconic resilience/i)) opts.push(r.active.some((a) => /draconic resilience/i.test(a.el.name) && isModern(a.el)) ? 10 + dex + mod("charisma") : 13 + dex);
-    if (has(/^dazzling footwork/i) && !shield) opts.push(10 + dex + mod("charisma"));
-    // Dragon Hide (feat): 13 + Dex without armor.
-    if (has(/^dragon hide$/i)) opts.push(13 + dex);
-    // Natural armor by species (Volo's, Mordenkainen's, Locathah Rising, The Tortle Package, Guildmasters' Guide).
-    const race = lc(reg.get(ch.race ?? "")?.name ?? "");
-    const NATURAL: [RegExp, () => number][] = [[/lizardfolk/, () => 13 + dex], [/locathah/, () => 12 + dex], [/tortle/, () => 17], [/loxodon/, () => 12 + mod("constitution")], [/autognome|warforged/, () => 13 + dex], [/thri-?kreen/, () => 13 + dex]];
-    const nat = NATURAL.find(([re]) => re.test(race));
-    if (nat && has(/natural armor|armored casing|chameleon carapace|integrated protection/i)) opts.push(nat[1]());
-    ac = Math.max(...opts);
-  }
-  if (ac !== undefined) {
-    if (shield) ac += 2 + (shield.i.magic ?? 0);
-    if (body && has(/^defense$/i)) ac += 1;
-    if (has(/integrated protection/i)) ac += 1;
-    // Mariner fighting style (Unearthed Arcana): +1 without heavy armor or a shield.
-    if (has(/^mariner$/i) && !shield && !/heavy/i.test(body?.el.setters.armor?.value ?? "")) ac += 1;
-    const known = has(/bladesong|warforged|integrated protection|shield of faith|ring of protection|cloak of protection|bracers of defense|soul of the forge|defensive duelist|dual wielder|elven accuracy/i) || ch.inventory.some((i) => i.attuned) || (ch.customStats ?? []).length > 0;
-    if (sh.ac.value !== ac && !known) add("Armor class", `${sh.ac.value}, the armor tables give ${ac} (${sh.ac.parts.join(", ")})`);
+    const calc = r.stats.parts("ac:calculation");
+    const floor = 10 + dex + shieldAc + miscSum;
+    const best = Math.max(10 + dex, r.stats.get("ac:calculation")) + shieldAc + miscSum;
+    if (sh.ac.value < floor) add("Armor class", `${sh.ac.value}, below 10 + Dex${shieldAc ? " + shield" : ""} (${floor})`);
+    else if (sh.ac.value > floor && !calc.length) add("Armor class", `${sh.ac.value} with no armor and nothing giving another calculation (10 + Dex gives ${floor})`);
+    else if (sh.ac.value !== best) add("Armor class", `${sh.ac.value}, the parts give ${best} (${calc.map((p) => `${p.from} ${p.value}`).join(", ") || `10 + Dex ${10 + dex}`})`);
   }
   if (body) {
     const kind = lc(body.el.setters.armor?.value ?? "");
@@ -392,10 +375,11 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const m = finesse ? Math.max(dex, mod("strength")) : ranged ? dex : mod("strength");
     const proficient = !/not proficient/.test(a.notes);
     const magic = (it?.magic ?? 0) + (Number(el.setters.attackBonus?.value) || 0);
-    const archery = ranged && has(/^archery$/i) ? 2 : 0;
-    const want = m + (proficient ? sh.proficiency : 0) + magic + archery;
-    const extra = has(/fighting style|blessed warrior|druidic warrior|pact of the blade|hex warrior|bladesong|elven accuracy|marksman/i);
-    if (a.bonus !== want && !extra) add("Weapon attack bonus", `${a.name}: +${a.bonus}, the rules give +${want}`);
+    // Fighting styles, features and items add to every attack of a kind: named parts of "ranged:attack",
+    // "melee:attack" and "attack".
+    const parts = [...r.stats.parts(`${ranged ? "ranged" : "melee"}:attack`), ...r.stats.parts("attack")];
+    const want = m + (proficient ? sh.proficiency : 0) + magic + parts.reduce((t, p) => t + p.value, 0);
+    if (a.bonus !== want && !(a.id && ch.attackEdits?.[a.id]?.bonusAdjust)) add("Weapon attack bonus", `${a.name}: +${a.bonus}, the rules give +${want}${parts.length ? ` (with ${parts.map((p) => `${p.from} ${p.value}`).join(", ")})` : ""}`);
   }
   return out;
 }

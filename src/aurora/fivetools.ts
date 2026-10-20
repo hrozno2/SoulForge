@@ -758,7 +758,7 @@ function cellNumber(v: unknown): number {
 }
 
 function tableColumn(c: J, re: RegExp): number[] | undefined {
-  for (const g of (c.classTableGroups as J[]) ?? []) {
+  for (const g of [...((c.classTableGroups as J[]) ?? []), ...((c.subclassTableGroups as J[]) ?? [])]) {
     const idx = (g.colLabels ?? []).findIndex((l: string) => re.test(stripTags(l)));
     if (idx >= 0 && g.rows) return (g.rows as J[]).map((r) => cellNumber(r[idx]));
   }
@@ -767,6 +767,72 @@ function tableColumn(c: J, re: RegExp): number[] | undefined {
 
 function deltas(totals: number[]): number[] {
   return totals.map((v, i) => v - (i === 0 ? 0 : totals[i - 1]));
+}
+
+/**
+ * A class's or a subclass's spellcasting (the Eldritch Knight and the Arcane Trickster cast too), from the same
+ * fields: the ability, the caster progression, the cantrip, known and prepared progressions, and the slot table.
+ * Tables become per-level stat steps so everything flows through the same rules. `shares`: the caster's levels
+ * count toward the multiclass spell slots.
+ */
+function castingRules(c: J, name: string, lists: string[], classLevel: string): { spellcasting?: AElement["spellcasting"]; rules: ARule[]; shares: boolean } {
+  const rules: ARule[] = [];
+  if (!c.spellcastingAbility && !c.casterProgression) return { rules, shares: false };
+  const lname = name.toLowerCase();
+  let spellcasting: AElement["spellcasting"];
+  {
+    const prepared = !!(c.preparedSpells || c.preparedSpellsProgression);
+    spellcasting = { name, ability: cap(abilFull(c.spellcastingAbility ?? "int")), prepare: prepared, list: lists, extendLists: [] };
+    const key = `${lname}:spellcasting`;
+    const rows = ([...((c.classTableGroups as J[]) ?? []), ...((c.subclassTableGroups as J[]) ?? [])]).find((g) => g.rowsSpellProgression)?.rowsSpellProgression as number[][] | undefined;
+    if (c.casterProgression === "pact" || tableColumn(c, /^slot level/)) {
+      const count = tableColumn(c, /^spell slots/) ?? [];
+      const slotLevel = tableColumn(c, /^slot level/) ?? [];
+      let prevVec = Array(9).fill(0) as number[];
+      count.forEach((n, i) => {
+        const level = i + 1;
+        const vec = Array(9).fill(0) as number[];
+        if (slotLevel[i]) vec[slotLevel[i] - 1] = n;
+        vec.forEach((v, j) => { if (v - prevVec[j]) rules.push({ kind: "stat", name: `${key}:slots:${j + 1}`, value: String(v - prevVec[j]), level }); });
+        const dc = n - (i ? count[i - 1] : 0); if (dc) rules.push({ kind: "stat", name: `${key}:slots:count`, value: String(dc), level });
+        const dl = (slotLevel[i] ?? 0) - (i ? (slotLevel[i - 1] ?? 0) : 0); if (dl) rules.push({ kind: "stat", name: `${key}:slot`, value: String(dl), level });
+        prevVec = vec;
+      });
+    } else if (rows) {
+      let prev = Array(9).fill(0) as number[];
+      rows.forEach((row, i) => {
+        row.forEach((v, j) => { if (v - prev[j]) rules.push({ kind: "stat", name: `${key}:slots:${j + 1}`, value: String(v - prev[j]), level: i + 1 }); });
+        prev = row;
+      });
+    }
+    const cant = (c.cantripProgression as number[] | undefined) ?? tableColumn(c, /^cantrips/);
+    if (cant) deltas(cant).forEach((n, i) => { if (n > 0) rules.push({ kind: "select", type: "Spell", name: `Cantrip (${name})`, supports: "$(spellcasting:list), 0", number: n, level: i + 1, spellcasting: name }); });
+    const known = (c.spellsKnownProgression as number[] | undefined) ?? tableColumn(c, /^spells known/);
+    const fixed = c.spellsKnownProgressionFixed as number[] | undefined;
+    const knownSteps = fixed ?? (known ? deltas(known) : undefined);
+    if (knownSteps) knownSteps.forEach((n, i) => { if (n > 0) rules.push({ kind: "select", type: "Spell", name: prepared && fixed ? `Spellbook (${name})` : `Spell known (${name})`, supports: "$(spellcasting:list), $(spellcasting:slots)", number: n, level: i + 1, spellcasting: name }); });
+    const prep = (c.preparedSpellsProgression as number[] | undefined) ?? tableColumn(c, /^prepared spells/);
+    if (prep) deltas(prep).forEach((n, i) => { if (n) rules.push({ kind: "stat", name: `${key}:prepare`, value: String(n), level: i + 1 }); });
+    else if (typeof c.preparedSpells === "string") {
+      for (const tok of String(c.preparedSpells).split("+")) {
+        const t = tok.trim();
+        if (/<\$level\$>\s*\/\s*2/.test(t)) rules.push({ kind: "stat", name: `${key}:prepare`, value: `level:${classLevel}:half` });
+        else if (/<\$level\$>/.test(t)) rules.push({ kind: "stat", name: `${key}:prepare`, value: `level:${classLevel}` });
+        else { const m = t.match(/<\$(\w+)_mod\$>/); if (m) rules.push({ kind: "stat", name: `${key}:prepare`, value: `${abilFull(m[1])}:modifier` }); }
+      }
+    }
+    // Share slots with other classes when multiclassing.
+    const prog = c.casterProgression as string | undefined;
+    if (prog === "full" || prog === "1/2" || prog === "1/3" || prog === "artificer") {
+      for (let l = 1; l <= 20; l++) {
+        const cnt = (lvl: number) => (prog === "full" ? lvl : prog === "1/2" ? (c.edition === "one" ? Math.ceil(lvl / 2) : Math.floor(lvl / 2)) : prog === "artificer" ? Math.ceil(lvl / 2) : lvl < 3 ? 0 : Math.floor(lvl / 3));
+        const d = cnt(l) - cnt(l - 1);
+        if (d) rules.push({ kind: "stat", name: "multiclass:spellcasting:level", value: String(d), level: l, requirements: "ID_INTERNAL_GRANT_MULTICLASS" });
+      }
+    }
+  }
+  const prog = c.casterProgression as string | undefined;
+  return { spellcasting, rules, shares: prog === "full" || prog === "1/2" || prog === "1/3" || prog === "artificer" };
 }
 
 function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: AElement[]): void {
@@ -831,59 +897,10 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   if (subLevel !== undefined) rules.push({ kind: "select", type: "Archetype", name: c.subclassTitle ?? `${c.name} Subclass`, supports: subTag, number: 1, level: subLevel });
 
   // Spellcasting: tables become per-level stat steps so everything flows through the same rules.
-  let spellcasting: AElement["spellcasting"];
-  if (c.spellcastingAbility || c.casterProgression) {
-    const prepared = !!(c.preparedSpells || c.preparedSpellsProgression);
-    spellcasting = { name: c.name, ability: cap(abilFull(c.spellcastingAbility ?? "int")), prepare: prepared, list: [c.name], extendLists: [] };
-    const key = `${lname}:spellcasting`;
-    const rows = (c.classTableGroups as J[] | undefined)?.find((g) => g.rowsSpellProgression)?.rowsSpellProgression as number[][] | undefined;
-    if (c.casterProgression === "pact" || tableColumn(c, /^slot level/)) {
-      const count = tableColumn(c, /^spell slots/) ?? [];
-      const slotLevel = tableColumn(c, /^slot level/) ?? [];
-      let prevVec = Array(9).fill(0) as number[];
-      count.forEach((n, i) => {
-        const level = i + 1;
-        const vec = Array(9).fill(0) as number[];
-        if (slotLevel[i]) vec[slotLevel[i] - 1] = n;
-        vec.forEach((v, j) => { if (v - prevVec[j]) rules.push({ kind: "stat", name: `${key}:slots:${j + 1}`, value: String(v - prevVec[j]), level }); });
-        const dc = n - (i ? count[i - 1] : 0); if (dc) rules.push({ kind: "stat", name: `${key}:slots:count`, value: String(dc), level });
-        const dl = (slotLevel[i] ?? 0) - (i ? (slotLevel[i - 1] ?? 0) : 0); if (dl) rules.push({ kind: "stat", name: `${key}:slot`, value: String(dl), level });
-        prevVec = vec;
-      });
-    } else if (rows) {
-      let prev = Array(9).fill(0) as number[];
-      rows.forEach((row, i) => {
-        row.forEach((v, j) => { if (v - prev[j]) rules.push({ kind: "stat", name: `${key}:slots:${j + 1}`, value: String(v - prev[j]), level: i + 1 }); });
-        prev = row;
-      });
-    }
-    const cant = (c.cantripProgression as number[] | undefined) ?? tableColumn(c, /^cantrips/);
-    if (cant) deltas(cant).forEach((n, i) => { if (n > 0) rules.push({ kind: "select", type: "Spell", name: `Cantrip (${c.name})`, supports: "$(spellcasting:list), 0", number: n, level: i + 1, spellcasting: c.name }); });
-    const known = (c.spellsKnownProgression as number[] | undefined) ?? tableColumn(c, /^spells known/);
-    const fixed = c.spellsKnownProgressionFixed as number[] | undefined;
-    const knownSteps = fixed ?? (known ? deltas(known) : undefined);
-    if (knownSteps) knownSteps.forEach((n, i) => { if (n > 0) rules.push({ kind: "select", type: "Spell", name: prepared && fixed ? `Spellbook (${c.name})` : `Spell known (${c.name})`, supports: "$(spellcasting:list), $(spellcasting:slots)", number: n, level: i + 1, spellcasting: c.name }); });
-    const prep = (c.preparedSpellsProgression as number[] | undefined) ?? tableColumn(c, /^prepared spells/);
-    if (prep) deltas(prep).forEach((n, i) => { if (n) rules.push({ kind: "stat", name: `${key}:prepare`, value: String(n), level: i + 1 }); });
-    else if (typeof c.preparedSpells === "string") {
-      for (const tok of String(c.preparedSpells).split("+")) {
-        const t = tok.trim();
-        if (/<\$level\$>\s*\/\s*2/.test(t)) rules.push({ kind: "stat", name: `${key}:prepare`, value: `level:${lname}:half` });
-        else if (/<\$level\$>/.test(t)) rules.push({ kind: "stat", name: `${key}:prepare`, value: `level:${lname}` });
-        else { const m = t.match(/<\$(\w+)_mod\$>/); if (m) rules.push({ kind: "stat", name: `${key}:prepare`, value: `${abilFull(m[1])}:modifier` }); }
-      }
-    }
-    // Share slots with other classes when multiclassing.
-    const prog = c.casterProgression as string | undefined;
-    if (prog === "full" || prog === "1/2" || prog === "1/3" || prog === "artificer") {
-      gained.push({ kind: "grant", type: "Grants", id: "ID_INTERNAL_GRANT_MULTICLASS" });
-      for (let l = 1; l <= 20; l++) {
-        const cnt = (lvl: number) => (prog === "full" ? lvl : prog === "1/2" ? (c.edition === "one" ? Math.ceil(lvl / 2) : Math.floor(lvl / 2)) : prog === "artificer" ? Math.ceil(lvl / 2) : lvl < 3 ? 0 : Math.floor(lvl / 3));
-        const d = cnt(l) - cnt(l - 1);
-        if (d) rules.push({ kind: "stat", name: "multiclass:spellcasting:level", value: String(d), level: l, requirements: "ID_INTERNAL_GRANT_MULTICLASS" });
-      }
-    }
-  }
+  const casting = castingRules(c, c.name, [c.name], lname);
+  const spellcasting = casting.spellcasting;
+  rules.push(...casting.rules);
+  if (casting.shares) gained.push({ kind: "grant", type: "Grants", id: "ID_INTERNAL_GRANT_MULTICLASS" });
   rules.push({ kind: "grant", type: "Grants", id: "ID_INTERNAL_GRANT_MULTICLASS", requirements: mcId });
 
   const reqObj = (mc.requirements ?? {}) as J;
@@ -909,7 +926,11 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
     }
     srules.push(...additionalSpellRules(s.additionalSpells, s.name, s.source).rules);
-    out.push(base(sid, s.name, "Archetype", srcName(ctx, s.source), { supports: [subTag], rules: srules, description: entriesHtml(s.entries ?? []) }));
+    // A subclass that casts (Eldritch Knight, Arcane Trickster): its list is the class whose spells it expands with.
+    const expandedFrom = [...JSON.stringify(s.additionalSpells ?? []).matchAll(/class=([A-Za-z ]+)/g)].map((m) => m[1].trim());
+    const subCasting = castingRules(s, s.shortName ?? s.name, expandedFrom.length ? [...new Set(expandedFrom)] : [c.name], lname);
+    srules.push(...subCasting.rules);
+    out.push(base(sid, s.name, "Archetype", srcName(ctx, s.source), { supports: [subTag], rules: srules, spellcasting: subCasting.spellcasting, description: entriesHtml(s.entries ?? []) }));
   }
 }
 

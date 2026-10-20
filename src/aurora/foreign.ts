@@ -11,6 +11,7 @@ import { hitDieOf, resolve, stillToChoose } from "./engine";
 import { buildSheet, preparePool } from "./sheet";
 import { ItemIndex, resolveChosenTools } from "./startingEquipment";
 import { isModern, isPlaytest } from "./edition";
+import { conceptOf } from "../engine/concepts";
 
 type Json = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -57,6 +58,10 @@ export interface FileNumbers {
   saveProficient?: AbilityId[];
   languages?: string[];
   tools?: string[];
+  initiative?: number;
+  speed?: number;
+  /** Weapon attacks the file lists, by name, with their bonus to hit. */
+  attacks?: { name: string; bonus: number }[];
 }
 
 /** Every element with this name, by the closest match first: exact, then without parentheses, then without spaces. */
@@ -71,8 +76,17 @@ function findAllByName(reg: ARegistry, types: string[], name: string): AElement[
   if (hits.length) return hits;
   // "Featherfalling" and "Feather Falling", "lightcrossbow" and "Light Crossbow" are the same thing.
   const tight = want.replace(/ /g, "");
-  return pool.filter((e) => normalize(e.name).replace(/ /g, "") === tight);
+  const squeezed = pool.filter((e) => normalize(e.name).replace(/ /g, "") === tight);
+  if (squeezed.length) return squeezed;
+  // An option named for its effect with the thing in brackets: "Fire’s Burn (Fire Giant)" is the Fire Giant ancestry.
+  return pool.filter((e) => normalizeFull(/\(([^)]+)\)\s*$/.exec(e.name)?.[1] ?? "") === full);
 }
+
+/**
+ * Of several elements for one name, the primary provider's, as the lists show them: Aurora's content where it has
+ * the element, 5e.tools' otherwise (docs/ENGINE-PLAN.md 3.1, one primary by a fixed priority).
+ */
+const primary = (els: AElement[]) => { const a = els.filter((e) => e.origin !== "5etools"); return a.length ? a : els; };
 
 /** The element of that name from the character's edition when both exist (2024 when the file does not say). */
 function findByName(reg: ARegistry, types: string[], name: string, edition?: Edition): AElement | undefined {
@@ -81,7 +95,7 @@ function findByName(reg: ARegistry, types: string[], name: string, edition?: Edi
   const official = all.filter((e) => !isPlaytest(e));
   const pool = official.length ? official : all;
   const same = pool.filter((e) => isModern(e) === ((edition ?? "2024") === "2024"));
-  const list = same.length ? same : pool;
+  const list = primary(same.length ? same : pool);
   return list[list.length - 1];
 }
 
@@ -123,7 +137,7 @@ function classByFeatures(reg: ARegistry, name: string, featureNames: Set<string>
     let n = 0;
     for (const name of grantedNames(reg, c)) if (featureNames.has(name)) n++;
     // Tasha's Cauldron reprints the Eberron artificer with changes; the newer one wins a tie.
-    return n - (isPlaytest(c) ? 0.5 : 0) + (edition && isModern(c) === (edition === "2024") ? 0.25 : 0) - (/rising from the last war/i.test(c.source) ? 0.1 : 0);
+    return n - (isPlaytest(c) ? 0.5 : 0) + (edition && isModern(c) === (edition === "2024") ? 0.25 : 0) - (/rising from the last war/i.test(c.source) ? 0.1 : 0) + (c.origin !== "5etools" ? 0.05 : 0);
   };
   return [...all].sort((a, b) => score(b) - score(a))[0];
 }
@@ -266,6 +280,32 @@ function fuzzyItem(reg: ARegistry, name: string, edition?: Edition): AElement | 
   return bestD <= max && best.length === 1 ? pickOf(best[0]) : undefined;
 }
 
+const COUNT_WORDS: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twenty: 20 };
+/** A plural noun to its singular: "potions" "potion", "javelins" "javelin", "flasks" "flask", "torches" "torch". */
+const singular = (w: string) => (/axes$/i.test(w) ? w.slice(0, -1) : /(ch|sh|x|ss)es$/i.test(w) ? w.slice(0, -2) : /ies$/i.test(w) ? `${w.slice(0, -3)}y` : /[^s]s$/i.test(w) ? w.slice(0, -1) : w);
+
+/**
+ * An item as a sheet writes it in words, to the item and how many: "2 potions of healing" is 2 Potion of Healing,
+ * "five (5) javelins" 5 Javelin, "ammunition: arrows (20)" 20 Arrow, "arcane focus: crystal" a Crystal.
+ */
+export function textItem(raw: string): { name: string; qty: number } {
+  let t = raw.trim();
+  let qty = 1;
+  const focus = /^(?:arcane|druidic|holy) (?:focus|symbol)\s*:\s*(.+)$|^holy symbol\s*:\s*(.+)$|^ammunition\s*:\s*(.+)$/i.exec(t);
+  if (focus) t = (focus[1] ?? focus[2] ?? focus[3]).trim();
+  const tail = /^(.*\S)\s*\((\d+)\)$/.exec(t);
+  if (tail) { t = tail[1]; qty = Number(tail[2]); }
+  const lead = /^(\d+|a|an|one|two|three|four|five|six|seven|eight|nine|ten|twenty)\s+(?:\((\d+)\)\s+)?(.+)$/i.exec(t);
+  if (lead) { qty = Number(lead[2] ?? (/^\d+$/.test(lead[1]) ? lead[1] : COUNT_WORDS[lead[1].toLowerCase()])) || qty; t = lead[3]; }
+  // The head noun is the last word before "of" ("potions of healing"), or the last word.
+  const of = /^(.+?)(\s+of\s+.+)$/i.exec(t);
+  const head = of ? of[1] : t;
+  const words = head.split(/\s+/);
+  if (qty > 1 || /s$/i.test(words[words.length - 1])) words[words.length - 1] = singular(words[words.length - 1]);
+  t = words.join(" ") + (of ? of[2] : "");
+  return { name: t, qty };
+}
+
 class Importer {
   ch: Character = newCharacter();
   notes: string[] = [];
@@ -371,6 +411,10 @@ class Importer {
 
   addItem(name: string, qty: number, equipped: boolean, attuned: boolean, extra: { base?: string; magic?: number; bonuses?: { stat: string; value: number }[]; edition?: Edition } = {}): void {
     const edition = extra.edition ?? this.edition;
+    // How sheets write a count, a plural or a focus: "2 potions of healing", "five (5) javelins", "ammunition:
+    // arrows (20)", "arcane focus: crystal", "holy symbol: amulet". The item itself, and how many.
+    const spoken = textItem(name);
+    if (spoken.name !== name && !findByName(this.reg, ITEM_TYPES, name, edition)) { name = spoken.name; if (qty <= 1) qty = spoken.qty; }
     // "Crossbow Bolts (20)" and "Blowgun Needles (50)" are a count of the item.
     const count = /^(.*\S)\s*\((\d{1,4})\)$/.exec(name);
     if (count && qty <= 1) {
@@ -584,8 +628,12 @@ class Importer {
       const counts = new Map<string, number>();
       for (const o of open.options) counts.set(normalize(o.name), (counts.get(normalize(o.name)) ?? 0) + 1);
       this.ambiguous = new Set([...counts].filter(([, n]) => n > 1).map(([k]) => k));
+      // Something the character already has, under any provider's id (Common from the species and Common offered
+      // by the background), is not taken again.
+      const hadConcepts = new Set([...r.active].map((a) => conceptOf(a.el)).filter(Boolean));
+      const had = (o: AElement) => r.ids.has(o.id) || (!!conceptOf(o) && hadConcepts.has(conceptOf(o)));
       const candidates = open.options
-        .filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !r.ids.has(o.id) && !spent(o))
+        .filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !had(o) && !spent(o))
         .map((o) => ({ o, sc: this.score(`${open.key} ${open.rule.name}`, o.name, scores, o) + this.trainingScore(o) + this.spellListScore(o) + this.grantedSpellScore(o) + this.resistScore(o, r.ids) + (own.has(o.source) ? 0.5 : 0) }))
         .sort((a, b) => b.sc - a.sc);
       const best = candidates[0] ?? { o: open.options.find((o) => !taken.has(o.id)), sc: 0 };
@@ -616,6 +664,17 @@ class Importer {
     for (const a of sh.abilities) diff(`${a.id.charAt(0).toUpperCase()}${a.id.slice(1)} saving throw`, f.saves?.[a.id], a.save);
     for (const k of sh.skills) diff(`${k.name.charAt(0).toUpperCase()}${k.name.slice(1)}`, f.skills?.[k.name.toLowerCase()], k.bonus);
     diff("Passive Perception", f.passivePerception, sh.skills.find((k) => /^perception$/i.test(k.name))?.passive);
+    diff("Initiative", f.initiative, sh.initiative);
+    diff("Speed", f.speed, sh.speed);
+    for (const at of f.attacks ?? []) {
+      // The line of the same name first ("Scimitar" is the plain one, "+2 Magic Scimitar" the magic one).
+      const bare = tight(at.name.replace(/^\+\d\s*(magic\s*)?/i, ""));
+      const named = (x: { name: string }) => tight(x.name.replace(/^\+\d\s*/, ""));
+      const magic = /^\+\d/.test(at.name);
+      const ours = sh.attacksCarried.find((x) => named(x) === bare && /^\+\d/.test(x.name) === magic) ?? sh.attacksCarried.find((x) => named(x) === bare) ?? sh.attacksCarried.find((x) => tight(x.name).includes(bare));
+      if (ours) diff(`${at.name} attack`, at.bonus, ours.bonus);
+      else out.push(`${at.name} attack: in the file, not on the Soul Forge sheet`);
+    }
     const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
     const LV = ["no proficiency", "proficiency", "expertise"];
     if (f.skillLevels) for (const k of sh.skills) {
@@ -758,7 +817,7 @@ class Importer {
     const pool = fits.length ? fits : all;
     // The item's own edition when the file says (a 2014 spell on a 2024 character), else the character's.
     const sameEd = pool.filter((e) => isModern(e) === ((w.edition ?? this.edition ?? "2024") === "2024"));
-    const list = sameEd.length ? sameEd : pool;
+    const list = fits.length ? (sameEd.length ? sameEd : pool) : primary(sameEd.length ? sameEd : pool);
     // Several versions of one feat ("Resilient (Wisdom)", "Resilient (Strength)"): the one the file's data points to.
     const rank = (e: AElement) => {
       const inner = (/\((.*)\)\s*$/.exec(e.name)?.[1] ?? "").toLowerCase();
@@ -1313,6 +1372,169 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   };
   // A caster's DC and attack only mean something when the character casts.
   return b.finish(scores, { hpMax: Number.isFinite(hpMax) && hpMax > 0 ? hpMax : undefined, numbers });
+}
+
+// ---------------------------------------------------------------- FastCharacter
+
+/** True for the text of a FastCharacter (fastcharacter.com) sheet. */
+export function isFastCharacterText(text: string): boolean {
+  return /fastcharacter\.com/i.test(text) && /Class & Level:/.test(text);
+}
+
+/**
+ * FastCharacter's own spellings, to the books': "Duelling" is the Dueling style, "Cthonic" the Chthonic tiefling,
+ * "Drudic" Druidic.
+ */
+const FC_SPELLING: Record<string, string> = { duelling: "Dueling", cthonic: "Chthonic", drudic: "Druidic" };
+const fcSpell = (s: string) => s.replace(/\b(duelling|cthonic|drudic)\b/gi, (w) => FC_SPELLING[w.toLowerCase()] ?? w);
+
+/**
+ * A FastCharacter sheet (the text format of fastcharacter.com's 2024 generator, saved as text or HTML text). It
+ * names the species, class, subclass, background, feats, trainings and spells, and states the numbers it worked
+ * out, which become the answer key the import compares against.
+ */
+export function importFastCharacter(text: string, reg: ARegistry): ForeignImport {
+  const b = new Importer(reg);
+  b.edition = /PHB 2024/.test(text) ? "2024" : "2014";
+  const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const field = (label: string) => fcSpell(lines.find((l) => l.startsWith(`${label}:`))?.slice(label.length + 1).trim() ?? "");
+  b.ch.name = field("Name");
+  b.ch.info.alignment = field("Alignment");
+  const xp = Number(field("Experience").replace(/[^\d]/g, ""));
+  if (xp > 0) b.ch.xp = xp;
+
+  // Class & Level: "Druid 17 (Circle of the Sea)".
+  const cl = /^(.+?)\s+(\d+)\s*(?:\((.+)\))?$/.exec(field("Class & Level"));
+  const featureNames = new Set<string>();
+  if (cl) {
+    const cls = classByFeatures(reg, cl[1], featureNames, b.edition);
+    if (cls) { b.ch.classes.push({ classId: cls.id, level: Math.min(20, Number(cl[2])) }); b.matched.push(`${cls.name} (class)`); }
+    else b.missing.push(`${cl[1]} (class)`);
+    if (cl[3]) b.want(["Archetype"], cl[3], "subclass");
+  }
+  // Species: "Orc", "Wood Elf", "Tiefling (Abyssal)", "Goliath (Hill Giant Ancestry)", "Dragonborn (Red Dragon Ancestry)".
+  let sp = field("Race/Ancestry/Heritage");
+  const anc = /^(.+?)\s*\((.+?)\s+ancestry\)$/i.exec(sp);
+  if (anc) sp = `${anc[1]} (${anc[2]})`;
+  const lead = /^(\w+)\s+(elf|gnome|dwarf|halfling)$/i.exec(sp);
+  if (lead) sp = `${lead[2]}; ${sp}`;
+  if (sp && !b.setSpecies(sp)) b.missing.push(`${sp} (species)`);
+  const bgName = field("Background");
+  const bg = findByName(reg, ["Background"], bgName, b.edition);
+  if (bg) { b.ch.background = bg.id; b.matched.push(`${bg.name} (background)`); } else if (bgName) { b.missing.push(`${bgName} (background)`); b.customBackground(); }
+
+  // Ability scores ("Strength 10") and the numbers FastCharacter worked out.
+  const scores: Partial<Record<AbilityId, number>> = {};
+  const saves: Partial<Record<AbilityId, number>> = {};
+  const skills: Record<string, number> = {};
+  const skillLevels: Record<string, number> = {};
+  const saveProficient: AbilityId[] = [];
+  for (const l of lines) {
+    let m = /^(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) (\d+)$/.exec(l);
+    if (m) scores[m[1].toLowerCase() as AbilityId] = Number(m[2]);
+    m = /^([+-]\d+) \.\.\. (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) Saving Throws( \*)?$/.exec(l);
+    if (m) { const a = m[2].toLowerCase() as AbilityId; saves[a] = Number(m[1]); if (m[3]) { saveProficient.push(a); b.hints.saves.add(a); } }
+    m = /^([+-]\d+) \.\.\. (.+?) Skill\s*(\*{1,2})?$/.exec(l);
+    if (m) {
+      const k = m[2].toLowerCase();
+      skills[k] = Number(m[1]);
+      skillLevels[k] = m[3]?.length === 2 ? 2 : m[3] ? 1 : 0;
+      if (m[3]) b.hints.skills.add(k);
+      if (m[3]?.length === 2) b.hints.expertise.add(k);
+    }
+  }
+  const num = (re: RegExp) => { for (const l of lines) { const m = re.exec(l); if (m) return Number(m[1].replace(/,/g, "")); } return undefined; };
+
+  // Feats: "Lucky Feat [PHB 2024, p. 201]: ..." and the fighting style, "Fighting Style: Duelling [PHB 2024, p. 209]".
+  // The sheet repeats a feature's line where it is used (a fighting style under the feats and the class); each feat
+  // counts once. A style without a page reference ("Fighting Style: Protection. Use reaction...") is one too.
+  const featsSeen = new Set<string>();
+  const feat = (types: string[], name: string) => { const k = normalize(name); if (featsSeen.has(k)) return; featsSeen.add(k); b.want(types, name, "feat"); };
+  for (const l of lines) {
+    let m = /^(.+?) Feat \[/.exec(l);
+    if (m) feat(["Feat"], fcSpell(m[1]));
+    m = /^Fighting Style: ([A-Za-z' -]+?)\s*[.[:]/.exec(l);
+    if (m) feat(["Feat", "Class Feature", "Archetype Feature"], fcSpell(m[1]));
+    m = /^• Weapon Mastery \(([^)]+)\)$/.exec(l);
+    if (m && !/\d+ weapons/.test(m[1])) for (const w of m[1].split(",")) b.hints.masteries.add(w.trim().toLowerCase().replace(/[^a-z]/g, ""));
+    // Class and species features by name ("• Primal Order (Warden)"): they settle the choices that offer them.
+    m = /^• ([^(:]+?)(?: \(([^)]*)\))?$/.exec(l);
+    if (m) { b.addName(fcSpell(m[1])); if (m[2] && !/\d/.test(m[2])) b.addName(fcSpell(m[2])); }
+  }
+  // Trainings and languages, as the sheet lists them.
+  const list = (label: string) => fcSpell(lines.find((l) => l.startsWith(`• ${label}:`))?.slice(label.length + 3).trim() ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  for (const t of list("Tools")) b.hints.tools.add(t.replace(/^gaming set \((.+)\)$/i, "$1").replace(/^musical instrument \((.+)\)$/i, "$1").toLowerCase());
+  for (const a of list("Armor")) b.hints.armor.add(a.toLowerCase().replace(/ armor$/, "").replace(/^shields$/, "shield"));
+  for (const w of list("Weapons")) b.hints.weapons.add(w.toLowerCase().split(" ")[0]);
+  const languages = list("Languages");
+  for (const l of languages) b.addLanguage(l);
+
+  // Spells: every one listed is known or prepared (FastCharacter lists the prepared spells).
+  b.preparedKnown = true;
+  for (const l of lines) {
+    const m = /^(?:Cantrips Known|\d+(?:st|nd|rd|th) Level \(\d+ slots?\)): (.+)$/.exec(l);
+    if (!m) continue;
+    for (const raw of m[1].split(",")) {
+      const name = raw.trim();
+      if (!name || /^none$/i.test(name)) continue;
+      b.want(["Spell"], name, "spell");
+      b.prepared.add(normalize(name));
+    }
+  }
+
+  // Equipment: the armor worn is equipped; carried gear and magic items are carried, attuned when marked "(a)".
+  const worn = /^Armor Class \d+ \.\.\. Armor worn: (.+)$/.exec(lines.find((l) => /^Armor Class \d+ \.\.\./.test(l)) ?? "")?.[1] ?? "";
+  for (const w of worn.split(",").map((x) => x.trim()).filter((x) => x && !/^none\b/i.test(x))) b.addItem(w.replace(/^wooden /, ""), 1, true, false);
+  const gear = /^Carried Gear[^:]*:\s*(.+)$/.exec(lines.find((l) => l.startsWith("Carried Gear")) ?? "")?.[1] ?? "";
+  // Commas inside brackets belong to a pack's contents; the load note at the end is not an item.
+  let depth = 0, cur = "";
+  const items: string[] = [];
+  for (const ch of gear.replace(/\(This load.*$/, "")) {
+    if (ch === "(") depth++;
+    if (ch === ")") depth--;
+    if (ch === "," && depth === 0) { items.push(cur.trim()); cur = ""; } else cur += ch;
+  }
+  if (cur.trim()) items.push(cur.trim().replace(/\.$/, ""));
+  const wornNames = new Set(worn.split(",").map((x) => normalize(x.replace(/^wooden /, ""))));
+  for (const it of items) {
+    // A pack's contents in brackets go; a count in brackets stays for the item reader ("ammunition: arrows (20)").
+    const clean = it.replace(/\s*\((?!\d+\)$)[^)]*\)\s*$/, "").replace(/^(?:set of)\s+/i, "").trim();
+    const qty = 1;
+    if (!clean || wornNames.has(normalize(clean))) continue;
+    const pair = /^(.+?) and (\d+ .+)$/.exec(clean);
+    if (pair) { b.addItem(pair[1], qty, false, false); b.addItem(pair[2], 1, false, false); continue; }
+    b.addItem(clean, qty, false, false);
+  }
+  let inMagic = false;
+  for (const l of lines) {
+    if (/^Magic Items/.test(l)) { inMagic = true; continue; }
+    if (inMagic && !l.startsWith("•")) inMagic = false;
+    if (!inMagic) continue;
+    const name = l.replace(/^•\s*/, "");
+    const attuned = /\(a\)$/.test(name);
+    b.addItem(name.replace(/\s*\(a\)$/, "").replace(/\s*\([^)]*\)$/, "").replace(/\bmagic\s+/i, ""), 1, attuned, attuned);
+  }
+  // Coins: "32,505 gold pieces (gp);".
+  for (const [k, word] of [["gp", "gold"], ["sp", "silver"], ["cp", "copper"], ["ep", "electrum"], ["pp", "platinum"]] as const) {
+    const v = num(new RegExp(`^([\\d,]+) ${word} pieces`));
+    if (v) b.ch.coins[k] = v;
+  }
+
+  const numbers: FileNumbers = {
+    ac: num(/^Armor Class (\d+) \.\.\./),
+    hpMax: num(/^(\d+) hit points \.\.\./),
+    proficiency: num(/^• Proficiency Bonus: \+(\d+)$/),
+    spellDc: num(/^Spell Save DC (\d+)$/),
+    spellAttack: num(/^Spell Attack Modifier \+(\d+)$/),
+    passivePerception: num(/^(\d+) \.\.\. Passive Perception$/),
+    initiative: num(/^([+-]\d+) \.\.\. Initiative Modifier$/),
+    speed: num(/^(\d+) ft\. Speed \.\.\./),
+    saves, skills, skillLevels, saveProficient,
+    languages: languages.filter((l) => !/^any/i.test(l)),
+    tools: list("Tools").map((t) => t.replace(/^gaming set \((.+)\)$/i, "$1").replace(/^musical instrument \((.+)\)$/i, "$1")),
+    attacks: lines.map((l) => /^(.+?)\. (?:Melee|Ranged|Melee or Ranged) Weapon Attack: ([+-]\d+) to hit/.exec(l)).filter(Boolean).map((m) => ({ name: m![1], bonus: Number(m![2]) })),
+  };
+  return b.finish(scores, { numbers });
 }
 
 export function importForeignCharacter(data: unknown, reg: ARegistry): ForeignImport {

@@ -1,6 +1,6 @@
 import type { AAppend, AElement, ParsedFile } from "./types";
 import { applyContentFixes } from "./contentFixes";
-import { borrowMechanics, type MechanicsReport } from "../engine/mechanics";
+import { borrowMechanics, checksIncludeInitiative, type MechanicsReport } from "../engine/mechanics";
 
 /** A `supports` filter: `A,B` is AND, `A||B` is OR, `A|B` is any of these ids, `!A` is NOT, parentheses group. */
 type SNode = { t: "and" | "or"; a: SNode[] } | { t: "any"; words: string[] } | { t: "not"; n: SNode };
@@ -150,6 +150,7 @@ export class ARegistry {
     }
     // 5e.tools features whose mechanics are only prose take them from the same feature in Aurora's content.
     this.mechanics = borrowMechanics(this.byId);
+    checksIncludeInitiative(this.byId);
     for (const el of improvementOptions([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
     for (const el of classAsiChoices([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
     for (const el of this.byId.values()) {

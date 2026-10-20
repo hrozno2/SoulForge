@@ -164,6 +164,24 @@ export class StatBook {
     return this.aggregate(name);
   }
 
+  /**
+   * What a statistic's own contributions add up to, one part per contributor (the best of each bonus group only),
+   * with where it came from: the calculators' "parts" (docs/ENGINE-PLAN.md, 3.5).
+   */
+  parts(rawName: string): { from: string; value: number }[] {
+    const list = this.contribs.get(rawName.toLowerCase().trim());
+    if (!list) return [];
+    const out: { from: string; value: number }[] = [];
+    const best = new Map<string, { from: string; value: number }>();
+    for (const c of list) {
+      if (c.inline) continue;
+      const v = this.evalValue(c.value);
+      if (!c.bonus) out.push({ from: c.from, value: v });
+      else if (!best.has(c.bonus) || best.get(c.bonus)!.value < v) best.set(c.bonus, { from: c.from, value: v });
+    }
+    return [...out, ...best.values()].filter((p) => p.value !== 0);
+  }
+
   /** Inline (text) stats such as `feature:damage type`, last one wins. */
   text(name: string): string | undefined {
     const list = this.contribs.get(name.toLowerCase())?.filter((c) => c.inline);

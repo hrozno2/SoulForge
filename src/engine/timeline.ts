@@ -97,6 +97,21 @@ function settleCached(chN: Character, reg: ARegistry, seed: Pass | null, finding
   return pass;
 }
 
+/** One element of one book, whichever provider has it: type, name and book. */
+const TWIN = new WeakMap<object, string>();
+const twinKey = (e: { type: string; name: string; source: string }) => {
+  let k = TWIN.get(e);
+  if (k === undefined) TWIN.set(e, (k = `${e.type}|${e.name.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s+/g, " ").trim()}|${bookKey(e.source ?? "")}`));
+  return k;
+};
+
+/** Options without the second provider's copy of an element the primary provider has (Aurora's, then 5e.tools'). */
+function primaryOptions<T extends { id: string; type: string; name: string; source: string; origin?: string }>(options: T[], chosen: string[]): T[] {
+  if (!options.some((e) => e.origin === "5etools")) return options;
+  const primary = new Set(options.filter((e) => e.origin !== "5etools").map(twinKey));
+  return options.filter((e) => e.origin !== "5etools" || chosen.includes(e.id) || !primary.has(twinKey(e)));
+}
+
 export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved {
   const findings: string[] = [];
   const total = totalLevel(ch);
@@ -114,6 +129,7 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
   for (const st of timeline) for (const s of st.pass.rawSlots) if (!openedAt.has(s.key)) openedAt.set(s.key, st);
 
   const restricted = new Set(ch.sources.map(bookKey));
+  const featsHad = new Set(final.active.filter((a) => a.el.type === "Feat").map((a) => twinKey(a.el)));
   const shared = sharedSlotLevel(final);
   const slots: SelectSlot[] = final.rawSlots.map((s) => {
     if (s.rule.type === "List") return { ...s, options: [], blocked: new Set<string>(), filter: "", listItems: s.rule.items ?? [] };
@@ -126,6 +142,8 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     const filter = resolveSupports(s.rule.supports, s.rule.spellcasting, changeable ? final : then, shared);
     let options = reg.find(s.rule.type, filter);
     if (restricted.size) options = options.filter((e) => !e.source || restricted.has(bookKey(e.source)) || s.chosen.includes(e.id));
+    // One book's element from two providers is one option, the primary's (as in the lists), unless the other was chosen.
+    options = primaryOptions(options, s.chosen);
     const ctx = makeCtx(then, thenSlot.ownerLevel, atLevel(ch, st.level), reg, then.stats);
     const blocked = new Set<string>();
     const nowCtx = changeable ? makeCtx(final, s.ownerLevel, ch, reg, final.stats) : undefined;
@@ -135,7 +153,8 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
       if (!meets(e.requirements, ctx.as?.(e.id) ?? ctx) && !(nowCtx && meets(e.requirements, nowCtx.as?.(e.id) ?? nowCtx))) blocked.add(e.id);
     }
     // A feat the character has from another choice or grant, at any level, is not offered again.
-    if (s.rule.type === "Feat") for (const e of options) if (final.ids.has(e.id) && !s.chosen.includes(e.id)) blocked.add(e.id);
+    // The same feat from the other provider counts as had too.
+    if (s.rule.type === "Feat") for (const e of options) if ((final.ids.has(e.id) || featsHad.has(twinKey(e))) && !s.chosen.includes(e.id)) blocked.add(e.id);
     return { ...s, options, blocked, filter };
   });
 

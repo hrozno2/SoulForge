@@ -140,9 +140,10 @@ export class StatBook {
     if (name === "initiative") return this.get("dexterity:modifier") + this.aggregate("initiative:misc") + this.aggregate(name);
 
     // Movement.
-    if (name === "speed") return this.get("innate speed") + this.aggregate("speed:misc") + this.aggregate(name);
+    // "innate speed:misc" is how Aurora content raises a speed (Fast Movement, Unarmored Movement: +10 ft).
+    if (name === "speed") return this.get("innate speed") + this.aggregate("innate speed:misc") + this.aggregate("speed:misc") + this.aggregate(name);
     const sp = name.match(/^speed:(climb|fly|swim|burrow)$/);
-    if (sp) return this.get(`innate speed:${sp[1]}`) + this.aggregate(`${name}:misc`) + this.aggregate(name);
+    if (sp) return this.get(`innate speed:${sp[1]}`) + (this.get(`innate speed:${sp[1]}`) > 0 ? this.aggregate(`innate speed:${sp[1]}:misc`) : 0) + this.aggregate(`${name}:misc`) + this.aggregate(name);
 
     if (name === "hp") return inp.baseHp(this.get("constitution:modifier")) + this.aggregate("hp");
     if (name === "attunement:max") return 3 + this.aggregate(name);

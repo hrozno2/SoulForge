@@ -4,6 +4,7 @@ import { meets, type ReqCtx } from "./requirements";
 import { StatBook, type StatInputs } from "./stats";
 import { ABILITY_IDS, totalLevel, type AbilityId, type Character } from "./character";
 import { isModern } from "./edition";
+import { resolveTimeline } from "../engine/timeline";
 
 export interface ActiveElement {
   el: AElement;
@@ -439,7 +440,22 @@ export function stillToChoose(s: SelectSlot, _r?: unknown): boolean {
   return !s.rule.optional && s.chosen.length < s.rule.number && s.options.some((o) => !s.chosen.includes(o.id) && !s.blocked.has(o.id));
 }
 
+/**
+ * Which resolver the app uses. "timeline" builds the character level by level and judges each choice at the level
+ * it was made (src/engine/timeline.ts, docs/ENGINE-PLAN.md); "legacy" is the old whole-character fixpoint, kept for
+ * the differential tests until it is removed.
+ */
+let engineMode: "timeline" | "legacy" = "timeline";
+export function setEngineMode(mode: "timeline" | "legacy"): void {
+  engineMode = mode;
+}
+
 export function resolve(ch: Character, reg: ARegistry): Resolved {
+  return engineMode === "legacy" ? resolveLegacy(ch, reg) : resolveTimeline(ch, reg);
+}
+
+/** The old resolver: re-walks the whole character until it stops changing (at most 7 walks). */
+export function resolveLegacy(ch: Character, reg: ARegistry): Resolved {
   let prev: Pass | null = null;
   let pass = walk(ch, reg, null);
   for (let i = 0; i < 6; i++) {

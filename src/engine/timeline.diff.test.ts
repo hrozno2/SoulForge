@@ -11,7 +11,7 @@ import { parseElementsXml } from "../aurora/parse";
 import { ARegistry } from "../aurora/registry";
 import { convertFiveTools } from "../aurora/fivetools";
 import { normalizeCharacter } from "../aurora/character";
-import { resolve } from "../aurora/engine";
+import { resolveLegacy as resolve } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
 import { resolveTimeline } from "./timeline";
 

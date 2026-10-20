@@ -68,3 +68,39 @@ describe.skipIf(!CACHE)("loading the real content", () => {
     expect(r.unmappedConcepts).toEqual([]);
   }, 600000);
 });
+
+describe.skipIf(!CACHE)("the stat dictionary", () => {
+  it("knows every stat the content sets, or something reads it", async () => {
+    const { statKind } = await import("./statDictionary");
+    const reg = new ARegistry();
+    for (const f of walk(join(CACHE!, "elements-master"), ".xml").sort((a, b) => Number(/internal|ALE/.test(b)) - Number(/internal|ALE/.test(a)))) {
+      try { reg.addFile(parseElementsXml(readFileSync(f, "utf8").replace(/^﻿/, ""), nodeXml, f)); } catch { /* not a content file */ }
+    }
+    const dir = join(CACHE!, "5etools-data");
+    if (existsSync(dir)) {
+      const json: Record<string, unknown> = {};
+      for (const f of walk(dir, ".json")) { const rel = relative(dir, f); if (!/index\.json$/.test(rel) && !rel.startsWith("bestiary")) json[rel] = JSON.parse(readFileSync(f, "utf8")); }
+      reg.addElements(convertFiveTools({ files: json as never }));
+    }
+    reg.build();
+    const set = new Map<string, string[]>();
+    const used = new Set<string>();
+    const take = (t: string | undefined) => { for (const m of (t ?? "").matchAll(/\{\{([^}]+)\}\}/g)) used.add(m[1].trim().toLowerCase()); };
+    for (const e of reg.all()) {
+      take(e.description); take(e.sheet?.usage); for (const d of e.sheet?.descriptions ?? []) { take(d.text); take(d.usage); }
+      const reqs = [e.requirements ?? "", ...e.rules.map((r) => ("requirements" in r ? r.requirements ?? "" : ""))].join(" ");
+      for (const m of reqs.matchAll(/\[([a-z][^\]]*?):(-?\d+)\]/gi)) used.add(m[1].trim().toLowerCase());
+      for (const r of e.rules) if (r.kind === "stat") {
+        (set.get(r.name.toLowerCase()) ?? set.set(r.name.toLowerCase(), []).get(r.name.toLowerCase())!).push(e.id);
+        if (isNaN(Number(r.value))) used.add(r.value.toLowerCase());
+        if (r.bonus && isNaN(Number(r.bonus))) used.add(r.bonus.toLowerCase());
+      }
+    }
+    const { TO_WIRE } = await import("./statDictionary");
+    const toWire = [...set].filter(([n]) => !statKind(n) && !used.has(n) && TO_WIRE.some((k) => k.pattern.test(n)));
+    const unknown = [...set].filter(([n]) => !statKind(n) && !used.has(n) && !TO_WIRE.some((k) => k.pattern.test(n))).map(([n, ids]) => `${n} (${ids.length}): ${ids.slice(0, 2).join(", ")}`);
+    writeFileSync(join(CACHE!, "engine", "unknown-stats.txt"), unknown.join("\n"));
+    console.log(`STATS ${set.size} names; to wire ${toWire.length}; unknown ${unknown.length}`);
+    for (const u of unknown.slice(0, 40)) console.log(`UNKNOWN ${u}`);
+  }, 600000);
+});

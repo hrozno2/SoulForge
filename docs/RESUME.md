@@ -4,6 +4,16 @@ The big picture: docs/PLAN-audit.md (the full audit of character creation, phase
 prefers English). Older plan: docs/PLAN-windows.md (windows, filters, lore). Decisions on scope are at the end of
 PLAN-audit.md.
 
+## 2026-10-20 evening: engine E2 closed, E3 started (see docs/ENGINE-PLAN.md, Progress)
+
+- Pushed: e495404, a7fda37, 50b8f38, 4cb1c55 (and the twin-key cache in the next commit).
+- Rules check (standard, seed 7777): reference, elements, random, level 20 pass. Builds fails only on 4 import
+  snapshot changes, all reviewed as fine: 2 imports now fill their infusions, 2 lose an empty casting line.
+  Accept them with `IMPORT_BASELINE=1` on the next run.
+- Audits to rerun after content changes: `RULES_TIER=parity`, `RULES_TIER=fastchar`, `RULES_TIER=diff`.
+- Next: E3 (feature attacks, one calculator module), E4 (solvers with lookahead), E5 (choice-key migration,
+  old resolver removed). The test app has not been rebuilt since 8d67b4a.
+
 ## Done today (all pushed to main)
 - Atlas of the content: `RULES_TIER=atlas SOULFORGE_RULES=~/.soulforge-test npx vitest run src/aurora/atlas.test.ts`
   -> docs/atlas/summary.md and ~/.soulforge-test/atlas/atlas.json. Dead references 162 -> 0, duplicate ids 173 -> 0.

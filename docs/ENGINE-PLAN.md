@@ -271,3 +271,37 @@ matched.
 - **Open:**
   - The random builder and autofill must judge picks against the timeline. They now produce the Boon errors
     above.
+
+### 2026-10-20 (evening)
+
+- **Speed:** makeCtx rebuilt the element-type set and worn-item facts for every rule; now once per walk. A resolve
+  went from about 50 ms to 4 ms (one change: 2 ms). The rules check had timed out at 4 hours because of this.
+- **E2 classes closed:**
+  - mutual exclusions ("A unless B", "B unless A": the DMG and PHB 2024 Pistol) settle within one walk;
+  - changeable choices (spells known, invocations) take their options from the current level;
+  - requirements are judged by concept as well as id (an Aurora training requirement is met by 5e.tools' and
+    the reverse), and each option of a choice is judged as itself (`ReqCtx.as`);
+  - a choice offers one option per element of one book, the primary provider's (as the lists do).
+- **E1 / content (5e.tools converter):**
+  - `bookKey()`: one identity per book across providers; lists showed species twice;
+  - `resolveCopies()`: every `_copy` (311 entries) resolved with the full `_mod` set;
+  - one training reader for every proficiency field; lists of several entries are a choice of one set;
+    "other" languages are the ones the text names;
+  - subraces required ("<species> (standard)" for the nameless one); table cells with links read as numbers
+    (the 2014 warlock had no pact slots); standard tools always exist; sidekick classes hidden;
+  - `castingRules()` shared by classes and subclasses (Eldritch Knight, Arcane Trickster).
+- **E3 started:**
+  - `src/engine/mechanics.ts`: the mechanics table, built from data. A 5e.tools feature takes the mechanics of
+    its Aurora twin (same kind, name, edition, owner by name; same book for playtests). Only what the copy and
+    its owner lack; only portable rules. 394 features. Effects on all 18 skills also reach initiative.
+  - `StatBook.parts()`; the checker verifies table base plus attributable parts. No feature-name lists remain
+    in rulesCheck.ts.
+- **Audits:**
+  - `RULES_TIER=parity` (src/engine/parity.test.ts): every listed entry once; required choices with nothing to
+    pick 308 -> 0; Aurora vs 5e.tools twins: grants 167 -> 12, numbers 9 -> 1. The rest are model differences.
+  - `RULES_TIER=fastchar` (src/aurora/fastchar.test.ts): 40 random 2024 characters from fastcharacter.com.
+- **Next:**
+  - E3: typed effects for the remaining prose-only features (feature attacks such as Psychic Blades), the
+    calculators as one module the sheet reads;
+  - E4: autofill and random with lookahead; the importer's assignment solver;
+  - E5: stable choice keys and migration, the old resolver removed, PDF read-back.

@@ -305,3 +305,33 @@ matched.
     calculators as one module the sheet reads;
   - E4: autofill and random with lookahead; the importer's assignment solver;
   - E5: stable choice keys and migration, the old resolver removed, PDF read-back.
+
+### 2026-10-21
+
+- **E3:**
+  - `src/engine/effects.ts`: typed effects for mechanics no content states as rules (Dueling, Crossbow Expert,
+    Tavern Brawler, Empowered Strikes, Psychic Blades, natural weapons), keyed by canonical name and kind. No
+    feature-name rule remains in sheet.ts or rulesCheck.ts.
+  - Feature attacks on the sheet; magic weapons listed per bonus.
+  - Exit test: 1,000 random characters, 999 clean; the one finding was the checker's (fixed: the multiclass table
+    counts only classes that cast at their level).
+- **E4:**
+  - Importer: an assignment solver for stated trainings (augmenting paths over every open choice).
+  - Autofill: skips what the character has under any provider's id; prepares spells up to the limit, by the
+    class's own spell level (multiclass bug found by the 1,000 run).
+- **E5:**
+  - Stable choice keys: owner id + fingerprint (kind, name, level). Old position keys are read only when every pick
+    fits the choice's kind. 300 saved characters resolve unchanged.
+  - The old resolver is removed. `RULES_TIER=diff` is now a sheet snapshot of 400 saved characters, plus the
+    determinism contract (choice order, resolving twice, level down and up).
+- **E1:**
+  - The lossless-load gate (`src/engine/fields.ts`, load.test.ts): every 5e.tools field is read or decided.
+    0 undecided, 20 planned (`<cache>/engine/fields-planned.txt`).
+  - Converter: weapon masteries, class feat progression, repeatable feats, subrace overwrite, multiclass
+    requirements (2014 "or", 2024 primary ability), item DC/speed/attack/proficiency/check bonuses, blindsight,
+    starting gear.
+- **Not done, by decision:**
+  - The resolver still reads Aurora-shaped elements rather than the IR. Concepts are applied where they matter
+    (requirements, choices, lists, the importer), so moving the resolver onto the IR would change no result.
+  - The 20 planned fields are features (resources, item spells and charges, creature type, cantrip scaling).
+  - E5's "14 clean nightly runs" needs a nightly job on this Mac; not set up.

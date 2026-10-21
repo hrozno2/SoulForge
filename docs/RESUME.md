@@ -4,6 +4,14 @@ The big picture: docs/PLAN-audit.md (the full audit of character creation, phase
 prefers English). Older plan: docs/PLAN-windows.md (windows, filters, lore). Decisions on scope are at the end of
 PLAN-audit.md.
 
+## 2026-10-21: engine plan E1-E5 done except the items in docs/ENGINE-PLAN.md "Not done, by decision"
+
+- Test app rebuilt at 0092c2e (rebuild again for the later commits: scripts/test-app.sh).
+- Big runs: `RULES_BIG=n RULES_NOPDF=1` (1,000 in about 90 s). 1,000: 999 clean (checker fixed).
+- Audits: `RULES_TIER=diff` (sheet snapshot + determinism), `parity`, `fastchar`; the lossless gate runs with the
+  loader test.
+- Import snapshots: accept the 4 reviewed changes with `IMPORT_BASELINE=1` on the next builds run.
+
 ## 2026-10-20 evening: engine E2 closed, E3 started (see docs/ENGINE-PLAN.md, Progress)
 
 - Pushed: e495404, a7fda37, 50b8f38, 4cb1c55 (and the twin-key cache in the next commit).

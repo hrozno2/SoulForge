@@ -264,7 +264,10 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (c === "1/3") return Math.floor(x.c.level / 3);
     return 0;
   };
-  const nonPact = casters.filter((x) => x.ref!.caster !== "pact");
+  // The multiclass table counts only classes that have Spellcasting at their level (a Ranger 1 has none yet in 2014):
+  // with one such class, its own table gives the slots (PHB, Multiclassing).
+  const castsNow = (x: (typeof refs)[number]) => (x.ref!.slots ? (x.ref!.slots[x.c.level - 1] ?? []).some((v) => v > 0) : casterLevel(x) > 0);
+  const nonPact = casters.filter((x) => x.ref!.caster !== "pact" && castsNow(x));
   const slotRow = (row: number[]) => row.filter((v) => v > 0).join("/");
   const ours = (line: (typeof sh.casting)[number]) => slotRow(line.slots.map((s) => s.total));
   if (nonPact.length === 1) {

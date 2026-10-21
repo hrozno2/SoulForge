@@ -104,3 +104,37 @@ describe.skipIf(!CACHE)("the stat dictionary", () => {
     for (const u of unknown.slice(0, 40)) console.log(`UNKNOWN ${u}`);
   }, 600000);
 });
+
+describe.skipIf(!CACHE)("the lossless-load gate", () => {
+  it("reads every 5e.tools field or has a decision for it", async () => {
+    const { decisionFor } = await import("./fields");
+    const dir = join(CACHE!, "5etools-data");
+    if (!existsSync(dir)) return;
+    // A field is read when the converter names it (a property access or key); the identity fields always are.
+    const conv = readFileSync("src/aurora/fivetools.ts", "utf8");
+    const reads = (k: string) => new RegExp(`[.\\["'\\s]${k.replace(/[$]/g, "\\$")}\\b`).test(conv);
+    const IDENTITY = new Set(["name", "source", "page", "srd", "srd52", "basicRules", "basicRules2024", "freeRules2024", "otherSources", "reprintedAs", "isReprinted", "hasFluff", "hasFluffImages", "fluff", "soundClip", "hasToken", "token", "tokenCredit", "foundryImg", "edition", "legacy", "_copy", "_isCopy", "_isBaseVersion"]);
+    const undecided: string[] = [];
+    const planned: string[] = [];
+    const seen = new Set<string>();
+    for (const f of walk(dir, ".json")) {
+      if (/index\.json$|bestiary|books\.json|sources\.json/.test(f)) continue;
+      const data = JSON.parse(readFileSync(f, "utf8"));
+      for (const [kind, list] of Object.entries(data)) {
+        if (!Array.isArray(list) || kind.startsWith("_")) continue;
+        for (const x of list) if (x && typeof x === "object") for (const k of Object.keys(x)) {
+          const key = `${kind}.${k}`;
+          if (seen.has(key) || IDENTITY.has(k) || reads(k)) continue;
+          seen.add(key);
+          const d = decisionFor(kind, k);
+          if (!d) undecided.push(key);
+          else if (d.startsWith("planned")) planned.push(`${key}: ${d.slice(9)}`);
+        }
+      }
+    }
+    mkdirSync(join(CACHE!, "engine"), { recursive: true });
+    writeFileSync(join(CACHE!, "engine", "fields-planned.txt"), planned.sort().join("\n"));
+    console.log(`FIELDS undecided ${undecided.length}; planned ${planned.length}`);
+    expect(undecided.sort()).toEqual([]);
+  }, 600000);
+});

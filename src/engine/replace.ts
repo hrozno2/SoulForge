@@ -5,13 +5,14 @@
  *
  * - Spells known and cantrips: replace one when gaining a level in the class (PHB 2014 and 2024, every known caster;
  *   2024 cantrips too). Feat spells such as Magic Initiate (2024) likewise.
- * - Eldritch Invocations, Artificer Infusions, Maneuvers, Metamagic: replace one when gaining a level.
+ * - Eldritch Invocations, Artificer Infusions, Maneuvers, Metamagic, Elemental Disciplines (PHB 2014 Way of the Four
+ *   Elements: replace one whenever you learn a new one): replace one when gaining a level.
  * - Fighting Style (2024 Fighter), Weapon Mastery (change after a long rest): changeable.
  * - Content marked allowReplace.
  */
 import type { SelectSlot } from "../aurora/engine";
 
-const CHANGEABLE = /invocation|infusion|maneuver|metamagic|fighting style|weapon mastery|mastery property/i;
+const CHANGEABLE = /invocation|infusion|maneuver|metamagic|elemental discipline|fighting style|weapon mastery|mastery property/i;
 
 export function replaceable(s: Pick<SelectSlot, "rule">): boolean {
   const r = s.rule;

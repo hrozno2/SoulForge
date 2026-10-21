@@ -154,7 +154,8 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     }
     // A feat the character has from another choice or grant, at any level, is not offered again.
     // The same feat from the other provider counts as had too.
-    if (s.rule.type === "Feat") for (const e of options) if ((final.ids.has(e.id) || featsHad.has(twinKey(e))) && !s.chosen.includes(e.id)) blocked.add(e.id);
+    // A feat the rules let a character take again (5e.tools "repeatable") stays open.
+    if (s.rule.type === "Feat") for (const e of options) if ((final.ids.has(e.id) || featsHad.has(twinKey(e))) && !s.chosen.includes(e.id) && e.setters["allow duplicate"]?.value !== "true") blocked.add(e.id);
     return { ...s, options, blocked, filter };
   });
 

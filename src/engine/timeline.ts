@@ -129,7 +129,11 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
   for (const st of timeline) for (const s of st.pass.rawSlots) if (!openedAt.has(s.key)) openedAt.set(s.key, st);
 
   const restricted = new Set(ch.sources.map(bookKey));
-  const featsHad = new Set(final.active.filter((a) => a.el.type === "Feat").map((a) => twinKey(a.el)));
+  // Feats had, by twin key and provider: the same feat from the other provider counts as had, but a provider's own
+  // copies of one feat (Aurora's Ability Score Improvement, _2, _3, taken again by design) do not block each other.
+  const featsHad = new Map<string, Set<boolean>>();
+  for (const a of final.active) if (a.el.type === "Feat") (featsHad.get(twinKey(a.el)) ?? featsHad.set(twinKey(a.el), new Set()).get(twinKey(a.el))!).add(a.el.origin === "5etools");
+  const hadAsTwin = (e: { type: string; name: string; source: string; origin?: string }) => featsHad.get(twinKey(e))?.has(e.origin !== "5etools") ?? false;
   const shared = sharedSlotLevel(final);
   const slots: SelectSlot[] = final.rawSlots.map((s) => {
     if (s.rule.type === "List") return { ...s, options: [], blocked: new Set<string>(), filter: "", listItems: s.rule.items ?? [] };
@@ -155,7 +159,7 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     // A feat the character has from another choice or grant, at any level, is not offered again.
     // The same feat from the other provider counts as had too.
     // A feat the rules let a character take again (5e.tools "repeatable") stays open.
-    if (s.rule.type === "Feat") for (const e of options) if ((final.ids.has(e.id) || featsHad.has(twinKey(e))) && !s.chosen.includes(e.id) && e.setters["allow duplicate"]?.value !== "true") blocked.add(e.id);
+    if (s.rule.type === "Feat") for (const e of options) if ((final.ids.has(e.id) || hadAsTwin(e)) && !s.chosen.includes(e.id) && e.setters["allow duplicate"]?.value !== "true") blocked.add(e.id);
     return { ...s, options, blocked, filter };
   });
 

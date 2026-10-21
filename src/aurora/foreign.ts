@@ -78,8 +78,12 @@ function findAllByName(reg: ARegistry, types: string[], name: string): AElement[
   const tight = want.replace(/ /g, "");
   const squeezed = pool.filter((e) => normalize(e.name).replace(/ /g, "") === tight);
   if (squeezed.length) return squeezed;
-  // An option named for its effect with the thing in brackets: "Fire’s Burn (Fire Giant)" is the Fire Giant ancestry.
-  return pool.filter((e) => normalizeFull(/\(([^)]+)\)\s*$/.exec(e.name)?.[1] ?? "") === full);
+  // An option named for its effect with the thing in brackets: "Fire’s Burn (Fire Giant)" is the Fire Giant ancestry,
+  // "Figurine of Wondrous Power (Bronze Griffon)" the Bronze Griffon. Only a name of two words or more, and only when
+  // one element answers to it: "Water" is not the Ring of Elemental Command (Water).
+  if (full.split(" ").length < 2 || /\d/.test(full)) return [];
+  const bracketed = pool.filter((e) => normalizeFull(/\(([^)]+)\)\s*$/.exec(e.name)?.[1] ?? "") === full);
+  return bracketed.length === 1 ? bracketed : [];
 }
 
 /**
@@ -282,7 +286,7 @@ function fuzzyItem(reg: ARegistry, name: string, edition?: Edition): AElement | 
 
 const COUNT_WORDS: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twenty: 20 };
 /** A plural noun to its singular: "potions" "potion", "javelins" "javelin", "flasks" "flask", "torches" "torch". */
-const singular = (w: string) => (/axes$/i.test(w) ? w.slice(0, -1) : /(ch|sh|x|ss)es$/i.test(w) ? w.slice(0, -2) : /ies$/i.test(w) ? `${w.slice(0, -3)}y` : /[^s]s$/i.test(w) ? w.slice(0, -1) : w);
+const singular = (w: string) => (/(us|ss|is)$/i.test(w) ? w : /axes$/i.test(w) ? w.slice(0, -1) : /(ch|sh|x|ss)es$/i.test(w) ? w.slice(0, -2) : /ies$/i.test(w) ? `${w.slice(0, -3)}y` : /[^s]s$/i.test(w) ? w.slice(0, -1) : w);
 
 /**
  * An item as a sheet writes it in words, to the item and how many: "2 potions of healing" is 2 Potion of Healing,
@@ -413,8 +417,9 @@ class Importer {
     const edition = extra.edition ?? this.edition;
     // How sheets write a count, a plural or a focus: "2 potions of healing", "five (5) javelins", "ammunition:
     // arrows (20)", "arcane focus: crystal", "holy symbol: amulet". The item itself, and how many.
+    // Only when the spoken form names an item: "Bracers" stays Bracers, "10 Feet of String" stays for the rules below.
     const spoken = textItem(name);
-    if (spoken.name !== name && !findByName(this.reg, ITEM_TYPES, name, edition)) { name = spoken.name; if (qty <= 1) qty = spoken.qty; }
+    if (spoken.name !== name && !findByName(this.reg, ITEM_TYPES, name, edition) && itemNameVariants(spoken.name).some((v) => findByName(this.reg, ITEM_TYPES, v, edition))) { name = spoken.name; if (qty <= 1) qty = spoken.qty; }
     // "Crossbow Bolts (20)" and "Blowgun Needles (50)" are a count of the item.
     const count = /^(.*\S)\s*\((\d{1,4})\)$/.exec(name);
     if (count && qty <= 1) {

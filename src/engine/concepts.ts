@@ -53,7 +53,13 @@ export function conceptOf(el: { type: string; id: string; name: string }): strin
     const m = plain(name).match(/^(darkvision|blindsight|truesight|tremorsense|superior darkvision)/);
     return m ? `sense:${slugOf(m[1])}` : undefined;
   }
-  if (el.type !== "Proficiency") return undefined;
+  // "Skill Expertise (Deception)" and "Skill Proficiency (Stealth)" are the same concept whatever kind of element
+  // carries them (Aurora's 2014 expertise options are Class Features).
+  if (el.type !== "Proficiency") {
+    const named = /^skill (proficiency|expertise) \((.+)\)$/.exec(plain(name));
+    const sk = named ? skillOf(named[2]) : undefined;
+    return sk && /feature|trait/i.test(el.type) ? `${named![1] === "expertise" ? "expertise" : "skill"}:${slugOf(sk)}` : undefined;
+  }
   const p = plain(name);
   let m = p.match(/^saving throw proficiency \((\w+)\)$/);
   if (m && (ABILITIES as readonly string[]).includes(m[1])) return `save:${ABILITY_KEY[m[1] as Ability]}`;

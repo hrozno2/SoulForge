@@ -64,7 +64,9 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
       .sort((a, b) => prefer(open.rule.name, b.name) - prefer(open.rule.name, a.name));
     // If every allowed option leads to a dead end somewhere else, the best allowed one is still better than none;
     // an option the rules rule out is never picked (with none allowed, stillToChoose leaves the choice alone).
-    const pick = candidates[0] ?? open.options.find((o) => !taken.has(o.id) && !open.blocked.has(o.id));
+    // Last resort, in order: any legal option the character does not have yet, then any legal option at all.
+    const legal = open.options.filter((o) => !taken.has(o.id) && !open.blocked.has(o.id));
+    const pick = candidates[0] ?? legal.find((o) => !had(o)) ?? legal[0];
     if (!pick) break;
     const next = { ...cur, selections: { ...cur.selections, [open.key]: [...open.chosen, pick.id] } };
     if (candidates.length > 1 && blockedCount(resolve(atLevel(next, n), reg)) > blockedCount(r)) { bad.add(`${open.key} ${pick.id}`); continue; }

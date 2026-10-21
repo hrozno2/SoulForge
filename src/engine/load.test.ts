@@ -29,6 +29,7 @@ describe("concepts", () => {
     expect(c("Language", "Elvish")).toBe("language:elvish");
     expect(c("Vision", "Darkvision (60 ft.)")).toBe("sense:darkvision");
     expect(c("Proficiency", "Tool Expertise (Thieves’ Tools)")).toBe("tool-expertise:thieves-tools");
+    expect(c("Class Feature", "Skill Expertise (Animal Handling)")).toBe("expertise:animal-handling");
   });
   it("strips 5e.tools markup", () => {
     expect(plain("{@item Hand Crossbow|phb}")).toBe("hand crossbow");

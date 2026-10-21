@@ -22,7 +22,6 @@ export const ANY_KIND: Record<string, Decision> = {
 /** Per kind of entry. */
 export const BY_KIND: Record<string, Record<string, Decision>> = {
   background: {
-    startingEquipment: "planned: starting gear (the app's starting-equipment builder reads Aurora's lists)",
     fromFeature: "display: which features the background lists, already read from its entries",
   },
   baseitem: {
@@ -32,7 +31,6 @@ export const BY_KIND: Record<string, Record<string, Decision>> = {
     needleBlowgun: SEARCH, bulletSling: SEARCH, bulletFirearm: SEARCH, cellEnergy: SEARCH,
   },
   class: {
-    startingEquipment: "planned: starting gear (as for backgrounds)",
     preparedSpellsChange: "display: when prepared spells may be changed (a long rest), not a number",
     itemMasteries: "display: a flag; the masteries come from itemMasteriesProgression, which is read",
     spellsKnownProgressionFixedByLevel: "planned: a wizard's spellbook additions by spell level (2024)",

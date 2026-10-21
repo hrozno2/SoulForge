@@ -735,6 +735,51 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   }
 }
 
+const EQUIPMENT_TYPES: Record<string, string> = {
+  setGaming: "gaming set", toolArtisan: "artisan's tools", instrumentMusical: "musical instrument",
+  weaponSimple: "simple weapon", weaponMartial: "martial weapon", weaponSimpleMelee: "simple melee weapon",
+  weaponMartialMelee: "martial melee weapon", weaponSimpleRanged: "simple ranged weapon", weaponMartialRanged: "martial ranged weapon",
+  focusSpellcastingArcane: "arcane focus", focusSpellcastingHoly: "holy symbol", focusSpellcastingDruidic: "druidic focus",
+};
+/** "dungeoneer's pack" to "Dungeoneer's Pack": capitals at word starts only, not after an apostrophe. */
+const titleCase = (t: string) => t.replace(/(^|[\s(-])([a-z])/g, (_, a, b) => a + b.toUpperCase());
+
+/** One item of a 5e.tools starting-gear list, as a book writes it: "8 Javelins", "a gaming set", "14 GP". */
+function gearText(it: unknown): string {
+  if (typeof it === "string") return titleCase(plainName(it.split("|")[0]));
+  const x = (it ?? {}) as J;
+  const q = Number(x.quantity) || 1;
+  if (x.value !== undefined) return `${Math.round(Number(x.value) / 100)} GP`;
+  const worth = x.containsValue ? ` (with ${Math.round(Number(x.containsValue) / 100)} GP)` : "";
+  if (x.equipmentType && !x.displayName) {
+    const noun = EQUIPMENT_TYPES[String(x.equipmentType)] ?? String(x.equipmentType);
+    return `${q > 1 ? `${q} ${noun}s` : `${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun}`}${worth}`;
+  }
+  const name = x.displayName ? plainName(String(x.displayName)) : x.item ? titleCase(plainName(String(x.item).split("|")[0])) : x.special ? String(x.special) : "";
+  return `${q > 1 ? `${q} ` : ""}${name}${worth}`;
+}
+
+/**
+ * 5e.tools starting gear (`startingEquipment.defaultData`) as the text the starting-equipment builder reads: lettered
+ * options "(A) ...; or (B) ..." (2024), or one list item per choice, "(a) ... or (b) ...", with fixed items on their
+ * own (2014).
+ */
+function equipmentHtml(se: unknown): string {
+  const data = (Array.isArray(se) ? se : (se as J)?.defaultData) as J[] | undefined;
+  if (!Array.isArray(data) || !data.length) return "";
+  const lettered = data.length === 1 && Object.keys(data[0]).every((k) => /^[A-Z]$/.test(k));
+  if (lettered) {
+    const parts = Object.entries(data[0]).map(([k, items]) => `(${k}) ${(items as unknown[]).map(gearText).filter(Boolean).join(", ")}`);
+    return `<ul><li><strong>Equipment:</strong> ${esc(`Choose ${Object.keys(data[0]).join(" or ")}: ${parts.join("; or ")}`)}</li></ul>`;
+  }
+  const lis = data.map((group) => {
+    const fixed = group._ as unknown[] | undefined;
+    if (fixed) return esc(fixed.map(gearText).filter(Boolean).join(", "));
+    return Object.entries(group).map(([k, items]) => `<i>(${k})</i> ${esc((items as unknown[]).map(gearText).filter(Boolean).join(", "))}`).join(" or ");
+  });
+  return `<h5>EQUIPMENT</h5><ul>${lis.map((l) => `<li>${l}</li>`).join("")}</ul>`;
+}
+
 function convertBackground(b: J, ctx: Ctx, out: AElement[]): void {
   const id = ftId("BG", b.name, b.source);
   const rules: ARule[] = [...trainingRules(b, b.name, out, ctx, id), ...abilityRules(b.ability, "Ability score increase").map((x) => ({ ...x, requirements: x.requirements ?? `!${MARK_SPECIES_ASI}` }))];
@@ -752,7 +797,7 @@ function convertBackground(b: J, ctx: Ctx, out: AElement[]): void {
   }
   for (const f of (b.feats as J[]) ?? []) if (f.any) rules.push({ kind: "select", type: "Feat", name: "Origin feat", supports: "5et feat", number: 1 });
   rules.push(...traitList(b.entries, id, ctx, b.source, out, "5et trait", "Background Feature"));
-  out.push(base(id, b.name, "Background", srcName(ctx, b.source), { rules, description: entriesHtml(b.entries) }));
+  out.push(base(id, b.name, "Background", srcName(ctx, b.source), { rules, description: entriesHtml(b.entries) + equipmentHtml(b.startingEquipment) }));
 }
 
 function mod(h: J): string {
@@ -971,7 +1016,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     setters, rules, spellcasting,
     // Sidekicks (Tasha's) are companions the DM runs, not classes a player character takes.
     compendiumHidden: !!c.isSidekick,
-    description: `<p>${esc(c.name)}, from ${esc(srcName(ctx, c.source))}. Hit die d${c.hd?.faces ?? "?"}.</p>`,
+    description: `<p>${esc(c.name)}, from ${esc(srcName(ctx, c.source))}. Hit die d${c.hd?.faces ?? "?"}.</p>${equipmentHtml(c.startingEquipment)}`,
     multiclass: { id: mcId, requirements: reqParts.length ? `(${reqParts.join(",")})` : undefined, prerequisite: words.length ? words.join(", ") : undefined, setters: {}, rules: gained },
   });
   out.push(el);

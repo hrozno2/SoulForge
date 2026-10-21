@@ -335,3 +335,6 @@ matched.
     (requirements, choices, lists, the importer), so moving the resolver onto the IR would change no result.
   - The 20 planned fields are features (resources, item spells and charges, creature type, cantrip scaling).
   - E5's "14 clean nightly runs" needs a nightly job on this Mac; not set up.
+- **E4 exit met:** 10,000 random characters (seed 424242, `RULES_BIG=10000 RULES_NOPDF=1`), 0 with findings. The
+  run before found 3 repeated expertise picks; the cause was Aurora's 2014 expertise options being Class Features
+  outside the concept vocabulary (fixed in e092f1c).

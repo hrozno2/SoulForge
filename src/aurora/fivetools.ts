@@ -538,7 +538,7 @@ function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
     if (p.level) reqs.push(`[level:${typeof p.level === "object" ? p.level.level : p.level}]`);
   }
   const rules = [...abilityRules(f.ability, f.name, { out, idBase: ftId("FEAT", f.name, f.source) }), ...trainingRules(f, f.name, out, ctx, ftId("FEAT", f.name, f.source)), ...defenseRules(f)];
-  const spells = additionalSpellRules(f.additionalSpells, f.name, f.source);
+  const spells = additionalSpellRules(f.additionalSpells, f.name, f.source, out);
   rules.push(...spells.rules);
   const html = entriesHtml(f.entries);
   return base(ftId("FEAT", f.name, f.source), f.name, "Feat", srcName(ctx, f.source), {
@@ -730,7 +730,10 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     out.push(base(vid, `Darkvision (${r.darkvision} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));
     rules.push({ kind: "grant", type: "Vision", id: vid });
   }
-  const racialSpells = additionalSpellRules(r.additionalSpells, r.name, r.source);
+  // A species whose versions each carry one of its spell sets (the 2024 Elf's lineages, the Tiefling's legacies)
+  // gives them with the version; the species itself gives none.
+  const setsInVersions = (r.additionalSpells?.length ?? 0) > 1 && ((r._versions as J[]) ?? []).length > 0;
+  const racialSpells = setsInVersions ? { rules: [] as ARule[], ability: undefined } : additionalSpellRules(r.additionalSpells, r.name, r.source, out);
   rules.push(...racialSpells.rules);
   // Its own ids: Aurora's ID_INTERNAL_RACIAL_TRAIT_* are a different kind of entry (a size choice), and loading these
   // after Aurora replaced them (the 2024 Aasimar's size choice lost its options). A species of more than one size
@@ -784,7 +787,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
         out.push(base(dv, `Darkvision (${v.darkvision} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));
         vrules.push({ kind: "grant", type: "Vision", id: dv });
       }
-      const vSpells = JSON.stringify(v.additionalSpells) !== JSON.stringify(r.additionalSpells) ? additionalSpellRules(v.additionalSpells, vname, v.source ?? r.source) : { rules: [] as ARule[], ability: undefined };
+      const vSpells = JSON.stringify(v.additionalSpells) !== JSON.stringify(r.additionalSpells) ? additionalSpellRules(v.additionalSpells, vname, v.source ?? r.source, out) : { rules: [] as ARule[], ability: undefined };
       vrules.push(...vSpells.rules);
       const changed = ((v.entries as J[]) ?? []).filter((e) => !baseTraits.has(JSON.stringify(e)));
       vrules.push(...traitList(changed, vid, ctx, v.source ?? r.source, out, "5et trait", "Racial Trait"));
@@ -799,7 +802,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     if (abilityRules(s.ability, s.name ?? r.name).length) srules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
     if (s.speed) srules.push(...speedRules(s.speed));
     srules.push(...traitList(s.entries, sid, ctx, s.source, out, "5et trait", "Racial Trait"));
-    const subSpells = additionalSpellRules(s.additionalSpells, s.name ?? r.name, s.source);
+    const subSpells = additionalSpellRules(s.additionalSpells, s.name ?? r.name, s.source, out);
     srules.push(...subSpells.rules);
     out.push(base(sid, s.name ? `${s.name} ${r.name}` : `${r.name} (standard)`, "Sub Race", srcName(ctx, s.source), { spellcasting: subSpells.rules.length ? castingFor(s.name ?? r.name, subSpells.ability) : undefined, supports: [`5et subrace of ${id}`], rules: srules, description: entriesHtml(s.entries) }));
   }
@@ -1183,7 +1186,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
       srules.push(...refRules(f.entries, `${f.name} (${s.shortName ?? s.name} ${f.level})`, f.level, { cf: data.cf, sf: data.sf, ctx, out }, true));
     }
-    srules.push(...additionalSpellRules(s.additionalSpells, s.name, s.source).rules);
+    srules.push(...additionalSpellRules(s.additionalSpells, s.name, s.source, out).rules);
     // A subclass that casts (Eldritch Knight, Arcane Trickster): its list is the class whose spells it expands with.
     const expandedFrom = [...JSON.stringify(s.additionalSpells ?? []).matchAll(/class=([A-Za-z ]+)/g)].map((m) => m[1].trim());
     const subCasting = castingRules(s, s.shortName ?? s.name, expandedFrom.length ? [...new Set(expandedFrom)] : [c.name], lname);
@@ -1211,8 +1214,26 @@ function spellRefs(section: J | undefined): { level?: number; refs: unknown[] }[
   return out;
 }
 
-/** Rules for the spells a race, feat or feature adds. Fixed spells are resolved to element ids after conversion. */
-export function additionalSpellRules(adds: J[] | undefined, owner: string, ownerSource: string): { rules: ARule[]; ability?: string } {
+/**
+ * Rules for the spells a race, feat or feature adds. Fixed spells are resolved to element ids after conversion.
+ * More than one entry in `additionalSpells` is a choice of one of them, as 5e.tools and Plutonium read it (Circle of
+ * the Land's lands, Strixhaven Initiate's colleges, Divinely Favored's alignments): with `out`, each set becomes a
+ * hidden option holding its own spells and spell choices, and the owner gets one choice among them.
+ */
+export function additionalSpellRules(adds: J[] | undefined, owner: string, ownerSource: string, out?: AElement[]): { rules: ARule[]; ability?: string } {
+  if (out && (adds?.length ?? 0) > 1) {
+    const tag = `5et spell set ${slug(ownerSource)} ${slug(owner)}`.toLowerCase();
+    let ability: string | undefined;
+    adds!.forEach((set, i) => {
+      const own = additionalSpellRules([set], owner, ownerSource);
+      ability ??= own.ability;
+      // An unnamed set is named by its first spells ("Light, Sacred Flame").
+      const first = JSON.stringify(set).match(/"([a-z][a-z' /-]+)(?:\|[a-z0-9]+)?(?:#c)?"/gi)?.slice(0, 2).map((x) => titleCase(plainName(x.replace(/"/g, "").split("|")[0].split("#")[0]))) ?? [];
+      const label = set.name ? String(set.name) : first.join(", ") || `Option ${i + 1}`;
+      out.push(base(`ID_5ET_SPELLSET_${slug(ownerSource)}_${slug(owner)}_${i + 1}`, `${owner}: ${label}`, "Spell Set", "5etools", { compendiumHidden: true, supports: [tag], rules: own.rules, description: `<p>${esc(label)}: the spells this choice of ${esc(owner)} gives.</p>` }));
+    });
+    return { rules: [{ kind: "select", type: "Spell Set", name: `${owner} spells`, supports: tag, number: 1 } as ARule], ability };
+  }
   const rules: ARule[] = [];
   let ability: string | undefined;
   for (const a of adds ?? []) {

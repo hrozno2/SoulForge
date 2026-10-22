@@ -163,7 +163,17 @@ export type ContentFilters = { legacy: boolean; playtest: boolean; unusual: bool
 export const ALL_CONTENT: ContentFilters = { legacy: true, playtest: true, unusual: true };
 
 /** Which of the global content filters would hide something from this book. */
-export function hiddenBy(book: BookInfo, source: string, f: ContentFilters): boolean {
+/**
+ * Things that belong to no rule set or setting: skills, languages, tools, sizes and senses, and Aurora's own core
+ * essentials and internal entries. The content filters never hide them; a Ranger's skill choice needs every skill.
+ */
+const NEUTRAL_TYPES = /^(Proficiency|Language|Size|Vision|Condition|Ability Score Improvement|Training Option)$/;
+export function filterNeutral(type: string, source: string): boolean {
+  return NEUTRAL_TYPES.test(type) || /^(aurora legacy essentials|internal|5etools)$/i.test(source.trim());
+}
+
+export function hiddenBy(book: BookInfo, source: string, f: ContentFilters, type = ""): boolean {
+  if (filterNeutral(type, source)) return false;
   if (!f.playtest && book.playtest) return true;
   if (!f.legacy && ruleSetOf(book, source) === "Legacy" && !book.playtest) return true;
   if (!f.unusual && (SETTING_BOOKS.test(source) || (book.known && !book.official && !book.playtest))) return true;

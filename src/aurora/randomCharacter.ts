@@ -48,7 +48,7 @@ export interface RandomForce {
 
 export function randomCharacter(reg: ARegistry, level: number, filters: ContentFilters, rng: () => number = Math.random, force: RandomForce = {}): Character {
   const books = new BookIndex(reg);
-  const shown = (e: AElement) => !e.compendiumHidden && !hiddenBy(books.info(e.source), e.source, filters);
+  const shown = (e: AElement) => !e.compendiumHidden && !hiddenBy(books.info(e.source), e.source, filters, e.type);
   const pick = <T,>(a: T[]): T | undefined => a[Math.floor(rng() * a.length)];
   const pool = (type: string) => {
     // "Custom Background" and "Custom Lineage" are build-your-own templates, not something to roll.

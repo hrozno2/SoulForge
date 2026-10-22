@@ -9,10 +9,10 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { loadTestContent } from "./testContent";
+import { holder, loadTestContent } from "./testContent";
 import { it } from "vitest";
 import type { ARegistry } from "../aurora/registry";
-import { newCharacter, type Character } from "../aurora/character";
+import type { Character } from "../aurora/character";
 import { resolve } from "../aurora/engine";
 import { autoFill } from "../aurora/autofill";
 import { BookIndex, bookKey, groupVariants } from "../aurora/books";
@@ -23,43 +23,6 @@ const C = process.env.SOULFORGE_RULES;
 const load = () => loadTestContent(C!);
 
 const TYPES = ["Race", "Sub Race", "Background", "Class", "Archetype", "Feat"];
-// A wizard holds species, backgrounds and feats: it has the fewest proficiencies of its own to hide theirs.
-const CLASS_24 = "ID_WOTC_PHB24_CLASS_WIZARD";
-const CLASS_14 = "ID_WOTC_PHB_CLASS_WIZARD";
-
-/** Which class (at 20) or species (at 1) offers each subclass and subrace, and in which choice. Worked out once. */
-const OFFERS = new WeakMap<ARegistry, Map<string, { ch: Character; key: string }>>();
-function offeredBy(reg: ARegistry) {
-  let m = OFFERS.get(reg);
-  if (m) return m;
-  m = new Map();
-  const ch = newCharacter();
-  const roots: Character[] = [
-    ...reg.ofType("Class").map((c) => ({ ...ch, classes: [{ classId: c.id, level: 20 }] })),
-    ...reg.ofType("Race").map((rc) => ({ ...ch, race: rc.id, classes: [{ classId: /2024/.test(rc.source) ? CLASS_24 : CLASS_14, level: 1 }] })),
-  ];
-  for (const c of roots) for (const s of resolve(c, reg).slots) if (s.rule.type === "Archetype" || s.rule.type === "Sub Race") for (const o of s.options) if (!m.has(o.id)) m.set(o.id, { ch: c, key: s.key });
-  OFFERS.set(reg, m);
-  return m;
-}
-
-/** A character that has the element, at a level where all of it is open. */
-function holder(reg: ARegistry, el: AElement): Character | undefined {
-  const ch = newCharacter();
-  const modern = /2024/.test(el.source);
-  const fighter = modern ? CLASS_24 : CLASS_14;
-  if (el.type === "Race") return { ...ch, race: el.id, classes: [{ classId: fighter, level: 1 }] };
-  if (el.type === "Background") return { ...ch, background: el.id, classes: [{ classId: fighter, level: 1 }] };
-  if (el.type === "Class") return { ...ch, classes: [{ classId: el.id, level: 20 }] };
-  if (el.type === "Feat") return { ...ch, classes: [{ classId: fighter, level: 8 }], extras: [el.id] };
-  if (el.type === "Archetype" || el.type === "Sub Race") {
-    const where = offeredBy(reg).get(el.id);
-    if (!where) return undefined;
-    return { ...where.ch, selections: { [where.key]: [el.id] } };
-  }
-  return undefined;
-}
-
 /** What the element gives on its own: the holder minus the bare class. */
 function profile(reg: ARegistry, el: AElement, ch: Character) {
   const bare = resolve({ ...ch, race: el.type === "Race" || el.type === "Sub Race" ? undefined : ch.race, background: el.type === "Background" ? undefined : ch.background, extras: [], selections: el.type === "Archetype" || el.type === "Sub Race" ? {} : ch.selections }, reg);

@@ -130,6 +130,8 @@ export interface BrowseProps {
   viewKey?: string;
   /** Ignore the global content filters (2024 only, playtest, other worlds): the override of a choice that came up empty. */
   showAll?: boolean;
+  /** How many picks the choice takes: the content filters never hide options it needs to be completed. */
+  need?: number;
 }
 
 /** An item's category as a short badge (Weapon, Armor, Gear, Tool, Pack, Focus...), or its rarity for a magic item. */
@@ -146,7 +148,7 @@ const ITEM_ICON: Record<string, (p: { size?: number }) => React.ReactNode> = { W
 /** The drag data type for an element type, so a drop target can tell what is over it before the drop. */
 export const dragMime = (type: string) => `application/x-sf-${type.toLowerCase().replace(/[^a-z]/g, "")}`;
 
-export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabledReason, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort, draggable, barExtra, mini, viewKey, showAll }: BrowseProps) {
+export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabledReason, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort, draggable, barExtra, mini, viewKey, showAll, need }: BrowseProps) {
   const { books, learn } = useUi();
   const [view, setView] = useStored<"cards" | "list">(viewKey ?? `view.${type}`, defaultView);
   const [sort, setSort] = useStored<SortMode>(`sort.${type}`, defaultSort ?? (type === "Spell" ? "level" : "recommended"));
@@ -161,10 +163,13 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
   // The global content filters. Whatever is already picked stays visible.
   const items = useMemo(() => {
     if (showAll) return allItems;
-    const kept = allItems.filter((e) => chosenSet.has(e.id) || !hiddenBy(books.info(e.source), e.source, { legacy: prefs.showLegacy, playtest: prefs.showPlaytest, unusual: prefs.showUnusual }));
-    // A choice the rules require is never emptied by the content filters: if they would hide everything, show it all.
-    return kept.length ? kept : allItems;
-  }, [allItems, books, chosenSet, prefs.showLegacy, prefs.showPlaytest, prefs.showUnusual, showAll]);
+    const kept = allItems.filter((e) => chosenSet.has(e.id) || !hiddenBy(books.info(e.source), e.source, { legacy: prefs.showLegacy, playtest: prefs.showPlaytest, unusual: prefs.showUnusual }, e.type));
+    // The content filters never leave a choice unable to be completed: when fewer options the character can take
+    // remain than picks still to make, every option shows.
+    const takeable = (list: typeof allItems) => list.filter((e) => !chosenSet.has(e.id) && !disabledReason?.(e)).length;
+    const toPick = Math.max(0, (need ?? 1) - chosen.length);
+    return kept.length && takeable(kept) >= Math.min(toPick, takeable(allItems)) ? kept : allItems;
+  }, [allItems, books, chosenSet, chosen, need, disabledReason, prefs.showLegacy, prefs.showPlaytest, prefs.showUnusual, showAll]);
   const hidden = allItems.length - items.length;
 
   const defs = useMemo(() => facetsFor(type), [type]);

@@ -159,7 +159,7 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
             <>
               {all && <p className="notice slot-override-note">Showing every {type.toLowerCase()} in the loaded content, without this choice's own filter or your book filters. The rules check flags a pick the rules do not allow here.</p>}
               {!all && nothingLeft && <p className="notice slot-override-note">Nothing here can be chosen right now. If that is wrong (a filter or the content hides what you need), show the whole list.</p>}
-              <Browse items={pool} type={type} chosen={chosen} onPick={toggle} onSwap={swap} onHover={onDetail} disabledReason={all ? undefined : reason} ownedBy={owned} defaultView={type === "Spell" ? "cards" : "list"} allowCards={!["Language", "Proficiency", "Ability Score Improvement", "Companion"].includes(type)} perPage={60} showAll={all} />
+              <Browse items={pool} type={type} chosen={chosen} onPick={toggle} onSwap={swap} onHover={onDetail} disabledReason={all ? undefined : reason} ownedBy={owned} defaultView={type === "Spell" ? "cards" : "list"} allowCards={!["Language", "Proficiency", "Ability Score Improvement", "Companion"].includes(type)} perPage={60} showAll={all} need={slot.rule.number} />
             </>
           )}
           {!slot.listItems && (

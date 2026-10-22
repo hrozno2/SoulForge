@@ -4,8 +4,9 @@
  * challenge rating against each limit ("ws cr 1/2" on every beast of CR 1/2 or lower), and whether it flies or swims.
  * Each Druid class gets one choice per step of its Known Forms scale (Plutonium's Foundry data: 4 forms from level 2,
  * 6 from 4, 8 from 8), limited to the Wild Shape CR of that level and without flying before level 8 (and, in the
- * 2014 rules, swimming before level 4). The 2014 rules let a druid use any beast seen, so there the forms are
- * optional, a list to print; in the 2024 rules they are the known forms and required when there are enough beasts.
+ * 2014 rules, swimming before level 4). The choices are optional in both rule sets: the 2014 rules let a druid use
+ * any beast seen, and characters imported from other tools carry no forms, so a missing pick is never an open choice;
+ * the forms picked are the ones whose stat blocks print.
  */
 import type { AElement, ARule } from "../aurora/types";
 import { isModern } from "../aurora/edition";
@@ -51,9 +52,8 @@ export function wildShapeChoices(byId: Map<string, AElement>): number {
       if (number <= 0) continue;
       const name = `Wild Shape forms (level ${step.at})`;
       if (cls.rules.some((r) => r.kind === "select" && r.name === name)) continue;
-      const enough = beasts.filter((b) => b.cr <= cap && !(noFly && b.fly) && !(noSwim && b.swim)).length >= step.value;
       const supports = ["ws beast", `ws cr ${crText(cap)}`, ...(noFly ? ["!ws fly"] : []), ...(noSwim ? ["!ws swim"] : [])].join(",");
-      cls.rules = [...cls.rules, { kind: "select", type: "Companion", name, supports, number, level: step.at, optional: !modern || !enough } as ARule];
+      cls.rules = [...cls.rules, { kind: "select", type: "Companion", name, supports, number, level: step.at, optional: true } as ARule];
       added++;
     }
   }

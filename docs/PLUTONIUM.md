@@ -22,8 +22,10 @@ Each kind lists the fields that must match, compared case-insensitively (numbers
 | classFeature | classSource, className, level, source, name |
 | subclassFeature | classSource, className, subclassSource, subclassShortName, level, source, name |
 
-Soul Forge guesses ids instead (foundry.ts targetIds), which leaves 48 entries unmatched (23 species traits, 25 generic
-magic variants). **Next:** the converter keeps each element's 5e.tools identity fields, and foundry.ts and lore.ts
+Soul Forge matches by its converter's ids (foundry.ts targetIds). Species traits now follow Plutonium's fallback
+("Goblin (Zendikar; Grotag Tribe)", then "Goblin (Zendikar)", then "Goblin", in the trait's book): all match. Left
+unmatched: 25 generic magic variants, because magicvariants.json is not loaded yet (5e.tools builds "+1 Longsword"
+and the rest from it at run time; Plutonium does the same). **Next:** the converter keeps each element's 5e.tools identity fields, and foundry.ts and lore.ts
 match by those fields with the base-species fallback. Magic variants: the side data of a generic variant
 ("+1 Weapon") applies to every specific item made from it.
 
@@ -40,8 +42,9 @@ match by those fields with the base-species fallback. Magic variants: the side d
   immunities, resistances and vulnerabilities, resources, feature options (option blocks). Soul Forge's converter
   already reads these same fields; the comparison worth doing is the edge cases each chooser handles.
 
-**Next:** a text pass that gives every feature without side data its uses (the phrases above) and its attack, save
-and damage lines from the tags. It replaces the hand-made name list in src/engine/effects.ts with a rule that works
+**Done (src/aurora/textMechanics.ts):** limited uses from the text (712 features; 97% agree with Aurora's copy on
+the rest that restores them) and save DCs stated as "8 plus your X modifier and proficiency bonus" (15 features).
+**Next:** attack and damage lines from the tags. It replaces the hand-made name list in src/engine/effects.ts with a rule that works
 for all content, the macro fix this project prefers.
 
 ## 3. Foundry's level-up data (advancement)

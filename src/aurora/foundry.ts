@@ -250,10 +250,21 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
       for (const e of list as J[]) {
         const ids = targetIds(kind, e, ftId);
         let targets = ids.flatMap((id) => [...out.filter((o) => o.id === id || o.id.startsWith(`${id}_`) && /_\d+$/.test(o.id))]);
-        // A species trait kept under a lineage or subrace (its own id): the trait of that name within the species.
+        // A species trait: the trait of that name within the species, as Plutonium finds it. "Goblin (Zendikar; Grotag
+        // Tribe)" is tried whole, then as "Goblin (Zendikar)", then as the base "Goblin", always in the trait's book.
         if (!targets.length && kind === "raceFeature" && e.raceName) {
-          const species = slug(e.raceName);
-          targets = out.filter((o) => o.id.endsWith(`_T_${slug(e.name)}`) && o.id.includes(`_${species}`));
+          const m = /^(.+?) \((.+)\)$/.exec(String(e.raceName));
+          const parts = m ? m[2].split(";").map((x) => x.trim()) : [];
+          const tries = m ? [[m[1], ...parts], [m[1], parts[0]], [m[1]]] : [[String(e.raceName)]];
+          const book = slug(String(e.raceSource ?? e.source));
+          for (const words of tries) {
+            const keys = words.map(slug);
+            targets = out.filter((o) => o.id.endsWith(`_T_${slug(e.name)}`) && o.id.includes(`_${book}_`) && keys.every((k) => o.id.includes(k)));
+            if (targets.length) break;
+          }
+          // A subrace from another book ("Dragonborn (Draconblood; Black)", EGW) keeps its species' own trait, which
+          // that species' entry already gives: nothing left to apply.
+          if (!targets.length && m && out.some((o) => o.id.endsWith(`_T_${slug(e.name)}`) && o.id.includes(`_${slug(m[1])}_`))) continue;
         }
         if (!targets.length) { if (ids.length) report.unmatched.push(`${kind} ${e.name} (${e.source})`); continue; }
         for (const el of targets) {

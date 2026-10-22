@@ -4,6 +4,15 @@ The big picture: docs/PLAN-audit.md (the full audit of character creation, phase
 prefers English). Older plan: docs/PLAN-windows.md (windows, filters, lore). Decisions on scope are at the end of
 PLAN-audit.md.
 
+## Next (2026-10-22, stopped at 81% of the 5-hour limit)
+
+Plutonium analysis in docs/PLUTONIUM.md. In order:
+1. Side data and lore matched by 5e.tools fields (name, source, class, level, subclass, species with base-species
+   fallback) instead of guessed ids; magic variants apply to the items made from them.
+2. A text pass for features without side data: uses from "a number of times equal to..." and attack/save/damage
+   from {@damage}/{@dc}/{@hit} tags, replacing the name list in src/engine/effects.ts.
+3. Circle of the Moon's higher Wild Shape CR.
+
 ## 2026-10-22 later: Plutonium's Foundry data, lore, wild shape, card choices
 
 - Foundry mechanics (src/aurora/foundry.ts): the 5e.tools foundry-*.json files (what Plutonium reads) add passive

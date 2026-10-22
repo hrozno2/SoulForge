@@ -4,6 +4,13 @@ The big picture: docs/PLAN-audit.md (the full audit of character creation, phase
 prefers English). Older plan: docs/PLAN-windows.md (windows, filters, lore). Decisions on scope are at the end of
 PLAN-audit.md.
 
+## 2026-10-22: editions, optional class features, choice-window checks (docs/ENGINE-PLAN.md)
+
+- Audits: `RULES_TIER=editions` (gate), `RULES_TIER=aurora`, `RULES_TIER=diff`, `parity`, `fastchar`; the window
+  check runs inside every rules-check character.
+- The test app's window says TESTING (scripts/test-app.sh).
+- Open: a nightly run (the plan's last exit test) is not scheduled.
+
 ## 2026-10-21: engine plan E1-E5 done except the items in docs/ENGINE-PLAN.md "Not done, by decision"
 
 - Test app rebuilt at 0092c2e (rebuild again for the later commits: scripts/test-app.sh).

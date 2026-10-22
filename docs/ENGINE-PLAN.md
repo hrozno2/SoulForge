@@ -338,3 +338,22 @@ matched.
 - **E4 exit met:** 10,000 random characters (seed 424242, `RULES_BIG=10000 RULES_NOPDF=1`), 0 with findings. The
   run before found 3 repeated expertise picks; the cause was Aurora's 2014 expertise options being Class Features
   outside the concept vocabulary (fixed in e092f1c).
+
+### 2026-10-22
+
+- **Editions** (src/engine/editionPolicy.ts): a choice belongs to the edition of its class, species or background
+  (else its owner). It offers its own edition's version of each option, no 2024-only option in a 2014 choice, and
+  2014-only content in a 2024 choice (the 2024 PHB allows older content). A 2024 species gives no ability increase
+  (load-time rule); a 2024 species with a 2014 background is flagged. Gate: `RULES_TIER=editions`, 0 against the
+  rules.
+- **Optional class features** (src/engine/optionalFeatures.ts and the converter): Tasha's features are optional
+  choices on the 2014 classes at their level; taking one turns off what it replaces, in both providers.
+- **Choice windows checked in every test** (`checkChoiceWindows`): edition, duplicates, feat categories, spells
+  above what can be cast, a required choice with nothing to take.
+- **Repeat copies** offered one at a time, the next while a choice has room.
+- **Lists**: content filters never hide edition-neutral things and never leave a choice unable to be completed.
+- **Soul Forge against Aurora** (`RULES_TIER=aurora`): 248 classes, species and backgrounds; no choice of
+  Aurora's missing; every option left out is explained (edition, the other provider's copy, a repeat copy).
+- **5e.tools**: the gate has 0 undecided and 0 planned fields (Mystic Arcanum, item charges and attunement limits,
+  critical range, armor Dexterity cap, creature type...).
+- **E4 lookahead**: autofill weighs options by how many later choices require them.

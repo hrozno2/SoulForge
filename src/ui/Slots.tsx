@@ -54,6 +54,7 @@ export function mergeSlots(slots: SelectSlot[]): MergedSlot[] {
       defaulted: g.every((x) => x.defaulted),
       options,
       blocked: new Set(g.flatMap((x) => [...x.blocked])),
+      whyBlocked: (id: string) => g.map((x) => x.whyBlocked?.(id)).find(Boolean),
       members: g,
     };
   });
@@ -106,7 +107,7 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
   const chosenNames = slot.listItems ? chosen.map((id) => slot.listItems!.find((i) => i.id === id)?.text ?? id) : chosen.map((id) => r.reg.get(id)?.name ?? id);
   const need = rule.number;
   const type = rule.type;
-  const reason = (el: AElement): string | undefined => (slot.blocked.has(el.id) ? "requirements not met" : undefined);
+  const reason = (el: AElement): string | undefined => (slot.blocked.has(el.id) ? slot.whyBlocked?.(el.id) ?? "requirements not met" : undefined);
   const owned = (el: AElement): string | undefined => (chosen.includes(el.id) ? undefined : ownership(r, el, slot.members ? slot.members.map((m) => m.key) : slot.key));
 
   // A table (a 2014 background's personality traits, ideals, bonds and flaws) can be rolled on: a die per pick,

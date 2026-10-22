@@ -12,9 +12,10 @@
  * - Character level and class level are separate in requirements (requirements.ts).
  */
 import { makeCtx, resolveSupports, sharedSlotLevel, walk, type Pass, type Resolved, type SelectSlot } from "../aurora/engine";
-import { meets } from "../aurora/requirements";
+import { explainUnmet, meets } from "../aurora/requirements";
 import { totalLevel, type Character } from "../aurora/character";
 import type { ARegistry } from "../aurora/registry";
+import type { AElement } from "../aurora/types";
 import { replaceable } from "./replace";
 import { byEdition, choiceEdition } from "./editionPolicy";
 import { bookKey } from "../aurora/books";
@@ -113,6 +114,20 @@ function primaryOptions<T extends { id: string; type: string; name: string; sour
   return options.filter((e) => e.origin !== "5etools" || chosen.includes(e.id) || !primary.has(twinKey(e)));
 }
 
+/** The kept options per registry and (kind, filter, edition, books): they do not depend on the character's picks. */
+const OPTIONS = new WeakMap<ARegistry, Map<string, { kept: AElement[]; keptIds: Set<string>; primary: Set<string> }>>();
+function optionsFor(reg: ARegistry, type: string, filter: string, ed: string, books: string, build: () => { kept: AElement[]; primary: Set<string> }) {
+  const byReg = OPTIONS.get(reg) ?? OPTIONS.set(reg, new Map()).get(reg)!;
+  const key = `${type}\u0000${filter}\u0000${ed}\u0000${books}`;
+  let hit = byReg.get(key);
+  if (!hit) {
+    const b = build();
+    hit = { ...b, keptIds: new Set(b.kept.map((e) => e.id)) };
+    byReg.set(key, hit);
+  }
+  return hit;
+}
+
 export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved {
   const findings: string[] = [];
   const total = totalLevel(ch);
@@ -130,6 +145,7 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
   for (const st of timeline) for (const s of st.pass.rawSlots) if (!openedAt.has(s.key)) openedAt.set(s.key, st);
 
   const restricted = new Set(ch.sources.map(bookKey));
+  const restrictedKey = [...restricted].sort().join("|");
   // Feats had, by twin key and provider: the same feat from the other provider counts as had, but a provider's own
   // copies of one feat (Aurora's Ability Score Improvement, _2, _3, taken again by design) do not block each other.
   const featsHad = new Map<string, Set<boolean>>();
@@ -145,25 +161,37 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     // level allows; anything else must have been legal when it was made.
     const changeable = replaceable(s);
     const filter = resolveSupports(s.rule.supports, s.rule.spellcasting, changeable ? final : then, shared);
-    let options = reg.find(s.rule.type, filter);
-    if (restricted.size) options = options.filter((e) => !e.source || restricted.has(bookKey(e.source)) || s.chosen.includes(e.id));
-    // One book's element from two providers is one option, the primary's (as in the lists), unless the other was chosen.
-    options = primaryOptions(options, s.chosen);
-    // The edition rule: the choice's own edition's version of each option; no 2024-only option in a 2014 choice.
-    const edition = byEdition(options, choiceEdition(s.owner, s.root, ch, reg), s.chosen);
-    options = edition.options;
+    // The options for this kind, filter, edition and book restriction, the same on every resolve, so kept: one
+    // option per element of one book (the primary provider's, as in the lists), and the edition rule (the choice's own
+    // edition's version of each option; no 2024-only option in a 2014 choice). Picks already made are added back;
+    // one the edition rule leaves out is marked against the rules.
+    const ed = choiceEdition(s.owner, s.root, ch, reg);
+    const all = reg.find(s.rule.type, filter);
+    const base = optionsFor(reg, s.rule.type, filter, ed, restrictedKey, () => {
+      const inBooks = restricted.size ? all.filter((e) => !e.source || restricted.has(bookKey(e.source))) : all;
+      const primary = primaryOptions(inBooks, []);
+      return { kept: byEdition(primary, ed, []).options, primary: new Set(primary.map((e) => e.id)) };
+    });
+    let options = base.kept;
+    const edition = { outOfEdition: new Set<string>() };
+    if (s.chosen.some((id) => !base.keptIds.has(id))) {
+      const extra = all.filter((e) => s.chosen.includes(e.id) && !base.keptIds.has(e.id));
+      for (const e of extra) if (base.primary.has(e.id)) edition.outOfEdition.add(e.id);
+      options = [...options, ...extra];
+    }
     const ctx = makeCtx(then, thenSlot.ownerLevel, atLevel(ch, st.level), reg, then.stats);
     const blocked = new Set<string>(edition.outOfEdition);
+    const why = new Map<string, string | (() => string)>([...edition.outOfEdition].map((id) => [id, "from the other edition's rules"]));
     const nowCtx = changeable ? makeCtx(final, s.ownerLevel, ch, reg, final.stats) : undefined;
     // Each option is judged as itself: "Draconic, unless you have Draconic" is not blocked by this pick of it.
     for (const e of options) {
       if (!e.requirements) continue;
-      if (!meets(e.requirements, ctx.as?.(e.id) ?? ctx) && !(nowCtx && meets(e.requirements, nowCtx.as?.(e.id) ?? nowCtx))) blocked.add(e.id);
+      if (!meets(e.requirements, ctx.as?.(e.id) ?? ctx) && !(nowCtx && meets(e.requirements, nowCtx.as?.(e.id) ?? nowCtx))) { blocked.add(e.id); const c = ctx.as?.(e.id) ?? ctx; const req = e.requirements; why.set(e.id, () => explainUnmet(req, c, (x) => reg.get(x)?.name) ?? "requirements not met"); }
     }
     // A feat the character has from another choice or grant, at any level, is not offered again.
     // The same feat from the other provider counts as had too.
     // A feat the rules let a character take again (5e.tools "repeatable") stays open.
-    if (s.rule.type === "Feat") for (const e of options) if ((final.ids.has(e.id) || hadAsTwin(e)) && !s.chosen.includes(e.id) && e.setters["allow duplicate"]?.value !== "true") blocked.add(e.id);
+    if (s.rule.type === "Feat") for (const e of options) if ((final.ids.has(e.id) || hadAsTwin(e)) && !s.chosen.includes(e.id) && e.setters["allow duplicate"]?.value !== "true") { blocked.add(e.id); why.set(e.id, "you already have this feat"); }
     // Repeat copies (Aurora's Skilled and Skilled_2, its several Replicate Magic Item infusions, one name each): one
     // copy is offered at a time, the first the character can take and does not have; chosen ones stay.
     const byKey = new Map<string, typeof options>();
@@ -182,7 +210,8 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
       for (const e of sameProvider) if (!s.chosen.includes(e.id) && e !== keep) dropped.add(e.id);
     }
     if (dropped.size) options = options.filter((e) => !dropped.has(e.id));
-    return { ...s, options, blocked, filter };
+    const whyBlocked = (id: string) => { const w = why.get(id); return typeof w === "function" ? w() : w; };
+    return { ...s, options, blocked, whyBlocked, filter };
   });
 
   const classLevels: Record<string, number> = {};

@@ -54,6 +54,8 @@ export interface SelectSlot {
   options: AElement[];
   /** Options whose own requirements are not met right now. */
   blocked: Set<string>;
+  /** Why a blocked option is blocked, in words for the player; worked out when asked (lists ask for what they show). */
+  whyBlocked?: (id: string) => string | undefined;
   filter: string;
   /** The class level at which this choice is made (1 for species and background choices). */
   at?: number;

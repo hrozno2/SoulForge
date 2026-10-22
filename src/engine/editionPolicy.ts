@@ -17,9 +17,14 @@ import { filterNeutral } from "../aurora/books";
 
 export type Ed = "2014" | "2024" | "none";
 
+const ED = new WeakMap<object, Ed>();
 export function editionOfElement(e: Pick<AElement, "id" | "source" | "type">): Ed {
-  if (filterNeutral(e.type, e.source) || /^(Grants|Information|Rule|Item|Weapon|Armor)$/.test(e.type)) return "none";
-  return isModern(e) ? "2024" : "2014";
+  let v = ED.get(e);
+  if (v === undefined) {
+    v = filterNeutral(e.type, e.source) || /^(Grants|Information|Rule|Item|Weapon|Armor)$/.test(e.type) ? "none" : isModern(e) ? "2024" : "2014";
+    ED.set(e, v);
+  }
+  return v;
 }
 
 /**

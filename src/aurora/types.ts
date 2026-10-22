@@ -98,6 +98,8 @@ export interface AElement {
   scales?: Record<string, { at: number; value: number }[]>;
   /** Lore HTML kept apart from the rules (5e.tools' fluff, its Info tab). */
   lore?: string;
+  /** The abilities a species or background can raise (STR, DEX...), fixed or by a choice it offers; for list filters. */
+  abilityTags?: string[];
   compendiumHidden: boolean;
   sheet?: SheetInfo;
   setters: Record<string, SetterValue>;

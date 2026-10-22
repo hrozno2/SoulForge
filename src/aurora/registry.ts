@@ -116,6 +116,19 @@ export function matchesSupports(el: AElement, filter: string): boolean {
   return !node || matchNode(node, offered(el));
 }
 
+/** True when a requirement holds with nothing switched on: every top-level part is a "not" ("!X", "!(X||Y)"). */
+function byDefault(req: string): boolean {
+  const parts: string[] = [];
+  let depth = 0, cur = "";
+  for (const ch of req) {
+    if (ch === "(") depth++;
+    if (ch === ")") depth--;
+    if (ch === "," && depth === 0) { parts.push(cur); cur = ""; } else cur += ch;
+  }
+  parts.push(cur);
+  return parts.every((p) => p.trim().startsWith("!"));
+}
+
 export class ARegistry {
   private byId = new Map<string, AElement>();
   private byType = new Map<string, AElement[]>();
@@ -185,6 +198,31 @@ export class ARegistry {
       const key = el.type.toLowerCase();
       (this.byType.get(key) ?? this.byType.set(key, []).get(key)!).push(el);
     }
+    // What each species and background can raise, for the lists' "Ability increase" filter.
+    for (const el of this.byId.values()) if (/^(race|sub race|background)$/i.test(el.type)) el.abilityTags = this.abilitiesRaised(el);
+  }
+
+  /**
+   * The abilities an element can raise: its own increases, and those of the choices it offers (a Half-Elf's two +1s,
+   * a 2024 background's three abilities, the custom lineage's "+2 and +1 to any") and of the subraces and traits it
+   * grants or offers, a few levels down. A choice of any ability gives all six; a rule on a condition counts for none.
+   */
+  private abilitiesRaised(el: AElement, depth = 0, seen = new Set<string>()): string[] {
+    if (seen.has(el.id) || depth > 3) return [];
+    seen.add(el.id);
+    const out = new Set<string>();
+    const ABIL = /^(strength|dexterity|constitution|intelligence|wisdom|charisma)$/i;
+    for (const r of el.rules) {
+      // What applies by default counts: no requirement, or only "not" conditions (the Dwarf's +2 Constitution applies
+      // unless Tasha's "Customizing Your Origin" is on). A rule that needs an option switched on does not.
+      if ("requirements" in r && r.requirements && !byDefault(r.requirements)) continue;
+      if (r.kind === "stat" && ABIL.test(r.name) && Number(r.value) > 0) out.add(r.name.slice(0, 3).toUpperCase());
+      else if (r.kind === "grant" && r.id) { const g = this.byId.get(r.id); if (g) for (const a of this.abilitiesRaised(g, depth + 1, seen)) out.add(a); }
+      else if (r.kind === "select" && /ability score|sub race|race variant|racial trait|feat feature|option/i.test(r.type)) {
+        for (const o of this.find(r.type, r.supports).slice(0, 60)) for (const a of this.abilitiesRaised(o, depth + 1, seen)) out.add(a);
+      }
+    }
+    return [...out];
   }
 
   get(id: string): AElement | undefined {

@@ -21,6 +21,9 @@ const common: FacetDef[] = [
   { id: "year", label: "Released", get: (e, b) => { const y = yearOf(b.info(e.source).release); return [y ? String(y) : "Undated"]; }, order: (a, b) => (b === "Undated" ? -1 : a === "Undated" ? 1 : num(b, a)) },
 ];
 
+const ABILITY_ORDER = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
+const abilityOrder = (a: string, b: string) => ABILITY_ORDER.indexOf(a) - ABILITY_ORDER.indexOf(b);
+
 const levelLabel = (e: AElement) => (setter(e, "level") === "0" ? "C" : setter(e, "level") || "?");
 
 function timeKind(t: string): string {
@@ -64,7 +67,7 @@ const FACETS: Record<string, FacetDef[]> = {
   Race: [
     { id: "size", label: "Size", get: (e) => (sizeOf(e) ? [sizeOf(e)] : []) },
     { id: "speed", label: "Speed", get: (e) => { const r = e.rules.find((x) => x.kind === "stat" && x.name === "innate speed"); return r && r.kind === "stat" ? [`${r.value} ft`] : []; } },
-    { id: "ability", label: "Ability increase", get: (e) => e.rules.filter((r) => r.kind === "stat" && /^(strength|dexterity|constitution|intelligence|wisdom|charisma)$/.test(r.name) && Number(r.value) > 0).map((r) => (r.kind === "stat" ? r.name.slice(0, 3).toUpperCase() : "")) },
+    { id: "ability", label: "Ability increase", get: (e) => e.abilityTags ?? [], order: abilityOrder },
     { id: "flight", label: "Movement", get: (e) => e.rules.filter((r) => r.kind === "stat" && /^innate speed:(fly|swim|climb|burrow)/.test(r.name)).map((r) => (r.kind === "stat" ? r.name.split(":")[1] : "")) },
   ],
   Class: [
@@ -73,6 +76,7 @@ const FACETS: Record<string, FacetDef[]> = {
     { id: "primary", label: "Primary ability", get: (e) => { const m = e.description.match(/<b>\s*Primary Ability\s*<\/b>\s*<\/td>\s*<td[^>]*>([^<]+)/i); return m ? m[1].split(/ and |, | or /).map((s) => s.trim()).filter(Boolean) : []; } },
   ],
   Background: [
+    { id: "ability", label: "Ability increase", get: (e) => e.abilityTags ?? [], order: abilityOrder },
     { id: "skills", label: "Skills", get: (e) => { const m = e.description.match(/Skill Proficienc(?:y|ies):<\/strong>\s*([^<]+)/i); return m ? m[1].split(/,| and /).map((s) => s.trim()).filter(Boolean) : []; } },
   ],
   Feat: [

@@ -22,6 +22,7 @@ export interface StatInputs {
   baseHp: (conMod: number) => number;
 }
 
+const ABILITY_NAMES = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"];
 const half = (n: number, up: boolean) => (up ? Math.ceil(n / 2) : Math.floor(n / 2));
 
 /**
@@ -38,6 +39,11 @@ export class StatBook {
   add(name: string, c: Contribution): void {
     const key = name.toLowerCase();
     (this.contribs.get(key) ?? this.contribs.set(key, []).get(key)!).push(c);
+  }
+
+  /** Forgets computed values, for when an input changes after the walk (a chosen spellcasting ability). */
+  clearCache(): void {
+    this.cache.clear();
   }
 
   names(): string[] {
@@ -155,7 +161,8 @@ export class StatBook {
     // Spellcasting save DC, attack bonus and ability modifier, per spellcasting entry.
     const sc = name.match(/^(.+):spellcasting:(dc|attack|modifier)$/);
     if (sc) {
-      const ability = inp.spellAbility[sc[1]];
+      // A chosen ability ("<entry>:spellcasting:ability:wisdom") wins over the entry's default.
+      const ability = ABILITY_NAMES.find((a) => this.has(`${sc[1]}:spellcasting:ability:${a}`)) ?? inp.spellAbility[sc[1]];
       const m = ability ? this.get(`${ability}:modifier`) : 0;
       const prof = this.get("proficiency");
       const base = sc[2] === "dc" ? 8 + prof + m : sc[2] === "attack" ? prof + m : m;

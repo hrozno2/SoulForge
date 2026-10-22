@@ -1225,7 +1225,7 @@ export function additionalSpellRules(adds: J[] | undefined, owner: string, owner
     const tag = `5et spell set ${slug(ownerSource)} ${slug(owner)}`.toLowerCase();
     let ability: string | undefined;
     adds!.forEach((set, i) => {
-      const own = additionalSpellRules([set], owner, ownerSource);
+      const own = additionalSpellRules([set], owner, ownerSource, out);
       ability ??= own.ability;
       // An unnamed set is named by its first spells ("Light, Sacred Flame").
       const first = JSON.stringify(set).match(/"([a-z][a-z' /-]+)(?:\|[a-z0-9]+)?(?:#c)?"/gi)?.slice(0, 2).map((x) => titleCase(plainName(x.replace(/"/g, "").split("|")[0].split("#")[0]))) ?? [];
@@ -1239,6 +1239,17 @@ export function additionalSpellRules(adds: J[] | undefined, owner: string, owner
   for (const a of adds ?? []) {
     const ab = a.ability;
     if (!ability && ab) ability = typeof ab === "string" ? ab : Array.isArray(ab?.choose) ? ab.choose[0] : undefined;
+    // "ability": {"choose": ["int", "wis", "cha"]}: the player picks the spellcasting ability; the first is the default.
+    // Each pick sets "<owner>:spellcasting:ability:<ability>", which the engine reads for the spell DC and attack.
+    if (out && Array.isArray(ab?.choose) && ab.choose.length > 1) {
+      const tag = `5et spell ability ${slug(ownerSource)} ${slug(owner)}`.toLowerCase();
+      for (const k of ab.choose as string[]) {
+        const full = abilFull(k);
+        const oid = `ID_5ET_SPELLABILITY_${slug(ownerSource)}_${slug(owner)}_${slug(full)}`;
+        if (!out.some((o) => o.id === oid)) out.push(base(oid, cap(full), "Spellcasting Ability", "5etools", { compendiumHidden: true, supports: [tag], rules: [{ kind: "stat", name: `${owner.toLowerCase()}:spellcasting:ability:${full.toLowerCase()}`, value: "1" } as ARule], description: `<p>${esc(cap(full))} is the spellcasting ability for the spells of ${esc(owner)}.</p>` }));
+      }
+      if (!rules.some((r) => r.kind === "select" && r.type === "Spellcasting Ability")) rules.push({ kind: "select", type: "Spellcasting Ability", name: `Spellcasting ability (${owner})`, supports: tag, number: 1 } as ARule);
+    }
     for (const kind of ["innate", "known", "prepared"] as const) {
       for (const { level, refs } of spellRefs(a[kind])) {
         for (const r of refs) {
@@ -1246,11 +1257,14 @@ export function additionalSpellRules(adds: J[] | undefined, owner: string, owner
             const [name, src] = r.split("#")[0].split("|");
             rules.push({ kind: "grant", type: "Spell", id: `SPELLREF:${name.trim().toLowerCase()}|${(src ?? "").toLowerCase()}|${ownerSource.toLowerCase()}`, level, spellcasting: owner } as ARule);
           } else if (r && typeof (r as J).choose === "string") {
-            const crit = Object.fromEntries(String((r as J).choose).split("|").map((p) => p.split("=")).filter((p) => p.length === 2)) as Record<string, string>;
+            const crit = Object.fromEntries(String((r as J).choose).split("|").map((p) => p.split("=")).filter((p) => p.length === 2).map(([k, v]) => [k.trim().toLowerCase(), v])) as Record<string, string>;
             // 5e.tools separates alternatives with ";" (class=Cleric;Wizard); the filter syntax here uses "||".
             const anyOf = (v?: string) => (v ? (v.includes(";") ? `(${v.split(";").map((x) => x.trim()).filter(Boolean).join("||")})` : v.trim()) : "");
             const school = crit.school ? crit.school.split(";").map((x) => SCHOOL[x.trim().toUpperCase()] ?? x).join(";") : "";
-            const parts = [anyOf(crit.class), anyOf(crit.level), anyOf(school)].filter(Boolean) as string[];
+            // "components & miscellaneous=ritual" (Ritual Caster, Magic Initiate's rituals): spells that are rituals, or
+            // concentration spells; the registry offers both as tags.
+            const misc = (crit["components & miscellaneous"] ?? "").split(";").map((x) => x.trim().toLowerCase()).filter((x) => x === "ritual" || x === "concentration");
+            const parts = [anyOf(crit.class), anyOf(crit.level), anyOf(school), ...misc].filter(Boolean) as string[];
             rules.push({ kind: "select", type: "Spell", name: `${owner} spell`, supports: parts.join(", ") || "0", number: (r as J).count ?? 1, level, spellcasting: owner } as ARule);
           }
         }

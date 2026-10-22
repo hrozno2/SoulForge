@@ -470,6 +470,12 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
 
   const signature =
     [...ids].sort().join(",") + "#" + [...stats.names()].sort().map((n) => `${n}=${stats.get(n)}`).join(";") + "#" + rawSlots.length;
+  // A spellcasting ability the player chose ("<entry>:spellcasting:ability:wisdom", from a feature that lets them
+  // choose Intelligence, Wisdom or Charisma) replaces the entry's default.
+  for (const [key, entry] of spellcasting) {
+    const chosen = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"].find((a) => stats.has(`${key}:spellcasting:ability:${a}`));
+    if (chosen && entry.ability !== chosen) { entry.ability = chosen; spellAbility[key] = chosen; stats.clearCache(); }
+  }
   return { ids, active, stats, spellcasting, spellPicks, rawSlots, warnings, signature, gained, via };
 }
 

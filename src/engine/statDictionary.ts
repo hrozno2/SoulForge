@@ -29,6 +29,7 @@ export const STAT_DICTIONARY: StatKind[] = [
   { kind: "speed", pattern: /^(?:innate speed(?::(?:walk|fly|swim|climb|burrow))?(?::misc)?|speed(?::(?:walk|fly|swim|climb|burrow))?(?::misc)?)$/, readBy: "stats.ts, sheet.ts" },
   { kind: "sense", pattern: /^(?:darkvision|blindsight|truesight|tremorsense)(?::range)?$/, readBy: "sheet.ts senses" },
   { kind: "spellcasting", pattern: /^(?:[a-z][a-z' ()-]*:)?spellcasting:(?:slots:\d|slots:count|slot|level|prepare|dc|attack|ability|known|cantrips)$/, readBy: "sheet.ts casting, engine.ts multiclass" },
+  { kind: "chosen spellcasting ability", pattern: /^[^:]+:spellcasting:ability:(?:strength|dexterity|constitution|intelligence|wisdom|charisma)$/, readBy: "engine.ts (the entry's ability), stats.ts (its DC and attack)" },
   { kind: "attack", pattern: /^(?:attack|damage|(?:melee|ranged)(?: weapon)?:(?:attack|damage)|extra attack:count|unarmed strike:(?:damage|dice|attack))$/, readBy: "sheet.ts attacks" },
   { kind: "carrying", pattern: /^(?:carrying capacity|attunement:max|encumbrance:.+)$/, readBy: "sheet.ts" },
   { kind: "companion", pattern: new RegExp(`^companion:(?:hp:max|ac|speed(?::(?:fly|swim|climb|burrow))?|initiative|proficiency|${SKILL}:proficiency|${AB}(?::save:proficiency)?)$`), readBy: "companion stat blocks (to wire: atlas finds companion:ac and speeds unread)" },

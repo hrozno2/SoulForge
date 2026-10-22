@@ -6,22 +6,22 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { it } from "vitest";
+import { expect, it } from "vitest";
 import { resolve } from "../aurora/engine";
 import { autoFill } from "../aurora/autofill";
-import { isModern } from "../aurora/edition";
 import type { AElement } from "../aurora/types";
+import { choiceEdition, editionOfElement } from "./editionPolicy";
 import { holder, loadTestContent } from "./testContent";
 
 const C = process.env.SOULFORGE_RULES;
-/** Kinds that belong to no edition: skills, languages, sizes, internal markers. */
-const NEUTRAL = /^(Proficiency|Language|Size|Vision|Grants|Information|Condition|Rule|Training Option|Item|Weapon|Armor)$/;
-const editionOf = (e: AElement): "2024" | "2014" | "none" => (NEUTRAL.test(e.type) || /internal|aurora legacy essentials/i.test(e.source) ? "none" : isModern(e) ? "2024" : "2014");
+const editionOf = editionOfElement;
+const vname = (n: string) => n.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s*\((?:20\d\d|legacy|2014|2024)\)\s*$/, "").replace(/\s+/g, " ").trim();
 
 it.skipIf(!C || process.env.RULES_TIER !== "editions")("where 2014 and 2024 meet in a choice", () => {
   const reg = loadTestContent(C!);
   const shown = (e: AElement) => !e.compendiumHidden && !/unearthed|playtest/i.test(e.source);
   const tally = new Map<string, { n: number; ex: Set<string> }>();
+  const bad: string[] = [];
   const note = (k: string, ex: string) => { const t = tally.get(k) ?? tally.set(k, { n: 0, ex: new Set() }).get(k)!; t.n++; if (t.ex.size < 6) t.ex.add(ex); };
   for (const type of ["Race", "Sub Race", "Background", "Class", "Archetype", "Feat"]) {
     for (const el of reg.ofType(type).filter(shown)) {
@@ -30,15 +30,19 @@ it.skipIf(!C || process.env.RULES_TIER !== "editions")("where 2014 and 2024 meet
       let filled = ch;
       try { filled = autoFill(ch, reg); } catch { /* the holder alone still shows its first choices */ }
       const r = resolve(filled, reg);
-      const rootEd = editionOf(el);
       for (const s of r.slots) {
         if (s.rule.type === "List") continue;
-        const ownerEd = editionOf(s.owner) === "none" ? rootEd : editionOf(s.owner);
+        // The engine's own rule for a choice's edition: its class, species or background, else its owner.
+        const ownerEd = choiceEdition(s.owner, s.root, filled, reg);
+        const ownVersions = new Set(s.options.filter((o) => editionOf(o) === ownerEd).map((o) => `${o.type}|${vname(o.name)}`));
         for (const o of s.options) {
           if (s.blocked.has(o.id)) continue;
           const oe = editionOf(o);
           if (oe === "none" || oe === ownerEd || ownerEd === "none") continue;
-          note(`${s.rule.type} | owner ${ownerEd} | option ${oe}`, `${el.name} (${el.source}): "${s.rule.name}" offers ${o.name} (${o.source})`);
+          // Against the rules: a 2024 option in a 2014 choice, or the other edition's version of an option.
+          const wrong = ownerEd === "2014" || ownVersions.has(`${o.type}|${vname(o.name)}`);
+          if (wrong) bad.push(`${el.name} (${el.source}): "${s.rule.name}" offers ${o.name} (${o.source})`);
+          note(`${wrong ? "AGAINST THE RULES: " : "older content (allowed): "}${s.rule.type} | owner ${ownerEd} | option ${oe}`, `${el.name} (${el.source}): "${s.rule.name}" offers ${o.name} (${o.source})`);
         }
       }
     }
@@ -47,4 +51,5 @@ it.skipIf(!C || process.env.RULES_TIER !== "editions")("where 2014 and 2024 meet
   mkdirSync(join(C!, "engine"), { recursive: true });
   writeFileSync(join(C!, "engine", "editions.md"), lines.join("\n"));
   console.log(`EDITIONS ${[...tally].sort((a, b) => b[1].n - a[1].n).map(([k, t]) => `${k}: ${t.n}`).join("; ")}`);
+  expect(bad.slice(0, 20)).toEqual([]);
 }, 7200000);

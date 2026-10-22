@@ -16,6 +16,7 @@ import { meets } from "../aurora/requirements";
 import { totalLevel, type Character } from "../aurora/character";
 import type { ARegistry } from "../aurora/registry";
 import { replaceable } from "./replace";
+import { byEdition, choiceEdition } from "./editionPolicy";
 import { bookKey } from "../aurora/books";
 
 export interface LevelState {
@@ -148,8 +149,11 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     if (restricted.size) options = options.filter((e) => !e.source || restricted.has(bookKey(e.source)) || s.chosen.includes(e.id));
     // One book's element from two providers is one option, the primary's (as in the lists), unless the other was chosen.
     options = primaryOptions(options, s.chosen);
+    // The edition rule: the choice's own edition's version of each option; no 2024-only option in a 2014 choice.
+    const edition = byEdition(options, choiceEdition(s.owner, s.root, ch, reg), s.chosen);
+    options = edition.options;
     const ctx = makeCtx(then, thenSlot.ownerLevel, atLevel(ch, st.level), reg, then.stats);
-    const blocked = new Set<string>();
+    const blocked = new Set<string>(edition.outOfEdition);
     const nowCtx = changeable ? makeCtx(final, s.ownerLevel, ch, reg, final.stats) : undefined;
     // Each option is judged as itself: "Draconic, unless you have Draconic" is not blocked by this pick of it.
     for (const e of options) {

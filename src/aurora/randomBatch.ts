@@ -3,6 +3,7 @@
  * background, levels spread from 1 to 20, both rule sets, some multiclassed, some with rolled hit points, other
  * starting gear, optional rules or a companion. Used by the testing tools and the rules tests.
  */
+import { isModern } from "./edition";
 import { randomCharacter } from "./randomCharacter";
 import type { Character } from "./character";
 import type { ContentFilters } from "./books";
@@ -25,6 +26,7 @@ export function randomBatch(reg: ARegistry, count: number, filters: ContentFilte
   const order = [...byName.values()].map((v) => v[0]).concat([...byName.values()].flatMap((v) => v.slice(1)));
   const races = shuffle(reg.ofType("Race").filter(shown));
   const backgrounds = shuffle(reg.ofType("Background").filter(shown));
+  const modernBackgrounds = backgrounds.filter((b) => isModern(b));
   const options = reg.ofType("Option").filter(shown);
   const bands = shuffle(LEVEL_BANDS);
   const out: Character[] = [];
@@ -41,7 +43,8 @@ export function randomBatch(reg: ARegistry, count: number, filters: ContentFilte
     let ch = randomCharacter(reg, level, filters, rng, {
       classId: cls.id,
       raceId: races[i % races.length]?.id,
-      backgroundId: backgrounds[i % backgrounds.length]?.id,
+      // A 2024 species gives no ability increase: its background is a 2024 one, where the increases are.
+      backgroundId: (isModern(races[i % races.length]) && modernBackgrounds.length ? modernBackgrounds[i % modernBackgrounds.length] : backgrounds[i % backgrounds.length])?.id,
       multiclass,
       randomGear: true,
       options: options.length && rng() < 0.25 ? [options[Math.floor(rng() * options.length)].id] : [],

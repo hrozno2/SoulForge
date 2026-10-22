@@ -106,6 +106,13 @@ export const MARK_SPECIES_ASI = "ID_5ET_MARK_SPECIES_ASI";
 export function syntheticElements(): AElement[] {
   const out: AElement[] = [];
   out.push(base(MARK_SPECIES_ASI, "Species ability score increase", "Information", "5etools", { compendiumHidden: true, description: "Marks that the species already raises ability scores." }));
+  // The 2014 Ability Score Improvement, as an option of the class's feat-or-improvement choice: +2 to one score or +1
+  // to two. Taken again at each level that offers it.
+  out.push(base("ID_5ET_ASI_CHOICE", "Ability Score Improvement", "Feat", "5etools", {
+    compendiumHidden: true, supports: ["5et asi choice"], setters: { "allow duplicate": set("true") },
+    description: "<p>Increase one ability score by 2, or two ability scores by 1. A score cannot go above 20 this way.</p>",
+    rules: [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement", supports: "5et asi", number: 1 }],
+  }));
   for (const s of SKILLS) {
     out.push(base(`ID_5ET_SKILL_${slug(s)}`, cap(s), "Proficiency", "5etools", {
       supports: ["5et skill"], compendiumHidden: true,
@@ -949,6 +956,9 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   const subTag = `5et subclass of ${id}`;
   let subLevel: number | undefined;
   const asiLevels: number[] = [];
+  const variants = new Map<string, string>();
+  const replacements: { name: string; by: string }[] = [];
+  const granted = new Map<string, string>();
   for (const ref of (c.classFeatures as J[]) ?? []) {
     const str: string = typeof ref === "string" ? ref : ref.classFeature;
     const [name, , csrc, lv] = str.split("|");
@@ -964,11 +974,33 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     const fid = ftId("CF", `${c.name} ${name}`, feat.source, String(level));
     const generic = name === "Subclass Feature" || name === c.subclassTitle;
     out.push(featureElement(feat, "5et class feature", "Class Feature", fid, ctx, generic));
+    // An optional class feature (Tasha's: Deft Explorer, Favored Foe) is a choice, not a given; its later parts
+    // ("Deft Explorer Improvement") come with it, and the feature it replaces goes when it is taken.
+    if (feat.isClassFeatureVariant) {
+      const base = [...variants.keys()].find((v) => name !== v && name.startsWith(v));
+      if (base) { rules.push({ kind: "grant", type: "Class Feature", id: fid, level, requirements: variants.get(base) }); continue; }
+      variants.set(name, fid);
+      rules.push({ kind: "select", type: "Class Feature", name: `Optional class feature: ${name} (${c.name} ${level})`, supports: fid, number: 1, level, optional: true });
+      const replaced = /replaces the (.+?) feature/i.exec(stripTags(JSON.stringify(feat.entries ?? [])))?.[1];
+      if (replaced) replacements.push({ name: replaced, by: fid });
+      continue;
+    }
+    granted.set(fid, name);
     rules.push({ kind: "grant", type: "Class Feature", id: fid, level });
   }
+  // The replaced feature itself requires the optional one's absence, as Aurora's content does (a requirement on the
+  // class's own grant would not see a choice the class itself offers).
+  for (const { name, by } of replacements) {
+    for (const [fid, fname] of granted) {
+      if (fname.toLowerCase() !== name.toLowerCase()) continue;
+      const el = out.find((o) => o.id === fid);
+      if (el) el.requirements = el.requirements ? `${el.requirements},!${by}` : `!${by}`;
+    }
+  }
+  // An Ability Score Improvement is one choice: a feat, or the improvement itself (2014: +2 to one score or +1 to two;
+  // 2024: the Ability Score Improvement feat among the feats). Before, both could be taken.
   for (const level of asiLevels) {
-    rules.push({ kind: "select", type: "Ability Score Improvement", name: `Ability Score Improvement (level ${level})`, supports: "5et asi", number: 1, level, optional: true });
-    rules.push({ kind: "select", type: "Feat", name: `Feat instead of ability increase (level ${level})`, supports: "5et feat", number: 1, level, optional: true });
+    rules.push({ kind: "select", type: "Feat", name: `Ability Score Improvement or feat (level ${level})`, supports: c.edition === "one" ? "5et feat" : "5et feat||5et asi choice", number: 1, level });
   }
   rules.push(...optionalFeatureRules(c));
   // Feats a class takes at set levels, by category (2024: the Fighting Style feat at 1, the Epic Boon at 19).

@@ -113,6 +113,11 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     }
   }
   for (const w of r.warnings) add("Content refers to something missing", w);
+  // Origins: the 2024 rules raise ability scores in the background, the 2014 rules in the species. A 2024 species
+  // with a 2014 background gets neither (a 2014 species with a 2024 background is the legacy rule: the background's).
+  const sp = ch.race ? reg.get(ch.race) : undefined;
+  const bg = ch.background ? reg.get(ch.background) : undefined;
+  if (sp && bg && isModern(sp) && !isModern(bg) && !/custom/i.test(bg.name)) add("Origin editions mixed", `${sp.name} (2024) gives no ability score increase and ${bg.name} (2014) gives none either; take the 2024 version of the background`);
   const inLines = new Set(sh.casting.flatMap((l) => [...l.cantripsKnown, ...l.spells, ...l.granted].map((p) => p.id)));
   for (const p of r.spellPicks) if (!inLines.has(p.id)) add("A spell is not castable (no spellcasting line)", reg.get(p.id)?.name ?? p.id);
 

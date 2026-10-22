@@ -65,7 +65,9 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
   };
   let c = newCharacter();
   c.race = force.raceId ?? pick(sameEdition("Race"))?.id;
-  c.background = force.backgroundId ?? pick(sameEdition("Background"))?.id;
+  // A 2024 species gives no ability increase, so its background is a 2024 one (where the increases are).
+  const race = c.race ? reg.get(c.race) : undefined;
+  c.background = force.backgroundId ?? pick(race && modern(race) ? pool("Background").filter((b) => modern(b)) : sameEdition("Background"))?.id;
   const total = Math.max(1, Math.min(20, Math.floor(level) || 1));
   const second = force.multiclass && force.multiclass.level < total ? reg.get(force.multiclass.classId) : undefined;
   const moreLv = (force.more ?? []).reduce((t, m) => t + m.level, 0);

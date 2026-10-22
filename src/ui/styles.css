@@ -1934,3 +1934,13 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .passive-feature > summary { cursor: pointer; padding: 7px 12px; font-weight: 600; }
 .passive-feature[open] > summary { border-bottom: 1px solid var(--line); }
 .passive-feature > :not(summary) { padding: 4px 12px 8px; }
+/* The launch loading bar: only after 2 s of loading (the animation's delay), under the pack. A step without a count
+   (preparing the 5e.tools content) shows a moving stripe instead of a figure. */
+.launch-progress { position: absolute; left: 50%; bottom: 12%; width: min(360px, 70vw); transform: translateX(-50%); display: grid; gap: 6px; justify-items: center; opacity: 0; animation: li-bar-in .4s 2s ease-out forwards; }
+.launch-intro.burst .launch-progress, .launch-intro.out .launch-progress { animation: li-fade .25s ease forwards; }
+.launch-bar { position: relative; width: 100%; height: 6px; border-radius: 3px; background: rgba(255,214,140,.15); overflow: hidden; }
+.launch-bar > span { position: absolute; inset: 0; transform-origin: left; background: linear-gradient(90deg, #b8903a, #f1d98f); transition: transform .3s ease-out; }
+.launch-bar.busy::after { content: ""; position: absolute; top: 0; bottom: 0; width: 30%; background: linear-gradient(90deg, transparent, rgba(255,246,220,.85), transparent); animation: li-bar-busy 1.1s linear infinite; }
+.launch-progress small { color: #d9c49a; font: 600 12px var(--body); letter-spacing: .04em; }
+@keyframes li-bar-in { to { opacity: 1; } }
+@keyframes li-bar-busy { from { transform: translateX(-100%); } to { transform: translateX(340%); } }

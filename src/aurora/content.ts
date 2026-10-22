@@ -14,6 +14,8 @@ export const fetchText: TextFetcher = async (url) => {
 };
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+/** Waits until the page has drawn (two frames), so a progress label shows before a long step starts. */
+const painted = () => new Promise<void>((r) => (typeof requestAnimationFrame === "function" ? requestAnimationFrame(() => requestAnimationFrame(() => r())) : setTimeout(r, 0)));
 
 /** Parses every cached file of every enabled index, in load order, into one registry. */
 declare const __BUILD_ID__: string;
@@ -31,7 +33,7 @@ export let lastLoadTimes: Record<string, number> = {};
 export async function buildRegistry(
   sources: SourceConfig[],
   xml: XmlApi = browserXml(),
-  onProgress?: (done: number, total: number) => void,
+  onProgress?: (done: number, total: number, step?: string) => void,
 ): Promise<{ reg: ARegistry; errors: string[] }> {
   const reg = new ARegistry();
   const errors: string[] = [];
@@ -87,8 +89,9 @@ export async function buildRegistry(
         n++;
       }
       times.parse += performance.now() - t;
-      onProgress?.(n, total);
-      await tick();
+      // The one long step (seconds, after an update or a new import): said so, as it has no count of its own.
+      onProgress?.(n, total, `Preparing ${source.name}`);
+      await painted();
       t = performance.now();
       try {
         const elements = convertFiveTools({ files });
@@ -123,6 +126,8 @@ export async function buildRegistry(
       await tick();
     }
   }
+  onProgress?.(total, total, "Putting it together");
+  await tick();
   const tb = performance.now();
   reg.build();
   times.build = performance.now() - tb;

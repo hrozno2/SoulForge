@@ -10,7 +10,8 @@ import { createPortal } from "react-dom";
  *
  * The app's own Reduce motion setting turns it off (the system's reduced-motion preference does not: the user wants
  * the intro with it on); a click skips it. The animation is all CSS on transform and opacity, so it stays smooth while
- * the content loads on the main thread. It covers the window and centres the pack whatever the interface scale (the app
+ * the content loads on the main thread. When loading takes longer than 2 s (the first launch after an update or a new
+ * import), a loading bar appears under the pack with what is being done. It covers the window and centres the pack whatever the interface scale (the app
  * zooms the page), and the cards fly from where the pack actually is on screen.
  */
 let played = false;
@@ -20,8 +21,19 @@ const ready = new Promise<void>((done) => { markReady = done; });
 
 const reduced = () => document.documentElement.classList.contains("reduce-motion");
 
+/** The loading bar under the pack: how far the content is (0 to 1), what it is doing, and whether the step is one
+ * long piece of work with no count (the bar then moves without a figure). It shows after 2 s of loading. */
+type LaunchProgress = { value: number; label: string; busy: boolean };
+let progress: LaunchProgress = { value: 0, label: "Starting", busy: false };
+const progressListeners = new Set<(p: LaunchProgress) => void>();
+export function launchProgress(value: number, label: string, busy = false): void {
+  progress = { value, label, busy };
+  progressListeners.forEach((f) => f(progress));
+}
+
 /** The home screen calls this when its cards are drawn with everything on them (the app, when Home is not shown). */
 export function launchReady(): void {
+  launchProgress(1, "Ready");
   markReady();
 }
 
@@ -68,6 +80,8 @@ export function dropCardsIfWaiting(): void {
 /** `onDone` runs when the intro is over (at once when it does not play), so the tutorial opens after it. */
 export function LaunchIntro({ onDone }: { onDone?: () => void }) {
   const [phase, setPhase] = useState<"shimmer" | "burst" | "out" | "done">(() => (played || reduced() ? "done" : "shimmer"));
+  const [prog, setProg] = useState(progress);
+  useEffect(() => { progressListeners.add(setProg); return () => { progressListeners.delete(setProg); }; }, []);
   useEffect(() => { if (phase === "done") onDone?.(); }, [phase, onDone]);
   useEffect(() => {
     if (phase === "done") return;
@@ -96,7 +110,7 @@ export function LaunchIntro({ onDone }: { onDone?: () => void }) {
   }, []);
   if (phase === "done") return null;
   return createPortal(
-    <div className={`launch-intro ${phase}`} aria-hidden="true">
+    <div className={`launch-intro ${phase}`}>
       <div className="launch-rays" />
       <div className="launch-pack">
         <div className="launch-pack-glow" />
@@ -119,6 +133,10 @@ export function LaunchIntro({ onDone }: { onDone?: () => void }) {
         <div className="launch-pack-shine" />
       </div>
       <div className="launch-flash" />
+      <div className="launch-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(prog.value * 100)} aria-label={prog.label}>
+        <div className={`launch-bar ${prog.busy ? "busy" : ""}`}><span style={{ transform: `scaleX(${Math.max(0.03, prog.value)})` }} /></div>
+        <small>{prog.label}</small>
+      </div>
     </div>,
     document.body,
   );

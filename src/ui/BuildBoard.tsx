@@ -757,8 +757,13 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     if (!keep) {
       set(() => b.snap);
       if (b.mode === "new" && b.from && !reduced()) flyHome(rect, b.from, b.name, b.kind);
+      // Not placed: the list it came from stays open.
+      if (b.mode === "new") setOpen(b.kind);
       return;
     }
+    // Placed: a newly filled core space moves the lists on to the next empty one.
+    const core: Kind[] = ["race", "class", "background"];
+    if (b.mode === "new" && core.includes(b.kind)) setOpen(core.find((k) => k !== b.kind && !filled[k]) ?? null);
     const tileEl = document.querySelector<HTMLElement>(`[data-tile="${b.kind}"]`);
     if (b.mode === "new" && tileEl && !reduced()) {
       if (narrow) { setFlyHide(true); window.setTimeout(() => setFlyHide(false), 900); }
@@ -816,13 +821,16 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         set((c) => ({ ...c, classes: [...c.classes, { classId: el.id, level: 1 }] }));
       }
     } else if (kind === "equipment") addItem(set, el);
-    // Filling one of the three core spaces moves the lists on to the next empty one.
+    // The lists move on to the next empty core space only when the card is kept (Done, in finish): closing it with ×
+    // puts the pick back and leaves the player in the same list.
     const core: Kind[] = ["race", "class", "background"];
-    if (core.includes(kind) && !filled[kind]) setOpen(core.find((k) => k !== kind && !filled[k]) ?? null);
     setFocus(kind);
     if (core.includes(kind)) {
       // A big choice flies up and turns over: its back holds its choices, and Done lands it (× takes it back).
-      const b: Back = { kind, mode: "new", snap: ch, from, name: el.name, phase: reduced() ? "open" : "flying" };
+      // A second pick while this card is open (a double click, a change of mind) keeps the first "before": × still
+      // puts back what was there before the card turned over.
+      const snap = back && back.mode === "new" && back.kind === kind ? back.snap : ch;
+      const b: Back = { kind, mode: "new", snap, from, name: el.name, phase: reduced() ? "open" : "flying" };
       setBack(b);
       if (!reduced()) flyToBack(from, el.name, kind, backRect(), () => setBack((cur) => (cur && cur.phase === "flying" ? { ...cur, phase: "open" } : cur)));
       return;

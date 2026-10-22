@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ARegistry } from "../aurora/registry";
 import { AUTO_UPDATE_MS, buildRegistry, newLinkSource, updateSource, DEFAULT_LINK } from "../aurora/content";
 import { deleteSource, listSources, saveSource } from "../aurora/storage";
+import { launchProgress } from "./LaunchIntro";
 import type { Progress, SourceConfig } from "../aurora/sources";
 import { countFiles } from "../aurora/sources";
 
@@ -44,7 +45,7 @@ export function useContent(): ContentState {
     setBusy(true);
     setStatus("Reading content...");
     try {
-      const { reg: next, errors: errs } = await buildRegistry(list, undefined, (d, t) => setProgress({ phase: "files", done: d, total: t }));
+      const { reg: next, errors: errs } = await buildRegistry(list, undefined, (d, t, step) => { setProgress({ phase: "files", done: d, total: t }); launchProgress(t ? d / t : 1, step ?? `Reading content (${d} of ${t} files)`, !!step); });
       setReg(next);
       setErrors(errs);
       setStatus("");

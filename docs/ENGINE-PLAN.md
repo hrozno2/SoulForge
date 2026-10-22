@@ -372,3 +372,19 @@ matched.
   twin elements, a general typed-effect model. Revisit only for maintainability.
 - **Known:** saved characters of a 5e.tools class keep their earlier "Ability Score Improvement" and "Feat instead"
   picks only until re-saved; those two choices became one and need picking again.
+
+### 2026-10-22 (evening): Plutonium's approach, applied
+
+Analysis in docs/PLUTONIUM.md (read from the module to learn its rules; nothing copied).
+- **Side data:** Foundry effects, activities, limited uses and scale values; species traits matched with Plutonium's
+  fallback; magic variants expanded into their items (3,730), so every Foundry entry now matches (258 applied).
+- **Text:** limited uses (712 features), save DCs (15) and attacks (natural weapons, a feature's spell attack) read
+  from feature text where no side data exists; Aurora's copy takes the 5e.tools copy's attacks and lore.
+- **additionalSpells:** alternative sets are one choice (they were all granted), the spellcasting ability is a
+  choice where offered (111), ritual conditions kept.
+- **Defenses:** resistance choices are choices (12 feats and species).
+- **Engine:** choice filters read statistics (`$(stat:name)`); Wild Shape's limits are statistics (Circle of the
+  Moon raises the CR); a chosen spellcasting ability sets the entry's DC and attack.
+- **Lore** from 5e.tools' fluff files; **bestiary beasts** imported for Wild Shape.
+- Every step: unit tests, loader gates (0 undecided fields, 3 known unread stats), saved sheets unchanged,
+  determinism, editions, 1,000 random characters with 0 findings.

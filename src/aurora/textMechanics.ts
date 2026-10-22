@@ -89,3 +89,46 @@ export function applyTextDc(out: AElement[]): number {
   }
   return n;
 }
+
+const DAMAGE_TYPES = "acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|slashing|thunder";
+const ABBR: Record<string, string> = { strength: "str", dexterity: "dex", constitution: "con", intelligence: "int", wisdom: "wis", charisma: "cha" };
+
+/**
+ * An attack a feature's text gives (as Plutonium reads one when the side data has none): a natural weapon used for
+ * unarmed strikes ("your claws... when you hit with them, the strike deals 1d6 + your Strength modifier slashing
+ * damage") or a spell attack of the feature's own ("make a ranged spell attack... 1d10 force damage"). Undefined when
+ * the text states no die and damage type for one.
+ */
+export function attackFromText(name: string, text: string): NonNullable<AElement["attacks"]>[number] | undefined {
+  const natural = /\b(?:unarmed strikes?|natural weapons?)\b/i.test(text);
+  const spell = /\bmake an? (melee|ranged) spell attack\b/i.exec(text);
+  if (!natural && !spell) return undefined;
+  const abil = Object.keys(ABBR).join("|");
+  // "1d6 + your Strength modifier slashing damage" (2024, MPMM), or "slashing damage equal to 1d4 + your Strength
+  // modifier" (2014), read into the same order: die, ability, type.
+  const older = new RegExp(`\\b(${DAMAGE_TYPES}) damage equal to (\\d+d\\d+|\\d+) \\+ your (${abil}) modifier`, "i").exec(text);
+  const dmg = older ? [older[0], older[2], older[3], older[1]] : new RegExp(`\\b(\\d+d\\d+|\\d+)(?: \\+ your (${abil}) modifier)? (${DAMAGE_TYPES}) damage`, "i").exec(text);
+  if (!dmg) return undefined;
+  // Text with several damage rolls (a choice of options, Animal Enhancement) does not say which one is the attack.
+  const rolls = new Set([...text.matchAll(new RegExp(`\\b\\d+d\\d+\\b[^.]{0,40}?\\b(?:${DAMAGE_TYPES})\\b|\\b(?:${DAMAGE_TYPES}) damage equal to \\d+d\\d+`, "gi"))].map((m) => m[0].toLowerCase()));
+  if (rolls.size > 1) return undefined;
+  // A natural weapon states the strike's own damage: with an ability modifier, or in place of an unarmed strike's
+  // usual damage. Extra damage on a hit (Radiant Strikes) or a save effect (Quivering Palm) is not an attack.
+  if (!spell && !dmg[2] && !/instead of the bludgeoning damage normal for an unarmed strike/i.test(text)) return undefined;
+  const die = dmg[1];
+  if (spell) return { name, die, damageType: dmg[3].toLowerCase(), ability: "spellcasting", ranged: spell[1].toLowerCase() === "ranged" };
+  return { name, die, damageType: dmg[3].toLowerCase(), ability: dmg[2] ? ABBR[dmg[2].toLowerCase()] : "", ranged: false };
+}
+
+/** Gives each 5e.tools feature without an attack the one its text states. Returns how many it gave. */
+export function applyTextAttacks(out: AElement[]): number {
+  let n = 0;
+  for (const el of out) {
+    if (el.origin !== "5etools" || !USES_TYPES.has(el.type) || el.attacks?.length) continue;
+    const a = attackFromText(el.name.replace(/\s*\(.*\)\s*$/, ""), plain(el.description ?? ""));
+    if (!a) continue;
+    el.attacks = [a];
+    n++;
+  }
+  return n;
+}

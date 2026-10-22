@@ -162,11 +162,18 @@ export class ARegistry {
     this.mechanics = borrowMechanics(this.byId);
     checksIncludeInitiative(this.byId);
     applyEditionPolicy(this.byId);
-    // Lore (5e.tools' fluff) is the same for both providers' copy of one thing: Aurora's copy, the one the lists
-    // show, takes the 5e.tools copy's lore.
+    // Lore (5e.tools' fluff) and the attacks a feature gives (from Foundry data or its text) are the same for both
+    // providers' copy of one thing: Aurora's copy, the one the lists show, takes the 5e.tools copy's.
     const lore = new Map<string, string>();
-    for (const el of this.byId.values()) if (el.lore) lore.set(twinKey(el), el.lore);
-    if (lore.size) for (const el of this.byId.values()) if (!el.lore) { const l = lore.get(twinKey(el)); if (l) el.lore = l; }
+    const attacks = new Map<string, NonNullable<AElement["attacks"]>>();
+    for (const el of this.byId.values()) {
+      if (el.lore) lore.set(twinKey(el), el.lore);
+      if (el.attacks?.length) attacks.set(twinKey(el), el.attacks);
+    }
+    for (const el of this.byId.values()) {
+      if (!el.lore) { const l = lore.get(twinKey(el)); if (l) el.lore = l; }
+      if (!el.attacks?.length) { const a = attacks.get(twinKey(el)); if (a) el.attacks = a; }
+    }
     optionalFeatureChoices(this.byId);
     wildShapeChoices(this.byId);
     for (const el of improvementOptions([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);

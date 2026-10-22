@@ -8,7 +8,7 @@
  */
 import { applyFoundry } from "./foundry";
 import { applyLore } from "./lore";
-import { applyTextDc, applyTextUses } from "./textMechanics";
+import { applyTextAttacks, applyTextDc, applyTextUses } from "./textMechanics";
 import type { AElement, ARule, SetterValue } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -1419,9 +1419,10 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   for (const c of classes) convertClass(c, { cf, sc, sf }, ctx, out);
   // Foundry mechanics first, so the reference passes below also mend what they grant (Auran becomes Primordial).
   if (foundryFiles.length) applyFoundry(foundryFiles, out, ftId);
-  // What the side data does not give, from the feature's own text (limited uses, save DCs).
+  // What the side data does not give, from the feature's own text (limited uses, save DCs, attacks).
   applyTextUses(out);
   applyTextDc(out);
+  applyTextAttacks(out);
   resolveSpellRefs(out, spellIds);
   resolveLooseRefs(out);
   const fluff = new Map<string, J[]>();

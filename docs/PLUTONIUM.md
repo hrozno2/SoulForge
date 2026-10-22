@@ -44,7 +44,11 @@ match by those fields with the base-species fallback. Magic variants: the side d
 
 **Done (src/aurora/textMechanics.ts):** limited uses from the text (712 features; 97% agree with Aurora's copy on
 the rest that restores them) and save DCs stated as "8 plus your X modifier and proficiency bonus" (15 features).
-**Next:** attack and damage lines from the tags. It replaces the hand-made name list in src/engine/effects.ts with a rule that works
+Attacks from the text too: natural weapons ("1d6 + your Strength modifier slashing damage", or the 2014 "slashing
+damage equal to 1d4 + your Strength modifier") and a feature's own spell attack; extra damage on a hit and save
+effects are not attacks, and text with several damage rolls (a choice of options) gives none. Aurora's copy of a
+feature takes the attacks (and lore) of the 5e.tools copy, and the hand-made list in src/engine/effects.ts only adds
+an attack for a feature with none from data. **Next:** It replaces the hand-made name list in src/engine/effects.ts with a rule that works
 for all content, the macro fix this project prefers.
 
 ## 3. Foundry's level-up data (advancement)

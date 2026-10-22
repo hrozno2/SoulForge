@@ -663,7 +663,9 @@ function featureAttacks(r: Resolved): AttackLine[] {
   // Dexterity, the better (Foundry's default for a feature's weapon-like attack); "spellcasting", the casting ability.
   const fromData: AttackLine[] = [];
   const seenNames = new Set<string>();
+  const withData = new Set<string>();
   for (const a of r.active) for (const at of a.el.attacks ?? []) {
+    withData.add(a.el.id);
     if (seenNames.has(at.name.toLowerCase())) continue;
     seenNames.add(at.name.toLowerCase());
     const abil = at.ability === "spellcasting" ? (r.spellcasting.values().next().value?.ability ?? "") : ({ str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" } as Record<string, string>)[at.ability] ?? "";
@@ -677,8 +679,8 @@ function featureAttacks(r: Resolved): AttackLine[] {
   const str = s.get("strength:modifier");
   const dex = s.get("dexterity:modifier");
   const martial = s.get("martial arts:dice") > 0;
-  // The hand-written table only where the data has nothing of that name.
-  return [...fromData, ...effectsOfKind(r, "attack").filter(({ effect: e }) => !seenNames.has(e.name.toLowerCase())).map(({ effect: e, from }) => {
+  // The hand-written table only where the data has nothing: no attack of that name, none from that feature.
+  return [...fromData, ...effectsOfKind(r, "attack").filter(({ effect: e, from }) => !seenNames.has(e.name.toLowerCase()) && !withData.has(from.id)).map(({ effect: e, from }) => {
     const mod = e.ability === "finesse" || martial ? Math.max(str, dex) : str;
     const unarmed = e.ability === "unarmed";
     const bonus = mod + prof + s.get("melee:attack") + s.get("attack") + (unarmed ? s.get("unarmed:attack") + s.get("unarmed strike:attack") + s.get("natural:attack") : s.get(`${canonicalName(from.name)}:attack`));

@@ -599,21 +599,34 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
 }
 
 /**
- * The books a chosen card exists in, as a strip of buttons side by side, oldest to newest; the current one is
- * highlighted. A click switches the card to that book's version. More than fit scroll sideways.
+ * The books a chosen card exists in. In the open card (`strip`): a strip of buttons side by side, oldest to newest, the
+ * current one highlighted, scrolling sideways when they do not fit. On the board's summary card: only the current book,
+ * with the others unfolding above it on hover or focus, so the card keeps its look. A click switches to that book.
  */
-function SourcePicker({ g, activeId, onPick }: { g: Group; activeId: string; onPick: (el: AElement) => void }) {
+function SourcePicker({ g, activeId, onPick, strip = false }: { g: Group; activeId: string; onPick: (el: AElement) => void; strip?: boolean }) {
   const active = g.variants.find((v) => v.el.id === activeId) ?? g.best;
   const byDate = [...g.variants].sort((a, b) => (a.book.release ?? 0) - (b.book.release ?? 0) || a.el.source.localeCompare(b.el.source));
   const year = (r?: number) => (r ? String(Math.floor(r / 10000)) : "");
   const title = (v: typeof active) => `${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`;
+  const label = (v: typeof active) => <><b>{v.book.abbr ?? v.el.source}</b><small>{year(v.book.release)}</small></>;
+  if (strip) {
+    return (
+      <div className="src-strip" role="group" aria-label="Book">
+        {byDate.map((v) => (
+          <button key={v.el.id} className={v === active ? "on" : ""} aria-pressed={v === active} title={title(v)} onClick={() => v !== active && onPick(v.el)}>{label(v)}</button>
+        ))}
+      </div>
+    );
+  }
+  const others = byDate.filter((v) => v !== active);
   return (
-    <div className="src-strip" role="group" aria-label="Book">
-      {byDate.map((v) => (
-        <button key={v.el.id} className={v === active ? "on" : ""} aria-pressed={v === active} title={title(v)} onClick={() => v !== active && onPick(v.el)}>
-          <b>{v.book.abbr ?? v.el.source}</b><small>{year(v.book.release)}</small>
-        </button>
-      ))}
+    <div className={`src-pick ${others.length ? "has-more" : ""}`}>
+      {others.length > 0 && (
+        <div className="src-more" role="group" aria-label="Other books">
+          {others.map((v) => <button key={v.el.id} title={title(v)} onClick={() => onPick(v.el)}>{label(v)}</button>)}
+        </div>
+      )}
+      <button className="src-current" title={others.length ? `${title(active)}. Hover for other books.` : title(active)} aria-haspopup={others.length ? "true" : undefined}>{label(active)}{others.length > 0 && <span className="src-more-mark" aria-hidden="true">+</span>}</button>
     </div>
   );
 }
@@ -1139,7 +1152,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
                   const el = kind === "class" ? firstClass : kind === "race" ? chosenEl.race : kind === "background" ? chosenEl.background : undefined;
                   const g = el ? groupOf(el) : undefined;
                   return el && g && g.variants.length > 1 ? (
-                    <div className="card-back-source"><small>Source</small><SourcePicker g={g} activeId={el.id} onPick={(to) => switchVersion(kind as Kind, el, to)} /></div>
+                    <div className="card-back-source"><small>Source</small><SourcePicker strip g={g} activeId={el.id} onPick={(to) => switchVersion(kind as Kind, el, to)} /></div>
                   ) : null;
                 })()}
                 <div className="card-back-ctl">

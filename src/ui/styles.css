@@ -1859,3 +1859,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .slot-override { margin-right: 8px; font-size: 12px; }
 .slot-override.urgent { border-color: var(--gold); color: var(--gold); }
 .slot-override-note { margin: 6px 0; font-size: 12px; }
+
+/* The open card's source picker, beside its title. */
+.card-back-source { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 12px; }
+.card-back-source > small { text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.7; }

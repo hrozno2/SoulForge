@@ -1135,6 +1135,15 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
                   <small>{TITLE[back.kind]}</small>
                   <h2>{back.kind === "class" ? firstClass?.name : back.kind === "race" ? chosenEl.race?.name : back.kind === "background" ? chosenEl.background?.name : back.kind === "magic" ? "Your spells" : "Your inventory"}</h2>
                 </div>
+                {(() => {
+                  // The open card's book: switching it changes the card to that version, and its choices with it.
+                  const kind = back.kind;
+                  const el = kind === "class" ? firstClass : kind === "race" ? chosenEl.race : kind === "background" ? chosenEl.background : undefined;
+                  const g = el ? groupOf(el) : undefined;
+                  return el && g && g.variants.length > 1 ? (
+                    <div className="card-back-source"><small>Source</small><SourcePicker g={g} activeId={el.id} onPick={(to) => switchVersion(kind as Kind, el, to)} /></div>
+                  ) : null;
+                })()}
                 <div className="card-back-ctl">
                   <button className="primary" onClick={() => finish(true)}>Done</button>
                   <button className="board-ico" title={back.mode === "new" ? "Put it back" : "Undo the changes"} aria-label={back.mode === "new" ? "Put it back" : "Undo the changes"} onClick={() => finish(false)}>×</button>

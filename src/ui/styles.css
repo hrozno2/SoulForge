@@ -719,8 +719,9 @@ span.roll-chip.save:hover { background: var(--panel2); color: var(--text); }
 
 .cropper { width: min(720px, 100%); }
 .crop-row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
-.crop-stage { position: relative; flex: 1 1 320px; max-width: 420px; line-height: 0; cursor: crosshair; }
-.crop-stage img { width: 100%; height: auto; display: block; border: 1px solid var(--gilt); }
+.crop-stage { position: relative; flex: 1 1 320px; max-width: 420px; line-height: 0; cursor: move; touch-action: none; user-select: none; }
+.cropper-back { z-index: 60; }
+.crop-stage img { width: 100%; height: auto; display: block; border: 1px solid var(--gilt); pointer-events: none; }
 .crop-box { position: absolute; border: 2px solid var(--accent); box-shadow: 0 0 0 9999px rgba(0,0,0,.35); pointer-events: none; }
 .crop-side { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
 .crop-side .portrait-lg { width: 120px; height: 120px; }

@@ -658,7 +658,7 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
             <h2>Portrait</h2>
             <div className="row">
               {ch.portrait && <img className="portrait small" src={ch.portrait} alt="Portrait" />}
-              <label>Your own image: <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f && f.type.startsWith("image/")) setCrop(f); }} /></label>
+              <label>Your own image: <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f && f.type.startsWith("image/")) { setCrop(f); setOpen(false); } }} /></label>
               {ch.portrait && <button onClick={() => { set((c) => ({ ...c, portrait: undefined })); setOpen(false); }}>Remove</button>}
             </div>
             <PortraitPicker onPick={pick} />

@@ -357,3 +357,18 @@ matched.
 - **5e.tools**: the gate has 0 undecided and 0 planned fields (Mystic Arcanum, item charges and attunement limits,
   critical range, armor Dexterity cap, creature type...).
 - **E4 lookahead**: autofill weighs options by how many later choices require them.
+
+### 2026-10-22 (later)
+
+- **Full check on request** (`npm run full-check` / `node scripts/full-check.mjs [seed] [--count N]`): every test
+  and audit, one summary in `<cache>/runs/full-<date>/summary.md`. It replaces the planned nightly runs, by decision.
+- **Accuracy fixes:** repeat copies for 5e.tools repeatable feats and the ASI option (a second improvement counted
+  for nothing); 5e.tools ability alternatives as one choice (2024 backgrounds and the ASI feat gave every
+  alternative); the custom-lineage rule's increases (Monsters of the Multiverse species had none); editions from
+  book release dates; every content stat read (weapon-specific bonuses, feature DCs, tool expertise, companions).
+- **Stability:** option lists cached per kind, filter and edition (one change back to 3 to 5 ms); blocked options
+  carry their reason from the engine; merged choices assign picks by where they are allowed.
+- **Not built, by decision** (no result would change): the resolver on the IR, the direct 5e.tools loader, merged
+  twin elements, a general typed-effect model. Revisit only for maintainability.
+- **Known:** saved characters of a 5e.tools class keep their earlier "Ability Score Improvement" and "Feat instead"
+  picks only until re-saved; those two choices became one and need picking again.

@@ -1863,3 +1863,12 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 /* The open card's source picker, beside its title. */
 .card-back-source { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 12px; }
 .card-back-source > small { text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.7; }
+
+/* The source strip: one button per book, oldest to newest, scrolling sideways when they do not fit. */
+.src-strip { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; padding-bottom: 2px; scrollbar-width: thin; margin-right: auto; }
+.src-strip button { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; min-width: 60px; padding: 4px 10px; border-radius: 6px; background: rgba(10, 8, 6, .6); border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); color: var(--muted); line-height: 1.1; cursor: pointer; }
+.src-strip button b { font: 700 12px var(--display); letter-spacing: .08em; }
+.src-strip button small { font: 600 9.5px var(--body); letter-spacing: .08em; }
+.src-strip button:hover { border-color: var(--gold); color: var(--text); }
+.src-strip button.on { border-color: var(--gold); color: var(--text); background: color-mix(in srgb, var(--gold) 22%, #15110c); cursor: default; }
+.card-back-source { min-width: 0; max-width: 55%; }

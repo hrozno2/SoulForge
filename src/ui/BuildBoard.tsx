@@ -599,23 +599,21 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
 }
 
 /**
- * The book a chosen card comes from, as one button. Hovering (or focusing) it unfolds the other books above it; a click
- * on one switches the card to that book's version.
+ * The books a chosen card exists in, as a strip of buttons side by side, oldest to newest; the current one is
+ * highlighted. A click switches the card to that book's version. More than fit scroll sideways.
  */
 function SourcePicker({ g, activeId, onPick }: { g: Group; activeId: string; onPick: (el: AElement) => void }) {
   const active = g.variants.find((v) => v.el.id === activeId) ?? g.best;
-  const others = g.variants.filter((v) => v !== active);
+  const byDate = [...g.variants].sort((a, b) => (a.book.release ?? 0) - (b.book.release ?? 0) || a.el.source.localeCompare(b.el.source));
   const year = (r?: number) => (r ? String(Math.floor(r / 10000)) : "");
-  const label = (v: typeof active) => <><b>{v.book.abbr ?? v.el.source}</b><small>{year(v.book.release)}</small></>;
   const title = (v: typeof active) => `${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`;
   return (
-    <div className={`src-pick ${others.length ? "has-more" : ""}`}>
-      {others.length > 0 && (
-        <div className="src-more" role="group" aria-label="Other books">
-          {others.map((v) => <button key={v.el.id} title={title(v)} onClick={() => onPick(v.el)}>{label(v)}</button>)}
-        </div>
-      )}
-      <button className="src-current" title={others.length ? `${title(active)}. Hover for other books.` : title(active)} aria-haspopup={others.length ? "true" : undefined}>{label(active)}{others.length > 0 && <span className="src-more-mark" aria-hidden="true">+</span>}</button>
+    <div className="src-strip" role="group" aria-label="Book">
+      {byDate.map((v) => (
+        <button key={v.el.id} className={v === active ? "on" : ""} aria-pressed={v === active} title={title(v)} onClick={() => v !== active && onPick(v.el)}>
+          <b>{v.book.abbr ?? v.el.source}</b><small>{year(v.book.release)}</small>
+        </button>
+      ))}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { loadContent } from "./load";
 import { nodeXml } from "../aurora/fixture";
 import { parseElementsXml } from "../aurora/parse";
 import { ARegistry } from "../aurora/registry";
+import { lastFoundryReport } from "../aurora/foundry";
 import { convertFiveTools } from "../aurora/fivetools";
 
 describe("concepts", () => {
@@ -67,6 +68,8 @@ describe.skipIf(!CACHE)("loading the real content", () => {
     }
     expect(r.danglingRefs).toEqual([]);
     expect(r.unmappedConcepts).toEqual([]);
+    // Every Foundry path (Plutonium's side data) is mapped or decided as display: a new one shows up here.
+    expect([...lastFoundryReport.unknownPaths.keys()]).toEqual([]);
   }, 600000);
 });
 

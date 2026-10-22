@@ -106,7 +106,7 @@ export function translateFormula(v: unknown): string | undefined {
     if (m === "details.level") return "{level}";
     if ((x = /^classes\.([\w-]+)\.levels$/.exec(m))) return `{level:${x[1].replace(/-/g, " ")}}`;
     if (m === "attributes.movement.walk" || m === "attributes.movement.speed") return "{speed}";
-    if ((x = /^attributes\.movement\.(fly|swim|climb|burrow)$/.exec(m))) return `{speed:${x[1]}}`;
+    if ((x = /^attributes\.movement\.(?:speeds\.)?(fly|swim|climb|burrow)$/.exec(m))) return `{speed:${x[1]}}`;
     bad = true;
     return "0";
   });
@@ -130,6 +130,8 @@ function changeRules(key: string, mode: string, value: unknown, out: AElement[])
   const val = v();
   // Newer dnd5e paths for the same things: damage bonuses, sense ranges, tool proficiency.
   if ((m = /^system\.rolls\.damage\.(mwak|rwak|msak|rsak)\.bonus$/.exec(key))) return changeRules(`system.bonuses.${m[1]}.damage`, mode, value, out);
+  // dnd5e 5's speeds ("system.attributes.movement.speeds.fly") for the older "system.attributes.movement.fly".
+  if ((m = /^system\.attributes\.movement\.speeds\.(walk|fly|swim|climb|burrow)$/.exec(key))) return changeRules(`system.attributes.movement.${m[1]}`, mode, value, out);
   if ((m = /^system\.attributes\.senses\.ranges\.(\w+)$/.exec(key))) return changeRules(`system.attributes.senses.${m[1]}`, mode, value, out);
   if ((m = /^system\.tools\.(\w+)(?:\.value)?$/.exec(key))) {
     const TOOL: Record<string, string> = { mason: "mason's tools", brewer: "brewer's supplies", smith: "smith's tools", thief: "thieves' tools", herb: "herbalism kit", alchemist: "alchemist's supplies", carpenter: "carpenter's tools", cook: "cook's utensils", tinker: "tinker's tools", disg: "disguise kit", forg: "forgery kit", pois: "poisoner's kit", navg: "navigator's tools" };

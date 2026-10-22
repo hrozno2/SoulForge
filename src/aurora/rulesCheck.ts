@@ -110,8 +110,10 @@ export function checkChoiceWindows(r: Resolved): Finding[] {
     const seen = new Map<string, string>();
     for (const o of open) {
       const k = `${o.type}|${vname(o.name)}|${bookKey(o.source)}`;
-      if (seen.has(k) && seen.get(k) !== o.id) add("Choice offers one option twice", `${s.rule.name}: ${o.name} (${o.source})`);
-      seen.set(k, o.id);
+      // A copy picked here beside the next free one is a repeat the choice has room for, not a duplicate.
+      const prev = seen.get(k);
+      if (prev && prev !== o.id && !(s.chosen.includes(prev) || s.chosen.includes(o.id))) add("Choice offers one option twice", `${s.rule.name}: ${o.name} (${o.source})`);
+      if (!prev || !s.chosen.includes(prev)) seen.set(k, o.id);
     }
     // Feat categories: an origin feat choice offers origin feats, a fighting style choice fighting styles.
     if (s.rule.type === "Feat") {

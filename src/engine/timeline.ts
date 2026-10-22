@@ -174,8 +174,11 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
       const sameProvider = group.filter((e) => (e.origin === "5etools") === (group[0].origin === "5etools"));
       if (sameProvider.length < 2) continue;
       const free = sameProvider.filter((e) => !s.chosen.includes(e.id) && !final.ids.has(e.id) && !blocked.has(e.id));
-      // A copy already picked in this choice is the one shown; otherwise the first free copy.
-      const keep = sameProvider.some((e) => s.chosen.includes(e.id)) ? undefined : free[0];
+      // The first free copy, while the choice has room for it: copies exist so an option can be taken again (an
+      // Artificer learns Replicate Magic Item more than once in one choice). A copy already picked stays as well.
+      const room = s.chosen.length < s.rule.number;
+      const pickedHere = sameProvider.some((e) => s.chosen.includes(e.id));
+      const keep = !pickedHere || room ? free[0] : undefined;
       for (const e of sameProvider) if (!s.chosen.includes(e.id) && e !== keep) dropped.add(e.id);
     }
     if (dropped.size) options = options.filter((e) => !dropped.has(e.id));

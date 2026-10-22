@@ -170,7 +170,10 @@ export class ARegistry {
       if (el.lore) lore.set(twinKey(el), el.lore);
       if (el.attacks?.length) attacks.set(twinKey(el), el.attacks);
     }
+    // Sci-fi technology is marked from 5e.tools' item ages; Aurora's items of the same name (any book) share it.
+    const scifi = new Set([...this.byId.values()].filter((e) => e.supports.includes("scifi")).map((e) => e.name.toLowerCase()));
     for (const el of this.byId.values()) {
+      if (scifi.size && !el.supports.includes("scifi") && /item|weapon|armor/i.test(el.type) && scifi.has(el.name.toLowerCase())) el.supports = [...el.supports, "scifi"];
       if (!el.lore) { const l = lore.get(twinKey(el)); if (l) el.lore = l; }
       if (!el.attacks?.length) { const a = attacks.get(twinKey(el)); if (a) el.attacks = a; }
     }

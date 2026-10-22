@@ -136,7 +136,7 @@ export function App() {
   const open = (nid: string, ch: Character) => { setId(nid); setCharacter(normalizeCharacter(ch)); setTab("build"); };
   const random = (level: number) => {
     const p = getSettings();
-    open(uid(), randomCharacter(content.reg, level, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual }));
+    open(uid(), randomCharacter(content.reg, level, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual, scifi: p.showSciFi }));
   };
   const [testMsg, setTestMsg] = useState("");
   const [report, setReport] = useState<{ name: string; res: ForeignImport; rules: string[] } | null>(null);

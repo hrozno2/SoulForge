@@ -447,7 +447,9 @@ function convertItem(i: J, ctx: Ctx): AElement | null {
   const type = weapon ? "Weapon" : armor ? "Armor" : magic ? "Magic Item" : "Item";
   const setters: Record<string, SetterValue> = { category: set(weapon ? "Weapons" : armor ? "Armor" : magic ? "Magic Items" : "Adventuring Gear") };
   const rules: ARule[] = [];
-  const supports: string[] = [];
+  // Modern and futuristic technology (5e.tools' "age": laser rifles, automatic pistols, grenades, powered armor) is
+  // sci-fi, for the global filter; a magic item built on one ("+1 Laser Rifle") takes its base item's age.
+  const supports: string[] = /^(modern|futuristic)$/i.test(String(m.age ?? "")) ? ["scifi"] : [];
   if (m.weight !== undefined) setters.weight = set(`${m.weight} lb.`, { lb: String(m.weight) });
   const c = cost(m.value);
   if (c) setters.cost = c;

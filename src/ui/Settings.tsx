@@ -19,6 +19,8 @@ export interface AppSettings {
   showLegacy: boolean;
   showPlaytest: boolean;
   showUnusual: boolean;
+  /** Modern and futuristic technology (laser rifles, grenades, powered armor). */
+  showSciFi: boolean;
   /** Printed sheets list every spell the character can prepare, with blank boxes to mark each day. */
   allSpells: boolean;
   /** The Build tab's layout: the build board (lists, board and scores side by side), or the older tabs along the top. */
@@ -28,7 +30,7 @@ export interface AppSettings {
 }
 
 const KEY = "charforge.settings";
-const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true, allSpells: true, buildLayout: "board", hideTestTools: false };
+const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true, showSciFi: false, allSpells: true, buildLayout: "board", hideTestTools: false };
 
 function read(): AppSettings {
   try {
@@ -183,6 +185,10 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           <label className="set-row">
             <span><b>Settings and other sources</b><small className="muted"> Eberron, Ravnica, Theros and other worlds, plus third party and homebrew books</small></span>
             <input type="checkbox" checked={s.showUnusual} onChange={(e) => updateSettings({ showUnusual: e.target.checked })} />
+          </label>
+          <label className="set-row">
+            <span><b>Sci-fi technology</b><small className="muted"> Modern and futuristic gear: laser and antimatter guns, automatic firearms, grenades, powered armor</small></span>
+            <input type="checkbox" checked={s.showSciFi} onChange={(e) => updateSettings({ showSciFi: e.target.checked })} />
           </label>
           <p className="muted">What you already picked stays visible even when its book is hidden here.</p>
         </fieldset>

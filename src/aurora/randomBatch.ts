@@ -17,7 +17,7 @@ const LEVEL_BANDS = [[1, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10, 11], [12, 14],
 
 export function randomBatch(reg: ARegistry, count: number, filters: ContentFilters, rng: () => number = Math.random): Character[] {
   const books = new BookIndex(reg);
-  const shown = (e: AElement) => !e.compendiumHidden && !/^custom\b/i.test(e.name) && !hiddenBy(books.info(e.source), e.source, filters, e.type);
+  const shown = (e: AElement) => !e.compendiumHidden && !/^custom\b/i.test(e.name) && !hiddenBy(books.info(e.source), e.source, filters, e.type, e.supports);
   const shuffle = <T,>(a: T[]) => a.map((x) => [rng(), x] as const).sort((p, q) => p[0] - q[0]).map(([, x]) => x);
   const classes = shuffle(reg.ofType("Class").filter(shown));
   // One per class name first (a 2014 and a 2024 Fighter are the same class), then the rest.

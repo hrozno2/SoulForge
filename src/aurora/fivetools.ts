@@ -112,6 +112,13 @@ const repeatIds = (id: string, n: number) => Array.from({ length: n }, (_, i) =>
 export function syntheticElements(): AElement[] {
   const out: AElement[] = [];
   out.push(base(MARK_SPECIES_ASI, "Species ability score increase", "Information", "5etools", { compendiumHidden: true, description: "Marks that the species already raises ability scores." }));
+  // The damage defenses as elements: the content grants them as markers (the sheet reads the ids), and a choice of
+  // one ("resistance to acid, cold or fire") needs them as options.
+  for (const [kind, word] of [["RESISTANCE", "resistance"], ["IMMUNITY", "immunity"], ["VULNERABILITY", "vulnerability"]]) {
+    for (const t of ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"]) {
+      out.push(base(`ID_INTERNAL_CONDITION_DAMAGE_${kind}_${t.toUpperCase()}`, `${cap(t)} ${word}`, "Condition", "5etools", { compendiumHidden: true, description: `<p>${cap(t)} damage ${word}.</p>` }));
+    }
+  }
   // The 2014 Ability Score Improvement, as an option of the class's feat-or-improvement choice: +2 to one score or +1
   // to two. Taken again at each level that offers it.
   // The custom-lineage rule some species use instead of fixed increases (Van Richten's, Monsters of the Multiverse:
@@ -603,11 +610,17 @@ function expandVersions(list: J[]): J[] {
 }
 
 /** Damage resistances, immunities and condition immunities, as the entries Aurora content grants for them. */
-function defenseRules(r: J): ARule[] {
+function defenseRules(r: J, owner = String(r.name ?? "")): ARule[] {
   const rules: ARule[] = [];
+  const LABEL: Record<string, string> = { DAMAGE_RESISTANCE: "Damage resistance", DAMAGE_IMMUNITY: "Damage immunity", DAMAGE_VULNERABILITY: "Damage vulnerability", CONDITION_IMMUNITY: "Condition immunity" };
   const add = (list: unknown, kind: string) => {
     for (const x of (Array.isArray(list) ? list : []) as unknown[]) {
       if (typeof x === "string") rules.push({ kind: "grant", type: "Condition", id: `ID_INTERNAL_CONDITION_${kind}_${slug(x)}` });
+      // {"choose": {"from": [...], "count": 2}}: the player picks (Boon of Energy Resistance, the Dragonborn's type).
+      else if (x && typeof x === "object" && Array.isArray((x as J).choose?.from)) {
+        const ids = ((x as J).choose.from as string[]).map((t) => `ID_INTERNAL_CONDITION_${kind}_${slug(t)}`);
+        rules.push({ kind: "select", type: "Condition", name: `${LABEL[kind]} (${owner})`, supports: ids.join("||"), number: Number((x as J).choose.count) || 1 } as ARule);
+      }
     }
   };
   add(r.resist, "DAMAGE_RESISTANCE");
@@ -781,7 +794,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     for (const v of versions) {
       const vname = String(v.name).split(";").pop()!.trim() || String(v.name);
       const vid = ftId("RACEVERSION", `${r.name} ${vname}`, v.source ?? r.source);
-      const vrules: ARule[] = [...speedRules(v.speed), ...abilityRules(v.ability, vname, { out, idBase: vid }), ...trainingRules(v, vname, out, ctx, vid), ...defenseRules(v)].filter((x) => !baseIds.has(JSON.stringify(x)));
+      const vrules: ARule[] = [...speedRules(v.speed), ...abilityRules(v.ability, vname, { out, idBase: vid }), ...trainingRules(v, vname, out, ctx, vid), ...defenseRules(v, r.name)].filter((x) => !baseIds.has(JSON.stringify(x)));
       if (v.darkvision && v.darkvision !== r.darkvision) {
         const dv = `${vid}_DARKVISION`;
         out.push(base(dv, `Darkvision (${v.darkvision} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));

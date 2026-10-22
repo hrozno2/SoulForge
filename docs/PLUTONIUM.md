@@ -43,8 +43,9 @@ match by those fields with the base-species fallback. Magic variants: the side d
   already reads these same fields; the comparison worth doing is the edge cases each chooser handles.
   Done for additionalSpells (2026-10-22): alternative sets are one choice (they were all granted: the 2024 Elf got
   8 spells, Circle of the Land 64), a choice of spellcasting ability is offered (111 features; it was fixed to the
-  first), and "ritual" conditions in spell choices are kept. Next: the other choosers (expertise, item masteries,
-  senses, resources, immunities).
+  first), and "ritual" conditions in spell choices are kept. Damage defenses offered as a choice ("resist": [{"choose":
+  ...}], 12 feats and species: Boon of Energy Resistance, Dragonborn, Tiefling) are a choice now; they were dropped.
+  The other fields (expertise, senses, tools, languages, weapons, feats) use only shapes the converter reads.
 
 **Done (src/aurora/textMechanics.ts):** limited uses from the text (712 features; 97% agree with Aurora's copy on
 the rest that restores them) and save DCs stated as "8 plus your X modifier and proficiency bonus" (15 features).

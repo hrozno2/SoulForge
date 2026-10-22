@@ -11,7 +11,7 @@ import { resolve } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
 import { ClassIcon, hasClassIcon } from "./classIcons";
 import { hueOf } from "./PickCards";
-import { dropCardsIfWaiting } from "./LaunchIntro";
+import { dropCardsIfWaiting, launchReady } from "./LaunchIntro";
 
 function ago(ms: number): string {
   const m = Math.round((Date.now() - ms) / 60000);
@@ -35,14 +35,18 @@ export function StartTab({
   onImportForeign: (file: File) => Promise<string>;
 }) {
   const [list, setList] = useState<CharacterRecord[]>([]);
+  const [listed, setListed] = useState(false);
   // The launch intro's cards drop in here when the list arrives after the pack has burst.
   useEffect(() => { if (list.length) requestAnimationFrame(dropCardsIfWaiting); }, [list.length]);
+  // The launch pack opens once the cards are drawn with everything on them: the saved list and the rules content
+  // (their classes, colours and numbers). Two frames, so they are painted before it bursts.
+  useEffect(() => { if (listed && contentReady) requestAnimationFrame(() => requestAnimationFrame(launchReady)); }, [listed, contentReady]);
   const [msg, setMsg] = useState("");
   const [askLevel, setAskLevel] = useState(false);
   const [level, setLevel] = useState(1);
   const fileRef = useRef<HTMLInputElement>(null);
   const foreignRef = useRef<HTMLInputElement>(null);
-  const refresh = () => listCharacters().then(setList);
+  const refresh = () => listCharacters().then((l) => { setList(l); setListed(true); });
   useEffect(() => {
     refresh();
     const t = setInterval(refresh, 4000);

@@ -2,6 +2,7 @@ import { browserXml, parseElementsXml, type XmlApi } from "./parse";
 import { ARegistry } from "./registry";
 import { crawlIndex, countFiles, flatten, syncFiles, type IndexNode, type Progress, type SourceConfig, type SyncResult, type TextFetcher } from "./sources";
 import { idbFileCache, readFiles, saveSource } from "./storage";
+import type { AElement } from "./types";
 import { FIVETOOLS_CORE_FILES, FIVETOOLS_EXTRA_FILES, convertFiveTools } from "./fivetools";
 
 export const DEFAULT_LINK = "https://raw.githubusercontent.com/AuroraLegacy/elements/master/AuroraLegacy.index";
@@ -15,6 +16,18 @@ export const fetchText: TextFetcher = async (url) => {
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
 /** Parses every cached file of every enabled index, in load order, into one registry. */
+declare const __BUILD_ID__: string;
+
+/** A short hash of a text (FNV-1a), for cache keys. */
+function hashText(text: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return (h >>> 0).toString(36);
+}
+
+/** The time each step of the last content load took, in milliseconds. */
+export let lastLoadTimes: Record<string, number> = {};
+
 export async function buildRegistry(
   sources: SourceConfig[],
   xml: XmlApi = browserXml(),
@@ -22,6 +35,9 @@ export async function buildRegistry(
 ): Promise<{ reg: ARegistry; errors: string[] }> {
   const reg = new ARegistry();
   const errors: string[] = [];
+  // How long each step takes, for the launch-time budget (printed to the console, kept in lastLoadTimes).
+  const t0 = performance.now();
+  const times = { read: 0, parse: 0, convert: 0, build: 0 };
   const plan: { source: SourceConfig; urls: string[] }[] = [];
   let total = 0;
   for (const s of sources) {
@@ -33,9 +49,32 @@ export async function buildRegistry(
   let n = 0;
   for (const { source, urls } of plan) {
     if (source.format === "5etools") {
+      // The converted elements are kept, and reused while the source, its files and the app build are the same:
+      // converting is most of a launch's work (a few seconds), reading the kept result a fraction of it.
+      const cacheUrl = `${source.url}#converted`;
+      const cacheKey = `${__BUILD_ID__}|${source.lastChecked}|${source.fileCount}|${urls.length}|${hashText(urls.join("\n"))}`;
+      let t = performance.now();
+      const kept = await idbFileCache.get(cacheUrl).catch(() => undefined);
+      if (kept) {
+        try {
+          const saved = JSON.parse(kept) as { key: string; elements: AElement[] };
+          if (saved.key === cacheKey) {
+            reg.addElements(saved.elements);
+            times.read += performance.now() - t;
+            n += urls.length;
+            onProgress?.(n, total);
+            continue;
+          }
+        } catch {
+          /* a damaged copy is converted again */
+        }
+      }
       // 5etools files are converted together, because classes refer to features and spell lists in other files.
       const files: Record<string, unknown> = {};
+      t = performance.now();
       const texts = await readFiles(urls);
+      times.read += performance.now() - t;
+      t = performance.now();
       const prefix = `${source.url}/`;
       for (const u of urls) {
         const text = texts.get(u);
@@ -47,18 +86,28 @@ export async function buildRegistry(
         }
         n++;
       }
+      times.parse += performance.now() - t;
       onProgress?.(n, total);
       await tick();
+      t = performance.now();
       try {
-        reg.addElements(convertFiveTools({ files }));
+        const elements = convertFiveTools({ files });
+        // Kept before the registry's build passes change them; written after the launch, off the critical path.
+        const copy = JSON.stringify({ key: cacheKey, elements });
+        globalThis.setTimeout(() => void idbFileCache.put(cacheUrl, copy, source.url).catch(() => undefined), 3000);
+        reg.addElements(elements);
       } catch (e) {
         errors.push(`${source.name}: ${(e as Error).message}`);
       }
+      times.convert += performance.now() - t;
       continue;
     }
     for (let i = 0; i < urls.length; i += 40) {
       const batch = urls.slice(i, i + 40);
+      let t = performance.now();
       const texts = await readFiles(batch);
+      times.read += performance.now() - t;
+      t = performance.now();
       for (const u of batch) {
         const text = texts.get(u);
         if (!text) continue;
@@ -69,11 +118,16 @@ export async function buildRegistry(
         }
         n++;
       }
+      times.parse += performance.now() - t;
       onProgress?.(n, total);
       await tick();
     }
   }
+  const tb = performance.now();
   reg.build();
+  times.build = performance.now() - tb;
+  lastLoadTimes = { ...times, total: performance.now() - t0 };
+  console.info(`[load] ${Object.entries(lastLoadTimes).map(([k, v]) => `${k} ${Math.round(v)} ms`).join(", ")}`);
   return { reg, errors };
 }
 

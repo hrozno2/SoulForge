@@ -13,7 +13,7 @@ import { useContent } from "./useContent";
 import { BuildTab } from "./BuildTab";
 import { BuildBoard } from "./BuildBoard";
 import { StartTab } from "./StartTab";
-import { LaunchIntro } from "./LaunchIntro";
+import { LaunchIntro, launchReady } from "./LaunchIntro";
 import { outdatedFiveTools } from "../aurora/content";
 import { DetailPanel } from "./DetailPanel";
 import { UpdateBanner } from "./UpdateBanner";
@@ -98,6 +98,8 @@ export function App() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [detail, setDetail] = useState<AElement | null>(null);
   const content = useContent();
+  // Launched on another tab than Home: the pack opens when the content is ready (the home screen signals otherwise).
+  useEffect(() => { if (tab !== "start" && content.ready) launchReady(); }, [tab, content.ready]);
   // 5e.tools content imported by an older importer lacks files this version reads: ask for a fresh import, once per
   // launch, until it is done.
   const [reimportLater, setReimportLater] = useState(false);

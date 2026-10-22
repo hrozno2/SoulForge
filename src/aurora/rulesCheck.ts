@@ -6,6 +6,8 @@
  * Player's Handbooks. Every finding names the rule it breaks.
  */
 import { conceptOf } from "../engine/concepts";
+import { choiceEdition, editionOfElement } from "../engine/editionPolicy";
+import { bookKey } from "./books";
 import type { Resolved } from "./engine";
 import { preparePool, type SheetData } from "./sheet";
 import type { AElement } from "./types";
@@ -71,8 +73,68 @@ export function refFor(ref: RefClass[], cls: AElement): RefClass | undefined {
   return same.find((c) => (c.edition === "one") === isModern(cls)) ?? same[0];
 }
 
-export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Finding[] {
+/** A feat's category as either provider tags it: Origin, General, Fighting Style, Epic Boon; "" for none (2014). */
+function featCategory(e: AElement): string {
+  const t = e.supports.map((x) => x.toLowerCase());
+  if (t.includes("origin") || t.includes("category o")) return "origin";
+  if (t.some((x) => /fighting style$/.test(x)) || t.some((x) => /^category fs/.test(x))) return "fighting style";
+  if (t.includes("epic boon") || t.includes("category eb")) return "epic boon";
+  if (t.includes("general") || t.includes("category g")) return "general";
+  return "";
+}
+
+/**
+ * Every choice window, not only the finished character: what each open choice offers must be something the rules
+ * let the character take there. Checked apart from the code that builds the lists, so a filter, a content rule or a
+ * flow that lets an illegal option through shows up even when no test happens to pick it.
+ */
+export function checkChoiceWindows(r: Resolved): Finding[] {
   const out: Finding[] = [];
+  const add = (rule: string, detail: string) => out.push({ rule, detail });
+  const vname = (n: string) => n.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s*\((?:20\d\d|legacy|2014|2024)\)\s*$/, "").replace(/\s+/g, " ").trim();
+  for (const s of r.slots) {
+    if (s.rule.type === "List") continue;
+    const open = s.options.filter((o) => !s.blocked.has(o.id));
+    // Edition: a 2014 choice offers no 2024 option; no choice offers the other edition's version of an option.
+    const ed = choiceEdition(s.owner, s.root, r.character, r.reg);
+    if (ed !== "none") {
+      const own = new Set(open.filter((o) => editionOfElement(o) === ed).map((o) => `${o.type}|${vname(o.name)}`));
+      for (const o of open) {
+        const oe = editionOfElement(o);
+        if (oe === "none" || oe === ed) continue;
+        if (ed === "2014") add("Choice offers a 2024 option to a 2014 choice", `${s.rule.name}: ${o.name} (${o.source})`);
+        else if (own.has(`${o.type}|${vname(o.name)}`)) add("Choice offers both versions of an option", `${s.rule.name}: ${o.name} (${o.source})`);
+      }
+    }
+    // The same element of the same book twice.
+    const seen = new Map<string, string>();
+    for (const o of open) {
+      const k = `${o.type}|${vname(o.name)}|${bookKey(o.source)}`;
+      if (seen.has(k) && seen.get(k) !== o.id) add("Choice offers one option twice", `${s.rule.name}: ${o.name} (${o.source})`);
+      seen.set(k, o.id);
+    }
+    // Feat categories: an origin feat choice offers origin feats, a fighting style choice fighting styles.
+    if (s.rule.type === "Feat") {
+      const want = /origin feat/i.test(s.rule.name) ? "origin" : /fighting style/i.test(s.rule.name) ? "fighting style" : "";
+      if (want) for (const o of open) { const c = featCategory(o); if (c && c !== want) add("Choice offers a feat of another category", `${s.rule.name}: ${o.name} is ${c}`); }
+    }
+    // Spells: none above what the character can cast with the choice's spellcasting.
+    // Only choices bounded by the spell slots: one of a stated level (Mystic Arcanum: level 6) is above them by design.
+    if (s.rule.type === "Spell" && s.rule.spellcasting && /\$\(spellcasting:slots\)/.test(s.rule.supports)) {
+      const key = s.rule.spellcasting.toLowerCase();
+      let max = 0;
+      for (let n = 1; n <= 9; n++) if (r.stats.get(`${key}:spellcasting:slots:${n}`) > 0) max = n;
+      max = Math.max(max, r.stats.get(`${key}:spellcasting:slot`));
+      if (max > 0) for (const o of open) { const lv = Number(o.setters.level?.value ?? 0); if (lv > max) add("Choice offers a spell above what can be cast", `${s.rule.name}: ${o.name} (level ${lv}, max ${max})`); }
+    }
+    // A required choice always has something to take.
+    if (!s.rule.optional && s.chosen.length < s.rule.number && !open.some((o) => !s.chosen.includes(o.id))) add("A required choice has nothing to take", `${s.rule.name} [${s.rule.type}]`);
+  }
+  return out;
+}
+
+export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Finding[] {
+  const out: Finding[] = [...checkChoiceWindows(r)];
   const add = (rule: string, detail: string) => out.push({ rule, detail });
   const ch = r.character;
   const reg = r.reg;

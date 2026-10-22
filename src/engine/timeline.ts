@@ -164,6 +164,21 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     // The same feat from the other provider counts as had too.
     // A feat the rules let a character take again (5e.tools "repeatable") stays open.
     if (s.rule.type === "Feat") for (const e of options) if ((final.ids.has(e.id) || hadAsTwin(e)) && !s.chosen.includes(e.id) && e.setters["allow duplicate"]?.value !== "true") blocked.add(e.id);
+    // Repeat copies (Aurora's Skilled and Skilled_2, its several Replicate Magic Item infusions, one name each): one
+    // copy is offered at a time, the first the character can take and does not have; chosen ones stay.
+    const byKey = new Map<string, typeof options>();
+    for (const e of options) (byKey.get(twinKey(e)) ?? byKey.set(twinKey(e), []).get(twinKey(e))!).push(e);
+    const dropped = new Set<string>();
+    for (const group of byKey.values()) {
+      if (group.length < 2) continue;
+      const sameProvider = group.filter((e) => (e.origin === "5etools") === (group[0].origin === "5etools"));
+      if (sameProvider.length < 2) continue;
+      const free = sameProvider.filter((e) => !s.chosen.includes(e.id) && !final.ids.has(e.id) && !blocked.has(e.id));
+      // A copy already picked in this choice is the one shown; otherwise the first free copy.
+      const keep = sameProvider.some((e) => s.chosen.includes(e.id)) ? undefined : free[0];
+      for (const e of sameProvider) if (!s.chosen.includes(e.id) && e !== keep) dropped.add(e.id);
+    }
+    if (dropped.size) options = options.filter((e) => !dropped.has(e.id));
     return { ...s, options, blocked, filter };
   });
 

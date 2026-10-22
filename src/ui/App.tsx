@@ -14,6 +14,7 @@ import { BuildTab } from "./BuildTab";
 import { BuildBoard } from "./BuildBoard";
 import { StartTab } from "./StartTab";
 import { LaunchIntro } from "./LaunchIntro";
+import { outdatedFiveTools } from "../aurora/content";
 import { DetailPanel } from "./DetailPanel";
 import { UpdateBanner } from "./UpdateBanner";
 import { DicePanel, setRollContext } from "./Dice";
@@ -97,6 +98,10 @@ export function App() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [detail, setDetail] = useState<AElement | null>(null);
   const content = useContent();
+  // 5e.tools content imported by an older importer lacks files this version reads: ask for a fresh import, once per
+  // launch, until it is done.
+  const [reimportLater, setReimportLater] = useState(false);
+  const outdated = useMemo(() => outdatedFiveTools(content.sources), [content.sources]);
   const updater = useUpdater();
 
   const r = useMemo(() => resolve(character, content.reg), [character, content.reg]);
@@ -315,6 +320,19 @@ export function App() {
       <DicePanel />
       <ConfirmHost />
       {bugOpen && <BugReport r={r} sources={content.sources} onClose={() => setBugOpen(false)} />}
+      {introOver && !reimportLater && outdated.length > 0 && !(tutorialOpen && !tutorialMin) && (
+        <div className="modal-back" role="dialog" aria-label="Import 5e.tools again" onClick={() => setReimportLater(true)}>
+          <div className="modal-page themed reimport" onClick={(e) => e.stopPropagation()}>
+            <h2>Import your 5e.tools content again</h2>
+            <p>This version of Soul Forge reads more from 5e.tools than your import has: magic item variants (+1 weapons, Flame Tongue and the rest), lore, beasts for Wild Shape, and the mechanics data Plutonium uses (limited uses, attacks, saving throws).</p>
+            <p>Import <b>{outdated.map((s) => s.name).join(", ")}</b> again on the Content tab to get them. Your characters stay as they are.</p>
+            <div className="row">
+              <button className="primary" onClick={() => { setReimportLater(true); setTab("content"); }}>Go to Content</button>
+              <button onClick={() => setReimportLater(true)}>Later</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </UiProvider>
   );

@@ -192,5 +192,28 @@ export async function storeFiveTools(name: string, files: Map<string, string>, b
   }
   const children: IndexNode[] = [...groups.entries()].map(([g, list]) => ({ url: `${root}#${g}`, name: g, description: "", version: "local", files: list, children: [] }));
   const tree: IndexNode = { url: root, name, description: "5etools data", version: "local", files: [], children };
-  return { url: root, name, kind: "local", format: "5etools", baseUrl, tree, disabled: [], versions: {}, lastChecked: Date.now(), fileCount: urls.length };
+  return { url: root, name, kind: "local", format: "5etools", importFormat: FIVETOOLS_IMPORT_FORMAT, baseUrl, tree, disabled: [], versions: {}, lastChecked: Date.now(), fileCount: urls.length };
+}
+
+/**
+ * The 5e.tools importer's format. Raise it when the importer starts fetching files it did not before; a full import
+ * of an older format is then out of date, and the app asks the user to import it again.
+ *   2: magic variants, lore (fluff), bestiary beasts and Plutonium's Foundry files (2026-10-22)
+ */
+export const FIVETOOLS_IMPORT_FORMAT = 2;
+
+/**
+ * Full 5e.tools imports made by an older importer: they lack files this version reads. A source without a stamp
+ * (imported before stamps existed) counts as current when it already holds the format 2 files. Picked entries
+ * (single items from the 5e.tools picker) are not full imports.
+ */
+export function outdatedFiveTools(sources: SourceConfig[]): SourceConfig[] {
+  const files = (s: SourceConfig) => { const out: string[] = []; const walk = (n?: IndexNode) => { if (!n) return; out.push(...n.files); n.children.forEach(walk); }; walk(s.tree); return out; };
+  return sources.filter((s) => {
+    if (s.format !== "5etools" || s.disabled.includes(s.url)) return false;
+    const list = files(s);
+    if (!list.some((f) => /\/races\.json$/.test(f))) return false;
+    const format = s.importFormat ?? (list.some((f) => /\/magicvariants\.json$/.test(f)) && list.some((f) => /\/foundry-races\.json$/.test(f)) ? 2 : 1);
+    return format < FIVETOOLS_IMPORT_FORMAT;
+  });
 }

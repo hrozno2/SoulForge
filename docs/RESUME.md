@@ -4,6 +4,12 @@ The big picture: docs/PLAN-audit.md (the full audit of character creation, phase
 prefers English). Older plan: docs/PLAN-windows.md (windows, filters, lore). Decisions on scope are at the end of
 PLAN-audit.md.
 
+## Releases: asking users to import 5e.tools again
+
+When the 5e.tools importer starts fetching new files, raise FIVETOOLS_IMPORT_FORMAT (src/aurora/content.ts) and add a
+line to its list. On launch, a full 5e.tools import of an older format gets a popup ("Import your 5e.tools content
+again", Go to Content / Later). Format 2 (this release): magic variants, lore, bestiary beasts, Foundry files.
+
 ## Flagged for later (2026-10-22)
 
 - Launch intro (src/ui/LaunchIntro.tsx): the user sees issues with the animation, details still to collect. Known so

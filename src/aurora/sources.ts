@@ -21,6 +21,8 @@ export interface SourceConfig {
   kind: "link" | "local";
   /** How the files are read. Aurora element XML is the default; "5etools" files are JSON converted on load. */
   format?: "aurora" | "5etools";
+  /** For 5etools sources: the importer's format when they were imported (FIVETOOLS_IMPORT_FORMAT). */
+  importFormat?: number;
   /** For 5etools sources fetched from an address, so they can be refreshed from it. */
   baseUrl?: string;
   /** The crawled index tree, kept so the content loads offline. */

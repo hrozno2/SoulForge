@@ -1911,3 +1911,5 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .char-card[data-rarity="epic"] { --rarity: rgba(176, 82, 255, .9); }
 .char-card[data-rarity="legendary"] { --rarity: rgba(255, 150, 30, .95); }
 @keyframes li-rarity { 0% { opacity: 1; } 60% { opacity: 1; } 100% { opacity: 0; } }
+.reimport { width: min(560px, 100%); }
+.reimport p { line-height: 1.5; }

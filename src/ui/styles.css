@@ -530,7 +530,8 @@ button.tiny { padding: 0 6px; }
 .custom-in { width: 64px; }
 
 /* the full description window */
-.modal-back { position: fixed; inset: 0; background: rgba(0, 0, 0, .65); z-index: 50; display: grid; place-items: center; padding: 20px; }
+/* Dialogs open above everything they can be opened from, the open build card (.card-back-veil, 280) included. */
+.modal-back { position: fixed; inset: 0; background: rgba(0, 0, 0, .65); z-index: 320; display: grid; place-items: center; padding: 20px; }
 .modal-page { position: relative; width: min(760px, 100%); max-height: calc(100vh - 40px); overflow: auto; background: var(--paper); color: var(--ink); border: 1px solid var(--gilt); border-top: 4px solid var(--crimson); box-shadow: 0 12px 50px #000; padding: 20px 28px 26px; }
 .modal-page h2 { color: var(--crimson); font-size: 28px; border-bottom: 2px solid var(--gilt); }
 .modal-page:not(.themed) .muted, .modal-page:not(.themed) small { color: #6b5a3a; }
@@ -720,7 +721,7 @@ span.roll-chip.save:hover { background: var(--panel2); color: var(--text); }
 .cropper { width: min(720px, 100%); }
 .crop-row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
 .crop-stage { position: relative; flex: 1 1 320px; max-width: 420px; line-height: 0; cursor: move; touch-action: none; user-select: none; }
-.cropper-back { z-index: 60; }
+.cropper-back { z-index: 330; }
 .crop-stage img { width: 100%; height: auto; display: block; border: 1px solid var(--gilt); pointer-events: none; }
 .crop-box { position: absolute; border: 2px solid var(--accent); box-shadow: 0 0 0 9999px rgba(0,0,0,.35); pointer-events: none; }
 .crop-side { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
@@ -1913,3 +1914,11 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 @keyframes li-rarity { 0% { opacity: 1; } 60% { opacity: 1; } 100% { opacity: 0; } }
 .reimport { width: min(560px, 100%); }
 .reimport p { line-height: 1.5; }
+/* What a species, background or class gives without a choice, each an explanation that opens (PassiveFeatures). */
+.passive-features { margin-top: 14px; }
+.passive-features h3 { margin: 0 0 6px; }
+.passive-asi { margin: 0 0 8px; }
+.passive-feature { border: 1px solid var(--line); border-radius: 6px; margin: 4px 0; background: var(--panel2); }
+.passive-feature > summary { cursor: pointer; padding: 7px 12px; font-weight: 600; }
+.passive-feature[open] > summary { border-bottom: 1px solid var(--line); }
+.passive-feature > :not(summary) { padding: 4px 12px 8px; }

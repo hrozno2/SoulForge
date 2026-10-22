@@ -13,6 +13,7 @@ import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as
 import { buildSheet } from "../aurora/sheet";
 import { formatRelease, groupVariants, hiddenBy, type Group } from "../aurora/books";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
+import { PassiveFeatures } from "./PassiveFeatures";
 import { ClassPanel } from "./BuildTab";
 import { Browse, blurb, dragMime } from "./Browse";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
@@ -1029,22 +1030,22 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   /** A card's back: the choices its species, class or background asks for, the spells, or the inventory. */
   const choicesFor = (kind: Kind) => (
     <>
-          {kind === "race" && (chosenEl.race ? <SlotList slots={ownSlots((root) => root === "race")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your species." /> : <p className="muted">Choose a species from the list on the left, or drag one onto its space.</p>)}
+          {kind === "race" && (chosenEl.race ? <><SlotList slots={ownSlots((root) => root === "race")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your species." /><PassiveFeatures r={r} root={(root) => root === "race"} /></> : <p className="muted">Choose a species from the list on the left, or drag one onto its space.</p>)}
           {kind === "class" && (ch.classes.length ? (
             <>
               <ClassPanel r={r} ch={ch} set={set} onDetail={() => undefined} picker={false} compact />
               {ch.classes.map((c) => {
                 const extra = ownSlots((root) => root === `class:${c.classId}`).filter((s) => tabOfSlot(s) !== "class");
-                return extra.length > 0 && (
+                return (
                   <section key={c.classId}>
-                    <h3>{r.reg.get(c.classId)?.name} training and feats</h3>
-                    <SlotList slots={extra} r={r} set={set} onDetail={() => undefined} />
+                    {extra.length > 0 && <><h3>{r.reg.get(c.classId)?.name} training and feats</h3><SlotList slots={extra} r={r} set={set} onDetail={() => undefined} /></>}
+                    <PassiveFeatures r={r} root={(root) => root === `class:${c.classId}`} />
                   </section>
                 );
               })}
             </>
           ) : <p className="muted">Choose a class from the list on the left, or drag one onto its space. Adding another class later makes a multiclass.</p>)}
-          {kind === "background" && (chosenEl.background ? <SlotList slots={ownSlots((root) => root === "background")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your background." /> : <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>)}
+          {kind === "background" && (chosenEl.background ? <><SlotList slots={ownSlots((root) => root === "background")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your background." /><PassiveFeatures r={r} root={(root) => root === "background"} /></> : <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>)}
           {kind === "magic" && (caster ? (
             <>
               <div className="card-back-art"><SpellBook f={spellFill} /><span>{spellNeed ? `${spellHave} of ${spellNeed}` : ""}</span></div>

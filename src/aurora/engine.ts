@@ -492,7 +492,9 @@ export function resolveSupports(filter: string, casting: string | undefined, pas
     void shared;
   }
   const slotExpr = maxSlot > 0 ? `(${Array.from({ length: maxSlot }, (_, i) => i + 1).join("||")})` : "(none)";
-  return filter.replace(/\$\(spellcasting:list\)/g, listExpr).replace(/\$\(spellcasting:slots\)/g, slotExpr);
+  // "$(stat:name)": a statistic's value in a filter, whole (Wild Shape's CR limit, raised by Circle of the Moon).
+  return filter.replace(/\$\(spellcasting:list\)/g, listExpr).replace(/\$\(spellcasting:slots\)/g, slotExpr)
+    .replace(/\$\(stat:([^)]+)\)/g, (_m, name: string) => String(Math.floor(pass.stats.get(name.trim()))));
 }
 
 const HALF_CASTERS = new Set(["paladin", "ranger", "artificer"]);

@@ -217,7 +217,7 @@ function targetIds(kind: string, e: J, ftId: (k: string, n: string, s: string, x
     // The converter adds the feature's header number to its level ("3" and header 1 give "_31").
     case "subclassFeature": return ["", "1", "2", "3", "4"].map((h) => ftId("SF", `${e.subclassShortName} ${e.name}`, e.source, `${e.level}${h}`));
     case "optionalfeature": return [ftId("OPT", e.name, e.source)];
-    case "item": case "magicvariant": case "baseitem": return [ftId("ITEM", e.name, e.source)];
+    case "item": case "baseitem": return [ftId("ITEM", e.name, e.source)];
     default: return [];
   }
 }
@@ -250,6 +250,8 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
       for (const e of list as J[]) {
         const ids = targetIds(kind, e, ftId);
         let targets = ids.flatMap((id) => [...out.filter((o) => o.id === id || o.id.startsWith(`${id}_`) && /_\d+$/.test(o.id))]);
+        // A generic magic variant ("Flame Tongue"): every item built from it.
+        if (kind === "magicvariant") targets = out.filter((o) => o.supports.includes(`5et variant ${String(e.name).toLowerCase()}|${String(e.source ?? "").toLowerCase()}`));
         // A species trait: the trait of that name within the species, as Plutonium finds it. "Goblin (Zendikar; Grotag
         // Tribe)" is tried whole, then as "Goblin (Zendikar)", then as the base "Goblin", always in the trait's book.
         if (!targets.length && kind === "raceFeature" && e.raceName) {
@@ -266,7 +268,7 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
           // that species' entry already gives: nothing left to apply.
           if (!targets.length && m && out.some((o) => o.id.endsWith(`_T_${slug(e.name)}`) && o.id.includes(`_${slug(m[1])}_`))) continue;
         }
-        if (!targets.length) { if (ids.length) report.unmatched.push(`${kind} ${e.name} (${e.source})`); continue; }
+        if (!targets.length) { if (ids.length || kind === "magicvariant") report.unmatched.push(`${kind} ${e.name} (${e.source})`); continue; }
         for (const el of targets) {
           const already = setBy(el, byId);
           const added: ARule[] = [];

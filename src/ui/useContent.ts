@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ARegistry } from "../aurora/registry";
 import { AUTO_UPDATE_MS, buildRegistry, newLinkSource, updateSource, DEFAULT_LINK } from "../aurora/content";
 import { deleteSource, listSources, saveSource } from "../aurora/storage";
+import { whenIntroOver } from "./LaunchIntro";
 import type { Progress, SourceConfig } from "../aurora/sources";
 import { countFiles } from "../aurora/sources";
 
@@ -91,6 +92,9 @@ export function useContent(): ContentState {
       const list = await listSources().catch(() => []);
       if (cancelled) return;
       setSources(list);
+      // Reading the content takes seconds of work; the launch intro plays first so it runs smoothly.
+      await whenIntroOver();
+      if (cancelled) return;
       await rebuild(list);
       for (const s of list) {
         if (s.kind === "link" && Date.now() - s.lastChecked > AUTO_UPDATE_MS && navigator.onLine) await syncOne(s, false, true);

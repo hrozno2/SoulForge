@@ -1289,6 +1289,38 @@ export interface FiveToolsInput {
 /** What the last conversion did with the lore files: how many matched, and the ones that matched nothing. */
 export let lastLoreReport: { applied: number; unmatched: string[] } = { applied: 0, unmatched: [] };
 
+/**
+ * The specific items of one magic variant ("Flame Tongue" over every sword it fits), as 5e.tools builds them at run
+ * time from magicvariants.json: each base item that meets one of the variant's `requires` (every field equal; a list
+ * means any of it) and none of its `excludes` gets the variant's `inherits`, named with its prefix and suffix and
+ * with the text's {=...} templates filled in. A 2024 variant prefers the 2024 base item where both fit with one name.
+ */
+function expandVariant(v: J, ctx: Ctx): J[] {
+  const inh: J = v.inherits;
+  if (!inh || !Array.isArray(v.requires)) return [];
+  const lc = (x: unknown) => String(x ?? "").toLowerCase();
+  const fits = (b: J, o: J) => Object.entries(o).every(([k, want]) => (Array.isArray(want) ? want.some((w) => lc(w) === lc(b[k])) : typeof want === "boolean" ? !!b[k] === want : lc(want) === lc(b[k])));
+  const excludes: J[] = Array.isArray(v.excludes) ? v.excludes : v.excludes ? [v.excludes] : [];
+  const modern = /^(XPHB|XDMG|XMM)$/i.test(String(inh.source ?? ""));
+  const bases = [...ctx.baseItems.values()]
+    .filter((b) => (v.requires as J[]).some((o) => fits(b, o)) && !excludes.some((o) => Object.entries(o).some(([k, x]) => fits(b, { [k]: x }))))
+    .sort((a, b) => Number(/^XPHB$/i.test(b.source) === modern) - Number(/^XPHB$/i.test(a.source) === modern));
+  const { namePrefix = "", nameSuffix = "", lootTables, tier, ...rest } = inh;
+  void lootTables; void tier;
+  return bases.map((b) => {
+    const item: J = { ...rest, name: `${namePrefix}${b.name}${nameSuffix}`, source: inh.source ?? v.source ?? b.source, baseItem: `${b.name}|${b.source}`, _variant: `${v.name}|${inh.source ?? v.source ?? ""}` };
+    const fill = (t: string) => t.replace(/\{=(\w+)(?:\/(\w+))?\}/g, (_m, key: string, mod?: string) => {
+      const val = key === "baseName" ? b.name : key === "dmgType" ? ({ S: "slashing", P: "piercing", B: "bludgeoning" } as Record<string, string>)[String(b.dmgType)] ?? "" : String(item[key] ?? b[key] ?? "");
+      if (mod === "l") return val.toLowerCase();
+      if (mod === "u") return val.toUpperCase();
+      if (mod === "a" || mod === "at") return `${/^[aeiou]/i.test(val) ? "an" : "a"} ${mod === "at" ? val.toLowerCase() : val}`;
+      return val;
+    });
+    if (item.entries) item.entries = JSON.parse(fill(JSON.stringify(item.entries)));
+    return item;
+  });
+}
+
 /** Converts every recognised file. Unknown files are ignored. */
 export function convertFiveTools(input: FiveToolsInput): AElement[] {
   const ctx: Ctx = { books: {}, spellClasses: {}, baseItems: new Map() };
@@ -1324,6 +1356,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
       }));
     }
   }
+  const variantItems: J[] = [];
   const cf: J[] = [];
   const sc: J[] = [];
   const sf: J[] = [];
@@ -1350,6 +1383,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
       }
     }
     for (const i of json.item ?? []) { const e = convertItem(i, ctx); if (e) out.push(e); }
+    for (const v of json.magicvariant ?? []) variantItems.push(...expandVariant(v, ctx));
     for (const f of json.feat ?? []) {
       if (featVariants(f, ctx, out)) continue;
       const el = convertFeat(f, ctx, out);
@@ -1372,6 +1406,15 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
     for (const r of json.race ?? []) convertRace(r, ctx, subraces, out);
     for (const b of json.background ?? []) convertBackground(b, ctx, out);
     for (const m of json.monster ?? []) out.push(convertMonster(m, ctx));
+  }
+  // The magic items 5e.tools builds from its variants, unless the data already lists one by that name and book.
+  const haveIds = new Set(out.map((e) => e.id));
+  for (const it of variantItems) {
+    const e = convertItem(it, ctx);
+    if (!e || haveIds.has(e.id)) continue;
+    haveIds.add(e.id);
+    e.supports = [...e.supports, `5et variant ${String(it._variant).toLowerCase()}`];
+    out.push(e);
   }
   for (const c of classes) convertClass(c, { cf, sc, sf }, ctx, out);
   // Foundry mechanics first, so the reference passes below also mend what they grant (Auran becomes Primordial).
@@ -1424,7 +1467,7 @@ function resolveSpellRefs(out: AElement[], spellIds: Record<string, { id: string
 }
 
 /** Files a 5etools data folder offers, for a base address. Index files list the book-specific parts. */
-export const FIVETOOLS_CORE_FILES = ["books.json", "races.json", "backgrounds.json", "feats.json", "items-base.json", "items.json", "languages.json", "optionalfeatures.json", "spells/sources.json"];
+export const FIVETOOLS_CORE_FILES = ["books.json", "races.json", "backgrounds.json", "feats.json", "items-base.json", "items.json", "magicvariants.json", "languages.json", "optionalfeatures.json", "spells/sources.json"];
 /** Plutonium's Foundry mechanics (foundry.ts) and the lore files (lore.ts), fetched with the core files when there. */
 export const FIVETOOLS_EXTRA_FILES = [
   "foundry-feats.json", "foundry-items.json", "foundry-optionalfeatures.json", "foundry-races.json", "foundry-actions.json", "foundry-backgrounds.json",

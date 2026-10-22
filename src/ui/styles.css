@@ -1880,3 +1880,34 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .slot.has-take > .slot-head { padding-left: 38px; }
 .slot-take { position: absolute; left: 12px; top: 12px; z-index: 1; width: 18px; height: 18px; margin: 0; accent-color: var(--gold); cursor: pointer; }
 .slot.declined > .slot-head { opacity: 0.55; cursor: default; }
+
+/* ---- Launch intro: a card pack bursting open (LaunchIntro.tsx) ----
+   Every step is timed here, as animations with delays, and only transform and opacity change, so it all runs on the
+   compositor: drop 0-0.5 s, shake 0.5-1.05 s, burst at 1.05 s, fade 1.35-2 s. */
+.launch-intro { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: radial-gradient(circle at 50% 50%, #2a1a10 0%, #0b0807 70%); pointer-events: none; perspective: 900px; overflow: hidden; will-change: opacity; animation: li-fade .65s 1.35s ease forwards; }
+.launch-intro > * { grid-area: 1 / 1; }
+.launch-pack { position: relative; width: min(220px, 40vw); aspect-ratio: 200 / 280; will-change: transform, opacity; animation: li-drop .5s cubic-bezier(.3,1.4,.5,1) both, li-shake .55s .5s ease-in, li-pop .35s 1.05s ease-out forwards; }
+.launch-pack-art { position: relative; width: 100%; height: 100%; filter: drop-shadow(0 18px 30px rgba(0,0,0,.6)); }
+.launch-pack-glow { position: absolute; inset: -30%; border-radius: 50%; background: radial-gradient(circle, rgba(255,190,90,.75) 0%, rgba(255,120,40,.25) 40%, transparent 70%); opacity: 0; will-change: transform, opacity; animation: li-glow .6s .45s ease-in forwards; }
+.launch-rays { width: 120vmax; height: 120vmax; background: repeating-conic-gradient(from 0deg, rgba(255,214,140,.3) 0deg 5deg, transparent 5deg 18deg); mask: radial-gradient(circle, #000 0%, rgba(0,0,0,.35) 25%, transparent 45%); -webkit-mask: radial-gradient(circle, #000 0%, rgba(0,0,0,.35) 25%, transparent 45%); opacity: 0; transform: scale(.2); will-change: transform, opacity; animation: li-rays .9s 1.05s ease-out forwards; }
+.launch-flash { width: 100%; height: 100%; background: radial-gradient(circle, #fff6dc 0%, rgba(255,214,140,.6) 30%, transparent 70%); opacity: 0; will-change: opacity; animation: li-flash .45s 1.05s ease-out forwards; }
+@keyframes li-drop { from { transform: translateY(-120vh) rotate(-8deg); } to { transform: none; } }
+@keyframes li-shake {
+  0% { transform: none; } 20% { transform: translateX(-3px) rotate(-1deg); } 40% { transform: translateX(4px) rotate(1.5deg) scale(1.02); }
+  60% { transform: translateX(-6px) rotate(-2.5deg) scale(1.04); } 80% { transform: translateX(7px) rotate(3deg) scale(1.06); } 100% { transform: translateX(-4px) rotate(-1deg) scale(1.08); }
+}
+@keyframes li-glow { to { opacity: 1; transform: scale(1.15); } }
+@keyframes li-pop { 0% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1.9); opacity: 0; } }
+@keyframes li-rays { 0% { opacity: 0; transform: scale(.2) rotate(0deg); } 25% { opacity: .9; } 100% { opacity: 0; transform: scale(1) rotate(35deg); } }
+@keyframes li-flash { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes li-fade { to { opacity: 0; } }
+
+/* The cards that fly out of the pack land with a glow by level, like a card's rarity. */
+.char-cards { perspective: 1200px; }
+.char-card.loot-drop { position: relative; z-index: 210; }
+.char-card.loot-drop::after { content: ""; position: absolute; inset: -6px; border-radius: 14px; pointer-events: none; box-shadow: 0 0 22px 6px var(--rarity, #e8e4da); animation: li-rarity 1.6s ease-out forwards; }
+.char-card[data-rarity="common"] { --rarity: rgba(232, 228, 218, .7); }
+.char-card[data-rarity="rare"] { --rarity: rgba(64, 150, 255, .85); }
+.char-card[data-rarity="epic"] { --rarity: rgba(176, 82, 255, .9); }
+.char-card[data-rarity="legendary"] { --rarity: rgba(255, 150, 30, .95); }
+@keyframes li-rarity { 0% { opacity: 1; } 60% { opacity: 1; } 100% { opacity: 0; } }

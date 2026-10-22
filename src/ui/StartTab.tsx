@@ -11,6 +11,7 @@ import { resolve } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
 import { ClassIcon, hasClassIcon } from "./classIcons";
 import { hueOf } from "./PickCards";
+import { dropCardsIfWaiting } from "./LaunchIntro";
 
 function ago(ms: number): string {
   const m = Math.round((Date.now() - ms) / 60000);
@@ -34,6 +35,8 @@ export function StartTab({
   onImportForeign: (file: File) => Promise<string>;
 }) {
   const [list, setList] = useState<CharacterRecord[]>([]);
+  // The launch intro's cards drop in here when the list arrives after the pack has burst.
+  useEffect(() => { if (list.length) requestAnimationFrame(dropCardsIfWaiting); }, [list.length]);
   const [msg, setMsg] = useState("");
   const [askLevel, setAskLevel] = useState(false);
   const [level, setLevel] = useState(1);
@@ -126,7 +129,7 @@ function CharCard({ rec, reg, current, onOpen, onDuplicate, onExport, onDelete }
   const cls = info?.firstClass ?? "";
   const hue = cls ? hueOf(cls) : 40;
   return (
-    <div className={`char-card ${current ? "current" : ""}`}>
+    <div className={`char-card ${current ? "current" : ""}`} data-level={ch.classes.reduce((n, k) => n + (k.level || 0), 0)}>
       <button className="char-card-body pick-card is-class" data-glyph="" style={{ ["--hue" as string]: hue }} onClick={onOpen} aria-label={`Open ${rec.name || "this character"}`}>
         {cls && hasClassIcon(cls) && <ClassIcon name={cls} size={220} className="pick-watermark" />}
         <span className="ribbon">{cls && hasClassIcon(cls) ? <ClassIcon name={cls} size={30} /> : (rec.name || "?").charAt(0)}</span>

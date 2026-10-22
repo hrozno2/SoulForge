@@ -63,6 +63,7 @@ export const BY_KIND: Record<string, Record<string, Decision>> = {
     weightNote: LORE, optionalfeatures: "display: which artificer infusion can make the item (Replicate Magic Item); the infusion's own choice lists the items", bonusSavingThrowConcentration: "display: a concentration bonus is in the item's text; the sheet has no concentration line", reqAttuneAlt: LORE,        seeAlsoVehicle: VEHICLE, seeAlsoDeck: LORE, vehSpeed: VEHICLE, crew: VEHICLE, crewMin: VEHICLE, crewMax: VEHICLE, vehAc: VEHICLE, vehHp: VEHICLE,
     vehDmgThresh: VEHICLE, capCargo: VEHICLE, capPassenger: VEHICLE, travelCost: VEHICLE, shippingCost: VEHICLE,
   },
+  magicvariant: { ammo: "display: whether the variant is ammunition; its `requires` already pick the ammunition base items" },
   itemGroup: {
     wondrous: SEARCH, attachedSpells: "planned: as for items", reqAttuneTags: "planned: as for items", itemsHidden: SEARCH, recharge: "planned: as for items",
     sentient: LORE, focus: "display: as for items", charges: "planned: as for items", rechargeAmount: "planned: as for items", tattoo: SEARCH,

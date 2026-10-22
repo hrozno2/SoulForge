@@ -13,6 +13,7 @@ import { useContent } from "./useContent";
 import { BuildTab } from "./BuildTab";
 import { BuildBoard } from "./BuildBoard";
 import { StartTab } from "./StartTab";
+import { LaunchIntro } from "./LaunchIntro";
 import { DetailPanel } from "./DetailPanel";
 import { UpdateBanner } from "./UpdateBanner";
 import { DicePanel, setRollContext } from "./Dice";
@@ -64,6 +65,9 @@ export function App() {
   const [tab, setTab] = useState<Tab>("start");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(tutorialWanted);
+  // The tutorial waits for the launch intro to finish.
+  const [introOver, setIntroOver] = useState(false);
+  const endIntro = useCallback(() => setIntroOver(true), []);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [tutorialMin, setTutorialMin] = useState(false);
   const [levelUpOpen, setLevelUpOpen] = useState(false);
@@ -198,6 +202,7 @@ export function App() {
 
   return (
     <UiProvider reg={content.reg}>
+      <LaunchIntro onDone={endIntro} />
     <div className="app">
       <header className="topbar">
         <strong className="brand">
@@ -274,7 +279,7 @@ export function App() {
           onClose={() => setReportOpen(false)}
         />
       )}
-      {tutorialOpen && <Tutorial step={tutorialStep} setStep={setTutorialStep} minimized={tutorialMin} setMinimized={setTutorialMin} onClose={() => { setTutorialOpen(false); setTutorialMin(false); }} onGo={(t) => setTab(t as Tab)} content={content} onImportForeign={importForeign} />}
+      {tutorialOpen && introOver && <Tutorial step={tutorialStep} setStep={setTutorialStep} minimized={tutorialMin} setMinimized={setTutorialMin} onClose={() => { setTutorialOpen(false); setTutorialMin(false); }} onGo={(t) => setTab(t as Tab)} content={content} onImportForeign={importForeign} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       {levelUpOpen && <Suspense fallback={null}><LevelUp r={r} ch={character} set={set} onDetail={setDetail} onClose={() => setLevelUpOpen(false)} /></Suspense>}
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} dismiss={updater.dismiss} />

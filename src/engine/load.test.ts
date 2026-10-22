@@ -89,6 +89,8 @@ describe.skipIf(!CACHE)("the stat dictionary", () => {
     const take = (t: string | undefined) => { for (const m of (t ?? "").matchAll(/\{\{([^}]+)\}\}/g)) used.add(m[1].trim().toLowerCase()); };
     for (const e of reg.all()) {
       take(e.description); take(e.sheet?.usage); for (const d of e.sheet?.descriptions ?? []) { take(d.text); take(d.usage); }
+      // A choice filter reads a statistic with "$(stat:name)" (Wild Shape's CR limit).
+      for (const r of e.rules) if (r.kind === "select") for (const m of (r.supports ?? "").matchAll(/\$\(stat:([^)]+)\)/g)) used.add(m[1].trim().toLowerCase());
       const reqs = [e.requirements ?? "", ...e.rules.map((r) => ("requirements" in r ? r.requirements ?? "" : ""))].join(" ");
       for (const m of reqs.matchAll(/\[([a-z][^\]]*?):(-?\d+)\]/gi)) used.add(m[1].trim().toLowerCase());
       for (const r of e.rules) if (r.kind === "stat") {

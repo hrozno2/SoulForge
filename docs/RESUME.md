@@ -4,14 +4,21 @@ The big picture: docs/PLAN-audit.md (the full audit of character creation, phase
 prefers English). Older plan: docs/PLAN-windows.md (windows, filters, lore). Decisions on scope are at the end of
 PLAN-audit.md.
 
+## Flagged for later (2026-10-22)
+
+- Launch intro (src/ui/LaunchIntro.tsx): the user sees issues with the animation, details still to collect. Known so
+  far: it lagged at the burst (fixed: CSS timing, content loads after the intro); the cards fly before the rules are
+  loaded, so they show plain gold until their class colours arrive; with several characters the last card lands a
+  little after 2 s.
+
 ## Next (2026-10-22, stopped at 81% of the 5-hour limit)
 
 Plutonium analysis in docs/PLUTONIUM.md. In order:
-1. Side data and lore matched by 5e.tools fields (name, source, class, level, subclass, species with base-species
+1. (Species traits done; magic variants done: 3,730 items, all Foundry entries match.) Side data and lore matched by 5e.tools fields (name, source, class, level, subclass, species with base-species
    fallback) instead of guessed ids; magic variants apply to the items made from them.
 2. A text pass for features without side data: uses from "a number of times equal to..." and attack/save/damage
    from {@damage}/{@dc}/{@hit} tags, replacing the name list in src/engine/effects.ts.
-3. Circle of the Moon's higher Wild Shape CR.
+3. ~~Circle of the Moon's higher Wild Shape CR~~ done: Wild Shape's limits are statistics read by the filter.
 
 ## 2026-10-22 later: Plutonium's Foundry data, lore, wild shape, card choices
 

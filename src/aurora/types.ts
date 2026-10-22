@@ -104,6 +104,8 @@ export interface AElement {
   extract?: { id: string; amount: number }[];
   /** Where it came from, so a source can be removed or updated. */
   origin?: string;
+  /** The rules the element belongs to, stamped at load from its book's release (see edition.ts). */
+  edition?: "2014" | "2024";
 }
 
 /** `<append id="...">` adds rules to an element defined elsewhere. */

@@ -1,3 +1,4 @@
+import { companionBonuses } from "../aurora/companion";
 import { ExportRulesNote } from "./RulesCheck";
 import { useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
@@ -267,6 +268,7 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
         {(r.active.some((a) => a.el.type === "Companion") || ch.companions.length > 0) && (
           <section className="block">
             <h3>Companions</h3>
+            {companionBonuses(r.stats).length > 0 && <p className="muted">From your features: {companionBonuses(r.stats).join(", ")}</p>}
             {r.active.filter((a) => a.el.type === "Companion").map((a) => <CompanionCard key={a.el.id} el={a.el} />)}
             {ch.companions.map((c) => { const el = r.reg.get(c.id); return el ? <div key={c.uid}><b>{c.name}</b><CompanionCard el={el} /></div> : null; })}
           </section>

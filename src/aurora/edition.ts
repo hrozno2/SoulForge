@@ -11,8 +11,27 @@ const MODERN_SOURCE = /\((2024|2025)\)|^(XPHB|XDMG|XMM|EFA)$|Forge of the Artifi
 const MODERN_ID = /_(PHB24|DMG24|MM25|XPHB|XDMG|XMM|EFA)_|^ID_(PHB24|XPHB)_/i;
 
 /** True for an element of the 2024 rules. Takes the element, or an ID and source when only those are known. */
-export function isModern(e: Pick<AElement, "id" | "source"> | undefined): boolean {
-  return !!e && (MODERN_ID.test(e.id) || MODERN_SOURCE.test(e.source ?? ""));
+export function isModern(e: (Pick<AElement, "id" | "source"> & { edition?: string }) | undefined): boolean {
+  if (!e) return false;
+  if (e.edition) return e.edition === "2024";
+  return MODERN_ID.test(e.id) || MODERN_SOURCE.test(e.source ?? "");
+}
+
+/** The 2024 Player's Handbook's release: books published from then on are written for the 2024 rules. */
+export const RULES_2024 = 20240917;
+
+/**
+ * Stamps each element's edition from its book's release date (the Source elements both providers carry): Heroes of
+ * Faerûn, Lorwyn: First Light and Ravenloft: The Horrors Within are 2024 rules though their names do not say so.
+ * Elements whose book has no date keep the name-based reading.
+ */
+export function stampEditions(elements: Iterable<AElement>, releaseOf: (source: string) => number | undefined): void {
+  for (const el of elements) {
+    if (el.edition) continue;
+    if (MODERN_ID.test(el.id) || MODERN_SOURCE.test(el.source ?? "")) { el.edition = "2024"; continue; }
+    const rel = releaseOf(el.source ?? "");
+    if (rel) el.edition = rel >= RULES_2024 ? "2024" : "2014";
+  }
 }
 
 export function editionOf(e: Pick<AElement, "id" | "source"> | undefined): Edition {

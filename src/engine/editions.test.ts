@@ -53,3 +53,20 @@ it.skipIf(!C || process.env.RULES_TIER !== "editions")("where 2014 and 2024 meet
   console.log(`EDITIONS ${[...tally].sort((a, b) => b[1].n - a[1].n).map(([k, t]) => `${k}: ${t.n}`).join("; ")}`);
   expect(bad.slice(0, 20)).toEqual([]);
 }, 7200000);
+
+it.skipIf(!C || process.env.RULES_TIER !== "editions")("every 2014 species raises scores under the 2014 rules", async () => {
+  const { newCharacter } = await import("../aurora/character");
+  const { isModern } = await import("../aurora/edition");
+  const reg = loadTestContent(C!);
+  const ABIL = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const;
+  const missing: string[] = [];
+  for (const race of reg.ofType("Race").filter((e) => !e.compendiumHidden && !isModern(e) && !/unearthed|playtest/i.test(e.source))) {
+    const ch = { ...newCharacter(), race: race.id, background: "ID_BACKGROUND_SOLDIER", classes: [{ classId: "ID_WOTC_PHB_CLASS_FIGHTER", level: 1 }] };
+    const r = resolve(ch, reg);
+    const raised = ABIL.some((a) => r.stats.get(a) !== ch.abilityBase[a]);
+    // A choice of the increase, or a subrace still to choose (its increase comes with it).
+    const choice = r.slots.some((s) => s.root === "race" && !s.chosen.length && s.options.length && (s.rule.type === "Ability Score Improvement" || /^(Sub Race|Race Variant|Racial Trait)$/.test(s.rule.type)));
+    if (!raised && !choice) missing.push(`${race.name} (${race.source})`);
+  }
+  expect(missing).toEqual([]);
+}, 7200000);

@@ -1,3 +1,4 @@
+import { companionBonuses } from "../aurora/companion";
 import { useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, headerInfo, type CastingLine, type FeatureLine, type SheetData } from "../aurora/sheet";
@@ -834,6 +835,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
               <>
                 {companions.length === 0 && <p className="muted">No companions. Add them on the Manage tab.</p>}
                 <FormsPanel reg={r.reg} ch={ch} set={set} companions={companions.map((c, i) => ({ key: ch.companions[i - (companions.length - ch.companions.length)]?.uid ?? c.el?.id ?? String(i), name: c.name, el: c.el }))} />
+                {companionBonuses(r.stats).length > 0 && companions.length > 0 && <p className="muted">From your features: {companionBonuses(r.stats).join(", ")}</p>}
                 {companions.map((c, i) => (c.el ? <div key={i}><h3>{c.name}</h3><CompanionCard el={c.el} /></div> : null))}
                 <Panel title="Conditions"><ConditionsPanel ch={ch} set={set} /></Panel>
               </>

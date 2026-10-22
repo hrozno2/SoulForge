@@ -456,7 +456,8 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const magic = (it?.magic ?? 0) + (Number(el.setters.attackBonus?.value) || 0);
     // Fighting styles, features and items add to every attack of a kind: named parts of "ranged:attack",
     // "melee:attack" and "attack".
-    const parts = [...r.stats.parts(`${ranged ? "ranged" : "melee"}:attack`), ...r.stats.parts("attack")];
+    const wname = el.name.replace(/^[+-]\d+\s*/, "").replace(/\s*,?\s*[+-]\d+$/, "").replace(/\s*\(.*\)\s*$/, "").toLowerCase();
+    const parts = [...r.stats.parts(`${ranged ? "ranged" : "melee"}:attack`), ...r.stats.parts("attack"), ...r.stats.parts(`${wname}:attack`)];
     const want = m + (proficient ? sh.proficiency : 0) + magic + parts.reduce((t, p) => t + p.value, 0);
     if (a.bonus !== want && !(a.id && ch.attackEdits?.[a.id]?.bonusAdjust)) add("Weapon attack bonus", `${a.name}: +${a.bonus}, the rules give +${want}${parts.length ? ` (with ${parts.map((p) => `${p.from} ${p.value}`).join(", ")})` : ""}`);
   }

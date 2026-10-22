@@ -108,6 +108,19 @@ export function syntheticElements(): AElement[] {
   out.push(base(MARK_SPECIES_ASI, "Species ability score increase", "Information", "5etools", { compendiumHidden: true, description: "Marks that the species already raises ability scores." }));
   // The 2014 Ability Score Improvement, as an option of the class's feat-or-improvement choice: +2 to one score or +1
   // to two. Taken again at each level that offers it.
+  // The custom-lineage rule some species use instead of fixed increases (Van Richten's, Monsters of the Multiverse:
+  // 5e.tools "lineage"): +2 to one score and +1 to another, or +1 to three different scores.
+  out.push(base("ID_5ET_ASI_PATTERN_2_1", "+2 to one score and +1 to another", "Ability Score Improvement", "5etools", {
+    compendiumHidden: true, supports: ["5et asi pattern"],
+    rules: [
+      { kind: "select", type: "Ability Score Improvement", name: "+2 to one score", supports: "5et asi one,amt2", number: 1 },
+      { kind: "select", type: "Ability Score Improvement", name: "+1 to another score", supports: "5et asi one,amt1", number: 1 },
+    ],
+  }));
+  out.push(base("ID_5ET_ASI_PATTERN_1_1_1", "+1 to three different scores", "Ability Score Improvement", "5etools", {
+    compendiumHidden: true, supports: ["5et asi pattern"],
+    rules: [{ kind: "select", type: "Ability Score Improvement", name: "+1 to three scores", supports: "5et asi one,amt1", number: 3 }],
+  }));
   out.push(base("ID_5ET_ASI_CHOICE", "Ability Score Improvement", "Feat", "5etools", {
     compendiumHidden: true, supports: ["5et asi choice"], setters: { "allow duplicate": set("true") },
     description: "<p>Increase one ability score by 2, or two ability scores by 1. A score cannot go above 20 this way.</p>",
@@ -442,7 +455,7 @@ function convertItem(i: J, ctx: Ctx): AElement | null {
   if (attune.length) setters["attune requirements"] = set(attune.length > 1 ? `(${attune.join("||")})` : attune[0]);
   if (m.critThreshold) setters.critRange = set(String(m.critThreshold));
   if (m.dexterityMax !== undefined && m.dexterityMax !== null) setters["dexterity max"] = set(String(m.dexterityMax));
-  if (m.bonusSavingThrowConcentration) rules.push({ kind: "stat", name: "concentration:misc", value: String(bonus(m.bonusSavingThrowConcentration)) });
+
   if (m.bonusWeaponAttack) setters.attackBonus = set(String((parseInt(setters.attackBonus?.value ?? "0", 10) || 0) + bonus(m.bonusWeaponAttack)));
   if (m.bonusProficiencyBonus) rules.push({ kind: "stat", name: "proficiency", value: String(bonus(m.bonusProficiencyBonus)) });
   // A bonus to every ability check: every skill, and initiative (a Dexterity check).
@@ -668,6 +681,11 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     rules.push({ kind: "grant", type: "Language", id: "ID_5ET_LANGUAGE_COMMON" });
     rules.push({ kind: "select", type: "Language", name: `${r.name} language`, supports: "standard", number: 2 });
   }
+  // A species on the custom-lineage rule chooses its increases (the background's, under the 2024 rules, instead).
+  if (r.lineage && !abilityRules(r.ability, r.name).length) {
+    rules.push({ kind: "select", type: "Ability Score Improvement", name: `Ability score increases (${r.name})`, supports: "5et asi pattern", number: 1, requirements: "!ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
+    rules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI, requirements: "!ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
+  }
   // Older (2014) species carry their own ability score increases. The 2024 background's would count a second time.
   if (abilityRules(r.ability, r.name).length) rules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
   // Creature types ("humanoid", or a choice such as fey or humanoid), shown with the species.
@@ -744,7 +762,8 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
       out.push(base(vid, vname, "Sub Race", srcName(ctx, v.source ?? r.source), { supports: [`5et version of ${id}`], rules: vrules, spellcasting: vSpells.rules.length ? castingFor(vname, vSpells.ability) : undefined, description: entriesHtml(changed) }));
     }
   }
-  out.push(base(id, r.name, "Race", srcName(ctx, r.source), { rules, setters: raceSetters, spellcasting: racialSpells.rules.length ? castingFor(r.name, racialSpells.ability) : undefined, description: entriesHtml(r.entries), supports: [] }));
+  // NPC races (the DMG's monsters played as NPCs) are not species a player character takes.
+  out.push(base(id, r.name, "Race", srcName(ctx, r.source), { rules, setters: raceSetters, compendiumHidden: ((r.traitTags as string[]) ?? []).includes("NPC Race"), spellcasting: racialSpells.rules.length ? castingFor(r.name, racialSpells.ability) : undefined, description: entriesHtml(r.entries), supports: [] }));
   for (const s of mine) {
     const sid = ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source);
     const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name), ...trainingRules(s, s.name ?? r.name, out, ctx, sid), ...defenseRules(s)];

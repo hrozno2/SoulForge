@@ -1,5 +1,7 @@
 import type { AAppend, AElement, ParsedFile } from "./types";
 import { applyContentFixes } from "./contentFixes";
+import { stampEditions } from "./edition";
+import { bookKey } from "./books";
 import { borrowMechanics, checksIncludeInitiative, type MechanicsReport } from "../engine/mechanics";
 import { applyEditionPolicy } from "../engine/editionPolicy";
 import { optionalFeatureChoices } from "../engine/optionalFeatures";
@@ -150,6 +152,10 @@ export class ARegistry {
       target.rules = [...target.rules, ...ap.rules];
       if (ap.supports.length) target.supports = [...target.supports, ...ap.supports];
     }
+    // Every element's edition, from its book's release date.
+    const release = new Map<string, number>();
+    for (const el of this.byId.values()) if (el.type === "Source") { const r = parseInt(el.setters.release?.value ?? "", 10); if (r > 19000000 && !release.has(bookKey(el.name))) release.set(bookKey(el.name), r); }
+    stampEditions(this.byId.values(), (src) => release.get(bookKey(src)));
     // 5e.tools features whose mechanics are only prose take them from the same feature in Aurora's content.
     this.mechanics = borrowMechanics(this.byId);
     checksIncludeInitiative(this.byId);

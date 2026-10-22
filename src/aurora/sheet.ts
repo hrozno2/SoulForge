@@ -171,21 +171,37 @@ function withSenses(a: ActiveElement, r: Resolved, text: string): string {
   return ft > 0 ? `You have Darkvision ${ft} ft.${text ? ` ${text}` : ""}` : text;
 }
 
+/**
+ * The character's trainings by kind, one entry per concept whichever provider gives it (Aurora's "Light Armor" and
+ * 5e.tools' "Armor Proficiency (Light Armor)" are one), named as the primary provider names it. Skills and saves
+ * have their own lines on the sheet. A tool the character has expertise in is marked so.
+ */
 function proficiencyGroups(r: Resolved) {
   const out = { armor: [] as string[], weapons: [] as string[], tools: [] as string[], languages: [] as string[], other: [] as string[] };
   const byId = new Map(r.active.map((a) => [a.el.id, a.el]));
+  const named = new Map<string, { name: string; aurora: boolean; kind: keyof typeof out }>();
+  const toolExpertise = new Set<string>();
   for (const a of r.active) {
     const { el } = a;
     // Individual weapon/armor proficiencies granted by a category (for example "Martial weapons") are implied by it.
     if (el.type === "Proficiency" && byId.get(a.from)?.type === "Proficiency") continue;
-    if (el.type === "Language") out.languages.push(el.name);
-    else if (el.type === "Proficiency") {
-      if (/_ARMOR_/.test(el.id)) out.armor.push(el.name);
-      else if (/_WEAPON_/.test(el.id)) out.weapons.push(el.name);
-      else if (/_TOOL|_INSTRUMENT|_GAMING|_ARTISAN|_KIT|_SUPPLIES/.test(el.id)) out.tools.push(el.name);
-      else if (/_SKILL_|_SAVINGTHROW_/.test(el.id) || /^ID_INTERNAL_PROFICIENCY/.test(el.id)) continue;
-      else out.other.push(el.name);
-    }
+    if (el.type !== "Language" && el.type !== "Proficiency") continue;
+    const k = conceptOf(el);
+    if (k?.startsWith("tool-expertise:")) { toolExpertise.add(k.slice(15)); continue; }
+    if (k && /^(skill|expertise|save|size|sense):/.test(k)) continue;
+    if (!k && (/_SKILL_|_SAVINGTHROW_|_SAVE_/.test(el.id) || /^ID_INTERNAL_PROFICIENCY/.test(el.id))) continue;
+    // By concept; content outside the vocabulary by its id, as before.
+    const kind: keyof typeof out = k?.startsWith("language:") || el.type === "Language" ? "languages" : k?.startsWith("armor:") || (!k && /_ARMOR_/.test(el.id)) ? "armor" : k?.startsWith("weapon:") || (!k && /_WEAPON_/.test(el.id)) ? "weapons" : k?.startsWith("tool:") || (!k && /_TOOL|_INSTRUMENT|_GAMING|_ARTISAN|_KIT|_SUPPLIES/.test(el.id)) ? "tools" : "other";
+    const key = k ?? `${kind}:${el.name.toLowerCase()}`;
+    const had = named.get(key);
+    const aurora = el.origin !== "5etools";
+    if (!had || (aurora && !had.aurora)) named.set(key, { name: el.name, aurora, kind });
+  }
+  // Aurora gives tool expertise as a stat ("thieves' tools:proficiency" doubled).
+  for (const n of r.stats.names()) { const m = /^(.+(?:tools?|supplies|utensils|kit)):proficiency$/.exec(n); if (m) toolExpertise.add(m[1].replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-")); }
+  for (const [key, v] of named) {
+    const expert = v.kind === "tools" && toolExpertise.has(key.replace(/^tool:/, ""));
+    out[v.kind].push(expert ? `${v.name} (expertise)` : v.name);
   }
   for (const k of Object.keys(out) as (keyof typeof out)[]) out[k] = [...new Set(out[k])].sort();
   return out;
@@ -382,10 +398,12 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     const magicDmg = (Number(el.setters.damageBonus?.value) || 0) + (it.magic ?? 0);
     const kind = ranged ? "ranged" : "melee";
     // Fighting styles and similar features add to every attack of a kind.
-    const atkExtra = s.get(`${kind}:attack`) + s.get("attack") + magicAtk;
+    // Bonuses for this kind of weapon by name (Bracers of Archery: longbow:damage; Fell Handed: handaxe:attack).
+    const wname = el.name.replace(/^[+-]\d+\s*/, "").replace(/\s*,?\s*[+-]\d+$/, "").replace(/\s*\(.*\)\s*$/, "").toLowerCase();
+    const atkExtra = s.get(`${kind}:attack`) + s.get("attack") + magicAtk + s.get(`${wname}:attack`);
     const twoHandedWeapon = tags.some((t) => /two.?handed/.test(t)) || it.twoHanded;
     const duel = dueling && kind === "melee" && !twoHandedWeapon && weaponsHeld <= 1 ? dueling : 0;
-    const dmgExtra = s.get(`${kind}:damage`) + s.get("damage") + magicDmg + duel;
+    const dmgExtra = s.get(`${kind}:damage`) + s.get("damage") + magicDmg + duel + s.get(`${wname}:damage`);
     const dmg = it.twoHanded && el.setters.versatile ? { value: el.setters.versatile.value, attrs: el.setters.damage?.attrs ?? {} } : el.setters.damage;
     // A 2024 weapon's mastery property applies only when the character has mastered that weapon (issue #3).
     const isMastery = (t: string) => /^ID_WOTC_PHB24_WEAPON_PROPERTY_/.test(t);
@@ -428,6 +446,30 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     });
   }
   return out;
+}
+
+/**
+ * The numbers a feature's content works out for it and that its text does not show: a stat named after the
+ * feature ending in dc, damage or attack ("fighter:psionic power:dc", "barbarian rage:damage", "agonizing blast:
+ * damage"). "DC 14", "damage +3", "attack +6".
+ */
+function featureValues(el: AElement, r: Resolved): string {
+  const n = canonicalName(el.name);
+  if (n.length < 3) return "";
+  const out: string[] = [];
+  for (const name of r.stats.names()) {
+    const parts = name.split(":");
+    const last = parts[parts.length - 1];
+    if (!["dc", "damage", "attack"].includes(last) || parts.length < 2) continue;
+    const owner = parts.slice(0, -1);
+    // The feature's own name, alone or after its class ("barbarian rage" for Rage).
+    if (!owner.some((p) => p === n || p.endsWith(` ${n}`))) continue;
+    if (/^(melee|ranged|unarmed|natural|spellcasting|attack|damage)$/.test(owner[owner.length - 1])) continue;
+    const v = r.stats.get(name);
+    if (!v) continue;
+    out.push(last === "dc" ? `DC ${v}` : `${last} ${v >= 0 ? "+" : ""}${v}`);
+  }
+  return [...new Set(out)].join("; ");
 }
 
 export function buildSheet(r: Resolved): SheetData {
@@ -487,12 +529,13 @@ export function buildSheet(r: Resolved): SheetData {
     }
     const t = sheetText(a, r);
     if (!t.text && !a.el.sheet) continue;
+    const values = featureValues(a.el, r);
     features.push({
       id: a.el.id,
       name: a.el.sheet?.alt ?? a.el.name,
       type: a.el.type,
       source: a.el.source,
-      text: t.text,
+      text: values && !t.text.includes(values) ? `${t.text}${t.text ? " " : ""}(${values})` : t.text,
       usage: t.usage,
       action: t.action,
       level: a.ownerLevel,
@@ -620,8 +663,8 @@ function featureAttacks(r: Resolved): AttackLine[] {
   return effectsOfKind(r, "attack").map(({ effect: e, from }) => {
     const mod = e.ability === "finesse" || martial ? Math.max(str, dex) : str;
     const unarmed = e.ability === "unarmed";
-    const bonus = mod + prof + s.get("melee:attack") + s.get("attack") + (unarmed ? s.get("unarmed:attack") + s.get("unarmed strike:attack") : s.get(`${canonicalName(from.name)}:attack`));
-    const extra = mod + s.get("melee:damage") + s.get("damage") + (unarmed ? s.get("unarmed:damage") + s.get("unarmed strike:damage") : s.get(`${canonicalName(from.name)}:damage`));
+    const bonus = mod + prof + s.get("melee:attack") + s.get("attack") + (unarmed ? s.get("unarmed:attack") + s.get("unarmed strike:attack") + s.get("natural:attack") : s.get(`${canonicalName(from.name)}:attack`));
+    const extra = mod + s.get("melee:damage") + s.get("damage") + (unarmed ? s.get("unarmed:damage") + s.get("unarmed strike:damage") + s.get("natural:damage") : s.get(`${canonicalName(from.name)}:damage`));
     return {
       id: `feature-${from.id}-${e.name}`,
       auto: true,

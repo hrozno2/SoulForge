@@ -43,7 +43,9 @@ export const BY_KIND: Record<string, Record<string, Decision>> = {
     preparedSpellsChange: "display: as for classes",
   },
   feat: { repeatableHidden: "display: whether 5e.tools hides the repeatable note" },
-  language: { dialects: LORE },
+  language: { dialects: LORE, origin: LORE },
+  itemProperty: { abbreviation: "display: the property's short code, used inside other entries", template: "display: how 5e.tools words the property" },
+  itemType: { abbreviation: "display: the type's short code, used inside other entries" },
   race: {
     sizeEntry: LORE,
   },
@@ -58,7 +60,7 @@ export const BY_KIND: Record<string, Record<string, Decision>> = {
     curse: LORE, tattoo: SEARCH, spellScrollLevel: SEARCH, grantsLanguage: SEARCH, grantsProficiency: SEARCH, packContents: "display: as for base items",
     containerCapacity: "display: what a container holds", carryingCapacity: "display: a mount's or vehicle's load", ammoType: "display: as for base items",
     typeAlt: SEARCH, valueRarity: SEARCH, barDimensions: LORE, firearm: SEARCH, group: SEARCH, atomicPackContents: "display: as for packs",
-    weightNote: LORE, reqAttuneAlt: LORE,        seeAlsoVehicle: VEHICLE, seeAlsoDeck: LORE, vehSpeed: VEHICLE, crew: VEHICLE, crewMin: VEHICLE, crewMax: VEHICLE, vehAc: VEHICLE, vehHp: VEHICLE,
+    weightNote: LORE, optionalfeatures: "display: which artificer infusion can make the item (Replicate Magic Item); the infusion's own choice lists the items", bonusSavingThrowConcentration: "display: a concentration bonus is in the item's text; the sheet has no concentration line", reqAttuneAlt: LORE,        seeAlsoVehicle: VEHICLE, seeAlsoDeck: LORE, vehSpeed: VEHICLE, crew: VEHICLE, crewMin: VEHICLE, crewMax: VEHICLE, vehAc: VEHICLE, vehHp: VEHICLE,
     vehDmgThresh: VEHICLE, capCargo: VEHICLE, capPassenger: VEHICLE, travelCost: VEHICLE, shippingCost: VEHICLE,
   },
   itemGroup: {

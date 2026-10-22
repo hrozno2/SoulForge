@@ -15,6 +15,10 @@ export interface StatKind {
 }
 
 export const STAT_DICTIONARY: StatKind[] = [
+  { kind: "weapon-specific attack or damage", pattern: /^[a-z][a-z' -]*:(?:attack|damage)$/, readBy: "sheet attack lines (Bracers of Archery: longbow:damage; Fell Handed: handaxe:attack) and feature values" },
+  { kind: "tool expertise", pattern: /^[a-z][a-z’' -]*(?:tools?|supplies|utensils|kit):proficiency$/, readBy: "sheet proficiency list (marked expertise)" },
+  { kind: "companion", pattern: /^companion:.+$/, readBy: "companion bonuses on the Sheet and Play tabs" },
+  { kind: "feature DC", pattern: /^[a-z][a-z ]*:[a-z ]+:dc$/, readBy: "feature values on the sheet (Psionic Power: DC 14)" },
   { kind: "ability", pattern: new RegExp(`^${AB}(?::(?:score:set|max|max:extra|modifier|score))?$`), readBy: "stats.ts (scores, caps, set scores)" },
   { kind: "save", pattern: new RegExp(`^(?:${AB}:save(?::misc|:proficiency)?|saves?(?::misc)?)$`), readBy: "stats.ts, sheet.ts" },
   { kind: "skill", pattern: new RegExp(`^(?:${SKILL}(?::misc|:proficiency|:passive)?|skills?(?::misc)?|passive (?:perception|investigation|insight))$`), readBy: "stats.ts, sheet.ts" },
@@ -35,10 +39,6 @@ export const STAT_DICTIONARY: StatKind[] = [
  * work for the calculators (docs/ENGINE-PLAN.md, E3), named here so it cannot be forgotten.
  */
 export const TO_WIRE: StatKind[] = [
-  { kind: "weapon-specific attack or damage", pattern: /^[a-z][a-z' -]*:(?:attack|damage)$/, readBy: "TO WIRE: attack calculator (Bracers of Archery: longbow:damage +2; Insignia of Claws; weapon-mastery feats; Martial Arts)" },
-  { kind: "tool expertise", pattern: /^[a-z][a-z’' -]*(?:tools?|supplies|utensils|kit):proficiency$/, readBy: "TO WIRE: tool checks (expertise doubles proficiency)" },
-  { kind: "companion", pattern: /^companion:.+$/, readBy: "TO WIRE: companion calculator (AC, speeds, attacks, skills, saves)" },
-  { kind: "class DC", pattern: /^[a-z][a-z ]*:[a-z ]+:dc$/, readBy: "TO WIRE: feature save DCs (Soulknife Psionic Power)" },
 ];
 
 export function statKind(name: string): StatKind | undefined {

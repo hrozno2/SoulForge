@@ -113,7 +113,8 @@ describe.skipIf(!CACHE)("the lossless-load gate", () => {
     if (!existsSync(dir)) return;
     // A field is read when the converter names it (a property access or key); the identity fields always are.
     const conv = readFileSync("src/aurora/fivetools.ts", "utf8");
-    const reads = (k: string) => new RegExp(`[.\\["'\\s]${k.replace(/[$]/g, "\\$")}\\b`).test(conv);
+    // Read means accessed: ".lineage", "?.lineage", '["lineage"]' or a quoted key, not the word in a comment.
+    const reads = (k: string) => new RegExp(`(?:\\.|\\[["'])${k.replace(/[$]/g, "\\$")}\\b|["']${k.replace(/[$]/g, "\\$")}["']`).test(conv);
     const IDENTITY = new Set(["name", "source", "page", "srd", "srd52", "basicRules", "basicRules2024", "freeRules2024", "otherSources", "reprintedAs", "isReprinted", "hasFluff", "hasFluffImages", "fluff", "soundClip", "hasToken", "token", "tokenCredit", "foundryImg", "edition", "legacy", "_copy", "_isCopy", "_isBaseVersion"]);
     const undecided: string[] = [];
     const planned: string[] = [];

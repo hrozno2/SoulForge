@@ -1320,8 +1320,14 @@ function optionalFeatureRules(c: J): ARule[] {
       const k = keys.filter((n) => n <= i + 1).pop();
       return k === undefined ? 0 : Number(prog[String(k)]);
     });
+    // "required": {"3": ["Elemental Attunement|PHB"]}: options the character must take at that level. They are given,
+    // and the choice at that level is that many smaller (Way of the Four Elements knows Elemental Attunement and one more).
+    const required = (p.required ?? {}) as Record<string, string[]>;
     deltas(counts).forEach((n, i) => {
-      if (n > 0) rules.push({ kind: "select", type: "Optional Feature", name: String(p.name ?? "Optional feature"), supports: types.map(optTag).join("|"), number: n, level: i + 1 });
+      const must = (required[String(i + 1)] ?? []).map((r) => { const [name, src] = String(r).split("|"); return ftId("OPT", name, src || "PHB"); });
+      for (const id of must) rules.push({ kind: "grant", type: "Optional Feature", id, level: i + 1 });
+      const left = n - must.length;
+      if (left > 0) rules.push({ kind: "select", type: "Optional Feature", name: String(p.name ?? "Optional feature"), supports: types.map(optTag).join("|"), number: left, level: i + 1 });
     });
   }
   return rules;

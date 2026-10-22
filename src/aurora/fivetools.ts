@@ -103,6 +103,9 @@ const set = (value: string, attrs: Record<string, string> = {}): SetterValue => 
 /** Granted by a species or subrace that raises ability scores, so a background does not raise them a second time. */
 export const MARK_SPECIES_ASI = "ID_5ET_MARK_SPECIES_ASI";
 
+/** The ids of an element and its repeat copies: ID, ID_2, ID_3... (as Aurora names them). */
+const repeatIds = (id: string, n: number) => Array.from({ length: n }, (_, i) => (i === 0 ? id : `${id}_${i + 1}`));
+
 export function syntheticElements(): AElement[] {
   const out: AElement[] = [];
   out.push(base(MARK_SPECIES_ASI, "Species ability score increase", "Information", "5etools", { compendiumHidden: true, description: "Marks that the species already raises ability scores." }));
@@ -121,11 +124,15 @@ export function syntheticElements(): AElement[] {
     compendiumHidden: true, supports: ["5et asi pattern"],
     rules: [{ kind: "select", type: "Ability Score Improvement", name: "+1 to three scores", supports: "5et asi one,amt1", number: 3 }],
   }));
-  out.push(base("ID_5ET_ASI_CHOICE", "Ability Score Improvement", "Feat", "5etools", {
-    compendiumHidden: true, supports: ["5et asi choice"], setters: { "allow duplicate": set("true") },
-    description: "<p>Increase one ability score by 2, or two ability scores by 1. A score cannot go above 20 this way.</p>",
-    rules: [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement", supports: "5et asi", number: 1 }],
-  }));
+  // One copy per time it can be taken (a class gives at most seven): each has its own choice of scores. An element
+  // is counted once however often it is picked, so a repeat needs its own copy, as Aurora's content does it.
+  for (const id of repeatIds("ID_5ET_ASI_CHOICE", 8)) {
+    out.push(base(id, "Ability Score Improvement", "Feat", "5etools", {
+      compendiumHidden: true, supports: ["5et asi choice"],
+      description: "<p>Increase one ability score by 2, or two ability scores by 1. A score cannot go above 20 this way.</p>",
+      rules: [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement", supports: "5et asi", number: 1 }],
+    }));
+  }
   for (const s of SKILLS) {
     out.push(base(`ID_5ET_SKILL_${slug(s)}`, cap(s), "Proficiency", "5etools", {
       supports: ["5et skill"], compendiumHidden: true,
@@ -338,7 +345,26 @@ function trainingRules(e: J, label: string, out: AElement[], ctx: Ctx, idBase: s
   return rules;
 }
 
-function abilityRules(list: J[] | undefined, label: string): ARule[] {
+/**
+ * Ability score increases. A list of more than one entry is a choice between them (the 2024 backgrounds: +2 and +1,
+ * or +1 to three; the 2024 Ability Score Improvement feat: +2 to one, or +1 to two), as 5e.tools lists alternatives
+ * everywhere; given `sets`, each becomes an option and the character takes one.
+ */
+function abilityRules(list: J[] | undefined, label: string, sets?: { out: AElement[]; idBase: string }): ARule[] {
+  if (sets && Array.isArray(list) && list.length > 1) {
+    const words = (entry: J) => {
+      const c = entry.choose as J | undefined;
+      if (c?.weighted) { const w = c.weighted.weights as number[]; return w.every((x) => x === 1) ? `+1 to ${w.length} scores` : w.map((x, i) => `+${x} to ${i ? "another score" : "one score"}`).join(" and "); }
+      if (c) return `+${c.amount ?? 1} to ${(c.count ?? 1) > 1 ? `${c.count} scores` : "one score"}`;
+      return Object.entries(entry).filter(([k]) => k in ABIL).map(([k, v]) => `${cap(abilFull(k))} +${v}`).join(", ");
+    };
+    const ids = list.map((entry, i) => {
+      const oid = `${sets.idBase}_ABILITY_OPTION_${i + 1}`;
+      if (!sets.out.some((o) => o.id === oid)) sets.out.push(base(oid, words(entry) || `Option ${i + 1}`, "Ability Score Improvement", "5etools", { compendiumHidden: true, supports: [`${sets.idBase} ability options`], rules: abilityRules([entry], label) }));
+      return oid;
+    });
+    return [{ kind: "select", type: "Ability Score Improvement", name: `${label}: ability score increases (choose one)`, supports: ids.join("|"), number: 1 }];
+  }
   const rules: ARule[] = [];
   for (const entry of list ?? []) {
     for (const [k, v] of Object.entries(entry)) {
@@ -508,7 +534,7 @@ function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
     if (ab) reqs.push(`(${ab.map((o) => Object.entries(o).map(([k, v]) => `[${k}:${v}]`).join(",")).join("||")})`);
     if (p.level) reqs.push(`[level:${typeof p.level === "object" ? p.level.level : p.level}]`);
   }
-  const rules = [...abilityRules(f.ability, f.name), ...trainingRules(f, f.name, out, ctx, ftId("FEAT", f.name, f.source)), ...defenseRules(f)];
+  const rules = [...abilityRules(f.ability, f.name, { out, idBase: ftId("FEAT", f.name, f.source) }), ...trainingRules(f, f.name, out, ctx, ftId("FEAT", f.name, f.source)), ...defenseRules(f)];
   const spells = additionalSpellRules(f.additionalSpells, f.name, f.source);
   rules.push(...spells.rules);
   const html = entriesHtml(f.entries);
@@ -674,7 +700,7 @@ export function resolveCopies(files: Record<string, J>): Record<string, J> {
 
 function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const id = ftId("RACE", r.name, r.source);
-  const rules: ARule[] = [...speedRules(r.speed), ...abilityRules(r.ability, r.name), ...trainingRules(r, r.name, out, ctx, id), ...defenseRules(r)];
+  const rules: ARule[] = [...speedRules(r.speed), ...abilityRules(r.ability, r.name, { out, idBase: id }), ...trainingRules(r, r.name, out, ctx, id), ...defenseRules(r)];
   // A species that lists no languages (the Ravenloft lineages, for one) leaves them to the character's origin: under
   // the 2024 rules, Common and two standard languages.
   if (!r.languageProficiencies?.length) {
@@ -749,7 +775,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     for (const v of versions) {
       const vname = String(v.name).split(";").pop()!.trim() || String(v.name);
       const vid = ftId("RACEVERSION", `${r.name} ${vname}`, v.source ?? r.source);
-      const vrules: ARule[] = [...speedRules(v.speed), ...abilityRules(v.ability, vname), ...trainingRules(v, vname, out, ctx, vid), ...defenseRules(v)].filter((x) => !baseIds.has(JSON.stringify(x)));
+      const vrules: ARule[] = [...speedRules(v.speed), ...abilityRules(v.ability, vname, { out, idBase: vid }), ...trainingRules(v, vname, out, ctx, vid), ...defenseRules(v)].filter((x) => !baseIds.has(JSON.stringify(x)));
       if (v.darkvision && v.darkvision !== r.darkvision) {
         const dv = `${vid}_DARKVISION`;
         out.push(base(dv, `Darkvision (${v.darkvision} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));
@@ -766,7 +792,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   out.push(base(id, r.name, "Race", srcName(ctx, r.source), { rules, setters: raceSetters, compendiumHidden: ((r.traitTags as string[]) ?? []).includes("NPC Race"), spellcasting: racialSpells.rules.length ? castingFor(r.name, racialSpells.ability) : undefined, description: entriesHtml(r.entries), supports: [] }));
   for (const s of mine) {
     const sid = ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source);
-    const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name), ...trainingRules(s, s.name ?? r.name, out, ctx, sid), ...defenseRules(s)];
+    const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name, { out, idBase: sid }), ...trainingRules(s, s.name ?? r.name, out, ctx, sid), ...defenseRules(s)];
     if (abilityRules(s.ability, s.name ?? r.name).length) srules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
     if (s.speed) srules.push(...speedRules(s.speed));
     srules.push(...traitList(s.entries, sid, ctx, s.source, out, "5et trait", "Racial Trait"));
@@ -823,7 +849,7 @@ function equipmentHtml(se: unknown): string {
 
 function convertBackground(b: J, ctx: Ctx, out: AElement[]): void {
   const id = ftId("BG", b.name, b.source);
-  const rules: ARule[] = [...trainingRules(b, b.name, out, ctx, id), ...abilityRules(b.ability, "Ability score increase").map((x) => ({ ...x, requirements: x.requirements ?? `!${MARK_SPECIES_ASI}` }))];
+  const rules: ARule[] = [...trainingRules(b, b.name, out, ctx, id), ...abilityRules(b.ability, "Ability score increase", { out, idBase: id }).map((x) => ({ ...x, requirements: x.requirements ?? `!${MARK_SPECIES_ASI}` }))];
   for (const f of (b.feats as J[]) ?? []) for (const k of Object.keys(f)) {
     // "Any feat of a category" (the Haunted One's Dark Gift) is a choice limited to that category.
     if (k === "anyFromCategory") {
@@ -1262,7 +1288,23 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
       }
     }
     for (const i of json.item ?? []) { const e = convertItem(i, ctx); if (e) out.push(e); }
-    for (const f of json.feat ?? []) if (!featVariants(f, ctx, out)) out.push(convertFeat(f, ctx, out));
+    for (const f of json.feat ?? []) {
+      if (featVariants(f, ctx, out)) continue;
+      const el = convertFeat(f, ctx, out);
+      out.push(el);
+      // A feat taken more than once (the 2024 Ability Score Improvement, Elemental Adept): numbered copies, each
+      // needing the one before, so each taking counts and keeps its own choices.
+      if (f.repeatable) {
+        const ids = repeatIds(el.id, 8);
+        // Each copy has its own option elements (an element counts once, so copies cannot share them).
+        const opts = out.filter((o) => o.id.startsWith(`${el.id}_ABILITY_OPTION_`));
+        for (let i = 1; i < ids.length; i++) {
+          for (const o of opts) out.push({ ...o, id: o.id.replace(el.id, ids[i]), supports: o.supports.map((t) => t.replace(el.id, ids[i])), rules: [...o.rules] });
+          const rules = el.rules.map((r) => (r.kind === "select" && r.supports.includes(`${el.id}_ABILITY_OPTION_`) ? { ...r, supports: r.supports.split(el.id).join(ids[i]) } : r));
+          out.push({ ...el, id: ids[i], rules, compendiumHidden: true, requirements: el.requirements ? `${el.requirements},${ids[i - 1]}` : ids[i - 1], setters: { ...el.setters } });
+        }
+      }
+    }
     for (const o of json.optionalfeature ?? []) out.push(convertOptionalFeature(o, ctx));
     for (const l of json.language ?? []) out.push(languageElement(l, ctx));
     for (const r of json.race ?? []) convertRace(r, ctx, subraces, out);

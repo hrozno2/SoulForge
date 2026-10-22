@@ -71,16 +71,28 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
     wasFull.current = full;
   }, [full]);
 
-  // A merged choice hands its picks back to the underlying choices, filling the earlier ones first.
+  // A merged choice hands its picks back to the underlying choices: each pick to one where it is allowed (a 2nd-level
+  // spell to the choice made at level 3, not the one at level 1), matched all at once, earlier choices first; by order
+  // only when no allowed assignment exists.
   const commit = (next: string[]) => {
     if (!slot.members) return setSelection(set, slot.key, next);
-    let at = 0;
-    const entries = slot.members.map((m) => {
-      const part = next.slice(at, at + m.rule.number);
-      at += m.rule.number;
-      return [m.key, part] as const;
-    });
-    set((c) => ({ ...c, selections: { ...c.selections, ...Object.fromEntries(entries) } }));
+    const places = slot.members.flatMap((m, mi) => Array.from({ length: m.rule.number }, () => mi));
+    const fits = (id: string, p: number) => !slot.members![places[p]].blocked.has(id);
+    const at = new Map<number, string>();
+    const tryPick = (id: string, seen: Set<number>): boolean => {
+      for (let p = 0; p < places.length; p++) {
+        if (seen.has(p) || !fits(id, p)) continue;
+        seen.add(p);
+        const other = at.get(p);
+        if (other === undefined || tryPick(other, seen)) { at.set(p, id); return true; }
+      }
+      return false;
+    };
+    const placedAll = next.every((id) => tryPick(id, new Set()));
+    const parts = slot.members.map(() => [] as string[]);
+    if (placedAll) for (const [p, id] of [...at].sort((a, b) => a[0] - b[0])) parts[places[p]].push(id);
+    else next.forEach((id, i) => { if (i < places.length) parts[places[i]].push(id); });
+    set((c) => ({ ...c, selections: { ...c.selections, ...Object.fromEntries(slot.members!.map((m, i) => [m.key, parts[i]])) } }));
   };
   const toggle = (el: AElement) => {
     let next: string[];

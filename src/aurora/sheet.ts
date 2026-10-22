@@ -596,8 +596,11 @@ export function headerInfo(r: Resolved): HeaderInfo {
   const ch = r.character;
   const race = ch.race ? r.reg.get(ch.race)?.name : undefined;
   const sub = r.active.find((a) => ["Sub Race", "Race Variant"].includes(a.el.type));
-  const lineage = r.active.find((a) => a.from && a.el.type === "Racial Trait" && /lineage|heritage|ancestry/i.test(r.reg.get(a.from)?.name ?? "") && false);
-  const species = [sub?.el.name ?? lineage?.el.name ?? race].filter(Boolean).join("") || "-";
+  // The 2024 species' lineage, legacy or ancestry, as chosen ("Wood Elf"; "Tiefling (Abyssal Legacy)"; "Dragonborn (Red)").
+  const pick = r.slots.find((s) => s.root === "race" && /lineage|legacy|ancestry/i.test(s.rule.name) && s.chosen.length);
+  const chosen = pick ? r.reg.get(pick.chosen[0])?.name.replace(/\s*\(.*\)\s*$/, "") : undefined;
+  const lineage = chosen && race ? (chosen.toLowerCase().includes(race.toLowerCase()) ? chosen : `${race} (${chosen})`) : undefined;
+  const species = [sub?.el.name ?? lineage ?? race].filter(Boolean).join("") || "-";
   return {
     species: sub && race && !sub.el.name.toLowerCase().includes(race.toLowerCase()) ? `${sub.el.name} ${race}` : species,
     classLine: ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ") || "-",

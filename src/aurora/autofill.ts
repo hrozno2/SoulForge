@@ -24,6 +24,10 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
   // the character at that level. Each pick then only touches the level being built (the timeline reuses the levels
   // below it), and no choice is filled with something only a later level allows.
   const total = totalLevel(ch);
+  // Lookahead: what the character's later choices will require (Scholar's options need proficiency in their skill).
+  // Among options equally preferred, one that something later needs comes first, so an early pick does not leave a
+  // later choice with nothing to take.
+  const needed = demanded(resolve(ch, reg), reg);
   for (let n = total === 0 ? 0 : 1; n <= total; n++) cur = fillLevel(cur, n);
   return prepareSpells(cur);
 
@@ -60,8 +64,11 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
     const free = open.options.filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !had(o) && !bad.has(`${open.key} ${o.id}`));
     // Options from books the player shows come first; the others only when nothing else fits.
     const shown = free.filter(allow);
+    // How many later choices need an option: the most needed first, then the caller's preference (random builds).
+    const wanted = (o: { id: string }) => Math.max(needed.get(o.id) ?? 0, needed.get(conceptOf(o as never) ?? "") ?? 0);
+    const score = new Map(free.map((o) => [o.id, prefer(open.rule.name, o.name)]));
     const candidates = (shown.length ? shown : free)
-      .sort((a, b) => prefer(open.rule.name, b.name) - prefer(open.rule.name, a.name));
+      .sort((a, b) => wanted(b) - wanted(a) || score.get(b.id)! - score.get(a.id)!);
     // If every allowed option leads to a dead end somewhere else, the best allowed one is still better than none;
     // an option the rules rule out is never picked (with none allowed, stillToChoose leaves the choice alone).
     // Last resort, in order: any legal option the character does not have yet, then any legal option at all.
@@ -74,4 +81,36 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
   }
   return cur;
   }
+}
+
+/**
+ * Ids (and their concepts) that options of the character's choices require, through everything its classes, species
+ * and background grant at their full level, without following choices: what later picks will need.
+ */
+function demanded(r: ReturnType<typeof resolve>, reg: ARegistry): Map<string, number> {
+  const out = new Map<string, number>();
+  const bump = (k: string, seenHere: Set<string>) => { if (seenHere.has(k)) return; seenHere.add(k); out.set(k, (out.get(k) ?? 0) + 1); };
+  const seen = new Set<string>();
+  const roots = [r.character.race, r.character.background, ...r.character.classes.map((c) => c.classId)].filter(Boolean) as string[];
+  const visit = (id: string, depth: number) => {
+    const e = reg.get(id);
+    if (!e || seen.has(id) || depth > 6) return;
+    seen.add(id);
+    for (const rule of e.rules) {
+      if (rule.kind === "grant" && rule.id) visit(rule.id, depth + 1);
+      if (rule.kind !== "select") continue;
+      // Each choice counts once per thing it needs.
+      const here = new Set<string>();
+      for (const o of reg.find(rule.type, rule.supports).slice(0, 60)) {
+        for (const m of (o.requirements ?? "").matchAll(/(?<![!\w])(ID_[A-Z0-9_]+)/g)) {
+          bump(m[1], here);
+          const t = reg.get(m[1]);
+          const k = t ? conceptOf(t) : undefined;
+          if (k) bump(k, here);
+        }
+      }
+    }
+  };
+  for (const id of roots) visit(id, 0);
+  return out;
 }

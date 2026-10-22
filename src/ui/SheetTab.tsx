@@ -160,6 +160,7 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
             <div><small>Subclass</small>{head.subclass}</div>
             <div><small>Background</small>{head.background}</div>
             <div><small>Size</small>{head.size || "-"}</div>
+            {head.creatureType && <div><small>Type</small>{head.creatureType}</div>}
             <div><small>Alignment</small>{head.alignment}</div>
           </div>
         </header>

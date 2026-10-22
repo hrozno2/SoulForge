@@ -1,4 +1,5 @@
 import { canonicalName, effectsOfKind } from "../engine/effects";
+import { conceptOf, conceptOfMarker } from "../engine/concepts";
 import type { AElement } from "./types";
 import { FULL_CASTER_SLOTS, itemWeight, multiclassCasterLevel, sharedSlotLevel, type ActiveElement, type Resolved, type SpellPick } from "./engine";
 import { ABILITY_IDS, SKILL_ABILITY, itemLabel, type AbilityId } from "./character";
@@ -327,7 +328,9 @@ function buildAc(r: Resolved): { value: number; parts: string[] } {
     const kind = lc(armor.setters.armor?.value ?? "");
     // Medium armor counts Dexterity up to +2, or more where content raises the cap (Medium Armor Master: +3).
     const mediumCap = Math.max(2, s.get("ac:armored:dexterity:cap"));
-    const cap = kind === "heavy" ? 0 : kind === "medium" ? Math.min(mediumCap, dex) : dex;
+    // An armor that sets its own Dexterity cap (5e.tools dexterityMax) uses it.
+    const own = armor.setters["dexterity max"]?.value;
+    const cap = own !== undefined ? Math.min(Number(own) || 0, dex) : kind === "heavy" ? 0 : kind === "medium" ? Math.min(mediumCap, dex) : dex;
     value = armorBase + cap + s.get("ac:armored:enhancement") + s.get("ac:armored:misc");
     parts.push(`${armor.name} ${armorBase}`);
     if (cap) parts.push(`Dex ${signed(cap)}`);
@@ -403,7 +406,7 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
       damage: edit?.damage?.trim() || (dmg ? `${dmg.value}${mods(ability) + dmgExtra ? signed(mods(ability) + dmgExtra) : ""}` : ""),
       damageType: edit?.damageType ?? dmg?.attrs.type ?? "",
       properties: [...props.filter((x) => !(versatile && x === "versatile")), versatile && !it.twoHanded ? `versatile (${versatile})` : "", it.twoHanded ? "two-handed" : ""].filter(Boolean).join(", "),
-      notes: edit?.notes ?? (proficient ? "" : "not proficient"),
+      notes: edit?.notes ?? [proficient ? "" : "not proficient", el.setters.critRange ? `critical hit on ${el.setters.critRange.value}–20` : ""].filter(Boolean).join("; "),
     };
     if (edit?.hidden) line.hiddenByEdit = true;
     out.push(line);
@@ -540,6 +543,8 @@ export interface HeaderInfo {
   subclass: string;
   background: string;
   size: string;
+  /** Humanoid, Construct...: when the species' content says. */
+  creatureType: string;
   alignment: string;
 }
 
@@ -555,11 +560,16 @@ export function headerInfo(r: Resolved): HeaderInfo {
     classLine: ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ") || "-",
     subclass: r.active.filter((a) => a.el.type === "Archetype").map((a) => a.el.name).join(", ") || "-",
     background: ch.background ? (r.reg.get(ch.background)?.name ?? "-") : "-",
+    // The size by concept, whichever provider names it (Aurora's ID_SIZE_SMALL, 5e.tools' Small).
     size: (() => {
-      const id = [...r.ids].find((x) => /^ID_(INTERNAL_RACIAL_TRAIT|SIZE)_(TINY|SMALL|MEDIUM|LARGE|HUGE|GARGANTUAN)(_|$)/.test(x));
-      const m = id?.match(/(TINY|SMALL|MEDIUM|LARGE|HUGE|GARGANTUAN)/);
-      return m ? m[1].charAt(0) + m[1].slice(1).toLowerCase() : "";
+      for (const id of r.ids) {
+        const el = r.reg.get(id);
+        const k = (el ? conceptOf(el) : undefined) ?? conceptOfMarker(id) ?? (/^ID_INTERNAL_RACIAL_TRAIT_(TINY|SMALL|MEDIUM|LARGE|HUGE|GARGANTUAN)(_|$)/.exec(id) ? `size:${/(TINY|SMALL|MEDIUM|LARGE|HUGE|GARGANTUAN)/.exec(id)![1].toLowerCase()}` : undefined);
+        if (k?.startsWith("size:")) return k.slice(5).charAt(0).toUpperCase() + k.slice(6);
+      }
+      return "";
     })(),
+    creatureType: (ch.race ? r.reg.get(ch.race)?.setters["creature type"]?.value : undefined) ?? "",
     alignment: ch.info.alignment || "-",
   };
 }

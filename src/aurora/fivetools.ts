@@ -434,6 +434,15 @@ function convertItem(i: J, ctx: Ctx): AElement | null {
   if (m.bonusSavingThrow) for (const a of Object.values(ABIL)) rules.push({ kind: "stat", name: `${a}:save:misc`, value: String(bonus(m.bonusSavingThrow)) });
   if (m.bonusSpellAttack) rules.push({ kind: "stat", name: "spellcasting:attack", value: String(bonus(m.bonusSpellAttack)) }); // the name Aurora content and the engine use
   if (m.bonusSpellSaveDc) rules.push({ kind: "stat", name: "spellcasting:dc", value: String(bonus(m.bonusSpellSaveDc)) });
+  // Charges, as Aurora's items keep them, and how they come back.
+  if (m.charges !== undefined) setters.charges = set(String(m.charges));
+  if (m.recharge) setters.recharge = set(`${m.recharge}${m.rechargeAmount ? ` (${stripTags(String(m.rechargeAmount))})` : ""}`);
+  // Who may attune: any one of the tags (a class, any spellcaster); in the requirement syntax the checker reads.
+  const attune = ((m.reqAttuneTags as J[]) ?? []).map((t) => (t.class ? `[level:${String(t.class).split("|")[0].toLowerCase()}:1]` : t.spellcasting ? "[type:spell]" : "")).filter(Boolean);
+  if (attune.length) setters["attune requirements"] = set(attune.length > 1 ? `(${attune.join("||")})` : attune[0]);
+  if (m.critThreshold) setters.critRange = set(String(m.critThreshold));
+  if (m.dexterityMax !== undefined && m.dexterityMax !== null) setters["dexterity max"] = set(String(m.dexterityMax));
+  if (m.bonusSavingThrowConcentration) rules.push({ kind: "stat", name: "concentration:misc", value: String(bonus(m.bonusSavingThrowConcentration)) });
   if (m.bonusWeaponAttack) setters.attackBonus = set(String((parseInt(setters.attackBonus?.value ?? "0", 10) || 0) + bonus(m.bonusWeaponAttack)));
   if (m.bonusProficiencyBonus) rules.push({ kind: "stat", name: "proficiency", value: String(bonus(m.bonusProficiencyBonus)) });
   // A bonus to every ability check: every skill, and initiative (a Dexterity check).
@@ -449,7 +458,10 @@ function convertItem(i: J, ctx: Ctx): AElement | null {
     for (const [k, v] of Object.entries(m.ability.static ?? {})) rules.push({ kind: "stat", name: `${abilFull(k)}:score:set`, value: String(v) });
     for (const [k, v] of Object.entries(m.ability)) if (k in ABIL && typeof v === "number") rules.push({ kind: "stat", name: abilFull(k), value: String(v) });
   }
-  const desc = entriesHtml(m.entries) || (m.type ? "" : "");
+  // The spells an item lets its wearer cast, listed with the item (casting them uses the item's own rules).
+  const attached = m.attachedSpells as J | string[] | undefined;
+  const spellNames = Array.isArray(attached) ? attached : attached ? Object.values(attached).flatMap((x) => (Array.isArray(x) ? x : Object.values(x as J).flat())) : [];
+  const desc = (entriesHtml(m.entries) || (m.type ? "" : "")) + (spellNames.length ? `<p><b>Spells:</b> ${esc(spellNames.map((x) => titleCase(plainName(String(x).split("|")[0].split("#")[0]))).join(", "))}</p>` : "");
   return base(ftId("ITEM", i.name, i.source ?? m.source), i.name, type, srcName(ctx, i.source ?? m.source), { supports, setters, rules, description: desc });
 }
 
@@ -658,6 +670,9 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   }
   // Older (2014) species carry their own ability score increases. The 2024 background's would count a second time.
   if (abilityRules(r.ability, r.name).length) rules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
+  // Creature types ("humanoid", or a choice such as fey or humanoid), shown with the species.
+  const types = ((r.creatureTypes as string[]) ?? []).map((t) => cap(String(t)));
+  const raceSetters: Record<string, SetterValue> = types.length ? { "creature type": set(types.join(" or ")) } : {};
   if (r.blindsight) {
     const bid = `${id}_BLINDSIGHT`;
     out.push(base(bid, `Blindsight (${r.blindsight} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));
@@ -729,7 +744,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
       out.push(base(vid, vname, "Sub Race", srcName(ctx, v.source ?? r.source), { supports: [`5et version of ${id}`], rules: vrules, spellcasting: vSpells.rules.length ? castingFor(vname, vSpells.ability) : undefined, description: entriesHtml(changed) }));
     }
   }
-  out.push(base(id, r.name, "Race", srcName(ctx, r.source), { rules, spellcasting: racialSpells.rules.length ? castingFor(r.name, racialSpells.ability) : undefined, description: entriesHtml(r.entries), supports: [] }));
+  out.push(base(id, r.name, "Race", srcName(ctx, r.source), { rules, setters: raceSetters, spellcasting: racialSpells.rules.length ? castingFor(r.name, racialSpells.ability) : undefined, description: entriesHtml(r.entries), supports: [] }));
   for (const s of mine) {
     const sid = ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source);
     const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name), ...trainingRules(s, s.name ?? r.name, out, ctx, sid), ...defenseRules(s)];
@@ -895,6 +910,10 @@ function castingRules(c: J, name: string, lists: string[], classLevel: string): 
     const fixed = c.spellsKnownProgressionFixed as number[] | undefined;
     const knownSteps = fixed ?? (known ? deltas(known) : undefined);
     if (knownSteps) knownSteps.forEach((n, i) => { if (n > 0) rules.push({ kind: "select", type: "Spell", name: prepared && fixed ? `Spellbook (${name})` : `Spell known (${name})`, supports: "$(spellcasting:list), $(spellcasting:slots)", number: n, level: i + 1, spellcasting: name }); });
+    // Spells of a set level learned at set class levels (the Warlock's Mystic Arcanum: one 6th-level spell at 11...).
+    for (const [lv, byLevel] of Object.entries((c.spellsKnownProgressionFixedByLevel as Record<string, Record<string, number>>) ?? {})) {
+      for (const [spellLevel, n] of Object.entries(byLevel)) rules.push({ kind: "select", type: "Spell", name: `Level ${spellLevel} spell (${name} ${lv})`, supports: `$(spellcasting:list), ${spellLevel}`, number: Number(n) || 1, level: Number(lv), spellcasting: name });
+    }
     const prep = (c.preparedSpellsProgression as number[] | undefined) ?? tableColumn(c, /^prepared spells/);
     if (prep) deltas(prep).forEach((n, i) => { if (n) rules.push({ kind: "stat", name: `${key}:prepare`, value: String(n), level: i + 1 }); });
     else if (typeof c.preparedSpells === "string") {

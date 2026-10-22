@@ -432,6 +432,13 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (kind && !/shield/.test(kind) && !trained.includes(kind) && !trained.includes("all armor")) add("Wearing armor without training", `${body.el.name} (${kind})`);
   }
 
+  // Attunement: an item only some may attune to (a wizard, any spellcaster).
+  for (const it of ch.inventory.filter((i) => i.attuned && i.id)) {
+    const el = reg.get(it.id);
+    const req = el?.setters["attune requirements"]?.value;
+    if (req && !meets(req, ctx)) add("Attuned to an item that needs someone else", `${el!.name} (${req.replace(/\[level:(\w+):1\]/g, "$1").replace(/\[type:spell\]/g, "a spellcaster").replace(/\|\|/g, " or ").replace(/[()]/g, "")})`);
+  }
+
   // Hands: a two-handed weapon and a shield, or more than two weapons, cannot be held at once.
   const weapons = ch.inventory.filter((i) => i.equipped && i.id && reg.get(i.id)?.type === "Weapon");
   const twoHanded = weapons.filter((i) => reg.get(i.id)!.supports.some((t) => /two.?handed/i.test(t)) || i.twoHanded);

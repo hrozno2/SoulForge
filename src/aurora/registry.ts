@@ -6,6 +6,7 @@ import { borrowMechanics, checksIncludeInitiative, type MechanicsReport } from "
 import { applyEditionPolicy } from "../engine/editionPolicy";
 import { optionalFeatureChoices } from "../engine/optionalFeatures";
 import { wildShapeChoices } from "../engine/wildShape";
+import { twinKey } from "../engine/timeline";
 
 /** A `supports` filter: `A,B` is AND, `A||B` is OR, `A|B` is any of these ids, `!A` is NOT, parentheses group. */
 type SNode = { t: "and" | "or"; a: SNode[] } | { t: "any"; words: string[] } | { t: "not"; n: SNode };
@@ -161,6 +162,11 @@ export class ARegistry {
     this.mechanics = borrowMechanics(this.byId);
     checksIncludeInitiative(this.byId);
     applyEditionPolicy(this.byId);
+    // Lore (5e.tools' fluff) is the same for both providers' copy of one thing: Aurora's copy, the one the lists
+    // show, takes the 5e.tools copy's lore.
+    const lore = new Map<string, string>();
+    for (const el of this.byId.values()) if (el.lore) lore.set(twinKey(el), el.lore);
+    if (lore.size) for (const el of this.byId.values()) if (!el.lore) { const l = lore.get(twinKey(el)); if (l) el.lore = l; }
     optionalFeatureChoices(this.byId);
     wildShapeChoices(this.byId);
     for (const el of improvementOptions([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);

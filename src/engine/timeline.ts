@@ -101,7 +101,7 @@ function settleCached(chN: Character, reg: ARegistry, seed: Pass | null, finding
 
 /** One element of one book, whichever provider has it: type, name and book. */
 const TWIN = new WeakMap<object, string>();
-const twinKey = (e: { type: string; name: string; source: string }) => {
+export const twinKey = (e: { type: string; name: string; source: string }) => {
   let k = TWIN.get(e);
   if (k === undefined) TWIN.set(e, (k = `${e.type}|${e.name.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s+/g, " ").trim()}|${bookKey(e.source ?? "")}`));
   return k;

@@ -16,7 +16,7 @@ export const ANY_KIND: Record<string, Decision> = {
   referenceSources: PUBLISHING, hasRefs: PUBLISHING, alias: "display: other names, for search",
   miscTags: SEARCH, traitTags: SEARCH, areaTags: SEARCH, creatureTypeTags: SEARCH, scfType: SEARCH, tier: SEARCH, lootTables: SEARCH,
   age: LORE, heightAndWeight: "display: height and weight tables for a description", isClassFeatureVariant: SEARCH,
-  fonts: "display: the script's font, for reading", additionalEntries: LORE, entriesTemplate: LORE, appliesTo: LORE,
+  fonts: "display: the script's font, for reading", images: "display: art (lore files); the app ships no third-party art", additionalEntries: LORE, entriesTemplate: LORE, appliesTo: LORE,
 };
 
 /** Per kind of entry. */

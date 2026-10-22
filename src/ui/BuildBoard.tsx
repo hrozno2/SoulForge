@@ -15,7 +15,7 @@ import { formatRelease, groupVariants, hiddenBy, type Group } from "../aurora/bo
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { PassiveFeatures } from "./PassiveFeatures";
 import { ClassPanel } from "./BuildTab";
-import { Browse, blurb, dragMime } from "./Browse";
+import { Browse, KindTag, blurb, dragMime } from "./Browse";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
 import { ChosenBanner, hueOf } from "./PickCards";
 import { RulesCheckBar } from "./RulesCheck";
@@ -609,7 +609,7 @@ function SourcePicker({ g, activeId, onPick, strip = false }: { g: Group; active
   const byDate = [...g.variants].sort((a, b) => (a.book.release ?? 0) - (b.book.release ?? 0) || a.el.source.localeCompare(b.el.source));
   const year = (r?: number) => (r ? String(Math.floor(r / 10000)) : "");
   const title = (v: typeof active) => `${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`;
-  const label = (v: typeof active) => <><b>{v.book.abbr ?? v.el.source}</b><small>{year(v.book.release)}</small></>;
+  const label = (v: typeof active) => <><b>{v.book.abbr ?? v.el.source}</b><small>{year(v.book.release)}</small><KindTag v={v} /></>;
   if (strip) {
     return (
       <div className="src-strip" role="group" aria-label="Book">

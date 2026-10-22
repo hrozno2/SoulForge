@@ -1406,7 +1406,8 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
       const rel = typeof b.published === "string" ? b.published.replace(/-/g, "").slice(0, 8) : "";
       out.push(base(`ID_5ET_SOURCE_${slug(b.id ?? b.name)}`, b.name, "Source", "5etools", {
         compendiumHidden: true,
-        setters: { release: set(rel), official: set(/^(UA|HB|Unearthed)/i.test(b.id ?? "") ? "false" : "true"), abbreviation: set(String(b.id ?? "")) },
+        // 5e.tools' own classification of the book: core, supplement, setting, prerelease, homebrew...
+        setters: { release: set(rel), official: set(/^(UA|HB|Unearthed)/i.test(b.id ?? "") ? "false" : "true"), abbreviation: set(String(b.id ?? "")), group: set(String(b.group ?? "")) },
       }));
     }
   }

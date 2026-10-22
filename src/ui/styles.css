@@ -483,7 +483,13 @@ button.tiny { padding: 0 6px; }
 .vchip.static { cursor: default; }
 .vchip em { font-style: normal; font: 700 9.5px var(--body); letter-spacing: .1em; text-transform: uppercase; margin-left: 5px; padding: 0 5px; border-radius: 6px; }
 .vchip em.newest { background: #2f6f3f; color: #fff; }
-.vchip em.ua { background: #8a5a14; color: #fff; }
+/* A source's kind: Official, Setting, UA (playtest) or Other (third-party, homebrew). */
+em.kind { font-style: normal; font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; margin-left: 4px; vertical-align: 1px; }
+em.kind-official { background: #2d4f7c; color: #e6efff; }
+em.kind-setting { background: #5b3d7a; color: #f3e8ff; }
+em.kind-playtest { background: #8a5a14; color: #fff; }
+em.kind-other { background: #555; color: #eee; }
+.src-pick button em.kind, .src-strip button em.kind { margin: 2px 0 0; display: block; }
 .pick-card.dim { opacity: .55; }
 
 /* list view */

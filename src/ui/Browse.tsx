@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AElement } from "../aurora/types";
-import { formatRelease, groupVariants, hasRecommendation, hiddenBy, sortGroups, type Group, type SortMode, type Variant } from "../aurora/books";
+import { BOOK_KIND_LABEL, bookKind, formatRelease, groupVariants, hasRecommendation, hiddenBy, sortGroups, type Group, type SortMode, type Variant } from "../aurora/books";
 import { applyFacets, facetCounts, facetsFor, type Selected } from "../aurora/facets";
 import { stripHtml } from "../aurora/sheet";
 import { shortRange, shortTime } from "../sheets/data";
@@ -52,11 +52,18 @@ export const featOf = (e: AElement): string | undefined => {
 const SORTS: [SortMode, string][] = [["az", "A to Z"], ["recommended", "Recommended"], ["newest", "Newest"]];
 
 /** The books an option comes from, as chips; a click switches to that version. */
+/** A source's kind as a small marker: Official, Setting, UA or Other. */
+export function KindTag({ v }: { v: Variant }) {
+  const k = bookKind(v.book, v.el.source);
+  if (!k) return null;
+  return <em className={`kind kind-${k}`} title={k === "playtest" ? "Unearthed Arcana: playtest material" : k === "setting" ? "An official setting or adventure book" : k === "official" ? "An official core book or supplement" : "Not an official book (third-party or homebrew)"}>{BOOK_KIND_LABEL[k]}</em>;
+}
+
 export function VariantChips({ g, activeId, chosen, onActive, short, onSwitch, onPickVersion }: { g: Group; activeId: string; chosen: Set<string>; onActive: (id: string) => void; short?: boolean; onSwitch?: (from: AElement, to: AElement) => void; onPickVersion?: (el: AElement) => void }) {
   const when = (r?: number) => (short ? (r ? String(Math.floor(r / 10000)) : "") : formatRelease(r));
   if (g.variants.length < 2) {
     const v = g.variants[0];
-    return <span className="vchips"><span className="vchip static" tabIndex={0} title={`${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`}>{v.book.abbr ?? v.el.source}{v.book.release ? ` · ${when(v.book.release)}` : ""}</span></span>;
+    return <span className="vchips"><span className="vchip static" tabIndex={0} title={`${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`}>{v.book.abbr ?? v.el.source}{v.book.release ? ` · ${when(v.book.release)}` : ""}<KindTag v={v} /></span></span>;
   }
   return (
     <span className="vchips" role="group" aria-label="Versions from different books">
@@ -73,7 +80,7 @@ export function VariantChips({ g, activeId, chosen, onActive, short, onSwitch, o
           {v.book.abbr ?? v.el.source}
           {v.book.release ? <small> {when(v.book.release)}</small> : null}
           {v === g.newest && g.variants.length > 1 && v.book.release ? <em className="newest">newest</em> : null}
-          {v.book.playtest ? <em className="ua">playtest</em> : null}
+          <KindTag v={v} />
         </button>
       ))}
     </span>

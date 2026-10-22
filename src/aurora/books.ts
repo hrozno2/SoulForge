@@ -15,6 +15,8 @@ export interface BookInfo {
   abbr?: string;
   /** True when the content has a Source element for this book, so "official" is a fact and not a guess. */
   known?: boolean;
+  /** 5e.tools' group for the book (core, supplement, setting, setting-alt, prerelease, homebrew...), when it has one. */
+  group?: string;
 }
 
 /**
@@ -33,7 +35,9 @@ export class BookIndex {
     for (const e of reg.ofType("Source")) {
       // Both providers can describe one book; Aurora's description is kept.
       const had = this.map.get(key(e.name));
-      if (had && e.origin === "5etools") continue;
+      const group = e.setters.group?.value || undefined;
+      // 5e.tools' group for the book is kept with Aurora's description of it.
+      if (had && e.origin === "5etools") { had.group ??= group; continue; }
       const rel = parseInt(e.setters.release?.value ?? "", 10);
       this.map.set(key(e.name), {
         name: e.name,
@@ -42,6 +46,7 @@ export class BookIndex {
         playtest: /unearthed arcana|playtest/i.test(e.name),
         abbr: e.setters.abbreviation?.value,
         known: true,
+        group: group ?? had?.group,
       });
     }
   }
@@ -95,6 +100,25 @@ export function bookTier(book: BookInfo, source: string): number {
   return 5;
 }
 
+/**
+ * What kind of book a source is: "official" (the core books and the official supplements), "setting" (an official
+ * campaign-setting or adventure book: Eberron, Ravenloft, the Forgotten Realms...), "playtest" (Unearthed Arcana)
+ * or "other" (third-party and homebrew). Every source is shown with its kind.
+ */
+export type BookKind = "official" | "setting" | "playtest" | "other";
+
+export function bookKind(book: BookInfo, source: string): BookKind | undefined {
+  // The app's own entries (skills, the ability score options...) come from no book.
+  if (/^(internal|5etools|core|soul forge)$/i.test(source.trim())) return undefined;
+  if (book.playtest || book.group === "prerelease") return "playtest";
+  // 5e.tools says what kind of book it is; otherwise the name and the content's "official" flag tell.
+  if (book.group) return /^setting/.test(book.group) ? "setting" : book.group === "homebrew" ? "other" : "official";
+  if (SETTING_BOOKS.test(source) || SETTING_BOOKS.test(book.name ?? "")) return book.official || !book.known ? "setting" : "other";
+  return book.official ? "official" : "other";
+}
+
+export const BOOK_KIND_LABEL: Record<BookKind, string> = { official: "Official", setting: "Setting", playtest: "UA", other: "Other" };
+
 export interface Variant {
   el: AElement;
   book: BookInfo;
@@ -131,8 +155,10 @@ export function groupVariants(items: AElement[], books: BookIndex): Group[] {
     }
     const variants = [...seen.values()];
     variants.sort((a, b) => (b.book.release ?? 0) - (a.book.release ?? 0) || a.el.source.localeCompare(b.el.source));
-    const official = variants.filter((v) => !v.book.playtest);
-    const best = official[0] ?? variants[0];
+    // The default version: the newest official core book (not a setting book, not playtest), then the newest setting
+    // book, then anything else, playtest last.
+    const rank = (v: Variant) => ({ official: 0, setting: 1, other: 2, playtest: 3 })[bookKind(v.book, v.el.source) ?? "other"];
+    const best = [...variants].sort((a, b) => rank(a) - rank(b))[0];
     const dated = variants.filter((v) => v.book.release && !v.book.playtest);
     const newest = dated[0] ?? variants[0];
     out.push({ key: k, name: variants[0].el.name, type: variants[0].el.type, variants, best, newest });

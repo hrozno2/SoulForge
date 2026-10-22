@@ -1,9 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { requestRoll } from "./Dice";
 import { D20 } from "./icons";
 import { Browse } from "./Browse";
 import type { AElement } from "../aurora/types";
-import type { Resolved, SelectSlot } from "../aurora/engine";
+import { skippable, type Resolved, type SelectSlot } from "../aurora/engine";
 import type { Character } from "../aurora/character";
 
 export type SetCharacter = (fn: (c: Character) => Character) => void;
@@ -39,7 +39,7 @@ export function setSelection(set: SetCharacter, key: string, ids: string[]): voi
 /** Several identical choices (two spells at level 1, two more at 3, and so on) shown as one. */
 export type MergedSlot = SelectSlot & { members?: SelectSlot[] };
 
-const signature = (s: SelectSlot) => [s.owner.id, s.rule.type, s.rule.name, s.rule.supports ?? "", s.rule.spellcasting ?? "", s.rule.optional ? 1 : 0, s.listItems ? "list" : ""].join("|");
+const signature = (s: SelectSlot) => [s.owner.id, s.rule.type, s.rule.name, s.rule.supports ?? "", s.rule.spellcasting ?? "", s.rule.optional ? 1 : 0, s.declined ? 1 : 0, s.listItems ? "list" : ""].join("|");
 
 export function mergeSlots(slots: SelectSlot[]): MergedSlot[] {
   const groups = new Map<string, SelectSlot[]>();
@@ -62,8 +62,20 @@ export function mergeSlots(slots: SelectSlot[]): MergedSlot[] {
 
 export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved; set: SetCharacter; onDetail: (e: AElement) => void }) {
   const { rule, chosen } = slot;
-  const [open, setOpen] = useState(chosen.length < rule.number);
-  const full = chosen.length >= rule.number;
+  const declined = !!slot.declined;
+  const [open, setOpen] = useState(chosen.length < rule.number && !declined);
+  const full = chosen.length >= rule.number || declined;
+  // A variant or optional choice has a box: unticked, it is not taken, its picks go and it counts as done.
+  const canSkip = !slot.listItems && skippable(rule);
+  const keys = slot.members ? slot.members.map((m) => m.key) : [slot.key];
+  const setTaking = (take: boolean) => {
+    set((c) => ({
+      ...c,
+      declined: take ? (c.declined ?? []).filter((k) => !keys.includes(k)) : [...new Set([...(c.declined ?? []), ...keys])],
+      selections: take ? c.selections : { ...c.selections, ...Object.fromEntries(keys.map((k) => [k, []])) },
+    }));
+    setOpen(take);
+  };
   // A choice that just got filled folds away so the next one is in view. Opening it again stays open.
   const wasFull = useRef(full);
   useEffect(() => {
@@ -137,21 +149,22 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
     one();
   };
   return (
-    <div className={`slot ${full ? "done" : "todo"} ${slot.listItems ? "has-roll" : ""}`}>
+    <div className={`slot ${full ? "done" : "todo"} ${slot.listItems ? "has-roll" : ""} ${canSkip ? "has-take" : ""} ${declined ? "declined" : ""}`}>
+      {canSkip && <input type="checkbox" className="slot-take" checked={!declined} title={declined ? "Not taken: tick to take it" : "Untick to not take it"} aria-label={`Take ${rule.name}`} onChange={(e) => setTaking(e.target.checked)} />}
       {slot.listItems && slot.listItems.length > 1 && <button className="slot-roll" title={`Roll on the table (d${slot.listItems.length})`} aria-label={`Roll ${rule.name}`} onClick={rollTable}><D20 size={16} /></button>}
-      <button className="slot-head" onClick={() => setOpen(!open)}>
+      <button className="slot-head" onClick={() => !declined && setOpen(!open)}>
         <span className="slot-title">
           <span className="slot-name">{rule.name}</span>
-          <span className={`slot-count ${full ? "full" : ""}`} title={`${chosen.length} of ${need} chosen`}>{chosen.length}/{need}</span>
-          <span className="slot-need">{slot.listItems ? "optional" : full ? "done" : need === 1 ? "choose 1" : `choose ${need - chosen.length} more (${need} total)`}</span>
+          {!declined && <span className={`slot-count ${full ? "full" : ""}`} title={`${chosen.length} of ${need} chosen`}>{chosen.length}/{need}</span>}
+          <span className="slot-need">{declined ? "not taken" : slot.listItems ? "optional" : full ? "done" : need === 1 ? "choose 1" : `choose ${need - chosen.length} more (${need} total)`}</span>
         </span>
         <span className="slot-chosen">
           {chosenNames.join(" · ")}
           {slot.defaulted ? " (default)" : ""}
         </span>
-        <span className="chev">{open ? "▾" : "▸"}</span>
+        <span className="chev">{declined ? "" : open ? "▾" : "▸"}</span>
       </button>
-      {open && (
+      {open && !declined && (
         <div className="slot-body">
           {slot.listItems ? (
             <ul className="options">
@@ -187,35 +200,13 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
   );
 }
 
-/**
- * A list of choices. Finished ones move below the open ones, like ticking off a shopping list, and slide to their
- * new place rather than jumping (each keeps its spot when nothing changed).
- */
+/** A list of choices, in the content's order: a finished one folds where it is, nothing moves. */
 export function SlotList({ slots: given, r, set, onDetail, empty, merge = true }: { slots: SelectSlot[]; r: Resolved; set: SetCharacter; onDetail: (e: AElement) => void; empty?: string; merge?: boolean }) {
   const merged: MergedSlot[] = merge ? mergeSlots(given) : given;
-  const full = (s: MergedSlot) => s.rule.optional ? s.chosen.length > 0 : s.chosen.length >= s.rule.number;
-  const slots = [...merged.filter((s) => !full(s)), ...merged.filter(full)];
-  const box = useRef<HTMLDivElement>(null);
-  const before = useRef(new Map<string, number>());
-  const order = slots.map((s) => s.key).join("|");
-  // Where each choice was, so a move can play from there: measured before the browser paints the new order.
-  useLayoutEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const now = new Map<string, number>();
-    for (const c of Array.from(el.children) as HTMLElement[]) if (c.dataset.slot) now.set(c.dataset.slot, c.getBoundingClientRect().top);
-    if (!document.documentElement.classList.contains("reduce-motion")) {
-      for (const c of Array.from(el.children) as HTMLElement[]) {
-        const was = before.current.get(c.dataset.slot ?? "");
-        const is = now.get(c.dataset.slot ?? "");
-        if (was !== undefined && is !== undefined && Math.abs(was - is) > 2) c.animate([{ transform: `translateY(${was - is}px)` }, { transform: "none" }], { duration: 380, easing: "cubic-bezier(.22,.8,.24,1)" });
-      }
-    }
-    before.current = now;
-  }, [order]);
+  const slots = merged;
   if (!slots.length) return empty ? <p className="muted">{empty}</p> : null;
   return (
-    <div className="slot-list" ref={box}>
+    <div className="slot-list">
       {slots.map((s) => (
         <div key={s.key} data-slot={s.key}>
           <Slot slot={s} r={r} set={set} onDetail={onDetail} />

@@ -46,6 +46,12 @@ function LearnModal({ el, books, onClose }: { el: AElement; books: BookIndex; on
           </dl>
         )}
         <Html cap html={el.description || "<p>No description in the content file.</p>"} />
+        {el.lore && (
+          <details className="lore">
+            <summary>Lore</summary>
+            <Html html={el.lore} />
+          </details>
+        )}
       </div>
     </div>
   );

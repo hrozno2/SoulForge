@@ -70,6 +70,22 @@ export const BY_KIND: Record<string, Record<string, Decision>> = {
   },
 };
 
+/**
+ * Plutonium's Foundry files (foundry.ts reads effects, activities and system.uses). The rest is how Plutonium builds
+ * the Foundry item: bookkeeping, or choices the 5e.tools entries already give.
+ */
+const PLUTONIUM: Decision = "display: Plutonium's own bookkeeping for building the Foundry item";
+export const FOUNDRY: Record<string, Decision> = {
+  migrationVersion: PLUTONIUM, ignoreSrdActivities: PLUTONIUM, ignoreSrdEffects: PLUTONIUM, identifier: PLUTONIUM, img: "display: art",
+  _merge: PLUTONIUM, isIgnored: "display: entries Plutonium leaves out; the 5e.tools entry itself is converted",
+  entryData: PLUTONIUM, actorTokenMod: "display: token art", subEntities: "display: extra Foundry items (summons, statblocks) made with the feature",
+  advancement: "display: Foundry's level-up choices; the same choices come from the 5e.tools entries (ASI, skills, scale values)",
+  classSource: "display: identity, used to match the entry", subclassSource: "display: identity, used to match the entry",
+  shortName: "display: identity, used to match the entry",
+  system: "display: Foundry item data; its uses become the usage line, its ranges, durations and targets are in the text",
+};
+
 export function decisionFor(kind: string, field: string): Decision | undefined {
+  if (kind.startsWith("foundry:")) return FOUNDRY[field] ?? ANY_KIND[field];
   return BY_KIND[kind]?.[field] ?? ANY_KIND[field];
 }

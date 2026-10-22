@@ -6,6 +6,8 @@
  *
  * The data itself is never bundled with Soul Forge: it is read from files or a base address the user supplies.
  */
+import { applyFoundry } from "./foundry";
+import { applyLore } from "./lore";
 import type { AElement, ARule, SetterValue } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -983,6 +985,54 @@ function castingRules(c: J, name: string, lists: string[], classLevel: string): 
   return { spellcasting, rules, shares: prog === "full" || prog === "1/2" || prog === "1/3" || prog === "artificer" };
 }
 
+/**
+ * The features an entry refers to: in a "choose N" block (type "options") they are a choice; outside one, a class
+ * feature it names is given with it. Refers by 5e.tools' refClassFeature ("Name|Class|ClassSource|Level|Source"),
+ * refSubclassFeature ("Name|Class|ClassSource|Subclass|SubclassSource|Level|Source") and refOptionalfeature
+ * ("Name|Source"). With `optionsOnly`, plain references are left alone (the subclass loop converts those already).
+ */
+function refRules(entries: unknown, label: string, level: number, data: { cf: J[]; sf: J[]; ctx: Ctx; out: AElement[] }, optionsOnly = false): ARule[] {
+  const rules: ARule[] = [];
+  const idOf = (ref: J): { id: string; type: string } | undefined => {
+    if (ref.type === "refClassFeature") {
+      const [name, cls, csrc, lv, src] = String(ref.classFeature).split("|");
+      const f = data.cf.find((x) => x.name === name && x.className === cls && (x.classSource ?? "PHB") === (csrc || x.classSource) && String(x.level) === lv && x.source === (src || csrc || "PHB"));
+      if (!f) return undefined;
+      const id = ftId("CF", `${cls} ${name}`, f.source, String(f.level));
+      if (!data.out.some((o) => o.id === id)) data.out.push(featureElement(f, "5et class feature", "Class Feature", id, data.ctx));
+      return { id, type: "Class Feature" };
+    }
+    if (ref.type === "refSubclassFeature") {
+      const [name, , csrc, short, ssrc, lv, src] = String(ref.subclassFeature).split("|");
+      const book = src || ssrc || csrc || "PHB";
+      const hit = data.out.find((o) => ["", "1", "2", "3", "4"].some((h) => o.id === ftId("SF", `${short ?? ""} ${name}`, book, `${lv ?? ""}${h}`)));
+      return hit ? { id: hit.id, type: "Archetype Feature" } : undefined;
+    }
+    if (ref.type === "refOptionalfeature") {
+      const [name, src] = String(ref.optionalfeature).split("|");
+      return { id: ftId("OPT", name, src || "PHB"), type: "Optional Feature" };
+    }
+    return undefined;
+  };
+  const walk = (x: unknown, inOptions: boolean) => {
+    if (Array.isArray(x)) { for (const y of x) walk(y, inOptions); return; }
+    if (!x || typeof x !== "object") return;
+    const e = x as J;
+    if (e.type === "options" && Array.isArray(e.entries)) {
+      const refs = (e.entries as J[]).map(idOf).filter(Boolean) as { id: string; type: string }[];
+      if (refs.length) {
+        const types = [...new Set(refs.map((r) => r.type))];
+        rules.push({ kind: "select", type: types[0], name: `${label}: choose ${e.count ?? 1}`, supports: refs.filter((r) => r.type === types[0]).map((r) => r.id).join("|"), number: Number(e.count) || 1, level });
+      }
+      return;
+    }
+    if (!inOptions && !optionsOnly && e.type === "refClassFeature") { const r = idOf(e); if (r) rules.push({ kind: "grant", type: r.type, id: r.id, level }); return; }
+    if (e.entries) walk(e.entries, inOptions);
+  };
+  walk(entries, false);
+  return rules;
+}
+
 function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: AElement[]): void {
   const id = ftId("CLASS", c.name, c.source);
   const mcId = `${id}_MULTICLASS`;
@@ -1051,6 +1101,9 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     }
     granted.set(fid, name);
     rules.push({ kind: "grant", type: "Class Feature", id: fid, level });
+    // "Choose one of these" blocks inside the feature (the 2024 Cleric's Divine Order: Protector or Thaumaturge) are
+    // a choice; a feature it simply refers to (Monk's Focus: Flurry of Blows) is given with it.
+    rules.push(...refRules(feat.entries, `${name} (${c.name} ${level})`, level, { cf: data.cf, sf: data.sf, ctx, out }));
   }
   // The replaced feature itself requires the optional one's absence, as Aurora's content does (a requirement on the
   // class's own grant would not see a choice the class itself offers).
@@ -1127,6 +1180,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       if (out.some((o) => o.id === fid)) continue;
       out.push(featureElement(f, "5et subclass feature", "Archetype Feature", fid, ctx, f.name === (s.name)));
       srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
+      srules.push(...refRules(f.entries, `${f.name} (${s.shortName ?? s.name} ${f.level})`, f.level, { cf: data.cf, sf: data.sf, ctx, out }, true));
     }
     srules.push(...additionalSpellRules(s.additionalSpells, s.name, s.source).rules);
     // A subclass that casts (Eldritch Knight, Arcane Trickster): its list is the class whose spells it expands with.
@@ -1231,10 +1285,17 @@ export interface FiveToolsInput {
   files: Record<string, J>;
 }
 
+/** What the last conversion did with the lore files: how many matched, and the ones that matched nothing. */
+export let lastLoreReport: { applied: number; unmatched: string[] } = { applied: 0, unmatched: [] };
+
 /** Converts every recognised file. Unknown files are ignored. */
 export function convertFiveTools(input: FiveToolsInput): AElement[] {
   const ctx: Ctx = { books: {}, spellClasses: {}, baseItems: new Map() };
-  const all = Object.entries(resolveCopies(input.files as Record<string, J>));
+  // The Foundry files (Plutonium's mechanics) hold "feat", "item", "classFeature"... lists of mechanics, not content:
+  // set aside here and applied to the converted elements at the end (foundry.ts).
+  const isFoundry = (p: string) => /(^|\/)foundry(-[a-z]+)?\.json$/i.test(p);
+  const foundryFiles = Object.entries(input.files as Record<string, J>).filter(([p]) => isFoundry(p));
+  const all = Object.entries(resolveCopies(Object.fromEntries(Object.entries(input.files as Record<string, J>).filter(([p]) => !isFoundry(p)))));
   for (const [path, json] of all) {
     if (json?.book && Array.isArray(json.book)) for (const b of json.book) if (b.id) ctx.books[b.id] = b.name;
     if (json?.adventure && Array.isArray(json.adventure)) for (const b of json.adventure) if (b.id) ctx.books[b.id] = b.name;
@@ -1312,8 +1373,13 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
     for (const m of json.monster ?? []) out.push(convertMonster(m, ctx));
   }
   for (const c of classes) convertClass(c, { cf, sc, sf }, ctx, out);
+  // Foundry mechanics first, so the reference passes below also mend what they grant (Auran becomes Primordial).
+  if (foundryFiles.length) applyFoundry(foundryFiles, out, ftId);
   resolveSpellRefs(out, spellIds);
   resolveLooseRefs(out);
+  const fluff = new Map<string, J[]>();
+  for (const [, json] of all) if (json && typeof json === "object" && !Array.isArray(json)) for (const [k, v] of Object.entries(json as J)) if (/Fluff$/.test(k) && Array.isArray(v)) (fluff.get(k) ?? fluff.set(k, []).get(k)!).push(...v);
+  if (fluff.size) lastLoreReport = applyLore(fluff, out, ftId, entriesHtml);
   return out;
 }
 
@@ -1355,3 +1421,9 @@ function resolveSpellRefs(out: AElement[], spellIds: Record<string, { id: string
 
 /** Files a 5etools data folder offers, for a base address. Index files list the book-specific parts. */
 export const FIVETOOLS_CORE_FILES = ["books.json", "races.json", "backgrounds.json", "feats.json", "items-base.json", "items.json", "languages.json", "optionalfeatures.json", "spells/sources.json"];
+/** Plutonium's Foundry mechanics (foundry.ts) and the lore files (lore.ts), fetched with the core files when there. */
+export const FIVETOOLS_EXTRA_FILES = [
+  "foundry-feats.json", "foundry-items.json", "foundry-optionalfeatures.json", "foundry-races.json", "foundry-actions.json", "foundry-backgrounds.json",
+  "class/foundry.json", "spells/foundry.json",
+  "fluff-races.json", "fluff-backgrounds.json", "fluff-feats.json", "fluff-items.json", "fluff-optionalfeatures.json", "fluff-languages.json",
+];

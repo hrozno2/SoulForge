@@ -30,7 +30,8 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "diff")("saved characters keep th
   for (const f of picked) {
     let ch;
     try { ch = normalizeCharacter(JSON.parse(readFileSync(f, "utf8"))); } catch { continue; }
-    const name = f.split("/").slice(-2).join("/");
+    // The run folder too: every rules-check run writes the same file names.
+    const name = f.split("/").slice(-3).join("/");
     const t = performance.now();
     const r = resolve(ch, reg);
     ms += performance.now() - t;

@@ -5,6 +5,7 @@ import { bookKey } from "./books";
 import { borrowMechanics, checksIncludeInitiative, type MechanicsReport } from "../engine/mechanics";
 import { applyEditionPolicy } from "../engine/editionPolicy";
 import { optionalFeatureChoices } from "../engine/optionalFeatures";
+import { wildShapeChoices } from "../engine/wildShape";
 
 /** A `supports` filter: `A,B` is AND, `A||B` is OR, `A|B` is any of these ids, `!A` is NOT, parentheses group. */
 type SNode = { t: "and" | "or"; a: SNode[] } | { t: "any"; words: string[] } | { t: "not"; n: SNode };
@@ -161,6 +162,7 @@ export class ARegistry {
     checksIncludeInitiative(this.byId);
     applyEditionPolicy(this.byId);
     optionalFeatureChoices(this.byId);
+    wildShapeChoices(this.byId);
     for (const el of improvementOptions([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
     for (const el of classAsiChoices([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
     for (const el of this.byId.values()) {

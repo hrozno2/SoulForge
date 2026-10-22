@@ -51,6 +51,8 @@ export interface SelectSlot {
   root: string;
   chosen: string[];
   defaulted: boolean;
+  /** An optional or variant choice the player chose not to take. */
+  declined?: boolean;
   options: AElement[];
   /** Options whose own requirements are not met right now. */
   blocked: Set<string>;
@@ -264,6 +266,11 @@ function mutualExclusions(el: AElement, reg: ARegistry): Set<string> {
  * level), with a count when the owner has two such choices. It does not move when content adds or reorders rules.
  */
 const KEYS = new WeakMap<AElement, string[]>();
+/** A choice the player may turn down: one marked optional, or a variant ("Variant Feature", "Optional class feature"). */
+export function skippable(rule: { name: string; optional?: boolean }): boolean {
+  return !!rule.optional || /\b(variant|optional)\b/i.test(rule.name);
+}
+
 export function choiceKey(el: AElement, rule: SelectRule, idx: number): string {
   let keys = KEYS.get(el);
   if (!keys) {
@@ -376,7 +383,10 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
           defaulted = true;
         }
         const isList = rule.type === "List";
-        rawSlots.push({ key, owner: el, rule: isList ? { ...rule, optional: true } : rule, ownerLevel, root, chosen, defaulted, at: Math.max(at, rule.level ?? 0) });
+        // A variant or optional choice the player turned down: nothing taken, and nothing left open.
+        const declined = skippable(rule) && !!ch.declined?.includes(key);
+        if (declined) { chosen = []; defaulted = false; }
+        rawSlots.push({ key, owner: el, rule: isList || declined ? { ...rule, optional: true } : rule, ownerLevel, root, chosen, defaulted, declined, at: Math.max(at, rule.level ?? 0) });
         for (const id of isList ? [] : chosen) {
           const target = reg.get(id);
           if (!target) {

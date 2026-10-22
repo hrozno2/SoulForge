@@ -659,11 +659,26 @@ export function defensesOf(r: Resolved): SheetData["defenses"] {
  */
 function featureAttacks(r: Resolved): AttackLine[] {
   const s = r.stats;
+  // Attacks the content states as data (5e.tools' Foundry activities): ability as given; none means Strength or
+  // Dexterity, the better (Foundry's default for a feature's weapon-like attack); "spellcasting", the casting ability.
+  const fromData: AttackLine[] = [];
+  const seenNames = new Set<string>();
+  for (const a of r.active) for (const at of a.el.attacks ?? []) {
+    if (seenNames.has(at.name.toLowerCase())) continue;
+    seenNames.add(at.name.toLowerCase());
+    const abil = at.ability === "spellcasting" ? (r.spellcasting.values().next().value?.ability ?? "") : ({ str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" } as Record<string, string>)[at.ability] ?? "";
+    const mod = abil ? s.get(`${abil}:modifier`) : at.ranged ? s.get("dexterity:modifier") : Math.max(s.get("strength:modifier"), s.get("dexterity:modifier"));
+    const kind = at.ranged ? "ranged" : "melee";
+    const bonus = mod + s.get("proficiency") + s.get(`${kind}:attack`) + s.get("attack");
+    const extra = mod + s.get(`${kind}:damage`) + s.get("damage");
+    fromData.push({ id: `data-${a.el.id}-${at.name}`, auto: true, name: at.name, bonus, damage: `${at.die}${extra ? signed(extra) : ""}`, damageType: at.damageType, properties: at.ranged ? "ranged" : "", notes: a.el.name });
+  }
   const prof = s.get("proficiency");
   const str = s.get("strength:modifier");
   const dex = s.get("dexterity:modifier");
   const martial = s.get("martial arts:dice") > 0;
-  return effectsOfKind(r, "attack").map(({ effect: e, from }) => {
+  // The hand-written table only where the data has nothing of that name.
+  return [...fromData, ...effectsOfKind(r, "attack").filter(({ effect: e }) => !seenNames.has(e.name.toLowerCase())).map(({ effect: e, from }) => {
     const mod = e.ability === "finesse" || martial ? Math.max(str, dex) : str;
     const unarmed = e.ability === "unarmed";
     const bonus = mod + prof + s.get("melee:attack") + s.get("attack") + (unarmed ? s.get("unarmed:attack") + s.get("unarmed strike:attack") + s.get("natural:attack") : s.get(`${canonicalName(from.name)}:attack`));
@@ -678,7 +693,7 @@ function featureAttacks(r: Resolved): AttackLine[] {
       properties: e.properties ?? (unarmed ? "unarmed strike" : ""),
       notes: [from.name, e.notes].filter(Boolean).join("; "),
     };
-  });
+  })];
 }
 
 function unarmedStrike(r: Resolved): AttackLine {

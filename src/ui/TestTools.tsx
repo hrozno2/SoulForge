@@ -64,3 +64,34 @@ export async function testExport(reg: ARegistry, onProgress: (s: string) => void
   const ok = await saveFile(`soulforge-test-export-${new Date().toISOString().slice(0, 10)}.zip`, bytes, "application/zip");
   return ok ? `Exported ${list.length} test characters.${notes.length ? ` ${notes.length} notes in NOTES.txt.` : ""}` : "Cancelled.";
 }
+
+/**
+ * Dev server only (the browser test run, docs/PROMPT-ui-check.md): loads the test cache's Aurora files and 5e.tools
+ * data, served by the dev server, as two ordinary content sources, through the same storage the app uses.
+ */
+export async function loadTestContent(onProgress: (s: string) => void): Promise<string> {
+  const { idbFileCache, saveSource } = await import("../aurora/storage");
+  const { storeFiveTools } = await import("../aurora/content");
+  const list = (await (await fetch("/__testcontent/list")).json()) as { aurora: string[]; fivetools: string[] };
+  // Aurora's internal and essentials files first, as the tests load them (later files override earlier ones).
+  const aurora = [...list.aurora].sort((a, b) => Number(/internal|ALE/.test(b)) - Number(/internal|ALE/.test(a)));
+  const root = "local://Test content (Aurora)";
+  const urls: string[] = [];
+  let n = 0;
+  const get = async (p: string, set = "") => (await fetch(`/__testcontent/file?p=${encodeURIComponent(p)}${set ? `&set=${set}` : ""}`)).text();
+  for (const p of aurora) {
+    const url = `${root}/${p}`;
+    await idbFileCache.put(url, await get(p), root);
+    urls.push(url);
+    if (++n % 200 === 0) onProgress(`Aurora files: ${n} of ${aurora.length}`);
+  }
+  await saveSource({ url: root, name: "Test content (Aurora)", kind: "local", format: "aurora", tree: { url: root, name: "Test content (Aurora)", description: "The test cache's Aurora files", version: "local", files: urls, children: [] }, disabled: [], versions: {}, lastChecked: Date.now(), fileCount: urls.length });
+  const files = new Map<string, string>();
+  n = 0;
+  for (const p of list.fivetools) {
+    files.set(p, await get(p, "5etools"));
+    if (++n % 50 === 0) onProgress(`5e.tools files: ${n} of ${list.fivetools.length}`);
+  }
+  await saveSource(await storeFiveTools("Test content (5e.tools)", files));
+  return `Loaded ${urls.length} Aurora files and ${files.size} 5e.tools files.`;
+}

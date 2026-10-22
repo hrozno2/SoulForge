@@ -94,6 +94,10 @@ export interface AElement {
   requirements?: string;
   /** Builder side-panel HTML. */
   description: string;
+  /** Per-level numbers by identifier ("known-forms": 4 from level 2...), from the Foundry data. */
+  scales?: Record<string, { at: number; value: number }[]>;
+  /** Lore HTML kept apart from the rules (5e.tools' fluff, its Info tab). */
+  lore?: string;
   compendiumHidden: boolean;
   sheet?: SheetInfo;
   setters: Record<string, SetterValue>;
@@ -104,6 +108,8 @@ export interface AElement {
   extract?: { id: string; amount: number }[];
   /** Where it came from, so a source can be removed or updated. */
   origin?: string;
+  /** Attacks the element gives (from 5e.tools' Foundry activities): shown on the sheet as attack lines. */
+  attacks?: { name: string; die: string; damageType: string; ability: string; ranged: boolean }[];
   /** The rules the element belongs to, stamped at load from its book's release (see edition.ts). */
   edition?: "2014" | "2024";
 }

@@ -187,6 +187,8 @@ export interface Character {
   pointBuy?: { budget: number; min: number; max: number; costs: Record<number, number> };
   /** Slot key (`ownerId|ruleIndex`) to chosen element ids. */
   selections: Record<string, string[]>;
+  /** Optional and variant choices (slot keys) the player chose not to take: not counted as choices left open. */
+  declined?: string[];
   /** Option elements the player enabled (type Option). */
   options: string[];
   /** Bonuses the player adds by hand, for table rulings and things the content does not cover. */

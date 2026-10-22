@@ -55,6 +55,9 @@ export class StatBook {
   private evalValue(v: string): number {
     const n = Number(v);
     if (!Number.isNaN(n) && v.trim() !== "") return n;
+    // A formula: statistics in braces with arithmetic ("2 * {level}", "10 + {dexterity:modifier}"), as the 5e.tools
+    // Foundry effects give them.
+    if (v.includes("{")) return evalFormula(v, (name) => this.get(name));
     const t = v.trim().toLowerCase();
     return t.startsWith("-") ? -this.get(t.slice(1)) : this.get(t);
   }
@@ -187,4 +190,44 @@ export class StatBook {
     const list = this.contribs.get(name.toLowerCase())?.filter((c) => c.inline);
     return list && list.length ? list[list.length - 1].value : undefined;
   }
+}
+
+/**
+ * A small arithmetic formula: numbers, {statistic} references, + - * /, brackets and floor, ceil, min, max, abs.
+ * Read by a recursive-descent parser; nothing is evaluated as code. An unreadable formula counts 0.
+ */
+export function evalFormula(src: string, stat: (name: string) => number): number {
+  const toks = src.match(/\{[^}]*\}|\d+(?:\.\d+)?|floor|ceil|min|max|abs|[-+*/(),]/gi) ?? [];
+  let i = 0;
+  const peek = () => toks[i];
+  const take = () => toks[i++];
+  const atom = (): number => {
+    const t = take();
+    if (t === undefined) return 0;
+    if (t === "(") { const v = sum(); take(); return v; }
+    if (t === "-") return -atom();
+    if (t === "+") return atom();
+    if (/^\{/.test(t)) return stat(t.slice(1, -1).trim().toLowerCase());
+    if (/^(floor|ceil|min|max|abs)$/i.test(t)) {
+      take(); // (
+      const args = [sum()];
+      while (peek() === ",") { take(); args.push(sum()); }
+      take(); // )
+      const f = t.toLowerCase();
+      return f === "floor" ? Math.floor(args[0]) : f === "ceil" ? Math.ceil(args[0]) : f === "abs" ? Math.abs(args[0]) : f === "min" ? Math.min(...args) : Math.max(...args);
+    }
+    const n = Number(t);
+    return Number.isNaN(n) ? 0 : n;
+  };
+  const product = (): number => {
+    let v = atom();
+    while (peek() === "*" || peek() === "/") { const op = take(); const r = atom(); v = op === "*" ? v * r : r === 0 ? 0 : v / r; }
+    return v;
+  };
+  const sum = (): number => {
+    let v = product();
+    while (peek() === "+" || peek() === "-") { const op = take(); const r = product(); v = op === "+" ? v + r : v - r; }
+    return v;
+  };
+  try { return sum(); } catch { return 0; }
 }

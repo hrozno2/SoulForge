@@ -26,7 +26,7 @@ import { useUpdater } from "../updater";
 import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
 import { ImportNotes, ImportReport, importReportText } from "./ImportReport";
 import { ruleProblems } from "./RulesCheck";
-import { makeTestBatch, testExport, testToolsEnabled } from "./TestTools";
+import { loadTestContent, makeTestBatch, testExport, testToolsEnabled } from "./TestTools";
 import { listCharacters } from "../aurora/storage";
 import { Tutorial, tutorialWanted } from "./Tutorial";
 import { CompendiumSearch } from "./CompendiumSearch";
@@ -243,6 +243,7 @@ export function App() {
           <small title="If this is older than the build you expect, quit the app (Cmd+Q) and open it again.">{import.meta.env.VITE_TEST_BUILD}</small>
           <button onClick={async () => { if (!content.ready) { setTestMsg("Load rules content first (Home, Go to content)."); return; } setTestMsg("Making 10 random characters..."); const made = await makeTestBatch(content.reg); if (made[0]) open(made[0].id, made[0].ch); setTab("start"); setTestMsg(`Made ${made.length} test characters. They are on Home.`); }}>Make 10 random characters</button>
           <button onClick={async () => setTestMsg(await testExport(content.reg, setTestMsg))}>Export test characters</button>
+          {import.meta.env.DEV && <button onClick={async () => { setTestMsg("Loading the test content..."); const msg = await loadTestContent(setTestMsg); await content.reload(); setTestMsg(msg); }} title="Dev server only: the test cache's Aurora and 5e.tools content">Load test content</button>}
           <button onClick={() => updateSettings({ buildLayout: board ? "tabs" : "board" })} title="Try the new Build layout or go back to the old one">Build layout: {board ? "new (board)" : "old (tabs)"}</button>
           <button onClick={() => { updateSettings({ hideTestTools: true }); setTestMsg("Test controls hidden. Bring them back in the menu or in Settings."); }} title="Hide this bar so the app looks like the released one">Hide test controls</button>
         </div>

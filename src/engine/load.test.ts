@@ -112,9 +112,11 @@ describe.skipIf(!CACHE)("the lossless-load gate", () => {
     const dir = join(CACHE!, "5etools-data");
     if (!existsSync(dir)) return;
     // A field is read when the converter names it (a property access or key); the identity fields always are.
-    const conv = readFileSync("src/aurora/fivetools.ts", "utf8");
+    // The Foundry files are read by foundry.ts, the lore files by lore.ts.
+    const conv = ["fivetools", "lore"].map((n) => readFileSync(`src/aurora/${n}.ts`, "utf8")).join("\n");
+    const foundryConv = readFileSync("src/aurora/foundry.ts", "utf8");
     // Read means accessed: ".lineage", "?.lineage", '["lineage"]' or a quoted key, not the word in a comment.
-    const reads = (k: string) => new RegExp(`(?:\\.|\\[["'])${k.replace(/[$]/g, "\\$")}\\b|["']${k.replace(/[$]/g, "\\$")}["']`).test(conv);
+    const readsIn = (src: string, k: string) => new RegExp(`(?:\\.|\\[["'])${k.replace(/[$]/g, "\\$")}\\b|["']${k.replace(/[$]/g, "\\$")}["']`).test(src);
     const IDENTITY = new Set(["name", "source", "page", "srd", "srd52", "basicRules", "basicRules2024", "freeRules2024", "otherSources", "reprintedAs", "isReprinted", "hasFluff", "hasFluffImages", "fluff", "soundClip", "hasToken", "token", "tokenCredit", "foundryImg", "edition", "legacy", "_copy", "_isCopy", "_isBaseVersion"]);
     const undecided: string[] = [];
     const planned: string[] = [];
@@ -122,13 +124,15 @@ describe.skipIf(!CACHE)("the lossless-load gate", () => {
     for (const f of walk(dir, ".json")) {
       if (/index\.json$|bestiary|books\.json|sources\.json/.test(f)) continue;
       const data = JSON.parse(readFileSync(f, "utf8"));
+      const isFoundry = /(^|\/)foundry(-[a-z]+)?\.json$/.test(f);
+      const reads = (k: string) => readsIn(isFoundry ? foundryConv : conv, k);
       for (const [kind, list] of Object.entries(data)) {
         if (!Array.isArray(list) || kind.startsWith("_")) continue;
         for (const x of list) if (x && typeof x === "object") for (const k of Object.keys(x)) {
-          const key = `${kind}.${k}`;
+          const key = `${isFoundry ? "foundry:" : ""}${kind}.${k}`;
           if (seen.has(key) || IDENTITY.has(k) || reads(k)) continue;
           seen.add(key);
-          const d = decisionFor(kind, k);
+          const d = decisionFor(isFoundry ? `foundry:${kind}` : kind, k);
           if (!d) undecided.push(key);
           else if (d.startsWith("planned")) planned.push(`${key}: ${d.slice(9)}`);
         }

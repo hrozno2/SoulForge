@@ -4,6 +4,21 @@ The big picture: docs/PLAN-audit.md (the full audit of character creation, phase
 prefers English). Older plan: docs/PLAN-windows.md (windows, filters, lore). Decisions on scope are at the end of
 PLAN-audit.md.
 
+## 2026-10-22 later: Plutonium's Foundry data, lore, wild shape, card choices
+
+- Foundry mechanics (src/aurora/foundry.ts): the 5e.tools foundry-*.json files (what Plutonium reads) add passive
+  effects, attack and save activities, limited uses ("@prof"/long rest as the usage line) and scale values
+  (@scale.monk.die and the rest, as level formulas; classes keep them as `scales`). The importer fetches these files.
+- Lore (src/aurora/lore.ts): 5e.tools fluff files become `lore`, shown under "Lore" in the detail and Learn views. The
+  importer fetches fluff-*.json and the class/spell fluff indexes. The test cache has no fluff files yet (needs a
+  download, ask first), so it is untested against real data.
+- Wild Shape (src/engine/wildShape.ts): every beast (both providers) is tagged by CR and fly/swim; each Druid gets form
+  choices per Known Forms step (2024 required, 2014 optional). The importer fetches the bestiary trimmed to beasts.
+  Not done: Circle of the Moon's higher CR.
+- Cards: choices keep their order and fold when done; optional and variant choices have a box to not take them
+  (`Character.declined`, the slot becomes optional).
+- The saved-sheet snapshot keys include the run folder (same file names in every run collided).
+
 ## 2026-10-22: editions, optional class features, choice-window checks (docs/ENGINE-PLAN.md)
 
 - Audits: `RULES_TIER=editions` (gate), `RULES_TIER=aurora`, `RULES_TIER=diff`, `parity`, `fastchar`; the window

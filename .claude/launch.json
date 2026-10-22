@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "soulforge-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "env": { "VITE_TEST_TOOLS": "1" },
+      "port": 1420
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Resolved } from "../aurora/engine";
+import { withHpRoll } from "../aurora/hpRolls";
 import { hitDieOf, resolve, stillToChoose } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
 import { totalLevel, type Character } from "../aurora/character";
@@ -98,8 +99,8 @@ export function LevelUp({ r, ch, set, onDetail, onClose }: { r: Resolved; ch: Ch
               <div className="lu-tile hp"><span>Hit points</span><b>{hpGain >= 0 ? `+${hpGain}` : hpGain}</b><small>{ch.hpMode === "roll" && rolled !== undefined ? `rolled ${rolled} on the d${die}` : `average of the d${die}`}</small></div>
             </div>
             <div className="row lu-hp-actions">
-              <button onClick={() => { const v = 1 + Math.floor(Math.random() * die); set((c) => ({ ...c, hpMode: "roll", hpRolls: { ...c.hpRolls, [String(newLevel)]: v } })); }}>Roll the d{die} instead</button>
-              {ch.hpMode === "roll" && rolled !== undefined && <button onClick={() => set((c) => { const next = { ...c.hpRolls }; delete next[String(newLevel)]; return { ...c, hpRolls: next }; })}>Use the average</button>}
+              <button onClick={() => { const v = 1 + Math.floor(Math.random() * die); set((c) => withHpRoll(c, newLevel, v, "app", die)); }}>Roll the d{die} instead</button>
+              {ch.hpMode === "roll" && rolled !== undefined && <button onClick={() => set((c) => ({ ...withHpRoll(c, newLevel, undefined, "app", die), hpMode: c.hpMode }))}>Use the average</button>}
             </div>
 
             {newFeatures.length > 0 && (

@@ -14,6 +14,7 @@ import { buildSheet } from "../aurora/sheet";
 import { formatRelease, groupVariants, hiddenBy, type Group } from "../aurora/books";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { PassiveFeatures } from "./PassiveFeatures";
+import { HpRollsDialog } from "./HpRolls";
 import { ClassPanel } from "./BuildTab";
 import { Browse, KindTag, blurb, dragMime } from "./Browse";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
@@ -641,6 +642,7 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
   const diceLeft = Math.max(0, dice - (ch.play.hitDiceUsed ?? 0));
   const dieNames = sh.hitDice.map((h) => `d${h.die}`).join("+");
   const [crop, setCrop] = useState<File | null>(null);
+  const [hpOpen, setHpOpen] = useState(false);
   const race = ch.race ? r.reg.get(ch.race)?.name : "";
   const what = [race, ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join(" / ")].filter(Boolean).join(" · ");
   const pick = (url: string) => { set((c) => ({ ...c, portrait: url })); setOpen(false); };
@@ -654,9 +656,9 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
         <small>{what || "Nothing chosen yet"}</small>
         {sh.hp > 0 && (
           <div className="board-bars">
-            <div className="board-bar hp" title={`Hit points ${hp} of ${sh.hp}${ch.play.tempHp ? `, ${ch.play.tempHp} temporary` : ""}`}>
+            <button type="button" className="board-bar hp" title={`Hit points ${hp} of ${sh.hp}${ch.play.tempHp ? `, ${ch.play.tempHp} temporary` : ""}. Click for the hit point rolls.`} onClick={() => setHpOpen(true)}>
               <span style={{ width: `${(100 * hp) / sh.hp}%` }} /><b>HP {hp}/{sh.hp}{ch.play.tempHp ? ` +${ch.play.tempHp}` : ""}</b>
-            </div>
+            </button>
             {dice > 0 && (
               <div className="board-bar hd" title={`Hit dice ${diceLeft} of ${dice} (${dieNames})`}>
                 <span style={{ width: `${(100 * diceLeft) / dice}%` }} /><b>Hit dice {diceLeft}/{dice} {dieNames}</b>
@@ -681,6 +683,7 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
         document.body,
       )}
       {crop && <PortraitCropper file={crop} onCancel={() => setCrop(null)} onDone={(url) => { pick(url); setCrop(null); }} />}
+      {hpOpen && <HpRollsDialog r={r} ch={ch} set={set} onClose={() => setHpOpen(false)} />}
     </div>
   );
 }

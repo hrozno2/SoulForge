@@ -120,9 +120,13 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
   }
   if (force.rollHp) {
     const rolls: Record<string, number> = {};
+    const log: NonNullable<typeof c.hpRollLog> = {};
     let n = 0;
-    for (const k of c.classes) for (let i = 0; i < k.level; i++) { n++; if (n > 1) { const die = hitDieOf(reg.get(k.classId)) || 8; rolls[String(n)] = 1 + Math.floor(rng() * die); } }
-    c = { ...c, hpMode: "roll", hpRolls: rolls };
+    for (const k of c.classes) for (let i = 0; i < k.level; i++) {
+      n++;
+      if (n > 1) { const die = hitDieOf(reg.get(k.classId)) || 8; const v = 1 + Math.floor(rng() * die); rolls[String(n)] = v; log[String(n)] = { value: v, die, by: "app" }; }
+    }
+    c = { ...c, hpMode: "roll", hpRolls: rolls, hpRollLog: log };
   }
   c.name = "Random adventurer";
   return c;

@@ -198,6 +198,11 @@ export interface Character {
   hpMode: "average" | "roll";
   /** Hit point roll for each level from 2 up, by character level number as a string. */
   hpRolls: Record<string, number>;
+  /**
+   * Who made each hit point roll and when, by level: "app" when Soul Forge rolled it (a Roll button, a random
+   * character), "player" when it was typed in. Kept so the rolls can be checked (src/aurora/hpRolls.ts).
+   */
+  hpRollLog?: Record<string, { value: number; die: number; by: "app" | "player"; at?: number }>;
   /** Prepared spell ids by spellcasting name (for example "Wizard"). */
   prepared: Record<string, string[]>;
   inventory: InvItem[];

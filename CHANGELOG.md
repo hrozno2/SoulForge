@@ -2,6 +2,82 @@
 
 What changed in each release. Newest first.
 
+## v0.18.0 (2026-10-23)
+
+- Hit point rolls: a window from the HP bar, every roll kept with who made it, and a check of the app's rolls
+- Soul Forge sheet laid out after the DLDM 5E24 sheet
+- Filter species and backgrounds by the abilities they can raise
+- Global sci-fi filter: modern and futuristic technology hidden by default
+- Launch loading bar after 2 s; the lists move on only when a card is kept
+- Sources: default to the newest official core book; every source marked Official, Setting, UA or Other
+- Launch: the pack shimmers until the home cards are final, then bursts; content is cached so launch takes ~2.4 s
+- Cards show what a species, background or class gives without a choice; dialogs open above the card
+- Required optional features are given (Way of the Four Elements: Elemental Attunement)
+- Ask users to import 5e.tools again when the importer has grown
+- Foundry: dnd5e 5 speed paths; gate on unknown Foundry paths
+- Engine plan: the Plutonium work in the progress log
+- Damage resistance choices from 5e.tools (Boon of Energy Resistance, Dragonborn, Tiefling...)
+- Spellcasting ability is a choice where 5e.tools offers one; ritual spell choices keep the condition
+- Alternative spell sets are one choice, as 5e.tools and Plutonium read them
+- Attacks from feature text; Aurora copies take the 5e.tools copy's attacks
+- Magic variants, launch intro, stat-driven Wild Shape limits with Circle of the Moon
+- Text mechanics (uses, save DCs), Plutonium's species trait fallback, Wild Shape forms optional
+- Board cards show only their book again, the others unfold on hover; the strip stays in the open card
+- Plutonium analysis and next steps
+- Lore shared with Aurora's copies; fluff images decided
+- Portrait cropper: drag the square, open above the portrait window
+- Plutonium Foundry data (uses, scale values), 5e.tools lore, Wild Shape forms, optional-choice checkbox
+- Source picker: a strip of buttons, oldest to newest, scrolling sideways when they do not fit
+- Docs: full check on request, accuracy and stability fixes, decisions
+- Repeats and alternatives counted right; full check on request; loose ends
+- Blocked options say why; option lists cached per kind, filter and edition
+- 2014 species keep their increases; editions from book dates; every content stat read
+- Docs: editions, optional features, window checks
+- Last 5e.tools fields mapped; Mystic Arcanum; autofill lookahead
+- Repeat copies: the next copy stays available while a choice has room (an Artificer's several Replicate Magic Item infusions)
+- Open card source picker; Soul Forge against Aurora audit
+- Choice windows checked in every test; one repeat copy offered at a time
+- Editions, optional class features, one ASI-or-feat choice; the test app says TESTING
+- Lists: content filters never hide edition-neutral things (skills, languages, tools, Aurora core essentials) and never leave a choice unable to be completed
+- Docs: E4 exit met (10,000 random characters clean)
+- Concepts: 'Skill Expertise (X)' and 'Skill Proficiency (X)' are one concept whatever feature type carries them; autofill's last resort avoids repeats
+- Fixes found reviewing the import snapshots
+- Docs: engine plan progress for E1-E5; resume notes
+- 5e.tools starting gear for classes and backgrounds, in the text the starting-equipment builder reads
+- E2 exit tests: the determinism contract on saved characters (choice order, resolving twice, level down and up)
+- E1: lossless-load gate; weapon masteries, class feats, multiclass requirements and more read from 5e.tools
+- Checker: the multiclass slot table counts only classes that cast at their level (Paladin 19 / Ranger 1 uses the paladin's table)
+- Spellcasting: a class prepares and learns by its own table, not the shared multiclass slots; RULES_NOPDF for big runs
+- E5: old resolver removed; saved characters become a sheet regression snapshot
+- E5: stable choice keys (owner + fingerprint of kind, name, level); old position keys read only when every pick fits
+- E4: assignment solver for imported trainings; autofill prepares spells and skips what it has by concept
+- E3: typed effects table for prose-only mechanics; feature attacks; magic weapons
+- Docs: engine progress (E2 closed, E3 started), resume notes; twin keys cached
+- E3: checker reads parts, not names; 5e.tools subclass casting; FastCharacter importer and run
+- E3 start: mechanics table from Aurora twins; requirements judged by concept
+- Content: one book identity across providers, 5e.tools _copy resolved, every proficiency field read, post-import audit
+- Engine: settle mutual exclusions in one walk, changeable choices use the current filter, memoize per-walk lookups (10x faster)
+- Every choice has a 'Show the whole list' override: every element of its kind, without the choice's filter or the book filters, offered prominently when nothing can be chosen (the 2024 filter case); the rules check still flags an illegal pick
+- Timeline becomes the app's resolver (old one kept as resolveLegacy for the differential tests); autofill builds level by level against the character at each level (random level-20 build: 10.2 s -> 1.9 s); stat dictionary with a to-wire list (809 names: 3 unknown, all UA); 2014 Fast Movement and Unarmored Movement now add their speed (innate speed:misc was never read)
+- Timeline: settled levels cached by the character apart from its choices, the previous level and the choices that level read (one change: 8.8 ms vs 5.3 ms old; cold 71 ms)
+- E2 start: timeline resolver (level by level, choices judged at the level they open; changeable choices at the current level), provenance chains so '!X' means X from elsewhere (ends requirement loops), [character:X] uses the total level; differential test against the old resolver (300 characters: identical sheets, the only differences are Epic Boons the old engine let through before level 19)
+- Engine plan (docs/ENGINE-PLAN.md): critique of the architecture plan and the master plan for a deterministic engine. E1 start: canonical concepts (skills, saves, armor, weapons, tools, languages, senses, sizes) shared by Aurora and 5e.tools, IR types, loader with stable choice keys; on the real content 0 dangling references, 0 unmapped concepts. 5e.tools names lose leftover markup.
+- Finesse ranged weapons (darts) use the better of Strength and Dexterity; Second Wind's move is half your Speed (content fix, also applied to the sheet copies of the text)
+- 5e.tools species: lineages, legacies and ancestries from _versions (template versions expanded), resistances and immunities, replaced traits left out of the base; atlas lists every 5e.tools field the converter never reads
+- Resume note: lineages from 5e.tools in progress, filters next, then the audit plan
+- Build board: the card back is bigger and taller (up to 860 x 900, 92% of the window height)
+- Atlas of the content (phase A); 5e.tools conversion: 2014 classes keep their subclasses (distinct ids per class version), optional features findable (no element without setters), spell choice filters translated (;->||, school), category feat choices, feat variants, elemental languages to Primordial; Medium Armor Master's Dex cap; spell attack bonus name
+- Audit plan: decisions on sheets, the Etsy kids sheet, content scope, cards
+- Plan: full audit of character creation (every option, every sheet, wild shapes)
+- 5e.tools species: a choice of size where the species allows several (Dhampir: Small or Medium); Common and two languages where the species lists none
+- Prompt for checking an exported character against the rules; resume note
+- Sheets: prepared spells of whole-list casters reach the sheets; chosen hidden class options (Divine Order) show; one sign in filled text (1d8+4, not 1d8++4); Crossbow Expert drops Loading; feat-offering background feature not listed as a feat; no repeated versatile; notes print on DLDM page 2A Content: 5e.tools sizes get their own ids and converted entries never replace other content (2024 Aasimar size choice); the same item from another book counts as already in the pack (one Traveler's Clothes) Plan: docs/PLAN-windows.md
+- Options tier: the scan cache follows only the code that decides what is offered
+- Options tier: picks a swap made illegal are picked again; clearer counts. Light Domain name alias matches
+- Resume note: v0.17.0 out; what is left
+- Options tier: scan results cached per saved character, and five parts side by side
+- Rules check prints rough progress per group every 30 seconds
+
 ## v0.17.0 (2026-10-16)
 
 - Rules check runs its test groups side by side; release runs the full coverage check only Monday to Thursday, 9 to 17

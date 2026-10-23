@@ -4,6 +4,35 @@ The big picture: docs/PLAN-audit.md (the full audit of character creation, phase
 prefers English). Older plan: docs/PLAN-windows.md (windows, filters, lore). Decisions on scope are at the end of
 PLAN-audit.md.
 
+## Next: the user's list of 2026-10-23 (after v0.18.0), in order
+
+Stopped before starting: the weekly usage reached 69% (stop rule at 70%). Do these, rebuilding Soul Forge Test after
+each batch (scripts/test-app.sh), then continue with the plan, then the full check and a release.
+
+1. Prepared casters: import the whole spellbook (every spell the class can prepare) into the character sheet.
+2. Export option on every sheet: limit spell cards to prepared spells.
+3. Builder: "See options" opens the list and never closes it on a second click.
+4. Optional features (the take/not-take box): unchecked by default.
+5. Tutorial: make sure new users load all of 5e.tools and all of Aurora; Settings explains the global filters.
+6. Foundry import and export: improve them with what Plutonium does (docs/PLUTONIUM.md).
+7. Mixed multi-choices (skills, tools, languages... in one choice): a type filter in the list.
+8. 2014-style personality traits, ideals, bonds and flaws: one checkbox on the background that turns all four
+   off and stops them counting as open choices (they are gone in 2024).
+9. 2014 backgrounds: offer the standard 2024 background options (ability increases, two skills, a tool, an origin
+   feat, starting equipment). A 2014 background without ability increases gets an optional feature that gives
+   them and satisfies the rules check. Seen: "Origin editions mixed: Orc (2024) gives no ability score increase
+   and Outlander (2014) gives none either; take the 2024 version of the background".
+10. Choices: deselecting never folds a choice; it folds only when every pick is made.
+11. Backpack and spellbook on the build board: clicking the icon shows or hides the inventory or the prepare-spells
+    picker, with a label under each ("Inventory", "Prepare spells"); no scrolling and searching to find them.
+12. Inventory changes cost or refund gold like a shop; a price multiplier setting for the shop.
+13. Backpack: the "Kept in" section offers keeping items in a staff or other equipment: check whether that is a bug
+    (containers only).
+
+Then the plan (my recommendation, given 2026-10-23): H (fix list: Telekinetic printed twice, launch-animation
+details, FastCharacter's 91 open choices, 3 unread UA Artificer stats), G (Wild Shape cards with adjusted stats,
+Polymorph and companions, Play transform), D (class by class), E and F alongside, I (reports).
+
 ## Releases: asking users to import 5e.tools again
 
 When the 5e.tools importer starts fetching new files, raise FIVETOOLS_IMPORT_FORMAT (src/aurora/content.ts) and add a

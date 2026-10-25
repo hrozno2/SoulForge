@@ -1,4 +1,9 @@
-# Where we left off (2026-10-17, usage running out)
+# Where we left off
+
+**The open work is in docs/MASTER-PLAN.md (2026-10-25):** Stage A engine, Stage B tests, Stage C interface, in that
+order. It merges the list below, docs/PLAN-linux-testing-and-ui.md and the open audit phases. The notes below keep
+the detail and the history.
+
 
 The big picture: docs/PLAN-audit.md (the full audit of character creation, phases A-I; partly Slovak, the user now
 prefers English). Older plan: docs/PLAN-windows.md (windows, filters, lore). Decisions on scope are at the end of

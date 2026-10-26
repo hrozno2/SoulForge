@@ -52,6 +52,7 @@ Order inside the stage: first what makes characters wrong today, then what is mi
 | A2.7 | Report a bug writes its log to a file on disk. | FEATURES-LATER, issue #4 | |
 | A2.8 | Lag: `resolve` runs on every keystroke in the name field (and other text fields). | Linux plan 0.1 | **Unverified:** profile first. If `resolve` is the cause, keep text-only fields out of its inputs or debounce them, with a timing guard. If the cause is rendering or CSS, the fix moves to C. |
 | A2.9 | A global filter for modern technology that is not science fiction (firearms, the DMG's renaissance and modern items, modern vehicles). | Chris 2026-10-26 | Engine tag "modern" from 5e.tools item ages, shared with Aurora's same-named items, apart from "scifi"; the switch in Settings next to the sci-fi one. |
+| A2.10 | Drakim, made by hand in Soul Forge and in Foundry: the import must give the same character and the export must carry what Foundry's actor has. | Chris 2026-10-26, three files in ~/.soulforge-test/drakim | Test src/aurora/drakim.test.ts (report in the cache). Numbers already agree; to fix: a language, the export's species name, features, item types, packs (RESUME.md list). Then strict. |
 
 ### A3. Audits that find engine mistakes (run inside Stage A, fix what they find)
 

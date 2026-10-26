@@ -41,6 +41,18 @@ Rules for each item:
   Master's Guide's renaissance and modern items; modern vehicles). Engine: a "modern" tag set when the registry is
   built, from 5e.tools' item ages (as `scifi`) and shared with Aurora's items of the same name; keep "scifi" and
   "modern" apart. The switch in Settings goes with the sci-fi one (Stage C, or tonight if it is one line).
+- **A2.10 Drakim, one character made in both tools (Chris, 2026-10-26 21:51).** Files in ~/.soulforge-test/drakim:
+  soulforge.json (Soul Forge's save), foundry.json (made by hand in Foundry), soulforge-to-foundry.json (Soul Forge's
+  Foundry export, for Chris to import into Foundry). Test: src/aurora/drakim.test.ts writes drakim/report.md. First run
+  (22:40): the rules engine agrees on every number (scores, saves, skills, HP, AC, proficiency, speed). To fix: the
+  Dragonborn language (Soul Forge has Orc, Foundry's actor names none, so the import leaves the choice open: check
+  whether Foundry stores it elsewhere, system.traits.languages); and the export, against Foundry's own actor:
+  species named with its ancestry ("Dragonborn (Blue)"), species traits and the Fighting Style choice as features
+  ("Darkvision", "Damage Resistance", "Fighting Style: Interception"), subclass choices named as Foundry does
+  ("Runes: Fire Rune"), class features Foundry lists that the export misses (Bonus Proficiencies, Giant's Might,
+  Extra Attack, Tactical Shift), item types as dnd5e has them (consumable, container, tool, equipment instead of
+  loot) and the packs unpacked as Foundry does, the Unarmed Strike weapon. Then make the test strict (expect the
+  report empty, with a short accepted list for real differences) so it guards the exporter and importer.
 - Also open: the comparison run of 21:00 failed "levelling up five characters" (A2.1/A2.2 code). Rerun it on the
   current code first; if it still fails, find the cause before A1.9.
 
@@ -60,6 +72,11 @@ Rules for each item:
   them) and are placed first; a feat's own choices travel with it (flags.soulforge.choices: Magic Initiate's list);
   flagged elements are placed exactly (`exactId`). Round trip: 0 lost, 0 added. Full checks were started at 22:15;
   if this line is the last, rerun them (unit tests, RULES_TIER=diff, fastchar, the content tests), then strike A2.4.
+
+- 2026-10-26 22:45: the full checks of 22:15 showed six imported characters losing spells. Two causes, both fixed
+  but not yet confirmed by the comparison: spells a file prepares beyond the limit are kept as added by hand again
+  (they were cut), and the "on the class list by name" rule applies only to spells the file marks prepared (Roll20
+  sheets mark none). Rerun `-t "imported characters"` first: the six must match the baseline.
 
 ### Questions for Chris
 - A2.3: shop price multiplier per character or an app setting, and the selling price rule (half at 1.0?).

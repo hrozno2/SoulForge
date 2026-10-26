@@ -945,12 +945,17 @@ class Importer {
     const spellbookOf = (e: { name: string }) => r.slots.some((s) => /spellbook/i.test(s.rule.name) && (s.rule.spellcasting ?? "").toLowerCase() === e.name.toLowerCase());
     // On the list by name: another book's copy of the spell (Princes of the Apocalypse's Catapult) may lack the tag.
     const copies = el.type === "Spell" ? findAllByName(this.reg, ["Spell"], el.name) : [];
-    const onClassList = el.type === "Spell" && [...r.spellcasting.values()].some((e) => prepares(e) && !spellbookOf(e) && e.lists.some((l) => copies.some((c) => c.supports.includes(l))));
+    const onListBy = (tagged: AElement[]) => el.type === "Spell" && [...r.spellcasting.values()].some((e) => prepares(e) && !spellbookOf(e) && e.lists.some((l) => tagged.some((c) => c.supports.includes(l))));
+    const onClassList = onListBy([el]);
+    const onClassListByName = onListBy(copies);
     // A spell on the list of a class that prepares from its whole list (a cleric's, a druid's) needs no choice: it is
     // on the list already, and prepared (below, from the file's marks) if the file says so. Adding it by hand would
     // give the character a second copy outside the class.
     const leveled = Number(el.setters.level?.value ?? 0) > 0;
-    if (!fits2.length && onClassList && (!filePrepared || (leveled && !this.deferring))) {
+    // Only when the spell does end up prepared (the file marks it): a Roll20 sheet marks nothing, and its spells are
+    // kept by hand as before.
+    const markedPrepared = this.preparedKnown && this.prepared.has(normalize(el.name));
+    if (!fits2.length && ((onClassList && !filePrepared) || (onClassListByName && leveled && !this.deferring && markedPrepared))) {
       this.matched.push(`${el.name} (on the class spell list)`);
       return ch;
     }
@@ -1049,8 +1054,13 @@ class Importer {
         const always = new Set([...line.granted.map((g) => normalize(rr.reg.get(g.id)?.name ?? "")), ...line.spells.filter((p) => p.granted).map((p) => normalize(rr.reg.get(p.id)?.name ?? ""))]);
         const ids = preparePool(rr, line).filter((e) => this.prepared.has(normalize(e.name)) && !always.has(normalize(e.name))).map((e) => e.id);
         const max = line.prepareMax > 0 ? line.prepareMax : ids.length;
-        if (ids.length > max) this.notes.push(`${line.name}: the file prepares ${ids.length} spells; the rules allow ${max}, so the first ${max} are prepared.`);
-        if (ids.length) prepared[line.name] = [...new Set(ids)].slice(0, max);
+        // More than the rules allow: the first ones are prepared and the rest kept as added by hand, so nothing the
+        // file lists is lost (the player can sort it out; the rules check names it).
+        if (ids.length > max) this.notes.push(`${line.name}: the file prepares ${ids.length} spells; the rules allow ${max}, so the first ${max} are prepared and the rest added by hand.`);
+        const uniq = [...new Set(ids)];
+        if (uniq.length) prepared[line.name] = uniq.slice(0, max);
+        const over = uniq.slice(max).filter((id) => !ch.extras.includes(id));
+        if (over.length) ch = { ...ch, extras: [...ch.extras, ...over] };
       }
       ch = { ...ch, prepared };
     }

@@ -1,5 +1,7 @@
 import type { AAppend, AElement, ParsedFile } from "./types";
 import { markComingSoon } from "./comingSoon";
+import { background2024Choices } from "../engine/backgroundOptions";
+import { alignClassSkills } from "../engine/classSkills";
 import { applyContentFixes } from "./contentFixes";
 import { stampEditions } from "./edition";
 import { bookKey } from "./books";
@@ -136,6 +138,8 @@ export class ARegistry {
   private appends: AAppend[] = [];
   private raw: AElement[] = [];
   private queryCache = new Map<string, AElement[]>();
+  /** Skills added to class lists from 5e.tools at the last build (classSkills.ts). */
+  skillFixes: string[] = [];
   /** What the mechanics table borrowed at the last build. */
   mechanics: MechanicsReport = { borrowed: [] };
 
@@ -192,6 +196,8 @@ export class ARegistry {
       if (!el.attacks?.length) { const a = attacks.get(twinKey(el)); if (a) el.attacks = a; }
     }
     markComingSoon(this.byId);
+    background2024Choices(this.byId);
+    this.skillFixes = alignClassSkills(this.byId);
     optionalFeatureChoices(this.byId);
     wildShapeChoices(this.byId);
     for (const el of improvementOptions([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);

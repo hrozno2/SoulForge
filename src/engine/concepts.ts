@@ -25,6 +25,13 @@ export function plain(s: string): string {
 
 export const slugOf = (s: string) => plain(s).replace(/'/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
+/**
+ * A name for matching, whoever wrote it: lower case, apostrophes dropped without a gap, everything else not a letter
+ * or digit one space. "Melfs Acid Arrow", "Melf's Acid Arrow" and "Melf’s Acid Arrow" are one key. Everything that
+ * matches names from outside (importers, side data) goes through this, so no matcher has its own rules.
+ */
+export const nameKey = (s: string) => plain(s).replace(/'/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+
 const SKILL_BY_SQUASHED = new Map(SKILLS.map((s) => [s.replace(/\s+/g, ""), s]));
 const skillOf = (s: string) => SKILL_BY_SQUASHED.get(plain(s).replace(/[^a-z]/g, ""));
 

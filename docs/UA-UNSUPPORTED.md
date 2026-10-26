@@ -14,6 +14,7 @@ seen, instead of being fixed by hand or hidden.
 | UA1 | `infusions:count` | Artificer, Unearthed Arcana 2019-02-28: Infuse Item (`ID_WOTC_UA20190228_CLASS_FEATURE_ARTIFICER_INFUSE_ITEM`) | The number of infusions, set at several levels; not shown or used. | stat gate |
 | UA2 | `infusions:vanish` | Same feature | Probably how many infused items there may be before the oldest stops working (from its name; to confirm in the content); not shown or used. | stat gate |
 | UA3 | `equipment:id_wotc_ua_armor_light_arcanomechanical` | Wizard School of Invention, Unearthed Arcana 2018-01-08 (Three Subclasses): Arcanomechanical Armor (`ID_WOTC_UA_ARCHETYPE_FEATURE_SCHOOL_INVENTION_ARCANOMECHANICAL_ARMOR`) | A value tied to the arcanomechanical armor item; not applied. | stat gate |
+| UA4 | Artificer (2017 playtest) proficiencies | Unearthed Arcana: Artificer (2017-01-09) | Aurora and 5e.tools disagree: 5e.tools gives shields and tinker's tools, 2 skills including Perception; Aurora 3 skills including Deception and Religion. Settle from the playtest text in A4. | class proficiency gate (src/engine/classSkills.ts) |
 
 The stat dictionary (src/engine/statDictionary.ts) marks UA1 to UA3 as "playtest, not supported yet" so the gate
 stays meaningful; remove that entry when they are wired.

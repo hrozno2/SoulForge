@@ -11,7 +11,7 @@ import { hitDieOf, resolve, stillToChoose } from "./engine";
 import { buildSheet, preparePool } from "./sheet";
 import { ItemIndex, resolveChosenTools } from "./startingEquipment";
 import { isModern, isPlaytest } from "./edition";
-import { conceptOf } from "../engine/concepts";
+import { conceptOf, nameKey } from "../engine/concepts";
 
 type Json = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -35,11 +35,11 @@ export function detectCharacterFormat(data: unknown): "foundry" | "roll20" | "ch
   return "unknown";
 }
 
-const normalize = (s: string) =>
-  s.toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
+// The engine's name key (concepts.ts): "Melfs Acid Arrow" (FastCharacter) and "Melf’s Acid Arrow" agree.
+const normalize = (s: string) => nameKey(s.replace(/\(.*?\)/g, " "));
 
 /** Keeps the words inside parentheses and after a colon: "Magic Initiate: Warlock" and "Magic Initiate (Warlock)" agree. */
-const normalizeFull = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const normalizeFull = (s: string) => nameKey(s);
 
 export type Edition = "2014" | "2024";
 
@@ -315,7 +315,8 @@ class Importer {
   notes: string[] = [];
   matched: string[] = [];
   missing: string[] = [];
-  private wantedChoices: { types: string[]; name: string; label: string; alts?: string[]; from?: string; edition?: Edition }[] = [];
+  /** `early`: placed with the cantrips, before the open choices are filled (a spell a feat's text names). */
+  private wantedChoices: { types: string[]; name: string; label: string; alts?: string[]; from?: string; edition?: Edition; early?: boolean }[] = [];
   /** Which rules the character was made with, when the file says. Picks the 2014 or 2024 version of a name. */
   edition?: Edition;
   /** Weapons the character carries, for weapon mastery when the file names none. */
@@ -407,10 +408,10 @@ class Importer {
 
   /** Remember something to put into whichever choice can hold it once the character is shaped. */
   /** `from` names where the file says it came from ("magic initiate"), to pick the choice that holds it. */
-  want(types: string[], name: string, label: string, alts: string[] = [], from?: string, edition?: Edition): void {
+  want(types: string[], name: string, label: string, alts: string[] = [], from?: string, edition?: Edition, early?: boolean): void {
     if (name && label === "spell") this.hints.spells.add(normalize(name));
     if (name && label === "feat") this.featCount.set(normalize(name), (this.featCount.get(normalize(name)) ?? 0) + 1);
-    if (name) this.wantedChoices.push({ types, name, label, alts, from, edition });
+    if (name) this.wantedChoices.push({ types, name, label, alts, from, edition, early });
   }
 
   addItem(name: string, qty: number, equipped: boolean, attuned: boolean, extra: { base?: string; magic?: number; bonuses?: { stat: string; value: number }[]; edition?: Edition } = {}): void {
@@ -699,9 +700,16 @@ class Importer {
       // by the background), is not taken again.
       const hadConcepts = new Set([...r.active].map((a) => conceptOf(a.el)).filter(Boolean));
       const had = (o: AElement) => r.ids.has(o.id) || (!!conceptOf(o) && hadConcepts.has(conceptOf(o)));
+      // A feat the file never names is not taken to account for a spell (decision D1: no guesses): a bard's Shield
+      // is no reason for Abjuration Adept or Magic Initiate, nor Mage Hand for Telekinetic. A feature's option (a
+      // Divine Soul's affinity, a Circle of the Land's terrain) still is.
+      // The class list inside a feat already taken (the 2024 Magic Initiate's "Wizard", a feat-type option) is scored.
+      const LIST = /^(artificer|bard|cleric|druid|paladin|ranger|sorcerer|warlock|wizard)$/i;
+      const named = (o: AElement) => o.type !== "Feat" || LIST.test(o.name.trim()) || this.featCount.has(normalize(o.name)) || this.hints.names.has(normalizeFull(o.name));
+      const spellScore = (o: AElement) => (named(o) ? this.spellListScore(o) + this.grantedSpellScore(o) : 0);
       const candidates = open.options
         .filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !had(o) && !spent(o))
-        .map((o) => ({ o, sc: this.score(`${open.key} ${open.rule.name}`, o.name, scores, o) + this.trainingScore(o) + this.spellListScore(o) + this.grantedSpellScore(o) + this.resistScore(o, r.ids) + (own.has(o.source) ? 0.5 : 0) }))
+        .map((o) => ({ o, sc: this.score(`${open.key} ${open.rule.name}`, o.name, scores, o) + this.trainingScore(o) + spellScore(o) + this.resistScore(o, r.ids) + (own.has(o.source) ? 0.5 : 0) }))
         .sort((a, b) => b.sc - a.sc);
       const best = candidates[0] ?? { o: open.options.find((o) => !taken.has(o.id)), sc: 0 };
       if (!best.o) break;
@@ -976,7 +984,9 @@ class Importer {
     // remaining non-spell choices; spells last, so spells a species or subclass already grants are not picked twice.
     // Cantrips come before the other choices too: invocations such as Agonizing Blast need Eldritch Blast.
     const cantrip = (w: { label: string; name: string }) => w.label === "spell" && findAllByName(this.reg, ["Spell"], w.name).some((e) => Number(e.setters.level?.value) === 0);
-    const order = (w: { label: string; name: string }) => (w.label === "subclass" ? 0 : /subrace|lineage/.test(w.label) ? 1 : w.label === "feat" ? 2 : cantrip(w) ? 3 : 4);
+    // A spell a feat gives (Magic Initiate's) goes in with the cantrips too, before the open choices are filled, so
+    // they see it is had and do not take another feat for it.
+    const order = (w: { label: string; name: string; early?: boolean }) => (w.label === "subclass" ? 0 : /subrace|lineage/.test(w.label) ? 1 : w.label === "feat" ? 2 : cantrip(w) || w.early ? 3 : 4);
     const wanted = [...this.wantedChoices].sort((x, y) => order(x) - order(y));
     this.deferring = true;
     for (const w of wanted.filter((x) => order(x) < 4)) ch = this.place(ch, w);
@@ -1460,10 +1470,14 @@ export function isFastCharacterText(text: string): boolean {
 
 /**
  * FastCharacter's own spellings, to the books': "Duelling" is the Dueling style, "Cthonic" the Chthonic tiefling,
- * "Drudic" Druidic.
+ * "Drudic" Druidic, "Thamaturge" the Thaumaturge order; its metamagic drops the "-ed" ("Heighten Spell" is
+ * Heightened Spell).
  */
-const FC_SPELLING: Record<string, string> = { duelling: "Dueling", cthonic: "Chthonic", drudic: "Druidic" };
-const fcSpell = (s: string) => s.replace(/\b(duelling|cthonic|drudic)\b/gi, (w) => FC_SPELLING[w.toLowerCase()] ?? w);
+const FC_SPELLING: Record<string, string> = {
+  duelling: "Dueling", cthonic: "Chthonic", drudic: "Druidic", thamaturge: "Thaumaturge",
+  "heighten spell": "Heightened Spell", "quicken spell": "Quickened Spell", "extend spell": "Extended Spell", "twin spell": "Twinned Spell", "empower spell": "Empowered Spell",
+};
+const fcSpell = (s: string) => s.replace(/\b(duelling|cthonic|drudic|thamaturge|(?:heighten|quicken|extend|twin|empower) spell)\b/gi, (w) => FC_SPELLING[w.toLowerCase()] ?? w);
 
 /**
  * A FastCharacter sheet (the text format of fastcharacter.com's 2024 generator, saved as text or HTML text). It
@@ -1537,6 +1551,10 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
     // Class and species features by name ("• Primal Order (Warden)"): they settle the choices that offer them.
     m = /^• ([^(:]+?)(?: \(([^)]*)\))?$/.exec(l);
     if (m) { b.addName(fcSpell(m[1])); if (m[2] && !/\d/.test(m[2])) b.addName(fcSpell(m[2])); }
+    // "• Divine Order: Thaumaturge (...)" names the option taken; "• Hunter's Prey: Colossus Slayer (...) or Horde
+    // Breaker (...)" only lists the options, so it settles nothing.
+    m = /^• ([^(:]+?): ([^(]+?)(?: \(.*)?$/.exec(l);
+    if (m && !/\bor\b/.test(l.replace(/\([^)]*\)/g, ""))) b.addName(fcSpell(`${m[1]}: ${m[2]}`));
   }
   // Trainings and languages, as the sheet lists them.
   const list = (label: string) => fcSpell(lines.find((l) => l.startsWith(`• ${label}:`))?.slice(label.length + 3).trim() ?? "").split(",").map((x) => x.trim()).filter(Boolean);
@@ -1545,6 +1563,15 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
   for (const w of list("Weapons")) b.hints.weapons.add(w.toLowerCase().split(" ")[0]);
   const languages = list("Languages");
   for (const l of languages) b.addLanguage(l);
+
+  // Spells a feat gives, named only in its text: "Magic Initiate (Druid) [...]: Know the Produce Flame and Guidance
+  // cantrips, and can cast Cure Wounds once betw. long rests."
+  for (const l of lines) {
+    const m = /\b[Kk]now (?:the )?(.+?) cantrips?\b(?:, and can cast\s+(.+?) once\b)?/.exec(l);
+    if (!m) continue;
+    const from = /^(.+?)\s*(?:\[|:)/.exec(l)?.[1].replace(/\s*\(.*$/, "");
+    for (const name of [...m[1].split(/,\s*|\s+and\s+/), ...(m[2] ? m[2].split(/\s+and\s+/) : [])].map((x) => x.trim()).filter(Boolean)) b.want(["Spell"], fcSpell(name), "spell", [], from, undefined, true);
+  }
 
   // Spells: every one listed is known or prepared (FastCharacter lists the prepared spells).
   b.preparedKnown = true;

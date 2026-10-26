@@ -68,14 +68,17 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
   // A variant or optional choice has a box: unticked, it is not taken, its picks go and it counts as done.
   const canSkip = !slot.listItems && skippable(rule);
   const keys = slot.members ? slot.members.map((m) => m.key) : [slot.key];
+  // An optional choice with a single option (a package such as a 2014 background's "2024 rules") is that option:
+  // ticking the box takes it, with nothing more to pick.
+  const only = keys.length === 1 && rule.number === 1 && slot.options.length === 1 ? slot.options[0].id : undefined;
   const setTaking = (take: boolean) => {
     set((c) => ({
       ...c,
       declined: take ? (c.declined ?? []).filter((k) => !keys.includes(k)) : [...new Set([...(c.declined ?? []), ...keys])],
       taken: take ? [...new Set([...(c.taken ?? []), ...keys])] : (c.taken ?? []).filter((k) => !keys.includes(k)),
-      selections: take ? c.selections : { ...c.selections, ...Object.fromEntries(keys.map((k) => [k, []])) },
+      selections: take ? (only ? { ...c.selections, [keys[0]]: [only] } : c.selections) : { ...c.selections, ...Object.fromEntries(keys.map((k) => [k, []])) },
     }));
-    setOpen(take);
+    setOpen(take && !only);
   };
   // A choice that just got filled folds away so the next one is in view. Opening it again stays open.
   const wasFull = useRef(full);

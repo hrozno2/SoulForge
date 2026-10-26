@@ -9,6 +9,7 @@
  * Edition-neutral options (skills, languages, tools, sizes, internal entries) are never touched. A pick already made
  * that the rule leaves out stays visible and is marked as against the rules.
  */
+import { BACKGROUND_2024_ID } from "./backgroundOptions";
 import type { AElement } from "../aurora/types";
 import type { Character } from "../aurora/character";
 import type { ARegistry } from "../aurora/registry";
@@ -36,6 +37,9 @@ export function choiceEdition(owner: AElement, root: string, ch: Character, reg:
   const rootId = root.startsWith("class:") ? root.slice(6) : root === "race" ? ch.race : root === "background" ? ch.background : undefined;
   const el = rootId ? reg.get(rootId) : undefined;
   const fromRoot = el ? editionOfElement(el) : "none";
+  // A 2014 background taken with the 2024 rules (backgroundOptions.ts) chooses under them: its origin feat is a 2024
+  // one, and its own 2014 options stay (a 2024 choice keeps options that have no 2024 version).
+  if (root === "background" && fromRoot === "2014" && Object.values(ch.selections).some((ids) => ids.includes(BACKGROUND_2024_ID))) return "2024";
   return fromRoot !== "none" ? fromRoot : editionOfElement(owner);
 }
 

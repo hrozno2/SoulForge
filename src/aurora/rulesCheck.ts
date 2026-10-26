@@ -5,6 +5,7 @@
  * rest (proficiency bonus, hit points, armor class, attack bonuses, armor and hands) are written out here from the
  * Player's Handbooks. Every finding names the rule it breaks.
  */
+import { BACKGROUND_ASI_MARKER } from "../engine/backgroundOptions";
 import { conceptOf } from "../engine/concepts";
 import { choiceEdition, editionOfElement } from "../engine/editionPolicy";
 import { bookKey } from "./books";
@@ -181,7 +182,8 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   // with a 2014 background gets neither (a 2014 species with a 2024 background is the legacy rule: the background's).
   const sp = ch.race ? reg.get(ch.race) : undefined;
   const bg = ch.background ? reg.get(ch.background) : undefined;
-  if (sp && bg && isModern(sp) && !isModern(bg) && !/custom/i.test(bg.name)) add("Origin editions mixed", `${sp.name} (2024) gives no ability score increase and ${bg.name} (2014) gives none either; take the 2024 version of the background`);
+  // A 2014 background taken with the 2024 rules (its optional choice, backgroundOptions.ts) raises them itself.
+  if (sp && bg && isModern(sp) && !isModern(bg) && !/custom/i.test(bg.name) && !r.ids.has(BACKGROUND_ASI_MARKER)) add("Origin editions mixed", `${sp.name} (2024) gives no ability score increase and ${bg.name} (2014) gives none either; take the background's "2024 rules" option or its 2024 version`);
   const inLines = new Set(sh.casting.flatMap((l) => [...l.cantripsKnown, ...l.spells, ...l.granted].map((p) => p.id)));
   for (const p of r.spellPicks) if (!inLines.has(p.id)) add("A spell is not castable (no spellcasting line)", reg.get(p.id)?.name ?? p.id);
 

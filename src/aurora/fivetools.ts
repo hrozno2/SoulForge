@@ -1072,20 +1072,45 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     return k === "light" ? "ID_5ET_PROF_ARMOR_LIGHT" : k === "medium" ? "ID_5ET_PROF_ARMOR_MEDIUM" : k === "heavy" ? "ID_5ET_PROF_ARMOR_HEAVY" : k === "shield" ? "ID_5ET_PROF_ARMOR_SHIELD" : undefined;
   };
   for (const a of sp.armor ?? []) { const g = armorGrant(a); if (g) rules.push({ kind: "grant", type: "Proficiency", id: g, ...first }); }
-  const weaponGrant = (w: unknown): string | undefined => {
-    const k = String(typeof w === "string" ? w : (w as J).proficiency ?? "").split("|")[0].toLowerCase();
-    if (k === "simple") return "ID_5ET_PROF_WEAPON_SIMPLE";
-    if (k === "martial") return "ID_5ET_PROF_WEAPON_MARTIAL";
+  const weaponId = (k: string) => {
     const wid = ftId("PROF_WEAPON", k, "ALL");
-    if (k && !out.some((o) => o.id === wid)) out.push(base(wid, `Weapon Proficiency (${cap(k)})`, "Proficiency", "5etools", { compendiumHidden: true }));
-    return k ? wid : undefined;
+    if (!out.some((o) => o.id === wid)) out.push(base(wid, `Weapon Proficiency (${cap(k)})`, "Proficiency", "5etools", { compendiumHidden: true }));
+    return wid;
   };
-  for (const w of sp.weapons ?? []) { const g = weaponGrant(w); if (g) rules.push({ kind: "grant", type: "Proficiency", id: g, ...first }); }
+  // Weapons by kind and property: "Martial weapons that have the {@filter Finesse or Light|items|type=martial
+  // weapon|property=finesse;light} property" (the 2024 Rogue and Monk) is every such weapon, not one named that.
+  const PROPERTY: Record<string, string> = { finesse: "F", light: "L", heavy: "H", reach: "R", thrown: "T", "two-handed": "2H", versatile: "V", ammunition: "A", loading: "LD" };
+  const byFilter = (text: string): string[] | undefined => {
+    const f = /\{@filter [^|}]*\|items\|([^}]*)\}/.exec(text)?.[1];
+    if (!f) return undefined;
+    const params = new Map(f.split("|").map((x) => x.split("=") as [string, string]));
+    const cat = /\b(simple|martial)\b/.exec(params.get("type") ?? "")?.[1];
+    const props = new Set((params.get("property") ?? "").split(";").map((x) => PROPERTY[x.trim().toLowerCase()]).filter(Boolean));
+    const names = new Set<string>();
+    for (const b of ctx.baseItems.values()) {
+      if (!b.weaponCategory || (cat && b.weaponCategory !== cat)) continue;
+      const has = ((b.property ?? []) as unknown[]).map((x) => String(typeof x === "string" ? x : (x as J).uid ?? "").split("|")[0]);
+      if (!props.size || has.some((x) => props.has(x))) names.add(String(b.name).toLowerCase());
+    }
+    return [...names].sort();
+  };
+  const weaponGrants = (w: unknown): string[] => {
+    // An optional proficiency is the DM's to give (the Artificer's firearms), not the class's.
+    if (w && typeof w === "object" && (w as J).optional) return [];
+    const text = String(typeof w === "string" ? w : (w as J).proficiency ?? "");
+    const filtered = byFilter(text);
+    if (filtered) return filtered.map(weaponId);
+    const k = text.split("|")[0].toLowerCase();
+    if (k === "simple") return ["ID_5ET_PROF_WEAPON_SIMPLE"];
+    if (k === "martial") return ["ID_5ET_PROF_WEAPON_MARTIAL"];
+    return k ? [weaponId(k)] : [];
+  };
+  for (const w of sp.weapons ?? []) for (const g of weaponGrants(w)) rules.push({ kind: "grant", type: "Proficiency", id: g, ...first });
   for (const r of skillRules(sp.skills, c.name)) rules.push({ ...r, ...first } as ARule);
   for (const r of profRules({ toolProficiencies: sp.toolProficiencies }, c.name, out)) rules.push({ ...r, ...first } as ARule);
   for (const r of profRules({ toolProficiencies: mc.proficienciesGained?.toolProficiencies }, c.name, out)) gained.push(r);
   for (const a of mc.proficienciesGained?.armor ?? []) { const g = armorGrant(a); if (g) gained.push({ kind: "grant", type: "Proficiency", id: g }); }
-  for (const w of mc.proficienciesGained?.weapons ?? []) { const g = weaponGrant(w); if (g) gained.push({ kind: "grant", type: "Proficiency", id: g }); }
+  for (const w of mc.proficienciesGained?.weapons ?? []) for (const g of weaponGrants(w)) gained.push({ kind: "grant", type: "Proficiency", id: g });
   for (const r of skillRules(mc.proficienciesGained?.skills, c.name)) gained.push(r);
 
   // Features by level, and the subclass choice.

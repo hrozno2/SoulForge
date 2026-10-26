@@ -5,7 +5,7 @@
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
-import { conceptOf, plain } from "./concepts";
+import { nameKey, conceptOf, plain } from "./concepts";
 import { loadContent } from "./load";
 import { nodeXml } from "../aurora/fixture";
 import { parseElementsXml } from "../aurora/parse";
@@ -31,6 +31,11 @@ describe("concepts", () => {
     expect(c("Vision", "Darkvision (60 ft.)")).toBe("sense:darkvision");
     expect(c("Proficiency", "Tool Expertise (Thieves’ Tools)")).toBe("tool-expertise:thieves-tools");
     expect(c("Class Feature", "Skill Expertise (Animal Handling)")).toBe("expertise:animal-handling");
+  });
+
+  it("matches a name however it is written (nameKey)", () => {
+    for (const n of ["Melfs Acid Arrow", "Melf's Acid Arrow", "Melf’s Acid Arrow", "melf‘s  acid-arrow"]) expect(nameKey(n)).toBe("melfs acid arrow");
+    expect(nameKey("Thieves’ Cant")).toBe(nameKey("Thieves' Cant"));
   });
   it("strips 5e.tools markup", () => {
     expect(plain("{@item Hand Crossbow|phb}")).toBe("hand crossbow");

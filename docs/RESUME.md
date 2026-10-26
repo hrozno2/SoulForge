@@ -16,6 +16,18 @@ Rules for each item:
 - A question only Chris can answer: write it under "Questions for Chris" below and move to the next item.
 - No AI-generated images; Plutonium code is read only; ask before downloads (do not download overnight).
 
+### Do first tonight (Chris, 2026-10-26 22:20)
+- **A1.9 Ability Score Improvement: +2 to one ability.** Chris: "ability score improvements should allow a +2 to one
+  ability. currently i cant pick the same ability twice." The rule (PHB 2014 and 2024): increase one score by 2, or
+  two scores by 1 each. Find every place an improvement is offered (class ASI features in Aurora's and 5e.tools'
+  content, the 2024 Ability Score Improvement feat, the generated improvement options in registry.ts
+  `improvementOptions`/`classAsiChoices`, feats with a +1 choice) and how the choice of two is built; a choice of
+  two that cannot take the same ability twice is the cause. Fix it for all of them (either the same ability twice
+  counts as +2, or a "+2 to one / +1 to two" option first), keep the 20 cap, and add a test that every improvement
+  in the content can give +2 to one ability. Check the saved-sheet comparison afterwards.
+- Also open: the comparison run of 21:00 failed "levelling up five characters" (A2.1/A2.2 code). Rerun it on the
+  current code first; if it still fails, find the cause before A1.9.
+
 ### Overnight log
 - 2026-10-26 20:40: hand-off from the evening session; next item A2.1.
 - 2026-10-26 21:30: A2.1 and A2.2 done (one rule for ready spells, card scope option, guard src/pdf/spellScope.test.ts).

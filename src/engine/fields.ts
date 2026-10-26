@@ -58,7 +58,7 @@ export const BY_KIND: Record<string, Record<string, Decision>> = {
   item: {
     wondrous: SEARCH,         staff: SEARCH, detail1: LORE, detail2: LORE, focus: "display: whether the item is a spellcasting focus", sentient: LORE, poisonTypes: SEARCH,
     curse: LORE, tattoo: SEARCH, spellScrollLevel: SEARCH, grantsLanguage: SEARCH, grantsProficiency: SEARCH, packContents: "display: as for base items",
-    containerCapacity: "display: what a container holds", carryingCapacity: "display: a mount's or vehicle's load", ammoType: "display: as for base items",
+    carryingCapacity: "display: a mount's or vehicle's load", ammoType: "display: as for base items",
     typeAlt: SEARCH, valueRarity: SEARCH, barDimensions: LORE, firearm: SEARCH, group: SEARCH, atomicPackContents: "display: as for packs",
     weightNote: LORE, optionalfeatures: "display: which artificer infusion can make the item (Replicate Magic Item); the infusion's own choice lists the items", bonusSavingThrowConcentration: "display: a concentration bonus is in the item's text; the sheet has no concentration line", reqAttuneAlt: LORE,        seeAlsoVehicle: VEHICLE, seeAlsoDeck: LORE, vehSpeed: VEHICLE, crew: VEHICLE, crewMin: VEHICLE, crewMax: VEHICLE, vehAc: VEHICLE, vehHp: VEHICLE,
     vehDmgThresh: VEHICLE, capCargo: VEHICLE, capPassenger: VEHICLE, travelCost: VEHICLE, shippingCost: VEHICLE,

@@ -1,3 +1,4 @@
+import { isContainer } from "../aurora/containers";
 import { useMemo, useState } from "react";
 import { focusNote } from "../aurora/startingEquipment";
 import { HANDS, handsUsed, setTwoHanded, toggleEquip } from "../aurora/hands";
@@ -59,7 +60,7 @@ export function EquipmentTab({ r, ch, set, onDetail, listBeside = false, part = 
         ...(el.extract ?? []).map((x) => ({ uid: uid(), id: x.id, qty: x.amount * it.qty, equipped: false, attuned: false })),
       ],
     }));
-  const containers = ch.inventory.filter((i) => i.id && r.reg.get(i.id)?.setters.container);
+  const containers = ch.inventory.filter((i) => i.id && isContainer(r.reg.get(i.id)));
 
   return (
     <div className="equip">
@@ -132,7 +133,7 @@ export function EquipmentTab({ r, ch, set, onDetail, listBeside = false, part = 
                   </td>
                   <td>{needsAttune(el) ? <input type="checkbox" checked={it.attuned} onChange={() => update(it.uid, (i) => ({ ...i, attuned: !i.attuned }))} /> : ""}</td>
                   <td>
-                    {containers.length > 0 && it.id !== "" && !el?.setters.container && (
+                    {containers.length > 0 && it.id !== "" && !isContainer(el) && (
                       <select aria-label="Where this is kept" title="Where this is kept: on you, or inside a container such as a backpack" value={it.container ?? ""} onChange={(e) => update(it.uid, (i) => ({ ...i, container: e.target.value || undefined }))}>
                         <option value="">On you</option>
                         {containers.map((c) => <option key={c.uid} value={c.uid}>{r.reg.get(c.id)?.name}</option>)}

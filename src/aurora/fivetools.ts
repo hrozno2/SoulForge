@@ -450,6 +450,8 @@ function convertItem(i: J, ctx: Ctx): AElement | null {
   // Modern and futuristic technology (5e.tools' "age": laser rifles, automatic pistols, grenades, powered armor) is
   // sci-fi, for the global filter; a magic item built on one ("+1 Laser Rifle") takes its base item's age.
   const supports: string[] = /^(modern|futuristic)$/i.test(String(m.age ?? "")) ? ["scifi"] : [];
+  // Something that holds other things (a backpack, a pouch, a bag of holding), for "Kept in" in the inventory.
+  if (m.containerCapacity) supports.push("container");
   if (m.weight !== undefined) setters.weight = set(`${m.weight} lb.`, { lb: String(m.weight) });
   const c = cost(m.value);
   if (c) setters.cost = c;

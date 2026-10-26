@@ -32,7 +32,7 @@ Order inside the stage: first what makes characters wrong today, then what is mi
 | A1.2 | Personality traits, ideals, bonds and flaws: one switch on the background turns all four off and they stop counting as open choices (gone in 2024). | RESUME #8 | Builds on `Character.declined`; the box itself is C. |
 | A1.3 | Optional and variant features start not taken (unchecked) by default; not taken never counts as open. | RESUME #4 | Engine default; check saved characters keep their picks. |
 | A1.4 | Generic items in packs ("a musical instrument", a gaming set, artisan's tools) become an open choice instead of literal text. | Linux plan 0.3 | `startingEquipment.ts`; tests per category and for "same as above" lines. |
-| A1.5 | Backpack "Kept in" offers a staff and other non-containers. | RESUME #13 | Likely a container filter bug: only containers may hold items. Fix in the inventory logic. |
+| ~~A1.5~~ | ~~Backpack "Kept in" offers a staff and other non-containers.~~ | RESUME #13 | Done 2026-10-26: Aurora's "container" setter names a focus group (Staff: Arcane Focus), not a container; containers are now known by 5e.tools' capacity or a volume in their text (src/aurora/containers.ts). |
 | A1.6 | Telekinetic (and any feat with a feature of the same text) printed twice on the sheet. | Plan H | Sheet data: find the cause (feat plus its feat feature) and guard the class. |
 | A1.7 | FastCharacter imports leave 91 required choices open. | Plan H, full check | Import logic (`foreign.ts`): sort by cause, fix the classes of cause. |
 | A1.8 | Three statistics nothing reads (Unearthed Arcana Artificer: infusions count and vanish, an armor equipment stat). | Plan H, stat gate | Wire or decide them. |

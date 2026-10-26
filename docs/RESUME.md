@@ -25,6 +25,22 @@ Rules for each item:
   two that cannot take the same ability twice is the cause. Fix it for all of them (either the same ability twice
   counts as +2, or a "+2 to one / +1 to two" option first), keep the 20 cap, and add a test that every improvement
   in the content can give +2 to one ability. Check the saved-sheet comparison afterwards.
+- **A1.9, how to pick (Chris, with a Foundry screenshot):** use Foundry's check-box grid for every ability score
+  increase: a row per ability the source allows, columns "+2" and "+1" (and "+1" twice where it gives +1/+1/+1), one
+  box per column, and a different ability in each column. Example: "From Dexterity, Constitution, and Wisdom choose
+  one ability to increase by 2 and one other ability to increase by 1." Build the engine side so one improvement is
+  one choice with these slots (ability for +2, ability for +1), and the grid as the way to fill it, for species,
+  backgrounds (2014 and 2024, and the 2024-rules option of A1.1), class improvements and feats. The grid is the one
+  interface piece done tonight, because the fix is unusable without it.
+- **A1.10 Names capitalised after an apostrophe (Chris, screenshot):** 5e.tools tool names show as "Tool Proficiency
+  (Alchemist'S Supplies)", "Cook'S Utensils". The title-casing in the converter (src/aurora/fivetools.ts, `cap` or
+  the name builder) starts a new word after the apostrophe. Fix it for every name it makes, and add a gate that no
+  element name has a capital right after an apostrophe ("'S", "’S").
+- **A2.9 Modern technology filter (Chris):** a global content filter, like the sci-fi one, for things that are not
+  science fiction but modern technology (firearms such as pistols, revolvers, rifles and shotguns; the Dungeon
+  Master's Guide's renaissance and modern items; modern vehicles). Engine: a "modern" tag set when the registry is
+  built, from 5e.tools' item ages (as `scifi`) and shared with Aurora's items of the same name; keep "scifi" and
+  "modern" apart. The switch in Settings goes with the sci-fi one (Stage C, or tonight if it is one line).
 - Also open: the comparison run of 21:00 failed "levelling up five characters" (A2.1/A2.2 code). Rerun it on the
   current code first; if it still fails, find the cause before A1.9.
 

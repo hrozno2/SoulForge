@@ -78,6 +78,10 @@ Rules for each item:
   (they were cut), and the "on the class list by name" rule applies only to spells the file marks prepared (Roll20
   sheets mark none). Rerun `-t "imported characters"` first: the six must match the baseline.
 
+- 2026-10-26 23:00: recheck result: four of the six imports match the baseline again; two still lose spells
+  (fvtt-Actor-aria, fvtt-Actor-mr.-smith, both Foundry paladins or half-casters with prepared spells). Round trip
+  still 0. Start tonight with these two: compare their matched lists before and after commit f104bf0.
+
 ### Questions for Chris
 - A2.3: shop price multiplier per character or an app setting, and the selling price rule (half at 1.0?).
 

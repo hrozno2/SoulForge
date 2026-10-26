@@ -322,8 +322,26 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     appearance: [ch.info.gender, ch.info.age && `Age ${ch.info.age}`, ch.info.height, ch.info.weight, ch.info.eyes && `${ch.info.eyes} eyes`, ch.info.hair && `${ch.info.hair} hair`, ch.info.skin && `${ch.info.skin} skin`].filter(Boolean).join(", "),
     alignment: ch.info.alignment, notes: ch.notes, portrait: ch.portrait, companion: comp,
     body: { age: ch.info.age ?? "", height: ch.info.height ?? "", weight: ch.info.weight ?? "", eyes: ch.info.eyes ?? "", hair: ch.info.hair ?? "", skin: ch.info.skin ?? "", gender: ch.info.gender ?? "", deity: ch.info.deity ?? "", allies: ch.info.allies ?? "", player: ch.playerName ?? "" },
-    featureList: ([["Class features", ["Class Feature", "Archetype Feature"]], ["Species traits", ["Racial Trait"]], ["Feats", ["Feat", "Feat Feature", "Background Feature"]]] as [string, string[]][]).flatMap(([group, types]) => feat(types).map((f) => ({ group, name: f.name, usage: f.usage ?? "", text: f.text.replace(/\s+/g, " ").trim() }))),
+    featureList: mergeSameName(([["Class features", ["Class Feature", "Archetype Feature"]], ["Species traits", ["Racial Trait"]], ["Feats", ["Feat", "Feat Feature", "Background Feature"]]] as [string, string[]][]).flatMap(([group, types]) => feat(types).map((f) => ({ group, name: f.name, usage: f.usage ?? "", text: f.text.replace(/\s+/g, " ").trim() })))),
   };
+}
+
+/**
+ * One entry per name within a group: a feat and the feature it grants can share a name (Telekinetic and its shove,
+ * Telepathic), which printed the name twice. Their texts are joined (an identical text once), usages kept.
+ */
+function mergeSameName(list: { group: string; name: string; usage: string; text: string }[]): typeof list {
+  const out: typeof list = [];
+  const at = new Map<string, number>();
+  for (const f of list) {
+    const k = `${f.group}|${f.name.toLowerCase()}`;
+    const i = at.get(k);
+    if (i === undefined) { at.set(k, out.length); out.push({ ...f }); continue; }
+    const into = out[i];
+    if (f.text && !into.text.includes(f.text)) into.text = into.text ? `${into.text} ${f.text}` : f.text;
+    if (f.usage && !into.usage) into.usage = f.usage;
+  }
+  return out;
 }
 
 export { ABILITY_LABEL, SKILL_ABILITY, has };

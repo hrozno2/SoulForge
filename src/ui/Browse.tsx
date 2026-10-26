@@ -55,8 +55,9 @@ const SORTS: [SortMode, string][] = [["az", "A to Z"], ["recommended", "Recommen
 /** A source's kind as a small marker: Official, Setting, UA or Other. */
 export function KindTag({ v }: { v: Variant }) {
   const k = bookKind(v.book, v.el.source);
-  if (!k) return null;
-  return <em className={`kind kind-${k}`} title={k === "playtest" ? "Unearthed Arcana: playtest material" : k === "setting" ? "An official setting or adventure book" : k === "official" ? "An official core book or supplement" : "Not an official book (third-party or homebrew)"}>{BOOK_KIND_LABEL[k]}</em>;
+  const soon = v.el.comingSoon ? <em className="soon-tag" title="Playtest content Soul Forge does not support yet: it cannot be picked">Coming soon</em> : null;
+  if (!k) return soon;
+  return <>{soon}<em className={`kind kind-${k}`} title={k === "playtest" ? "Unearthed Arcana: playtest material" : k === "setting" ? "An official setting or adventure book" : k === "official" ? "An official core book or supplement" : "Not an official book (third-party or homebrew)"}>{BOOK_KIND_LABEL[k]}</em></>;
 }
 
 export function VariantChips({ g, activeId, chosen, onActive, short, onSwitch, onPickVersion }: { g: Group; activeId: string; chosen: Set<string>; onActive: (id: string) => void; short?: boolean; onSwitch?: (from: AElement, to: AElement) => void; onPickVersion?: (el: AElement) => void }) {
@@ -155,7 +156,7 @@ const ITEM_ICON: Record<string, (p: { size?: number }) => React.ReactNode> = { W
 /** The drag data type for an element type, so a drop target can tell what is over it before the drop. */
 export const dragMime = (type: string) => `application/x-sf-${type.toLowerCase().replace(/[^a-z]/g, "")}`;
 
-export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabledReason, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort, draggable, barExtra, mini, viewKey, showAll, need }: BrowseProps) {
+export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap: swapProp, disabledReason: reasonProp, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort, draggable, barExtra, mini, viewKey, showAll, need }: BrowseProps) {
   const { books, learn } = useUi();
   const [view, setView] = useStored<"cards" | "list">(viewKey ?? `view.${type}`, defaultView);
   const [sort, setSort] = useStored<SortMode>(`sort.${type}`, defaultSort ?? (type === "Spell" ? "level" : "recommended"));
@@ -166,6 +167,14 @@ export function Browse({ items: allItems, type, chosen, onPick, onSwap, disabled
   const [shown, setShown] = useState(perPage);
   const [active, setActive] = useState<Record<string, string>>({});
   const chosenSet = useMemo(() => new Set(chosen), [chosen]);
+  // Playtest content not supported yet shows with a "Coming soon" lock and can never be picked (comingSoon.ts).
+  const disabledReason = useMemo(() => {
+    const anySoon = allItems.some((e) => e.comingSoon);
+    if (!anySoon) return reasonProp;
+    return (e: AElement) => (e.comingSoon ? "Coming soon" : reasonProp?.(e));
+  }, [allItems, reasonProp]);
+  const onPick = (e: AElement) => { if (!e.comingSoon) pickProp(e); };
+  const onSwap = swapProp && ((from: AElement, to: AElement) => { if (!to.comingSoon) swapProp(from, to); });
   const prefs = useSettings();
   // The global content filters. Whatever is already picked stays visible.
   const items = useMemo(() => {

@@ -1,4 +1,5 @@
 import type { AAppend, AElement, ParsedFile } from "./types";
+import { markComingSoon } from "./comingSoon";
 import { applyContentFixes } from "./contentFixes";
 import { stampEditions } from "./edition";
 import { bookKey } from "./books";
@@ -190,6 +191,7 @@ export class ARegistry {
       if (!el.lore) { const l = lore.get(twinKey(el)); if (l) el.lore = l; }
       if (!el.attacks?.length) { const a = attacks.get(twinKey(el)); if (a) el.attacks = a; }
     }
+    markComingSoon(this.byId);
     optionalFeatureChoices(this.byId);
     wildShapeChoices(this.byId);
     for (const el of improvementOptions([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);

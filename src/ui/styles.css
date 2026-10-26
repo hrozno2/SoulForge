@@ -483,6 +483,9 @@ button.tiny { padding: 0 6px; }
 .vchip.static { cursor: default; }
 .vchip em { font-style: normal; font: 700 9.5px var(--body); letter-spacing: .1em; text-transform: uppercase; margin-left: 5px; padding: 0 5px; border-radius: 6px; }
 .vchip em.newest { background: #2f6f3f; color: #fff; }
+/* Playtest content not supported yet (comingSoon.ts): marked wherever its book is named, never pickable. */
+em.soon-tag { margin-left: 4px; padding: 0 5px; border-radius: 3px; background: #5a4a7a; color: #fff; font-style: normal; font-size: .78em; letter-spacing: .03em; white-space: nowrap; }
+.src-strip button:disabled, .src-more button:disabled { opacity: .55; cursor: not-allowed; }
 /* A source's kind: Official, Setting, UA (playtest) or Other (third-party, homebrew). */
 em.kind { font-style: normal; font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; margin-left: 4px; vertical-align: 1px; }
 em.kind-official { background: #2d4f7c; color: #e6efff; }

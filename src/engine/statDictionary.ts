@@ -19,7 +19,7 @@ export const STAT_DICTIONARY: StatKind[] = [
   { kind: "tool expertise", pattern: /^[a-z][a-z’' -]*(?:tools?|supplies|utensils|kit):proficiency$/, readBy: "sheet proficiency list (marked expertise)" },
   { kind: "companion", pattern: /^companion:.+$/, readBy: "companion bonuses on the Sheet and Play tabs" },
   // Unearthed Arcana content not supported yet (docs/UA-UNSUPPORTED.md, UA1 to UA3; support is master plan A4): the
-  // 2019 playtest Artificer's infusion count and vanishing, the 2015 School of Invention's arcanomechanical armor.
+  // 2019 playtest Artificer's infusion count and vanishing, the 2018 School of Invention's arcanomechanical armor.
   { kind: "playtest, not supported yet", pattern: /^(?:infusions:(?:count|vanish)|equipment:id_wotc_ua_armor_light_arcanomechanical)$/, readBy: "nothing yet: listed in docs/UA-UNSUPPORTED.md" },
   { kind: "feature DC", pattern: /^[a-z][a-z' ()-]*(?::[a-z ]+)?:dc$/, readBy: "feature values on the sheet (Psionic Power: DC 14)" },
   { kind: "ability", pattern: new RegExp(`^${AB}(?::(?:score:set|max|max:extra|modifier|score))?$`), readBy: "stats.ts (scores, caps, set scores)" },

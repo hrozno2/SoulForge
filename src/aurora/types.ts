@@ -114,6 +114,8 @@ export interface AElement {
   attacks?: { name: string; die: string; damageType: string; ability: string; ranged: boolean }[];
   /** The rules the element belongs to, stamped at load from its book's release (see edition.ts). */
   edition?: "2014" | "2024";
+  /** Playtest content not supported yet, or something that brings it (comingSoon.ts): listed but not pickable. */
+  comingSoon?: boolean;
 }
 
 /** `<append id="...">` adds rules to an element defined elsewhere. */

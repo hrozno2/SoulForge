@@ -13,7 +13,11 @@ seen, instead of being fixed by hand or hidden.
 |---|---|---|---|---|
 | UA1 | `infusions:count` | Artificer, Unearthed Arcana 2019-02-28: Infuse Item (`ID_WOTC_UA20190228_CLASS_FEATURE_ARTIFICER_INFUSE_ITEM`) | The number of infusions, set at several levels; not shown or used. | stat gate |
 | UA2 | `infusions:vanish` | Same feature | Probably how many infused items there may be before the oldest stops working (from its name; to confirm in the content); not shown or used. | stat gate |
-| UA3 | `equipment:id_wotc_ua_armor_light_arcanomechanical` | Wizard School of Invention, Unearthed Arcana 2015: Arcanomechanical Armor (`ID_WOTC_UA_ARCHETYPE_FEATURE_SCHOOL_INVENTION_ARCANOMECHANICAL_ARMOR`) | A value tied to the arcanomechanical armor item; not applied. | stat gate |
+| UA3 | `equipment:id_wotc_ua_armor_light_arcanomechanical` | Wizard School of Invention, Unearthed Arcana 2018-01-08 (Three Subclasses): Arcanomechanical Armor (`ID_WOTC_UA_ARCHETYPE_FEATURE_SCHOOL_INVENTION_ARCANOMECHANICAL_ARMOR`) | A value tied to the arcanomechanical armor item; not applied. | stat gate |
 
 The stat dictionary (src/engine/statDictionary.ts) marks UA1 to UA3 as "playtest, not supported yet" so the gate
 stays meaningful; remove that entry when they are wired.
+
+In the app, the features above and whatever grants them (today the 2019 playtest Artificer class and the 2018 School
+of Invention) show with a "Coming soon" mark and cannot be picked; random characters and autofill skip them. The ids
+live in src/aurora/comingSoon.ts: add an item's feature there when it is listed here, remove it when it is supported.

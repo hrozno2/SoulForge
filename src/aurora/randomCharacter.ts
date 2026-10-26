@@ -52,7 +52,7 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
   const pick = <T,>(a: T[]): T | undefined => a[Math.floor(rng() * a.length)];
   const pool = (type: string) => {
     // "Custom Background" and "Custom Lineage" are build-your-own templates, not something to roll.
-    const all = reg.ofType(type).filter((e) => !e.compendiumHidden && !/^custom\b/i.test(e.name));
+    const all = reg.ofType(type).filter((e) => !e.compendiumHidden && !e.comingSoon && !/^custom\b/i.test(e.name));
     const vis = all.filter(shown);
     return vis.length ? vis : all;
   };

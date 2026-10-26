@@ -61,7 +61,7 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
     // Not what the character already has, under any provider's id.
     const hadConcepts = new Set(r.active.map((a) => conceptOf(a.el)).filter(Boolean));
     const had = (o: (typeof open.options)[number]) => r.ids.has(o.id) || (!!conceptOf(o) && hadConcepts.has(conceptOf(o)));
-    const free = open.options.filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !had(o) && !bad.has(`${open.key} ${o.id}`));
+    const free = open.options.filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !o.comingSoon && !had(o) && !bad.has(`${open.key} ${o.id}`));
     // Options from books the player shows come first; the others only when nothing else fits.
     const shown = free.filter(allow);
     // How many later choices need an option: the most needed first, then the caller's preference (random builds).
@@ -72,7 +72,7 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
     // If every allowed option leads to a dead end somewhere else, the best allowed one is still better than none;
     // an option the rules rule out is never picked (with none allowed, stillToChoose leaves the choice alone).
     // Last resort, in order: any legal option the character does not have yet, then any legal option at all.
-    const legal = open.options.filter((o) => !taken.has(o.id) && !open.blocked.has(o.id));
+    const legal = open.options.filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !o.comingSoon);
     const pick = candidates[0] ?? legal.find((o) => !had(o)) ?? legal[0];
     if (!pick) break;
     const next = { ...cur, selections: { ...cur.selections, [open.key]: [...open.chosen, pick.id] } };

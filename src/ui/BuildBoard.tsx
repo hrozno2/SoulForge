@@ -615,7 +615,7 @@ function SourcePicker({ g, activeId, onPick, strip = false }: { g: Group; active
     return (
       <div className="src-strip" role="group" aria-label="Book">
         {byDate.map((v) => (
-          <button key={v.el.id} className={v === active ? "on" : ""} aria-pressed={v === active} title={title(v)} onClick={() => v !== active && onPick(v.el)}>{label(v)}</button>
+          <button key={v.el.id} className={v === active ? "on" : ""} aria-pressed={v === active} title={title(v)} disabled={v.el.comingSoon && v !== active} onClick={() => v !== active && onPick(v.el)}>{label(v)}</button>
         ))}
       </div>
     );
@@ -625,7 +625,7 @@ function SourcePicker({ g, activeId, onPick, strip = false }: { g: Group; active
     <div className={`src-pick ${others.length ? "has-more" : ""}`}>
       {others.length > 0 && (
         <div className="src-more" role="group" aria-label="Other books">
-          {others.map((v) => <button key={v.el.id} title={title(v)} onClick={() => onPick(v.el)}>{label(v)}</button>)}
+          {others.map((v) => <button key={v.el.id} title={title(v)} disabled={v.el.comingSoon} onClick={() => onPick(v.el)}>{label(v)}</button>)}
         </div>
       )}
       <button className="src-current" title={others.length ? `${title(active)}. Hover for other books.` : title(active)} aria-haspopup={others.length ? "true" : undefined}>{label(active)}{others.length > 0 && <span className="src-more-mark" aria-hidden="true">+</span>}</button>

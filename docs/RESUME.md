@@ -1,5 +1,28 @@
 # Where we left off
 
+## Overnight run, 2026-10-26 to 27 (Chris: "continue with the plan without usage restrictions ... keep going all night")
+
+Done today: A1.1 to A1.8 (all of A1), the "Coming soon" lock for unsupported playtest content, the class proficiency
+gate. Last commit at hand-off: f104bf0. Work through docs/MASTER-PLAN.md Stage A in order, from the first item not
+struck through: A2.1, A2.2, (A2.3 needs Chris's decision: skip it, leave it open), A2.4 to A2.8, A3.1 to A3.3, then A4
+(playtest support, docs/UA-UNSUPPORTED.md). Do not start Stage B or C, and do not cut a release.
+Rules for each item:
+- Fix the cause for the whole class of bug, and add a guard (a test or gate) so it cannot come back.
+- After each item: unit tests (npx vitest run), the saved-sheet comparison
+  (SOULFORGE_RULES=$HOME/.soulforge-test RULES_TIER=diff npx vitest run src/aurora/rules.suite.test.ts) with no
+  unexplained change, scripts/test-app.sh, then commit with the trailer
+  "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" and push.
+- Strike the item in MASTER-PLAN.md with a "Done <date>:" note, and add a line to the log below.
+- A question only Chris can answer: write it under "Questions for Chris" below and move to the next item.
+- No AI-generated images; Plutonium code is read only; ask before downloads (do not download overnight).
+
+### Overnight log
+- 2026-10-26 20:40: hand-off from the evening session; next item A2.1.
+
+### Questions for Chris
+- A2.3: shop price multiplier per character or an app setting, and the selling price rule (half at 1.0?).
+
+
 **The open work is in docs/MASTER-PLAN.md (2026-10-25):** Stage A engine, Stage B tests, Stage C interface, in that
 order. It merges the list below, docs/PLAN-linux-testing-and-ui.md and the open audit phases. The notes below keep
 the detail and the history.

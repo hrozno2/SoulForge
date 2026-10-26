@@ -35,7 +35,7 @@ Order inside the stage: first what makes characters wrong today, then what is mi
 | ~~A1.5~~ | ~~Backpack "Kept in" offers a staff and other non-containers.~~ | RESUME #13 | Done 2026-10-26: Aurora's "container" setter names a focus group (Staff: Arcane Focus), not a container; containers are now known by 5e.tools' capacity or a volume in their text (src/aurora/containers.ts). |
 | ~~A1.6~~ | ~~Telekinetic (and any feat with a feature of the same text) printed twice on the sheet.~~ | Plan H | Done 2026-10-26: a feat and the feature it grants share the name (the feat's benefits, then its shove); the sheet data merges same-named entries in a group, keeping both texts. |
 | A1.7 | FastCharacter imports leave 91 required choices open. | Plan H, full check | Import logic (`foreign.ts`): sort by cause, fix the classes of cause. |
-| ~~A1.8~~ | ~~Three statistics nothing reads (Unearthed Arcana Artificer: infusions count and vanish, an armor equipment stat).~~ | Plan H, stat gate | Done 2026-10-26: decided as playtest-only in the stat dictionary (UA is out of scope); the stat gate reports 0 unknown. |
+| ~~A1.8~~ | ~~Three statistics nothing reads (Unearthed Arcana Artificer: infusions count and vanish, an armor equipment stat).~~ | Plan H, stat gate | Done 2026-10-26: listed in docs/UA-UNSUPPORTED.md (UA1 to UA3) and marked "playtest, not supported yet" so the stat gate reports 0 unknown; wired in A4. |
 
 ### A2. Missing engine features
 
@@ -58,6 +58,20 @@ Order inside the stage: first what makes characters wrong today, then what is mi
 | A3.2 | Every sheet: a stored profile per sheet (WotC 2014 and 2024, DLDM 5E24 and companions, the layouts, the kids' sheet), a test that fills every field from a fully loaded character, fillable fields for printed sheets without them. | Plan F |
 | A3.3 | Every element against its 5e.tools counterpart: one report per element type with a coverage figure (the comparison already runs as a test). | Plan I |
 
+### A4. Unearthed Arcana support (last engine block, before Stage B)
+
+Scope changed 2026-10-26: playtest content is in scope (it was out by the audit decision of 2026-10-17).
+
+1. Collect every playtest file and element: Aurora's (Unearthed Arcana sources) and 5e.tools' (UA books and
+   `prerelease` groups, plus their Foundry side data).
+2. For each kind of element, compare how Aurora encodes it and how Plutonium imports it (docs/PLUTONIUM.md: side
+   data matched by fields, mechanics read from the text), and take what each gets right, as for official content.
+3. Make the checks cover it: the rules check, the edition gate (playtest has its own edition and release dates), the
+   Aurora and 5e.tools comparisons, random characters with playtest content switched on.
+4. Work through docs/UA-UNSUPPORTED.md (starting with UA1 to UA3) until it is empty or every item left has a reason.
+
+Until then, anything playtest-only that a check reports goes into docs/UA-UNSUPPORTED.md instead of being hidden.
+
 Not built, by decision (docs/ENGINE-PLAN.md): the resolver on the internal format, merging the two sources' copies,
 a general effects model. Revisit only for maintainability.
 
@@ -65,7 +79,7 @@ a general effects model. Revisit only for maintainability.
 
 ## Stage B: tests
 
-After Stage A, before any interface work:
+After Stage A (A4, playtest support, included), before any interface work:
 1. `npm test`, `npx tsc --noEmit`, `npm run build`.
 2. The full check on request: `node scripts/full-check.mjs [seed]` (unit tests, loader gates, the rules check,
    10,000 random characters, the edition gate, Soul Forge against Aurora, Aurora against 5e.tools, saved characters

@@ -633,6 +633,23 @@ function SourcePicker({ g, activeId, onPick, strip = false }: { g: Group; active
   );
 }
 
+/**
+ * One switch for a 2014 background's personality traits, ideals, bonds and flaws (its tables): off, all four are left
+ * out and never count as missing, as in the 2024 rules, which have none. Shown only when the background has them.
+ */
+function PersonalitySwitch({ r, set }: { r: Resolved; set: SetCharacter }) {
+  const lists = r.slots.filter((s) => s.root === "background" && s.listItems);
+  if (!lists.length) return null;
+  const keys = lists.map((s) => s.key);
+  const on = lists.some((s) => !s.declined);
+  return (
+    <label className="personality-switch">
+      <input type="checkbox" checked={on} onChange={(e) => set((c) => ({ ...c, declined: e.target.checked ? (c.declined ?? []).filter((k) => !keys.includes(k)) : [...new Set([...(c.declined ?? []), ...keys])] }))} />
+      <span><b>Personality traits, ideals, bonds and flaws</b> <small className="muted">2014 rules; the 2024 rules have none. Untick to leave all four out.</small></span>
+    </label>
+  );
+}
+
 /** The portrait in an arched frame at the top of the right column, with the name and what the character is. Click to change it. */
 function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
   const [open, setOpen] = useState(false);
@@ -1056,7 +1073,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
               })}
             </>
           ) : <p className="muted">Choose a class from the list on the left, or drag one onto its space. Adding another class later makes a multiclass.</p>)}
-          {kind === "background" && (chosenEl.background ? <><SlotList slots={ownSlots((root) => root === "background")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your background." /><PassiveFeatures r={r} root={(root) => root === "background"} /></> : <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>)}
+          {kind === "background" && (chosenEl.background ? <><PersonalitySwitch r={r} set={set} /><SlotList slots={ownSlots((root) => root === "background")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your background." /><PassiveFeatures r={r} root={(root) => root === "background"} /></> : <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>)}
           {kind === "magic" && (caster ? (
             <>
               <div className="card-back-art"><SpellBook f={spellFill} /><span>{spellNeed ? `${spellHave} of ${spellNeed}` : ""}</span></div>

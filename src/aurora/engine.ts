@@ -386,7 +386,9 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         // A variant or optional choice is not taken until the player opts in (ticks it, or has picked something in
         // it, as older saves have) or it gives a default; turned down, nothing is taken and nothing is left open.
         const optedIn = chosen.length > 0 || !!ch.taken?.includes(key);
-        const declined = !isList && skippable(rule) && (!!ch.declined?.includes(key) || (!optedIn && !rule.default));
+        // A table of 2014 personality traits, ideals, bonds and flaws is turned off only by the player (one switch on
+        // the background turns all four off: the 2024 rules have none).
+        const declined = isList ? !!ch.declined?.includes(key) : skippable(rule) && (!!ch.declined?.includes(key) || (!optedIn && !rule.default));
         if (declined) { chosen = []; defaulted = false; }
         rawSlots.push({ key, owner: el, rule: isList || declined ? { ...rule, optional: true } : rule, ownerLevel, root, chosen, defaulted, declined, at: Math.max(at, rule.level ?? 0) });
         for (const id of isList ? [] : chosen) {

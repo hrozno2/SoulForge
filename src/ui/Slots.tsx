@@ -72,6 +72,7 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
     set((c) => ({
       ...c,
       declined: take ? (c.declined ?? []).filter((k) => !keys.includes(k)) : [...new Set([...(c.declined ?? []), ...keys])],
+      taken: take ? [...new Set([...(c.taken ?? []), ...keys])] : (c.taken ?? []).filter((k) => !keys.includes(k)),
       selections: take ? c.selections : { ...c.selections, ...Object.fromEntries(keys.map((k) => [k, []])) },
     }));
     setOpen(take);
@@ -150,7 +151,7 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
   };
   return (
     <div className={`slot ${full ? "done" : "todo"} ${slot.listItems ? "has-roll" : ""} ${canSkip ? "has-take" : ""} ${declined ? "declined" : ""}`}>
-      {canSkip && <input type="checkbox" className="slot-take" checked={!declined} title={declined ? "Not taken: tick to take it" : "Untick to not take it"} aria-label={`Take ${rule.name}`} onChange={(e) => setTaking(e.target.checked)} />}
+      {canSkip && <input type="checkbox" className="slot-take" checked={!declined} title={declined ? "Not taken (optional): tick to take it" : "Untick to not take it"} aria-label={`Take ${rule.name}`} onChange={(e) => setTaking(e.target.checked)} />}
       {slot.listItems && slot.listItems.length > 1 && <button className="slot-roll" title={`Roll on the table (d${slot.listItems.length})`} aria-label={`Roll ${rule.name}`} onClick={rollTable}><D20 size={16} /></button>}
       <button className="slot-head" onClick={() => !declined && setOpen(!open)}>
         <span className="slot-title">

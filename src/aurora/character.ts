@@ -189,6 +189,8 @@ export interface Character {
   selections: Record<string, string[]>;
   /** Optional and variant choices (slot keys) the player chose not to take: not counted as choices left open. */
   declined?: string[];
+  /** Optional and variant choices (slot keys) the player opted into: they start not taken until ticked or picked. */
+  taken?: string[];
   /** Option elements the player enabled (type Option). */
   options: string[];
   /** Bonuses the player adds by hand, for table rulings and things the content does not cover. */

@@ -3,6 +3,8 @@
  * Content files describe equipment as text ("Choose A or B: (A) 2 Daggers, Robe and 5 GP; or (B) 55 GP" for the
  * 2024 rules, or lists of "(a) X or (b) Y" for older classes). This reads that text and matches it to items.
  */
+import type { GenericKind } from "./character";
+import { TOOL_KINDS } from "./fivetools";
 import type { AElement } from "./types";
 import { buildSheet } from "./sheet";
 import { resolve } from "./engine";
@@ -34,6 +36,8 @@ export interface EquipPlan {
 
 export interface ResolvedItem {
   el?: AElement;
+  /** Names only a kind of item that nothing settled: the player picks one later. */
+  pending?: GenericKind;
   name: string;
   qty: number;
   /** The full wording from the rulebook, kept on custom items. */
@@ -384,7 +388,7 @@ export function addToInventory(ch: Character, items: ResolvedItem[], gp = 0): Ch
       stack.qty += it.qty;
       continue;
     }
-    inv.push({ uid: uid(), id: it.el?.id ?? "", qty: it.qty, equipped: false, attuned: false, custom: it.el ? undefined : { name: it.name, description: it.note } });
+    inv.push({ uid: uid(), id: it.el?.id ?? "", qty: it.qty, equipped: false, attuned: false, custom: it.el ? undefined : { name: it.name, description: it.note }, ...(it.pending && !it.el ? { pending: it.pending } : {}) });
   }
   return { ...ch, inventory: inv, coins: { ...ch.coins, gp: ch.coins.gp + gp } };
 }
@@ -500,6 +504,18 @@ export function focusNote(name: string): string | undefined {
 }
 
 /**
+ * The items a player can pick for gear that names only a kind: the standard tools of that kind (TOOL_KINDS), plus
+ * any item of the content filed as a musical instrument, as items of the content, one per name.
+ */
+export function genericOptions(reg: ARegistry, kind: GenericKind, prefer = ""): AElement[] {
+  const idx = new ItemIndex(reg);
+  const out = new Map<string, AElement>();
+  for (const n of TOOL_KINDS[kind] ?? []) { const el = idx.find(n, prefer); if (el) out.set(el.name.toLowerCase(), el); }
+  if (kind === "instrument") for (const el of reg.ofType("Item")) if (/musical instrument/i.test(el.setters.category?.value ?? "") && !el.compendiumHidden && !out.has(el.name.toLowerCase())) out.set(el.name.toLowerCase(), el);
+  return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
  * "Gaming Set (same as above)", "Musical Instrument (one of your choice)" and "Artisan's Tools (same as above)":
  * the item the character chose a proficiency in, when the starting gear names only the kind.
  */
@@ -522,6 +538,8 @@ export function resolveChosenTools(items: ResolvedItem[], activeIds: Iterable<st
     const kind = /gaming set/i.test(it.name) ? "gaming" : /musical instrument/i.test(it.name) ? "instrument" : /artisan/i.test(it.name) ? "artisan" : /\btools?\b.*\b(choose|choice)\b.*\bproficien/i.test(it.name) ? "any" : undefined;
     if (kind === "any") chosen.any = [...chosen.gaming, ...chosen.instrument, ...chosen.artisan];
     const pick = kind ? chosen[kind][used[kind] ?? 0] : undefined;
+    // Nothing the character took settles it: an open choice of that kind, not the words as an item.
+    if (kind && kind !== "any" && !pick) return { ...it, pending: kind };
     if (!kind || !pick) return it;
     const el = idx.find(pick, prefer);
     if (!el) return it;

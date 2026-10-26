@@ -187,7 +187,8 @@ export function App() {
   const magicList = unfilled.filter((s) => tabOfSlot(s) === "magic").map(describe);
   const pending = pendingList.length;
   // Starting gear not chosen: shown on the Equipment tab, like open choices on Build.
-  const equipPending = character.classes.length > 0 && !(character.equipmentAdded?.length) && character.inventory.length === 0;
+  // Starting gear not taken yet, or gear that names only a kind still to pick ("a musical instrument").
+  const equipPending = (character.classes.length > 0 && !(character.equipmentAdded?.length) && character.inventory.length === 0) || character.inventory.some((i) => i.pending);
   const hasMagic = r.spellcasting.size > 0 || r.spellPicks.length > 0;
   // When the last open choice on Build is made, go on to Magic (casters) or Equipment; when the last spell is
   // chosen on Magic, go on to Equipment. Only on the change itself, so opening a finished character moves nothing.

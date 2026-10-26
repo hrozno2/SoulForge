@@ -1,3 +1,6 @@
+/** The kinds of starting gear a pack or background may name without saying which one. */
+export type GenericKind = "instrument" | "gaming" | "artisan";
+
 export const ABILITY_IDS = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const;
 export type AbilityId = (typeof ABILITY_IDS)[number];
 
@@ -63,6 +66,11 @@ export interface InvItem {
   magic?: number;
   /** Free-form fields for custom items and per-item notes. */
   custom?: { name: string; type?: string; weight?: number; cost?: string; description?: string; ac?: number; damage?: string };
+  /**
+   * Starting gear that names only a kind ("a musical instrument", "a gaming set", "artisan's tools") and nothing the
+   * character took settles: the player still picks which one (src/aurora/startingEquipment.ts genericOptions).
+   */
+  pending?: GenericKind;
   notes?: string;
 }
 

@@ -206,7 +206,8 @@ function langRules(list: J[] | undefined, label: string): { rules: ARule[]; lang
 }
 
 /** The standard tools by kind, for "any artisan's tool" style choices. */
-const TOOL_KINDS: Record<string, string[]> = {
+/** The standard tools of each kind, by name (also the options for gear that names only a kind). */
+export const TOOL_KINDS: Record<string, string[]> = {
   artisan: ["alchemist's supplies", "brewer's supplies", "calligrapher's supplies", "carpenter's tools", "cartographer's tools", "cobbler's tools", "cook's utensils", "glassblower's tools", "jeweler's tools", "leatherworker's tools", "mason's tools", "painter's supplies", "potter's tools", "smith's tools", "tinker's tools", "weaver's tools", "woodcarver's tools"],
   gaming: ["dice set", "dragonchess set", "playing card set", "three-dragon ante set"],
   instrument: ["bagpipes", "drum", "dulcimer", "flute", "horn", "lute", "lyre", "pan flute", "shawm", "viol"],

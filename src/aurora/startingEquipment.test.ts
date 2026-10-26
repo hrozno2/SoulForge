@@ -125,3 +125,17 @@ describe.skipIf(!C24)("2024 content", () => {
     expect(b.filter((i) => !i.el).map((i) => i.name)).toEqual([]);
   });
 });
+
+describe("gear that names only a kind", () => {
+  it("is a pending choice of that kind when nothing the character took settles it", async () => {
+    const { resolveChosenTools, addToInventory } = await import("./startingEquipment");
+    const { ARegistry } = await import("./registry");
+    const { newCharacter } = await import("./character");
+    const reg = new ARegistry();
+    reg.build();
+    const items = resolveChosenTools([{ name: "Musical Instrument (one of your choice)", qty: 1 }, { name: "Gaming Set (same as above)", qty: 1 }, { name: "Artisan's Tools", qty: 1 }], [], reg);
+    expect(items.map((i) => i.pending)).toEqual(["instrument", "gaming", "artisan"]);
+    const ch = addToInventory(newCharacter(), items);
+    expect(ch.inventory.map((i) => i.pending)).toEqual(["instrument", "gaming", "artisan"]);
+  });
+});

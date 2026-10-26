@@ -27,6 +27,11 @@ Rules for each item:
   Left (the test still fails on these 4): two Artificers get an extra prepared spell added by hand (Dragon's Breath,
   Catapult: check whether the artificer line counts as a whole-list caster and the spell's list tags), and a
   Sorcerer 7 swaps Color Spray for Detect Magic. Then the saved-sheet comparison, strike A2.4, commit.
+- 2026-10-26 22:15: the 4 round-trip differences fixed: a spell is on a class list by name across books (Princes of the
+  Apocalypse's Catapult lacks the Artificer tag); exported spells carry dnd5e's sourceItem (the feature that chose
+  them) and are placed first; a feat's own choices travel with it (flags.soulforge.choices: Magic Initiate's list);
+  flagged elements are placed exactly (`exactId`). Round trip: 0 lost, 0 added. Full checks were started at 22:15;
+  if this line is the last, rerun them (unit tests, RULES_TIER=diff, fastchar, the content tests), then strike A2.4.
 
 ### Questions for Chris
 - A2.3: shop price multiplier per character or an app setting, and the selling price rule (half at 1.0?).

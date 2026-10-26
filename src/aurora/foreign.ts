@@ -316,7 +316,7 @@ class Importer {
   matched: string[] = [];
   missing: string[] = [];
   /** `early`: placed with the cantrips, before the open choices are filled (a spell a feat's text names). */
-  private wantedChoices: { types: string[]; name: string; label: string; alts?: string[]; from?: string; edition?: Edition; early?: boolean }[] = [];
+  private wantedChoices: { types: string[]; name: string; label: string; alts?: string[]; from?: string; edition?: Edition; early?: boolean; exactId?: string }[] = [];
   /** Which rules the character was made with, when the file says. Picks the 2014 or 2024 version of a name. */
   edition?: Edition;
   /** Weapons the character carries, for weapon mastery when the file names none. */
@@ -408,10 +408,11 @@ class Importer {
 
   /** Remember something to put into whichever choice can hold it once the character is shaped. */
   /** `from` names where the file says it came from ("magic initiate"), to pick the choice that holds it. */
-  want(types: string[], name: string, label: string, alts: string[] = [], from?: string, edition?: Edition, early?: boolean): void {
+  /** `exactId`: the file names the element itself (a Soul Forge export's flags.soulforge.id); no search by name. */
+  want(types: string[], name: string, label: string, alts: string[] = [], from?: string, edition?: Edition, early?: boolean, exactId?: string): void {
     if (name && label === "spell") this.hints.spells.add(normalize(name));
     if (name && label === "feat") this.featCount.set(normalize(name), (this.featCount.get(normalize(name)) ?? 0) + 1);
-    if (name) this.wantedChoices.push({ types, name, label, alts, from, edition, early });
+    if (name) this.wantedChoices.push({ types, name, label, alts, from, edition, early, exactId });
   }
 
   addItem(name: string, qty: number, equipped: boolean, attuned: boolean, extra: { base?: string; magic?: number; bonuses?: { stat: string; value: number }[]; edition?: Edition } = {}): void {
@@ -840,12 +841,13 @@ class Importer {
   }
 
   /** Puts one wanted thing into a choice that can hold it. Spells and feats nothing can hold are added by hand. */
-  private place(ch: Character, w: { types: string[]; name: string; label: string; alts?: string[]; from?: string; edition?: Edition }): Character {
+  private place(ch: Character, w: { types: string[]; name: string; label: string; alts?: string[]; from?: string; edition?: Edition; exactId?: string }): Character {
     // "Magic Initiate: Warlock" is the Magic Initiate feat with Warlock chosen inside it.
     const base = w.name.split(/[:(]/)[0].trim();
     const inner = w.name.slice(base.length).replace(/[:()]/g, " ").trim();
     const clean = w.name.replace(/\s+-\s+(race|class|feat|item)$/i, "").trim();
-    let all = findAllByName(this.reg, w.types, clean);
+    const exact = w.exactId ? this.reg.get(w.exactId) : undefined;
+    let all = exact ? [exact] : findAllByName(this.reg, w.types, clean);
     for (const alt of w.alts ?? []) if (!all.length) all = findAllByName(this.reg, w.types, alt);
     if (!all.length && base !== clean) all = findAllByName(this.reg, w.types, base);
     // The 2024 books drop the wizard from some spell names: "Tiny Hut" is Leomund's Tiny Hut.
@@ -941,7 +943,9 @@ class Importer {
     const fits2 = r.slots.filter((s) => s.chosen.length < s.rule.number && s.options.some((o) => o.id === el.id) && (filePrepared || !isPrepareChoice(s)));
     // A wizard's spellbook holds more than the level-up picks (copied spells): those are kept, as additions.
     const spellbookOf = (e: { name: string }) => r.slots.some((s) => /spellbook/i.test(s.rule.name) && (s.rule.spellcasting ?? "").toLowerCase() === e.name.toLowerCase());
-    const onClassList = el.type === "Spell" && [...r.spellcasting.values()].some((e) => prepares(e) && !spellbookOf(e) && e.lists.some((l) => el.supports.includes(l)));
+    // On the list by name: another book's copy of the spell (Princes of the Apocalypse's Catapult) may lack the tag.
+    const copies = el.type === "Spell" ? findAllByName(this.reg, ["Spell"], el.name) : [];
+    const onClassList = el.type === "Spell" && [...r.spellcasting.values()].some((e) => prepares(e) && !spellbookOf(e) && e.lists.some((l) => copies.some((c) => c.supports.includes(l))));
     // A spell on the list of a class that prepares from its whole list (a cleric's, a druid's) needs no choice: it is
     // on the list already, and prepared (below, from the file's marks) if the file says so. Adding it by hand would
     // give the character a second copy outside the class.
@@ -991,7 +995,9 @@ class Importer {
     // A spell a feat gives (Magic Initiate's) goes in with the cantrips too, before the open choices are filled, so
     // they see it is had and do not take another feat for it.
     const order = (w: { label: string; name: string; early?: boolean }) => (w.label === "subclass" ? 0 : /subrace|lineage/.test(w.label) ? 1 : w.label === "feat" ? 2 : cantrip(w) || w.early ? 3 : 4);
-    const wanted = [...this.wantedChoices].sort((x, y) => order(x) - order(y));
+    // Within a step, what the file says came from somewhere first: it claims its own choice before a spell with no
+    // origin takes that choice as merely the narrowest one.
+    const wanted = [...this.wantedChoices].sort((x, y) => order(x) - order(y) || Number(!x.from) - Number(!y.from));
     this.deferring = true;
     for (const w of wanted.filter((x) => order(x) < 4)) ch = this.place(ch, w);
     this.deferring = false;
@@ -1138,7 +1144,7 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
         if (own?.type === "Race") {
           b.ch.race = own.id;
           b.matched.push(`${own.name} (species)`);
-          for (const id of (it.flags?.soulforge?.lineages ?? []) as string[]) { const l = reg.get(id); if (l) b.want(["Sub Race", "Race Variant", "Racial Trait"], l.name, "subrace or lineage", [], undefined, l.edition); }
+          for (const id of (it.flags?.soulforge?.lineages ?? []) as string[]) { const l = reg.get(id); if (l) b.want(["Sub Race", "Race Variant", "Racial Trait"], l.name, "subrace or lineage", [], undefined, l.edition, false, l.id); }
           speciesSet = true;
           break;
         }
@@ -1163,7 +1169,11 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
         const kind = String(isys.type?.value ?? "");
         const trait = /^(age|alignment|size|speed|languages?|creature type|darkvision|feature:|variant feature|optional rule|infusions?:|ability score (increase|improvement)s?$)/i.test(name);
         const ownFeat = sfEl(it);
-        if (ownFeat?.type === "Feat") b.want(["Feat"], ownFeat.name, "feat", [], undefined, ownFeat.edition);
+        if (ownFeat?.type === "Feat") {
+          b.want(["Feat"], ownFeat.name, "feat", [], undefined, ownFeat.edition, false, ownFeat.id);
+          // Its own choices, exactly (a Soul Forge export lists them): the list Magic Initiate draws from, and so on.
+          for (const id of (it.flags?.soulforge?.choices ?? []) as string[]) { const c = reg.get(id); if (c) b.want([c.type], c.name, c.type === "Spell" ? "spell" : "feat", [], undefined, c.edition, false, c.id); }
+        }
         else if (kind === "feat" || (!kind && !trait)) b.want(["Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature"], name, "feat", [], undefined, ruleOf(it));
         else b.addName(name);
         break;
@@ -1171,7 +1181,8 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
       case "spell": {
         // Foundry 5 says where a spell came from: "class:wizard", "feat:magic-initiate", "race:gnome-rock".
         const origin = String(isys.sourceItem ?? "").replace(/^\w+:/, "").replace(/-/g, " ");
-        b.want(["Spell"], name, "spell", [], origin || undefined, ruleOf(it));
+        const ownSpell = sfEl(it);
+        b.want(["Spell"], name, "spell", [], origin || undefined, ruleOf(it), false, ownSpell?.type === "Spell" ? ownSpell.id : undefined);
         const prep = isys.prepared ?? isys.preparation?.prepared;
         // Spells a feature keeps prepared (mode "always", or prepared 2: oath and domain spells) and innate, pact or at-will spells do not
         // count against the prepared limit.

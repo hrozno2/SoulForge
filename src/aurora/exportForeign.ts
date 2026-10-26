@@ -50,7 +50,10 @@ export function exportFoundry(r: Resolved): Record<string, unknown> {
   if (subclass) add("subclass", subclass, { identifier: ident(subclass), classIdentifier: ident(subClass), description: { value: "" } }, { id: subclassId });
   if (race) add("race", race, { description: { value: "" } }, { id: c.race, lineages: lineages.map((l) => l.id) });
   if (background) add("background", background, { description: { value: "" } }, { id: c.background });
-  for (const f of sheet.features.filter((x) => x.type === "Feat")) add("feat", f.name, { description: { value: html(stripTags(f.text)) }, type: { value: "feat" } }, f.id ? { id: f.id } : {});
+  // A feat's own choices go with it (Magic Initiate's list and ability, Resilient's ability, Skilled's skills), and
+  // their choices in turn, so an import makes the same picks.
+  const choicesUnder = (id: string, depth = 0): string[] => depth > 3 ? [] : r.slots.filter((s) => s.owner.id === id).flatMap((s) => s.chosen.flatMap((c) => [c, ...choicesUnder(c, depth + 1)]));
+  for (const f of sheet.features.filter((x) => x.type === "Feat")) add("feat", f.name, { description: { value: html(stripTags(f.text)) }, type: { value: "feat" } }, f.id ? { id: f.id, choices: choicesUnder(f.id) } : {});
   // Class, subclass, species and background features too, as dnd5e's feature items (type class, race, background),
   // with their uses ("3/Long Rest": three uses, all back on a long rest).
   const KIND: Record<string, string> = { "Class Feature": "class", "Archetype Feature": "class", "Racial Trait": "race", "Background Feature": "background" };
@@ -62,14 +65,23 @@ export function exportFoundry(r: Resolved): Record<string, unknown> {
   // Each spell once, with how it is ready (dnd5e's preparation): always prepared from a feature, prepared today, or
   // known (cantrips and the spells of a class that does not prepare).
   const prep = new Map<string, { mode: string; prepared: boolean }>();
+  const fromOf = new Map<string, string>();
   for (const line of sheet.casting) {
     for (const p of line.cantripsKnown) prep.set(p.id, { mode: "prepared", prepared: true });
     for (const p of line.granted) prep.set(p.id, { mode: "always", prepared: true });
     for (const p of line.spells) if (!prep.has(p.id)) prep.set(p.id, { mode: "prepared", prepared: p.granted || !line.prepare || p.prepared });
   }
+  // Where each spell was chosen, as Foundry 5's sourceItem ("feat:magic-initiate", "class:spellcasting"): the feature
+  // whose choice holds it, so an import puts it back in that choice and not in another that also offers it.
+  for (const p of r.spellPicks) {
+    const owner = p.from ? r.reg.get(p.from) : undefined;
+    if (!owner || fromOf.has(p.id)) continue;
+    const kind = owner.type === "Feat" ? "feat" : /^(Race|Sub Race|Racial Trait)$/.test(owner.type) ? "race" : owner.type === "Background" ? "background" : "class";
+    fromOf.set(p.id, `${kind}:${owner.name.replace(/^level \d+:\s*/i, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`);
+  }
   for (const [id, preparation] of prep) {
     const el = r.reg.get(id);
-    if (el) add("spell", el.name, { level: Number(el.setters.level?.value) || 0, school: FSCHOOL[(el.setters.school?.value ?? "").toLowerCase()] ?? "", preparation, description: { value: el.description } }, { id });
+    if (el) add("spell", el.name, { level: Number(el.setters.level?.value) || 0, school: FSCHOOL[(el.setters.school?.value ?? "").toLowerCase()] ?? "", preparation, ...(fromOf.get(id) ? { sourceItem: fromOf.get(id) } : {}), description: { value: el.description } }, { id });
   }
   for (const it of c.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;

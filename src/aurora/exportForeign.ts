@@ -14,28 +14,62 @@ const html = (t: string) => (t ? `<p>${t.replace(/&/g, "&amp;").replace(/</g, "&
 const stripTags = (t: string) => t.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 const rid = (n: number) => Array.from({ length: n }, () => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[Math.floor(Math.random() * 62)]).join("");
 
+/** dnd5e's spell school keys. */
+const FSCHOOL: Record<string, string> = { abjuration: "abj", conjuration: "con", divination: "div", enchantment: "enc", evocation: "evo", illusion: "ill", necromancy: "nec", transmutation: "trs" };
+
 function details(r: Resolved) {
   const c = r.character;
   const nameOf = (id?: string) => (id ? r.reg.get(id)?.name ?? "" : "");
-  const sub = r.active.find((a) => a.el.type === "Archetype")?.el.name ?? "";
-  return { c, race: nameOf(c.race), background: nameOf(c.background), subclass: sub, classes: c.classes.map((x) => ({ name: nameOf(x.classId), level: x.level })) };
+  const subEl = r.active.find((a) => a.el.type === "Archetype")?.el;
+  // The species' subrace or lineage (Sea Elf, Water Genasi, White Dragonborn): named with it, as "Elf (Sea Elf)".
+  const lineages = r.active.filter((a) => /^(Sub Race|Race Variant)$/.test(a.el.type)).map((a) => a.el);
+  const race = nameOf(c.race);
+  return {
+    c, race: lineages.length ? `${race} (${lineages.map((l) => l.name).join("; ")})` : race, lineages,
+    background: nameOf(c.background), subclass: subEl?.name ?? "", subclassId: subEl?.id,
+    classes: c.classes.map((x) => ({ name: nameOf(x.classId), level: x.level, id: x.classId })),
+  };
 }
 
 export function exportFoundry(r: Resolved): Record<string, unknown> {
   const sheet = buildSheet(r);
-  const { c, race, background, subclass, classes } = details(r);
+  const { c, race, lineages, background, subclass, subclassId, classes } = details(r);
   const items: Record<string, unknown>[] = [];
-  const add = (type: string, name: string, system: Record<string, unknown>) => items.push({ _id: rid(16), name, type, img: "icons/svg/item-bag.svg", system, effects: [], flags: {} });
-  for (const k of classes) add("class", k.name, { levels: k.level, description: { value: "" } });
-  if (subclass) add("subclass", subclass, { description: { value: "" } });
-  if (race) add("race", race, { description: { value: "" } });
-  if (background) add("background", background, { description: { value: "" } });
-  for (const f of sheet.features.filter((x) => x.type === "Feat")) add("feat", f.name, { description: { value: html(stripTags(f.text)) }, type: { value: "feat" } });
-  const spellIds = new Set<string>();
-  for (const line of sheet.casting) for (const p of [...line.cantripsKnown, ...line.spells, ...line.granted]) spellIds.add(p.id);
-  for (const id of spellIds) {
+  // Each item carries the Soul Forge element it came from (flags.soulforge, as Plutonium keeps flags.plutonium), so
+  // importing the actor back finds exactly that element; other tools read the name.
+  const add = (type: string, name: string, system: Record<string, unknown>, sf: Record<string, unknown> = {}) => {
+    const el = typeof sf.id === "string" ? r.reg.get(sf.id) : undefined;
+    const source = el ? { book: el.source, rules: el.edition ?? "" } : undefined;
+    items.push({ _id: rid(16), name, type, img: "icons/svg/item-bag.svg", system: source ? { source, ...system } : system, effects: [], flags: Object.keys(sf).length ? { soulforge: sf } : {} });
+  };
+  // dnd5e ties a subclass to its class by the class's identifier (the name, lower case, dashed).
+  const ident = (n: string) => n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  for (const k of classes) add("class", k.name, { levels: k.level, identifier: ident(k.name), description: { value: "" } }, { id: k.id });
+  const subOf = r.active.find((a) => a.el.id === subclassId)?.root ?? "";
+  const subClass = subOf.startsWith("class:") ? r.reg.get(subOf.slice(6))?.name ?? "" : classes[0]?.name ?? "";
+  if (subclass) add("subclass", subclass, { identifier: ident(subclass), classIdentifier: ident(subClass), description: { value: "" } }, { id: subclassId });
+  if (race) add("race", race, { description: { value: "" } }, { id: c.race, lineages: lineages.map((l) => l.id) });
+  if (background) add("background", background, { description: { value: "" } }, { id: c.background });
+  for (const f of sheet.features.filter((x) => x.type === "Feat")) add("feat", f.name, { description: { value: html(stripTags(f.text)) }, type: { value: "feat" } }, f.id ? { id: f.id } : {});
+  // Class, subclass, species and background features too, as dnd5e's feature items (type class, race, background),
+  // with their uses ("3/Long Rest": three uses, all back on a long rest).
+  const KIND: Record<string, string> = { "Class Feature": "class", "Archetype Feature": "class", "Racial Trait": "race", "Background Feature": "background" };
+  for (const f of sheet.features.filter((x) => KIND[x.type])) {
+    const u = /(\d+)\s*\/\s*(short|long)/i.exec(f.usage ?? "");
+    const uses = u ? { max: u[1], spent: 0, recovery: [{ period: u[2].toLowerCase() === "short" ? "sr" : "lr", type: "recoverAll" }] } : undefined;
+    add("feat", f.name, { description: { value: html(stripTags(f.text)) }, type: { value: KIND[f.type] }, ...(uses ? { uses } : {}) }, { id: f.id });
+  }
+  // Each spell once, with how it is ready (dnd5e's preparation): always prepared from a feature, prepared today, or
+  // known (cantrips and the spells of a class that does not prepare).
+  const prep = new Map<string, { mode: string; prepared: boolean }>();
+  for (const line of sheet.casting) {
+    for (const p of line.cantripsKnown) prep.set(p.id, { mode: "prepared", prepared: true });
+    for (const p of line.granted) prep.set(p.id, { mode: "always", prepared: true });
+    for (const p of line.spells) if (!prep.has(p.id)) prep.set(p.id, { mode: "prepared", prepared: p.granted || !line.prepare || p.prepared });
+  }
+  for (const [id, preparation] of prep) {
     const el = r.reg.get(id);
-    if (el) add("spell", el.name, { level: Number(el.setters.level?.value) || 0, school: (el.setters.school?.value ?? "").slice(0, 3).toLowerCase(), description: { value: el.description } });
+    if (el) add("spell", el.name, { level: Number(el.setters.level?.value) || 0, school: FSCHOOL[(el.setters.school?.value ?? "").toLowerCase()] ?? "", preparation, description: { value: el.description } }, { id });
   }
   for (const it of c.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;

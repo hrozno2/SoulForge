@@ -2,7 +2,7 @@ import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
-import { stripHtml, type SheetData } from "../aurora/sheet";
+import { everySpellOf, readySpells, stripHtml, type SheetData } from "../aurora/sheet";
 import { playTips } from "./tips";
 import { drawSoulForgeSheet } from "./sheetSF";
 import { buildFillData } from "../sheets/data";
@@ -18,6 +18,11 @@ export interface PdfOptions {
   tips?: boolean;
   /** The spell pages list every spell the character can prepare, not only the prepared ones. */
   allSpells?: boolean;
+  /**
+   * Which spells get a card: "prepared" (the default: cantrips, always-prepared and prepared spells, as the spell
+   * table) or "all" (every spell the character can prepare, a cleric's whole list).
+   */
+  spellCardScope?: "prepared" | "all";
   /** Translate the printed text. Names the player typed are kept as they are. */
   translate?: {
     target: string;
@@ -239,9 +244,9 @@ function drawTips(pdf: PDFDocument, f: Fonts, r: Resolved, sh: SheetData, size: 
 
 // ---------------------------------------------------------------- entry
 
-function cardSources(r: Resolved, sh: SheetData) {
+export function cardSources(r: Resolved, sh: SheetData, scope: "prepared" | "all" = "prepared") {
   const spellIds = new Set<string>();
-  for (const c of sh.casting) for (const p of [...c.cantripsKnown, ...c.spells.filter((s) => s.prepared || !c.prepare), ...c.granted]) spellIds.add(p.id);
+  for (const c of sh.casting) for (const p of scope === "all" ? everySpellOf(r, c) : readySpells(c)) spellIds.add(p.id);
   const spells = [...spellIds].map((id) => r.reg.get(id)).filter((e): e is AElement => !!e)
     .sort((a, b) => Number(a.setters.level?.value ?? 0) - Number(b.setters.level?.value ?? 0) || a.name.localeCompare(b.name));
   const items = r.character.inventory.map((i) => ({ el: i.id ? r.reg.get(i.id) : undefined, qty: i.qty })).filter((x): x is { el: AElement; qty: number } => !!x.el);
@@ -257,7 +262,7 @@ export async function buildPdf(r: Resolved, sh: SheetData, opts: PdfOptions, fon
   const keep = new Set<string>([r.character.name, ...Object.values(r.character.info)].map((x) => String(x ?? "").trim()).filter(Boolean));
   if (t.keepNames !== false) {
     // Names of what is printed stay as they are; the descriptions around them are translated.
-    const src = cardSources(r, sh);
+    const src = cardSources(r, sh, opts.spellCardScope);
     for (const e of [...src.spells, ...src.items.map((i) => i.el)]) keep.add(e.name);
     for (const f of src.features) keep.add(f.name);
     for (const i of r.character.inventory) { const n = i.id ? r.reg.get(i.id)?.name : i.custom?.name; if (n) keep.add(n); }
@@ -289,7 +294,7 @@ async function buildPdfOnce(r: Resolved, sh: SheetData, opts: PdfOptions, fonts:
   const size = PAPER[opts.paper];
   if (opts.sheet) await drawSoulForgeSheet(pdf, f, buildFillData(r, sh, { allSpells: opts.allSpells }), size, clean);
 
-  const src = cardSources(r, sh);
+  const src = cardSources(r, sh, opts.spellCardScope);
   const cards: CardData[] = [];
   if (opts.spellCards) cards.push(...src.spells.map(spellCard));
   if (opts.itemCards) cards.push(...src.items.map((x) => itemCard(x.el, x.qty)));
@@ -301,7 +306,7 @@ async function buildPdfOnce(r: Resolved, sh: SheetData, opts: PdfOptions, fonts:
   return pdf.save();
 }
 
-export function cardCounts(r: Resolved, sh: SheetData): { spells: number; items: number; features: number } {
-  const s = cardSources(r, sh);
+export function cardCounts(r: Resolved, sh: SheetData, scope: "prepared" | "all" = "prepared"): { spells: number; items: number; features: number } {
+  const s = cardSources(r, sh, scope);
   return { spells: s.spells.length, items: s.items.length, features: s.features.length };
 }

@@ -24,7 +24,7 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
   const [opts, setOpts] = useState<PdfOptions>(() => ({ ...DEFAULT_PDF_OPTIONS, paper: getSettings().paper }));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
-  const counts = cardCounts(r, sheet);
+  const counts = cardCounts(r, sheet, opts.spellCardScope);
   const prepares = sheet.casting.some((c) => c.prepare);
   const [allSpells, setAllSpells] = useState(getSettings().allSpells);
   const tr = useTranslation();
@@ -62,6 +62,12 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
           <p className="muted">A sheet in Soul Forge's own layout, with optional cards and play tips. Use this if you have no official sheet loaded.</p>
           <label className="check"><input type="checkbox" checked={opts.sheet} onChange={() => toggle("sheet")} /> Character sheet</label>
           <label className="check"><input type="checkbox" checked={opts.spellCards} onChange={() => toggle("spellCards")} /> Spell cards <small>{counts.spells}</small></label>
+          {opts.spellCards && prepares && (
+            <div className="row indent">
+              <span className="muted">Cards for</span>
+              {(["prepared", "all"] as const).map((k) => <button key={k} className={(opts.spellCardScope ?? "prepared") === k ? "pill active" : "pill"} onClick={() => setOpts((o) => ({ ...o, spellCardScope: k }))}>{k === "prepared" ? "Prepared spells only" : "Every spell I can prepare"}</button>)}
+            </div>
+          )}
           <label className="check"><input type="checkbox" checked={opts.itemCards} onChange={() => toggle("itemCards")} /> Item cards <small>{counts.items}</small></label>
           <label className="check"><input type="checkbox" checked={opts.featureCards} onChange={() => toggle("featureCards")} /> Feat and feature cards <small>{counts.features}</small></label>
           <label className="check"><input type="checkbox" checked={!!opts.tips} onChange={() => setOpts((o) => ({ ...o, tips: !o.tips }))} /> Tips and tricks for play <small>1-2 pages</small></label>

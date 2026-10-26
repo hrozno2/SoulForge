@@ -18,6 +18,15 @@ Rules for each item:
 
 ### Overnight log
 - 2026-10-26 20:40: hand-off from the evening session; next item A2.1.
+- 2026-10-26 21:30: A2.1 and A2.2 done (one rule for ready spells, card scope option, guard src/pdf/spellScope.test.ts).
+- 2026-10-26 21:30: A2.4 in progress. New guard src/aurora/foundryRoundTrip.test.ts (24 random characters exported to
+  Foundry and imported back; nothing lost, nothing added). Done: exported items carry flags.soulforge.id and the
+  importer uses it for class, subclass, species (with lineages), background and feats; species named with the lineage;
+  dnd5e school keys (transmutation "trs"); spell preparation; class identifiers; class/species/background features
+  with uses. Importer fix: a prepared spell on a whole-list class (cleric, druid, paladin) is no longer added by hand.
+  Left (the test still fails on these 4): two Artificers get an extra prepared spell added by hand (Dragon's Breath,
+  Catapult: check whether the artificer line counts as a whole-list caster and the spell's list tags), and a
+  Sorcerer 7 swaps Color Spray for Detect Magic. Then the saved-sheet comparison, strike A2.4, commit.
 
 ### Questions for Chris
 - A2.3: shop price multiplier per character or an app setting, and the selling price rule (half at 1.0?).

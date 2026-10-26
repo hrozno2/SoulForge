@@ -942,7 +942,11 @@ class Importer {
     // A wizard's spellbook holds more than the level-up picks (copied spells): those are kept, as additions.
     const spellbookOf = (e: { name: string }) => r.slots.some((s) => /spellbook/i.test(s.rule.name) && (s.rule.spellcasting ?? "").toLowerCase() === e.name.toLowerCase());
     const onClassList = el.type === "Spell" && [...r.spellcasting.values()].some((e) => prepares(e) && !spellbookOf(e) && e.lists.some((l) => el.supports.includes(l)));
-    if (!fits2.length && onClassList && !filePrepared) {
+    // A spell on the list of a class that prepares from its whole list (a cleric's, a druid's) needs no choice: it is
+    // on the list already, and prepared (below, from the file's marks) if the file says so. Adding it by hand would
+    // give the character a second copy outside the class.
+    const leveled = Number(el.setters.level?.value ?? 0) > 0;
+    if (!fits2.length && onClassList && (!filePrepared || (leveled && !this.deferring))) {
       this.matched.push(`${el.name} (on the class spell list)`);
       return ch;
     }
@@ -1107,30 +1111,46 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   if (votes.length) b.edition = votes.filter((v) => v === "2024").length > votes.length / 2 ? "2024" : "2014";
   const subclasses: string[] = [];
   let speciesSet = false;
+  // An item Soul Forge exported names its element (flags.soulforge.id): when the content has it, that is the one.
+  const sfEl = (it: Json): AElement | undefined => { const id = it.flags?.soulforge?.id; return typeof id === "string" ? reg.get(id) : undefined; };
   for (const it of items) {
     const name = String(it.name ?? "");
     const isys: Json = it.system ?? {};
     if (!name) continue;
     switch (it.type as string) {
       case "class": {
-        const el = findByName(reg, ["Class"], name, ruleOf(it) ?? b.edition);
+        const own = sfEl(it);
+        const el = own?.type === "Class" ? own : findByName(reg, ["Class"], name, ruleOf(it) ?? b.edition);
         if (el) {
           b.ch.classes.push({ classId: el.id, level: Math.max(1, Math.min(20, Number(isys.levels) || 1)) });
           b.matched.push(`${el.name} (class)`);
         } else b.missing.push(`${name} (class)`);
         break;
       }
-      case "subclass":
-        subclasses.push(name);
+      case "subclass": {
+        const own = sfEl(it);
+        subclasses.push(own?.type === "Archetype" ? own.name : name);
         break;
-      case "race":
+      }
+      case "race": {
+        // Exported by Soul Forge: the species and its lineages by id (flags.soulforge).
+        const own = sfEl(it);
+        if (own?.type === "Race") {
+          b.ch.race = own.id;
+          b.matched.push(`${own.name} (species)`);
+          for (const id of (it.flags?.soulforge?.lineages ?? []) as string[]) { const l = reg.get(id); if (l) b.want(["Sub Race", "Race Variant", "Racial Trait"], l.name, "subrace or lineage", [], undefined, l.edition); }
+          speciesSet = true;
+          break;
+        }
         // "Tiefling, Infernal" also names the legacy to choose.
         b.addName(name);
         speciesSet = b.setSpecies(name);
         if (!speciesSet) b.missing.push(`${name} (species)`);
         break;
+      }
       case "background": {
-        const el = findByName(reg, ["Background"], name, ruleOf(it) ?? b.edition) ?? findByName(reg, ["Background"], name.replace(/^variant\s+/i, "").replace(/\s*\(.*\)\s*$/, ""), b.edition) ?? findByName(reg, ["Background"], /\((.*)\)/.exec(name)?.[1] ?? "", b.edition);
+        const own = sfEl(it);
+        const el = own?.type === "Background" ? own : findByName(reg, ["Background"], name, ruleOf(it) ?? b.edition) ?? findByName(reg, ["Background"], name.replace(/^variant\s+/i, "").replace(/\s*\(.*\)\s*$/, ""), b.edition) ?? findByName(reg, ["Background"], /\((.*)\)/.exec(name)?.[1] ?? "", b.edition);
         if (el) {
           b.ch.background = el.id;
           b.matched.push(`${el.name} (background)`);
@@ -1142,7 +1162,9 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
         // Plutonium stores species traits ("Age", "Languages", "Speed") and background features as untyped feats.
         const kind = String(isys.type?.value ?? "");
         const trait = /^(age|alignment|size|speed|languages?|creature type|darkvision|feature:|variant feature|optional rule|infusions?:|ability score (increase|improvement)s?$)/i.test(name);
-        if (kind === "feat" || (!kind && !trait)) b.want(["Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature"], name, "feat", [], undefined, ruleOf(it));
+        const ownFeat = sfEl(it);
+        if (ownFeat?.type === "Feat") b.want(["Feat"], ownFeat.name, "feat", [], undefined, ownFeat.edition);
+        else if (kind === "feat" || (!kind && !trait)) b.want(["Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature"], name, "feat", [], undefined, ruleOf(it));
         else b.addName(name);
         break;
       }

@@ -624,6 +624,27 @@ export function headerInfo(r: Resolved): HeaderInfo {
  * The spells a prepared caster chooses from: the spells they know (a wizard's spellbook) or, for casters like the
  * Cleric, the whole class list up to the highest slot level, one version of each spell from the class's edition.
  */
+/**
+ * The spells a casting line has ready: its cantrips, the always-prepared ones, and the prepared ones. When the player
+ * has marked none prepared, every spell the line has chosen counts (a 2024 cleric's choices are its prepared
+ * spells). The one rule for the sheet's spell table and the spell cards, so the two never disagree.
+ */
+export function readySpells(line: CastingLine): SpellPick[] {
+  const anyPrepared = line.spells.some((s) => s.prepared);
+  return [...line.cantripsKnown, ...(line.prepare && anyPrepared ? [...line.granted, ...line.spells.filter((s) => s.prepared)] : [...line.spells, ...line.granted])];
+}
+
+/**
+ * Every spell a line can use: the ready ones and, for a class that prepares from its whole list (a cleric, a druid,
+ * a wizard's spellbook), everything it could prepare. For the sheet's "every spell I can prepare" and the cards.
+ */
+export function everySpellOf(r: Resolved, line: CastingLine): SpellPick[] {
+  const ready = readySpells(line);
+  if (!line.prepare) return ready;
+  const have = new Set(ready.map((p) => p.id));
+  return [...ready, ...preparePool(r, line).filter((e) => !have.has(e.id)).map((e) => ({ id: e.id, casting: line.name, granted: false, prepared: false }))];
+}
+
 export function preparePool(r: Resolved, line: CastingLine): AElement[] {
   const entry = r.spellcasting.get(line.name.toLowerCase());
   if (!entry) return [];

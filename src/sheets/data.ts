@@ -1,7 +1,7 @@
 import { isModern } from "../aurora/edition";
 import { companionHtml } from "../aurora/companion";
 import type { Resolved } from "../aurora/engine";
-import { headerInfo, preparePool, type SheetData } from "../aurora/sheet";
+import { headerInfo, preparePool, readySpells, type SheetData } from "../aurora/sheet";
 import { ABILITY_IDS, ABILITY_LABEL, SKILL_ABILITY, itemLabel, type AbilityId, type InvItem } from "../aurora/character";
 
 export interface SpellRow {
@@ -234,8 +234,7 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     // 2024 classes all prepare spells, whether or not the content says so.
     const lineClass = ch.classes.map((k) => r.reg.get(k.classId)).find((e) => e?.name === c.name);
     fixedLine = c.prepare || (lineClass && isModern(lineClass)) ? null : lineClass ? "known" : "always";
-    const anyPrepared = c.spells.some((s) => s.prepared);
-    const list = [...c.cantripsKnown, ...(c.prepare && anyPrepared ? [...c.granted, ...c.spells.filter((s) => s.prepared)] : [...c.spells, ...c.granted])];
+    const list = readySpells(c);
     // One line per spell name: the 2014 and 2024 versions of a spell (one from a domain, one chosen) are the same spell.
     const nameOf = (id: string) => (r.reg.get(id)?.name ?? id).toLowerCase().replace(/[’']/g, "'");
     const byGrantFirst = [...list].sort((a, b) => Number(!!b.granted) - Number(!!a.granted));

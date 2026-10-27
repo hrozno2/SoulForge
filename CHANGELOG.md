@@ -2,6 +2,29 @@
 
 What changed in each release. Newest first.
 
+## v0.19.0 (2026-10-27)
+
+- A1.9 ability score increases: +2 to one ability and Foundry's check-box grid; A1.10; A2.9 modern technology filter; A2.4 round trip clean
+- RESUME: import recheck, two characters left
+- Importer: keep spells over the prepared limit; Drakim comparison test; plan A2.10
+- Plan: A1.9 check-box grid for increases, A1.10 apostrophe capitals, A2.9 modern technology filter
+- Plan: A1.9 ability score improvement +2 to one ability, first item tonight
+- A2.4 Foundry round trip clean: spell sources, a feat's own choices, exact placement by identity
+- A2.1, A2.2 spell cards follow the sheet; A2.4 Foundry export/import by identity (in progress)
+- RESUME: overnight run instructions
+- A1.1 2024 rules for 2014 backgrounds; A1.7 FastCharacter imports; class proficiency gate against 5e.tools
+- Unsupported playtest content: shown as Coming soon, never picked
+- Plan: Unearthed Arcana in scope (A4), unsupported list
+- Starting gear that names only a kind is a choice, not text
+- Stat dictionary: the three playtest-only Artificer statistics decided; 0 unknown
+- Sheet: a feat and its feature of the same name print once (Telekinetic)
+- One switch turns a 2014 background's personality traits, ideals, bonds and flaws off
+- Optional and variant choices start not taken
+- Inventory: only real containers can hold items (a staff no longer could)
+- Master plan: engine first, then tests, then the interface
+- docs: plan for CachyOS test findings and interface rework
+- Resume notes: the user's list of 2026-10-23, stopped at the weekly usage limit
+
 ## v0.18.0 (2026-10-23)
 
 - Hit point rolls: a window from the HP bar, every roll kept with who made it, and a check of the app's rolls

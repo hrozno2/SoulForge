@@ -461,8 +461,14 @@ function convertItem(i: J, ctx: Ctx): AElement | null {
   // Something that holds other things (a backpack, a pouch, a bag of holding), for "Kept in" in the inventory.
   if (m.containerCapacity) supports.push("container");
   if (m.weight !== undefined) setters.weight = set(`${m.weight} lb.`, { lb: String(m.weight) });
-  const c = cost(m.value);
+  // A magic item without a price of its own keeps its base item's as "base cost" (a +1 Longsword is not 15 gp); the
+  // shop prices it by rarity on top when the character uses rarity prices, as Plutonium does (src/aurora/shop.ts).
+  const ownless = magic && i.value == null && b.value != null;
+  const c = cost(ownless ? undefined : m.value);
   if (c) setters.cost = c;
+  const bc = ownless ? cost(b.value) : undefined;
+  if (bc) setters["base cost"] = bc;
+  if (magic && (m.miscTags ?? []).includes("CNS")) setters.consumable = set("true");
   if (magic) setters.rarity = set(`${cap(String(m.rarity))}${m.reqAttune ? " (requires attunement)" : ""}`);
   if (weapon) {
     if (m.dmg1) setters.damage = set(String(m.dmg1), { type: DMG[m.dmgType] ?? "" });

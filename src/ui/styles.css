@@ -1340,6 +1340,10 @@ body::after { content: ""; position: fixed; right: 18px; bottom: 54px; width: 12
 .rules-check-head .chev { margin-left: auto; color: var(--muted); }
 .rules-check ul { margin: 0; padding: 4px 14px 10px 30px; }
 .rules-check li { margin: 3px 0; }
+/* A character from an older Soul Forge: what no longer lines up (src/ui/RulesCheck.tsx OlderBuildNotice). */
+.older-build { max-width: 1100px; margin: 10px auto 0; padding: 10px 14px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 4px; background: var(--panel); }
+.older-build p { margin: 0 0 6px; }
+.older-build ul { margin: 0 0 8px; padding-left: 20px; }
 .rules-export-note { margin: 0 0 10px; padding: 7px 12px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 4px; background: var(--panel); }
 
 /* ================= Build board (on trial in the test app) ================= */

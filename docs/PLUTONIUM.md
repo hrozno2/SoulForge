@@ -75,3 +75,14 @@ worth a check against our choices once the matching above is by fields.
 - **Playtest sources.** Plutonium counts a source as prerelease (playtest) when its code starts with "UA" or "XUA" (the
   One D&D playtest), and names it "Unearthed Arcana: ...". Soul Forge names 5e.tools' playtest codes the same way, so
   they count as playtest and meet Aurora's copy (fivetools.ts, srcName).
+
+## Equipment shop (A2.3, 2026-10-27)
+
+- One global "Price Multiplier" (config equipmentShop.priceMultiplier, default 1); Soul Forge keeps it per character.
+- Optional "Magic Item Values by Rarity" (2024 DMG p. 217): common 100 gp, uncommon 400, rare 4,000, very rare 40,000,
+  legendary 200,000, artifact none; the base item's value is added and consumables cost half. Used only when the item
+  has no value of its own. Soul Forge: `rarityPrices` per character.
+- Spending works on a copper total; the remaining coins are rebuilt to look like the purse before (never more of the
+  largest coin than it held, change capped by what the next coin up could give). Soul Forge pays smallest coins first
+  and gives change in the largest coins, which keeps the same property.
+- No selling. A class's starting gold can be rolled ("goldAlternative" dice) or set to a fixed amount in the config.

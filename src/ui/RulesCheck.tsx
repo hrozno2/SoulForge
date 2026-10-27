@@ -8,6 +8,11 @@ import { buildSheet } from "../aurora/sheet";
 import { checkCharacter, type Finding } from "../aurora/rulesCheck";
 import { ensureRulesRef, onRulesRef, rulesRef } from "../aurora/rulesRefStore";
 import { RULES_REF_CLASSES } from "../aurora/rulesRef";
+import { markChecked, misalignments } from "../aurora/olderBuild";
+import type { Character } from "../aurora/character";
+
+declare const __APP_VERSION__: string;
+export const APP_VERSION = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev";
 
 /** Choices still to make are shown by the Build tab's badges; the check lists only the rest. */
 const OPEN_CHOICE = /^A required choice is not made$/;
@@ -96,5 +101,36 @@ export function ExportRulesNote({ r }: { r: Resolved }) {
     <p className="rules-export-note noprint" role="note">
       <b>Rules check:</b> {res.rules.length} {res.rules.length === 1 ? "thing breaks" : "things break"} the rules ({res.rules.slice(0, 2).map((f) => f.rule.toLowerCase()).join("; ")}{res.rules.length > 2 ? "; ..." : ""}). The sheets show the character as it is; the details are on Build.
     </p>
+  );
+}
+
+/**
+ * A character saved by an older Soul Forge, opened in this version: what no longer lines up (picks a choice no longer
+ * offers, content that is gone, what the rules check now finds), listed once. "Got it" marks it checked in this
+ * version; a character with nothing to report is marked without a word.
+ */
+export function OlderBuildNotice({ r, set }: { r: Resolved; set: (fn: (c: Character) => Character) => void }) {
+  const res = useRulesCheck(r);
+  const items = useMemo(() => misalignments(r, [...res.rules, ...res.content]), [r, res]);
+  const ready = res.full;
+  useEffect(() => {
+    if (ready && !items.length) set((c) => markChecked(c, APP_VERSION));
+  }, [ready, items.length, set]);
+  useEffect(() => {
+    if (ready && items.length) logEvent("older-build", `${r.character.name || "a character"} from ${r.character.checkedWith ?? "an older version"}: ${items.length} not aligned`);
+  }, [ready, items.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!ready || !items.length) return null;
+  return (
+    <section className="older-build" role="status" aria-label="Changes since this character was saved">
+      <p>
+        <b>{r.character.name || "This character"} was saved {r.character.checkedWith ? `in Soul Forge ${r.character.checkedWith}` : "by an older Soul Forge"}.</b>{" "}
+        {items.length === 1 ? "One thing no longer lines up" : `${items.length} things no longer line up`} with this version's content and rules:
+      </p>
+      <ul>
+        {items.slice(0, 12).map((f, i) => <li key={i}><b>{f.rule}:</b> {f.detail}</li>)}
+        {items.length > 12 && <li className="muted">and {items.length - 12} more (the rules check on Build lists them)</li>}
+      </ul>
+      <button onClick={() => set((c) => markChecked(c, APP_VERSION))}>Got it</button>
+    </section>
   );
 }

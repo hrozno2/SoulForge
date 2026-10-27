@@ -53,7 +53,11 @@ export default defineConfig({
   plugins: [react(), testContent()],
   // One id per build (per start of the development server), so caches of converted content are redone after an
   // update: the converter's output depends on the code.
-  define: { __BUILD_ID__: JSON.stringify(`${JSON.parse(readFileSync("package.json", "utf8")).version}-${Date.now()}`) },
+  define: {
+    __BUILD_ID__: JSON.stringify(`${JSON.parse(readFileSync("package.json", "utf8")).version}-${Date.now()}`),
+    // The version a character was last checked in (src/aurora/olderBuild.ts).
+    __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync("package.json", "utf8")).version),
+  },
   build: {
     chunkSizeWarningLimit: 900,
     rollupOptions: {

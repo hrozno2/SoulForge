@@ -223,6 +223,12 @@ export interface Character {
   resources: Resource[];
   /** What the starting equipment dialog has already added, so it can fold away. */
   equipmentAdded?: string[];
+  /** The Soul Forge version this character was last checked in (src/aurora/olderBuild.ts); unset for older saves. */
+  checkedWith?: string;
+  /** The shop's price multiplier for this character (its table's), 1 when unset (src/aurora/shop.ts). */
+  priceMultiplier?: number;
+  /** Magic items without a price cost their rarity's value (the 2024 DMG's table), as Plutonium's option does. */
+  rarityPrices?: boolean;
   /** Items features gave ("equipment:<id>" statistics) already put in the inventory, so a removed one does not return. */
   grantedItemsAdded?: string[];
   /** What each starting equipment label added, so choosing another option can take it back out. */

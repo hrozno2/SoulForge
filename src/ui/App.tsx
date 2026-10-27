@@ -1,6 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { logEvent, timed } from "../logbook";
 import { withGrantedItems } from "../aurora/grantedItems";
+import { checkDue } from "../aurora/olderBuild";
 import { ConfirmHost } from "./Confirm";
 import { BugReport } from "./BugReport";
 import { t } from "../i18n";
@@ -29,7 +30,7 @@ import { runAutoBackup } from "../aurora/backup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
 import { ImportNotes, ImportReport, importReportText } from "./ImportReport";
-import { ruleProblems } from "./RulesCheck";
+import { APP_VERSION, OlderBuildNotice, ruleProblems } from "./RulesCheck";
 import { loadTestContent, makeTestBatch, testExport, testToolsEnabled } from "./TestTools";
 import { listCharacters } from "../aurora/storage";
 import { Tutorial, tutorialWanted } from "./Tutorial";
@@ -149,7 +150,7 @@ export function App() {
   const open = (nid: string, ch: Character) => { setId(nid); setCharacter(normalizeCharacter(ch)); setTab("build"); };
   const random = (level: number) => {
     const p = getSettings();
-    open(uid(), randomCharacter(content.reg, level, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual, scifi: p.showSciFi, modern: p.showModern }));
+    open(uid(), { ...randomCharacter(content.reg, level, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual, scifi: p.showSciFi, modern: p.showModern }), checkedWith: APP_VERSION });
   };
   const [testMsg, setTestMsg] = useState("");
   const [report, setReport] = useState<{ name: string; res: ForeignImport; rules: string[] } | null>(null);
@@ -180,7 +181,8 @@ export function App() {
       // The report stays with the character (Import notes, beside Level up), to read again or add to the notes.
       const rules = ruleProblems(resolve(res.character, content.reg));
       const text = importReportText(res, file.name, new Date(), rules);
-      res.character = { ...res.character, importReport: text };
+      // The import report lists what does not line up; the older-build notice would repeat it.
+      res.character = { ...res.character, importReport: text, checkedWith: APP_VERSION };
       open(uid(), res.character);
       setReport({ name: res.character.name, res, rules });
       return `Imported ${res.character.name || "the character"}.`;
@@ -303,6 +305,7 @@ export function App() {
       {tutorialOpen && introOver && <Tutorial step={tutorialStep} setStep={setTutorialStep} minimized={tutorialMin} setMinimized={setTutorialMin} onClose={() => { setTutorialOpen(false); setTutorialMin(false); }} onGo={(t) => setTab(t as Tab)} content={content} onImportForeign={importForeign} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       {levelUpOpen && <Suspense fallback={null}><LevelUp r={r} ch={character} set={set} onDetail={setDetail} onClose={() => setLevelUpOpen(false)} /></Suspense>}
+      {checkDue(character, APP_VERSION) && !loading.current && <OlderBuildNotice key={id} r={r} set={set} />}
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} dismiss={updater.dismiss} />
       <main className={[showDetail ? "with-detail" : "", tab === "build" && board ? "wide" : ""].filter(Boolean).join(" ")}>
         <div className="pane">
@@ -316,7 +319,7 @@ export function App() {
             </div>
           )}
           <Suspense fallback={<p className="muted">Loading...</p>}>
-          {tab === "start" && <StartTab currentId={id} onOpen={open} onNew={() => open(uid(), newCharacter())} onRandom={random} contentReady={content.ready} sourceCount={content.sources.length} goContent={() => setTab("content")} onImportForeign={importForeign} reg={content.reg} />}
+          {tab === "start" && <StartTab currentId={id} onOpen={open} onNew={() => open(uid(), { ...newCharacter(), checkedWith: APP_VERSION })} onRandom={random} contentReady={content.ready} sourceCount={content.sources.length} goContent={() => setTab("content")} onImportForeign={importForeign} reg={content.reg} />}
           {tab === "build" && (
             <>
               {!board && <div className="namebar"><input placeholder="Character name" value={character.name} onChange={(e) => set((c) => ({ ...c, name: e.target.value }))} /></div>}

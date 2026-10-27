@@ -119,7 +119,8 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
     else if (chosen.length < rule.number) next = [...(slot.defaulted ? [] : chosen), el.id];
     else return;
     commit(next);
-    if (rule.number === 1) setOpen(false);
+    // A one-pick choice folds once its pick is made (or swapped); deselecting never folds it (C1.2).
+    if (rule.number === 1 && next.length) setOpen(false);
   };
   const swap = (from: AElement, to: AElement) => {
     if (slot.blocked.has(to.id)) return;

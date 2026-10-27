@@ -1788,11 +1788,30 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .char-card-name { font: 700 26px var(--display); line-height: 1.05; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.7); overflow-wrap: anywhere; }
 .char-card-what { font: 500 13.5px var(--body); color: #e4dccb; }
 .char-card-bg { font: 400 12px var(--body); color: var(--gold2); letter-spacing: .04em; }
-.char-card-stats { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-.char-card-stats > span { display: flex; flex-direction: column; align-items: center; min-width: 40px; padding: 3px 6px; border-radius: 6px; background: rgba(10,8,6,.55); border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); }
+.char-card-stats { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.cc-row { display: flex; align-items: stretch; gap: 5px; position: relative; }
+.cc-row > span, .cc-rest > span { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 6px; border-radius: 6px; background: rgba(10,8,6,.55); border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); }
 .char-card-stats small { font: 600 9px var(--body); letter-spacing: .1em; color: var(--muted); }
 .char-card-stats b { font: 700 15px var(--display); color: #fff; line-height: 1.1; }
+.char-card-stats b small { font: 600 11px var(--body); letter-spacing: 0; }
 .char-card-stats em { font: 600 10px var(--body); font-style: normal; color: var(--gold2); }
+.cc-ab { min-width: 40px; }
+/* Hit points: a bar of current over maximum, the numbers under it. */
+.cc-row > .cc-hp { flex: 1 1 auto; min-width: 86px; align-items: stretch; gap: 2px; }
+.cc-hp-bar { display: block; height: 7px; border-radius: 4px; background: #0008; overflow: hidden; }
+.cc-hp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #3f8f4f, #6cbc7a); }
+.cc-hp-bar.low i { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 60%, #000), var(--accent)); }
+.cc-hp b { text-align: center; }
+/* Armor class inside a small shield. */
+.cc-row > .cc-ac { position: relative; width: 38px; padding: 0; background: none; border: 0; }
+.cc-ac svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: rgba(10,8,6,.6); stroke: color-mix(in srgb, var(--gold) 70%, transparent); stroke-width: 1.4; }
+.cc-ac b { position: relative; }
+/* The "+" box: the other three ability scores come in beside it on hover (or when the card has focus). */
+.cc-row > .cc-more { min-width: 22px; padding: 0 6px; font: 700 14px var(--display); color: var(--gold2); cursor: default; }
+/* The other three come in as a row over the first one (the card is too narrow beside them and too short below). */
+.cc-rest { position: absolute; z-index: 3; left: 0; bottom: calc(100% + 6px); display: flex; gap: 5px; opacity: 0; transform: translateY(5px); pointer-events: none; transition: opacity .15s, transform .15s; }
+.cc-rest > span { background: rgba(10,8,6,.92); }
+.cc-more:hover .cc-rest, .char-card-body:focus-visible .cc-rest { opacity: 1; transform: none; }
 .char-card-when { color: var(--muted); font-size: 11.5px; margin-top: 6px; }
 .char-card-tools { position: absolute; bottom: 16px; right: 16px; z-index: 4; display: flex; gap: 5px; opacity: 0; transition: opacity .15s; }
 .char-card:hover .char-card-tools, .char-card:focus-within .char-card-tools { opacity: 1; }

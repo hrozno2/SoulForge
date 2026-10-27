@@ -124,7 +124,11 @@ function CharCard({ rec, reg, current, onOpen, onDuplicate, onExport, onDelete }
         firstClass: name(ch.classes[0]?.classId) ?? "",
         species: name(ch.race) ?? "", background: name(ch.background) ?? "",
         level: r.totalLevel, hp: sh.hp, ac: sh.ac.value, speed: sh.speed,
+        // Current hit points as the Play tab keeps them (unset: full).
+        hpNow: Math.max(0, Math.min(sh.hp, ch.play.hp ?? sh.hp)),
+        // The three best scores on the card, the other three behind the "+" (in the sheet's order).
         top: [...sh.abilities].sort((a, b) => b.score - a.score).slice(0, 3),
+        rest: sh.abilities.filter((a) => ![...sh.abilities].sort((x, y) => y.score - x.score).slice(0, 3).includes(a)),
       };
     } catch {
       return null;
@@ -145,10 +149,28 @@ function CharCard({ rec, reg, current, onOpen, onDuplicate, onExport, onDelete }
           {info?.background && <span className="char-card-bg">{info.background}</span>}
           {info && info.level > 0 && (
             <span className="char-card-stats">
-              <span><small>HP</small><b>{info.hp}</b></span>
-              <span><small>AC</small><b>{info.ac}</b></span>
-              <span><small>Speed</small><b>{info.speed}</b></span>
-              {info.top.map((a) => <span key={a.id}><small>{a.id.slice(0, 3).toUpperCase()}</small><b>{a.score}</b><em>{SIGNED(a.mod)}</em></span>)}
+              {/* First row: hit points as a bar, armor class on a shield, walking speed (C1.0b). */}
+              <span className="cc-row">
+                <span className="cc-hp" title={`Hit points ${info.hpNow} of ${info.hp}`}>
+                  <span className={`cc-hp-bar ${info.hp && info.hpNow / info.hp < 0.25 ? "low" : ""}`}><i style={{ width: `${info.hp ? Math.round((info.hpNow / info.hp) * 100) : 0}%` }} /></span>
+                  <b>{info.hpNow}<small> / {info.hp}</small></b>
+                </span>
+                <span className="cc-ac" title="Armor class">
+                  <svg viewBox="0 0 24 28" aria-hidden="true"><path d="M12 1 2 5v8c0 6.5 4.3 11.6 10 14 5.7-2.4 10-7.5 10-14V5z" /></svg>
+                  <b>{info.ac}</b>
+                </span>
+                <span className="cc-speed" title="Walking speed"><small>Speed</small><b>{info.speed}</b></span>
+              </span>
+              {/* Second row: the three best ability scores; the "+" shows the other three on hover. */}
+              <span className="cc-row">
+                {info.top.map((a) => <span key={a.id} className="cc-ab"><small>{a.id.slice(0, 3).toUpperCase()}</small><b>{a.score}</b><em>{SIGNED(a.mod)}</em></span>)}
+                <span className="cc-more" aria-label={`Other abilities: ${info.rest.map((a) => `${a.id} ${a.score}`).join(", ")}`}>
+                  +
+                  <span className="cc-rest">
+                    {info.rest.map((a) => <span key={a.id} className="cc-ab"><small>{a.id.slice(0, 3).toUpperCase()}</small><b>{a.score}</b><em>{SIGNED(a.mod)}</em></span>)}
+                  </span>
+                </span>
+              </span>
             </span>
           )}
           <small className="char-card-when">Edited {ago(rec.updated)}</small>

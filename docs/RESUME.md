@@ -90,6 +90,8 @@ Rules for each item:
   the two imports (Aria, Mr. Smith) fixed (one rule for which classes prepare; a prepared spell that lands nowhere is
   kept by hand). All imported characters match the saved sheets.
 
+- 2026-10-27 07:45: released v0.19.0 (standard rules check passed; before 9:00 so no full coverage). Next: A2.10 export.
+
 ### Questions for Chris
 - A2.3: shop price multiplier per character or an app setting, and the selling price rule (half at 1.0?).
 - Drakim: Foundry's actor knows Giant (and Common), Soul Forge's also Orc. Which is right? (A difference between the two builds.)

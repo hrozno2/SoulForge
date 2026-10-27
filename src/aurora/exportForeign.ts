@@ -5,6 +5,7 @@
  */
 import { ABILITY_IDS, itemLabel, type AbilityId } from "./character";
 import type { Resolved } from "./engine";
+import type { AElement } from "./types";
 import { buildSheet } from "./sheet";
 
 const ABBR: Record<AbilityId, string> = { strength: "str", dexterity: "dex", constitution: "con", intelligence: "int", wisdom: "wis", charisma: "cha" };
@@ -17,13 +18,17 @@ const rid = (n: number) => Array.from({ length: n }, () => "abcdefghijklmnopqrst
 /** dnd5e's spell school keys. */
 const FSCHOOL: Record<string, string> = { abjuration: "abj", conjuration: "con", divination: "div", enchantment: "enc", evocation: "evo", illusion: "ill", necromancy: "nec", transmutation: "trs" };
 
+const lineagesOf = (r: Resolved) => r.active.filter((a) => /^(Sub Race|Race Variant)$/.test(a.el.type)).map((a) => a.el);
+
 function details(r: Resolved) {
   const c = r.character;
   const nameOf = (id?: string) => (id ? r.reg.get(id)?.name ?? "" : "");
   const subEl = r.active.find((a) => a.el.type === "Archetype")?.el;
   // The species' subrace or lineage (Sea Elf, Water Genasi, White Dragonborn): named with it, as "Elf (Sea Elf)".
   const lineages = r.active.filter((a) => /^(Sub Race|Race Variant)$/.test(a.el.type)).map((a) => a.el);
-  const race = nameOf(c.race);
+  // The species' ancestry or legacy, as Foundry names it: "Dragonborn (Blue)".
+  const ancestry = r.slots.filter((x) => x.root === "race" && /ancestry|legacy|lineage|heritage/i.test(x.rule.name)).flatMap((x) => x.chosen).map((id) => r.reg.get(id)?.name).filter((n): n is string => !!n && !/ancestry|legacy/i.test(n));
+  const race = nameOf(c.race) + (ancestry.length && !lineagesOf(r).length ? ` (${ancestry.join("; ")})` : "");
   // Choices the species itself asks for (Fiendish Legacy, the legacy's spellcasting ability): the importer places them by id.
   const speciesPicks = r.slots.filter((x) => x.root === "race").flatMap((x) => x.chosen).map((id) => r.reg.get(id)).filter((e): e is NonNullable<typeof e> => !!e && e.type === "Racial Trait" && !lineages.includes(e));
   return {
@@ -32,6 +37,35 @@ function details(r: Resolved) {
     background: nameOf(c.background), subclass: subEl?.name ?? "", subclassId: subEl?.id,
     classes: c.classes.map((x) => ({ name: nameOf(x.classId), level: x.level, id: x.classId })),
   };
+}
+
+/**
+ * dnd5e's item type for an element: weapons by category (simpleM, martialR) with their base item, armour by weight, and
+ * gear by use: ammunition, potions and flasks, food, and gear that is used up are consumables; clothes, lamps and kits
+ * equipment; tools, kits and instruments tools; things that hold other things containers; the rest loot.
+ */
+export function foundryItemType(el: AElement | undefined, name: string): { type: string; system: Record<string, unknown> } {
+  const n = name.toLowerCase();
+  const key = n.replace(/\s*\(.*\)\s*/g, "").replace(/[^a-z]/g, "");
+  if (el?.type === "Weapon" || /^ID_INTERNAL_WEAPON_CATEGORY/.test(el?.supports.find((x) => x.startsWith("ID_INTERNAL_WEAPON_CATEGORY")) ?? "")) {
+    const cat = el?.supports.find((x) => x.startsWith("ID_INTERNAL_WEAPON_CATEGORY_")) ?? "";
+    const value = `${/MARTIAL/.test(cat) ? "martial" : "simple"}${/RANGED/.test(cat) ? "R" : "M"}`;
+    return { type: "weapon", system: { type: { value, baseItem: key } } };
+  }
+  if (el?.type === "Armor") {
+    const w = String(el.setters.armor?.value ?? "").toLowerCase();
+    const value = /shield/.test(n) || w === "shield" ? "shield" : w === "light" || w === "medium" || w === "heavy" ? w : "clothing";
+    return { type: "equipment", system: { type: { value, baseItem: key.replace(/armor$/, "") } } };
+  }
+  if (el?.supports.includes("container") || /^(backpack|pouch|sack|chest|barrel|basket|bag|waterskin|quiver|case|component pouch)\b/.test(n)) return { type: "container", system: {} };
+  if (/\b(tools|supplies|utensils|kit|set)\b/.test(n) && !/\b(mess kit|climber)/.test(n)) return { type: "tool", system: { type: { value: /\b(supplies|utensils|tools)\b/.test(n) && !/thieves|navigator/.test(n) ? "art" : "" } } };
+  if (/\b(arrows?|bolts?|bullets?|needles?|ammunition)\b/.test(n)) return { type: "consumable", system: { type: { value: "ammo" } } };
+  if (el?.type === "Magic Item" && /potion/i.test(String(el.setters.type?.value ?? ""))) return { type: "consumable", system: { type: { value: "potion" } } };
+  if (/\b(potion|oil|acid|alchemist's fire|holy water|antitoxin|perfume|poison)\b/.test(n)) return { type: "consumable", system: { type: { value: "potion" } } };
+  if (/\b(rations?|food|bread|cheese|meat|wine|ale)\b/.test(n)) return { type: "consumable", system: { type: { value: "food" } } };
+  if (/\b(torch|rope|caltrops|candle|ball bearings|chalk|pitons?|spikes|paper|parchment|ink|string|soap)\b/.test(n)) return { type: "consumable", system: { type: { value: "trinket" } } };
+  if (/\b(clothes|robes?|costume|vestments|tinderbox|lamp|lantern|bedroll|blanket|mess kit|mirror|signet|ring|amulet)\b/.test(n)) return { type: "equipment", system: { type: { value: "trinket" } } };
+  return { type: "loot", system: { type: { value: "gear" } } };
 }
 
 export function exportFoundry(r: Resolved): Record<string, unknown> {
@@ -59,17 +93,34 @@ export function exportFoundry(r: Resolved): Record<string, unknown> {
   // A feat's own choices go with it (Magic Initiate's list and ability, Resilient's ability, Skilled's skills), and
   // their choices in turn, so an import makes the same picks.
   const choicesUnder = (id: string, depth = 0): string[] => depth > 3 ? [] : r.slots.filter((s) => s.owner.id === id).flatMap((s) => s.chosen.flatMap((c) => [c, ...choicesUnder(c, depth + 1)]));
-  for (const f of sheet.features.filter((x) => x.type === "Feat")) add("feat", f.name, { description: { value: html(stripTags(f.text)) }, type: { value: "feat" } }, f.id ? { id: f.id, choices: choicesUnder(f.id) } : {});
+  const feats = sheet.features.filter((x) => x.type === "Feat");
   // Class, subclass, species and background features too, as dnd5e's feature items (type class, race, background),
   // with their uses ("3/Long Rest": three uses, all back on a long rest).
   const KIND: Record<string, string> = { "Class Feature": "class", "Archetype Feature": "class", "Optional Feature": "class", "Racial Trait": "race", "Background Feature": "background" };
-  // Optional features the sheet does not list (an invocation such as Book of Ancient Secrets, a metamagic option).
-  const listed = new Set(sheet.features.map((f) => f.id));
-  for (const a of r.active) if (a.el.type === "Optional Feature" && !listed.has(a.el.id)) { listed.add(a.el.id); add("feat", a.el.name, { description: { value: a.el.description }, type: { value: "class" } }, { id: a.el.id }); }
-  for (const f of sheet.features.filter((x) => KIND[x.type])) {
-    const u = /(\d+)\s*\/\s*(short|long)/i.exec(f.usage ?? "");
+  // Every feature the character has, also those the sheet does not show (Extra Attack, Bonus Proficiencies), named as
+  // Foundry names them: without "Level 5:", with straight apostrophes, an option with what it was chosen for
+  // ("Fighting Style: Interception", "Runes: Fire Rune"), a sense as a species feature ("Darkvision").
+  const usesOf = new Map(sheet.features.map((f) => [f.id, f]));
+  const chosenFor = new Map<string, string>();
+  for (const sl of r.slots) for (const id of sl.chosen) {
+    const label = /^fighting style\b/i.test(sl.rule.name) ? "Fighting Style" : /^runes?\b/i.test(sl.rule.name) ? "Runes" : undefined;
+    if (label) chosenFor.set(id, label);
+  }
+  const foundryName = (n: string, id: string) => {
+    const base = n.replace(/^level \d+:\s*/i, "").replace(/[’‘]/g, "'");
+    return chosenFor.has(id) ? `${chosenFor.get(id)}: ${base}` : base;
+  };
+  for (const f of feats) add("feat", foundryName(f.name, f.id), { description: { value: html(stripTags(f.text)) }, type: { value: "feat" } }, f.id ? { id: f.id, choices: choicesUnder(f.id) } : {});
+  const listed = new Set<string>();
+  for (const a of r.active) {
+    const kind = KIND[a.el.type] ?? (a.el.type === "Vision" ? "race" : undefined);
+    if (!kind || listed.has(a.el.id) || /\bsubclass$|^(level \d+: )?ability score improvement$/i.test(a.el.name)) continue;
+    listed.add(a.el.id);
+    const f = usesOf.get(a.el.id);
+    const u = /(\d+)\s*\/\s*(short|long)/i.exec(f?.usage ?? "");
     const uses = u ? { max: u[1], spent: 0, recovery: [{ period: u[2].toLowerCase() === "short" ? "sr" : "lr", type: "recoverAll" }] } : undefined;
-    add("feat", f.name, { description: { value: html(stripTags(f.text)) }, type: { value: KIND[f.type] }, ...(uses ? { uses } : {}) }, { id: f.id });
+    const name = a.el.type === "Vision" ? a.el.name.replace(/\s*\(.*\)\s*$/, "") : foundryName(a.el.name, a.el.id);
+    add("feat", name, { description: { value: f ? html(stripTags(f.text)) : a.el.description }, type: { value: kind }, ...(uses ? { uses } : {}) }, { id: a.el.id });
   }
   // Each spell once, with how it is ready (dnd5e's preparation): always prepared from a feature, prepared today, or
   // known (cantrips and the spells of a class that does not prepare).
@@ -95,12 +146,21 @@ export function exportFoundry(r: Resolved): Record<string, unknown> {
     const el = r.reg.get(id);
     if (el) add("spell", el.name, { level: Number(el.setters.level?.value) || 0, school: FSCHOOL[(el.setters.school?.value ?? "").toLowerCase()] ?? "", preparation, ...(fromOf.get(id) ? { sourceItem: fromOf.get(id) } : {}), description: { value: el.description } }, { id });
   }
+  // Items as dnd5e types them (Foundry's own actor for the same character, Chris 2026-10-26): weapons and armour by
+  // category, gear by use; an item keeps the container it is in.
+  const fid = new Map(c.inventory.map((it) => [it.uid, rid(16)]));
   for (const it of c.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;
-    const name = itemLabel(it, el?.name) || "Item";
-    const type = el?.type === "Weapon" ? "weapon" : el?.type === "Armor" ? "equipment" : "loot";
-    add(type, name, { quantity: it.qty, equipped: it.equipped, attunement: it.attuned ? 2 : 0, description: { value: el?.description ?? html(it.custom?.description ?? "") } });
+    const name = (itemLabel(it, el?.name) || "Item").replace(/[’‘]/g, "'");
+    const kind = foundryItemType(el, name);
+    const system: Record<string, unknown> = { quantity: it.qty, equipped: it.equipped, attunement: it.attuned ? 2 : 0, description: { value: el?.description ?? html(it.custom?.description ?? "") }, ...kind.system };
+    if (it.container && fid.has(it.container)) system.container = fid.get(it.container);
+    const before = items.length;
+    add(kind.type, name, system, el ? { id: el.id } : {});
+    (items[before] as { _id: string })._id = fid.get(it.uid)!;
   }
+  // Every dnd5e actor has an Unarmed Strike (a natural weapon); importing skips it again.
+  add("weapon", "Unarmed Strike", { type: { value: "natural", baseItem: "" }, quantity: 1, equipped: true, description: { value: "" } });
   const abilities = Object.fromEntries(ABILITY_IDS.map((a) => {
     const line = sheet.abilities.find((x) => x.id === a)!;
     return [ABBR[a], { value: line.score, proficient: line.saveProficient ? 1 : 0, bonuses: { check: "", save: "" } }];

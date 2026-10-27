@@ -53,6 +53,10 @@ describe.skipIf(!C || !existsSync(join(DIR, "foundry.json")))("Drakim: Soul Forg
     for (const m of imp.missing) out.push(`import not found: ${m}`);
     writeFileSync(join(DIR, "report.md"), ["# Drakim: Soul Forge and Foundry", "", ...out.map((x) => `- ${x}`), ""].join("\n"));
     console.log(`DRAKIM ${out.length}\n${out.join("\n")}`);
-    expect(out.length).toBeGreaterThanOrEqual(0);
+    // Differences that are not Soul Forge's: Chris's two builds differ (Orc and the oil), the language choice the
+    // import leaves open follows from that, and 5e.tools names the Dragonborn's trait "Damage Resistance" where
+    // Aurora's content says "Draconic Resistance".
+    const ACCEPTED = [/^language: Soul Forge has orc/, /^import left open: Build: Language \(Dragonborn\)/, /oil \(5 flasks\)/, /feat: damage resistance,/];
+    expect(out.filter((x) => !ACCEPTED.some((re) => re.test(x)))).toEqual([]);
   }, 900000);
 });

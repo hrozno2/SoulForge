@@ -101,6 +101,7 @@ After Stage A (A4, playtest support, included), before any interface work:
 | # | Item | Where it comes from |
 |---|---|---|
 | C1.0 | Typing lag in the name field (A2.8 measured: the engine takes under 10 ms): profile the React renders and stop every tab and card re-rendering on each keystroke. | Linux plan 0.1, A2.8 |
+| C1.0b | Character cards on Home (Chris 2026-10-27, screenshot): first row an actual HP bar (current of max), then a small shield with the AC, then the walking speed; second row the three best ability scores (score and modifier) with a small "+" box after them; hovering the "+" brings in the other three. Replaces today's row of HP, AC, Speed and five ability boxes. | Chris 2026-10-27 |
 | C1.1 | "See options" opens the list and never closes it on a second click. | RESUME #3 |
 | C1.2 | Deselecting never folds a choice; it folds only when every pick is made. | RESUME #10 |
 | C1.3 | A type filter in choices that mix skills, tools, languages and the rest. | RESUME #7 |

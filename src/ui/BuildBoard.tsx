@@ -797,10 +797,14 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   });
-  /** Opens a list; on a narrow window it also brings out the lists panel (a click there never just closes it). */
+  /**
+   * Opens a list; on a narrow window it also brings out the lists panel (a click there never just closes it). A second
+   * click closes the list, and on a narrow window the panel with it, so no empty panel stays over the cards (C1.1).
+   */
   const toggleList = (kind: Kind) => {
     if (narrow && side !== "left") { setOpen(kind); setSide("left"); return; }
-    setOpen(open === kind ? null : kind);
+    if (open === kind) { setOpen(null); if (narrow) setSide(null); return; }
+    setOpen(kind);
   };
   /** Change on the class card: the next class picked replaces the starting class instead of adding a multiclass. */
   const [replacing, setReplacing] = useState(false);

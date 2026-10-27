@@ -84,6 +84,21 @@ test.describe("Build board on a narrow window", () => {
     expect(seen.csp).toEqual([]);
     expect(seen.errors).toEqual([]);
   });
+  test("See options opens the list, and a second click closes it with its panel (C1.1)", async ({ page }) => {
+    await addTestContent(page);
+    await page.getByRole("button", { name: /new character/i }).click();
+    await tab(page, "Build");
+    const board = page.locator(".board");
+    const see = page.locator("[data-tile=race]").getByRole("button", { name: /see options/i });
+    for (let i = 0; i < 2; i++) {
+      await see.click();
+      await expect(board).toHaveClass(/side-left/);
+      await expect(see).toHaveClass(/\bon\b/);
+      await see.click();
+      await expect(board).not.toHaveClass(/side-left/);
+      await expect(see).not.toHaveClass(/\bon\b/);
+    }
+  });
 });
 
 test("deleting a character asks first, in the app's own dialog", async ({ page }) => {

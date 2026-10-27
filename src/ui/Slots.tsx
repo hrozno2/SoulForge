@@ -241,3 +241,20 @@ export function tabOfSlot(s: SelectSlot): "race" | "class" | "background" | "abi
   if (s.root.startsWith("class:")) return "class";
   return "other";
 }
+
+/**
+ * One switch for a 2014 background's personality traits, ideals, bonds and flaws (its tables): off, all four are left
+ * out and never count as missing, as in the 2024 rules, which have none. Shown only when the background has them.
+ */
+export function PersonalitySwitch({ r, set }: { r: Resolved; set: SetCharacter }) {
+  const lists = r.slots.filter((s) => s.root === "background" && s.listItems);
+  if (!lists.length) return null;
+  const keys = lists.map((s) => s.key);
+  const on = lists.some((s) => !s.declined);
+  return (
+    <label className="personality-switch">
+      <input type="checkbox" checked={on} onChange={(e) => set((c) => ({ ...c, declined: e.target.checked ? (c.declined ?? []).filter((k) => !keys.includes(k)) : [...new Set([...(c.declined ?? []), ...keys])] }))} />
+      <span><b>Personality traits, ideals, bonds and flaws</b> <small className="muted">2014 rules; the 2024 rules have none. Untick to leave all four out.</small></span>
+    </label>
+  );
+}

@@ -6,7 +6,7 @@ import { stillToChoose, type Resolved } from "../aurora/engine";
 import {
   ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, totalLevel, type AbilityId, type Character,
 } from "../aurora/character";
-import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
+import { SlotList, tabOfSlot, type SetCharacter, PersonalitySwitch } from "./Slots";
 import { buildSheet } from "../aurora/sheet";
 import { ChosenBanner, PickCards } from "./PickCards";
 import { multiclassLock } from "./multiclass";
@@ -254,6 +254,7 @@ export function BuildTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character;
       {sub === "class" && <ClassPanel r={r} ch={ch} set={set} onDetail={onDetail} />}
       {sub === "background" && (
         <ChosenOrCards kicker="Choose a background" title="Where did you come from?" label="Background" items={backgrounds} value={ch.background} onPick={(id) => set((c) => ({ ...c, background: id }))} onClear={() => set((c) => ({ ...c, background: undefined }))} onDetail={onDetail}>
+          <PersonalitySwitch r={r} set={set} />
           <SlotList slots={of("background")} r={r} set={set} onDetail={onDetail} />
         </ChosenOrCards>
       )}

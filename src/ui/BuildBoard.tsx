@@ -13,7 +13,7 @@ import { ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, totalLevel, type AbilityId,
 import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as pbSpent } from "../aurora/pointBuy";
 import { buildSheet } from "../aurora/sheet";
 import { formatRelease, groupVariants, hiddenBy, type Group } from "../aurora/books";
-import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
+import { SlotList, tabOfSlot, type SetCharacter, PersonalitySwitch } from "./Slots";
 import { PassiveFeatures } from "./PassiveFeatures";
 import { HpRollsDialog } from "./HpRolls";
 import { ClassPanel } from "./BuildTab";
@@ -631,23 +631,6 @@ function SourcePicker({ g, activeId, onPick, strip = false }: { g: Group; active
       )}
       <button className="src-current" title={others.length ? `${title(active)}. Hover for other books.` : title(active)} aria-haspopup={others.length ? "true" : undefined}>{label(active)}{others.length > 0 && <span className="src-more-mark" aria-hidden="true">+</span>}</button>
     </div>
-  );
-}
-
-/**
- * One switch for a 2014 background's personality traits, ideals, bonds and flaws (its tables): off, all four are left
- * out and never count as missing, as in the 2024 rules, which have none. Shown only when the background has them.
- */
-function PersonalitySwitch({ r, set }: { r: Resolved; set: SetCharacter }) {
-  const lists = r.slots.filter((s) => s.root === "background" && s.listItems);
-  if (!lists.length) return null;
-  const keys = lists.map((s) => s.key);
-  const on = lists.some((s) => !s.declined);
-  return (
-    <label className="personality-switch">
-      <input type="checkbox" checked={on} onChange={(e) => set((c) => ({ ...c, declined: e.target.checked ? (c.declined ?? []).filter((k) => !keys.includes(k)) : [...new Set([...(c.declined ?? []), ...keys])] }))} />
-      <span><b>Personality traits, ideals, bonds and flaws</b> <small className="muted">2014 rules; the 2024 rules have none. Untick to leave all four out.</small></span>
-    </label>
   );
 }
 

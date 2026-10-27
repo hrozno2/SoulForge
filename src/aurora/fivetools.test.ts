@@ -126,6 +126,11 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("no element name has a capital right after an apostrophe", () => {
+    const bad = reg!.all().filter((e) => /['’]S\b/.test(e.name)).map((e) => `${e.id}: ${e.name}`);
+    expect(bad.slice(0, 20)).toEqual([]);
+  });
+
   it("builds a level 5 Wizard (2024) with the right numbers", () => {
     const wiz = reg!.ofType("Class").find((c) => c.name === "Wizard" && c.source.includes("2024"))!;
     expect(wiz).toBeTruthy();

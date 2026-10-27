@@ -136,6 +136,24 @@ export function checkChoiceWindows(r: Resolved): Finding[] {
   return out;
 }
 
+/**
+ * A skill, tool or language picked in this choice that the character already has from elsewhere counts once: the pick
+ * is wasted and the character ends up a proficiency short (issue #3: Perception from Skillful and the Ranger).
+ * Only when something new was left to pick: a Fighter taking Weapon Master already has every weapon, so any pick repeats.
+ * Shared with the auto-fill, so a later pick (a feat taken at level 12) cannot undo an earlier one (Expertise at 9).
+ */
+export function repeatedPicks(r: Resolved, s: Resolved["slots"][number]): string[] {
+  const out: string[] = [];
+  const hasOther = s.options.some((o) => !s.chosen.includes(o.id) && !s.blocked.has(o.id) && !r.ids.has(o.id));
+  if ((s.rule.type === "Proficiency" || s.rule.type === "Language") && hasOther) {
+    for (const id of s.chosen) {
+      const got = r.active.find((a) => a.el.id === id);
+      if (got && got.from && got.from !== s.owner.id) out.push(`${s.rule.name}: ${r.reg.get(id)?.name} (already from ${r.reg.get(got.from)?.name ?? "another choice"}); choose another`);
+    }
+  }
+  return out;
+}
+
 export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Finding[] {
   const out: Finding[] = [...checkChoiceWindows(r)];
   const add = (rule: string, detail: string) => out.push({ rule, detail });
@@ -166,16 +184,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (!s.options.length) add("A required choice has no options", `${s.rule.name} [${s.rule.type}]`);
     else if (stillToChoose(s, r)) add("A required choice is not made", `${s.rule.name}: ${s.chosen.length} of ${s.rule.number}`);
     for (const id of s.chosen) if (s.blocked.has(id)) add("A choice does not meet its requirements", `${s.rule.name}: ${reg.get(id)?.name}`);
-    // A skill, tool or language picked here that the character already has from elsewhere counts once: the pick
-    // is wasted and the character ends up a proficiency short (issue #3: Perception from Skillful and the Ranger).
-    // Only when something new was left to pick: a Fighter taking Weapon Master already has every weapon, so any pick repeats.
-    const hasOther = s.options.some((o) => !s.chosen.includes(o.id) && !s.blocked.has(o.id) && !r.ids.has(o.id));
-    if ((s.rule.type === "Proficiency" || s.rule.type === "Language") && hasOther) {
-      for (const id of s.chosen) {
-        const got = r.active.find((a) => a.el.id === id);
-        if (got && got.from && got.from !== s.owner.id) add("A choice repeats something the character already has", `${s.rule.name}: ${reg.get(id)?.name} (already from ${reg.get(got.from)?.name ?? "another choice"}); choose another`);
-      }
-    }
+    for (const d of repeatedPicks(r, s)) add("A choice repeats something the character already has", d);
   }
   for (const w of r.warnings) add("Content refers to something missing", w);
   // Origins: the 2024 rules raise ability scores in the background, the 2014 rules in the species. A 2024 species

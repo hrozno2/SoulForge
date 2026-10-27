@@ -18,7 +18,7 @@ export const testToolsEnabled = import.meta.env.VITE_TEST_TOOLS === "1";
 
 export async function makeTestBatch(reg: ARegistry): Promise<{ id: string; ch: Character }[]> {
   const p = getSettings();
-  const batch = randomBatch(reg, 10, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual, scifi: p.showSciFi });
+  const batch = randomBatch(reg, 10, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual, scifi: p.showSciFi, modern: p.showModern });
   const out: { id: string; ch: Character }[] = [];
   for (const ch of batch) {
     const id = uid();

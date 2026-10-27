@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { findGrids } from "../aurora/improvements";
+import { ImprovementGrid } from "./ImprovementGrid";
 import { requestRoll } from "./Dice";
 import { D20 } from "./icons";
 import { Browse } from "./Browse";
@@ -207,13 +209,18 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
 /** A list of choices, in the content's order: a finished one folds where it is, nothing moves. */
 export function SlotList({ slots: given, r, set, onDetail, empty, merge = true }: { slots: SelectSlot[]; r: Resolved; set: SetCharacter; onDetail: (e: AElement) => void; empty?: string; merge?: boolean }) {
   const merged: MergedSlot[] = merge ? mergeSlots(given) : given;
-  const slots = merged;
+  // Ability score increases are drawn as one check-box grid each (improvements.ts); the choices a grid fills are not
+  // listed again.
+  const grids = findGrids(r, given);
+  const inGrid = new Set(grids.flatMap((g) => [...g.keys]));
+  const gridAt = new Map(grids.map((g) => [g.anchor.key, g]));
+  const slots = merged.filter((s) => gridAt.has(s.key) || !inGrid.has(s.key));
   if (!slots.length) return empty ? <p className="muted">{empty}</p> : null;
   return (
     <div className="slot-list">
       {slots.map((s) => (
         <div key={s.key} data-slot={s.key}>
-          <Slot slot={s} r={r} set={set} onDetail={onDetail} />
+          {gridAt.has(s.key) ? <ImprovementGrid grid={gridAt.get(s.key)!} r={r} set={set} /> : <Slot slot={s} r={r} set={set} onDetail={onDetail} />}
         </div>
       ))}
     </div>

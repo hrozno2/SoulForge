@@ -179,13 +179,13 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
   // The global content filters. Whatever is already picked stays visible.
   const items = useMemo(() => {
     if (showAll) return allItems;
-    const kept = allItems.filter((e) => chosenSet.has(e.id) || !hiddenBy(books.info(e.source), e.source, { legacy: prefs.showLegacy, playtest: prefs.showPlaytest, unusual: prefs.showUnusual, scifi: prefs.showSciFi }, e.type, e.supports));
+    const kept = allItems.filter((e) => chosenSet.has(e.id) || !hiddenBy(books.info(e.source), e.source, { legacy: prefs.showLegacy, playtest: prefs.showPlaytest, unusual: prefs.showUnusual, scifi: prefs.showSciFi, modern: prefs.showModern }, e.type, e.supports));
     // The content filters never leave a choice unable to be completed: when fewer options the character can take
     // remain than picks still to make, every option shows.
     const takeable = (list: typeof allItems) => list.filter((e) => !chosenSet.has(e.id) && !disabledReason?.(e)).length;
     const toPick = Math.max(0, (need ?? 1) - chosen.length);
     return kept.length && takeable(kept) >= Math.min(toPick, takeable(allItems)) ? kept : allItems;
-  }, [allItems, books, chosenSet, chosen, need, disabledReason, prefs.showLegacy, prefs.showPlaytest, prefs.showUnusual, prefs.showSciFi, showAll]);
+  }, [allItems, books, chosenSet, chosen, need, disabledReason, prefs.showLegacy, prefs.showPlaytest, prefs.showUnusual, prefs.showSciFi, prefs.showModern, showAll]);
   const hidden = allItems.length - items.length;
 
   const defs = useMemo(() => facetsFor(type), [type]);

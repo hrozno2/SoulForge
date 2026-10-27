@@ -184,8 +184,11 @@ export function sortGroups(groups: Group[], mode: SortMode): Group[] {
 /** Campaign setting and adventure books, whose options suit one world. */
 const SETTING_BOOKS = /eberron|ravnica|theros|strixhaven|spelljammer|wildemount|explorer.s guide to|planescape|dragonlance|ravenloft|van richten|forgotten realms|sword coast|avernus|baldur|icewind|candlekeep|acquisitions inc|mythic odysseys|plane shift|critical role|radiant citadel|netherdeep|witchlight|journeys through|golden vault|infinite staircase|dragonlance|dark sun|greyhawk|midnight|kobold press|tal.dorei|lost laboratory|call of the|astral adventurer|boo.s astral|adventurers league|tomb of annihilation|storm king|princes of the apocalypse|out of the abyss|waterdeep|rime of the|ghosts of saltmarsh|elemental evil|tyranny of dragons|adventure with muk/i;
 
-/** `scifi`: modern and futuristic technology (laser rifles, grenades, powered armor); shown unless set false. */
-export type ContentFilters = { legacy: boolean; playtest: boolean; unusual: boolean; scifi?: boolean };
+/**
+ * `scifi`: futuristic technology (laser rifles, powered armor). `modern`: renaissance and modern technology that is not
+ * science fiction (pistols, revolvers, muskets, rifles, shotguns, modern vehicles). Both are shown unless set false.
+ */
+export type ContentFilters = { legacy: boolean; playtest: boolean; unusual: boolean; scifi?: boolean; modern?: boolean };
 
 export const ALL_CONTENT: ContentFilters = { legacy: true, playtest: true, unusual: true };
 
@@ -202,6 +205,7 @@ export function filterNeutral(type: string, source: string): boolean {
 export function hiddenBy(book: BookInfo, source: string, f: ContentFilters, type = "", tags: string[] = []): boolean {
   // Sci-fi is a property of the thing, not its book (the DMG has laser rifles beside longswords).
   if (f.scifi === false && tags.includes("scifi")) return true;
+  if (f.modern === false && tags.includes("modern")) return true;
   if (filterNeutral(type, source)) return false;
   if (!f.playtest && book.playtest) return true;
   if (!f.legacy && ruleSetOf(book, source) === "Legacy" && !book.playtest) return true;

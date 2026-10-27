@@ -807,7 +807,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const lastName = useRef("");
   const sheet = useMemo(() => buildSheet(r), [r]);
 
-  const visible = (items: AElement[]) => items.filter((e) => !e.compendiumHidden && !hiddenBy(books.info(e.source), e.source, { legacy: prefs.showLegacy, playtest: prefs.showPlaytest, unusual: prefs.showUnusual, scifi: prefs.showSciFi }, e.type, e.supports));
+  const visible = (items: AElement[]) => items.filter((e) => !e.compendiumHidden && !hiddenBy(books.info(e.source), e.source, { legacy: prefs.showLegacy, playtest: prefs.showPlaytest, unusual: prefs.showUnusual, scifi: prefs.showSciFi, modern: prefs.showModern }, e.type, e.supports));
   const races = r.reg.ofType("Race");
   const classes = r.reg.ofType("Class").filter((c) => !c.compendiumHidden);
   const backgrounds = r.reg.ofType("Background");

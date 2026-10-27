@@ -82,8 +82,17 @@ Rules for each item:
   (fvtt-Actor-aria, fvtt-Actor-mr.-smith, both Foundry paladins or half-casters with prepared spells). Round trip
   still 0. Start tonight with these two: compare their matched lists before and after commit f104bf0.
 
+- 2026-10-27 02:59-06:00: the scheduled run started late (02:59) and worked without committing: A1.10, A2.9, the
+  "levelling up five characters" fix (autofill treats a pick that makes an earlier one a repeat as a dead end), part of
+  A1.9. At 06:00 Chris asked to continue here; the run was stopped and the schedule paused, its work checked and kept.
+- 2026-10-27 07:00: A1.9 done with the check-box grid; A2.4 round trip clean again (Mystic Arcanum and Book of
+  Ancient Secrets spells, every pick of a class's, species' and background's choices carried by id, prepared count);
+  the two imports (Aria, Mr. Smith) fixed (one rule for which classes prepare; a prepared spell that lands nowhere is
+  kept by hand). All imported characters match the saved sheets.
+
 ### Questions for Chris
 - A2.3: shop price multiplier per character or an app setting, and the selling price rule (half at 1.0?).
+- Drakim: Foundry's actor knows Giant (and Common), Soul Forge's also Orc. Which is right? (A difference between the two builds.)
 
 
 **The open work is in docs/MASTER-PLAN.md (2026-10-25):** Stage A engine, Stage B tests, Stage C interface, in that

@@ -214,6 +214,25 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     return { ...s, options, blocked, whyBlocked, filter };
   });
 
+  // One improvement is one choice with several slots (+2 to one ability, +1 to another): an ability taken in one slot
+  // is not offered in its sibling slots, so the increases land on different abilities (the check-box grid's rule).
+  const asiGroups = new Map<string, typeof slots>();
+  for (const s of slots) if (s.rule.type === "Ability Score Improvement" && /^5et asi one\b/i.test(s.rule.supports)) {
+    const k = `${s.owner.id}|${s.root}|${s.ownerLevel}`;
+    (asiGroups.get(k) ?? asiGroups.set(k, []).get(k)!).push(s);
+  }
+  const abilityOf = (id: string) => /^ID_5ET_ASIONE_\d_(\w+)$/.exec(id)?.[1];
+  for (const group of asiGroups.values()) {
+    if (group.length < 2) continue;
+    for (const s of group) {
+      const taken = new Set(group.filter((o) => o !== s).flatMap((o) => o.chosen.map(abilityOf)).filter(Boolean));
+      if (!taken.size) continue;
+      const prev = s.whyBlocked;
+      for (const o of s.options) if (taken.has(abilityOf(o.id)) && !s.chosen.includes(o.id)) s.blocked.add(o.id);
+      s.whyBlocked = (id) => (taken.has(abilityOf(id)) && !s.chosen.includes(id) ? "already raised by the other increase of this choice" : prev?.(id));
+    }
+  }
+
   const classLevels: Record<string, number> = {};
   for (const c of ch.classes) {
     const el = reg.get(c.classId);

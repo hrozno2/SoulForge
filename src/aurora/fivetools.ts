@@ -23,7 +23,8 @@ const PROP: Record<string, string> = { F: "finesse", L: "light", H: "heavy", T: 
 const slug = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "");
 export const ftId = (kind: string, name: string, source: string, extra = "") => `ID_5ET_${kind}_${slug(source)}_${slug(name)}${extra ? `_${slug(extra)}` : ""}`;
 const abilFull = (k: string) => ABIL[k] ?? k;
-const cap = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
+// A new word starts after a space or bracket, never after an apostrophe ("Alchemist's", not "Alchemist'S").
+const cap = (s: string) => s.replace(/(^|[^\w'’])(\w)/g, (_, a, c) => a + c.toUpperCase());
 
 // ---------------------------------------------------------------- text
 
@@ -448,9 +449,10 @@ function convertItem(i: J, ctx: Ctx): AElement | null {
   const type = weapon ? "Weapon" : armor ? "Armor" : magic ? "Magic Item" : "Item";
   const setters: Record<string, SetterValue> = { category: set(weapon ? "Weapons" : armor ? "Armor" : magic ? "Magic Items" : "Adventuring Gear") };
   const rules: ARule[] = [];
-  // Modern and futuristic technology (5e.tools' "age": laser rifles, automatic pistols, grenades, powered armor) is
-  // sci-fi, for the global filter; a magic item built on one ("+1 Laser Rifle") takes its base item's age.
-  const supports: string[] = /^(modern|futuristic)$/i.test(String(m.age ?? "")) ? ["scifi"] : [];
+  // Futuristic technology (5e.tools' "age": laser rifles, powered armor) is "scifi" and renaissance or modern technology
+  // (pistols, muskets, revolvers, rifles, modern vehicles) is "modern", each for its own global filter; a magic item
+  // built on one ("+1 Laser Rifle") takes its base item's age.
+  const supports: string[] = /^futuristic$/i.test(String(m.age ?? "")) ? ["scifi"] : /^(modern|renaissance)$/i.test(String(m.age ?? "")) ? ["modern"] : [];
   // Something that holds other things (a backpack, a pouch, a bag of holding), for "Kept in" in the inventory.
   if (m.containerCapacity) supports.push("container");
   if (m.weight !== undefined) setters.weight = set(`${m.weight} lb.`, { lb: String(m.weight) });

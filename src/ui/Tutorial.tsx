@@ -161,7 +161,8 @@ export function Tutorial(p: TutorialProps) {
             </span>
             <label className="check"><input type="checkbox" checked={settings.showPlaytest} onChange={(e) => updateSettings({ showPlaytest: e.target.checked })} /> Unearthed Arcana and playtest material (drafts that may change)</label>
             <label className="check"><input type="checkbox" checked={settings.showUnusual} onChange={(e) => updateSettings({ showUnusual: e.target.checked })} /> Settings and other sources (Eberron, Ravnica, Theros and other worlds, third party and homebrew books)</label>
-            <label className="check"><input type="checkbox" checked={settings.showSciFi} onChange={(e) => updateSettings({ showSciFi: e.target.checked })} /> Sci-fi technology (laser guns, automatic firearms, grenades, powered armor)</label>
+            <label className="check"><input type="checkbox" checked={settings.showSciFi} onChange={(e) => updateSettings({ showSciFi: e.target.checked })} /> Sci-fi technology (laser guns, powered armor)</label>
+            <label className="check"><input type="checkbox" checked={settings.showModern} onChange={(e) => updateSettings({ showModern: e.target.checked })} /> Modern technology (pistols, rifles, shotguns, modern vehicles)</label>
           </div>
           <p>Many options exist in more than one book, such as the 2014 and the 2024 Wizard. A chosen card shows its book as a <b>source chip</b> (for example <b>XPHB 2024</b> or <b>PHB 2014</b>); click another chip on the card to switch to that book's version. Each list's <b>Filters</b> can also narrow it by source.</p>
           <p className="muted">You can change all of this later in Menu, Settings, under Content shown in lists. What you already picked stays visible even when its book is hidden.</p>

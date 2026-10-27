@@ -5,6 +5,7 @@ import { totalLevel } from "./character";
 import { atLevel } from "../engine/timeline";
 import { conceptOf } from "../engine/concepts";
 import { buildSheet, preparePool } from "./sheet";
+import { repeatedPicks } from "./rulesCheck";
 
 /**
  * Fills every open choice with the first sensible option. Used for random characters and tests.
@@ -15,10 +16,11 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
   // Picks that made an earlier choice illegal (2014 Alert at level 4 after 2024 Alert at level 5), not tried again.
   const bad = new Set<string>();
   // A pick that makes an earlier choice illegal, or opens a choice with no legal option left (Resilient for a
-  // monk who already has every saving throw), is a dead end.
+  // monk who already has every saving throw), or that makes an earlier pick a repeat (the Survivalist feat after
+  // Expertise in Survival), is a dead end.
   const blockedCount = (r: ReturnType<typeof resolve>) => r.slots.reduce((n, s) => {
     const dead = !s.rule.optional && s.chosen.length < s.rule.number && s.options.length > 0 && s.options.every((o) => s.chosen.includes(o.id) || s.blocked.has(o.id) || r.ids.has(o.id));
-    return n + s.chosen.filter((id) => s.blocked.has(id)).length + (dead ? 1 : 0);
+    return n + s.chosen.filter((id) => s.blocked.has(id)).length + (dead ? 1 : 0) + repeatedPicks(r, s).length;
   }, 0);
   // Level by level, the way a player builds: origin and level 1 first, then each level's new choices, judged against
   // the character at that level. Each pick then only touches the level being built (the timeline reuses the levels

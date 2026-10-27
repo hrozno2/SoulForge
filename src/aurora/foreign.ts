@@ -408,6 +408,8 @@ class Importer {
 
   /** Remember something to put into whichever choice can hold it once the character is shaped. */
   /** `from` names where the file says it came from ("magic initiate"), to pick the choice that holds it. */
+  /** Spells the file marks prepared that were left to the class list (name to element), checked at the end. */
+  private leftToPrepare = new Map<string, string>();
   /** `exactId`: the file names the element itself (a Soul Forge export's flags.soulforge.id); no search by name. */
   want(types: string[], name: string, label: string, alts: string[] = [], from?: string, edition?: Edition, early?: boolean, exactId?: string): void {
     if (name && label === "spell") this.hints.spells.add(normalize(name));
@@ -945,9 +947,11 @@ class Importer {
     const spellbookOf = (e: { name: string }) => r.slots.some((s) => /spellbook/i.test(s.rule.name) && (s.rule.spellcasting ?? "").toLowerCase() === e.name.toLowerCase());
     // On the list by name: another book's copy of the spell (Princes of the Apocalypse's Catapult) may lack the tag.
     const copies = el.type === "Spell" ? findAllByName(this.reg, ["Spell"], el.name) : [];
-    const onListBy = (tagged: AElement[]) => el.type === "Spell" && [...r.spellcasting.values()].some((e) => prepares(e) && !spellbookOf(e) && e.lists.some((l) => tagged.some((c) => c.supports.includes(l))));
+    const onListBy = (tagged: AElement[], strict = false) => el.type === "Spell" && [...r.spellcasting.values()].some((e) => (strict ? !!e.prepare : prepares(e)) && !spellbookOf(e) && e.lists.some((l) => tagged.some((c) => c.supports.includes(l))));
     const onClassList = onListBy([el]);
-    const onClassListByName = onListBy(copies);
+    // Left to the prepared list only where the sheet keeps one (the class's spellcasting prepares, as the sheet reads
+    // it): elsewhere a prepared spell the file lists is kept by hand, as before.
+    const onClassListByName = onListBy(copies, true);
     // A spell on the list of a class that prepares from its whole list (a cleric's, a druid's) needs no choice: it is
     // on the list already, and prepared (below, from the file's marks) if the file says so. Adding it by hand would
     // give the character a second copy outside the class.
@@ -956,6 +960,7 @@ class Importer {
     // kept by hand as before.
     const markedPrepared = this.preparedKnown && this.prepared.has(normalize(el.name));
     if (!fits2.length && ((onClassList && !filePrepared) || (onClassListByName && leveled && !this.deferring && markedPrepared))) {
+      if (markedPrepared) this.leftToPrepare.set(normalize(el.name), el.id);
       this.matched.push(`${el.name} (on the class spell list)`);
       return ch;
     }
@@ -1052,17 +1057,30 @@ class Importer {
         if (!line.prepare) continue;
         // Spells the class or subclass always has prepared (domain spells) are not counted against the limit.
         const always = new Set([...line.granted.map((g) => normalize(rr.reg.get(g.id)?.name ?? "")), ...line.spells.filter((p) => p.granted).map((p) => normalize(rr.reg.get(p.id)?.name ?? ""))]);
-        const ids = preparePool(rr, line).filter((e) => this.prepared.has(normalize(e.name)) && !always.has(normalize(e.name))).map((e) => e.id);
+        // Spells held in a choice (a Mystic Arcanum, a ritual from the Book of Ancient Secrets) are had anyway and do
+        // not count against the prepared limit.
+        const inChoice = new Set(rr.slots.filter((x) => x.rule.type === "Spell").flatMap((x) => x.chosen).map((id) => normalize(rr.reg.get(id)?.name ?? "")));
+        const ids = preparePool(rr, line).filter((e) => this.prepared.has(normalize(e.name)) && !always.has(normalize(e.name)) && !inChoice.has(normalize(e.name))).map((e) => e.id);
         const max = line.prepareMax > 0 ? line.prepareMax : ids.length;
         // More than the rules allow: the first ones are prepared and the rest kept as added by hand, so nothing the
         // file lists is lost (the player can sort it out; the rules check names it).
         if (ids.length > max) this.notes.push(`${line.name}: the file prepares ${ids.length} spells; the rules allow ${max}, so the first ${max} are prepared and the rest added by hand.`);
-        const uniq = [...new Set(ids)];
+        // One per spell name: two books' copies of a spell are one prepared spell.
+        const seenName = new Set<string>();
+        const uniq = [...new Set(ids)].filter((id) => { const n = normalize(rr.reg.get(id)?.name ?? id); if (seenName.has(n)) return false; seenName.add(n); return true; });
         if (uniq.length) prepared[line.name] = uniq.slice(0, max);
         const over = uniq.slice(max).filter((id) => !ch.extras.includes(id));
         if (over.length) ch = { ...ch, extras: [...ch.extras, ...over] };
       }
       ch = { ...ch, prepared };
+      // A prepared spell left to the class list that did not land in it (above the levels the class can prepare yet:
+      // a 3rd-level Haste for a 5th-level artificer) is kept by hand: nothing the file lists is lost.
+      if (this.leftToPrepare.size) {
+        const sh = buildSheet(resolve(ch, this.reg));
+        const have = new Set([...sh.casting.flatMap((l) => [...l.cantripsKnown, ...l.spells, ...l.granted].map((p) => p.id)), ...ch.extras].map((id) => normalize(this.reg.get(id)?.name ?? "")));
+        const lost = [...this.leftToPrepare].filter(([n]) => !have.has(n)).map(([, id]) => id);
+        if (lost.length) ch = { ...ch, extras: [...ch.extras, ...lost] };
+      }
     }
     if (this.missing.length) this.notes.push(`${this.missing.length} things were not found in your loaded content and were skipped or kept as custom items.`);
     this.notes.push(`${this.matched.length} matched.`);
@@ -1125,10 +1143,13 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   };
   const votes = items.filter((it) => ["class", "subclass", "race", "background"].includes(it.type)).map(ruleOf).filter(Boolean);
   if (votes.length) b.edition = votes.filter((v) => v === "2024").length > votes.length / 2 ? "2024" : "2014";
-  const subclasses: string[] = [];
+  const subclasses: { name: string; id?: string }[] = [];
   let speciesSet = false;
   // An item Soul Forge exported names its element (flags.soulforge.id): when the content has it, that is the one.
   const sfEl = (it: Json): AElement | undefined => { const id = it.flags?.soulforge?.id; return typeof id === "string" ? reg.get(id) : undefined; };
+  // And the picks made in its own choices (flags.soulforge.choices), each placed exactly.
+  const LABEL = (t: string) => (t === "Archetype" ? "subclass" : /^(Sub Race|Race Variant)$/.test(t) ? "subrace or lineage" : t === "Spell" ? "spell" : "feat");
+  const sfChoices = (it: Json) => { for (const id of (it.flags?.soulforge?.choices ?? []) as string[]) { const c = reg.get(id); if (c) b.want([c.type], c.name, LABEL(c.type), [], undefined, c.edition, false, c.id); } };
   for (const it of items) {
     const name = String(it.name ?? "");
     const isys: Json = it.system ?? {};
@@ -1137,6 +1158,7 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
       case "class": {
         const own = sfEl(it);
         const el = own?.type === "Class" ? own : findByName(reg, ["Class"], name, ruleOf(it) ?? b.edition);
+        if (own?.type === "Class") sfChoices(it);
         if (el) {
           b.ch.classes.push({ classId: el.id, level: Math.max(1, Math.min(20, Number(isys.levels) || 1)) });
           b.matched.push(`${el.name} (class)`);
@@ -1145,7 +1167,7 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
       }
       case "subclass": {
         const own = sfEl(it);
-        subclasses.push(own?.type === "Archetype" ? own.name : name);
+        subclasses.push(own?.type === "Archetype" ? { name: own.name, id: own.id } : { name });
         break;
       }
       case "race": {
@@ -1155,6 +1177,7 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
           b.ch.race = own.id;
           b.matched.push(`${own.name} (species)`);
           for (const id of (it.flags?.soulforge?.lineages ?? []) as string[]) { const l = reg.get(id); if (l) b.want(["Sub Race", "Race Variant", "Racial Trait"], l.name, "subrace or lineage", [], undefined, l.edition, false, l.id); }
+          sfChoices(it);
           speciesSet = true;
           break;
         }
@@ -1166,6 +1189,7 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
       }
       case "background": {
         const own = sfEl(it);
+        if (own?.type === "Background") sfChoices(it);
         const el = own?.type === "Background" ? own : findByName(reg, ["Background"], name, ruleOf(it) ?? b.edition) ?? findByName(reg, ["Background"], name.replace(/^variant\s+/i, "").replace(/\s*\(.*\)\s*$/, ""), b.edition) ?? findByName(reg, ["Background"], /\((.*)\)/.exec(name)?.[1] ?? "", b.edition);
         if (el) {
           b.ch.background = el.id;
@@ -1184,6 +1208,9 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
           // Its own choices, exactly (a Soul Forge export lists them): the list Magic Initiate draws from, and so on.
           for (const id of (it.flags?.soulforge?.choices ?? []) as string[]) { const c = reg.get(id); if (c) b.want([c.type], c.name, c.type === "Spell" ? "spell" : "feat", [], undefined, c.edition, false, c.id); }
         }
+        // Any other element Soul Forge exported (an invocation, a metamagic option, a maneuver, a fighting style):
+        // placed exactly into the choice that offers it; one the content grants by itself is just recognised.
+        else if (ownFeat) b.want([ownFeat.type], ownFeat.name, "feat", [], undefined, ownFeat.edition, false, ownFeat.id);
         else if (kind === "feat" || (!kind && !trait)) b.want(["Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature"], name, "feat", [], undefined, ruleOf(it));
         else b.addName(name);
         break;
@@ -1239,7 +1266,7 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   b.customBackground();
   if (!b.ch.classes.length) b.notes.push("No class found in the file.");
   // Subclasses are choices of the class, so place them after the classes are set.
-  for (const s of subclasses) b.want(["Archetype"], s, "subclass");
+  for (const s of subclasses) b.want(["Archetype"], s.name, "subclass", [], undefined, undefined, false, s.id);
   const FSKILL: Record<string, string> = { acr: "acrobatics", ani: "animal handling", arc: "arcana", ath: "athletics", dec: "deception", his: "history", ins: "insight", itm: "intimidation", inv: "investigation", med: "medicine", nat: "nature", prc: "perception", prf: "performance", per: "persuasion", rel: "religion", slt: "sleight of hand", ste: "stealth", sur: "survival" };
   for (const [k, name] of Object.entries(FSKILL)) {
     const v = Number(sys.skills?.[k]?.value);

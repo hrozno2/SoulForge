@@ -24,7 +24,10 @@ function details(r: Resolved) {
   // The species' subrace or lineage (Sea Elf, Water Genasi, White Dragonborn): named with it, as "Elf (Sea Elf)".
   const lineages = r.active.filter((a) => /^(Sub Race|Race Variant)$/.test(a.el.type)).map((a) => a.el);
   const race = nameOf(c.race);
+  // Choices the species itself asks for (Fiendish Legacy, the legacy's spellcasting ability): the importer places them by id.
+  const speciesPicks = r.slots.filter((x) => x.root === "race").flatMap((x) => x.chosen).map((id) => r.reg.get(id)).filter((e): e is NonNullable<typeof e> => !!e && e.type === "Racial Trait" && !lineages.includes(e));
   return {
+    speciesPicks,
     c, race: lineages.length ? `${race} (${lineages.map((l) => l.name).join("; ")})` : race, lineages,
     background: nameOf(c.background), subclass: subEl?.name ?? "", subclassId: subEl?.id,
     classes: c.classes.map((x) => ({ name: nameOf(x.classId), level: x.level, id: x.classId })),
@@ -33,7 +36,7 @@ function details(r: Resolved) {
 
 export function exportFoundry(r: Resolved): Record<string, unknown> {
   const sheet = buildSheet(r);
-  const { c, race, lineages, background, subclass, subclassId, classes } = details(r);
+  const { c, race, lineages, speciesPicks, background, subclass, subclassId, classes } = details(r);
   const items: Record<string, unknown>[] = [];
   // Each item carries the Soul Forge element it came from (flags.soulforge, as Plutonium keeps flags.plutonium), so
   // importing the actor back finds exactly that element; other tools read the name.
@@ -44,19 +47,25 @@ export function exportFoundry(r: Resolved): Record<string, unknown> {
   };
   // dnd5e ties a subclass to its class by the class's identifier (the name, lower case, dashed).
   const ident = (n: string) => n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  for (const k of classes) add("class", k.name, { levels: k.level, identifier: ident(k.name), description: { value: "" } }, { id: k.id });
+  // Every pick made in a class's, the species' or the background's own choices (feats, improvements, fighting styles,
+  // invocations; spells travel as spells), so an import makes the same picks instead of guessing.
+  const picksUnder = (root: string) => r.slots.filter((x) => x.root === root && x.rule.type !== "Spell" && !x.listItems).flatMap((x) => x.chosen);
+  for (const k of classes) add("class", k.name, { levels: k.level, identifier: ident(k.name), description: { value: "" } }, { id: k.id, choices: picksUnder(`class:${k.id}`) });
   const subOf = r.active.find((a) => a.el.id === subclassId)?.root ?? "";
   const subClass = subOf.startsWith("class:") ? r.reg.get(subOf.slice(6))?.name ?? "" : classes[0]?.name ?? "";
   if (subclass) add("subclass", subclass, { identifier: ident(subclass), classIdentifier: ident(subClass), description: { value: "" } }, { id: subclassId });
-  if (race) add("race", race, { description: { value: "" } }, { id: c.race, lineages: lineages.map((l) => l.id) });
-  if (background) add("background", background, { description: { value: "" } }, { id: c.background });
+  if (race) add("race", race, { description: { value: "" } }, { id: c.race, lineages: [...lineages, ...speciesPicks].map((l) => l.id), choices: picksUnder("race") });
+  if (background) add("background", background, { description: { value: "" } }, { id: c.background, choices: picksUnder("background") });
   // A feat's own choices go with it (Magic Initiate's list and ability, Resilient's ability, Skilled's skills), and
   // their choices in turn, so an import makes the same picks.
   const choicesUnder = (id: string, depth = 0): string[] => depth > 3 ? [] : r.slots.filter((s) => s.owner.id === id).flatMap((s) => s.chosen.flatMap((c) => [c, ...choicesUnder(c, depth + 1)]));
   for (const f of sheet.features.filter((x) => x.type === "Feat")) add("feat", f.name, { description: { value: html(stripTags(f.text)) }, type: { value: "feat" } }, f.id ? { id: f.id, choices: choicesUnder(f.id) } : {});
   // Class, subclass, species and background features too, as dnd5e's feature items (type class, race, background),
   // with their uses ("3/Long Rest": three uses, all back on a long rest).
-  const KIND: Record<string, string> = { "Class Feature": "class", "Archetype Feature": "class", "Racial Trait": "race", "Background Feature": "background" };
+  const KIND: Record<string, string> = { "Class Feature": "class", "Archetype Feature": "class", "Optional Feature": "class", "Racial Trait": "race", "Background Feature": "background" };
+  // Optional features the sheet does not list (an invocation such as Book of Ancient Secrets, a metamagic option).
+  const listed = new Set(sheet.features.map((f) => f.id));
+  for (const a of r.active) if (a.el.type === "Optional Feature" && !listed.has(a.el.id)) { listed.add(a.el.id); add("feat", a.el.name, { description: { value: a.el.description }, type: { value: "class" } }, { id: a.el.id }); }
   for (const f of sheet.features.filter((x) => KIND[x.type])) {
     const u = /(\d+)\s*\/\s*(short|long)/i.exec(f.usage ?? "");
     const uses = u ? { max: u[1], spent: 0, recovery: [{ period: u[2].toLowerCase() === "short" ? "sr" : "lr", type: "recoverAll" }] } : undefined;
@@ -65,11 +74,14 @@ export function exportFoundry(r: Resolved): Record<string, unknown> {
   // Each spell once, with how it is ready (dnd5e's preparation): always prepared from a feature, prepared today, or
   // known (cantrips and the spells of a class that does not prepare).
   const prep = new Map<string, { mode: string; prepared: boolean }>();
+  const inChoice = new Set(r.slots.filter((x) => x.rule.type === "Spell").flatMap((x) => x.chosen));
   const fromOf = new Map<string, string>();
   for (const line of sheet.casting) {
     for (const p of line.cantripsKnown) prep.set(p.id, { mode: "prepared", prepared: true });
     for (const p of line.granted) prep.set(p.id, { mode: "always", prepared: true });
-    for (const p of line.spells) if (!prep.has(p.id)) prep.set(p.id, { mode: "prepared", prepared: p.granted || !line.prepare || p.prepared });
+    // A spell held in a choice (a Mystic Arcanum, a Book of Ancient Secrets ritual, a 2024 class's chosen spells) is one
+    // the character has, so it is ready; only spells merely on a whole class list carry their prepared mark.
+    for (const p of line.spells) if (!prep.has(p.id)) prep.set(p.id, { mode: "prepared", prepared: inChoice.has(p.id) || p.granted || !line.prepare || p.prepared });
   }
   // Where each spell was chosen, as Foundry 5's sourceItem ("feat:magic-initiate", "class:spellcasting"): the feature
   // whose choice holds it, so an import puts it back in that choice and not in another that also offers it.

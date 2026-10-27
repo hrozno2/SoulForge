@@ -575,7 +575,30 @@ export function stillToChoose(s: SelectSlot, _r?: unknown): boolean {
  * two was an old bug (docs/ENGINE-PLAN.md, E5).
  */
 export function resolve(ch: Character, reg: ARegistry): Resolved {
-  return resolveTimeline(ch, reg);
+  return resolveTimeline(upgradePlusTwo(ch, reg), reg);
+}
+
+/**
+ * Characters saved before a choice of two +1s became "+2 to one ability" or "+1 to two abilities" (registry.ts,
+ * plusTwoChoices) keep their two +1s: the picks move inside "+1 to two abilities". Nothing else changes.
+ */
+function upgradePlusTwo(ch: Character, reg: ARegistry): Character {
+  let out: Character | undefined;
+  for (const [key, ids] of Object.entries(ch.selections)) {
+    if (!ids.length || ids.some((id) => id.startsWith("ID_INTERNAL_PLUS_TWO_"))) continue;
+    const el = reg.get(key.split("#")[0]);
+    if (!el) continue;
+    el.rules.forEach((rule, idx) => {
+      if (rule.kind !== "select" || !rule.supports.startsWith("Plus two ") || choiceKey(el, rule, idx) !== key) return;
+      const plus1 = reg.get(`ID_INTERNAL_${`PLUS_TWO_${el.id}_${idx}`.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}_PLUS1`);
+      const inner = plus1?.rules[0];
+      if (!plus1 || inner?.kind !== "select") return;
+      out ??= { ...ch, selections: { ...ch.selections } };
+      out.selections[key] = [plus1.id];
+      out.selections[choiceKey(plus1, inner, 0)] = ids;
+    });
+  }
+  return out ?? ch;
 }
 
 export type { AbilityId };

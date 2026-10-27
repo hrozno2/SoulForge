@@ -188,10 +188,11 @@ export class ARegistry {
       if (el.lore) lore.set(twinKey(el), el.lore);
       if (el.attacks?.length) attacks.set(twinKey(el), el.attacks);
     }
-    // Sci-fi technology is marked from 5e.tools' item ages; Aurora's items of the same name (any book) share it.
-    const scifi = new Set([...this.byId.values()].filter((e) => e.supports.includes("scifi")).map((e) => e.name.toLowerCase()));
+    // Sci-fi and modern technology are marked from 5e.tools' item ages; Aurora's items of the same name (any book) share it.
+    const TECH = ["scifi", "modern"];
+    const tech = new Map(TECH.map((t) => [t, new Set([...this.byId.values()].filter((e) => e.supports.includes(t)).map((e) => e.name.toLowerCase()))]));
     for (const el of this.byId.values()) {
-      if (scifi.size && !el.supports.includes("scifi") && /item|weapon|armor/i.test(el.type) && scifi.has(el.name.toLowerCase())) el.supports = [...el.supports, "scifi"];
+      if (/item|weapon|armor/i.test(el.type)) for (const t of TECH) if (tech.get(t)!.size && !el.supports.includes(t) && tech.get(t)!.has(el.name.toLowerCase())) el.supports = [...el.supports, t];
       if (!el.lore) { const l = lore.get(twinKey(el)); if (l) el.lore = l; }
       if (!el.attacks?.length) { const a = attacks.get(twinKey(el)); if (a) el.attacks = a; }
     }
@@ -202,6 +203,7 @@ export class ARegistry {
     wildShapeChoices(this.byId);
     for (const el of improvementOptions([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
     for (const el of classAsiChoices([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
+    for (const el of plusTwoChoices([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
     for (const el of this.byId.values()) {
       const key = el.type.toLowerCase();
       (this.byType.get(key) ?? this.byType.set(key, []).get(key)!).push(el);
@@ -328,6 +330,44 @@ function improvementOptions(all: AElement[]): AElement[] {
         ...abilityOptions(t1, 1, key),
       );
     }
+  }
+  return out;
+}
+
+/**
+ * "Increase one ability score by 2, or two ability scores by 1" written as a choice of two +1s (the 2024 Ability Score
+ * Improvement feat in Aurora and 5e.tools, boons and feats like it): one choice cannot take the same +1 twice, so the
+ * +2 was impossible (A1.9). Such a choice becomes one pick of "+2 to one ability" or "+1 to two abilities", over the
+ * same abilities, the way the class improvements already are. Only where the element's text says so ("by 2, or").
+ */
+function plusTwoChoices(all: AElement[]): AElement[] {
+  const out: AElement[] = [];
+  const asi = all.filter((e) => e.type === "Ability Score Improvement");
+  const ABIL = new Set(ABILITIES.map((a) => a.toLowerCase()));
+  // The one ability a +1 option raises, or nothing when it does anything else.
+  const plusOne = (e: AElement) => {
+    const st = e.rules.filter((x) => x.kind === "stat");
+    const r = st[0] as { name: string; value: string } | undefined;
+    return st.length === 1 && e.rules.length === 1 && r && ABIL.has(r.name.toLowerCase()) && r.value === "1" ? r.name.toLowerCase() : undefined;
+  };
+  for (const el of all) {
+    const text = el.description.replace(/<[^>]+>/g, " ");
+    if (!/\bby 2,? or\b[^.]*\bby 1\b/i.test(text)) continue;
+    el.rules = el.rules.map((r, i) => {
+      if (r.kind !== "select" || r.type !== "Ability Score Improvement" || r.number !== 2) return r;
+      const opts = asi.filter((e) => matchesSupports(e, r.supports));
+      const abilities = [...new Set(opts.map(plusOne))];
+      if (!opts.length || abilities.some((x) => !x)) return r;
+      const key = `PLUS_TWO_${el.id}_${i}`.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+      const tag = `Plus two ${el.id} ${i}`, t2 = `${tag} +2`;
+      const make = (suffix: string, name: string, text: string, rules: AElement["rules"]): AElement => ({ id: `ID_INTERNAL_${key}_${suffix}`, name, type: "Ability Score Improvement", source: "Internal", supports: [tag], description: `<p>${text}</p>`, compendiumHidden: true, sheet: { display: false, descriptions: [] }, setters: {}, rules });
+      out.push(
+        make("PLUS2", "+2 to one ability", "Increase one ability score by 2. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: `${r.name} +2`, supports: t2, number: 1 }]),
+        make("PLUS1", "+1 to two abilities", "Increase two different ability scores by 1. You can't raise a score above 20 this way.", [{ ...r, name: `${r.name} +1` }]),
+        ...abilityOptions(t2, 2, key).filter((e) => abilities.includes(e.name.toLowerCase())),
+      );
+      return { ...r, supports: tag, number: 1 };
+    });
   }
   return out;
 }

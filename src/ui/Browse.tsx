@@ -209,7 +209,8 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
   }, [filtered, books, effSort, type, disabledReason, chosenSet]);
   useEffect(() => setShown(perPage), [q, sel, sort, view, perPage]);
 
-  const activeCount = Object.values(sel).reduce((n, s) => n + s.size, 0);
+  // The Filters button counts what is set behind it; a switch on the bar shows its own state.
+  const activeCount = defs.filter((d) => !d.inline).reduce((n, d) => n + (sel[d.id]?.size ?? 0), 0);
   const toggle = (id: string, v: string) =>
     setSel((s) => {
       const next = { ...s, [id]: new Set(s[id] ?? []) };
@@ -261,6 +262,16 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
             </span>
           </div>
         )}
+        {/* A mixed choice (skills, tools, weapons... in one): its kinds as one switch on the bar (C1.3). */}
+        {counts.filter((c) => c.def.inline).map(({ def, values }) => (
+          <div key={def.id} className="seg-group">
+            <span className="seg-label">{def.label}</span>
+            <span className="seg" role="group" aria-label={def.label}>
+              <button className={!sel[def.id]?.size ? "on" : ""} onClick={() => setSel((s) => ({ ...s, [def.id]: new Set() }))}>All</button>
+              {values.map(([v, n]) => <button key={v} className={sel[def.id]?.has(v) ? "on" : ""} title={`${n} ${v.toLowerCase()}`} onClick={() => setSel((s) => ({ ...s, [def.id]: new Set([v]) }))}>{v}</button>)}
+            </span>
+          </div>
+        ))}
         {lockedCount > 0 && (
           <div className="seg-group">
             <span className="seg-label">Locked ({lockedCount})</span>
@@ -285,7 +296,7 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
       <p className="muted count">{groups.length} shown{filtered.length !== groups.length ? `, ${filtered.length} versions` : ""}{hidden > 0 ? `, ${hidden} hidden by your content filters (Menu, Settings)` : ""}</p>
       {open && (
         <div className="filters">
-          {counts.map(({ def, values }) => (
+          {counts.filter((c) => !c.def.inline).map(({ def, values }) => (
             <div key={def.id} className="filter-group">
               <b>{def.label}</b>
               <div className={`chips ${values.length > 14 ? "scroll" : ""}`}>

@@ -8,6 +8,8 @@ export interface FacetDef {
   get(el: AElement, books: BookIndex): string[];
   /** How values sort in the filter bar. */
   order?: (a: string, b: string) => number;
+  /** Shown on the list's own bar as one switch (All or one value), not only under Filters. */
+  inline?: boolean;
 }
 
 const setter = (el: AElement, k: string) => el.setters[k]?.value ?? "";
@@ -62,7 +64,29 @@ const sizeOf = (e: AElement) => {
   return m ? m[1].charAt(0) + m[1].slice(1).toLowerCase() : "";
 };
 
+const KIND_ORDER = ["Skills", "Tools", "Languages", "Weapons", "Armor", "Saving throws", "Other"];
+
+/**
+ * What a proficiency is (C1.3): a skill, tool, weapon, armor or saving throw, from its id, its name or its supports,
+ * the way Plutonium sorts a mixed "skill, tool or language" choice into its kinds. Aurora's ids
+ * (ID_PROFICIENCY_SKILL_..., ID_WOTC_ERLW_WEAPON_PROFICIENCY_...), its names ("Tool Proficiency (Vehicles)") and the
+ * 5e.tools converter's ids (ID_5ET_SKILL_..., ID_5ET_TOOL_..., ID_5ET_PROF_WEAPON_...).
+ */
+export function proficiencyKind(e: AElement): string {
+  if (e.type === "Language") return "Languages";
+  const id = e.id.toUpperCase();
+  const name = e.name.toLowerCase();
+  const sup = e.supports.join(" ").toLowerCase();
+  if (/SAVINGTHROW|SAVING_THROW/.test(id) || /^saving throw/.test(name)) return "Saving throws";
+  if (/_SKILL_|EXPERTISE/.test(id) || /^skill /.test(name) || /\b(5et )?skill\b/.test(sup)) return "Skills";
+  if (/_TOOL_|_GAMING|_INSTRUMENT|_VEHICLE/.test(id) || /^tool |supplies|tools|kit\b|set\b/.test(name) || /tool|gaming set|musical instrument|artisan/.test(sup)) return "Tools";
+  if (/WEAPON/.test(id) || /^weapon /.test(name)) return "Weapons";
+  if (/ARMOR|SHIELD/.test(id) || /^armor /.test(name)) return "Armor";
+  return "Other";
+}
+
 const FACETS: Record<string, FacetDef[]> = {
+  Proficiency: [{ id: "profKind", label: "Kind", inline: true, get: (e) => [proficiencyKind(e)], order: (a, b) => KIND_ORDER.indexOf(a) - KIND_ORDER.indexOf(b) }],
   Spell: SPELL,
   Race: [
     { id: "size", label: "Size", get: (e) => (sizeOf(e) ? [sizeOf(e)] : []) },

@@ -86,3 +86,9 @@ worth a check against our choices once the matching above is by fields.
   largest coin than it held, change capped by what the next coin up could give). Soul Forge pays smallest coins first
   and gives change in the largest coins, which keeps the same property.
 - No selling. A class's starting gold can be rolled ("goldAlternative" dice) or set to a fixed amount in the config.
+
+## Mixed proficiency choices (C1.3, 2026-10-27)
+
+Charactermancer_OtherProficiencySelect sorts every option of a "skillToolLanguageProficiencies" choice into its kind
+(skill, tool, language, weapon, armor, saving throw) by checking it against each kind's list, and summarises and
+renders each kind on its own. Soul Forge does the same with a "Kind" switch on the list (src/aurora/facets.ts).

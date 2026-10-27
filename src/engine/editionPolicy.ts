@@ -40,6 +40,9 @@ export function choiceEdition(owner: AElement, root: string, ch: Character, reg:
   // A 2014 background taken with the 2024 rules (backgroundOptions.ts) chooses under them: its origin feat is a 2024
   // one, and its own 2014 options stay (a 2024 choice keeps options that have no 2024 version).
   if (root === "background" && fromRoot === "2014" && Object.values(ch.selections).some((ids) => ids.includes(BACKGROUND_2024_ID))) return "2024";
+  // A 2024 element taken under a 2014 background (Aurora's "Origin Feat" variant feature, written for 2014
+  // backgrounds) makes its own choices under its rules: the origin feat is a 2024 one.
+  if (root === "background" && fromRoot === "2014" && editionOfElement(owner) === "2024") return "2024";
   return fromRoot !== "none" ? fromRoot : editionOfElement(owner);
 }
 
@@ -53,6 +56,9 @@ export function byEdition<T extends AElement>(options: T[], ed: Ed, chosen: stri
   const keep = options.filter((o) => {
     const oe = editionOfElement(o);
     if (oe === "none" || oe === ed) return true;
+    // A background feature of the other edition is written to be offered there (Aurora's 2024 "Origin Feat" as a 2014
+    // background's variant feature): it is kept.
+    if (o.type === "Background Feature") return true;
     const ok = !inEdition.has(`${o.type}|${versionName(o.name)}`) && ed === "2024";
     if (!ok && chosen.includes(o.id)) { outOfEdition.add(o.id); return true; }
     return ok;

@@ -4,6 +4,7 @@
  * change between versions, so this reads what it recognises, matches names against the loaded content, and
  * reports what it could not place.
  */
+import { logEvent } from "../logbook";
 import { ABILITY_IDS, newCharacter, uid, type AbilityId, type Character } from "./character";
 import type { AElement } from "./types";
 import type { ARegistry } from "./registry";
@@ -1084,6 +1085,8 @@ class Importer {
     }
     if (this.missing.length) this.notes.push(`${this.missing.length} things were not found in your loaded content and were skipped or kept as custom items.`);
     this.notes.push(`${this.matched.length} matched.`);
+    // The log (A2.11): what an import found, missed and left open.
+    logEvent("import", `${ch.name || "a character"}: ${this.matched.length} matched, ${this.missing.length} not found${this.missing.length ? ` (${this.missing.slice(0, 8).join("; ")})` : ""}, ${todo.length} left open${todo.length ? ` (${todo.slice(0, 6).join("; ")})` : ""}`);
     return { character: ch, notes: this.notes, matched: this.matched, missing: this.missing, todo, differences: this.compare(ch, opts.numbers) };
   }
 }

@@ -11,14 +11,23 @@ seen, instead of being fixed by hand or hidden.
 
 | # | Item | Source | What is missing | Seen by |
 |---|---|---|---|---|
-| UA1 | `infusions:count` | Artificer, Unearthed Arcana 2019-02-28: Infuse Item (`ID_WOTC_UA20190228_CLASS_FEATURE_ARTIFICER_INFUSE_ITEM`) | The number of infusions, set at several levels; not shown or used. | stat gate |
-| UA2 | `infusions:vanish` | Same feature | Probably how many infused items there may be before the oldest stops working (from its name; to confirm in the content); not shown or used. | stat gate |
-| UA3 | `equipment:id_wotc_ua_armor_light_arcanomechanical` | Wizard School of Invention, Unearthed Arcana 2018-01-08 (Three Subclasses): Arcanomechanical Armor (`ID_WOTC_UA_ARCHETYPE_FEATURE_SCHOOL_INVENTION_ARCANOMECHANICAL_ARMOR`) | A value tied to the arcanomechanical armor item; not applied. | stat gate |
-| UA4 | Artificer (2017 playtest) proficiencies | Unearthed Arcana: Artificer (2017-01-09) | Aurora and 5e.tools disagree: 5e.tools gives shields and tinker's tools, 2 skills including Perception; Aurora 3 skills including Deception and Religion. Settle from the playtest text in A4. | class proficiency gate (src/engine/classSkills.ts) |
+| ~~UA1~~ | ~~`infusions:count`~~ | ~~Artificer, Unearthed Arcana 2019-02-28: Infuse Item~~ | Done 2026-10-27: the infusions known; the content's own Artificer Infusion choices give that many per level, and the sheet shows the infused-item maximum (`infusions:items`). | stat gate |
+| UA2 | `infusions:vanish` | Same feature | 1 + Intelligence modifier; nothing in the content's text says what it counts, so it is not shown. Needs the playtest article (2019-02-28) to place. Does not stop the class being played. | stat gate |
+| ~~UA3~~ | ~~`equipment:id_wotc_ua_armor_light_arcanomechanical`~~ | ~~Wizard School of Invention, Unearthed Arcana 2018-01-08~~ | Done 2026-10-27: "equipment:<item>" means the feature gives the item; it goes into the inventory once (src/aurora/grantedItems.ts, for any content that uses it). | stat gate |
+| UA4 | Artificer (2017 playtest) proficiencies | Unearthed Arcana: Artificer (2017-01-09) | Aurora and 5e.tools disagree: 5e.tools gives shields and tinker's tools, 2 skills including Perception; Aurora 3 skills including Deception and Religion. Settle from the playtest text in A4. | class proficiency gate (src/engine/classSkills.ts) Aurora's copy is the one the lists show. Needs the playtest article (2017-01-09) to settle which provider is right. |
 
 The stat dictionary (src/engine/statDictionary.ts) marks UA1 to UA3 as "playtest, not supported yet" so the gate
 stays meaningful; remove that entry when they are wired.
 
-In the app, the features above and whatever grants them (today the 2019 playtest Artificer class and the 2018 School
-of Invention) show with a "Coming soon" mark and cannot be picked; random characters and autofill skip them. The ids
-live in src/aurora/comingSoon.ts: add an item's feature there when it is listed here, remove it when it is supported.
+In the app, a feature listed in src/aurora/comingSoon.ts and whatever grants it show with a "Coming soon" mark and
+cannot be picked; random characters and autofill skip them. Since 2026-10-27 the list is empty: the 2019 playtest
+Artificer and the 2018 School of Invention can be picked. Add a feature there when something listed here stops a class
+or option being played.
+
+## The playtest audit (A4)
+
+`SOULFORGE_RULES=$HOME/.soulforge-test RULES_TIER=ua npx vitest run src/engine/uaAudit.test.ts` builds every playtest
+class, subclass, species, subrace, background and feat and checks it as official content is
+(<cache>/engine/ua.md). 2026-10-27: 254 built, 239 with nothing found (94%). The 15 left are feats whose prerequisite is
+a chain of other feats (Squire of Solamnia before the Knight feats, Scion of the Outer Planes before Agent of Order),
+which the audit's character does not take: a limit of the audit, not of the engine.

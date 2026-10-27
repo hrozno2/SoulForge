@@ -1,4 +1,5 @@
 import { browserXml, parseElementsXml, type XmlApi } from "./parse";
+import { logEvent } from "../logbook";
 import { ARegistry } from "./registry";
 import { crawlIndex, countFiles, flatten, syncFiles, type IndexNode, type Progress, type SourceConfig, type SyncResult, type TextFetcher } from "./sources";
 import { idbFileCache, readFiles, saveSource } from "./storage";
@@ -133,6 +134,10 @@ export async function buildRegistry(
   times.build = performance.now() - tb;
   lastLoadTimes = { ...times, total: performance.now() - t0 };
   console.info(`[load] ${Object.entries(lastLoadTimes).map(([k, v]) => `${k} ${Math.round(v)} ms`).join(", ")}`);
+  // The log (A2.11): what was loaded, how long it took, and what the build passes fixed or could not use.
+  logEvent("content", `loaded ${reg.all().length} elements from ${plan.length} sources (${plan.map((p) => `${p.source.name}: ${p.urls.length} files`).join("; ")}) in ${Math.round(lastLoadTimes.total)} ms (${Object.entries(times).map(([k, v]) => `${k} ${Math.round(v)}`).join(", ")})`);
+  if (errors.length) logEvent("content", `${errors.length} files could not be read: ${errors.slice(0, 10).join("; ")}`);
+  if (reg.skillFixes.length) logEvent("content", `class skill lists aligned with 5e.tools: ${reg.skillFixes.join(", ")}`);
   return { reg, errors };
 }
 

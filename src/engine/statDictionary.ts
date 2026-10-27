@@ -18,9 +18,12 @@ export const STAT_DICTIONARY: StatKind[] = [
   { kind: "weapon-specific attack or damage", pattern: /^[a-z][a-z' -]*:(?:attack|damage)$/, readBy: "sheet attack lines (Bracers of Archery: longbow:damage; Fell Handed: handaxe:attack) and feature values" },
   { kind: "tool expertise", pattern: /^[a-z][a-z’' -]*(?:tools?|supplies|utensils|kit):proficiency$/, readBy: "sheet proficiency list (marked expertise)" },
   { kind: "companion", pattern: /^companion:.+$/, readBy: "companion bonuses on the Sheet and Play tabs" },
-  // Unearthed Arcana content not supported yet (docs/UA-UNSUPPORTED.md, UA1 to UA3; support is master plan A4): the
-  // 2019 playtest Artificer's infusion count and vanishing, the 2018 School of Invention's arcanomechanical armor.
-  { kind: "playtest, not supported yet", pattern: /^(?:infusions:(?:count|vanish)|equipment:id_wotc_ua_armor_light_arcanomechanical)$/, readBy: "nothing yet: listed in docs/UA-UNSUPPORTED.md" },
+  // Items a feature gives (the 2018 playtest School of Invention's arcanomechanical armor): put in the inventory.
+  { kind: "granted item", pattern: /^equipment:id_[a-z0-9_]+$/, readBy: "src/aurora/grantedItems.ts" },
+  // The 2019 playtest Artificer's infusions known: the content's own infusion choices give that many per level.
+  { kind: "playtest count kept by choices", pattern: /^infusions:count$/, readBy: "the Artificer Infusion choices (their number per level)" },
+  // Unearthed Arcana content not supported yet (docs/UA-UNSUPPORTED.md, UA2): the 2019 Artificer's "vanish" value.
+  { kind: "playtest, not supported yet", pattern: /^infusions:vanish$/, readBy: "nothing yet: listed in docs/UA-UNSUPPORTED.md" },
   { kind: "feature DC", pattern: /^[a-z][a-z' ()-]*(?::[a-z ]+)?:dc$/, readBy: "feature values on the sheet (Psionic Power: DC 14)" },
   { kind: "ability", pattern: new RegExp(`^${AB}(?::(?:score:set|max|max:extra|modifier|score))?$`), readBy: "stats.ts (scores, caps, set scores)" },
   { kind: "save", pattern: new RegExp(`^(?:${AB}:save(?::misc|:proficiency)?|saves?(?::misc)?)$`), readBy: "stats.ts, sheet.ts" },

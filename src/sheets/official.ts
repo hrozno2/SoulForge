@@ -2,6 +2,7 @@
  * The official Wizards of the Coast character sheets. Each is a known layout: the positions of every field are kept here,
  * so the same filler works on a fillable copy (the form's own fields) and on a plain printing copy (text drawn at those positions).
  */
+import { logEvent } from "../logbook";
 import { appendSpellPages } from "./continuation";
 import type { SpellRow } from "./data";
 import { PDFDocument, type PDFCheckBox, type PDFFont, type PDFTextField } from "pdf-lib";
@@ -107,7 +108,8 @@ function continueSpells(doc: PDFDocument, font: PDFFont, rows: SpellRow[], data:
 export async function fillOfficialSheet(template: Uint8Array | ArrayBuffer, nameHint: string, data: FillData, font: { regular: ArrayBuffer | Uint8Array }): Promise<FormFillResult & { layout?: LayoutId; form?: boolean }> {
   const doc = await PDFDocument.load(template, { ignoreEncryption: true });
   const id = identifySheet(doc, nameHint);
-  if (!id) throw new Error("This is not one of the official sheets Soul Forge knows.");
+  if (!id) { logEvent("export", `sheet not recognised: ${nameHint}`); throw new Error("This is not one of the official sheets Soul Forge knows."); }
+  logEvent("export", `filling ${nameHint} as layout ${id.layout}${id.form ? "" : " (printed: fields added)"}`);
   const fontkit = (await import("@pdf-lib/fontkit")).default;
   doc.registerFontkit(fontkit);
   const f = await doc.embedFont(font.regular, { subset: true });

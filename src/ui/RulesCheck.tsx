@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { logEvent } from "../logbook";
+
+/** The last findings logged, so only a change is logged. */
+let lastFindings = "";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
 import { checkCharacter, type Finding } from "../aurora/rulesCheck";
@@ -32,8 +36,16 @@ export function useRulesCheck(r: Resolved): RulesCheckResult {
     let found: Finding[] = [];
     try {
       found = checkCharacter(r, buildSheet(r), ref ?? []);
-    } catch {
+    } catch (e) {
+      // A failing check was silent; the log says so (A2.11).
+      logEvent("rules", `rules check failed: ${(e as Error).message}`);
       found = [];
+    }
+    // The findings when they change (not on every keystroke): what the rules check says about this character.
+    const sig = found.map((f) => `${f.rule}: ${f.detail}`).join(" | ");
+    if (sig !== lastFindings) {
+      lastFindings = sig;
+      if (found.length) logEvent("rules", `${found.length} findings for ${r.character.name || "a character"}: ${found.slice(0, 6).map((f) => `${f.rule}: ${f.detail}`).join(" | ")}${found.length > 6 ? " ..." : ""}`);
     }
     const kept = found.filter((f) => !OPEN_CHOICE.test(f.rule) && !(!official && /^Class not in the rules reference$/.test(f.rule)) && !(ref === null && /^Class not in the rules reference$/.test(f.rule)));
     return { rules: kept.filter((f) => !CONTENT.test(f.rule)), content: kept.filter((f) => CONTENT.test(f.rule)), full: !!ref || !official };

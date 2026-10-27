@@ -1,4 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { logEvent, timed } from "../logbook";
+import { withGrantedItems } from "../aurora/grantedItems";
 import { ConfirmHost } from "./Confirm";
 import { BugReport } from "./BugReport";
 import { t } from "../i18n";
@@ -106,7 +108,18 @@ export function App() {
   const outdated = useMemo(() => outdatedFiveTools(content.sources), [content.sources]);
   const updater = useUpdater();
 
-  const r = useMemo(() => resolve(character, content.reg), [character, content.reg]);
+  // Working out the character; logged only when slow (A2.11), with what the character is made of.
+  const r = useMemo(() => timed("engine", "resolve", () => resolve(character, content.reg), 50, () => `${character.classes.map((c) => `${content.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join("/")}, ${Object.keys(character.selections).length} picks`), [character, content.reg]);
+  // Content the character's rules point at but nothing loaded has (the engine's warnings), when that changes (A2.11).
+  const warned = useRef("");
+  useEffect(() => {
+    const sig = r.warnings.join(" | ");
+    if (sig === warned.current) return;
+    warned.current = sig;
+    if (sig) logEvent("engine", `${r.warnings.length} references to missing content: ${r.warnings.slice(0, 8).join(" | ")}`);
+  }, [r]);
+  // Items a feature gives go into the inventory once (src/aurora/grantedItems.ts).
+  useEffect(() => { const next = withGrantedItems(character, r); if (next !== character) setCharacter(next); }, [character, r]);
   useEffect(() => setRollContext({ conditions: character.play.conditions, exhaustion: character.play.exhaustion ?? 0 }), [character.play.conditions, character.play.exhaustion]);
 
   // Autosave the open character, and keep a copy in the library.

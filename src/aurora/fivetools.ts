@@ -407,7 +407,11 @@ interface Ctx {
   baseItems: Map<string, J>;
 }
 
-const srcName = (ctx: Ctx, code: string) => ctx.books[code] ?? code;
+/**
+ * A book's name from its 5e.tools code. A playtest code the book list does not name ("UATheMysticClass") becomes
+ * "Unearthed Arcana: The Mystic Class", so it counts as playtest material and meets Aurora's copy of the same article.
+ */
+const srcName = (ctx: Ctx, code: string) => ctx.books[code] ?? (/^UA[A-Z0-9]/.test(code) ? `Unearthed Arcana: ${code.slice(2).replace(/([a-z])([A-Z0-9])/g, "$1 $2").replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")}` : code);
 
 function convertSpell(s: J, ctx: Ctx): AElement {
   const comp = s.components ?? {};

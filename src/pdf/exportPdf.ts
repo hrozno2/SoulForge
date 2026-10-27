@@ -1,4 +1,5 @@
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { logEvent } from "../logbook";
 import fontkit from "@pdf-lib/fontkit";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
@@ -255,6 +256,19 @@ export function cardSources(r: Resolved, sh: SheetData, scope: "prepared" | "all
 }
 
 export async function buildPdf(r: Resolved, sh: SheetData, opts: PdfOptions, fonts: FontData): Promise<Uint8Array> {
+  // The log (A2.11): what was made, how long it took, or why it failed.
+  const t0 = performance.now();
+  try {
+    const bytes = await buildPdfTranslated(r, sh, opts, fonts);
+    logEvent("export", `Soul Forge PDF for ${r.character.name || "a character"}: ${[opts.sheet && "sheet", opts.spellCards && "spell cards", opts.itemCards && "item cards", opts.featureCards && "feature cards", opts.tips && "tips"].filter(Boolean).join(", ")}${opts.translate ? `, translated to ${opts.translate.target}` : ""}; ${Math.round(bytes.length / 1024)} KB in ${Math.round(performance.now() - t0)} ms`);
+    return bytes;
+  } catch (e) {
+    logEvent("export", `Soul Forge PDF failed: ${(e as Error).message}`);
+    throw e;
+  }
+}
+
+async function buildPdfTranslated(r: Resolved, sh: SheetData, opts: PdfOptions, fonts: FontData): Promise<Uint8Array> {
   const t = opts.translate;
   if (!t) return buildPdfOnce(r, sh, opts, fonts);
   // First pass only collects the strings that would be printed. Then they are translated, then the real pass runs.

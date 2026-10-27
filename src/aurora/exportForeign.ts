@@ -3,6 +3,7 @@
  * Both are best effort and name-based. Items come across with their descriptions but without links to any compendium,
  * so the target tool shows them as plain items and features.
  */
+import { logEvent } from "../logbook";
 import { ABILITY_IDS, itemLabel, type AbilityId } from "./character";
 import type { Resolved } from "./engine";
 import type { AElement } from "./types";
@@ -69,6 +70,12 @@ export function foundryItemType(el: AElement | undefined, name: string): { type:
 }
 
 export function exportFoundry(r: Resolved): Record<string, unknown> {
+  const actor = exportFoundryActor(r);
+  logEvent("export", `Foundry actor for ${r.character.name || "a character"}: ${(actor.items as unknown[]).length} items`);
+  return actor;
+}
+
+function exportFoundryActor(r: Resolved): Record<string, unknown> {
   const sheet = buildSheet(r);
   const { c, race, lineages, speciesPicks, background, subclass, subclassId, classes } = details(r);
   const items: Record<string, unknown>[] = [];

@@ -6,8 +6,7 @@ import type { AElement } from "./types";
  * Remove an id here when its item in UA-UNSUPPORTED.md is done.
  */
 export const UNSUPPORTED_UA: Record<string, string> = {
-  ID_WOTC_UA20190228_CLASS_FEATURE_ARTIFICER_INFUSE_ITEM: "UA1, UA2: infusion count and vanishing",
-  ID_WOTC_UA_ARCHETYPE_FEATURE_SCHOOL_INVENTION_ARCANOMECHANICAL_ARMOR: "UA3: arcanomechanical armor",
+  // Empty since 2026-10-27: UA1 and UA3 are supported, UA2 (an unused display value) does not stop play.
 };
 
 /** Marks the unsupported elements and, through grants, every element that brings one. */

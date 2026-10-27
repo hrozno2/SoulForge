@@ -1,9 +1,11 @@
 /**
  * Recent errors and warnings from the app, kept in memory for a bug report: console errors and warnings, uncaught
  * errors and rejected promises. Started before the app renders. Home folder paths are taken out when reported.
+ * Also the app's own events (A2.11, `logEvent`): content loading, imports, exports, slow work, rules findings; short
+ * lines, kept with the errors and written to the log file a few seconds later, so they cost almost nothing.
  */
 const lines: string[] = [];
-const MAX = 200;
+const MAX = 400;
 
 function note(kind: string, parts: unknown[]) {
   const text = parts.map((p) => (p instanceof Error ? `${p.name}: ${p.message}` : typeof p === "string" ? p : (() => { try { return JSON.stringify(p); } catch { return String(p); } })())).join(" ");
@@ -23,6 +25,26 @@ export function startLogbook(): void {
 }
 
 export const logLines = (): string[] => lines.slice();
+
+/**
+ * An event worth knowing when something goes wrong: `area` names the part of the app ("content", "import",
+ * "export", "rules", "engine"), `message` says what happened, with the numbers that matter. Kept short; never call
+ * it on every keystroke (use `timed`, which logs only slow work).
+ */
+export function logEvent(area: string, message: string): void {
+  note(area, [message]);
+}
+
+/** Runs `fn`; when it takes longer than `slowMs`, logs it with `what` (a function, so nothing is built when fast). */
+export function timed<T>(area: string, label: string, fn: () => T, slowMs = 50, what?: () => string): T {
+  const t = performance.now();
+  try {
+    return fn();
+  } finally {
+    const ms = performance.now() - t;
+    if (ms > slowMs) logEvent(area, `slow: ${label} took ${Math.round(ms)} ms${what ? ` (${what()})` : ""}`);
+  }
+}
 
 // ---------------------------------------------------------------- the log file (desktop)
 

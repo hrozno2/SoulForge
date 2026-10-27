@@ -480,6 +480,16 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
     const chosen = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"].find((a) => stats.has(`${key}:spellcasting:ability:${a}`));
     if (chosen && entry.ability !== chosen) { entry.ability = chosen; spellAbility[key] = chosen; stats.clearCache(); }
   }
+  // "inherit" (5e.tools: the ability you already cast with, for a feat's spells such as Magic Connoisseur's): a class's
+  // spellcasting ability, or with none the best of Intelligence, Wisdom and Charisma.
+  for (const [key, entry] of spellcasting) {
+    if (entry.ability !== "inherit") continue;
+    const fromClass = [...spellcasting.values()].find((e) => e !== entry && e.ability && e.ability !== "inherit" && reg.get(e.owner)?.type === "Class")?.ability;
+    const best = ["intelligence", "wisdom", "charisma"].reduce((b, a) => (stats.get(a) > stats.get(b) ? a : b), "intelligence");
+    entry.ability = fromClass ?? best;
+    spellAbility[key] = entry.ability;
+    stats.clearCache();
+  }
   return { ids, active, stats, spellcasting, spellPicks, rawSlots, warnings, signature, gained, via };
 }
 

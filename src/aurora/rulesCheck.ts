@@ -68,7 +68,12 @@ const ARMOR: [RegExp, number, number | undefined, number?][] = [
 ];
 
 /** Which reference class a class element is: same name, same edition. */
+/** Playtest material (Unearthed Arcana): the rules reference holds the published books only. */
+const isPlaytest = (el: AElement) => /unearthed arcana|playtest/i.test(el.source);
+
 export function refFor(ref: RefClass[], cls: AElement): RefClass | undefined {
+  // A playtest class is not the published one of the same name (the 2017 Artificer is not Tasha's).
+  if (isPlaytest(cls)) return undefined;
   const name = cls.name.replace(/\s*\(.*\)$/, "");
   const same = ref.filter((c) => lc(c.name) === lc(name));
   return same.find((c) => (c.edition === "one") === isModern(cls)) ?? same[0];
@@ -176,7 +181,8 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   };
   const level = ch.classes.reduce((n, c) => n + c.level, 0);
   const score = (a: AbilityId) => sh.abilities.find((x) => x.id === a)!;
-  const mod = (a: AbilityId) => score(a).mod;
+  // An ability the sheet does not know (content naming a spellcasting ability another way) is NaN, not a crash.
+  const mod = (a: AbilityId) => sh.abilities.find((x) => x.id === a)?.mod ?? NaN;
 
   // Completeness: every choice the rules ask for is made, none is impossible, nothing points at missing content.
   for (const s of r.slots) {
@@ -200,7 +206,8 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   if (sh.proficiency !== prof(level)) add("Proficiency bonus by level", `${sh.proficiency}, should be ${prof(level)} at level ${level}`);
 
   const refs = ch.classes.map((c) => ({ c, el: reg.get(c.classId)!, ref: reg.get(c.classId) ? refFor(ref, reg.get(c.classId)!) : undefined }));
-  for (const x of refs) if (!x.ref) add("Class not in the rules reference", x.el?.name ?? x.c.classId);
+  // A playtest class has no reference (the reference holds the published books): nothing to report.
+  for (const x of refs) if (!x.ref && !(x.el && isPlaytest(x.el))) add("Class not in the rules reference", x.el?.name ?? x.c.classId);
 
   // Hit dice and hit points (average rule): first level the full die, then half the die + 1, Constitution each level.
   const con = mod("constitution");
@@ -304,7 +311,8 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const exact = x.ref.subclasses.filter((s) => [s.name, s.shortName].some((n) => norm(n) === norm(sub.name)));
     const subMatches = exact.length ? exact : x.ref.subclasses.filter((s) => [s.name, s.shortName].some((n) => word(norm(sub.name), norm(n)) || word(norm(n), norm(sub.name))));
     const subEd = isModern(sub) ? ["XPHB", "EFA"] : [];
-    const refSub = subMatches.find((s) => subEd.length ? subEd.includes(s.source) : !["XPHB", "EFA"].includes(s.source)) ?? subMatches[0] ?? x.ref.subclasses.find((s) => [s.name, s.shortName].some((n) => norm(n) === norm(sub.name) || norm(sub.name).includes(norm(n)) || norm(n).includes(norm(sub.name))));
+    // A playtest subclass is not the published one of the same name (the playtest Rune Knight's features differ).
+    const refSub = isPlaytest(sub) ? undefined : subMatches.find((s) => subEd.length ? subEd.includes(s.source) : !["XPHB", "EFA"].includes(s.source)) ?? subMatches[0] ?? x.ref.subclasses.find((s) => [s.name, s.shortName].some((n) => norm(n) === norm(sub.name) || norm(sub.name).includes(norm(n)) || norm(n).includes(norm(sub.name))));
     if (!refSub) continue;
     for (const f of refSub.features) {
       if (f.level > x.c.level || f.optional || skip.test(f.name) || norm(f.name) === norm(refSub.name) || norm(f.name) === norm(refSub.shortName)) continue;
@@ -403,6 +411,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   }
   for (const line of sh.casting) {
     const m = line.ability ? mod(line.ability as AbilityId) : NaN;
+    if (line.ability && !Number.isFinite(m)) add("Spellcasting ability unknown", `${line.name}: "${line.ability}"`);
     if (Number.isFinite(m) && (line.dc !== 8 + sh.proficiency + m || line.attack !== sh.proficiency + m)) {
       // Magic items and features (Robe of the Archmagi, a +1 focus) can add to these.
       const items = ch.inventory.some((i) => i.attuned || /\+\d/.test(reg.get(i.id)?.name ?? ""));

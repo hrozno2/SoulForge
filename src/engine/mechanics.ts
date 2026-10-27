@@ -92,13 +92,16 @@ export function borrowMechanics(byId: Map<string, AElement>): MechanicsReport {
     if (twins.length > 1) twins = twins.filter((t) => bookKey(t.source) === bookKey(el.source));
     if (twins.length !== 1) continue; // none, or more than one: nothing is guessed
     const twin = twins[0];
-    const setHere = new Set(el.rules.filter((r) => r.kind === "stat").map((r) => (r as { name: string }).name.toLowerCase()));
-    for (const rid of rootsById.get(el.id) ?? []) for (const n of statsUnder(rid)) setHere.add(n);
+    // A statistic and its ":misc" part are one ("innate speed" from Aurora, "innate speed:misc" from a Foundry effect):
+    // borrowing one where the other is set counts it twice (Boon of Speed +60).
+    const family = (n: string) => n.toLowerCase().replace(/:misc$/, "");
+    const setHere = new Set(el.rules.filter((r) => r.kind === "stat").map((r) => family((r as { name: string }).name)));
+    for (const rid of rootsById.get(el.id) ?? []) for (const n of statsUnder(rid)) setHere.add(family(n));
     const givenHere = conceptsOf(el);
     const added: ARule[] = [];
     for (const r of twin.rules) {
       if (!portable(r, byId)) continue;
-      if (r.kind === "stat" && !setHere.has(r.name.toLowerCase())) added.push(r);
+      if (r.kind === "stat" && !setHere.has(family(r.name))) added.push(r);
       if (r.kind === "grant" && r.id) {
         const target = byId.get(r.id);
         const k = target ? conceptOf(target) : conceptOfMarker(r.id);

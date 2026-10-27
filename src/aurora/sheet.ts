@@ -372,12 +372,41 @@ function buildAc(r: Resolved): { value: number; parts: string[] } {
   return { value, parts };
 }
 
+/**
+ * Features that let a weapon attack use another ability, read from their rules text: "you can use your Charisma
+ * modifier, instead of Strength or Dexterity, for the attack and damage rolls" (Hex Warrior, Pact of the Blade), "When
+ * you attack with a magic weapon, you can use your Intelligence modifier..." (Battle Ready). The conditions the same
+ * sentence or paragraph sets are kept: a magic weapon, a weapon without the two-handed property.
+ */
+export function weaponAbilityOptions(r: Resolved): { ability: AbilityId; magicOnly: boolean; notTwoHanded: boolean; from: string }[] {
+  const out: { ability: AbilityId; magicOnly: boolean; notTwoHanded: boolean; from: string }[] = [];
+  for (const a of r.active) {
+    const text = a.el.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    for (const para of [text]) {
+      const m = /use your (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) modifier,? instead of (?:your )?Strength or Dexterity(?: modifiers?)?,? for (?:the )?attack and damage rolls/i.exec(para)
+        ?? /use your (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) modifier for (?:the |its |the weapon's )?attack and damage rolls,? instead of (?:using )?(?:your )?Strength or Dexterity/i.exec(para);
+      if (!m) continue;
+      // The conditions are the granting sentence's ("When you attack with a magic weapon, you can use..."), or the
+      // sentence before for a weapon chosen there (Hex Warrior's "lacks the two-handed property").
+      const start = para.lastIndexOf(". ", m.index);
+      const prev = para.lastIndexOf(". ", Math.max(0, start - 1));
+      const sentence = para.slice(start + 1, para.indexOf(".", m.index) + 1 || undefined);
+      const around = para.slice(prev + 1, para.indexOf(".", m.index) + 1 || undefined);
+      // Only while something is active (Bladesong, a Rage): not the sheet's standing attack.
+      if (/while (?:your |the )?[\w' ]{0,30}\bis active|while it(?:'s| is) active|while you(?:'re| are) (?:raging|in)/i.test(para.slice(Math.max(0, m.index - 120), m.index))) continue;
+      out.push({ ability: m[1].toLowerCase() as AbilityId, magicOnly: /attack with a magic weapon/i.test(sentence), notTwoHanded: /lacks the two-handed property/i.test(around), from: a.el.name });
+    }
+  }
+  return out;
+}
+
 /** Attack lines from equipped weapons and custom attacks. With `carried`, weapons that are only carried count too, once per kind. */
 function buildAttacks(r: Resolved, carried = false): AttackLine[] {
   const s = r.stats;
   const prof = s.get("proficiency");
   const out: AttackLine[] = [];
   const mods = (a: AbilityId) => s.get(`${a}:modifier`);
+  const weaponAbilities = weaponAbilityOptions(r);
   // Dueling: +2 damage with a melee weapon held in one hand and no other weapon. The content leaves this to the app.
   const dueling = effectsOfKind(r, "one-hand-melee-damage").reduce((m, x) => Math.max(m, x.effect.value), 0);
   const weaponsHeld = r.character.inventory.filter((i) => i.equipped && i.id && r.reg.get(i.id)?.type === "Weapon").length;
@@ -393,7 +422,11 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     const ranged = tags.some((t) => t.includes("ranged"));
     const finesse = tags.some((t) => t.includes("finesse"));
     // Finesse (a dart too, which is also ranged): the better of Strength and Dexterity, for the attack and the damage.
-    const ability: AbilityId = finesse ? (mods("dexterity") > mods("strength") ? "dexterity" : "strength") : ranged ? "dexterity" : "strength";
+    const usual: AbilityId = finesse ? (mods("dexterity") > mods("strength") ? "dexterity" : "strength") : ranged ? "dexterity" : "strength";
+    // Another ability a feature allows for this weapon (Hex Warrior, Battle Ready), when it is better.
+    const twoHandedTag = tags.some((t) => /two.?handed/.test(t));
+    const alt = weaponAbilities.filter((o) => (!o.magicOnly || (it.magic ?? 0) > 0 || el.type === "Magic Item" || /^\+\d/.test(el.name)) && (!o.notTwoHanded || !twoHandedTag)).map((o) => o.ability);
+    const ability: AbilityId = [usual, ...alt].reduce((best, x) => (mods(x) > mods(best) ? x : best), usual);
     const proficient = (el.setters.proficiency?.value ?? "").split(",").some((id) => r.ids.has(id.trim()));
     const magicAtk = (Number(el.setters.attackBonus?.value) || 0) + (it.magic ?? 0);
     const magicDmg = (Number(el.setters.damageBonus?.value) || 0) + (it.magic ?? 0);

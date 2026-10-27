@@ -554,6 +554,8 @@ function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
   const rules = [...abilityRules(f.ability, f.name, { out, idBase: ftId("FEAT", f.name, f.source) }), ...trainingRules(f, f.name, out, ctx, ftId("FEAT", f.name, f.source)), ...defenseRules(f)];
   const spells = additionalSpellRules(f.additionalSpells, f.name, f.source, out);
   rules.push(...spells.rules);
+  // The options a feat teaches (Martial Adept's maneuvers, Metamagic Adept's options, Fighting Initiate's style).
+  rules.push(...optionalFeatureRules(f, rules));
   const html = entriesHtml(f.entries);
   return base(ftId("FEAT", f.name, f.source), f.name, "Feat", srcName(ctx, f.source), {
     // A feat the rules let a character take more than once (Elemental Adept, Ability Score Improvement).
@@ -1232,6 +1234,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       srules.push(...refRules(f.entries, `${f.name} (${s.shortName ?? s.name} ${f.level})`, f.level, { cf: data.cf, sf: data.sf, ctx, out }, true));
     }
     srules.push(...additionalSpellRules(s.additionalSpells, s.name, s.source, out).rules);
+    srules.push(...optionalFeatureRules(s, srules));
     // A subclass that casts (Eldritch Knight, Arcane Trickster): its list is the class whose spells it expands with.
     const expandedFrom = [...JSON.stringify(s.additionalSpells ?? []).matchAll(/class=([A-Za-z ]+)/g)].map((m) => m[1].trim());
     const subCasting = castingRules(s, s.shortName ?? s.name, expandedFrom.length ? [...new Set(expandedFrom)] : [c.name], lname);
@@ -1333,6 +1336,7 @@ function convertOptionalFeature(o: J, ctx: Ctx): AElement {
   const pre = (o.prerequisite as J[] | undefined) ?? [];
   const lv = pre.map((p) => p.level?.level).find((n) => typeof n === "number") as number | undefined;
   const rules = additionalSpellRules(o.additionalSpells, o.name, o.source).rules;
+  rules.push(...optionalFeatureRules(o, rules));
   return base(ftId("OPT", o.name, o.source), o.name, "Optional Feature", srcName(ctx, o.source), {
     supports: ["5et optional feature", ...types], rules, description: html,
     sheet: { display: true, descriptions: [{ text: html }] },
@@ -1340,13 +1344,24 @@ function convertOptionalFeature(o: J, ctx: Ctx): AElement {
   });
 }
 
-/** Select rules for the optional features a class gains (fighting styles, invocations, maneuvers and so on). */
-function optionalFeatureRules(c: J): ARule[] {
+/**
+ * Select rules for the optional features a class, subclass, feat or option gains (fighting styles, invocations,
+ * maneuvers, metamagic). A progression of {"*": 2} is "when you take it" (Martial Adept's two maneuvers): one choice
+ * with no level. `have`: rules already there; a kind of option already offered (from the text's option blocks) is
+ * not offered twice.
+ */
+function optionalFeatureRules(c: J, have: ARule[] = []): ARule[] {
   const rules: ARule[] = [];
   for (const p of (c.optionalfeatureProgression as J[]) ?? []) {
     const types: string[] = p.featureType ?? [];
     if (!types.length) continue;
+    const tags = types.map(optTag);
+    if (have.some((r) => r.kind === "select" && r.type === "Optional Feature" && tags.some((t) => r.supports.split("|").includes(t)))) continue;
     const prog = p.progression;
+    if (prog && !Array.isArray(prog) && prog["*"] !== undefined) {
+      rules.push({ kind: "select", type: "Optional Feature", name: String(p.name ?? "Optional feature"), supports: tags.join("|"), number: Number(prog["*"]) || 1 });
+      continue;
+    }
     const counts: number[] = Array.isArray(prog) ? prog : Array.from({ length: 20 }, (_, i) => {
       const keys = Object.keys(prog ?? {}).map(Number).sort((x, y) => x - y);
       const k = keys.filter((n) => n <= i + 1).pop();

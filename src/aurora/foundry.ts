@@ -298,6 +298,10 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
           const added: ARule[] = [];
           for (const eff of (e.effects as J[]) ?? []) {
             if (eff.transfer === false || eff.disabled) continue; // applied when used, not always on
+            // An effect that lasts a while (Slasher's "Slashed" for a turn, Gloom Stalker's first-turn speed) is put on
+            // a target or applied when used, not carried by the character.
+            const dur = (eff.duration ?? {}) as J;
+            if (["turns", "rounds", "seconds", "minutes", "hours"].some((k) => Number(dur[k]) > 0)) continue;
             for (const c of (eff.changes as J[]) ?? []) {
               const key = String(c.key ?? "");
               const r = changeRules(key, String(c.mode ?? "ADD"), c.value, out);

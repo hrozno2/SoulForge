@@ -10,7 +10,7 @@ import { conceptOf } from "../engine/concepts";
 import { choiceEdition, editionOfElement } from "../engine/editionPolicy";
 import { bookKey } from "./books";
 import type { Resolved } from "./engine";
-import { preparePool, type SheetData } from "./sheet";
+import { preparePool, weaponAbilityOptions, type SheetData } from "./sheet";
 import type { AElement } from "./types";
 import type { AbilityId } from "./character";
 import { meets } from "./requirements";
@@ -456,13 +456,17 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   if ((twoHanded.length && shield) || twoHanded.length > 1 || weapons.length > 2 || (twoHanded.length && weapons.length > 1)) add("More held than two hands can hold", weapons.map((i) => reg.get(i.id)?.name).join(", ") + (shield ? ", shield" : ""));
 
   // Attacks from weapons: ability modifier, proficiency if trained, magic bonus.
+  const altAbilities = weaponAbilityOptions(r);
   for (const a of sh.attacks.filter((x) => x.auto && x.elId)) {
     const el = reg.get(a.elId!)!;
     const it = ch.inventory.find((i) => i.uid === a.id);
     const tags = el.supports.map(lc);
     const ranged = tags.some((t) => t.includes("ranged"));
     const finesse = tags.some((t) => t.includes("finesse"));
-    const m = finesse ? Math.max(dex, mod("strength")) : ranged ? dex : mod("strength");
+    // A feature may allow another ability for this weapon (Hex Warrior, Pact of the Blade, Battle Ready): the better.
+    const twoHandedTag = tags.some((t) => /two.?handed/.test(t));
+    const alts = altAbilities.filter((o) => (!o.magicOnly || (it?.magic ?? 0) > 0 || /^\+\d/.test(el.name)) && (!o.notTwoHanded || !twoHandedTag)).map((o) => mod(o.ability));
+    const m = Math.max(finesse ? Math.max(dex, mod("strength")) : ranged ? dex : mod("strength"), ...alts);
     const proficient = !/not proficient/.test(a.notes);
     const magic = (it?.magic ?? 0) + (Number(el.setters.attackBonus?.value) || 0);
     // Fighting styles, features and items add to every attack of a kind: named parts of "ranged:attack",

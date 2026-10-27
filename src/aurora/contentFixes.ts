@@ -70,6 +70,10 @@ export const GRANTS_ADD: Record<string, { type: string; id: string; requirements
   ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_SPELLCASTING: [{ type: "Grants", id: "ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE" }],
   ID_WOTC_UA_CLASS_FEATURE_ARTIFICER_SPELLCASTING: [{ type: "Grants", id: "ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE" }],
   ID_WOTC_PHB24_CLASS_DRUID: [{ type: "Proficiency", id: "ID_PROFICIENCY_TOOL_PROFICIENCY_HERBALISM_KIT", requirements: "!ID_WOTC_PHB24_MULTICLASS_DRUID" }],
+  // Gunner (TCE p.80) grants proficiency with firearms outright. The content grants the DMG's firearms group, which
+  // only applies with the DMG's optional Firearms rule switched on (right for the Eberron Artificer, whose firearms are
+  // the DM's call), so a Gunner was proficient with none. Found by the class audit (src/aurora/classAudit.test.ts).
+  ID_WOTC_TCOE_FEAT_GUNNER: ["RENAISSANCE_FIREARMS_PISTOL", "RENAISSANCE_FIREARMS_MUSKET", "MODERN_FIREARMS_PISTOL_AUTOMATIC", "MODERN_FIREARMS_REVOLVER", "MODERN_FIREARMS_RIFLE_HUNTING", "MODERN_FIREARMS_RIFLE_AUTOMATIC", "MODERN_FIREARMS_SHOTGUN", "FUTURISTIC_FIREARMS_LASER_PISTOL", "FUTURISTIC_FIREARMS_ANTIMATTER_RIFLE", "FUTURISTIC_FIREARMS_LASER_RIFLE"].map((w) => ({ type: "Proficiency", id: `ID_WOTC_DMG_PROFICIENCY_WEAPON_${w}` })),
 };
 
 /**

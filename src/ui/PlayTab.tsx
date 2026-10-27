@@ -1,4 +1,5 @@
 import { companionBonuses } from "../aurora/companion";
+import { TextArea, TextInput } from "./TextField";
 import { useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, headerInfo, type CastingLine, type FeatureLine, type SheetData } from "../aurora/sheet";
@@ -561,7 +562,7 @@ function Description({ ch, sheet, set }: { ch: Character; sheet: SheetData; set:
         {!bits.some(([, v]) => v) && !sheet.lists.length && <p className="muted">Fill in details on the Manage tab.</p>}
       </Panel>
       {info.backstory && <Panel title="Backstory"><p>{info.backstory}</p></Panel>}
-      <label className="field"><span>Edit backstory</span><textarea rows={5} value={info.backstory} onChange={(e) => set((c) => ({ ...c, info: { ...c.info, backstory: e.target.value } }))} /></label>
+      <label className="field"><span>Edit backstory</span><TextArea rows={5} value={info.backstory} onCommit={(v) => set((c) => ({ ...c, info: { ...c.info, backstory: v } }))} /></label>
     </>
   );
 }
@@ -575,7 +576,7 @@ function Resources({ ch, set }: { ch: Character; set: SetCharacter }) {
       <p className="muted">Track anything that has a number: ki points, rage uses, a wand's charges, a pet's hit points. Short and long rests refill them for you.</p>
       {list.map((x) => (
         <div key={x.id} className="resource-row">
-          <input className="res-name" value={x.name} placeholder="Name" aria-label="Resource name" onChange={(e) => patch(x.id, { name: e.target.value })} />
+          <TextInput className="res-name" value={x.name} placeholder="Name" aria-label="Resource name" onCommit={(v) => patch(x.id, { name: v })} />
           <span className="res-pips">
             {x.max <= 12
               ? Array.from({ length: x.max }, (_, i) => (

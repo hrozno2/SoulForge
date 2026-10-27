@@ -5,6 +5,7 @@
  * training on the right. The same rules and choices as the tab layout (BuildTab), arranged differently.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { TextInput } from "./TextField";
 import { createPortal } from "react-dom";
 import type { AElement } from "../aurora/types";
 import { stillToChoose, type Resolved } from "../aurora/engine";
@@ -669,7 +670,7 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
         {ch.portrait ? <img src={ch.portrait} alt="" /> : <span className="board-arch-empty"><Head size={44} /><small>Add portrait</small></span>}
       </button>
       <div className="board-who-text">
-        <input className="board-name" placeholder="Character name" aria-label="Character name" value={ch.name} onChange={(e) => set((c) => ({ ...c, name: e.target.value }))} />
+        <TextInput className="board-name" placeholder="Character name" aria-label="Character name" value={ch.name} onCommit={(v) => set((c) => ({ ...c, name: v }))} />
         <small>{what || "Nothing chosen yet"}</small>
         {sh.hp > 0 && (
           <div className="board-bars">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TextArea } from "./TextField";
 import { askConfirm } from "./Confirm";
 import { uid, type Character, type JournalEntry } from "../aurora/character";
 
@@ -17,7 +18,7 @@ export function Journal({ ch, set }: { ch: Character; set: SetCharacter }) {
   const edit = (id: string, p: Partial<JournalEntry>) => set((c) => ({ ...c, journal: (c.journal ?? []).map((e) => (e.uid === id ? { ...e, ...p } : e)) }));
   return (
     <>
-      <label className="field"><span>Notes</span><textarea rows={8} value={ch.notes} onChange={(e) => set((c) => ({ ...c, notes: e.target.value }))} /></label>
+      <label className="field"><span>Notes</span><TextArea rows={8} value={ch.notes} onCommit={(v) => set((c) => ({ ...c, notes: v }))} /></label>
       <section className="block journal">
         <h3>Session log</h3>
         <div className="row">

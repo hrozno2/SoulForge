@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { TextInput } from "./TextField";
 import { logEvent, timed } from "../logbook";
 import { withGrantedItems } from "../aurora/grantedItems";
 import { checkDue } from "../aurora/olderBuild";
@@ -322,7 +323,7 @@ export function App() {
           {tab === "start" && <StartTab currentId={id} onOpen={open} onNew={() => open(uid(), { ...newCharacter(), checkedWith: APP_VERSION })} onRandom={random} contentReady={content.ready} sourceCount={content.sources.length} goContent={() => setTab("content")} onImportForeign={importForeign} reg={content.reg} />}
           {tab === "build" && (
             <>
-              {!board && <div className="namebar"><input placeholder="Character name" value={character.name} onChange={(e) => set((c) => ({ ...c, name: e.target.value }))} /></div>}
+              {!board && <div className="namebar"><TextInput placeholder="Character name" value={character.name} onCommit={(v) => set((c) => ({ ...c, name: v }))} /></div>}
               {board ? <BuildBoard r={r} ch={character} set={set} /> : <BuildTab r={r} ch={character} set={set} onDetail={setDetail} />}
             </>
           )}

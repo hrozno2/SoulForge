@@ -1,4 +1,5 @@
 import { requestRoll } from "./Dice";
+import { TextArea, TextInput } from "./TextField";
 import { useEffect, useMemo, useState } from "react";
 import { PortraitCropper, PortraitPicker } from "./Portrait";
 import { ConditionsPanel } from "./ConditionsPanel";
@@ -74,7 +75,7 @@ function PickOrType({ label, items, value, onChange }: { label: string; items: A
   const listId = `dl-${label}`;
   return (
     <label className="field"><span>{label}</span>
-      <input list={listId} value={value} onChange={(e) => onChange(e.target.value)} />
+      <TextInput list={listId} value={value} onCommit={onChange} />
       <datalist id={listId}>{items.map((i) => <option key={i.id} value={i.name} />)}</datalist>
     </label>
   );
@@ -93,16 +94,16 @@ function Info({ ch, set, r }: { ch: Character; set: SetCharacter; r: Resolved })
       <PortraitPicker onPick={(url) => set((c) => ({ ...c, portrait: url }))} />
       {crop && <PortraitCropper file={crop} onCancel={() => setCrop(null)} onDone={(url) => { set((c) => ({ ...c, portrait: url })); setCrop(null); }} />}
       <div className="row">
-        <label className="field"><span>Character name</span><input value={ch.name} onChange={(e) => set((c) => ({ ...c, name: e.target.value }))} /></label>
-        <label className="field"><span>Player</span><input value={ch.playerName} onChange={(e) => set((c) => ({ ...c, playerName: e.target.value }))} /></label>
+        <label className="field"><span>Character name</span><TextInput value={ch.name} onCommit={(v) => set((c) => ({ ...c, name: v }))} /></label>
+        <label className="field"><span>Player</span><TextInput value={ch.playerName} onCommit={(v) => set((c) => ({ ...c, playerName: v }))} /></label>
       </div>
       <div className="grid-fields">
         <PickOrType label="Alignment" items={[...new Map(r.reg.ofType("Alignment").map((a) => [a.name, a])).values()]} value={ch.info.alignment} onChange={(v) => put("alignment", v)} />
         <PickOrType label="Deity" items={[...new Map(r.reg.ofType("Deity").map((a) => [a.name, a])).values()].sort((a, b) => a.name.localeCompare(b.name))} value={ch.info.deity} onChange={(v) => put("deity", v)} />
-        {FIELDS.filter(([k]) => k !== "alignment" && k !== "deity").map(([k, label]) => <label className="field" key={k}><span>{label}</span><input value={ch.info[k]} onChange={(e) => put(k, e.target.value)} /></label>)}
+        {FIELDS.filter(([k]) => k !== "alignment" && k !== "deity").map(([k, label]) => <label className="field" key={k}><span>{label}</span><TextInput value={ch.info[k]} onCommit={(v) => put(k, v)} /></label>)}
       </div>
-      {AREAS.map(([k, label]) => <label className="field" key={k}><span>{label}</span><textarea rows={k === "backstory" ? 6 : 3} value={ch.info[k]} onChange={(e) => put(k, e.target.value)} /></label>)}
-      <label className="field"><span>Notes</span><textarea id="character-notes" rows={6} value={ch.notes} onChange={(e) => set((c) => ({ ...c, notes: e.target.value }))} /></label>
+      {AREAS.map(([k, label]) => <label className="field" key={k}><span>{label}</span><TextArea rows={k === "backstory" ? 6 : 3} value={ch.info[k]} onCommit={(v) => put(k, v)} /></label>)}
+      <label className="field"><span>Notes</span><TextArea id="character-notes" rows={6} value={ch.notes} onCommit={(v) => set((c) => ({ ...c, notes: v }))} /></label>
     </>
   );
 }
@@ -291,7 +292,7 @@ function Companions({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
         const el = r.reg.get(c.id);
         return (
           <div key={c.uid} className="card sub">
-            <div className="row"><input value={c.name} onChange={(e) => set((x) => ({ ...x, companions: x.companions.map((y) => (y.uid === c.uid ? { ...y, name: e.target.value } : y)) }))} /><button onClick={() => set((x) => ({ ...x, companions: x.companions.filter((y) => y.uid !== c.uid) }))}>Remove</button></div>
+            <div className="row"><TextInput value={c.name} onCommit={(v) => set((x) => ({ ...x, companions: x.companions.map((y) => (y.uid === c.uid ? { ...y, name: v } : y)) }))} /><button onClick={() => set((x) => ({ ...x, companions: x.companions.filter((y) => y.uid !== c.uid) }))}>Remove</button></div>
             {el && <CompanionCard el={el} />}
           </div>
         );

@@ -9,7 +9,7 @@ import type { SourceConfig } from "../aurora/sources";
 import { checkCharacter } from "../aurora/rulesCheck";
 import { buildSheet } from "../aurora/sheet";
 import { rulesRef } from "../aurora/rulesRefStore";
-import { logLines } from "../logbook";
+import { logLines, previousLog } from "../logbook";
 import { openExternal, saveFile } from "../store";
 import { REPO_URL } from "../config";
 
@@ -23,12 +23,13 @@ export function redact(text: string): string {
     .replace(/[A-Za-z]:\\\\?Users\\\\?[^\\\s"']+/g, "~");
 }
 
-type Part = "what" | "rules" | "system" | "log" | "content" | "character";
+type Part = "what" | "rules" | "system" | "log" | "previous" | "content" | "character";
 const LABEL: Record<Part, string> = {
   what: "What went wrong (your words)",
   rules: "Rules check of the current character",
   system: "App version and system",
   log: "Recent errors from the app",
+  previous: "Errors from the last session (the log file)",
   content: "Content links (addresses only)",
   character: "The character (its saved file)",
 };
@@ -36,7 +37,10 @@ const LABEL: Record<Part, string> = {
 export function BugReport({ r, sources, onClose }: { r: Resolved; sources: SourceConfig[]; onClose: () => void }) {
   const [what, setWhat] = useState("");
   const [system, setSystem] = useState("");
-  const [on, setOn] = useState<Record<Part, boolean>>({ what: true, rules: true, system: true, log: true, content: true, character: true });
+  const [on, setOn] = useState<Record<Part, boolean>>({ what: true, rules: true, system: true, log: true, previous: true, content: true, character: true });
+  // The last session's log file (desktop): what went wrong before a crash or restart.
+  const [previous, setPrevious] = useState("");
+  useEffect(() => { void previousLog().then((t) => setPrevious(redact(t.split("\n").slice(-200).join("\n")))); }, []);
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
@@ -87,6 +91,7 @@ export function BugReport({ r, sources, onClose }: { r: Resolved; sources: Sourc
     ["rules", `Character: ${summary}\n${rules}`],
     ["system", system || "(gathering...)"],
     ["log", log],
+    ...(previous ? [["previous", previous] as [Part, string]] : []),
     ["content", content],
   ];
   const body = (withCharacter: boolean) => [

@@ -1,6 +1,7 @@
 import { canonicalName, effectsOfKind } from "../engine/effects";
 import { conceptOf, conceptOfMarker } from "../engine/concepts";
 import type { AElement } from "./types";
+import { evalFormula } from "./stats";
 import { FULL_CASTER_SLOTS, itemWeight, multiclassCasterLevel, sharedSlotLevel, type ActiveElement, type Resolved, type SpellPick } from "./engine";
 import { ABILITY_IDS, SKILL_ABILITY, itemLabel, type AbilityId } from "./character";
 import { isModern as modern } from "./edition";
@@ -694,7 +695,9 @@ function featureAttacks(r: Resolved): AttackLine[] {
     const kind = at.ranged ? "ranged" : "melee";
     const bonus = mod + s.get("proficiency") + s.get(`${kind}:attack`) + s.get("attack");
     const extra = mod + s.get(`${kind}:damage`) + s.get("damage");
-    fromData.push({ id: `data-${a.el.id}-${at.name}`, auto: true, name: at.name, bonus, damage: `${at.die}${extra ? signed(extra) : ""}`, damageType: at.damageType, properties: at.ranged ? "ranged" : "", notes: a.el.name });
+    // A die that grows with level (a Monk's Martial Arts die): worked out from its scale formulas now.
+    const die = at.dieFormula ? `${evalFormula(at.dieFormula.count, (n) => s.get(n))}d${evalFormula(at.dieFormula.faces, (n) => s.get(n))}` : at.die;
+    fromData.push({ id: `data-${a.el.id}-${at.name}`, auto: true, name: at.name, bonus, damage: `${die}${extra ? signed(extra) : ""}`, damageType: at.damageType, properties: at.ranged ? "ranged" : "", notes: a.el.name });
   }
   const prof = s.get("proficiency");
   const str = s.get("strength:modifier");

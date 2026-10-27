@@ -83,6 +83,28 @@ function scaleFormula(sc: Scale, part: "value" | "faces"): string | undefined {
   return terms.length ? `(${terms.join(" + ")})` : "0";
 }
 
+/**
+ * A damage die a scale value gives, from the start of a Foundry damage formula: "@scale.monk.die" (a dice scale: its
+ * count and faces), "2@scale.monk.die" (two of that die), "(@scale.x.y)d8" (a number scale as the count).
+ */
+export function scaleDie(formula: string): { count: string; faces: string } | undefined {
+  let m = /^\s*(\d*)@scale\.([\w-]+)\.([\w-]+)\b/.exec(formula);
+  if (m) {
+    const sc = SCALES.get(`${m[2]}.${m[3]}`);
+    if (!sc || sc.type !== "dice") return undefined;
+    const faces = scaleFormula(sc, "faces");
+    const count = m[1] ? m[1] : scaleFormula(sc, "value");
+    return faces && count ? { count, faces } : undefined;
+  }
+  m = /^\s*\(@scale\.([\w-]+)\.([\w-]+)\)d(\d+)/.exec(formula);
+  if (m) {
+    const sc = SCALES.get(`${m[1]}.${m[2]}`);
+    const count = sc ? scaleFormula(sc, "value") : undefined;
+    return count ? { count, faces: m[3] } : undefined;
+  }
+  return undefined;
+}
+
 /** A Foundry formula as a stat formula ("2 * @details.level" to "2 * {level}"); undefined when it uses roll data this sheet does not keep. */
 export function translateFormula(v: unknown): string | undefined {
   if (typeof v === "number") return String(v);
@@ -294,8 +316,12 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
           for (const a of (e.activities as J[]) ?? []) {
             if (a.type === "attack" && kind !== "item" && kind !== "magicvariant" && kind !== "baseitem") {
               const part = ((a.damage?.parts as J[]) ?? [])[0];
-              if (!part?.denomination) continue;
-              attacks.push({ name: a.name || e.name, die: `${part.number ?? 1}d${part.denomination}`, damageType: ((part.types as string[]) ?? [])[0] ?? "", ability: a.attack?.ability ? String(a.attack.ability) : "", ranged: a.attack?.type?.value === "ranged" });
+              const base = { name: a.name || e.name, damageType: ((part?.types as string[]) ?? [])[0] ?? "", ability: a.attack?.ability ? String(a.attack.ability) : "", ranged: a.attack?.type?.value === "ranged" };
+              if (part?.denomination) { attacks.push({ ...base, die: `${part.number ?? 1}d${part.denomination}` }); continue; }
+              // A die that grows with level, written as a scale value ("@scale.monk.die + @mod", "(@scale.x.y)d8"):
+              // its count and size as formulas on the owner's level, worked out on the sheet.
+              const dieFormula = scaleDie(String(part?.custom?.formula ?? ""));
+              if (dieFormula) attacks.push({ ...base, die: "", dieFormula });
             }
             if (a.type === "save") {
               const abil = String(a.save?.dc?.calculation ?? "");

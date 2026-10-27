@@ -111,7 +111,7 @@ export interface AElement {
   /** Where it came from, so a source can be removed or updated. */
   origin?: string;
   /** Attacks the element gives (from 5e.tools' Foundry activities): shown on the sheet as attack lines. */
-  attacks?: { name: string; die: string; damageType: string; ability: string; ranged: boolean }[];
+  attacks?: { name: string; die: string; damageType: string; ability: string; ranged: boolean; dieFormula?: { count: string; faces: string } }[];
   /** The rules the element belongs to, stamped at load from its book's release (see edition.ts). */
   edition?: "2014" | "2024";
   /** Playtest content not supported yet, or something that brings it (comingSoon.ts): listed but not pickable. */

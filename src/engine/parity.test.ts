@@ -64,10 +64,14 @@ it.skipIf(!C || process.env.RULES_TIER !== "parity")("post-import audit", () => 
   const books = new BookIndex(reg);
   const out: string[] = ["# Post-import audit", ""];
   const counts: Record<string, number> = {};
-  const add = (kind: string, line: string) => { counts[kind] = (counts[kind] ?? 0) + 1; out.push(`- **${kind}**: ${line}`); };
+  const add = (kind: string, line: string) => { counts[kind] = (counts[kind] ?? 0) + 1; out.push(`- **${kind}**: ${line}`); perType.push(`- **${kind}**: ${line}`); };
+  // A3.3: per element type, how many entries have a twin in the other provider and how many twins agree.
+  let perType: string[] = [];
+  const coverage: string[] = ["| Type | Entries | Aurora only | 5e.tools only | Twins | Twins agree | Coverage |", "|---|---|---|---|---|---|---|"];
   const shown = (e: AElement) => !e.compendiumHidden && !/unearthed|playtest/i.test(e.source);
 
   for (const type of TYPES) {
+    perType = [];
     const groups = groupVariants(reg.ofType(type).filter(shown), books);
     for (const g of groups) {
       // 1. One book from two providers is one entry.
@@ -99,10 +103,15 @@ it.skipIf(!C || process.env.RULES_TIER !== "parity")("post-import audit", () => 
       const t = twins.get(k) ?? twins.set(k, {}).get(k)!;
       if (el.origin === "5etools") t.five ??= el; else t.aurora ??= el;
     }
+    let both = 0, agree = 0;
+    const onlyAurora = [...twins.values()].filter((t) => t.aurora && !t.five).length;
+    const onlyFive = [...twins.values()].filter((t) => t.five && !t.aurora).length;
     for (const [, t] of twins) {
       if (!t.aurora || !t.five) continue;
       const ca = holder(reg, t.aurora), cf = holder(reg, t.five);
       if (!ca || !cf) continue;
+      both++;
+      const before = perType.length;
       const a = profile(reg, t.aurora, ca), f = profile(reg, t.five, cf);
       const label = `${type} ${t.aurora.name} (${t.aurora.source})`;
       const onlyA = [...a.concepts].filter((x) => !f.concepts.has(x)), onlyF = [...f.concepts].filter((x) => !a.concepts.has(x));
@@ -113,9 +122,14 @@ it.skipIf(!C || process.env.RULES_TIER !== "parity")("post-import audit", () => 
       const nk = new Set([...Object.keys(a.nums), ...Object.keys(f.nums)]);
       const nd = [...nk].filter((x) => (a.nums[x] ?? 0) !== (f.nums[x] ?? 0)).map((x) => `${x} ${a.nums[x] ?? 0} vs ${f.nums[x] ?? 0}`);
       if (nd.length) add("twins differ: numbers", `${label}: Aurora vs 5e.tools ${nd.join("; ")}`);
+      if (perType.length === before) agree++;
     }
+    coverage.push(`| ${type} | ${twins.size} | ${onlyAurora} | ${onlyFive} | ${both} | ${agree} | ${both ? Math.round((agree / both) * 100) : 100}% |`);
+    mkdirSync(join(C!, "engine", "parity"), { recursive: true });
+    writeFileSync(join(C!, "engine", "parity", `${type.toLowerCase().replace(/\s+/g, "-")}.md`), [`# ${type}: Aurora and 5e.tools`, "", `${twins.size} entries, ${both} with both providers, ${agree} agree (${both ? Math.round((agree / both) * 100) : 100}%).`, "", ...perType, ""].join("\n"));
   }
-  out.splice(2, 0, `Counts: ${Object.entries(counts).map(([k, n]) => `${k} ${n}`).join(", ") || "none"}`, "");
+  out.splice(2, 0, `Counts: ${Object.entries(counts).map(([k, n]) => `${k} ${n}`).join(", ") || "none"}`, "", ...coverage, "");
+  console.log(`COVERAGE\n${coverage.join("\n")}`);
   mkdirSync(join(C!, "engine"), { recursive: true });
   writeFileSync(join(C!, "engine", "parity.md"), out.join("\n"));
   console.log(`PARITY ${Object.entries(counts).map(([k, n]) => `${k} ${n}`).join(", ")}`);

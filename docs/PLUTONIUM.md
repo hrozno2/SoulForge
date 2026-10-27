@@ -61,3 +61,17 @@ for all content, the macro fix this project prefers.
 ScaleValue advancements are used now (foundry.ts SCALES: @scale formulas, class `scales`, Wild Shape). The other
 advancement types (ItemGrant, ItemChoice, Trait, AbilityScoreImprovement) mostly repeat what the 5e.tools entries give;
 worth a check against our choices once the matching above is by fields.
+
+## Checked against Plutonium, 2026-10-27 (module on file in ~/.soulforge-test/plutonium)
+
+- **Subclass features by reference.** A subclass lists its features as references
+  (`name|class|classSource|subclassShortName|subclassSource|level|source`). Plutonium reads an empty class or subclass
+  source as the PHB and an empty feature source as the subclass's. A 2014 subclass copied onto a 2024 class (the
+  XPHB copy of the School of Necromancy) keeps its PHB features this way. Soul Forge filtered features by the class's
+  source and lost them; it now follows the references the same way (fivetools.ts, convertClass).
+- **"inherit" spellcasting ability.** For additional spells, Plutonium uses the parent's ability: the ability the
+  feature itself raised (the largest of its own ability score increases). Soul Forge does the same (engine.ts, after
+  the walk), falling back to a class's spellcasting ability, then the best of Intelligence, Wisdom and Charisma.
+- **Playtest sources.** Plutonium counts a source as prerelease (playtest) when its code starts with "UA" or "XUA" (the
+  One D&D playtest), and names it "Unearthed Arcana: ...". Soul Forge names 5e.tools' playtest codes the same way, so
+  they count as playtest and meet Aurora's copy (fivetools.ts, srcName).

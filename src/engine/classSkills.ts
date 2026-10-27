@@ -10,6 +10,7 @@ import { matchesSupports, type ARegistry } from "../aurora/registry";
 import { newCharacter } from "../aurora/character";
 import { resolve } from "../aurora/engine";
 import { conceptOf } from "./concepts";
+import { bookKey } from "../aurora/books";
 
 /** Adds the missing tags; returns what was added ("Fighter (2024): Insight"), for the tests and the log. */
 export function alignClassSkills(byId: Map<string, AElement>): string[] {
@@ -50,17 +51,17 @@ export function alignClassSkills(byId: Map<string, AElement>): string[] {
 /**
  * Differences that are not mistakes: 5e.tools counts the setting books' light martial weapons (the hooked shortspear,
  * the hoopak) under the 2024 Monk's and Rogue's "martial weapons that have the Light property", Aurora lists the core
- * ones; and the 2017 playtest Artificer differs between providers (docs/UA-UNSUPPORTED.md UA4).
+ * ones.
  */
 export const CLASS_PROFICIENCY_ACCEPTED: RegExp[] = [
   /^(Monk|Rogue) \(2024\) .*: 5e\.tools grants weapon:(hooked-shortspear|hoopak), Aurora does not$/,
-  /^Artificer \[Unearthed Arcana: Artificer\]: /,
 ];
 
 export function classProficiencyDiffs(reg: ARegistry): string[] {
   const out: string[] = [];
+  // Twins are one class of one book from both providers (a playtest class is not the published one of its name).
   const twins = new Map<string, AElement>();
-  for (const el of reg.ofType("Class")) if (el.origin === "5etools") twins.set(`${el.name.toLowerCase()}|${isModern(el)}`, el);
+  for (const el of reg.ofType("Class")) if (el.origin === "5etools") twins.set(`${el.name.toLowerCase()}|${bookKey(el.source)}`, el);
   const view = (id: string) => {
     const ch = newCharacter();
     ch.classes = [{ classId: id, level: 1 }];
@@ -76,7 +77,7 @@ export function classProficiencyDiffs(reg: ARegistry): string[] {
   const diff = (a: Set<string>, b: Set<string>) => [...a].filter((x) => !b.has(x)).sort();
   for (const cls of reg.ofType("Class")) {
     if (cls.origin === "5etools" || cls.compendiumHidden || cls.comingSoon) continue;
-    const twin = twins.get(`${cls.name.toLowerCase()}|${isModern(cls)}`);
+    const twin = twins.get(`${cls.name.toLowerCase()}|${bookKey(cls.source)}`);
     if (!twin) continue;
     const a = view(cls.id), f = view(twin.id);
     const label = `${cls.name}${isModern(cls) ? " (2024)" : ""} [${cls.source}]`;

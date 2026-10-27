@@ -411,7 +411,8 @@ interface Ctx {
  * A book's name from its 5e.tools code. A playtest code the book list does not name ("UATheMysticClass") becomes
  * "Unearthed Arcana: The Mystic Class", so it counts as playtest material and meets Aurora's copy of the same article.
  */
-const srcName = (ctx: Ctx, code: string) => ctx.books[code] ?? (/^UA[A-Z0-9]/.test(code) ? `Unearthed Arcana: ${code.slice(2).replace(/([a-z])([A-Z0-9])/g, "$1 $2").replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")}` : code);
+// Playtest codes as Plutonium tells them: "UA..." (Unearthed Arcana) and "XUA..." (the One D&D playtest).
+const srcName = (ctx: Ctx, code: string) => ctx.books[code] ?? (/^X?UA[A-Z0-9]/.test(code) ? `Unearthed Arcana: ${code.replace(/^X?UA/, "").replace(/([a-z])([A-Z0-9])/g, "$1 $2").replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")}` : code);
 
 function convertSpell(s: J, ctx: Ctx): AElement {
   const comp = s.components ?? {};
@@ -1230,10 +1231,23 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     // replace the first, and the 2014 class lost its subclasses. The class's book joins the id when it differs.
     const sid = ftId("SUBCLASS", `${c.name} ${s.shortName ?? s.name}`, s.source, c.source !== s.source ? `for ${c.source}` : "");
     const srules: ARule[] = [];
-    for (const f of data.sf.filter((x) => x.className === c.name && x.subclassShortName === (s.shortName ?? s.name) && (x.subclassSource ?? s.source) === s.source && (x.classSource ?? c.source) === c.source)) {
+    // The subclass's features, as its own list names them ("Undead Thralls|Wizard||Necromancy||6"): a 2014 subclass
+    // copied onto a 2024 class keeps its PHB features, which the class's source alone would not find (as Plutonium
+    // reads these references: an empty class or subclass source is the PHB, an empty feature source the subclass's).
+    // Without a list, the features that name this class and subclass.
+    const refs = ((s.subclassFeatures as unknown[]) ?? []).map((x) => String(typeof x === "string" ? x : (x as J).subclassFeature ?? "")).filter(Boolean);
+    const byRef = refs.map((uid) => {
+      const [name, className, classSource, shortName, subSource, level, source] = uid.split("|").map((p) => p.trim());
+      const cs = (classSource || "PHB").toLowerCase(), ss = (subSource || "PHB").toLowerCase(), fs = (source || subSource || "PHB").toLowerCase();
+      return data.sf.find((x) => x.name.toLowerCase() === name.toLowerCase() && String(x.className).toLowerCase() === className.toLowerCase() && String(x.classSource ?? "PHB").toLowerCase() === cs && String(x.subclassShortName).toLowerCase() === shortName.toLowerCase() && String(x.subclassSource ?? "PHB").toLowerCase() === ss && Number(x.level) === Number(level) && String(x.source).toLowerCase() === fs);
+    }).filter((x): x is J => !!x);
+    const features = byRef.length ? byRef : data.sf.filter((x) => x.className === c.name && x.subclassShortName === (s.shortName ?? s.name) && (x.subclassSource ?? s.source) === s.source && (x.classSource ?? c.source) === c.source);
+    for (const f of features) {
       const fid = ftId("SF", `${s.shortName ?? s.name} ${f.name}`, f.source, `${f.level}${f.header ?? ""}`);
-      if (out.some((o) => o.id === fid)) continue;
-      out.push(featureElement(f, "5et subclass feature", "Archetype Feature", fid, ctx, f.name === (s.name)));
+      // A feature two copies of one subclass share (the PHB subclass and its copy for the 2024 class) is one element,
+      // granted by both.
+      const had = out.some((o) => o.id === fid);
+      if (!had) out.push(featureElement(f, "5et subclass feature", "Archetype Feature", fid, ctx, f.name === (s.name)));
       srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
       srules.push(...refRules(f.entries, `${f.name} (${s.shortName ?? s.name} ${f.level})`, f.level, { cf: data.cf, sf: data.sf, ctx, out }, true));
     }

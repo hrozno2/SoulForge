@@ -202,3 +202,10 @@ The rules suites download and cache what they need in `~/.soulforge-test` (pinne
 4. `src/aurora/rulesCheck.ts` for what "follows the rules" means.
 5. `src/ui/App.tsx` and `BuildBoard.tsx` for the interface.
 6. `src/aurora/rules.suite.test.ts` for how all of it is tested together.
+
+## Plutonium as the base (2026-10-27)
+
+Chris builds characters correctly with Plutonium in Foundry in almost every case. Before writing or changing how the
+engine routes anything (classes, subclasses, features, choices, spells, items, imports, exports), read how Plutonium
+does it (~/.soulforge-test/plutonium/mod/plutonium, js/Bundle.js; read only, never copied: its licence is UNLICENSED),
+and use it to double-check the result. Note what it does in docs/PLUTONIUM.md.

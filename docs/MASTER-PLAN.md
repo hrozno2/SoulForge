@@ -18,6 +18,17 @@ memory "macro fixes"); rebuild Soul Forge Test after every change (`scripts/test
 70% of the weekly usage; the full check runs only on request; releases cut the full coverage rules check only Monday
 to Thursday, 9 to 17.
 
+**Plutonium is the base (Chris, 2026-10-27).** Chris creates characters correctly with Plutonium in Foundry in almost
+every case, so it is the reference for the engine: before writing or changing how anything is routed (classes,
+subclasses, features, choices, spells, items, imports, exports), read how Plutonium does it, and use it to double-check
+the engine's results (a character built in both, compared field by field, as with Drakim). The module is kept on file
+in ~/.soulforge-test/plutonium/mod/plutonium (source github.com/TheGiddyLimit/plutonium-next); its licence is
+UNLICENSED, so it is read for behaviour and never copied. Findings go to docs/PLUTONIUM.md.
+
+| # | Item | Source | Notes |
+|---|---|---|---|
+| A0.1 | Plutonium cross-check, standing: for every engine area, compare with Plutonium's routing and record differences in docs/PLUTONIUM.md; more characters built in both (like Drakim) as tests. | Chris 2026-10-27 | Ongoing. Done so far: subclass feature references (A2.12). |
+
 ---
 
 ## Stage A: engine fixes and buildout
@@ -54,7 +65,7 @@ Order inside the stage: first what makes characters wrong today, then what is mi
 | ~~A2.9~~ | ~~A global filter for modern technology that is not science fiction (firearms, the DMG's renaissance and modern items, modern vehicles).~~ | Chris 2026-10-26 | Done 2026-10-27 (overnight session): 5e.tools item ages "renaissance" and "modern" give the tag "modern", "futuristic" stays "scifi"; shared with Aurora's same-named items; a Modern technology switch in Settings and the tutorial (hidden by default, as before under sci-fi). |
 | ~~A2.10~~ | ~~Drakim, made by hand in Soul Forge and in Foundry: the import must give the same character and the export must carry what Foundry's actor has.~~ | Chris 2026-10-26, three files in ~/.soulforge-test/drakim | Done 2026-10-27: the export now matches Foundry's own actor for Drakim: items typed as dnd5e does (exportForeign.ts foundryItemType: weapons by category and base item, armour by weight, gear as consumable, equipment, tool, container or loot, kept in their container), every feature including those the sheet hides, Foundry's names ("Fighting Style: Interception", "Runes: Fire Rune", "Dragonborn (Blue)", straight apostrophes), senses as species features, the Unarmed Strike. The engine agrees on every number. The test is strict (src/aurora/drakim.test.ts); accepted: Chris's two builds differ in a language (Orc) and an item (Oil, 5 flasks), and 5e.tools calls Draconic Resistance "Damage Resistance". |
 | ~~A2.11~~ | ~~Logs in the app for errors, rules issues and build issues, light enough not to slow it down (Chris 2026-10-27).~~ | Chris | Done 2026-10-27: src/logbook.ts `logEvent(area, message)` and `timed(area, label, fn, slowMs)` (logs only slow work); short lines in the same memory buffer as the errors (400 lines), written to soul-forge.log a few seconds later. Logged: content loading (sources, files, times, unreadable files, skill list fixes), slow character resolves (over 50 ms, with the classes), the engine's references to missing content and the rules check's findings (only when they change), rules check failures (were silent), imports (matched, not found, left open), exports (Soul Forge PDF with time and size, official sheets with their layout, Foundry actors). Test: src/logbook.test.ts. |
-| A2.12 | Random characters with all content (found by the playtest audit's random run): 12 subclass features missing on published 2014 subclasses taken by 2024 classes (5e.tools copies, e.g. School of Necromancy's Undead Thralls on a 2024 Wizard), 3 spell slot counts off in mixed builds. Not playtest-specific. | A4 random run, <cache>/engine/ua-random.md | Find the cause per kind and fix for all. |
+| ~~A2.12~~ | ~~Random characters with all content (found by the playtest audit's random run): 12 subclass features missing on published 2014 subclasses taken by 2024 classes (5e.tools copies, e.g. School of Necromancy's Undead Thralls on a 2024 Wizard), 3 spell slot counts off in mixed builds. Not playtest-specific.~~ | A4 random run, <cache>/engine/ua-random.md | Done 2026-10-27, checked against Plutonium (docs/PLUTONIUM.md): subclass features now follow the subclass's own references, as Plutonium reads them, so a 2014 subclass on a 2024 class keeps its PHB features (a feature two copies share is granted by both); only classes' spellcasting shares the multiclass slot table (a playtest Eladrin's spells made an Arcane Trickster a multiclass caster). The playtest random run has no findings left. Also from Plutonium: \"inherit\" is the ability the feature raised; XUA sources are playtest. The class proficiency gate now pairs classes by book (UA4 withdrawn: it compared the 2017 Artificer with Tasha's). |
 
 ### A3. Audits that find engine mistakes (run inside Stage A, fix what they find)
 

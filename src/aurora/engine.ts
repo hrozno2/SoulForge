@@ -26,6 +26,8 @@ export interface SpellcastingEntry {
   owner: string;
   /** Class level of the owner. */
   level: number;
+  /** A class's own spellcasting, not a species', feat's or item's: only these share the multiclass slot table. */
+  fromClass?: boolean;
 }
 
 export interface SpellPick {
@@ -328,6 +330,7 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
           lists: sc.list.length ? sc.list : [sc.name],
           owner: classOwner?.id ?? el.id,
           level: ownerLevel,
+          fromClass: !!classOwner,
         });
         spellAbility[key] = lc(sc.ability ?? "");
       }
@@ -480,13 +483,22 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
     const chosen = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"].find((a) => stats.has(`${key}:spellcasting:ability:${a}`));
     if (chosen && entry.ability !== chosen) { entry.ability = chosen; spellAbility[key] = chosen; stats.clearCache(); }
   }
-  // "inherit" (5e.tools: the ability you already cast with, for a feat's spells such as Magic Connoisseur's): a class's
-  // spellcasting ability, or with none the best of Intelligence, Wisdom and Charisma.
+  // "inherit" (5e.tools, a feat's spells such as Magic Connoisseur's): as Plutonium reads it, the ability the feature
+  // itself raised (its own ability score increase, the larger if two); without one, a class's spellcasting ability,
+  // or the best of Intelligence, Wisdom and Charisma.
+  const ABIL = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"];
   for (const [key, entry] of spellcasting) {
     if (entry.ability !== "inherit") continue;
+    const raised = new Map<string, number>();
+    for (const a of active) {
+      if (a.el.id === entry.owner || !(via.get(a.el.id) ?? []).some((chain) => chain.includes(entry.owner))) continue;
+      for (const rule of a.el.rules) if (rule.kind === "stat" && ABIL.includes(rule.name.toLowerCase()) && Number(rule.value) > 0) raised.set(rule.name.toLowerCase(), (raised.get(rule.name.toLowerCase()) ?? 0) + Number(rule.value));
+    }
+    for (const rule of reg.get(entry.owner)?.rules ?? []) if (rule.kind === "stat" && ABIL.includes(rule.name.toLowerCase()) && Number(rule.value) > 0) raised.set(rule.name.toLowerCase(), (raised.get(rule.name.toLowerCase()) ?? 0) + Number(rule.value));
+    const own = [...raised].sort((x, y) => y[1] - x[1])[0]?.[0];
     const fromClass = [...spellcasting.values()].find((e) => e !== entry && e.ability && e.ability !== "inherit" && reg.get(e.owner)?.type === "Class")?.ability;
     const best = ["intelligence", "wisdom", "charisma"].reduce((b, a) => (stats.get(a) > stats.get(b) ? a : b), "intelligence");
-    entry.ability = fromClass ?? best;
+    entry.ability = own ?? fromClass ?? best;
     spellAbility[key] = entry.ability;
     stats.clearCache();
   }
@@ -530,7 +542,9 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
   // The content states a multiclass caster level, but rounds the artificer's share down (it rounds up), so the
   // level is worked out here whenever every class is known; the stated one only stands in for unknown casters.
   const stated = pass.stats.get("multiclass:spellcasting:level");
-  const own = [...pass.spellcasting.values()].filter((e) => !(pass.stats.get(`${lc(e.name)}:spellcasting:slots:count`) > 0));
+  // Only classes' spellcasting shares the table (PHB, Multiclassing): a species' or feat's spells (the playtest
+  // Eladrin's) do not make a single-class caster a multiclass one.
+  const own = [...pass.spellcasting.values()].filter((e) => e.fromClass !== false && !(pass.stats.get(`${lc(e.name)}:spellcasting:slots:count`) > 0));
   const byOwner = new Map(own.map((e) => [e.owner, e]));
   if (byOwner.size < 2) return stated > 0 ? stated : 0;
   let total = 0;

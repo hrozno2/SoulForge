@@ -225,7 +225,7 @@ export function autoFill(fields: AutoField[], d: FillData, sink: Sink): AutoResu
   };
   const abilities = Object.keys(d.abilities) as (keyof FillData["abilities"])[];
   put("name", d.name); put("class", d.className); put("species", d.species); put("background", d.background); put("subclass", d.subclass);
-  put("classLevel", [d.className, d.level].filter(Boolean).join(" ")); put("level", d.level); put("alignment", d.alignment); put("xp", d.xp || ""); put("player", "");
+  put("classLevel", [d.className, d.level].filter(Boolean).join(" ")); put("level", d.level); put("alignment", d.alignment); put("xp", d.xp || ""); put("player", d.body.player ?? "");
   put("hp.max", d.hpMax); put("hp.current", d.hpCurrent); put("hp.temp", d.hpTemp || ""); put("ac", d.ac); put("initiative", d.initiative); put("speed", d.speed ? `${d.speed} ft` : "");
   put("size", d.size); put("prof", d.profBonus); put("hd", d.hdMax);
   put("passive", d.passive);

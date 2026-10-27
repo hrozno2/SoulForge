@@ -17,6 +17,10 @@ export function fillAlt2(ws: W[], d: FillData, sink: Sink): void {
   put("initiative", d.initiative); put("languages", d.languages); put("speed", d.speed ? `${d.speed} ft` : ""); put("vision", d.darkvision ? `Darkvision ${d.darkvision}` : "");
   put("hp.total", d.hpMax); put("hp.current", d.hpCurrent); put("hd.total", d.hdMax); put("hd.remaining", d.hdMax.replace(/^\d+/, String(Math.max(0, (parseInt(d.hdMax, 10) || 0) - d.hdSpent))));
   put("ac", d.ac);
+  // The AC without armor (10 + Dexterity) and the experience the next level needs (PHB level table).
+  put("acnoarmor", 10 + (parseInt(d.abilities.dexterity.mod, 10) || 0));
+  const NEXT = [300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000];
+  if (d.level >= 1 && d.level < 20) put("nextlevel", NEXT[d.level - 1]);
   for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) put(`coin.${k}`, d.coins[k] === "0" ? "" : d.coins[k]);
   d.weapons.slice(0, 4).forEach((wp, i) => {
     put(`wpn${i + 1}.name`, wp.name); put(`wpn${i + 1}.atk`, wp.bonus);

@@ -4,7 +4,7 @@
  */
 import { appendSpellPages } from "./continuation";
 import type { SpellRow } from "./data";
-import { PDFDocument, type PDFFont } from "pdf-lib";
+import { PDFDocument, type PDFCheckBox, type PDFFont, type PDFTextField } from "pdf-lib";
 import type { FillData } from "./data";
 import { fill2014, fill2024Form, formSink, overlaySink, placePortrait, type FormFillResult, type Sink, type W } from "./forms";
 import { autoFill, type AutoField } from "./automap";
@@ -113,6 +113,16 @@ export async function fillOfficialSheet(template: Uint8Array | ArrayBuffer, name
   const f = await doc.embedFont(font.regular, { subset: true });
   const notes: string[] = [];
   const known = LAYOUTS[id.layout].widgets;
+  // A printed copy gets the fillable version's fields, at the layout's places (A3.2): transparent, no border, so the
+  // page looks the same and every value can be changed afterwards. If that fails, the text is written onto the page.
+  if (!id.form) {
+    try {
+      addFormFields(doc, known);
+      return await fillAsForm(doc, f, id.layout, data, [...notes, "The printed sheet got fillable fields, so you can change any value afterwards."]);
+    } catch {
+      // Fall back to writing onto the page below.
+    }
+  }
   if (!id.form) {
     const over = overlaySink(doc, f);
     const pics: W[] = [];
@@ -123,12 +133,40 @@ export async function fillOfficialSheet(template: Uint8Array | ArrayBuffer, name
     notes.push("This copy has no form fields, so the text is written onto the page and cannot be edited afterwards.");
     return { bytes: await doc.save(), notes, layout: id.layout, form: false };
   }
+  return fillAsForm(doc, f, id.layout, data, notes);
+}
+
+/** Fills a sheet through its form fields (its own, or the ones a printed copy was given). */
+async function fillAsForm(doc: PDFDocument, f: PDFFont, layout: LayoutId, data: FillData, notes: string[]): Promise<FormFillResult & { layout?: LayoutId; form?: boolean }> {
   const sink = formSink(doc, f);
   const ws: AutoField[] = sink.widgets.map((w) => ({ name: w.name, t: w.type === "Btn" ? "Btn" : "Tx", p: w.page, x: w.x, y: w.y, w: w.w, h: w.h }));
   const overflow: SpellRow[] = [];
-  notes.push(...run(id.layout, ws, data, sink, overflow));
+  notes.push(...run(layout, ws, data, sink, overflow));
   sink.done();
   continueSpells(doc, f, overflow, data, notes);
   await placePortrait(doc, data, sink.images, notes);
-  return { bytes: await doc.save({ updateFieldAppearances: false }), notes, layout: id.layout, form: true };
+  return { bytes: await doc.save({ updateFieldAppearances: false }), notes, layout, form: true };
+}
+
+/**
+ * Form fields for a printed sheet, from its layout (the fillable version's fields and places). Two places with one
+ * name (a slip in the original PDF) become one field with two boxes, as in the fillable version.
+ */
+export function addFormFields(doc: PDFDocument, widgets: W[]): void {
+  const form = doc.getForm();
+  const look = { borderWidth: 0, backgroundColor: undefined, borderColor: undefined };
+  for (const w of widgets) {
+    if (w.p >= doc.getPageCount()) continue;
+    const page = doc.getPage(w.p);
+    const at = { x: w.x, y: w.y, width: w.w, height: w.h, ...look };
+    if (w.t === "Btn") {
+      let cb: PDFCheckBox;
+      try { cb = form.getCheckBox(w.name); } catch { cb = form.createCheckBox(w.name); }
+      cb.addToPage(page, at);
+    } else {
+      let tf: PDFTextField;
+      try { tf = form.getTextField(w.name); } catch { tf = form.createTextField(w.name); }
+      tf.addToPage(page, at);
+    }
+  }
 }

@@ -12,7 +12,7 @@ seen, instead of being fixed by hand or hidden.
 | # | Item | Source | What is missing | Seen by |
 |---|---|---|---|---|
 | ~~UA1~~ | ~~`infusions:count`~~ | ~~Artificer, Unearthed Arcana 2019-02-28: Infuse Item~~ | Done 2026-10-27: the infusions known; the content's own Artificer Infusion choices give that many per level, and the sheet shows the infused-item maximum (`infusions:items`). | stat gate |
-| UA2 | `infusions:vanish` | Same feature | 1 + Intelligence modifier; nothing in the content's text says what it counts, so it is not shown. Needs the playtest article (2019-02-28) to place. Does not stop the class being played. | stat gate |
+| ~~UA2~~ | ~~`infusions:vanish`~~ | ~~Same feature~~ | Done 2026-10-28: the playtest's own text (Aurora's file, Infuse Item) says an infusion vanishes that many days after the artificer dies (Intelligence modifier, at least 1); the Infuse Item line on the sheet now says "infusions last N days after your death". | stat gate |
 | ~~UA3~~ | ~~`equipment:id_wotc_ua_armor_light_arcanomechanical`~~ | ~~Wizard School of Invention, Unearthed Arcana 2018-01-08~~ | Done 2026-10-27: "equipment:<item>" means the feature gives the item; it goes into the inventory once (src/aurora/grantedItems.ts, for any content that uses it). | stat gate |
 | ~~UA4~~ | ~~Artificer (2017 playtest) proficiencies~~ | ~~Unearthed Arcana: Artificer (2017-01-09)~~ | Withdrawn 2026-10-27: not a disagreement. 5e.tools has no 2017 Artificer; the gate had compared Aurora's playtest class with 5e.tools' Tasha's Artificer because the names match. The gate now pairs classes by book. | class proficiency gate |
 

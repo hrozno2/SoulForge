@@ -1524,7 +1524,10 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .reduce-motion .board-space, .reduce-motion .board-acc-body, .reduce-motion .board-focus, .reduce-motion .board-filled-anim { transition: none; animation: none; }
 /* The spellbook and backpack on the board: they grow, fill, shrink and empty as choices change */
 .board-art-live { opacity: 1 !important; right: 6px; top: 6px; color: inherit; transform: none !important; }
-.board-book, .board-pack { width: 128px; height: 128px; overflow: visible; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); }
+/* No filter on the book and the pack: their sparks, crackle and smoke animate forever, and a drop-shadow over animated
+   parts is redrawn every frame (WebKitGTK on Linux lagged, C5.4). The shadow is a still gradient under them instead. */
+.board-book, .board-pack { width: 128px; height: 128px; overflow: visible; position: relative; z-index: 1; }
+.board-art-live::after { content: ""; position: absolute; left: 22%; right: 22%; bottom: 4%; height: 12%; border-radius: 50%; background: radial-gradient(ellipse, rgba(0,0,0,.45), transparent 70%); pointer-events: none; z-index: 0; }
 .board-pack-body { transform-origin: 60px 100px; transition: transform .6s cubic-bezier(.3,1.5,.5,1); }
 .board-sparks circle { animation: board-twinkle 1.6s ease-in-out infinite alternate; }
 .board-sparks circle:nth-child(2) { animation-delay: .4s; } .board-sparks circle:nth-child(3) { animation-delay: .8s; } .board-sparks circle:nth-child(4) { animation-delay: 1.2s; }
@@ -1736,7 +1739,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .reduce-motion .board-book-charged path { animation: none; }
 
 /* A card turned over to its back: its choices, in the middle of the window */
-.card-back-veil { position: fixed; inset: 0; z-index: 280; background: rgba(6, 5, 4, .55); backdrop-filter: blur(2px); display: grid; place-items: center; animation: back-veil .2s ease-out; perspective: 1200px; }
+.card-back-veil { position: fixed; inset: 0; z-index: 280; background: rgba(6, 5, 4, .68); display: grid; place-items: center; animation: back-veil .2s ease-out; perspective: 1200px; }
 @keyframes back-veil { from { opacity: 0; } }
 .card-back { width: min(860px, 94vw); height: min(92vh, 900px); display: flex; flex-direction: column; border-radius: 14px; border: 2px solid var(--gold); background: linear-gradient(180deg, hsl(var(--hue) 35% 16%), var(--panel) 30%); box-shadow: inset 0 0 0 6px rgba(0,0,0,.25), 0 30px 80px rgba(0,0,0,.7); overflow: hidden; transform-origin: 50% 50%; animation: back-in .26s cubic-bezier(.2,.8,.3,1); }
 .card-back.edit { animation-duration: .18s; }

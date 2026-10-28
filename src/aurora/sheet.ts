@@ -507,8 +507,19 @@ function featureValues(el: AElement, r: Resolved): string {
     if (!v) continue;
     out.push(last === "dc" ? `DC ${v}` : `${last} ${v >= 0 ? "+" : ""}${v}`);
   }
+  // Values a feature's own statistic gives that its text describes without a number (UA2: the 2019 playtest
+  // Artificer's "infusions:vanish", the days an infusion lasts after the artificer dies: Intelligence, at least 1).
+  for (const [stat, feature, say] of SAID) {
+    if (n !== feature || !r.stats.names().includes(stat)) continue;
+    const v = r.stats.get(stat);
+    if (v) out.push(say(v));
+  }
   return [...new Set(out)].join("; ");
 }
+
+const SAID: [string, string, (v: number) => string][] = [
+  ["infusions:vanish", "infuse item", (v) => `infusions last ${v} ${v === 1 ? "day" : "days"} after your death`],
+];
 
 export function buildSheet(r: Resolved): SheetData {
   const s = r.stats;

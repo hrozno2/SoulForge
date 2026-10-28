@@ -22,8 +22,8 @@ export const STAT_DICTIONARY: StatKind[] = [
   { kind: "granted item", pattern: /^equipment:id_[a-z0-9_]+$/, readBy: "src/aurora/grantedItems.ts" },
   // The 2019 playtest Artificer's infusions known: the content's own infusion choices give that many per level.
   { kind: "playtest count kept by choices", pattern: /^infusions:count$/, readBy: "the Artificer Infusion choices (their number per level)" },
-  // Unearthed Arcana content not supported yet (docs/UA-UNSUPPORTED.md, UA2): the 2019 Artificer's "vanish" value.
-  { kind: "playtest, not supported yet", pattern: /^infusions:vanish$/, readBy: "nothing yet: listed in docs/UA-UNSUPPORTED.md" },
+  // The 2019 playtest Artificer's days an infusion lasts after its artificer dies (UA2, done 2026-10-28).
+  { kind: "feature value", pattern: /^infusions:vanish$/, readBy: "sheet.ts featureValues (Infuse Item: infusions last N days after your death)" },
   { kind: "feature DC", pattern: /^[a-z][a-z' ()-]*(?::[a-z ]+)?:dc$/, readBy: "feature values on the sheet (Psionic Power: DC 14)" },
   { kind: "ability", pattern: new RegExp(`^${AB}(?::(?:score:set|max|max:extra|modifier|score))?$`), readBy: "stats.ts (scores, caps, set scores)" },
   { kind: "save", pattern: new RegExp(`^(?:${AB}:save(?::misc|:proficiency)?|saves?(?::misc)?)$`), readBy: "stats.ts, sheet.ts" },

@@ -65,9 +65,12 @@ fn diagnostics() -> String {
 
 fn main() {
     // WebKitGTK's DMA-BUF renderer fails on NVIDIA's driver under Wayland and the app quits before a window shows
-    // (GitHub issue #1). Turned off on Linux unless the user has set the variable themselves.
+    // (GitHub issue #1). Turned off only where NVIDIA's driver is loaded, unless the user has set the variable
+    // themselves: elsewhere it is WebKitGTK's fast path, and turning it off everywhere made drawing slow (C5.4, Plasma).
     #[cfg(target_os = "linux")]
-    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none()
+        && (std::path::Path::new("/proc/driver/nvidia").exists() || std::path::Path::new("/sys/module/nvidia").exists())
+    {
         std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
     }
     tauri::Builder::default()

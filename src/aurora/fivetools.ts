@@ -197,7 +197,13 @@ function langRules(list: J[] | undefined, label: string): { rules: ARule[]; lang
     for (const [k, v] of Object.entries(entry)) {
       if (k === "anyStandard") rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "standard", number: Number(v) || 1 });
       else if (k === "any" || k === "other") rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(v) || 1 });
-      else if (v === true) {
+      // "choose": {"from": ["elvish", "other"], "count": 1} (Simic Hybrid, the Ravnica backgrounds): one of these, and
+      // "other" (or "any") opens it to any language, as Plutonium offers it.
+      else if (k === "choose" && v && typeof v === "object") {
+        const from = (((v as J).from as string[]) ?? []).map((x) => String(x).toLowerCase());
+        const open = from.some((x) => x === "other" || x === "any" || x === "anystandard");
+        rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: open || !from.length ? "5et language" : from.map((x) => `ID_5ET_LANGUAGE_${slug(x)}`).join("|"), number: Number((v as J).count) || 1 });
+      } else if (v === true) {
         languages.push(k);
         rules.push({ kind: "grant", type: "Language", id: `ID_5ET_LANGUAGE_${slug(k)}` });
       }
@@ -812,7 +818,9 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   gate((x) => (x.kind === "grant" || x.kind === "select") && x.type === "Proficiency" && /SKILL|skill/.test(x.kind === "grant" ? x.id : x.supports), overwriting("skillProficiencies"));
   // A subrace is required. A subrace without a name is, in 5e.tools, the species as it is (the standard Human next
   // to the Variant Human); it is one of the options, "Human (standard)", so what it adds is not lost.
-  if (mine.length) rules.push({ kind: "select", type: "Sub Race", name: "Subrace", supports: `5et subrace of ${id}`, number: 1 });
+  // It starts on the standard one when there is one, so a fresh pick leaves nothing open; the player can change it.
+  const standard = mine.find((s) => !s.name);
+  if (mine.length) rules.push({ kind: "select", type: "Sub Race", name: "Subrace", supports: `5et subrace of ${id}`, number: 1, ...(standard ? { default: ftId("SUBRACE", `${r.name} Base`, standard.source) } : {}) } as ARule);
   // Lineages, legacies and ancestries kept as "_versions" of the species (the 2024 Elf's Drow, High Elf and Wood Elf).
   // Each becomes a required choice; it carries only what differs from the base species.
   const versions = expandVersions((r._versions as J[]) ?? []).map((v) => applyVersion(r, v)).filter(Boolean) as J[];

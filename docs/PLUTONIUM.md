@@ -136,3 +136,10 @@ named after the creature it tags gives it.
 Found on the way, a regression from A2.12: a 5e.tools subclass took its features only from its own list, which names
 the header features; the features those headers refer to (the Battle Smith's Steel Defender, Battle Ready, its tool
 proficiency) were not converted. The subclass loop now follows those references (src/aurora/summons.test.ts).
+
+## Language lists and the standard subrace (A0.1, 2026-10-28)
+
+`languageProficiencies` with `choose: {from: [...], count}` (Simic Hybrid, eight backgrounds) was dropped by the
+converter: now a choice from that list, "other" or "any" opening it to every language, as Plutonium offers it. And a
+5e.tools species with subraces starts on its standard (nameless) subrace, so a fresh pick leaves nothing open
+(src/aurora/converterChoices.test.ts).

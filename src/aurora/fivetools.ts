@@ -1223,6 +1223,9 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       words.push(alts.map((ks) => ks.map((k) => `${cap(abilFull(k))} 13`).join(" and ")).join(" or "));
     }
   }
+  // The 2014 rolled alternative to the starting gear ("{@dice 5d4 × 10|...}"), as Plutonium offers it.
+  const goldAlt = /\{@dice ([^|}]+)/.exec(String(c.startingEquipment?.goldAlternative ?? ""))?.[1]?.trim();
+  if (goldAlt) setters["starting gold"] = set(goldAlt.replace(/\s*[×x*]\s*/g, " × "));
   const el = base(id, c.name, "Class", srcName(ctx, c.source), {
     setters, rules, spellcasting,
     // Sidekicks (Tasha's) are companions the DM runs, not classes a player character takes.

@@ -92,3 +92,12 @@ worth a check against our choices once the matching above is by fields.
 Charactermancer_OtherProficiencySelect sorts every option of a "skillToolLanguageProficiencies" choice into its kind
 (skill, tool, language, weapon, armor, saving throw) by checking it against each kind's list, and summarises and
 renders each kind on its own. Soul Forge does the same with a "Kind" switch on the list (src/aurora/facets.ts).
+
+## Starting gold (A0.1, 2026-10-28)
+
+EquipmentCurrencyManager reads a 2014 class's `startingEquipment.goldAlternative` ("{@dice 5d4 × 10|...}") and offers
+the roll instead of the gear. Soul Forge now does the same: the 5e.tools converter keeps it as the class's
+"starting gold", Aurora's 2014 classes take the PHB's starting wealth table, and the starting equipment offers
+"Starting gold instead" with a roll button (src/aurora/startingEquipment.ts, src/aurora/goldRoll.test.ts). The 2024
+classes have their gold option already (option B). Plutonium can also set a fixed starting gold in its config; not
+copied (a DM can type the coins).

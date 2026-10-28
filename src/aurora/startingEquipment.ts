@@ -4,6 +4,7 @@
  * 2024 rules, or lists of "(a) X or (b) Y" for older classes). This reads that text and matches it to items.
  */
 import type { GenericKind } from "./character";
+import { isModern } from "./edition";
 import { TOOL_KINDS } from "./fivetools";
 import type { AElement } from "./types";
 import { buildSheet } from "./sheet";
@@ -25,6 +26,24 @@ export interface EquipVariant {
   choices: { options: ItemRef[][] }[];
   /** A ready-made pack that holds exactly this variant's items, when the content has one. */
   packId?: string;
+  /** The 2014 alternative: roll for gold instead of the gear ("5d4", times `times` gp). */
+  goldRoll?: { dice: string; times: number };
+}
+
+/**
+ * The 2014 Player's Handbook's starting wealth by class (a rules table), for 2014 classes whose content does not carry
+ * the roll itself; 5e.tools classes carry it ("starting gold", from `goldAlternative`), as Plutonium reads it.
+ */
+const WEALTH_2014: Record<string, string> = {
+  barbarian: "2d4 × 10", bard: "5d4 × 10", cleric: "5d4 × 10", druid: "2d4 × 10", fighter: "5d4 × 10", monk: "5d4",
+  paladin: "5d4 × 10", ranger: "5d4 × 10", rogue: "4d4 × 10", sorcerer: "3d4 × 10", warlock: "4d4 × 10", wizard: "4d4 × 10",
+  artificer: "5d4 × 10",
+};
+
+/** "5d4 × 10" as the dice and the multiplier. */
+export function parseGoldRoll(text: string | undefined): EquipVariant["goldRoll"] {
+  const m = /^\s*(\d+d\d+)\s*(?:[×x*]\s*(\d+))?\s*$/i.exec(text ?? "");
+  return m ? { dice: m[1], times: Number(m[2] ?? 1) } : undefined;
 }
 
 export interface EquipPlan {
@@ -195,6 +214,11 @@ export function planFor(el: AElement, kind: "class" | "background", reg: ARegist
   } else {
     const p = parseItems(found.text);
     plan.variants.push({ label: "Starting equipment", fixed: p.refs, gp: p.gp, choices: [] });
+  }
+  // A 2014 class can take rolled gold instead of the gear (2024 classes have it as an option of their own).
+  if (kind === "class" && plan.variants.length && !isModern(el)) {
+    const roll = parseGoldRoll(el.setters["starting gold"]?.value ?? WEALTH_2014[el.name.toLowerCase()]);
+    if (roll) plan.variants.push({ label: "Starting gold instead", fixed: [], gp: 0, choices: [], goldRoll: roll });
   }
   return plan.variants.length ? plan : undefined;
 }

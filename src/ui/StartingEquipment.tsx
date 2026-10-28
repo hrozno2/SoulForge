@@ -1,3 +1,4 @@
+import { requestRoll } from "./Dice";
 import { useMemo, useState } from "react";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
@@ -24,8 +25,14 @@ function VariantCard({ plan, v, idx, prefer, onAdd, added, replaces }: { plan: E
       <div className="row">
         <b>{v.label}</b>
         {added && <span className="done-mark">✓ Added</span>}
-        {v.choices.length === 0 && !added && <button className="primary" onClick={() => onAdd(items, v.gp)}>{replaces ? "Use this instead" : "Add"}</button>}
+        {v.choices.length === 0 && !v.goldRoll && !added && <button className="primary" onClick={() => onAdd(items, v.gp)}>{replaces ? "Use this instead" : "Add"}</button>}
+        {v.goldRoll && !added && (
+          <button className="primary" title="Roll the class's starting gold and take it instead of the gear" onClick={() => { const g = v.goldRoll!; requestRoll(`Starting gold (${plan.title})`, g.dice, (res) => onAdd([], res.total * g.times)); }}>
+            Roll {v.goldRoll.dice}{v.goldRoll.times > 1 ? ` × ${v.goldRoll.times}` : ""} gp
+          </button>
+        )}
       </div>
+      {v.goldRoll && <p className="muted small-text">The 2014 rules let you roll for gold and buy your own gear (the shop is on the backpack) instead of taking the class's.</p>}
       {v.choices.map((g, gi) => (
         <div key={gi} className="choice-group">
           {g.options.map((o, oi) => (

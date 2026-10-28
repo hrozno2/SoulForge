@@ -89,8 +89,10 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
   for (const plan of startingPlans(c, reg)) {
     // The option with gear rather than only gold; in the older "choose (a) or (b)" lists, an option at random,
     // with an actual weapon wherever it says "any martial weapon".
-    const withGear = plan.variants.filter((x) => x.fixed.length + x.choices.length > 0 && !/^\s*\d+\s*gp\s*$/i.test(x.label));
-    const v = force.randomGear && plan.variants.length > 1 ? plan.variants[Math.floor(rng() * plan.variants.length)] : withGear[0] ?? plan.variants[0];
+    // Not the 2014 rolled gold (it needs the dice tray; a random character takes gear).
+    const pool = plan.variants.filter((x) => !x.goldRoll);
+    const withGear = pool.filter((x) => x.fixed.length + x.choices.length > 0 && !/^\s*\d+\s*gp\s*$/i.test(x.label));
+    const v = force.randomGear && pool.length > 1 ? pool[Math.floor(rng() * pool.length)] : withGear[0] ?? pool[0];
     if (!v) continue;
     const picks = v.choices.map((g) => Math.floor(rng() * g.options.length));
     const weapons: Record<string, string> = {};

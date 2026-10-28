@@ -26,6 +26,10 @@ get a Use button in Play (Turn Undead spends Channel Divinity), and a sheet entr
 FastCharacter import: cantrips named only in attack lines or species traits are read; a pick that repeats what the
 character has from elsewhere is taken back and left open (the suite now fails on any). The machine was under heavy load
 from macOS services around 04:00 (load average 37): suites that normally take a minute took ten.
+Later: the rules check no longer reports a spell count short only by open picks twice; summoned companions follow
+Plutonium's summon activities (5e.tools' Battle Smith gets a Steel Defender, the 2024 Beast Master chooses a beast).
+**For the next release notes:** v0.19.0 shipped an A2.12 regression: 5e.tools subclasses lost the features their
+header features refer to (e.g. the Battle Smith's Steel Defender and Battle Ready). Fixed in dc94305.
 Lesson: chain test, build and commit with && (one commit, 15e5fc0, went in with a failing unit test; fixed in 045aff3).
 Open, needing Chris: C4's four questions (docs/C4-DESIGN.md), C1.7 (launch animation details), C5.4 (Linux flicker
 facts), UA2 (playtest article).

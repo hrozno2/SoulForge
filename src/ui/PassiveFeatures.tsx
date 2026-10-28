@@ -1,4 +1,5 @@
 import type { Resolved } from "../aurora/engine";
+import { fixedChoice } from "./Slots";
 import { ABILITY_IDS } from "../aurora/character";
 import { Html } from "./Html";
 
@@ -13,7 +14,8 @@ const LABEL: Record<string, string> = { strength: "Strength", dexterity: "Dexter
  * increases the part gives, fixed or chosen, so a species with fixed increases shows them too.
  */
 export function PassiveFeatures({ r, root }: { r: Resolved; root: (root: string) => boolean }) {
-  const picked = new Set(r.slots.flatMap((s) => s.chosen));
+  // Picks are shown with their choice; a choice with only one option is no choice, so its pick is shown here instead.
+  const picked = new Set(r.slots.filter((s) => !fixedChoice(s)).flatMap((s) => s.chosen));
   const mine = r.active.filter((a) => root(a.root));
   const seen = new Set<string>();
   const features = mine.filter((a) => {

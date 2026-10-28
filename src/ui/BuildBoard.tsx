@@ -813,6 +813,8 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const cardTitle = (kind: Kind) => (kind === "class" ? ch.classes.map((c) => r.reg.get(c.classId)?.name ?? "?").join(" / ") || "Class" : kind === "race" ? chosenEl.race?.name ?? "Species" : kind === "background" ? chosenEl.background?.name ?? "Background" : kind === "magic" ? "Your spells" : "Your inventory");
   const openBack = (kind: Kind) => {
     setFocus(kind);
+    // A card opens on its first view (the backpack on its starting gear), not on the last one left open.
+    setBackView(null);
     if (floating) floating.open({ kind: "card", ref: kind, title: cardTitle(kind) });
     else setBack({ kind, mode: "edit", snap: ch, from: null, name: "", phase: "open" });
   };
@@ -1136,11 +1138,16 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           ) : <p className="muted">This character does not cast spells yet.</p>)}
           {kind === "equipment" && (
             <>
-              <div className="card-back-art">
-                <button className={`card-back-toggle ${backView === "inventory" ? "on" : ""}`} aria-pressed={backView === "inventory"} title={backView === "inventory" ? "Back to adding items" : "Show only the inventory"} onClick={() => setBackView(backView === "inventory" ? null : "inventory")}>
-                  <Backpack f={packFill} /><small>Inventory</small>
+              {/* Three views, always all three in sight (C6.1: a remembered "Inventory" or "Shop" hid the starting gear with
+                  no way back): starting gear and adding items, the inventory, the shop. */}
+              <div className="card-back-art" role="tablist" aria-label="Backpack">
+                <button role="tab" className={`card-back-toggle ${backView !== "inventory" && backView !== "shop" ? "on" : ""}`} aria-selected={backView !== "inventory" && backView !== "shop"} title="Starting equipment, adventuring packs and any item to add" onClick={() => setBackView(null)}>
+                  <Backpack f={packFill} /><small>Starting gear</small>
                 </button>
-                <button className={`card-back-toggle ${backView === "shop" ? "on" : ""}`} aria-pressed={backView === "shop"} title={backView === "shop" ? "Back to adding items" : "Buy items with your coins, sell from the inventory"} onClick={() => setBackView(backView === "shop" ? null : "shop")}>
+                <button role="tab" className={`card-back-toggle ${backView === "inventory" ? "on" : ""}`} aria-selected={backView === "inventory"} title="What the character carries" onClick={() => setBackView("inventory")}>
+                  <Backpack f={1} /><small>Inventory</small>
+                </button>
+                <button role="tab" className={`card-back-toggle ${backView === "shop" ? "on" : ""}`} aria-selected={backView === "shop"} title="Buy items with your coins, sell from the inventory" onClick={() => setBackView("shop")}>
                   <Purse /><small>Shop</small>
                 </button>
               </div>

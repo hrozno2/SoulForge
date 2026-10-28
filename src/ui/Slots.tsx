@@ -208,6 +208,16 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
 }
 
 /** A list of choices, in the content's order: a finished one folds where it is, nothing moves. */
+/**
+ * A choice with nothing to choose (Chris 2026-10-28): required, a single option it may take, and that option taken (by
+ * default or by hand). It is no selector: what it gives is listed under "What you get" (PassiveFeatures).
+ */
+export function fixedChoice(s: SelectSlot): boolean {
+  if (s.rule.optional || s.rule.type === "List" || s.listItems || s.rule.number !== 1) return false;
+  const takeable = s.options.filter((o) => !s.blocked.has(o.id));
+  return takeable.length === 1 && s.chosen.length === 1 && s.chosen[0] === takeable[0].id;
+}
+
 export function SlotList({ slots: given, r, set, onDetail, empty, merge = true }: { slots: SelectSlot[]; r: Resolved; set: SetCharacter; onDetail: (e: AElement) => void; empty?: string; merge?: boolean }) {
   const merged: MergedSlot[] = merge ? mergeSlots(given) : given;
   // Ability score increases are drawn as one check-box grid each (improvements.ts); the choices a grid fills are not
@@ -215,7 +225,7 @@ export function SlotList({ slots: given, r, set, onDetail, empty, merge = true }
   const grids = findGrids(r, given);
   const inGrid = new Set(grids.flatMap((g) => [...g.keys]));
   const gridAt = new Map(grids.map((g) => [g.anchor.key, g]));
-  const slots = merged.filter((s) => gridAt.has(s.key) || !inGrid.has(s.key));
+  const slots = merged.filter((s) => (gridAt.has(s.key) || !inGrid.has(s.key)) && !fixedChoice(s));
   if (!slots.length) return empty ? <p className="muted">{empty}</p> : null;
   return (
     <div className="slot-list">

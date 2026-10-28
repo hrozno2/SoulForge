@@ -54,18 +54,22 @@ test.describe("Build board", () => {
   });
 });
 
-test("the backpack on its card back switches to the inventory alone and back (C1.5)", async ({ page }) => {
+test("the backpack shows starting gear, inventory or shop, and always opens on the starting gear (C1.5, C6.1)", async ({ page }) => {
   await addTestContent(page);
   await randomCharacter(page, 3);
   await tab(page, "Build");
   await page.locator("[data-tile=equipment]").click();
-  const pack = page.getByRole("button", { name: /Inventory/ }).first();
-  await expect(pack).toHaveAttribute("aria-pressed", "false");
+  const gear = page.getByRole("tab", { name: /Starting gear/ });
+  const inv = page.getByRole("tab", { name: /Inventory/ });
+  await expect(gear).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".board-lib-sub", { hasText: "All items" })).toBeVisible();
-  await pack.click();
-  await expect(pack).toHaveAttribute("aria-pressed", "true");
+  await inv.click();
+  await expect(inv).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".board-lib-sub", { hasText: "All items" })).toHaveCount(0);
-  await pack.click();
+  // Closed on the inventory and opened again: back on the starting gear.
+  await page.locator(".card-window-equipment").getByRole("button", { name: /^Close |^Done/ }).first().click();
+  await page.locator("[data-tile=equipment]").click();
+  await expect(page.getByRole("tab", { name: /Starting gear/ })).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".board-lib-sub", { hasText: "All items" })).toBeVisible();
 });
 
@@ -74,16 +78,16 @@ test("the shop on the backpack buys with the purse and the inventory sells back 
   await randomCharacter(page, 3);
   await tab(page, "Build");
   await page.locator("[data-tile=equipment]").click();
-  await page.getByRole("button", { name: /Inventory/ }).first().click();
+  await page.getByRole("tab", { name: /Inventory/ }).click();
   await page.locator(".coin", { hasText: "GP" }).locator("input").fill("100");
-  await page.getByRole("button", { name: /Shop/ }).first().click();
+  await page.getByRole("tab", { name: /Shop/ }).click();
   const shop = page.locator(".card-window .shop");
   await expect(shop.locator(".summary")).toContainText("100 gp");
   const row = shop.locator(".opt-row:not(.dim)", { has: page.locator(".opt-label") }).first();
   const name = (await row.locator(".opt-name").textContent())!.trim();
   await row.locator(".opt-main").click();
   await expect(shop.locator(".summary")).toContainText(`Bought ${name}`);
-  await page.getByRole("button", { name: /Inventory/ }).first().click();
+  await page.getByRole("tab", { name: /Inventory/ }).click();
   const line = page.locator(".card-window table.inv tr", { hasText: name }).first();
   await line.getByRole("button", { name: /^Sell/ }).click();
   await expect(page.locator(".card-window table.inv tr", { hasText: name })).toHaveCount(0);

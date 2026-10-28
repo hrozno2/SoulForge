@@ -1,8 +1,8 @@
 /**
  * The shop's money (A2.3), its behaviour checked against Plutonium's equipment shop. Buying and selling change the
  * character's coins; prices are the item's cost times the character's price multiplier (Chris, 2026-10-27: per
- * character, as DMs set it per table; 1 when unset; Plutonium has one global multiplier). Selling pays half the price,
- * the usual table rule (Plutonium's shop only buys). Magic items without a price can cost their rarity's value, per
+ * character, as DMs set it per table; 1 when unset; Plutonium has one global multiplier). Selling pays the full price,
+ * one to one with buying (Chris, 2026-10-28; Plutonium's shop only buys). Magic items without a price can cost their rarity's value, per
  * character as well. Coins are paid with what the purse holds, smallest first, and change comes back in the largest
  * coins that fit up to gold, so the purse never gains platinum it did not have (Plutonium keeps the coin mix the same way).
  */
@@ -75,8 +75,8 @@ export function pay(purse: Coinage, cost: number): Coinage | undefined {
 /** What buying costs: price times quantity times the character's multiplier, in copper. */
 export const buyCost = (ch: Character, el: AElement, qty = 1) => Math.round((priceCp(el, !!ch.rarityPrices) ?? 0) * qty * multiplierOf(ch));
 
-/** What selling pays: half the price, times quantity and the multiplier, in copper (rounded down). */
-export const sellValue = (ch: Character, el: AElement, qty = 1) => Math.floor(((priceCp(el, !!ch.rarityPrices) ?? 0) * qty * multiplierOf(ch)) / 2);
+/** What selling pays: the same as buying it, one to one (Chris, 2026-10-28). */
+export const sellValue = buyCost;
 
 export type ShopResult = { ok: true; character: Character } | { ok: false; reason: string };
 
@@ -92,7 +92,7 @@ export function buy(ch: Character, el: AElement, qty = 1, uid = `shop-${el.id}-$
   return { ok: true, character: { ...ch, coins, inventory } };
 }
 
-/** Sells `qty` of an inventory item: the coins go up by half its price and the item goes (or its count down). */
+/** Sells `qty` of an inventory item: the coins go up by its price and the item goes (or its count down). */
 export function sell(ch: Character, uid: string, el: AElement | undefined, qty = 1): ShopResult {
   const it = ch.inventory.find((i) => i.uid === uid);
   if (!it) return { ok: false, reason: "That item is not in the inventory." };

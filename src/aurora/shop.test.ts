@@ -1,4 +1,4 @@
-/** The shop's money (A2.3): prices, the per-character multiplier, paying with change, and selling at half. */
+/** The shop's money (A2.3): prices, the per-character multiplier, paying with change, and selling one to one. */
 import { describe, expect, it } from "vitest";
 import { newCharacter } from "./character";
 import { asCoins, buy, formatCp, pay, priceCp, purseCp, sell } from "./shop";
@@ -23,7 +23,7 @@ describe("shop", () => {
     expect(formatCp(150000)).toBe("1,500 gp");
   });
 
-  it("buys and sells with the character's multiplier", () => {
+  it("buys and sells with the character's multiplier, one to one: buying and selling back leaves the purse as it was", () => {
     const sword = item("15");
     const ch = { ...newCharacter(), coins: { cp: 0, sp: 0, ep: 0, gp: 50, pp: 0 }, priceMultiplier: 2 };
     const bought = buy(ch, sword, 1, "u1");
@@ -33,7 +33,7 @@ describe("shop", () => {
     expect(buy(bought.character, sword, 1).ok).toBe(false);
     const sold = sell(bought.character, "u1", sword);
     if (!sold.ok) throw new Error(sold.reason);
-    expect(purseCp(sold.character.coins)).toBe(3500);
+    expect(purseCp(sold.character.coins)).toBe(5000);
     expect(sold.character.inventory).toEqual([]);
   });
 

@@ -202,6 +202,7 @@ export class ARegistry {
     this.skillFixes = alignClassSkills(this.byId);
     optionalFeatureChoices(this.byId);
     wildShapeChoices(this.byId);
+    spellChoicePools(this.byId);
     for (const el of improvementOptions([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
     for (const el of classAsiChoices([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
     for (const el of plusTwoChoices([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
@@ -370,6 +371,29 @@ export function resolveCreatureRefs(byId: Map<string, AElement>): void {
       return [r];
     });
   }
+}
+
+/**
+ * A class's spells known or prepared are one pool (Chris, 2026-10-28; Plutonium counts them as one total, each pick
+ * of any level the caster has slots for). Some content writes the first choice as "1st-level spells" and the later
+ * ones as "levels you have slots for", which split the pool into two lists: at the level the first choice comes, the
+ * two mean the same, and later the spells can be swapped for any level with slots. So a class spell choice fixed at
+ * level 1 becomes "levels you have slots for". A Wizard's spellbook keeps its six 1st-level spells (they are written
+ * in the book and stay), and Mystic Arcanum and the like (a fixed level above 1) keep their level.
+ */
+export function spellChoicePools(byId: Map<string, AElement>): number {
+  let n = 0;
+  for (const el of byId.values()) {
+    if (!el.rules.some((r) => r.kind === "select" && r.type === "Spell")) continue;
+    el.rules = el.rules.map((r) => {
+      if (r.kind !== "select" || r.type !== "Spell" || !r.spellcasting || /^spellbook/i.test(r.name)) return r;
+      const m = /^(\s*\$\(spellcasting:list\)\s*,\s*)1\s*$/.exec(r.supports ?? "");
+      if (!m) return r;
+      n++;
+      return { ...r, supports: `${m[1]}$(spellcasting:slots)` };
+    });
+  }
+  return n;
 }
 
 function plusTwoChoices(all: AElement[]): AElement[] {

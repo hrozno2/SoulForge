@@ -1,5 +1,5 @@
 import { isContainer } from "../aurora/containers";
-import { genericOptions } from "../aurora/startingEquipment";
+import { choosePending, genericOptions } from "../aurora/startingEquipment";
 import { useMemo, useState } from "react";
 import { focusNote } from "../aurora/startingEquipment";
 import { HANDS, handsUsed, setTwoHanded, toggleEquip } from "../aurora/hands";
@@ -122,7 +122,7 @@ export function EquipmentTab({ r, ch, set, onDetail, listBeside = false, part = 
                 <tr key={it.uid} onMouseEnter={() => el && onDetail(el)}>
                   <td>{name}{focusNote(name) && <small className="muted"> ({focusNote(name)})</small>}{!el && it.id && <small className="warn"> (content not loaded)</small>}{it.custom?.description && <small className="muted"> {it.custom.description}</small>}
                     {it.pending && (
-                      <select className="pending-pick" aria-label={`Choose the ${name}`} value="" onChange={(e) => { const id = e.target.value; if (id) update(it.uid, (i) => ({ ...i, id, custom: undefined, pending: undefined })); }}>
+                      <select className="pending-pick" aria-label={`Choose the ${name}`} value="" onChange={(e) => { const id = e.target.value; if (id) set((c) => choosePending(c, it.uid, id)); }}>
                         <option value="">Choose which one...</option>
                         {genericOptions(r.reg, it.pending, ch.classes[0] ? r.reg.get(ch.classes[0].classId)?.source ?? "" : "").map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                       </select>

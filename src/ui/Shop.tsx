@@ -58,12 +58,12 @@ export function ShopSettings({ ch, set }: { ch: Character; set: SetCharacter }) 
   );
 }
 
-/** "Sell" on an inventory row: half the price times the multiplier, one at a time. Nothing when it has no price. */
+/** "Sell" on an inventory row: the price times the multiplier, as buying, one at a time. Nothing when it has no price. */
 export function SellButton({ ch, set, uid, el }: { ch: Character; set: SetCharacter; uid: string; el?: AElement }) {
   if (!el || priceCp(el, !!ch.rarityPrices) === undefined) return null;
   const value = sellValue(ch, el);
   return (
-    <button title={`Sell one for ${formatCp(value)} (half its price)`} onClick={() => set((c) => { const res = sell(c, uid, el); return res.ok ? res.character : c; })}>
+    <button title={`Sell one for ${formatCp(value)} (what it costs to buy)`} onClick={() => set((c) => { const res = sell(c, uid, el); return res.ok ? res.character : c; })}>
       Sell · {formatCp(value)}
     </button>
   );

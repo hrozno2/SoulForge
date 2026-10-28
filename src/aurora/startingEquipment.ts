@@ -541,6 +541,22 @@ export function genericOptions(reg: ARegistry, kind: GenericKind, prefer = ""): 
 }
 
 /**
+ * The one place an open item ("a musical instrument of your choice") is settled (C6, Chris 2026-10-28: picked in the
+ * starting-gear box, not later down the inventory): in the gear before it is added, by position.
+ */
+export function settlePending(items: ResolvedItem[], picks: Record<number, string>, reg: ARegistry): ResolvedItem[] {
+  return items.map((it, i) => {
+    const el = it.pending && picks[i] ? reg.get(picks[i]) : undefined;
+    return el ? { ...it, el, name: el.name, pending: undefined } : it;
+  });
+}
+
+/** ...and in the inventory after it was added: the open item becomes the chosen one. */
+export function choosePending(ch: Character, uid: string, id: string): Character {
+  return { ...ch, inventory: ch.inventory.map((i) => (i.uid === uid && i.pending ? { ...i, id, custom: undefined, pending: undefined } : i)) };
+}
+
+/**
  * "Gaming Set (same as above)", "Musical Instrument (one of your choice)" and "Artisan's Tools (same as above)":
  * the item the character chose a proficiency in, when the starting gear names only the kind.
  */

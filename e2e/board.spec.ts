@@ -73,7 +73,7 @@ test("the backpack shows starting gear, inventory or shop, and always opens on t
   await expect(page.locator(".board-lib-sub", { hasText: "All items" })).toBeVisible();
 });
 
-test("the shop on the backpack buys with the purse and the inventory sells back at half (C3)", async ({ page }) => {
+test("the shop on the backpack buys with the purse and the inventory sells back at the same price (C3)", async ({ page }) => {
   await addTestContent(page);
   await randomCharacter(page, 3);
   await tab(page, "Build");
@@ -91,6 +91,9 @@ test("the shop on the backpack buys with the purse and the inventory sells back 
   const line = page.locator(".card-window table.inv tr", { hasText: name }).first();
   await line.getByRole("button", { name: /^Sell/ }).click();
   await expect(page.locator(".card-window table.inv tr", { hasText: name })).toHaveCount(0);
+  // One to one: the purse is back where it started.
+  await page.getByRole("tab", { name: /Shop/ }).click();
+  await expect(shop.locator(".summary")).toContainText("100 gp");
 });
 
 test("blank details never count as a choice; the board's Details button opens them (C2)", async ({ page }) => {

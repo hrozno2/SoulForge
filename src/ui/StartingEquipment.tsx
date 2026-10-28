@@ -4,7 +4,7 @@ import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import type { Character } from "../aurora/character";
 import {
-  ItemIndex, addToInventory, adventuringPacks, resolveChosenTools, anyWeaponKind, autoEquip, commonGear, expandPack, ledgerOf, removeAdded, focusNote, startingPlans, variantItems, weaponChoices, type EquipPlan, type EquipVariant, type ResolvedItem,
+  ItemIndex, addToInventory, choosePending, genericOptions, settlePending, adventuringPacks, resolveChosenTools, anyWeaponKind, autoEquip, commonGear, expandPack, ledgerOf, removeAdded, focusNote, startingPlans, variantItems, weaponChoices, type EquipPlan, type EquipVariant, type ResolvedItem,
 } from "../aurora/startingEquipment";
 import type { SetCharacter } from "./Slots";
 
@@ -15,11 +15,27 @@ function Preview({ items, gp }: { items: ResolvedItem[]; gp: number }) {
   return <p className="muted small-text">{[...lines, gpText(gp)].filter(Boolean).join(", ") || "Nothing"}</p>;
 }
 
-function VariantCard({ plan, v, idx, prefer, onAdd, added, replaces }: { plan: EquipPlan; v: EquipVariant; idx: ItemIndex; prefer: string; onAdd: (items: ResolvedItem[], gp: number) => void; added: boolean; replaces: boolean }) {
+/** "Choose which one..." for an open item (an instrument of your choice), the same list in the box and the inventory. */
+export function PendingPick({ kind, name, reg, prefer, value, onPick }: { kind: NonNullable<ResolvedItem["pending"]>; name: string; reg: Resolved["reg"]; prefer: string; value?: string; onPick: (id: string) => void }) {
+  return (
+    <label className="pending-row">
+      <span>{name}:</span>
+      <select className="pending-pick" aria-label={`Choose the ${name}`} value={value ?? ""} onChange={(e) => e.target.value && onPick(e.target.value)}>
+        <option value="">Choose which one...</option>
+        {genericOptions(reg, kind, prefer).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function VariantCard({ plan, v, idx, prefer, settle, onAdd, added, replaces }: { plan: EquipPlan; v: EquipVariant; idx: ItemIndex; prefer: string; settle: (items: ResolvedItem[]) => ResolvedItem[]; onAdd: (items: ResolvedItem[], gp: number) => void; added: boolean; replaces: boolean }) {
   const [picks, setPicks] = useState<number[]>([]);
   const [weapons, setWeapons] = useState<Record<string, string>>({});
+  const [generic, setGeneric] = useState<Record<number, string>>({});
   const [open, setOpen] = useState(true);
-  const items = useMemo(() => variantItems(v, picks, idx, prefer, open, weapons), [v, picks, idx, prefer, open, weapons]);
+  // Open items (an instrument of your choice) are chosen right here in the box, before the gear goes in.
+  const items = useMemo(() => settlePending(settle(variantItems(v, picks, idx, prefer, open, weapons)), generic, idx.registry), [v, picks, idx, prefer, open, weapons, generic, settle]);
+  const raw = useMemo(() => settle(variantItems(v, picks, idx, prefer, open, weapons)), [v, picks, idx, prefer, open, weapons, settle]);
   return (
     <div className={added ? "equip-card chosen" : "equip-card"}>
       <div className="row">
@@ -52,6 +68,7 @@ function VariantCard({ plan, v, idx, prefer, onAdd, added, replaces }: { plan: E
           ))}
         </div>
       ))}
+      {!added && raw.map((it, i) => it.pending && <PendingPick key={i} kind={it.pending} name={it.name} reg={idx.registry} prefer={prefer} value={generic[i]} onPick={(id) => setGeneric((g) => ({ ...g, [i]: id }))} />)}
       <Preview items={items} gp={v.gp} />
       {v.choices.length > 0 && !added && <button className="primary" onClick={() => onAdd(items, v.gp)}>{replaces ? "Use these instead" : "Add these"}</button>}
       <label className="check small"><input type="checkbox" checked={open} onChange={() => setOpen(!open)} /> open packs into separate items</label>
@@ -80,7 +97,7 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
       // Choosing another option for the same class or background takes the earlier one back out first.
       const earlier = plan ? addedFor(plan.title, c.equipmentAdded ?? []) : [];
       let next = earlier.length ? removeAdded(c, earlier) : c;
-      next = addToInventory(next, resolveChosenTools(items, r.ids, r.reg, prefer), gp);
+      next = addToInventory(next, settle(items), gp);
       if (equip) next = autoEquip(next, r.reg);
       return { ...next, equipmentAdded: [...(next.equipmentAdded ?? []), label], equipmentLedger: { ...(next.equipmentLedger ?? {}), [label]: ledgerOf(items, gp) } };
     });
@@ -90,9 +107,12 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
     // Adding a pack or a piece of gear leaves the panel open so you can add more and see what went in.
     if (plan && allDone(after)) setShow(false);
   };
+  const settle = useMemo(() => (items: ResolvedItem[]) => resolveChosenTools(items, r.ids, r.reg, prefer), [r.ids, r.reg, prefer]);
   const count = (name: string) => added.filter((l) => l === name).length;
   const addOne = (el: AElement, open: boolean) => add(open && el.extract?.length ? expandPack(el, r.reg) : [{ el, name: el.name, qty: 1 }], 0, el.name);
 
+  // Open items already in the inventory are chosen where their box was, once (not under both class and background).
+  const openPicks = ch.inventory.filter((i) => i.pending).map((i) => <PendingPick key={i.uid} kind={i.pending!} name={i.custom?.name ?? "Item"} reg={r.reg} prefer={prefer} onPick={(id) => set((c) => choosePending(c, i.uid, id))} />);
   if (added.length > 0 && !show && (allDone(added) || plans.length === 0)) {
     return (
       <section className="card equip-done">
@@ -103,6 +123,7 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
           <button className="more" title="Take the starting gear and gold back out and start the choice again" onClick={() => set((c) => ({ ...removeAdded(c, c.equipmentAdded ?? []), equipmentAdded: [] }))}>Start over</button>
         </div>
         <p className="muted small-text">{added.join(" · ")}. Edit or remove items in the list below; open "Add more" for other packs, gear or the starting options again.</p>
+        {openPicks}
       </section>
     );
   }
@@ -119,6 +140,7 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
             <div key={p.kind} className="equip-origin equip-origin-done">
               <h3>{p.kind === "class" ? "Class" : "Background"}: {p.title} <span className="done-mark">✓ Added</span></h3>
               <p className="muted small-text">{mine.map((l) => l.slice(p.title.length + 2)).join(" · ")}</p>
+              {p === plans.find((q) => addedFor(q.title, added).length) && openPicks}
               <button onClick={() => setReopened((o) => [...o, p.kind])}>Change</button>
               <button title="Take these items and gold back out" onClick={() => set((c) => removeAdded(c, addedFor(p.title, c.equipmentAdded ?? [])))}>Remove</button>
             </div>
@@ -128,7 +150,7 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
         <div key={p.kind} className="equip-origin">
           <h3>{p.kind === "class" ? "Class" : "Background"}: {p.title}</h3>
           <div className="equip-grid">
-            {p.variants.map((v) => <VariantCard key={v.label} plan={p} v={v} idx={idx} prefer={p.source} onAdd={(items, gp) => add(items, gp, `${p.title}, ${v.label.toLowerCase()}`, p)} added={mine.includes(`${p.title}, ${v.label.toLowerCase()}`)} replaces={mine.length > 0} />)}
+            {p.variants.map((v) => <VariantCard key={v.label} plan={p} v={v} idx={idx} prefer={p.source} settle={settle} onAdd={(items, gp) => add(items, gp, `${p.title}, ${v.label.toLowerCase()}`, p)} added={mine.includes(`${p.title}, ${v.label.toLowerCase()}`)} replaces={mine.length > 0} />)}
           </div>
         </div>
         );

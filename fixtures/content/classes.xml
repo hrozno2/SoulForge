@@ -68,7 +68,7 @@
 			<p>Spellsingers weave magic out of verse.</p>
 			<div class="sidebar"><table>
 				<tr><td><b>Hit Point Die</b></td><td>d6 per Spellsinger level</td></tr>
-				<tr><td><b>Starting Equipment</b></td><td><i>Choose A or B:</i> (A) 2 Daggers, Lute, Scholar's Pack and 10 GP; or (B) 80 GP</td></tr>
+				<tr><td><b>Starting Equipment</b></td><td><i>Choose A or B:</i> (A) 2 Daggers, Musical Instrument (one of your choice), Scholar's Pack and 10 GP; or (B) 80 GP</td></tr>
 			</table></div>
 		</description>
 		<setters><set name="short">Casts by song</set><set name="hd">d6</set></setters>

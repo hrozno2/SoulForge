@@ -159,8 +159,8 @@ dragging on Mac and Linux.
 
 | # | Item | Where it comes from |
 |---|---|---|
-| C5.1 | Tutorial: new users load all of 5e.tools and all of Aurora; Settings explains the global filters. | RESUME #5 |
-| C5.2 | Spellbook import button (A2.1) and the prepared-only spell cards switch in Export (A2.2). | RESUME #1, #2 |
+| ~~C5.1~~ | ~~Tutorial: new users load all of 5e.tools and all of Aurora; Settings explains the global filters.~~ | RESUME #5 | Done 2026-10-28: the tutorial's Aurora step adds the whole AuroraLegacy collection and says to keep every book (the filters decide what shows); its 5e.tools step asks for the whole data folder, says why, and shows whether 5e.tools data is loaded. Settings explains the filters: where they apply, that they only hide, and that a choice always keeps enough options. |
+| ~~C5.2~~ | ~~Spellbook import button (A2.1) and the prepared-only spell cards switch in Export (A2.2).~~ | RESUME #1, #2 | Done (checked 2026-10-28): Export has "List every spell I can prepare" for the sheet's spell table and "Cards for: Prepared spells only / Every spell I can prepare" for the cards, both only for casters who prepare. |
 | C5.3 | Wild Shape, Polymorph and companion cards like spell cards, and the transform, temporary hit points and revert in Play (on top of A2.6). | Plan G |
 | C5.4 | Window frame flicker on Linux: collect the facts (desktop, X11 or Wayland, when it happens), then a fixed window theme, or an in-app title bar only if that fails. | Linux plan 0.4 |
 | C5.5 | Interface tests (Playwright) for every creation path: pick, edit and undo on a card; level up and multiclass; preparing spells; equipment and buying; import and export; every setting. Plus the on-request browser run (random characters, every card screenshotted and checked); write its procedure. | Plan E, earlier request |

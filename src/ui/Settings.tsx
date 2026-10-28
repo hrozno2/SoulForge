@@ -175,6 +175,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
         </div>
         <fieldset className="set-group">
           <legend>Content shown in lists</legend>
+          <p className="muted set-explain">These filters apply everywhere you pick something: species, classes, backgrounds, every choice, spells, items and the shop. They only hide; the content stays loaded and characters that use it keep working. A choice is never left unable to be completed: when the filters would leave too few options, it shows all of them. Each list's own Filters button narrows that list further.</p>
           <label className="set-row">
             <span><b>2014 rules</b><small className="muted"> Species, classes, spells and items from before the 2024 books</small></span>
             <input type="checkbox" checked={s.showLegacy} onChange={(e) => updateSettings({ showLegacy: e.target.checked })} />

@@ -67,6 +67,7 @@ export function Tutorial(p: TutorialProps) {
   };
 
   const addAurora = () => void content.addLink(AURORA_LINK);
+  const fiveTools = content.sources.some((x) => x.format === "5etools");
   const pct = content.progress && content.progress.total ? Math.round((content.progress.done / content.progress.total) * 100) : 0;
 
   const getSheet = async (o: (typeof OFFICIAL_DOWNLOADS)[number]) => {
@@ -135,7 +136,7 @@ export function Tutorial(p: TutorialProps) {
       title: "1. Add rules content from Aurora",
       body: (
         <>
-          <p>Aurora content gives you species, classes, backgrounds, spells and items, and keeps itself up to date. Press the button to add the AuroraLegacy elements.</p>
+          <p>Aurora content gives you species, classes, backgrounds, spells and items, and keeps itself up to date. Press the button to add the whole AuroraLegacy collection: every book. Keep all of it; step 2 decides which books the lists show, so nothing has to be left out here.</p>
           <p><code className="copy-link">{AURORA_LINK}</code></p>
           <div className="row">
             <button className="primary" disabled={content.busy || aurora} onClick={addAurora}>{aurora ? "Added" : content.busy ? "Downloading..." : "Download rules content"}</button>
@@ -173,11 +174,12 @@ export function Tutorial(p: TutorialProps) {
       title: "3. Import from 5e.tools or Plutonium",
       body: (
         <>
-          <p>Soul Forge also reads the data format used by 5e.tools and the Plutonium module for Foundry. On the Content tab you can:</p>
+          <p>Soul Forge also reads the data format used by 5e.tools and the Plutonium module for Foundry. Load <b>all of it</b> alongside Aurora: the two fill each other's gaps, and books one has the other may not. On the Content tab:</p>
           <ul>
-            <li>pick the <b>data folder</b> (or a ZIP of it) from a copy you are allowed to use, or</li>
+            <li>pick the whole <b>data folder</b> (or a ZIP of it) from a copy you are allowed to use; this is the way to load everything, or</li>
             <li>paste <b>5e.tools links</b> to single spells, items, feats, species or classes and import only those.</li>
           </ul>
+          {fiveTools ? <p><span className="done-mark">✓ 5e.tools data loaded</span></p> : <p className="notice">No 5e.tools data loaded yet: with Aurora alone, books only 5e.tools has are missing.</p>}
           <p className="muted">5e.tools blocks apps from fetching its pages, so use a folder or an address that serves the data.</p>
           <p><button onClick={() => goAndMinimize("content")}>Open the importer</button> <span className="muted">The tutorial waits for you at the bottom of the window.</span></p>
         </>

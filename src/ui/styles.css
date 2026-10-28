@@ -816,6 +816,7 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .opt-row.owned .tick { color: var(--muted); }
 .slot-done { margin-top: 8px; }
 .set-group { border: 1px solid var(--line); margin: 10px 0; padding: 4px 10px 8px; }
+.set-explain { margin: 2px 0 8px; font-size: 12.5px; line-height: 1.45; }
 .set-group legend { font: 700 11px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 6px; }
 .equip-card.chosen { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 14%, transparent); }
 .equip-origin-done { border-left: 3px solid var(--gold); padding-left: 10px; }

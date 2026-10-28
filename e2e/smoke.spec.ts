@@ -32,6 +32,20 @@ test.describe("Soul Forge smoke tests", () => {
     expect(seen.errors).toEqual([]);
   });
 
+  test("home cards are drawn once, with their class, and never change after landing (C1.6)", async ({ page }) => {
+    await addTestContent(page);
+    await randomCharacter(page, 3);
+    await tab(page, "Home");
+    await page.reload();
+    // The first moment any card is in the page, its look and text; the same a few seconds later.
+    await page.waitForSelector(".char-cards > .char-card", { timeout: 30_000 });
+    const look = () => page.$$eval(".char-cards > .char-card .char-card-body", (cards) => cards.map((c) => `${(c as HTMLElement).style.getPropertyValue("--hue")}|${c.querySelector(".char-card-what")?.textContent}|${c.querySelector(".char-card-stats")?.textContent ?? ""}`));
+    const first = await look();
+    expect(first.every((x) => !/Nothing chosen yet|^\|/.test(x))).toBe(true);
+    await page.waitForTimeout(3000);
+    expect(await look()).toEqual(first);
+  });
+
   test("the dice tray builds a roll from clicks", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: /^dice$/i }).click();

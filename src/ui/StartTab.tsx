@@ -37,7 +37,7 @@ export function StartTab({
   const [list, setList] = useState<CharacterRecord[]>([]);
   const [listed, setListed] = useState(false);
   // The launch intro's cards drop in here when the list arrives after the pack has burst.
-  useEffect(() => { if (list.length) requestAnimationFrame(dropCardsIfWaiting); }, [list.length]);
+  useEffect(() => { if (list.length && contentReady) requestAnimationFrame(dropCardsIfWaiting); }, [list.length, contentReady]);
   // The launch pack opens once the cards are drawn with everything on them: the saved list and the rules content
   // (their classes, colours and numbers). Two frames, so they are painted before it bursts.
   useEffect(() => { if (listed && contentReady) requestAnimationFrame(() => requestAnimationFrame(launchReady)); }, [listed, contentReady]);
@@ -93,7 +93,10 @@ export function StartTab({
         )}
         {msg && <p className="notice">{msg}</p>}
         <div className="char-cards">
-          {list.map((c) => (
+          {/* Cards are drawn once the rules content is in, never before with an empty registry: they would show as
+              blank gold placeholders and change under the player's eyes (C1.6). What lands is final. */}
+          {!contentReady && list.length > 0 && <p className="muted">Loading your characters...</p>}
+          {contentReady && list.map((c) => (
             <CharCard key={c.id} rec={c} reg={reg} current={c.id === currentId} onOpen={() => onOpen(c.id, c.data)}
               onDuplicate={() => onOpen(uid(), { ...c.data, name: `${c.data.name || "Character"} (copy)` })}
               onExport={() => downloadText(`${c.name || "character"}.json`, JSON.stringify(c.data, null, 2))}

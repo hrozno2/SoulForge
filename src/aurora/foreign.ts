@@ -996,6 +996,21 @@ class Importer {
       this.matched.push(`${el.name} (${w.label})`);
       return { ...ch, selections: { ...ch.selections, [slot.key]: [...slot.chosen, el.id] } };
     }
+    // No open choice takes it, but a full one does: an earlier pick there moves to another open choice that takes that
+    // pick too, and this one goes in its place (one step of the matching the board's merged choices use). Choices of
+    // equal width (one spell list per class, spellChoicePools) no longer guide the first placement, so this keeps an
+    // early pick from taking the only choice a later one fits.
+    if (!this.deferring) {
+      const takes = (s: (typeof r.slots)[number], id: string) => s.options.some((o) => o.id === id) && !s.blocked.has(id) && (filePrepared || !isPrepareChoice(s));
+      for (const full of r.slots.filter((s) => s.chosen.length >= s.rule.number && !s.defaulted && takes(s, el.id))) {
+        for (const moved of full.chosen) {
+          const to = r.slots.find((t) => t !== full && t.chosen.length < t.rule.number && !t.defaulted && t.options.some((o) => o.id === moved));
+          if (!to) continue;
+          this.matched.push(`${el.name} (${w.label})`);
+          return { ...ch, selections: { ...ch.selections, [full.key]: [...full.chosen.filter((x) => x !== moved), el.id], [to.key]: [...to.chosen, moved] } };
+        }
+      }
+    }
     if (el.type === "Spell" && this.deferring) {
       this.deferred.push(w);
       return ch;

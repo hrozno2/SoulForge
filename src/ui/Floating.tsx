@@ -24,7 +24,7 @@ export interface FloatWindow {
 }
 export const MAX_WINDOWS = 10;
 
-interface FloatingApi {
+export interface FloatingApi {
   windows: FloatWindow[];
   /** Opens a window, or brings the one already open for the same thing to the front. False at the cap. */
   open: (w: { kind: WindowKind; ref: string; title: string }) => boolean;
@@ -135,7 +135,8 @@ function FloatingLayer({ api, render }: { api: FloatingApi; render: (w: FloatWin
   const bagged = api.windows.filter((w) => w.bagged);
   return (
     <>
-      {open.map((w) => <WindowFrame key={w.id} w={w} api={api}>{render(w)}</WindowFrame>)}
+      {/* Cards are drawn by the build board itself (their content is the board's); entries here. */}
+      {open.filter((w) => w.kind !== "card").map((w) => <WindowFrame key={w.id} w={w} api={api}>{render(w)}</WindowFrame>)}
       {api.windows.length > 0 && <BagOfHolding bagged={bagged} api={api} openCount={open.length} />}
       {api.notice && <div className="float-notice" role="status">{api.notice}</div>}
     </>
@@ -143,7 +144,7 @@ function FloatingLayer({ api, render }: { api: FloatingApi; render: (w: FloatWin
 }
 
 /** A window: a title bar to drag it by, the bag and close buttons, the content, a corner to resize it. */
-function WindowFrame({ w, api, children }: { w: FloatWindow; api: FloatingApi; children: ReactNode }) {
+export function WindowFrame({ w, api, children, className = "" }: { w: FloatWindow; api: FloatingApi; children: ReactNode; className?: string }) {
   const drag = useRef<{ dx: number; dy: number; mode: "move" | "size"; w0: number; h0: number; x0: number; y0: number } | null>(null);
   const down = (mode: "move" | "size") => (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("button") && mode === "move") return;
@@ -159,7 +160,7 @@ function WindowFrame({ w, api, children }: { w: FloatWindow; api: FloatingApi; c
   };
   const up = () => { drag.current = null; };
   return (
-    <section className={`float-window float-${w.kind}`} role="dialog" aria-label={w.title} style={{ left: w.x, top: w.y, width: w.w, height: w.h, zIndex: 400 + w.z }} onPointerDown={() => api.focus(w.id)}>
+    <section className={`float-window float-${w.kind} ${className}`} role="dialog" aria-label={w.title} style={{ left: w.x, top: w.y, width: w.w, height: w.h, zIndex: 400 + w.z }} onPointerDown={() => api.focus(w.id)}>
       <header className="float-bar" onPointerDown={down("move")} onPointerMove={moveTo} onPointerUp={up} onPointerCancel={up}>
         <b>{w.title}</b>
         <span className="float-tools">

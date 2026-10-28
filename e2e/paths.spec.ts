@@ -26,6 +26,14 @@ test("a level up can take a level in a new class (multiclass)", async ({ page })
   await pick.click();
   await dialog.locator("button.primary", { hasText: "Done" }).click();
   await expect.poll(async () => ((await saved(page)).classes as unknown[]).length).toBe(before.length + 1);
+  // The class card holds a tab per class; the new one is a Multiclass tab with its own look (C4).
+  await tab(page, "Build");
+  await page.locator("[data-tile=class]").click();
+  const win = page.locator(".float-window.card-window-class");
+  await expect(win.locator(".class-tab")).toHaveCount(before.length + 1);
+  await expect(win.locator(".class-tab.multiclass")).toHaveCount(before.length);
+  await win.locator(".class-tab.multiclass").first().click();
+  await expect(win.locator(".class-tab-body.multiclass")).toBeVisible();
 });
 
 test("a caster who prepares picks today's spells on the spellbook", async ({ page }) => {
@@ -39,9 +47,9 @@ test("a caster who prepares picks today's spells on the spellbook", async ({ pag
   await page.locator("[data-tile=magic]").click();
   const book = page.getByRole("button", { name: /Prepare spells/ });
   await book.click();
-  const count = page.locator(".card-back h3", { hasText: "Prepared spells" });
+  const count = page.locator(".card-window h3", { hasText: "Prepared spells" });
   await expect(count).toContainText(/^Prepared spells 0 \//);
-  await page.locator(".card-back .scroll-card:not(.dim) .scroll-main, .card-back .pick-card:not(.dim) button.pick-select").first().click();
+  await page.locator(".card-window .scroll-card:not(.dim) .scroll-main, .card-window .pick-card:not(.dim) button.pick-select").first().click();
   await expect(count).toContainText(/^Prepared spells 1 \//);
 });
 

@@ -2066,3 +2066,17 @@ button.board-bar { display: block; width: 100%; padding: 0; background: var(--bg
 .csearch-list li { display: flex; align-items: stretch; }
 .csearch-list li > button:first-child { flex: 1; }
 .csearch-float { padding: 0 10px; }
+
+/* Class card tabs (C4): the starting class plain, each multiclass its own violet look. */
+.class-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+.class-tab { display: flex; flex-direction: column; align-items: flex-start; padding: 4px 12px; border-radius: 8px 8px 0 0; border: 1px solid var(--line); border-bottom-width: 3px; background: var(--panel2); }
+.class-tab small { font: 600 9.5px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.class-tab b { font: 700 14px var(--display); }
+.class-tab.on { border-bottom-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--panel2)); }
+.class-tab.multiclass { border-color: color-mix(in srgb, #a57bdc 55%, transparent); }
+.class-tab.multiclass small { color: #c3a6ec; }
+.class-tab.multiclass.on { border-bottom-color: #a57bdc; background: color-mix(in srgb, #a57bdc 16%, var(--panel2)); }
+.class-tab-body.multiclass { border-left: 3px solid #a57bdc; padding-left: 12px; background: linear-gradient(90deg, color-mix(in srgb, #a57bdc 8%, transparent), transparent 40%); }
+/* A card in a floating window: the card's own colour along the title bar. */
+.card-window .float-bar { border-bottom: 2px solid hsl(var(--hue, 40) 60% 55%); }
+.card-window .card-back-body { padding: 0; }

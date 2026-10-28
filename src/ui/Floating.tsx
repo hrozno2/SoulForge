@@ -149,6 +149,9 @@ export function WindowFrame({ w, api, children, className = "" }: { w: FloatWind
   const down = (mode: "move" | "size") => (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("button") && mode === "move") return;
     api.focus(w.id);
+    // No text selection while dragging or resizing (it painted the page blue, C6.1).
+    e.preventDefault();
+    document.body.classList.add("float-dragging");
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     drag.current = { dx: e.clientX - w.x, dy: e.clientY - w.y, mode, w0: w.w, h0: w.h, x0: e.clientX, y0: e.clientY };
   };
@@ -158,7 +161,7 @@ export function WindowFrame({ w, api, children, className = "" }: { w: FloatWind
     if (d.mode === "move") api.move(w.id, e.clientX - d.dx, e.clientY - d.dy);
     else api.move(w.id, w.x, w.y, d.w0 + e.clientX - d.x0, d.h0 + e.clientY - d.y0);
   };
-  const up = () => { drag.current = null; };
+  const up = () => { drag.current = null; document.body.classList.remove("float-dragging"); };
   return (
     <section className={`float-window float-${w.kind} ${className}`} role="dialog" aria-label={w.title} style={{ left: w.x, top: w.y, width: w.w, height: w.h, zIndex: 400 + w.z }} onPointerDown={() => api.focus(w.id)}>
       <header className="float-bar" onPointerDown={down("move")} onPointerMove={moveTo} onPointerUp={up} onPointerCancel={up}>

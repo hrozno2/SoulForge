@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { newCharacter, type Character } from "./character";
 import { resolve } from "./engine";
-import { findGrids, tickBox } from "./improvements";
+import { boxesSelections, findGrids, tickBox, tickUnified, unifiedOf, unifiedSelections } from "./improvements";
 import { loadTestContent } from "../engine/testContent";
 
 const C = process.env.SOULFORGE_RULES;
@@ -53,5 +53,57 @@ describe.skipIf(!C)("ability score increase grids", () => {
     const grid = findGrids(r, r.slots).find((g) => g.anchor.key === asi.key);
     expect(grid?.modes.map((m) => m.label) ?? []).not.toContain("Crusher");
     expect(grid).toBeUndefined();
+  }, 600000);
+
+  it("draws the 2024-rules background increase once, not again for its inner choice (C6.1)", () => {
+    let ch = newCharacter();
+    ch.classes = [{ classId: "ID_WOTC_PHB_CLASS_FIGHTER", level: 1 }];
+    ch.background = "ID_BACKGROUND_ACOLYTE";
+    const opt = resolve(ch, reg).slots.find((s) => s.root === "background" && /2024 rules/i.test(s.rule.name))!;
+    ch = { ...ch, taken: [opt.key], selections: { [opt.key]: [opt.options[0].id] } };
+    let r = resolve(ch, reg);
+    const combo = r.slots.find((s) => s.root === "background" && s.rule.type === "Ability Score Improvement" && s.options.length > 1)!;
+    ch = { ...ch, selections: { ...ch.selections, [combo.key]: [combo.options[0].id] } };
+    r = resolve(ch, reg);
+    const bg = findGrids(r, r.slots).filter((g) => g.anchor.root === "background");
+    expect(bg).toHaveLength(1);
+  }, 600000);
+
+  it("one grid for both ways: the ticks decide +2/+1 or +1/+1/+1 (C6.2)", () => {
+    let ch = newCharacter();
+    ch.classes = [{ classId: "ID_WOTC_PHB_CLASS_FIGHTER", level: 1 }];
+    ch.background = "ID_BACKGROUND_ACOLYTE";
+    const opt = resolve(ch, reg).slots.find((s) => s.root === "background" && /2024 rules/i.test(s.rule.name))!;
+    ch = { ...ch, taken: [opt.key], selections: { [opt.key]: [opt.options[0].id] } };
+    const combo = resolve(ch, reg).slots.find((s) => s.root === "background" && s.rule.type === "Ability Score Improvement" && s.options.length > 1)!;
+    const strDexCon = combo.options.find((o) => /strength.*dexterity.*constitution/i.test(o.name)) ?? combo.options[0];
+    ch = { ...ch, selections: { ...ch.selections, [combo.key]: [strDexCon.id] } };
+    const r = resolve(ch, reg);
+    const g = findGrids(r, r.slots).find((x) => x.anchor.root === "background")!;
+    const u = unifiedOf(g)!;
+    expect(u).toBeTruthy();
+    const base = (a: "strength" | "dexterity" | "constitution") => r.stats.get(a);
+    const a = resolve({ ...ch, selections: { ...ch.selections, ...unifiedSelections(u, "strength", ["dexterity"]) } }, reg);
+    expect([a.stats.get("strength") - base("strength"), a.stats.get("dexterity") - base("dexterity")]).toEqual([2, 1]);
+    const b = resolve({ ...ch, selections: { ...ch.selections, ...unifiedSelections(u, undefined, ["strength", "dexterity", "constitution"]) } }, reg);
+    expect([b.stats.get("strength") - base("strength"), b.stats.get("dexterity") - base("dexterity"), b.stats.get("constitution") - base("constitution")]).toEqual([1, 1, 1]);
+  }, 600000);
+
+  it("ticks the same ability twice for +2 in the Ability Score Improvement feat's two +1 columns", () => {
+    const feat = "ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT";
+    const ch = newCharacter();
+    ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_FIGHTER", level: 1 }];
+    ch.extras = [feat];
+    const r = resolve(ch, reg);
+    const g = findGrids(r, r.slots).find((x) => x.anchor.owner.id === feat)!;
+    const u = unifiedOf(g)!;
+    expect(u.ones).toBe(2);
+    let boxes = tickUnified([undefined, undefined], 0, "wisdom", u);
+    boxes = tickUnified(boxes, 1, "wisdom", u);
+    const two = resolve({ ...ch, selections: { ...ch.selections, ...boxesSelections(u, boxes) } }, reg);
+    expect(two.stats.get("wisdom") - r.stats.get("wisdom")).toBe(2);
+    boxes = tickUnified(boxes, 1, "dexterity", u);
+    const split = resolve({ ...ch, selections: { ...ch.selections, ...boxesSelections(u, boxes) } }, reg);
+    expect([split.stats.get("wisdom") - r.stats.get("wisdom"), split.stats.get("dexterity") - r.stats.get("dexterity")]).toEqual([1, 1]);
   }, 600000);
 });

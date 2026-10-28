@@ -77,7 +77,9 @@ export function CompendiumSearch() {
         }}
       />
       {open && q.trim().length >= 2 && (
-        <ul className="csearch-list" role="listbox">
+        // WebKit does not focus a button on click: the input lost focus first and the list closed before the click
+        // landed (C6.1). Pressing in the list keeps the focus in the input.
+        <ul className="csearch-list" role="listbox" onMouseDown={(e) => e.preventDefault()}>
           {hits.length === 0 && <li className="muted">Nothing matches.</li>}
           {hits.map((h, i) => (
             <li key={h.id} role="option" aria-selected={i === at}>

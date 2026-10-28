@@ -138,7 +138,9 @@ export function findGrids(r: Resolved, slots: Slot[]): Grid[] {
     if (list.some((x) => used.has(x.slot.key))) continue;
     out.push({ anchor: list[0].slot, keys: new Set(list.map((x) => x.slot.key)), modes: [{ label: "", columns: list.map((x) => x.col), fixed: [] }], others: [] });
   }
-  return out;
+  // A choice another grid already draws (the 2024 background's combination holds its +2/+1 choice) is not a grid of its
+  // own as well: it showed twice (C6.1).
+  return out.filter((g) => !out.some((o) => o !== g && o.keys.has(g.anchor.key)));
 }
 
 /** The abilities ticked in each column instance, read from the character's picks. */
@@ -160,4 +162,97 @@ export function tickBox(ch: Character, mode: GridMode, col: number, n: number, a
   const out: Record<string, string[]> = {};
   mode.columns.forEach((c, i) => { out[c.key] = picks[i].filter((x): x is Ability => !!x).map((x) => c.options.get(x)!); });
   return out;
+}
+
+/**
+ * One grid for the usual pair of ways (C6.2, Chris: "I can just pick my combination with the checkmarks"): "+2 to one
+ * and +1 to another" or "+1 to three" (or "+2 to one" or "+1 to two"). A "+2" column, then as many "+1" columns as
+ * either way has; the ticks decide the way: a "+2" ticked takes the way with +2, none the way of +1s.
+ */
+export interface Unified { modeKey: string; two: GridMode; one: GridMode; ones: number; onesWithTwo: number }
+
+// A way's increases: its columns', or (a set of three that each get +1, no choice) its fixed ones.
+const amounts = (m: GridMode) => [...m.columns.flatMap((c) => Array.from({ length: c.count }, () => c.amount)), ...m.fixed.map((f) => f.amount)];
+
+export function unifiedOf(grid: Grid): Unified | undefined {
+  if (!grid.modeKey || grid.modes.length !== 2) return undefined;
+  const two = grid.modes.find((m) => !m.fixed.length && amounts(m).filter((a) => a === 2).length === 1 && amounts(m).every((a) => a === 1 || a === 2));
+  // The other way: +1s to choose, or +1 to each of a fixed set (then ticking all of them takes it).
+  const one = grid.modes.find((m) => m !== two && amounts(m).length > 0 && amounts(m).every((a) => a === 1) && (!m.fixed.length || !m.columns.length));
+  if (!two || !one) return undefined;
+  return { modeKey: grid.modeKey, two, one, ones: Math.max(amounts(one).length, amounts(two).length - 1), onesWithTwo: amounts(two).length - 1 };
+}
+
+/** What the unified grid shows: the +2 pick and the +1 picks, from the way taken now. */
+export function unifiedPicks(ch: Character, u: Unified, chosenMode?: string): { two?: Ability; ones: (Ability | undefined)[] } {
+  const mode = chosenMode === u.one.optionId ? u.one : chosenMode === u.two.optionId ? u.two : undefined;
+  const ones: (Ability | undefined)[] = Array.from({ length: u.ones }, () => undefined);
+  if (!mode) return { ones };
+  const picks = gridPicks(ch, mode);
+  let two: Ability | undefined;
+  let i = 0;
+  mode.columns.forEach((c, ci) => picks[ci].forEach((a) => { if (c.amount === 2) two = a; else ones[i++] = a; }));
+  for (const f of mode.fixed) if (i < ones.length) ones[i++] = f.ability;
+  return { two, ones };
+}
+
+/** The selections for the unified grid's ticks: the way they make, its columns filled, the other way's emptied. */
+export function unifiedSelections(u: Unified, two: Ability | undefined, ones: (Ability | undefined)[]): Record<string, string[]> {
+  // A fixed set's +1s are taken only when every one of them is ticked; anything less leaves the way open.
+  const fixedSet = u.one.fixed.map((f) => f.ability);
+  if (!two && fixedSet.length && !fixedSet.every((a) => ones.includes(a))) {
+    const out: Record<string, string[]> = { [u.modeKey]: [] };
+    for (const c of u.two.columns) out[c.key] = [];
+    return out;
+  }
+  const target = two ? u.two : u.one;
+  const out: Record<string, string[]> = { [u.modeKey]: [target.optionId!] };
+  for (const c of [...u.two.columns, ...u.one.columns]) out[c.key] = [];
+  const queue = ones.filter((a): a is Ability => !!a && a !== two);
+  for (const c of target.columns) {
+    const picks = c.amount === 2 ? (two ? [two] : []) : queue.splice(0, c.count);
+    out[c.key] = picks.map((a) => c.options.get(a)).filter((x): x is string => !!x);
+  }
+  return out;
+}
+
+/**
+ * The grid as Chris wants it (2026-10-28): only "+1" columns, as many as the way of +1s has; the same ability ticked in
+ * two columns is the +2 ("if I want a plus two to one ability I just pick it twice"). The boxes, in column order.
+ */
+export function unifiedBoxes(ch: Character, u: Unified, chosenMode?: string): (Ability | undefined)[] {
+  const p = unifiedPicks(ch, u, chosenMode);
+  const boxes: (Ability | undefined)[] = Array.from({ length: u.ones }, () => undefined);
+  const list = p.two ? [p.two, p.two, ...p.ones.filter(Boolean).slice(0, u.onesWithTwo)] : p.ones;
+  list.forEach((a, i) => { if (i < boxes.length) boxes[i] = a; });
+  return boxes;
+}
+
+/** The selections for the boxes: one ability in two boxes is the +2 way (the rest its +1s), else the +1 way. */
+export function boxesSelections(u: Unified, boxes: (Ability | undefined)[]): Record<string, string[]> {
+  const ticked = boxes.filter((a): a is Ability => !!a);
+  const twice = ticked.find((a, i) => ticked.indexOf(a) !== i);
+  if (twice) return unifiedSelections(u, twice, ticked.filter((a) => a !== twice));
+  return unifiedSelections(u, undefined, ticked);
+}
+
+/** Ticks a box: an ability is in at most two boxes, and only one ability is doubled (that is the +2). */
+export function tickUnified(boxes: (Ability | undefined)[], i: number, a: Ability | undefined, u: Unified): (Ability | undefined)[] {
+  const next = [...boxes];
+  next[i] = a;
+  if (!a) return next;
+  const count = (x: Ability) => next.filter((y) => y === x).length;
+  // A third box of the same ability: the oldest other one goes.
+  if (count(a) > 2) next[next.findIndex((x, j) => x === a && j !== i)] = undefined;
+  // Two doubled abilities, or a +2 with more +1s than that way has: the other doubled one goes down to one box.
+  const doubled = [...new Set(next.filter((x): x is Ability => !!x && count(x) === 2))];
+  if (doubled.length > 1) { const other = doubled.find((x) => x !== a)!; next[next.findIndex((x, j) => x === other && j !== i)] = undefined; }
+  const two = next.find((x) => !!x && count(x) === 2);
+  if (two) {
+    // The other +1s: the box just ticked stays, the oldest others go until the way's count is met.
+    const others = next.map((x, j) => (x && x !== two ? j : -1)).filter((j) => j >= 0);
+    let over = others.length - u.onesWithTwo;
+    for (const j of others) { if (over <= 0) break; if (j !== i) { next[j] = undefined; over--; } }
+  }
+  return next;
 }

@@ -161,6 +161,23 @@ test.describe("Soul Forge smoke tests", () => {
     expect(backup.characters[0].data.version).toBe(2);
   });
 
+  test("Home exports the whole library to one file and opens it again (C5.8)", async ({ page }) => {
+    await addTestContent(page);
+    await randomCharacter(page);
+    await page.waitForTimeout(1200);
+    await tab(page, "Home");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export library" }).click();
+    const path = (await (await download).path())!;
+    const { readFileSync } = await import("node:fs");
+    const json = readFileSync(path, "utf8");
+    expect(JSON.parse(json).kind).toBe("backup");
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: "Open file (.json)" }).click();
+    await (await chooser).setFiles({ name: "library.json", mimeType: "application/json", buffer: Buffer.from(json) });
+    await expect(page.getByText(/Library restored:/)).toBeVisible();
+  });
+
   test("conditions change rolls and say why", async ({ page }) => {
     await addTestContent(page);
     await randomCharacter(page);

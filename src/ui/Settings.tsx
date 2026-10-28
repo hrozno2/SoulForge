@@ -1,9 +1,9 @@
 import { CLASS_ICON_CREDIT } from "./classIcons";
 import { gpuStatus, setGpuFast } from "../system";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { backupFileName, isBackup, makeBackup, restoreBackup } from "../aurora/backup";
+import { exportLibrary, importLibrary } from "./library";
 import { backupStore } from "../aurora/storage";
-import { pickFiles, saveFile } from "../store";
+import { pickFiles } from "../store";
 import { SCHOOL_CREDIT } from "./schoolIcons";
 import { CONDITION_CREDIT } from "./conditionIcons";
 import { LANGUAGES, setLanguage, t, type Lang } from "../i18n";
@@ -103,17 +103,10 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
   useEffect(() => { void gpuStatus().then(setGpu); }, []);
   const [dates, setDates] = useState<string[]>([]);
   useEffect(() => { backupStore.dates().then(setDates); }, []);
-  const backUp = async () => {
-    const json = JSON.stringify(await makeBackup(), null, 2);
-    const ok = await saveFile(backupFileName(), new TextEncoder().encode(json), "application/json");
-    setMsg(ok ? "Backup saved." : "Cancelled.");
-  };
+  const backUp = async () => setMsg(await exportLibrary());
   const restoreFrom = async (text: string) => {
     try {
-      const v = JSON.parse(text);
-      if (!isBackup(v)) throw new Error("That is not a Soul Forge backup file.");
-      const r = await restoreBackup(v, "merge");
-      setMsg(`Restored: ${r.added} added, ${r.updated} updated, ${r.kept} already newer here.`);
+      setMsg(await importLibrary(JSON.parse(text)));
     } catch (e) {
       setMsg(`Could not restore: ${(e as Error).message}`);
     }

@@ -1,5 +1,14 @@
 # Where we left off
 
+## 2026-10-28 morning: v0.20.0 and v0.21.0
+
+v0.20.0 (08:54): everything up to the class-improvement feat list. v0.21.0: C4 floating cards and the Bag of Holding
+(Chris's answers in docs/C4-DESIGN.md), C5.7 system specs and the NVIDIA fast-drawing switch (CachyOS, NVIDIA driver:
+ask Chris to try it and send a bug report's system part), C5.8 library export on Home, and Plutonium cross-checks
+(languages from a list, standard subrace by default, proficiencies from feature text, signed Foundry values). Both
+releases after a full check with every gate passed. C1.7: keep watching the launch animation and fix what turns up.
+Lesson: a git worktree with a symlinked node_modules commits the link unless .gitignore says "node_modules" (now so).
+
 ## Night of 2026-10-27 to 28 (Chris: "keep going with the plan into the night as far as you can get")
 
 New standing rule: a Plutonium analysis is the first step of every feature (memory soulforge-plutonium-reference);

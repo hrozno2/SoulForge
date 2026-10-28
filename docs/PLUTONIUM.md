@@ -108,3 +108,15 @@ When `additionalSpells[].ability` is `{"choose": [...]}`, Plutonium asks the pla
 Soul Forge's converter did so for species, feats and optional features, but not for feats split by spell list (the
 2024 Magic Initiate's Cleric, Druid and Wizard versions), which always cast with Intelligence. One helper now serves
 every owner (`castingAbilityChoice` in src/aurora/fivetools.ts); src/aurora/castingAbility.test.ts.
+
+## Field sweep of the 5e.tools converter (A0.1, 2026-10-28)
+
+Every field the 5e.tools data uses on feats, species, classes, subclasses and their features was checked against what
+src/aurora/fivetools.ts and src/aurora/foundry.ts read. Not read, and why it is left:
+- feats `repeatableHidden`, species `sizeEntry` and `alias`: display only.
+- classes `itemMasteries`: a flag; the counts come from `itemMasteriesProgression`, which is read.
+- classes and subclasses `preparedSpellsChange` ("restLong", "level"): when prepared spells may change; display only.
+- classes `spellsKnownProgressionFixedAllowLowerLevel`: a Wizard's spellbook may take lower-level spells; the spell
+  choices already allow every level up to the highest the class can cast.
+- class and subclass features `consumes` (139): which resource a feature uses up (Plutonium links a feature's activity
+  to the resource it spends). Worth doing for Play's resource tracking: **open** (A0.1 follow-up).

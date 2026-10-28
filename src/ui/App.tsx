@@ -228,7 +228,8 @@ export function App() {
   }, [pending, magicList.length, id]); // eslint-disable-line react-hooks/exhaustive-deps
   const tip = (where: string, list: string[]) => `Still to choose on the ${where} tab:\n${list.slice(0, 12).join("\n")}${list.length > 12 ? `\n...and ${list.length - 12} more` : ""}`;
   // The build board has no description panel: its lists open descriptions with Learn more.
-  const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play" && !(tab === "build" && board);
+  // Manage has no right-hand lore panel (C2): its rows carry an "i" that opens the full description.
+  const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play" && tab !== "manage" && !(tab === "build" && board);
 
   return (
     <UiProvider reg={content.reg}>

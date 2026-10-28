@@ -86,7 +86,13 @@ export function DetailsDialog({ r, ch, set, notes, onClose }: { r: Resolved; ch:
 /** True when the player has written none of the details (portrait and name aside). */
 export const detailsBlank = (ch: Character) => !ch.playerName.trim() && !ch.notes.trim() && Object.values(ch.info).every((v) => !String(v ?? "").trim());
 
-function Options({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
+/** The "i" beside a Manage row (C2: the right-hand lore panel left Manage): opens the full description. */
+function LearnIcon({ el }: { el: AElement }) {
+  const { learn } = useUi();
+  return <button className="learn" title={`Read about ${el.name}`} aria-label={`Read about ${el.name}`} onClick={() => learn(el)}>i</button>;
+}
+
+function Options({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
   const opts = r.reg.ofType("Option");
   if (!opts.length) return <p className="muted">No character options are loaded. Options such as optional rules come from content files.</p>;
   return (
@@ -95,9 +101,10 @@ function Options({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: Se
         const on = ch.options.includes(o.id);
         return (
           <li key={o.id} className={on ? "picked" : ""}>
-            <button onClick={() => set((c) => ({ ...c, options: on ? c.options.filter((x) => x !== o.id) : [...c.options, o.id] }))} onMouseEnter={() => onDetail(o)}>
+            <button onClick={() => set((c) => ({ ...c, options: on ? c.options.filter((x) => x !== o.id) : [...c.options, o.id] }))}>
               <span className="tick">{on ? "✓" : ""}</span><span className="opt-name">{o.name}</span><span className="opt-meta" /><span className="opt-src" title={o.source}>{o.source}</span>
             </button>
+            <LearnIcon el={o} />
           </li>
         );
       })}
@@ -142,7 +149,7 @@ function Bonuses({ ch, set }: { ch: Character; set: SetCharacter }) {
 const ADD_TYPES = ["Language", "Feat", "Spell", "Proficiency", "Racial Trait", "Class Feature", "Feat Feature", "Archetype Feature", "Background Feature", "Item", "Magic Item"];
 
 /** Table rulings and homebrew: add any content to the character without going through a choice. */
-function Additions({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
+function Additions({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
   const [q, setQ] = useState("");
   const [type, setType] = useState("Language");
   const results = useMemo(() => {
@@ -158,7 +165,7 @@ function Additions({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: 
       </div>
       <ul className="options boxed">
         {results.map((o) => (
-          <li key={o.id}><button onMouseEnter={() => onDetail(o)} onClick={() => set((c) => ({ ...c, extras: [...c.extras, o.id] }))}><span className="tick">+</span><span className="opt-name">{o.name}</span><span className="opt-meta" /><span className="opt-src" title={o.source}>{o.source}</span></button></li>
+          <li key={o.id}><button onClick={() => set((c) => ({ ...c, extras: [...c.extras, o.id] }))}><span className="tick">+</span><span className="opt-name">{o.name}</span><span className="opt-meta" /><span className="opt-src" title={o.source}>{o.source}</span></button><LearnIcon el={o} /></li>
         ))}
       </ul>
       <h3>Added</h3>
@@ -263,7 +270,7 @@ function Companions({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
       <small className="muted">{found.length} listed</small>
       <ul className="options boxed companion-list">
         {found.map((c) => (
-          <li key={c.id}><button onMouseEnter={() => onDetail(c)} onClick={() => set((x) => ({ ...x, companions: [...x.companions, { uid: uid(), id: c.id, name: c.name }] }))}><span className="tick">+</span><span className="opt-name">{c.name}</span><span className="opt-meta" /><span className="opt-src" title={c.source}>{c.source}</span></button></li>
+          <li key={c.id}><button onClick={() => set((x) => ({ ...x, companions: [...x.companions, { uid: uid(), id: c.id, name: c.name }] }))}><span className="tick">+</span><span className="opt-name">{c.name}</span><span className="opt-meta" /><span className="opt-src" title={c.source}>{c.source}</span></button><LearnIcon el={c} /></li>
         ))}
       </ul>
       {ch.companions.map((c) => {
@@ -317,9 +324,9 @@ export function ManageTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character
   return (
     <div>
       <nav className="subtabs">{SUBS.map(([k, label]) => <button key={k} className={sub === k ? "subtab active" : "subtab"} onClick={() => setSub(k)}>{label}</button>)}</nav>
-      {sub === "options" && (<><Options r={r} ch={ch} set={set} onDetail={onDetail} />{other.length > 0 && (<><h3>Other choices</h3><SlotList slots={other} r={r} set={set} onDetail={onDetail} /></>)}</>)}
+      {sub === "options" && (<><Options r={r} ch={ch} set={set} />{other.length > 0 && (<><h3>Other choices</h3><SlotList slots={other} r={r} set={set} onDetail={onDetail} /></>)}</>)}
       {sub === "bonuses" && <Bonuses ch={ch} set={set} />}
-      {sub === "additions" && <Additions r={r} ch={ch} set={set} onDetail={onDetail} />}
+      {sub === "additions" && <Additions r={r} ch={ch} set={set} />}
       {sub === "attacks" && <Attacks r={r} ch={ch} set={set} />}
       {sub === "companions" && <Companions r={r} ch={ch} set={set} onDetail={onDetail} />}
     </div>

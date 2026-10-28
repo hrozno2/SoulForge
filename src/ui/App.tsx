@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { logSystemOnce } from "../system";
 import { TextInput } from "./TextField";
 import { logEvent, timed } from "../logbook";
 import { withGrantedItems } from "../aurora/grantedItems";
@@ -105,6 +106,8 @@ export function App() {
   const content = useContent();
   // Launched on another tab than Home: the pack opens when the content is ready (the home screen signals otherwise).
   useEffect(() => { if (tab !== "start" && content.ready) launchReady(); }, [tab, content.ready]);
+  // The machine, in the log once per start (C5.7), after the first paint (also the NVIDIA switch's "it drew" signal).
+  useEffect(() => { requestAnimationFrame(() => requestAnimationFrame(() => void logSystemOnce())); }, []);
   // 5e.tools content imported by an older importer lacks files this version reads: ask for a fresh import, once per
   // launch, until it is done.
   const [reimportLater, setReimportLater] = useState(false);

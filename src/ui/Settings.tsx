@@ -1,4 +1,5 @@
 import { CLASS_ICON_CREDIT } from "./classIcons";
+import { gpuStatus, setGpuFast } from "../system";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { backupFileName, isBackup, makeBackup, restoreBackup } from "../aurora/backup";
 import { backupStore } from "../aurora/storage";
@@ -98,6 +99,8 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", esc);
   }, [onClose]);
   const [msg, setMsg] = useState("");
+  const [gpu, setGpu] = useState({ applies: false, on: false });
+  useEffect(() => { void gpuStatus().then(setGpu); }, []);
   const [dates, setDates] = useState<string[]>([]);
   useEffect(() => { backupStore.dates().then(setDates); }, []);
   const backUp = async () => {
@@ -202,6 +205,12 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           <label className="set-row">
             <span><b>Show the test controls</b><small className="muted"> The test build's bar at the top; off makes it look like the released app</small></span>
             <input type="checkbox" checked={!s.hideTestTools} onChange={(e) => updateSettings({ hideTestTools: !e.target.checked })} />
+          </label>
+        )}
+        {gpu.applies && (
+          <label className="set-row">
+            <span><b>Fast drawing on NVIDIA</b><small className="muted"> Experimental: keeps WebKit's GPU path, which older NVIDIA drivers crash on. Takes effect at the next start; if that start fails to draw, it turns itself off.</small></span>
+            <input type="checkbox" checked={gpu.on} onChange={async (e) => { const on = e.target.checked; await setGpuFast(on); setGpu((g) => ({ ...g, on })); }} />
           </label>
         )}
         <div className="set-row">

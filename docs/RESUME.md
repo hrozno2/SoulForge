@@ -28,6 +28,10 @@ character has from elsewhere is taken back and left open (the suite now fails on
 from macOS services around 04:00 (load average 37): suites that normally take a minute took ten.
 Later: the rules check no longer reports a spell count short only by open picks twice; summoned companions follow
 Plutonium's summon activities (5e.tools' Battle Smith gets a Steel Defender, the 2024 Beast Master chooses a beast).
+Companion cards now show worked-out numbers (the Steel Defender's AC 15 and HP 2 + Int + 5 per level; formulas such as
+"5 + five times your Ranger level" are read). The older-build notice groups stale picks by choice (checked on Chris's 17
+saved characters: most have nothing, Waldrom's went from 29 lines to 4). Jev (TypeSafe's System One model): Chris said
+skip it for now (2026-10-28).
 **For the next release notes:** v0.19.0 shipped an A2.12 regression: 5e.tools subclasses lost the features their
 header features refer to (e.g. the Battle Smith's Steel Defender and Battle Ready). Fixed in dc94305.
 Lesson: chain test, build and commit with && (one commit, 15e5fc0, went in with a failing unit test; fixed in 045aff3).

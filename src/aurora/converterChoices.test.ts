@@ -34,3 +34,23 @@ describe.skipIf(!C)("converted choices", () => {
     expect(r.stats.get("strength")).toBe(r.character.abilityBase.strength + 1);
   }, 600000);
 });
+
+describe.skipIf(!C)("proficiencies from feature text", () => {
+  const reg = C ? loadTestContent(C) : undefined!;
+  const withSub = (classId: string, level: number, sub: RegExp) => {
+    let ch = newCharacter(); ch.classes = [{ classId, level }];
+    const slot = resolve(ch, reg).slots.find((s) => s.rule.type === "Archetype")!;
+    const pick = slot.options.find((o) => sub.test(o.name) && o.id.startsWith("ID_5ET_"))!;
+    ch = { ...ch, selections: { [slot.key]: [pick.id] } };
+    return resolve(ch, reg);
+  };
+  it.each([
+    ["ID_5ET_CLASS_PHB_CLERIC", 1, /^forge domain$/i, ["ID_5ET_PROF_ARMOR_HEAVY"]],
+    ["ID_5ET_CLASS_PHB_RANGER", 7, /^gloom stalker$/i, ["ID_5ET_SAVE_WISDOM"]],
+    ["ID_5ET_CLASS_PHB_WIZARD", 2, /^bladesinging$/i, ["ID_5ET_PROF_ARMOR_LIGHT", "ID_5ET_SKILL_PERFORMANCE"]],
+  ] as const)("%s %s %s", (classId, level, sub, ids) => {
+    if (!reg.get(classId)) return;
+    const r = withSub(classId, level, sub);
+    for (const id of ids) expect(r.ids.has(id), id).toBe(true);
+  }, 600000);
+});

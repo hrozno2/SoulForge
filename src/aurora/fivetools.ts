@@ -586,7 +586,33 @@ function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
   });
 }
 
-function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, hide = false): AElement {
+/**
+ * Proficiencies a feature's text gives that 5e.tools (and Plutonium's Foundry data) keep only as text: "You gain
+ * proficiency in Wisdom saving throws", "with heavy armor and smith's tools", "in the Performance skill" (Forge Domain,
+ * Bladesinging, Gloom Stalker, Samurai: their Aurora twins grant these). Only sentences naming exactly what they give;
+ * "one type of weapon of your choice" and "you instead gain" are left alone.
+ */
+function textProficiencies(entries: unknown, out?: AElement[]): ARule[] {
+  if (!out) return [];
+  const rules: ARule[] = [];
+  const text = stripTags(JSON.stringify(entries ?? [])).replace(/\\"/g, '"');
+  const TOOLS = new Set(Object.values(TOOL_KINDS).flat());
+  for (const m of text.matchAll(/\byou (?:also )?gain proficiency (?:in|with) (.+?)(?:\.|,? (?:and you|if|but|while|when|which)\b|"|$)/gi)) {
+    for (const raw of m[1].split(/,\s*(?:and\s+)?|\s+and\s+/)) {
+      const x = raw.trim().toLowerCase().replace(/^the\s+/, "");
+      let r: RegExpExecArray | null;
+      if ((r = /^(strength|dexterity|constitution|intelligence|wisdom|charisma) saving throws?$/.exec(x))) rules.push({ kind: "grant", type: "Proficiency", id: `ID_5ET_SAVE_${slug(r[1])}` });
+      else if ((r = /^(light|medium|heavy) armor$/.exec(x))) rules.push({ kind: "grant", type: "Proficiency", id: ARMOR_IDS[r[1]] });
+      else if (x === "shields") rules.push({ kind: "grant", type: "Proficiency", id: ARMOR_IDS.shield });
+      else if (x === "martial weapons") { const w = weaponId("martial", out); if (w) rules.push({ kind: "grant", type: "Proficiency", id: w }); }
+      else if ((r = /^([a-z ]+) skill$/.exec(x)) && SKILLS.includes(r[1])) rules.push({ kind: "grant", type: "Proficiency", id: skillIdOf(r[1]) });
+      else if (TOOLS.has(x)) rules.push({ kind: "grant", type: "Proficiency", id: toolId(x, out) });
+    }
+  }
+  return rules;
+}
+
+function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, hide = false, out?: AElement[]): AElement {
   const html = entriesHtml(f.entries);
   // What a use of this feature spends ("consumes": Turn Undead spends a Channel Divinity), as Plutonium links them.
   const c = f.consumes as J | undefined;
@@ -594,7 +620,7 @@ function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, 
   // A feature named after the creature it tags ("Steel Defender" and its {@creature steel defender|tce}) gives that
   // creature as a companion (found by name and book once all content is in: registry.ts resolveCreatureRefs).
   const own = [...JSON.stringify(f.entries ?? []).matchAll(/@creature ([^|}]+)(?:\|([^|}]*))?/g)].find((m) => m[1].trim().toLowerCase() === String(f.name).toLowerCase());
-  const rules: ARule[] = own ? [{ kind: "grant", type: "Companion", id: `CREATUREREF:${own[1].trim().toLowerCase()}|${(own[2] ?? "").trim().toLowerCase()}` } as ARule] : [];
+  const rules: ARule[] = [...(own ? [{ kind: "grant", type: "Companion", id: `CREATUREREF:${own[1].trim().toLowerCase()}|${(own[2] ?? "").trim().toLowerCase()}` } as ARule] : []), ...textProficiencies(f.entries, out)];
   return base(id, f.name, type, srcName(ctx, f.source), { description: html, sheet: { display: !hide, descriptions: [{ text: html }] }, supports: [kind], rules, ...(setters ? { setters } : {}) });
 }
 
@@ -1053,7 +1079,7 @@ function refRules(entries: unknown, label: string, level: number, data: { cf: J[
       const f = data.cf.find((x) => x.name === name && x.className === cls && (x.classSource ?? "PHB") === (csrc || x.classSource) && String(x.level) === lv && x.source === (src || csrc || "PHB"));
       if (!f) return undefined;
       const id = ftId("CF", `${cls} ${name}`, f.source, String(f.level));
-      if (!data.out.some((o) => o.id === id)) data.out.push(featureElement(f, "5et class feature", "Class Feature", id, data.ctx));
+      if (!data.out.some((o) => o.id === id)) data.out.push(featureElement(f, "5et class feature", "Class Feature", id, data.ctx, false, data.out));
       return { id, type: "Class Feature" };
     }
     if (ref.type === "refSubclassFeature") {
@@ -1166,7 +1192,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     if (!feat) continue;
     const fid = ftId("CF", `${c.name} ${name}`, feat.source, String(level));
     const generic = name === "Subclass Feature" || name === c.subclassTitle;
-    out.push(featureElement(feat, "5et class feature", "Class Feature", fid, ctx, generic));
+    out.push(featureElement(feat, "5et class feature", "Class Feature", fid, ctx, generic, out));
     // An optional class feature (Tasha's: Deft Explorer, Favored Foe) is a choice, not a given; its later parts
     // ("Deft Explorer Improvement") come with it, and the feature it replaces goes when it is taken.
     if (feat.isClassFeatureVariant) {
@@ -1291,7 +1317,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       // A feature two copies of one subclass share (the PHB subclass and its copy for the 2024 class) is one element,
       // granted by both.
       const had = out.some((o) => o.id === fid);
-      if (!had) out.push(featureElement(f, "5et subclass feature", "Archetype Feature", fid, ctx, f.name === (s.name)));
+      if (!had) out.push(featureElement(f, "5et subclass feature", "Archetype Feature", fid, ctx, f.name === (s.name), out));
       srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
       srules.push(...refRules(f.entries, `${f.name} (${s.shortName ?? s.name} ${f.level})`, f.level, { cf: data.cf, sf: data.sf, ctx, out }, true));
     }

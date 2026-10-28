@@ -2,7 +2,7 @@ import { isAvailable, usedAfterClick } from "./pips";
 import { useMemo } from "react";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
-import { buildSheet, preparePool, type CastingLine } from "../aurora/sheet";
+import { buildSheet, grantSource, preparePool, type CastingLine } from "../aurora/sheet";
 import type { Character } from "../aurora/character";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { Browse } from "./Browse";
@@ -33,6 +33,21 @@ function SlotTracker({ line, set }: { line: CastingLine; set: SetCharacter }) {
   );
 }
 
+/** Always-prepared spells, each marked, its hover saying where it comes from (C6.5). */
+function AlwaysPrepared({ line, r, onDetail }: { line: CastingLine; r: Resolved; onDetail: (e: AElement) => void }) {
+  if (!line.granted.length) return null;
+  return (
+    <>
+      <h3>Always prepared <small className="muted">(do not count against the limit)</small></h3>
+      <div className="chips">{line.granted.map((p) => {
+        const el = r.reg.get(p.id);
+        const src = grantSource(r, p);
+        return <span key={p.id} className="chip always-prepared" title={`Always prepared${src ? `: from ${src}` : ""}`} onMouseEnter={() => el && onDetail(el)}><span className="always-mark" aria-label="always prepared">◆</span> {el?.name ?? p.id}{src && <small className="muted"> ({src})</small>}</span>;
+      })}</div>
+    </>
+  );
+}
+
 function Prepared({ line, r, ch, set, onDetail }: { line: CastingLine; r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
   const pool = useMemo<AElement[]>(() => preparePool(r, line), [r, line]);
   const chosen = ch.prepared[line.name] ?? [];
@@ -45,6 +60,7 @@ function Prepared({ line, r, ch, set, onDetail }: { line: CastingLine; r: Resolv
     });
   return (
     <>
+      <AlwaysPrepared line={line} r={r} onDetail={onDetail} />
       <h3>Prepared spells <span className={valid.length > line.prepareMax ? "warn" : "muted"}>{valid.length} / {line.prepareMax}</span></h3>
       <Browse items={pool} type="Spell" chosen={valid} onPick={(e) => toggle(e.id)} onHover={onDetail} defaultView="cards" perPage={60} />
     </>
@@ -64,7 +80,6 @@ export function MagicTab({ r, ch, set, onDetail, prepareElsewhere = false }: { r
   const sheet = useMemo(() => buildSheet(r), [r]);
   const spellSlots = r.slots.filter((s) => tabOfSlot(s) === "magic");
   const other = spellSlots.filter((s) => !s.rule.spellcasting || !sheet.casting.some((c) => c.name.toLowerCase() === s.rule.spellcasting!.toLowerCase()));
-  const nm = (id: string) => r.reg.get(id);
   if (!sheet.casting.length && !spellSlots.length) {
     return <p className="muted">This character does not cast spells yet. Spellcasting appears when a class or feature grants it.</p>;
   }
@@ -85,12 +100,7 @@ export function MagicTab({ r, ch, set, onDetail, prepareElsewhere = false }: { r
             <SlotList slots={mine} r={r} set={set} onDetail={onDetail} empty="No spells to choose at this level." />
             {line.prepare && !prepareElsewhere && <Prepared line={line} r={r} ch={ch} set={set} onDetail={onDetail} />}
             {line.prepare && prepareElsewhere && <p className="muted">Prepare today's spells with "Prepare spells" under the spellbook above.</p>}
-            {line.granted.length > 0 && (
-              <>
-                <h3>Always prepared</h3>
-                <div className="chips">{line.granted.map((p) => <span key={p.id} className="chip" onMouseEnter={() => nm(p.id) && onDetail(nm(p.id)!)}>{nm(p.id)?.name ?? p.id}</span>)}</div>
-              </>
-            )}
+            {!(line.prepare && !prepareElsewhere) && <AlwaysPrepared line={line} r={r} onDetail={onDetail} />}
           </section>
         );
       })}

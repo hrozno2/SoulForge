@@ -2104,3 +2104,7 @@ body.float-dragging, body.float-dragging * { user-select: none !important; -webk
 /* An open starting item (an instrument of your choice) picked inside its gear box */
 .pending-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; font: 600 12.5px var(--body); color: var(--gold2); }
 .pending-row select { flex: 1; min-width: 0; }
+
+/* An always-prepared spell's mark (C6.5) */
+.chip.always-prepared { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+.always-mark { color: var(--gold); font-size: 10px; }

@@ -1,5 +1,15 @@
 # Where we left off
 
+## 2026-10-28 night: C6 fixes and v0.22.0 (Chris: fixes, engine and stability first; up to 80% weekly usage tonight)
+
+Done: C6.1 resize no longer selects text, "i" opens floating entries; C6.2 ability boxes (+1 columns only, doubled =
++2), fixed choices go to "things you get"; C6.3 window frame (Done, double-click shrink, Focus with blur, partly off
+screen with the bar kept, drop on the bag); C6.5 always-prepared marks with the source (grantSource) on cards and in
+brackets on sheets; C6.7 themed spell scrolls with a token guard (themeTokens.test). Engine: spellChoicePools (one
+spell list per class), selling one to one, settlePending/choosePending (open items picked in the gear box).
+Left from C6: C6.4 animations (flip out, bag, leather bag, fold slide), C6.5 the one print selector (whole spellbook or
+prepared only), C6.6 sticky spellbook and page/item flights.
+
 ## 2026-10-28 morning: v0.20.0 and v0.21.0
 
 v0.20.0 (08:54): everything up to the class-improvement feat list. v0.21.0: C4 floating cards and the Bag of Holding

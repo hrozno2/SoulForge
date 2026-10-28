@@ -1,7 +1,7 @@
 import { isModern } from "../aurora/edition";
 import { companionHtml } from "../aurora/companion";
 import type { Resolved } from "../aurora/engine";
-import { headerInfo, preparePool, readySpells, type SheetData } from "../aurora/sheet";
+import { grantSource, headerInfo, preparePool, readySpells, type SheetData } from "../aurora/sheet";
 import { ABILITY_IDS, ABILITY_LABEL, SKILL_ABILITY, itemLabel, type AbilityId, type InvItem } from "../aurora/character";
 
 export interface SpellRow {
@@ -209,7 +209,7 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
   // A line that does not prepare: a feat's or species' spells are always prepared; a class that knows its spells
   // (a 2014 Bard) has nothing to prepare, so neither says "prepared" (issue #3: Magic Initiate's Ice Knife).
   let fixedLine: "always" | "known" | null = null;
-  const row = (p: { id: string; granted?: boolean }, prepared: boolean): SpellRow | undefined => {
+  const row = (p: { id: string; granted?: boolean; from?: string }, prepared: boolean): SpellRow | undefined => {
     const el = r.reg.get(p.id);
     if (!el) return undefined;
     const set = (k: string) => el.setters[k]?.value ?? "";
@@ -219,7 +219,8 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
       level: set("level") || "0", name: el.name, school: set("school").slice(0, 4), time: shortTime(set("time")), range: shortRange(set("range")),
       duration: dur.text, concentration: dur.conc || set("isConcentration") === "true", ritual: set("isRitual") === "true",
       v: set("hasVerbalComponent") === "true", s: set("hasSomaticComponent") === "true", m: set("hasMaterialComponent") === "true",
-      notes: cantrip ? "" : p.granted || fixedLine === "always" ? "always prepared" : fixedLine === "known" ? "" : prepared ? "prepared" : "",
+      // Always prepared says where from, in brackets (C6.5): "always prepared (Life Domain)".
+      notes: cantrip ? "" : p.granted || fixedLine === "always" ? (p.granted && grantSource(r, p) ? `always prepared (${grantSource(r, p)})` : "always prepared") : fixedLine === "known" ? "" : prepared ? "prepared" : "",
       prepared: !cantrip && prepared,
     };
   };

@@ -521,6 +521,22 @@ const SAID: [string, string, (v: number) => string][] = [
   ["infusions:vanish", "infuse item", (v) => `infusions last ${v} ${v === 1 ? "day" : "days"} after your death`],
 ];
 
+/**
+ * Where an always-prepared spell comes from, in words ("Life Domain", "Magic Initiate"), for the mark's hover and the
+ * exported sheets' brackets (C6.5). A feature named only for its spells ("Domain Spells", "Oath of Devotion Spells")
+ * names what it belongs to instead, when that says more.
+ */
+export function grantSource(r: Resolved, p: Pick<SpellPick, "from">): string | undefined {
+  const el = p.from ? r.reg.get(p.from) : undefined;
+  if (!el) return undefined;
+  if (/^(\w+ )?spells$|spell list$/i.test(el.name)) {
+    const parent = r.active.find((a) => a.el.id === el.id)?.from;
+    const pe = parent ? r.reg.get(parent) : undefined;
+    if (pe) return pe.name;
+  }
+  return el.name;
+}
+
 export function buildSheet(r: Resolved): SheetData {
   const s = r.stats;
   const prof = s.get("proficiency");

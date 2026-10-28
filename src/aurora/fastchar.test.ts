@@ -6,7 +6,7 @@
  */
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { it } from "vitest";
+import { expect, it } from "vitest";
 import { importFastCharacter } from "./foreign";
 import { resolve } from "./engine";
 import { buildSheet } from "./sheet";
@@ -39,4 +39,6 @@ it.skipIf(!C || process.env.RULES_TIER !== "fastchar")("FastCharacter characters
   out.splice(2, 0, "## Counts", ...[...kinds].sort((a, b) => b[1] - a[1]).map(([k, n]) => `- ${k}: ${n}`), "");
   writeFileSync(join(C!, "fastcharacter", "report.md"), out.join("\n"));
   console.log(`FASTCHAR ${[...kinds].sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join("; ")}`);
+  // An import never leaves a pick that repeats what the character has from elsewhere (it is taken back and left open).
+  expect(kinds.get("rules: A choice repeats something the character already has") ?? 0).toBe(0);
 }, 3600000);

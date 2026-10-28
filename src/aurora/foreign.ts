@@ -5,6 +5,7 @@
  * reports what it could not place.
  */
 import { logEvent } from "../logbook";
+import { repeatedPicks } from "./rulesCheck";
 import { ABILITY_IDS, newCharacter, uid, type AbilityId, type Character } from "./character";
 import type { AElement } from "./types";
 import type { ARegistry } from "./registry";
@@ -803,6 +804,21 @@ class Importer {
     return { ...ch, hpMode: "roll", hpRolls: rolls };
   }
 
+  /** Takes back picks the rules check calls repeats (repeatedPicks), so the import leaves a choice open, not wasted. */
+  private dropRepeats(ch: Character): Character {
+    const r = resolve(ch, this.reg);
+    let out = ch;
+    for (const s of r.slots) {
+      const repeats = repeatedPicks(r, s);
+      if (!repeats.length) continue;
+      const drop = s.chosen.filter((id) => repeats.some((t) => t.includes(`: ${this.reg.get(id)?.name} (`)));
+      if (!drop.length) continue;
+      out = { ...out, selections: { ...out.selections, [s.key]: s.chosen.filter((id) => !drop.includes(id)) } };
+      for (const id of drop) this.notes.push(`${this.reg.get(id)?.name} was in ${s.rule.name} and also comes from elsewhere; that choice is left for you.`);
+    }
+    return out;
+  }
+
   /** Fill choices (subclass, feats, spells) with everything wanted, then derive base scores. */
   /**
    * Sets the species from a name as the file writes it: "Hill Dwarf", "Halfling (Lotusden)", "Aasimar (Fallen)",
@@ -965,7 +981,10 @@ class Importer {
       this.matched.push(`${el.name} (on the class spell list)`);
       return ch;
     }
-    const origin = (s: (typeof fits2)[number]) => (from && (normalize(s.owner.name).includes(from) || normalize(s.owner.id.replace(/_/g, " ")).includes(from) || normalize(s.rule.name).includes(from)) ? 0 : 1);
+    // The part of the character the named source belongs to ("Elven Lineage" is a species trait): a choice there is the
+    // source's own even when its name differs (the High Elf's "Wizard Cantrip" for the Elven Lineage's cantrip).
+    const fromRoot = from ? r.active.find((a) => normalize(a.el.sheet?.alt ?? a.el.name) === from || normalize(a.el.name) === from)?.root : undefined;
+    const origin = (s: (typeof fits2)[number]) => (from && (normalize(s.owner.name).includes(from) || normalize(s.owner.id.replace(/_/g, " ")).includes(from) || normalize(s.rule.name).includes(from)) ? 0 : fromRoot && s.root === fromRoot ? 0.5 : 1);
     // A spell the file says came from a feat whose choice is not open yet (the Magic Initiate list is picked later)
     // waits for it rather than filling the class's own spells.
     if (this.deferring && from && el.type === "Spell" && !fits2.some((s) => origin(s) === 0) && !/^(class|race|species|background)\b/.test(from) && !this.reg.ofType("Class").some((c) => normalize(c.name) === from)) {
@@ -1017,6 +1036,9 @@ class Importer {
     // Fill what is still open from the file's skills, languages, tools and scores, then with defaults. Spells the
     // file does not list are left for the player to choose rather than guessed.
     ch = this.fillOpen(ch, importedScores, true);
+    // A pick that repeats what the character has from elsewhere (a class cantrip taken before the species' own choice,
+    // which only opens later, gave the same cantrip by default) is taken back: that choice is left for the player.
+    ch = this.dropRepeats(ch);
     // What the file leaves open, as a to-do list: spells on the Magic tab, everything else on Build.
     const done = resolve(ch, this.reg);
     const todo = done.slots
@@ -1646,6 +1668,14 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
     for (const name of [...m[1].split(/,\s*|\s+and\s+/), ...(m[2] ? m[2].split(/\s+and\s+/) : [])].map((x) => x.trim()).filter(Boolean)) b.want(["Spell"], fcSpell(name), "spell", [], from, undefined, true);
   }
 
+  // A cantrip a species trait gives, named in the trait ("• Elven Lineage (Prestidigitation cantrip; ...)", "• Celestial
+  // Legacy (Charisma-based; Light cantrip)"): it claims the trait's own choice before "Cantrips Known" lists it again,
+  // so a class choice does not take it too.
+  for (const l of lines) {
+    const m = /^•\s*([^(]+?)\s*\((?:[^;()]*;\s*)?([A-Z][A-Za-z' ]+?) cantrip\b/.exec(l);
+    if (m) b.want(["Spell"], m[2].trim(), "spell", [], m[1].trim(), undefined, true);
+  }
+
   // Spells: every one listed is known or prepared (FastCharacter lists the prepared spells).
   b.preparedKnown = true;
   for (const l of lines) {
@@ -1657,6 +1687,15 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
       b.want(["Spell"], name, "spell");
       b.prepared.add(normalize(name));
     }
+  }
+
+  // A cantrip the file shows only in its attacks ("Shocking Grasp Cantrip. Melee Spell Attack: ...") while "Cantrips
+  // Known" says none (an Eldritch Knight's sheet): known all the same.
+  for (const l of lines) {
+    const m = /^([A-Z][^.:]{2,40}?) Cantrip\.\s/.exec(l);
+    if (!m || b.hints.spells.has(normalize(m[1]))) continue;
+    b.want(["Spell"], m[1].trim(), "spell");
+    b.prepared.add(normalize(m[1]));
   }
 
   // Equipment: the armor worn is equipped; carried gear and magic items are carried, attuned when marked "(a)".

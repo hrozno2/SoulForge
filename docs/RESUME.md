@@ -20,6 +20,10 @@ Done, each committed and pushed (last: see git log), Soul Forge Test rebuilt aft
 Later the same night: C5.3's PDF form cards, C5.5 (every creation path tested; the browser run, docs/BROWSER-RUN.md;
 it found repeated spells in the test content: rules check now flags a spell learned twice), C5.6 measured (8 to 15 ms,
 left for Linux numbers), the C4 design pass (docs/C4-DESIGN.md).
+Then A0.1 (Plutonium cross-checks): 2014 classes roll for starting gold; Magic Initiate's spell-list versions choose
+their casting ability; a field sweep of the 5e.tools converter (docs/PLUTONIUM.md); features that spend another's uses
+get a Use button in Play (Turn Undead spends Channel Divinity), and a sheet entry with uses but no text kept its uses.
+Lesson: chain test, build and commit with && (one commit, 15e5fc0, went in with a failing unit test; fixed in 045aff3).
 Open, needing Chris: C4's four questions (docs/C4-DESIGN.md), C1.7 (launch animation details), C5.4 (Linux flicker
 facts), UA2 (playtest article).
 No release cut (none asked; releases only Mon to Thu, 9 to 17, with the full check).

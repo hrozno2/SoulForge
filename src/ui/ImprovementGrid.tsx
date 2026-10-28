@@ -1,6 +1,9 @@
 import type { Resolved } from "../aurora/engine";
 import { ABILITY_ORDER, gridPicks, tickBox, type Ability, type Grid } from "../aurora/improvements";
+import { useState } from "react";
+import type { AElement } from "../aurora/types";
 import type { SetCharacter } from "./Slots";
+import { Browse } from "./Browse";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -15,7 +18,14 @@ export function ImprovementGrid({ grid, r, set }: { grid: Grid; r: Resolved; set
   // shows it; ticking a box then takes that way.
   const chosen = grid.modes.find((m) => !grid.modeKey || m.optionId === grid.chosenMode);
   const otherChosen = grid.others.some((o) => o.id === grid.chosenMode);
-  const mode = chosen ?? (otherChosen ? undefined : grid.modes[0]);
+  // A feat instead of the increase: the plain feat list (search, filters, versions, locks) behind one switch, not every
+  // feat as a button.
+  const [featList, setFeatList] = useState(otherChosen);
+  const showFeats = featList || otherChosen;
+  const mode = showFeats ? undefined : chosen ?? (otherChosen ? undefined : grid.modes[0]);
+  const feats = grid.others.map((o) => r.reg.get(o.id)).filter((e): e is AElement => !!e);
+  const anchor = grid.anchor;
+  const locked = (el: AElement) => (anchor.blocked.has(el.id) ? anchor.whyBlocked?.(el.id) ?? "requirements not met" : undefined);
   const picks = mode ? gridPicks(ch, mode) : [];
   const cols = mode ? mode.columns.flatMap((c, ci) => Array.from({ length: c.count }, (_, n) => ({ c, ci, n }))) : [];
   const rows = ABILITY_ORDER.filter((a) => mode && (mode.columns.some((c) => c.options.has(a)) || mode.fixed.some((f) => f.ability === a)));
@@ -41,9 +51,13 @@ export function ImprovementGrid({ grid, r, set }: { grid: Grid; r: Resolved; set
         )}
         {grid.modeKey && (grid.modes.length > 1 || grid.others.length > 0) && (
           <div className="row grid-modes">
-            {grid.modes.map((m) => <button key={m.optionId} className={m === mode ? "pill active" : "pill"} onClick={() => choose(grid.modeKey!, m.optionId!, allColumnKeys)}>{m.label}</button>)}
-            {grid.others.map((o) => <button key={o.id} className={grid.chosenMode === o.id ? "pill active" : "pill"} onClick={() => choose(grid.modeKey!, o.id, allColumnKeys)}>{o.label}</button>)}
+            {grid.modes.map((m) => <button key={m.optionId} className={m === mode ? "pill active" : "pill"} onClick={() => { setFeatList(false); choose(grid.modeKey!, m.optionId!, allColumnKeys); }}>{m.label}</button>)}
+            {feats.length > 0 && <button className={showFeats ? "pill active" : "pill"} onClick={() => setFeatList(true)}>{otherChosen ? `Feat: ${r.reg.get(grid.chosenMode!)?.name ?? "chosen"}` : "A feat instead"}</button>}
           </div>
+        )}
+        {showFeats && feats.length > 0 && (
+          <Browse items={feats} type="Feat" chosen={otherChosen && grid.chosenMode ? [grid.chosenMode] : []} onPick={(el) => choose(grid.modeKey!, el.id, allColumnKeys)}
+            disabledReason={locked} defaultView="list" perPage={60} need={1} />
         )}
         {mode && (
           <table className="asi-grid">

@@ -124,7 +124,9 @@ export function findGrids(r: Resolved, slots: Slot[]): Grid[] {
       continue;
     }
     // Packages (and options that are not, such as a feat instead).
-    const modes = s.options.map((o) => ({ o, m: modeOf(r, o) }));
+    // A feat that also raises an ability (a half-feat: Crusher, Elven Accuracy) is a feat, not a way of taking the
+    // increase; only the increase itself (the 2024 "Ability Score Improvement" feat, packages) is a mode.
+    const modes = s.options.map((o) => ({ o, m: o.type === "Feat" && !/^ability score improvement/i.test(o.name) ? undefined : modeOf(r, o) }));
     if (modes.some((x) => x.m)) {
       const ms = modes.filter((x) => x.m).map((x) => x.m!);
       const keys = new Set([s.key, ...ms.flatMap((m) => m.columns.map((c) => c.key))]);

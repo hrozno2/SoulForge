@@ -43,4 +43,15 @@ describe.skipIf(!C)("ability score increase grids", () => {
     const custom = resolve(base((c) => { c.background = "ID_WOTC_DMG24_BACKGROUND_CUSTOM"; }), reg);
     expect(findGrids(custom, custom.slots).some((g) => g.sets && g.sets.options.length >= 10)).toBe(true);
   }, 600000);
+
+  it("never shows half-feats as ways of taking a class's increase: the feats stay a list", () => {
+    const ch = newCharacter();
+    ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_DRUID", level: 4 }];
+    const r = resolve(ch, reg);
+    const asi = r.slots.find((s) => /Ability Score Improvement \(Druid 4\)/.test(s.rule.name))!;
+    expect(asi, "the Druid 4 improvement").toBeTruthy();
+    const grid = findGrids(r, r.slots).find((g) => g.anchor.key === asi.key);
+    expect(grid?.modes.map((m) => m.label) ?? []).not.toContain("Crusher");
+    expect(grid).toBeUndefined();
+  }, 600000);
 });

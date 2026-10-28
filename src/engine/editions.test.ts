@@ -10,7 +10,7 @@ import { expect, it } from "vitest";
 import { resolve } from "../aurora/engine";
 import { autoFill } from "../aurora/autofill";
 import type { AElement } from "../aurora/types";
-import { choiceEdition, editionOfElement } from "./editionPolicy";
+import { choiceEdition, editionOfElement, offeredAcrossEditions } from "./editionPolicy";
 import { holder, loadTestContent } from "./testContent";
 
 const C = process.env.SOULFORGE_RULES;
@@ -38,7 +38,7 @@ it.skipIf(!C || process.env.RULES_TIER !== "editions")("where 2014 and 2024 meet
         for (const o of s.options) {
           if (s.blocked.has(o.id)) continue;
           const oe = editionOf(o);
-          if (oe === "none" || oe === ownerEd || ownerEd === "none") continue;
+          if (oe === "none" || oe === ownerEd || ownerEd === "none" || offeredAcrossEditions(o)) continue;
           // Against the rules: a 2024 option in a 2014 choice, or the other edition's version of an option.
           const wrong = ownerEd === "2014" || ownVersions.has(`${o.type}|${vname(o.name)}`);
           if (wrong) bad.push(`${el.name} (${el.source}): "${s.rule.name}" offers ${o.name} (${o.source})`);

@@ -7,7 +7,7 @@
  */
 import { BACKGROUND_ASI_MARKER } from "../engine/backgroundOptions";
 import { conceptOf } from "../engine/concepts";
-import { choiceEdition, editionOfElement } from "../engine/editionPolicy";
+import { choiceEdition, editionOfElement, offeredAcrossEditions } from "../engine/editionPolicy";
 import { bookKey } from "./books";
 import type { Resolved } from "./engine";
 import { preparePool, weaponAbilityOptions, type SheetData } from "./sheet";
@@ -108,9 +108,7 @@ export function checkChoiceWindows(r: Resolved): Finding[] {
       for (const o of open) {
         const oe = editionOfElement(o);
         if (oe === "none" || oe === ed) continue;
-        // A background feature is written to be offered across editions (Aurora's 2024 Origin Feat for 2014
-        // backgrounds), as the edition policy allows.
-        if (o.type === "Background Feature") continue;
+        if (offeredAcrossEditions(o)) continue;
         if (ed === "2014") add("Choice offers a 2024 option to a 2014 choice", `${s.rule.name}: ${o.name} (${o.source})`);
         else if (own.has(`${o.type}|${vname(o.name)}`)) add("Choice offers both versions of an option", `${s.rule.name}: ${o.name} (${o.source})`);
       }

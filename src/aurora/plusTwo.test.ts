@@ -60,4 +60,16 @@ describe.skipIf(!C)("+2 to one ability", () => {
     expect(r.stats.get("strength")).toBe(resolve(ch, reg).stats.get("strength") + 1);
     expect(r.stats.get("dexterity")).toBe(resolve(ch, reg).stats.get("dexterity") + 1);
   }, 600000);
+
+  // The oldest saves key a choice "<element id>|<rule index>" (the saved-characters gate found three that lost a +1).
+  it("keeps the two +1s of a save with the old key form", () => {
+    const feat = "ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT";
+    const ch = newCharacter();
+    ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_FIGHTER", level: 1 }];
+    ch.extras = [feat];
+    const old = { ...ch, selections: { [`${feat}|0`]: ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_CONSTITUTION", "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_INTELLIGENCE"] } };
+    const r = resolve(old, reg);
+    expect(r.stats.get("constitution")).toBe(resolve(ch, reg).stats.get("constitution") + 1);
+    expect(r.stats.get("intelligence")).toBe(resolve(ch, reg).stats.get("intelligence") + 1);
+  }, 600000);
 });

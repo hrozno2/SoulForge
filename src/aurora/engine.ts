@@ -610,15 +610,20 @@ function upgradePlusTwo(ch: Character, reg: ARegistry): Character {
   let out: Character | undefined;
   for (const [key, ids] of Object.entries(ch.selections)) {
     if (!ids.length || ids.some((id) => id.startsWith("ID_INTERNAL_PLUS_TWO_"))) continue;
-    const el = reg.get(key.split("#")[0]);
+    // Both key forms: "<id>#<hash>" (choiceKey) and the oldest saves' "<id>|<rule index>", which the resolver still
+    // reads; a two-+1 pick under either moves inside "+1 to two abilities" (missed for the old form: one +1 was lost).
+    const legacy = /^(.*)\|(\d+)$/.exec(key);
+    const el = reg.get(legacy ? legacy[1] : key.split("#")[0]);
     if (!el) continue;
     el.rules.forEach((rule, idx) => {
-      if (rule.kind !== "select" || !rule.supports.startsWith("Plus two ") || choiceKey(el, rule, idx) !== key) return;
+      if (rule.kind !== "select" || !rule.supports.startsWith("Plus two ")) return;
+      if (legacy ? Number(legacy[2]) !== idx : choiceKey(el, rule, idx) !== key) return;
       const plus1 = reg.get(`ID_INTERNAL_${`PLUS_TWO_${el.id}_${idx}`.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}_PLUS1`);
       const inner = plus1?.rules[0];
       if (!plus1 || inner?.kind !== "select") return;
       out ??= { ...ch, selections: { ...ch.selections } };
-      out.selections[key] = [plus1.id];
+      if (legacy) delete out.selections[key];
+      out.selections[choiceKey(el, rule, idx)] = [plus1.id];
       out.selections[choiceKey(plus1, inner, 0)] = ids;
     });
   }

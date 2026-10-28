@@ -46,6 +46,12 @@ export function choiceEdition(owner: AElement, root: string, ch: Character, reg:
   return fromRoot !== "none" ? fromRoot : editionOfElement(owner);
 }
 
+/**
+ * Options written to be offered in a choice of the other edition: a background feature (Aurora's 2024 "Origin Feat"
+ * as a 2014 background's variant feature). The one place the policy, the rules check and the edition gate read it.
+ */
+export const offeredAcrossEditions = (o: AElement) => o.type === "Background Feature";
+
 const versionName = (n: string) => n.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s*\((?:20\d\d|legacy|2014|2024)\)\s*$/, "").replace(/\s+/g, " ").trim();
 
 /** The options a choice of edition `ed` offers, and the picks already made that the rule leaves out. */
@@ -56,9 +62,7 @@ export function byEdition<T extends AElement>(options: T[], ed: Ed, chosen: stri
   const keep = options.filter((o) => {
     const oe = editionOfElement(o);
     if (oe === "none" || oe === ed) return true;
-    // A background feature of the other edition is written to be offered there (Aurora's 2024 "Origin Feat" as a 2014
-    // background's variant feature): it is kept.
-    if (o.type === "Background Feature") return true;
+    if (offeredAcrossEditions(o)) return true;
     const ok = !inEdition.has(`${o.type}|${versionName(o.name)}`) && ed === "2024";
     if (!ok && chosen.includes(o.id)) { outOfEdition.add(o.id); return true; }
     return ok;

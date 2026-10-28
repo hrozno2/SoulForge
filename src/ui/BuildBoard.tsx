@@ -5,6 +5,7 @@
  * training on the right. The same rules and choices as the tab layout (BuildTab), arranged differently.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { detailsBlank } from "./ManageTab";
 import { Shop } from "./Shop";
 import { TextInput } from "./TextField";
 import { createPortal } from "react-dom";
@@ -669,7 +670,12 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
       </button>
       <div className="board-who-text">
         <TextInput className="board-name" placeholder="Character name" aria-label="Character name" value={ch.name} onCommit={(v) => set((c) => ({ ...c, name: v }))} />
-        <small>{what || "Nothing chosen yet"}</small>
+        <span className="board-who-what">
+          <small>{what || "Nothing chosen yet"}</small>
+          <button className="board-details" title="Alignment, personality, backstory, notes and the rest" onClick={() => window.dispatchEvent(new CustomEvent("cf-details"))}>
+            <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg> Details
+          </button>
+        </span>
         {sh.hp > 0 && (
           <div className="board-bars">
             <button type="button" className="board-bar hp" title={`Hit points ${hp} of ${sh.hp}${ch.play.tempHp ? `, ${ch.play.tempHp} temporary` : ""}. Click for the hit point rolls.`} onClick={() => setHpOpen(true)}>
@@ -1165,7 +1171,12 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
                   </li>
                 ))}
               </ul>
-            ) : <p className="ok">Everything is chosen. Export your sheet when you are ready.</p>}
+            ) : (
+              <>
+                <p className="ok">Everything is chosen. Export your sheet when you are ready.</p>
+                {detailsBlank(ch) && <p className="muted details-default">The character's details are at their defaults (blank). <button className="ghost" onClick={() => window.dispatchEvent(new CustomEvent("cf-details"))}>Add details</button></p>}
+              </>
+            )}
           </section>
         )}
       </nav>

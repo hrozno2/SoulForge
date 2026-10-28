@@ -42,6 +42,7 @@ import { CompendiumSearch } from "./CompendiumSearch";
 import { MagicTab } from "./MagicTab";
 import { EquipmentTab } from "./EquipmentTab";
 const ManageTab = lazy(() => import("./ManageTab").then((m) => ({ default: m.ManageTab })));
+const DetailsDialog = lazy(() => import("./ManageTab").then((m) => ({ default: m.DetailsDialog })));
 const SheetTab = lazy(() => import("./SheetTab").then((m) => ({ default: m.SheetTab })));
 const PlayTab = lazy(() => import("./PlayTab").then((m) => ({ default: m.PlayTab })));
 const LevelUp = lazy(() => import("./LevelUp").then((m) => ({ default: m.LevelUp })));
@@ -163,7 +164,13 @@ export function App() {
     const t = window.setTimeout(() => setNotesHint(""), 9000);
     return () => window.clearTimeout(t);
   }, [notesHint]);
-  const [notesFocus, setNotesFocus] = useState(0);
+  // The character details dialog (C2): from the board, Play, the character badge or "Open notes".
+  const [detailsOpen, setDetailsOpen] = useState<{ notes?: boolean } | null>(null);
+  useEffect(() => {
+    const open = (e: Event) => setDetailsOpen({ notes: !!(e as CustomEvent<{ notes?: boolean }>).detail?.notes });
+    window.addEventListener("cf-details", open);
+    return () => window.removeEventListener("cf-details", open);
+  }, []);
   // Report a bug, from the menu or from Settings.
   const [bugOpen, setBugOpen] = useState(false);
   useEffect(() => {
@@ -173,8 +180,7 @@ export function App() {
   }, []);
   const openNotes = () => {
     setNotesHint("");
-    setNotesFocus((n) => n + 1);
-    setTab("manage");
+    setDetailsOpen({ notes: true });
   };
   const importForeign = async (file: File): Promise<string> => {
     try {
@@ -249,7 +255,7 @@ export function App() {
           ];
         })()} />
         <CompendiumSearch />
-        <button className="who-badge" title="Character details" onClick={() => setTab("manage")}>
+        <button className="who-badge" title="Character details" onClick={() => setDetailsOpen({})}>
           {character.portrait ? <img src={character.portrait} alt="" /> : <span className="ph">{(character.name || "?").charAt(0)}</span>}
           <span className="who-text">
             <b>{character.name || "Unnamed"}</b>
@@ -289,7 +295,7 @@ export function App() {
             </>
           ) : (
             <>
-              <span>Added to the character's notes. Find them in Manage, Notes (and in Play, Notes).</span>
+              <span>Added to the character's notes. Find them in the character's details (and in Play, Notes).</span>
               <button className="primary" onClick={openNotes}>Open notes</button>
             </>
           )}
@@ -308,6 +314,7 @@ export function App() {
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       {levelUpOpen && <Suspense fallback={null}><LevelUp r={r} ch={character} set={set} onDetail={setDetail} onClose={() => setLevelUpOpen(false)} /></Suspense>}
       {checkDue(character, APP_VERSION) && !loading.current && <OlderBuildNotice key={id} r={r} set={set} />}
+      {detailsOpen && <Suspense fallback={null}><DetailsDialog r={r} ch={character} set={set} notes={detailsOpen.notes} onClose={() => setDetailsOpen(null)} /></Suspense>}
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} dismiss={updater.dismiss} />
       <main className={[showDetail ? "with-detail" : "", tab === "build" && board ? "wide" : ""].filter(Boolean).join(" ")}>
         <div className="pane">
@@ -330,7 +337,7 @@ export function App() {
           )}
           {tab === "magic" && <MagicTab r={r} ch={character} set={set} onDetail={setDetail} />}
           {tab === "equipment" && <EquipmentTab r={r} ch={character} set={set} onDetail={setDetail} />}
-          {tab === "manage" && <ManageTab r={r} ch={character} set={set} onDetail={setDetail} focusNotes={notesFocus} />}
+          {tab === "manage" && <ManageTab r={r} ch={character} set={set} onDetail={setDetail} />}
           {tab === "play" && <PlayTab r={r} ch={character} set={set} />}
           {tab === "sheet" && <SheetTab r={r} ch={character} set={set} />}
           {tab === "content" && <ContentTab content={content} onDetail={setDetail} r={r} set={set} />}

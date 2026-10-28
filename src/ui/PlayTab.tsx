@@ -561,7 +561,8 @@ function Description({ ch, sheet, set }: { ch: Character; sheet: SheetData; set:
       <Panel title="Details">
         {bits.filter(([, v]) => v).map(([k, v]) => <p key={k}><b>{k}.</b> {v}</p>)}
         {sheet.lists.map((l) => <p key={l.name}><b>{l.name}.</b> {l.texts.join(" ")}</p>)}
-        {!bits.some(([, v]) => v) && !sheet.lists.length && <p className="muted">Fill in details on the Manage tab.</p>}
+        {!bits.some(([, v]) => v) && !sheet.lists.length && <p className="muted">No details written yet.</p>}
+        <p><button onClick={() => window.dispatchEvent(new CustomEvent("cf-details"))}>Edit details</button></p>
       </Panel>
       {info.backstory && <Panel title="Backstory"><p>{info.backstory}</p></Panel>}
       <label className="field"><span>Edit backstory</span><TextArea rows={5} value={info.backstory} onCommit={(v) => set((c) => ({ ...c, info: { ...c.info, backstory: v } }))} /></label>

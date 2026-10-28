@@ -88,6 +88,20 @@ test("the shop on the backpack buys with the purse and the inventory sells back 
   await expect(page.locator(".card-back table.inv tr", { hasText: name })).toHaveCount(0);
 });
 
+test("blank details never count as a choice; the board's Details button opens them (C2)", async ({ page }) => {
+  await addTestContent(page);
+  await randomCharacter(page, 3);
+  await tab(page, "Build");
+  // A finished random character with no details: nothing is left to choose, and the board says the details are blank.
+  await expect(page.locator(".details-default")).toContainText("details are at their defaults");
+  await expect(page.locator(".board p.ok", { hasText: "Everything is chosen" })).toBeVisible();
+  await page.getByRole("button", { name: "Details", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Character details" });
+  await dialog.getByLabel("Ideals").fill("Freedom");
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await expect(page.locator(".details-default")).toHaveCount(0);
+});
+
 test.describe("Build board on a narrow window", () => {
   test.use({ viewport: { width: 1100, height: 820 } });
   test("the lists open from the edge or a card, step aside while a pick lands, and close when the mouse leaves", async ({ page }) => {

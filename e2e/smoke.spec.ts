@@ -483,9 +483,10 @@ test.describe("Soul Forge smoke tests", () => {
     const kept = page.getByRole("dialog", { name: "Import notes" });
     await expect(kept).toContainText("Mystery Trinket");
     await kept.getByRole("button", { name: "Add to notes" }).click();
-    await expect(page.locator(".notice-toast")).toContainText(/Manage, Notes/);
+    await expect(page.locator(".notice-toast")).toContainText(/character's details/);
     await page.locator(".notice-toast").getByRole("button", { name: /open notes/i }).click();
     await expect(page.locator("#character-notes")).toHaveValue(/Import notes: ira\.json[\s\S]*Mystery Trinket/);
+    await page.getByRole("dialog", { name: "Character details" }).getByRole("button", { name: "Close" }).click();
     // The button stays on Build, and the report is not added twice.
     await tab(page, "Build");
     await page.getByRole("toolbar", { name: "Character actions" }).getByRole("button", { name: "Import notes" }).click();

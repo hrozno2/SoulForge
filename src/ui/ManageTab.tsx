@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { TextArea, TextInput } from "./TextField";
 import { useEffect, useMemo, useState } from "react";
 import { PortraitCropper, PortraitPicker } from "./Portrait";
@@ -10,8 +11,8 @@ import { Html } from "./Html";
 import { useUi } from "./Learn";
 import { companionHtml } from "../aurora/companion";
 
-type Sub = "options" | "bonuses" | "additions" | "attacks" | "companions" | "info";
-const SUBS: [Sub, string][] = [["info", "Character details"], ["options", "Options"], ["bonuses", "Custom bonuses"], ["additions", "Manual additions"], ["attacks", "Attacks"], ["companions", "Companions"]];
+type Sub = "options" | "bonuses" | "additions" | "attacks" | "companions";
+const SUBS: [Sub, string][] = [ ["options", "Options"], ["bonuses", "Custom bonuses"], ["additions", "Manual additions"], ["attacks", "Attacks"], ["companions", "Companions"]];
 
 export { CONDITIONS } from "./conditions";
 
@@ -57,6 +58,33 @@ function Info({ ch, set, r }: { ch: Character; set: SetCharacter; r: Resolved })
     </>
   );
 }
+
+/**
+ * The character's details (C2: moved from Manage to Build): portrait, name, player, alignment, deity, the other
+ * details, personality, backstory and notes, in a dialog the board's "Details" button, Play's description, the
+ * character badge and "Open notes" all open (the "cf-details" event, `{ notes: true }` to bring the notes into view).
+ */
+export function DetailsDialog({ r, ch, set, notes, onClose }: { r: Resolved; ch: Character; set: SetCharacter; notes?: boolean; onClose: () => void }) {
+  useEffect(() => {
+    if (!notes) return;
+    const t = window.setTimeout(() => { const el = document.getElementById("character-notes"); el?.scrollIntoView({ block: "center" }); el?.focus(); }, 60);
+    return () => window.clearTimeout(t);
+  }, [notes]);
+  return createPortal(
+    <div className="modal-back" onClick={onClose}>
+      <div className="modal-page themed details-dialog" role="dialog" aria-label="Character details" onClick={(e) => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
+        <h2>Character details</h2>
+        <p className="muted">None of this is a choice to make: blank details stay blank on the sheet.</p>
+        <Info ch={ch} set={set} r={r} />
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/** True when the player has written none of the details (portrait and name aside). */
+export const detailsBlank = (ch: Character) => !ch.playerName.trim() && !ch.notes.trim() && Object.values(ch.info).every((v) => !String(v ?? "").trim());
 
 function Options({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
   const opts = r.reg.ofType("Option");
@@ -283,20 +311,12 @@ export function CompanionCard({ el }: { el: AElement }) {
   );
 }
 
-export function ManageTab({ r, ch, set, onDetail, focusNotes = 0 }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; focusNotes?: number }) {
-  const [sub, setSub] = useState<Sub>("info");
-  // "Open notes" after an import: the character details, with the notes in view.
-  useEffect(() => {
-    if (!focusNotes) return;
-    setSub("info");
-    const t = window.setTimeout(() => { const el = document.getElementById("character-notes"); el?.scrollIntoView({ block: "center" }); el?.focus(); }, 60);
-    return () => window.clearTimeout(t);
-  }, [focusNotes]);
+export function ManageTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
+  const [sub, setSub] = useState<Sub>("options");
   const other = r.slots.filter((s) => tabOfSlot(s) === "other" && s.rule.type !== "Companion");
   return (
     <div>
       <nav className="subtabs">{SUBS.map(([k, label]) => <button key={k} className={sub === k ? "subtab active" : "subtab"} onClick={() => setSub(k)}>{label}</button>)}</nav>
-      {sub === "info" && <Info ch={ch} set={set} r={r} />}
       {sub === "options" && (<><Options r={r} ch={ch} set={set} onDetail={onDetail} />{other.length > 0 && (<><h3>Other choices</h3><SlotList slots={other} r={r} set={set} onDetail={onDetail} /></>)}</>)}
       {sub === "bonuses" && <Bonuses ch={ch} set={set} />}
       {sub === "additions" && <Additions r={r} ch={ch} set={set} onDetail={onDetail} />}

@@ -6,6 +6,8 @@ export interface WildShape {
   maxHp: number;
   kind?: "wildshape" | "polymorph" | "truepoly" | "other";
   creatureId?: string;
+  /** 2024 Wild Shape: the character keeps their own hit points (and gains temporary ones); the form has no pool. */
+  ownHp?: boolean;
 }
 
 export const FORM_KINDS: { kind: NonNullable<WildShape["kind"]>; label: string; hint: string; concentration?: string }[] = [
@@ -25,7 +27,7 @@ export interface HpState {
 export function applyDamage(s: HpState, amount: number): HpState {
   let n = Math.max(0, Math.floor(amount));
   let ws = s.wildShape;
-  if (ws && n > 0) {
+  if (ws && !ws.ownHp && n > 0) {
     const taken = Math.min(ws.hp, n);
     n -= taken;
     ws = taken >= ws.hp ? undefined : { ...ws, hp: ws.hp - taken };
@@ -37,7 +39,7 @@ export function applyDamage(s: HpState, amount: number): HpState {
 /** Healing goes to the form while one is active, otherwise to the character up to their maximum. */
 export function applyHealing(s: HpState, amount: number, maxHp: number): HpState {
   const n = Math.max(0, Math.floor(amount));
-  if (s.wildShape) return { ...s, wildShape: { ...s.wildShape, hp: Math.min(s.wildShape.maxHp, s.wildShape.hp + n) } };
+  if (s.wildShape && !s.wildShape.ownHp) return { ...s, wildShape: { ...s.wildShape, hp: Math.min(s.wildShape.maxHp, s.wildShape.hp + n) } };
   return { ...s, hp: Math.min(maxHp, s.hp + n) };
 }
 

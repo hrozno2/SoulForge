@@ -301,6 +301,9 @@ test.describe("Soul Forge smoke tests", () => {
     await page.getByLabel("Kind of form").selectOption("polymorph");
     await page.getByLabel("Find a creature").fill("cave");
     await page.getByRole("button", { name: /Cave Hound/ }).click();
+    // The form worked out for the character (C5.3): under Polymorph the beast's own numbers.
+    await expect(page.locator(".forms-panel .form-card")).toContainText("Polymorph");
+    await expect(page.locator(".forms-panel .form-card")).toContainText("13");
     await expect(page.getByLabel("Form hit points")).toHaveValue("13");
     await page.getByRole("button", { name: "Assume form" }).click();
     await expect(page.locator(".hp-bar.wild")).toContainText("Cave Hound: 13 / 13");

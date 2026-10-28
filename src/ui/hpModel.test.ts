@@ -26,4 +26,11 @@ describe("hit points", () => {
     expect(trackedHp({}, "a", 9)).toBe(9);
     expect(trackedHp({ a: 4 }, "a", 9)).toBe(4);
   });
+
+  it("leaves a 2024 Wild Shape (own hit points) alone: damage takes temporary, then real hit points, and never reverts it", () => {
+    const ws = { name: "Wolf", hp: 0, maxHp: 0, ownHp: true };
+    const s = applyDamage({ hp: 20, tempHp: 5, wildShape: ws }, 8);
+    expect(s).toMatchObject({ hp: 17, tempHp: 0, wildShape: ws });
+    expect(applyHealing({ hp: 17, tempHp: 0, wildShape: ws }, 2, 20)).toMatchObject({ hp: 19, wildShape: ws });
+  });
 });

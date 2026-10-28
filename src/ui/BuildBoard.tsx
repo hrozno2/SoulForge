@@ -5,6 +5,7 @@
  * training on the right. The same rules and choices as the tab layout (BuildTab), arranged differently.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Shop } from "./Shop";
 import { TextInput } from "./TextField";
 import { createPortal } from "react-dom";
 import type { AElement } from "../aurora/types";
@@ -401,6 +402,20 @@ function SpellBook({ f }: { f: number }) {
  * A rucksack that fills with gear as the starting equipment goes in, and empties as it comes out: papers in the
  * front pocket, rope at the side, a bedroll buckled on top, a sword, a pouch and herbs, a scroll in the side sleeve.
  */
+/** A coin purse with a few coins beside it, for the shop on the backpack's card back. */
+function Purse() {
+  return (
+    <svg className="board-pack" viewBox="0 0 120 120" role="img" aria-label="Coin purse">
+      <path d="M44 38c-4-8 2-14 16-14s20 6 16 14" fill="none" stroke="var(--gold2)" strokeWidth="4" strokeLinecap="round" />
+      <path d="M40 40h40l-4 8c18 8 26 22 22 38-3 12-16 18-38 18s-35-6-38-18c-4-16 4-30 22-38z" fill="hsl(30 40% 26%)" stroke="var(--gold)" strokeWidth="2.5" />
+      <path d="M42 48h36" stroke="var(--gold2)" strokeWidth="4" strokeLinecap="round" />
+      <ellipse cx="96" cy="100" rx="11" ry="4.5" fill="var(--gold)" stroke="#0006" />
+      <ellipse cx="96" cy="94" rx="11" ry="4.5" fill="var(--gold2)" stroke="#0006" />
+      <ellipse cx="22" cy="102" rx="9" ry="3.8" fill="var(--gold2)" stroke="#0006" />
+    </svg>
+  );
+}
+
 function Backpack({ f }: { f: number }) {
   const has = (at: number) => f > 0 && f >= at - 1e-9;
   const brass = "url(#bpBrass)";
@@ -750,9 +765,9 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const [flyHide, setFlyHide] = useState(false);
   /** The card turned over to its back (its choices): a new pick waiting for Done, or a card opened to edit. */
   const [back, setBack] = useState<Back | null>(null);
-  // The spellbook's and backpack's own view on their card back: only the prepare-spells picker or only the inventory
-  // (C1.5), toggled by clicking the book or the pack; null shows everything.
-  const [backView, setBackView] = useState<"prepare" | "inventory" | null>(null);
+  // The spellbook's and backpack's own view on their card back: only the prepare-spells picker, only the inventory
+  // (C1.5) or the shop (C3), toggled by clicking the book, the pack or the purse; null shows everything.
+  const [backView, setBackView] = useState<"prepare" | "inventory" | "shop" | null>(null);
   /** Turns a filled card over to edit its choices (quickly; Done turns it back). */
   const openBack = (kind: Kind) => { setFocus(kind); setBack({ kind, mode: "edit", snap: ch, from: null, name: "", phase: "open" }); };
   /** Done (keep) or × (undo everything since the card turned over). */
@@ -1090,8 +1105,12 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
                 <button className={`card-back-toggle ${backView === "inventory" ? "on" : ""}`} aria-pressed={backView === "inventory"} title={backView === "inventory" ? "Back to adding items" : "Show only the inventory"} onClick={() => setBackView(backView === "inventory" ? null : "inventory")}>
                   <Backpack f={packFill} /><small>Inventory</small>
                 </button>
+                <button className={`card-back-toggle ${backView === "shop" ? "on" : ""}`} aria-pressed={backView === "shop"} title={backView === "shop" ? "Back to adding items" : "Buy items with your coins, sell from the inventory"} onClick={() => setBackView(backView === "shop" ? null : "shop")}>
+                  <Purse /><small>Shop</small>
+                </button>
               </div>
-              {backView !== "inventory" && (
+              {backView === "shop" && <Shop r={r} ch={ch} set={set} />}
+              {backView !== "inventory" && backView !== "shop" && (
                 <>
                   <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="adding" />
                   <h3 className="board-lib-sub">All items</h3>

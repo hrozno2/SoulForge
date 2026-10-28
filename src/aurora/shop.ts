@@ -4,15 +4,18 @@
  * character, as DMs set it per table; 1 when unset; Plutonium has one global multiplier). Selling pays half the price,
  * the usual table rule (Plutonium's shop only buys). Magic items without a price can cost their rarity's value, per
  * character as well. Coins are paid with what the purse holds, smallest first, and change comes back in the largest
- * coins that fit, so the purse never gains a larger coin than it gave (Plutonium keeps the coin mix the same way).
+ * coins that fit up to gold, so the purse never gains platinum it did not have (Plutonium keeps the coin mix the same way).
  */
 import type { AElement } from "./types";
 import type { Character, Coinage, InvItem } from "./character";
 
 export const COPPER: Record<keyof Coinage, number> = { cp: 1, sp: 10, ep: 50, gp: 100, pp: 1000 };
 const SMALL_FIRST: (keyof Coinage)[] = ["cp", "sp", "ep", "gp", "pp"];
-/** Change is given in these, largest first (no electrum, as tables rarely hand it out). */
-const CHANGE: (keyof Coinage)[] = ["pp", "gp", "sp", "cp"];
+/**
+ * Change and sale money come in these, largest first: gold, silver and copper. Never platinum (Plutonium never hands
+ * out more of the largest coin than the purse held; 12 gp 5 sp from a sale is not "1 pp 2 gp 5 sp") nor electrum.
+ */
+const CHANGE: (keyof Coinage)[] = ["gp", "sp", "cp"];
 
 const asCp = (c: { value: string; attrs?: Record<string, string> } | undefined) => {
   if (!c) return undefined;
@@ -43,7 +46,7 @@ export const multiplierOf = (ch: Character) => (ch.priceMultiplier && ch.priceMu
 /** The coins' total in copper. */
 export const purseCp = (c: Coinage) => SMALL_FIRST.reduce((n, k) => n + (c[k] || 0) * COPPER[k], 0);
 
-/** An amount of copper as the largest coins that fit. */
+/** An amount of copper as the largest coins that fit (gold, silver, copper). */
 export function asCoins(cp: number): Coinage {
   const out: Coinage = { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
   let left = Math.max(0, Math.round(cp));
@@ -99,9 +102,20 @@ export function sell(ch: Character, uid: string, el: AElement | undefined, qty =
   return { ok: true, character: { ...ch, inventory, coins: add(ch.coins, asCoins(value)) } };
 }
 
-/** "12 gp 5 sp" for an amount of copper. */
+/**
+ * "1,250 gp 5 sp" for an amount of copper: prices and totals in gold, silver and copper, as the books write them
+ * (a 73 gp purse is not "7 pp 3 gp").
+ */
 export function formatCp(cp: number): string {
-  const c = asCoins(cp);
-  const parts = CHANGE.filter((k) => c[k]).map((k) => `${c[k]} ${k}`);
+  let left = Math.max(0, Math.round(cp));
+  const gp = Math.floor(left / 100); left -= gp * 100;
+  const sp = Math.floor(left / 10); const c = left - sp * 10;
+  const parts = [gp ? `${gp.toLocaleString("en-US")} gp` : "", sp ? `${sp} sp` : "", c ? `${c} cp` : ""].filter(Boolean);
   return parts.join(" ") || "0 gp";
+}
+
+/** The coins a purse holds, largest first ("2 pp 73 gp 4 sp"). */
+export function formatCoins(c: Coinage): string {
+  const parts = (["pp", "gp", "ep", "sp", "cp"] as (keyof Coinage)[]).filter((k) => c[k]).map((k) => `${c[k].toLocaleString("en-US")} ${k}`);
+  return parts.join(" ") || "no coins";
 }

@@ -68,6 +68,26 @@ test("the backpack on its card back switches to the inventory alone and back (C1
   await expect(page.locator(".board-lib-sub", { hasText: "All items" })).toBeVisible();
 });
 
+test("the shop on the backpack buys with the purse and the inventory sells back at half (C3)", async ({ page }) => {
+  await addTestContent(page);
+  await randomCharacter(page, 3);
+  await tab(page, "Build");
+  await page.locator("[data-tile=equipment]").click();
+  await page.getByRole("button", { name: /Inventory/ }).first().click();
+  await page.locator(".coin", { hasText: "GP" }).locator("input").fill("100");
+  await page.getByRole("button", { name: /Shop/ }).first().click();
+  const shop = page.locator(".card-back .shop");
+  await expect(shop.locator(".summary")).toContainText("100 gp");
+  const row = shop.locator(".opt-row:not(.dim)", { has: page.locator(".opt-label") }).first();
+  const name = (await row.locator(".opt-name").textContent())!.trim();
+  await row.locator(".opt-main").click();
+  await expect(shop.locator(".summary")).toContainText(`Bought ${name}`);
+  await page.getByRole("button", { name: /Inventory/ }).first().click();
+  const line = page.locator(".card-back table.inv tr", { hasText: name }).first();
+  await line.getByRole("button", { name: /^Sell/ }).click();
+  await expect(page.locator(".card-back table.inv tr", { hasText: name })).toHaveCount(0);
+});
+
 test.describe("Build board on a narrow window", () => {
   test.use({ viewport: { width: 1100, height: 820 } });
   test("the lists open from the edge or a card, step aside while a pick lands, and close when the mouse leaves", async ({ page }) => {

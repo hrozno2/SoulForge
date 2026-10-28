@@ -125,6 +125,8 @@ export interface BrowseProps {
   hero?: { kicker: string; title: string };
   onHover?: (el: AElement) => void;
   pickLabel?: (el: AElement) => string;
+  /** A short label at the end of each list row (the shop's price). */
+  rowLabel?: (el: AElement) => string | undefined;
   perPage?: number;
   /** The recommended sort is the default for named choices; spells default to level. */
   defaultSort?: SortMode;
@@ -156,7 +158,7 @@ const ITEM_ICON: Record<string, (p: { size?: number }) => React.ReactNode> = { W
 /** The drag data type for an element type, so a drop target can tell what is over it before the drop. */
 export const dragMime = (type: string) => `application/x-sf-${type.toLowerCase().replace(/[^a-z]/g, "")}`;
 
-export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap: swapProp, disabledReason: reasonProp, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, perPage = 48, defaultSort, draggable, barExtra, mini, viewKey, showAll, need }: BrowseProps) {
+export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap: swapProp, disabledReason: reasonProp, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, rowLabel, perPage = 48, defaultSort, draggable, barExtra, mini, viewKey, showAll, need }: BrowseProps) {
   const { books, learn } = useUi();
   const [view, setView] = useStored<"cards" | "list">(viewKey ?? `view.${type}`, defaultView);
   const [sort, setSort] = useStored<SortMode>(`sort.${type}`, defaultSort ?? (type === "Spell" ? "level" : "recommended"));
@@ -403,6 +405,7 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
                 </button>
                 {type === "Spell" ? <SpellCells el={e} /> : <span className="opt-blurb">{blurb(e.description, 110)}</span>}
                 {why && !owner && <small className="why"><LockIcon />{why}</small>}
+                {rowLabel?.(e) && <span className="opt-label">{rowLabel(e)}</span>}
                 <VariantChips short g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} onSwitch={onSwap} onPickVersion={owner || why ? undefined : onPick} />
                 <button className="learn" onClick={() => learn(e)} title="Read the full description">i</button>
               </div>

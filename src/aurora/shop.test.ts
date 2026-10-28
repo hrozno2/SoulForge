@@ -16,10 +16,11 @@ describe("shop", () => {
   });
 
   it("makes change in the largest coins", () => {
-    expect(asCoins(1234)).toEqual({ pp: 1, gp: 2, sp: 3, cp: 4, ep: 0 });
+    expect(asCoins(1234)).toEqual({ pp: 0, gp: 12, sp: 3, cp: 4, ep: 0 });
     expect(pay({ cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 }, 150)).toEqual({ cp: 0, sp: 5, ep: 0, gp: 8, pp: 0 });
     expect(pay({ cp: 0, sp: 0, ep: 0, gp: 1, pp: 0 }, 150)).toBeUndefined();
-    expect(formatCp(1250)).toBe("1 pp 2 gp 5 sp");
+    expect(formatCp(1250)).toBe("12 gp 5 sp");
+    expect(formatCp(150000)).toBe("1,500 gp");
   });
 
   it("buys and sells with the character's multiplier", () => {

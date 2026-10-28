@@ -9,6 +9,7 @@ import { buildSheet } from "../aurora/sheet";
 import { itemLabel, uid, type Character, type InvItem } from "../aurora/character";
 import type { SetCharacter } from "./Slots";
 import { StartingEquipment } from "./StartingEquipment";
+import { SellButton, Shop, ShopSettings } from "./Shop";
 
 const ITEM_TYPES = ["Item", "Weapon", "Armor", "Magic Item"];
 const COINS = ["pp", "gp", "ep", "sp", "cp"] as const;
@@ -150,6 +151,7 @@ export function EquipmentTab({ r, ch, set, onDetail, listBeside = false, part = 
                   </td>
                   <td>
                     {el?.extract && el.extract.length > 0 && <button onClick={() => extract(it, el)}>Open pack</button>}
+                    <SellButton ch={ch} set={set} uid={it.uid} el={el} />
                     <button onClick={() => remove(it.uid)}>Remove</button>
                   </td>
                 </tr>
@@ -169,7 +171,9 @@ export function EquipmentTab({ r, ch, set, onDetail, listBeside = false, part = 
             </label>
           ))}
         </div>
+        <ShopSettings ch={ch} set={set} />
       </section>}
+      {part === "all" && <Shop r={r} ch={ch} set={set} />}
     </div>
   );
 }

@@ -139,6 +139,14 @@ The interface on top of A2.3: Inventory (sell, custom items, quantities) and Sho
 the multiplier, buying blocked or warned when coins are short). The multiplier setting's place follows the A2.3
 decision.
 
+**Done 2026-10-28** (src/ui/Shop.tsx): the backpack's card back has a purse switch, "Shop", beside "Inventory": every
+item with its price for this character (book price times the character's multiplier) at the end of its row, the
+search and filters of every list, the purse, and an item locked with "Not enough coins: 25 gp" or "No price". The
+inventory sells one at a time for half ("Sell · 12 gp 5 sp"). The price multiplier and "Price magic items by rarity"
+sit with the coins (per character). The list layout's Equipment tab has the shop under the coins. Prices and totals
+read in gold, silver and copper, and change and sale money never add platinum the purse did not have (Plutonium's
+rule). e2e/board.spec.ts buys and sells.
+
 ### C4. Multiple floating cards and the Bag of Holding (Linux plan Stage 3)
 
 Up to 10 cards open as draggable windows, minimized into a Bag of Holding (desaturated), removed one by one or

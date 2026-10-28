@@ -36,6 +36,37 @@ export interface FormBlock {
 const mod = (score: number) => Math.floor((score - 10) / 2);
 const num = (v: string | undefined) => Number(/-?\d+/.exec(v ?? "")?.[0] ?? 0);
 
+const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twice: 2 };
+
+/**
+ * A companion's AC or hit points written as a formula over the character ("5 + five times your Ranger level",
+ * "13 + your Wisdom modifier", "equal to five times your level in this class + your Intelligence modifier",
+ * "14 + PB", "the dancing item's Constitution modifier + ..."), worked out; undefined when it is not one.
+ * "This class" is the class the companion comes from (else the character's first).
+ */
+export function companionFormula(text: string | undefined, r: Resolved, beast: AElement, fromClass?: string): number | undefined {
+  if (!text || !/\byour\b|\bPB\b/i.test(text)) return undefined;
+  const sh = buildSheet(r);
+  const levelOf = (name?: string) => {
+    if (!name || /^this class$/i.test(name)) return r.character.classes.find((c) => c.classId === fromClass)?.level ?? r.character.classes[0]?.level ?? 0;
+    return r.character.classes.find((c) => (r.reg.get(c.classId)?.name ?? "").toLowerCase() === name.toLowerCase())?.level ?? 0;
+  };
+  const body = text.replace(/\([^)]*\)/g, " ").replace(/^\s*equal(?: to)?\s*/i, "").replace(/[’]/g, "'");
+  let total = 0;
+  for (const raw of body.split("+").map((t) => t.trim()).filter(Boolean)) {
+    const t = raw.toLowerCase();
+    let m: RegExpExecArray | null;
+    if ((m = /^(\d+)$/.exec(t))) total += Number(m[1]);
+    else if (t === "pb") total += sh.proficiency;
+    else if ((m = /^(\w+) times your (?:(\w+) level|level in (this class))$/.exec(t))) total += (WORDS[m[1]] ?? (Number(m[1]) || 0)) * levelOf(m[2] ?? m[3]);
+    else if ((m = /^your (?:(\w+) level|level in (this class))$/.exec(t))) total += levelOf(m[1] ?? m[2]);
+    else if ((m = /^your (\w+) modifier$/.exec(t))) total += sh.abilities.find((a) => a.id === m![1])?.mod ?? 0;
+    else if ((m = /^the .+'s (\w+) modifier$/.exec(t))) total += mod(num(beast.setters[m[1]]?.value) || 10);
+    else return undefined; // a part not understood: the stat block's own number stays
+  }
+  return total;
+}
+
 export function formStats(r: Resolved, beast: AElement, kind: FormKind): FormBlock {
   const sh = buildSheet(r);
   const set = beast.setters;
@@ -76,6 +107,12 @@ export function formStats(r: Resolved, beast: AElement, kind: FormKind): FormBlo
     }
   } else if (kind === "wild shape") notes.push("The beast's hit points; when they run out you return to your own.");
   if (kind === "companion") {
+    // Formulas over the character ("5 + five times your Ranger level"), from the class the companion comes from.
+    const root = r.active.find((a) => a.el.id === beast.id)?.root ?? "";
+    const fromClass = root.startsWith("class:") ? root.slice(6) : undefined;
+    const fac = companionFormula(set.ac?.value, r, beast, fromClass), fhp = companionFormula(set.hp?.value, r, beast, fromClass);
+    if (fac !== undefined) { ac = fac; notes.push(`AC ${set.ac?.value?.replace(/\s*\(.*\)\s*/g, " ").trim()}.`); }
+    if (fhp !== undefined) { hp = fhp; notes.push(`Hit points ${set.hp?.value?.replace(/\s*\(.*\)\s*/g, " ").trim()}.`); }
     // Aurora's companion statistics are the companion's own numbers worked out with the character's (the Steel
     // Defender's "2 + your Intelligence modifier + five times your artificer level"), not bonuses on top. They share
     // one name, so they are this companion's only when it is the character's only one; otherwise the stat block.

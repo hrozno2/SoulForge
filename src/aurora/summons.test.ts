@@ -51,4 +51,18 @@ describe.skipIf(!C)("summoned companions", () => {
     const b = formStats(r, sd, "companion");
     expect([b.ac, b.hp]).toEqual([15, 2 + 3 + 25]);
   }, 600000);
+
+  it("reads companion formulas over the character", async () => {
+    const { companionFormula } = await import("./forms");
+    const ch = newCharacter();
+    ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_RANGER", level: 5 }];
+    ch.abilityBase = { ...ch.abilityBase, wisdom: 16 };
+    const r = resolve(ch, reg);
+    const land = reg.ofType("Companion").find((e) => e.name === "Beast of the Land" && /your/.test(e.setters.hp?.value ?? ""))!;
+    expect(companionFormula(land.setters.ac?.value, r, land)).toBe(13 + 3);
+    expect(companionFormula(land.setters.hp?.value, r, land)).toBe(5 + 25);
+    const drake = reg.ofType("Companion").find((e) => e.name === "Drake Companion")!;
+    expect(companionFormula(drake.setters.ac?.value, r, drake)).toBe(14 + 3);
+    expect(companionFormula("13 (natural armor)", r, drake)).toBeUndefined();
+  }, 600000);
 });

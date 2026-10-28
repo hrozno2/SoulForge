@@ -240,7 +240,8 @@ export function App() {
             { key: "home", label: t("Home"), items: pick("start") },
             { key: "build", label: t("Build"), items: pick("build") },
             ...(board ? [] : [{ key: "magic", label: t("Magic"), items: pick("magic") }, { key: "equipment", label: t("Equipment"), items: pick("equipment") }]),
-            { key: "manage", label: t("Manage"), icon: defs.find((d) => d.key === "manage")?.icon, items: pick("manage", "content") },
+            { key: "manage", label: t("Manage"), items: pick("manage") },
+            { key: "content", label: t("Content"), items: pick("content") },
             // With the board, Magic and Equipment are gone from here, so Play and Export each get their own tab.
             ...(board
               ? [{ key: "play", label: t("Play"), items: pick("play") }, { key: "export", label: t("Export"), items: pick("sheet") }]
@@ -332,7 +333,7 @@ export function App() {
           {tab === "manage" && <ManageTab r={r} ch={character} set={set} onDetail={setDetail} focusNotes={notesFocus} />}
           {tab === "play" && <PlayTab r={r} ch={character} set={set} />}
           {tab === "sheet" && <SheetTab r={r} ch={character} set={set} />}
-          {tab === "content" && <ContentTab content={content} onDetail={setDetail} />}
+          {tab === "content" && <ContentTab content={content} onDetail={setDetail} r={r} set={set} />}
           </Suspense>
         </div>
         {showDetail && <DetailPanel el={detail} />}

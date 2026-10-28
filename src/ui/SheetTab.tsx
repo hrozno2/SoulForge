@@ -283,7 +283,7 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
         {ch.notes && <section className="block"><h3>Notes</h3><p>{ch.notes}</p></section>}
         {r.warnings.length > 0 && <section className="block noprint"><h3>Content warnings</h3>{r.warnings.slice(0, 10).map((w, i) => <p key={i} className="muted">{w}</p>)}</section>}
       </div>
-      <details className="noprint"><summary>Conditions reference</summary><p className="muted">{CONDITIONS.join(", ")}. Toggle them on the Manage tab.</p></details>
+      <details className="noprint"><summary>Conditions reference</summary><p className="muted">{CONDITIONS.join(", ")}. Toggle them on Play, Conditions.</p></details>
     </div>
   );
 }

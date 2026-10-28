@@ -606,7 +606,7 @@ function Resources({ ch, set }: { ch: Character; set: SetCharacter }) {
 
 // ---------------------------------------------------------------- page
 
-type Tab = "actions" | "spells" | "inventory" | "resources" | "features" | "description" | "notes" | "extras";
+type Tab = "actions" | "spells" | "inventory" | "resources" | "features" | "description" | "notes" | "conditions" | "extras";
 
 
 /** The row above the play sheet: resources always, plus whatever was pinned or dragged in. Only the player hides it. */
@@ -716,7 +716,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
   const nextXp = XP_TABLE[Math.min(19, sheet.level)] ?? 0;
   const prevXp = XP_TABLE[Math.max(0, sheet.level - 1)] ?? 0;
   const xpPct = nextXp > prevXp ? Math.max(0, Math.min(100, ((ch.xp - prevXp) / (nextXp - prevXp)) * 100)) : 100;
-  const tabs: [Tab, string, boolean][] = [["actions", "Sheet", true], ["spells", "Spells", hasSpells], ["inventory", "Inventory", true], ["resources", "Resources", true], ["features", "Features & Traits", true], ["description", "Description", true], ["notes", "Notes", true], ["extras", "Extras", sheet.features.length >= 0]];
+  const tabs: [Tab, string, boolean][] = [["actions", "Sheet", true], ["spells", "Spells", hasSpells], ["inventory", "Inventory", true], ["resources", "Resources", true], ["features", "Features & Traits", true], ["description", "Description", true], ["notes", "Notes", true], ["conditions", "Conditions", true], ["extras", "Extras", sheet.features.length >= 0]];
   const companions = [...r.active.filter((a) => a.el.type === "Companion").map((a) => ({ el: a.el, name: a.el.name })), ...ch.companions.map((c) => ({ el: r.reg.get(c.id), name: c.name }))];
 
   return (
@@ -832,13 +832,13 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
             {tab === "features" && <Features ch={ch} sheet={sheet} set={set} />}
             {tab === "description" && <Description ch={ch} sheet={sheet} set={set} />}
             {tab === "notes" && <Journal ch={ch} set={set} />}
+            {tab === "conditions" && <ConditionsPanel ch={ch} set={set} />}
             {tab === "extras" && (
               <>
                 {companions.length === 0 && <p className="muted">No companions. Add them on the Manage tab.</p>}
                 <FormsPanel r={r} reg={r.reg} ch={ch} set={set} companions={companions.map((c, i) => ({ key: ch.companions[i - (companions.length - ch.companions.length)]?.uid ?? c.el?.id ?? String(i), name: c.name, el: c.el }))} />
                 {companionBonuses(r.stats).length > 0 && companions.length > 0 && <p className="muted">From your features: {companionBonuses(r.stats).join(", ")}</p>}
                 {companions.map((c, i) => (c.el ? <div key={i}><h3>{c.name}</h3><CompanionCard el={c.el} /></div> : null))}
-                <Panel title="Conditions"><ConditionsPanel ch={ch} set={set} /></Panel>
               </>
             )}
           </div>

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { ContentState } from "./useContent";
 import { DEFAULT_LINK } from "../aurora/content";
 import type { IndexNode, SourceConfig } from "../aurora/sources";
@@ -9,6 +9,8 @@ import { FiveToolsImport } from "./FiveToolsImport";
 import { HomebrewBuilder } from "./HomebrewBuilder";
 import { openExternal } from "../store";
 import type { AElement } from "../aurora/types";
+import type { Resolved } from "../aurora/engine";
+import type { SetCharacter } from "./Slots";
 
 const TEMPLATE = `<?xml version="1.0" encoding="utf-8"?>
 <elements>
@@ -74,7 +76,33 @@ function Compendium({ content, onDetail }: { content: ContentState; onDetail: (e
   );
 }
 
-export function ContentTab({ content, onDetail }: { content: ContentState; onDetail: (e: AElement) => void }) {
+/** The books this character's choices may use (moved here from Manage): every loaded book, none ticked means all. */
+function Sources({ r, set }: { r: Resolved; set: SetCharacter }) {
+  const ch = r.character;
+  const names = useMemo(() => {
+    const seen = new Map<string, number>();
+    for (const t of ["Race", "Class", "Background", "Feat", "Spell", "Archetype"]) for (const e of r.reg.ofType(t)) if (e.source) seen.set(e.source, (seen.get(e.source) ?? 0) + 1);
+    return [...seen.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [r.reg]);
+  const on = new Set(ch.sources);
+  return (
+    <section className="card">
+      <h2>Books for {ch.name || "this character"}</h2>
+      <p className="muted">Limit this character's choices in the builder to specific books. Leave everything unticked to allow all content.</p>
+      <div className="source-grid">
+        {names.map(([n, count]) => (
+          <label key={n} className="check">
+            <input type="checkbox" checked={on.has(n)} onChange={() => set((c) => ({ ...c, sources: on.has(n) ? c.sources.filter((x) => x !== n) : [...c.sources, n] }))} />
+            {n} <small className="muted">{count}</small>
+          </label>
+        ))}
+      </div>
+      {ch.sources.length > 0 && <button onClick={() => set((c) => ({ ...c, sources: [] }))}>Allow all sources</button>}
+    </section>
+  );
+}
+
+export function ContentTab({ content, onDetail, r, set }: { content: ContentState; onDetail: (e: AElement) => void; r?: Resolved; set?: SetCharacter }) {
   const [link, setLink] = useState(DEFAULT_LINK);
   const [xmlName, setXmlName] = useState("My homebrew");
   const [xml, setXml] = useState(TEMPLATE);
@@ -247,6 +275,7 @@ export function ContentTab({ content, onDetail }: { content: ContentState; onDet
       </section>
 
       <Compendium content={content} onDetail={onDetail} />
+      {r && set && r.character.classes.length + (r.character.race ? 1 : 0) > 0 && <Sources r={r} set={set} />}
     </div>
   );
 }

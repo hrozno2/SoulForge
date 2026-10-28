@@ -10,6 +10,10 @@ test.describe("Soul Forge smoke tests", () => {
       await tab(page, name);
       await expect(page.locator("main")).toBeVisible();
     }
+    // Manage and Content are two plain top-level tabs (C2), not one menu.
+    const nav = page.locator("header nav");
+    await expect(nav.getByRole("button", { name: /^Manage/ })).not.toHaveAttribute("aria-haspopup", "menu");
+    await expect(nav.getByRole("button", { name: /^Content/ })).toBeVisible();
     await page.getByRole("button", { name: /^menu/i }).click();
     await page.locator(".theme select").selectOption("daylight");
     await expect(page.locator("html")).toHaveAttribute("data-skin", "daylight");
@@ -114,7 +118,8 @@ test.describe("Soul Forge smoke tests", () => {
     await addTestContent(page);
     await randomCharacter(page);
     await tab(page, "Play");
-    await page.locator(".play-tabs").getByRole("button", { name: "Extras" }).click();
+    // Conditions have their own Play tab (C2; they left Manage).
+    await page.locator(".play-tabs").getByRole("button", { name: "Conditions" }).click();
     await page.getByRole("button", { name: "Poisoned" }).click();
     await page.getByRole("button", { name: "Raise exhaustion" }).click();
     await page.locator(".ab-box").first().click();
@@ -126,6 +131,9 @@ test.describe("Soul Forge smoke tests", () => {
     await page.locator(".ab-box").first().click();
     await expect(page.locator(".roll-card")).not.toContainText("(disadvantage)");
     await expect(page.locator(".roll-card")).not.toContainText("(advantage)");
+    // The character's books moved from Manage to Content (C2).
+    await tab(page, "Content");
+    await expect(page.getByRole("heading", { name: /^Books for/ })).toBeVisible();
   });
 
   test("wild shape takes damage first, the journal keeps entries, the language switches", async ({ page }) => {

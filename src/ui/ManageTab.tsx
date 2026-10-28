@@ -2,7 +2,6 @@ import { requestRoll } from "./Dice";
 import { TextArea, TextInput } from "./TextField";
 import { useEffect, useMemo, useState } from "react";
 import { PortraitCropper, PortraitPicker } from "./Portrait";
-import { ConditionsPanel } from "./ConditionsPanel";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { dieForLevel as dieOf, withHpRoll } from "../aurora/hpRolls";
@@ -13,8 +12,8 @@ import { Html } from "./Html";
 import { useUi } from "./Learn";
 import { companionHtml } from "../aurora/companion";
 
-type Sub = "level" | "options" | "bonuses" | "additions" | "attacks" | "companions" | "conditions" | "info" | "sources";
-const SUBS: [Sub, string][] = [["level", "Level and hit points"], ["info", "Character details"], ["options", "Options"], ["bonuses", "Custom bonuses"], ["additions", "Manual additions"], ["attacks", "Attacks"], ["companions", "Companions"], ["conditions", "Conditions"], ["sources", "Sources"]];
+type Sub = "level" | "options" | "bonuses" | "additions" | "attacks" | "companions" | "info";
+const SUBS: [Sub, string][] = [["level", "Level and hit points"], ["info", "Character details"], ["options", "Options"], ["bonuses", "Custom bonuses"], ["additions", "Manual additions"], ["attacks", "Attacks"], ["companions", "Companions"]];
 
 export { CONDITIONS } from "./conditions";
 
@@ -333,33 +332,6 @@ export function CompanionCard({ el }: { el: AElement }) {
   );
 }
 
-function Conditions({ ch, set }: { ch: Character; set: SetCharacter }) {
-  return <ConditionsPanel ch={ch} set={set} />;
-}
-
-function Sources({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
-  const names = useMemo(() => {
-    const seen = new Map<string, number>();
-    for (const t of ["Race", "Class", "Background", "Feat", "Spell", "Archetype"]) for (const e of r.reg.ofType(t)) if (e.source) seen.set(e.source, (seen.get(e.source) ?? 0) + 1);
-    return [...seen.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [r.reg]);
-  const on = new Set(ch.sources);
-  return (
-    <>
-      <p className="muted">Limit the choices in the builder to specific books. Leave everything unticked to allow all content.</p>
-      <div className="source-grid">
-        {names.map(([n, count]) => (
-          <label key={n} className="check">
-            <input type="checkbox" checked={on.has(n)} onChange={() => set((c) => ({ ...c, sources: on.has(n) ? c.sources.filter((x) => x !== n) : [...c.sources, n] }))} />
-            {n} <small className="muted">{count}</small>
-          </label>
-        ))}
-      </div>
-      {ch.sources.length > 0 && <button onClick={() => set((c) => ({ ...c, sources: [] }))}>Allow all sources</button>}
-    </>
-  );
-}
-
 export function ManageTab({ r, ch, set, onDetail, focusNotes = 0 }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; focusNotes?: number }) {
   const [sub, setSub] = useState<Sub>(focusNotes ? "info" : "level");
   // "Open notes" after an import: the character details, with the notes in view.
@@ -380,8 +352,6 @@ export function ManageTab({ r, ch, set, onDetail, focusNotes = 0 }: { r: Resolve
       {sub === "additions" && <Additions r={r} ch={ch} set={set} onDetail={onDetail} />}
       {sub === "attacks" && <Attacks r={r} ch={ch} set={set} />}
       {sub === "companions" && <Companions r={r} ch={ch} set={set} onDetail={onDetail} />}
-      {sub === "conditions" && <Conditions ch={ch} set={set} />}
-      {sub === "sources" && <Sources r={r} ch={ch} set={set} />}
     </div>
   );
 }

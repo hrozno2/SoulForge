@@ -66,6 +66,37 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(dialog.getByLabel("Roll for level 2")).toBeVisible();
   });
 
+  test("favorites reorder with their move buttons and by dragging within the row (C2)", async ({ page }) => {
+    await addTestContent(page);
+    await randomCharacter(page, 5);
+    await tab(page, "Play");
+    const bar = page.getByRole("region", { name: "Favorites" });
+    await page.locator(".play-tabs").getByRole("button", { name: /^Features/ }).click();
+    const rows = page.locator(".play-body .feature-row");
+    const n = Math.min(3, await rows.count());
+    test.skip(n < 2, "the random character has fewer than two features");
+    for (let i = 0; i < n; i++) await rows.nth(i).getByRole("button", { name: "Add to favorites" }).click();
+    const tiles = bar.locator(".fav-tile");
+    await expect(tiles).toHaveCount(n);
+    const order = async () => (await tiles.allTextContents()).map((t) => t.replace(/[×◂▸]/g, "").trim().slice(0, 24));
+    const start = await order();
+    // The keyboard way: the first moves one later.
+    await tiles.nth(0).hover();
+    await tiles.nth(0).getByRole("button", { name: "Move later" }).click();
+    await expect.poll(order).toEqual([start[1], start[0], ...start.slice(2)]);
+    // Drag the last onto the left half of the first: it goes first, and nothing is added.
+    const from = (await tiles.nth(n - 1).boundingBox())!;
+    const to = (await tiles.nth(0).boundingBox())!;
+    await page.mouse.move(from.x + from.width / 2, from.y + 12);
+    await page.mouse.down();
+    await page.mouse.move(to.x + 8, to.y + to.height / 2, { steps: 12 });
+    await page.mouse.move(to.x + 6, to.y + to.height / 2, { steps: 3 });
+    await page.mouse.up();
+    await expect(tiles).toHaveCount(n);
+    const now = await order();
+    expect(now[0]).toBe((n === 2 ? [start[1], start[0]] : [start[1], start[0], ...start.slice(2)])[n - 1]);
+  });
+
   test("the dice tray builds a roll from clicks", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: /^dice$/i }).click();

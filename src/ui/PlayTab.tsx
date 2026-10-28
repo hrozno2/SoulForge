@@ -11,6 +11,7 @@ import { ConditionsPanel } from "./ConditionsPanel";
 import { applyDamage, applyHealing } from "./hpModel";
 import { FormsPanel } from "./FormsPanel";
 import { HpRollsDialog } from "./HpRolls";
+import { insertAt, moveTo } from "./favOrder";
 import { Journal } from "./Journal";
 import { SchoolIcon } from "./schoolIcons";
 import { ConditionIcon } from "./conditionIcons";
@@ -42,7 +43,8 @@ type FavKind = NonNullable<Character["favorites"]>[number]["kind"];
 const FAV_MIME = "application/x-soulforge-favorite";
 const FAV_TEXT = "soulforge-favorite:";
 /** What was dragged, from either the custom type or the plain text copy. */
-const readFav = (dt: DataTransfer): { kind: FavKind; ref: string } | undefined => {
+/** `uid`: a favorite dragged within the row (a move, not an add). */
+const readFav = (dt: DataTransfer): { kind: FavKind; ref: string; uid?: string } | undefined => {
   try {
     const own = dt.getData(FAV_MIME);
     if (own) return JSON.parse(own);
@@ -54,14 +56,19 @@ const readFav = (dt: DataTransfer): { kind: FavKind; ref: string } | undefined =
   return undefined;
 };
 
-/** Props that make a row draggable into the favorites row. */
-const favDrag = (kind: FavKind, ref: string) => ({
+/**
+ * Props that make a row draggable into the favorites row. With `uid` (a favorite already there, to move it) the tile
+ * takes the drag in the capture phase, before the weapon, spell or feature row inside it starts an "add" drag.
+ */
+const favDrag = (kind: FavKind, ref: string, uid?: string) => ({
   draggable: true,
   onDragStart: (e: React.DragEvent) => {
-    e.dataTransfer.setData(FAV_MIME, JSON.stringify({ kind, ref }));
+    e.stopPropagation();
+    const data = JSON.stringify(uid ? { kind, ref, uid } : { kind, ref });
+    e.dataTransfer.setData(FAV_MIME, data);
     // The desktop app's web view only passes plain text along, so the favourite rides in it too.
-    e.dataTransfer.setData("text/plain", `${FAV_TEXT}${JSON.stringify({ kind, ref })}`);
-    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData("text/plain", `${FAV_TEXT}${data}`);
+    e.dataTransfer.effectAllowed = uid ? "move" : "copy";
   },
 });
 
@@ -639,6 +646,8 @@ function ResourceStrip({ ch, set }: { ch: Character; set: SetCharacter }) {
 
 function Favorites({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: SheetData; set: SetCharacter }) {
   const [over, setOver] = useState(false);
+  // The gap a drop would land in (C2): before the favorite of this index, or the list's length for the end.
+  const [gap, setGap] = useState<number | null>(null);
   const favs = ch.favorites ?? [];
   const setHidden = (v: boolean) => set((c) => ({ ...c, favoritesHidden: v }));
   if (ch.favoritesHidden) {
@@ -648,11 +657,25 @@ function Favorites({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: S
     e.preventDefault();
     setOver(false);
     const d = readFav(e.dataTransfer);
-    if (d?.kind && d.ref && !isFav(ch, d.kind, d.ref)) toggleFav(set, d.kind, d.ref);
+    const at = gap ?? favs.length;
+    setGap(null);
+    if (!d?.kind || !d.ref) return;
+    if (d.uid && favs.some((f) => f.uid === d.uid)) set((c) => ({ ...c, favorites: moveTo(c.favorites ?? [], d.uid!, at) }));
+    else if (!isFav(ch, d.kind, d.ref)) set((c) => ({ ...c, favorites: insertAt(c.favorites ?? [], { uid: uid(), kind: d.kind, ref: d.ref }, at) }));
+  };
+  const move = (uidv: string, by: -1 | 1) => set((c) => {
+    const list = c.favorites ?? [];
+    const i = list.findIndex((f) => f.uid === uidv);
+    return { ...c, favorites: moveTo(list, uidv, by < 0 ? i - 1 : i + 2) };
+  });
+  // Over a tile: the gap before it, or after it past its middle.
+  const overTile = (e: React.DragEvent, i: number) => {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setGap(e.clientX > r.left + r.width / 2 ? i + 1 : i);
   };
   const castingOf = (id: string) => sheet.casting.find((c) => [...c.cantripsKnown, ...c.spells, ...c.granted].some((p) => p.id === id));
   const remove = (uidv: string) => set((c) => ({ ...c, favorites: (c.favorites ?? []).filter((f) => f.uid !== uidv) }));
-  const tile = (f: NonNullable<Character["favorites"]>[number]) => {
+  const tile = (f: NonNullable<Character["favorites"]>[number], i: number) => {
     let body: React.ReactNode = null;
     if (f.kind === "weapon") {
       const a = sheet.attacks.find((x) => (x.id ?? x.name) === f.ref);
@@ -686,21 +709,25 @@ function Favorites({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: S
       ) : <span className="muted">An item you no longer have</span>;
     }
     return (
-      <div key={f.uid} className={`fav-tile ${f.kind}`}>
+      <div key={f.uid} className={`fav-tile ${f.kind}${gap === i ? " drop-before" : ""}${gap === i + 1 && i === favs.length - 1 ? " drop-after" : ""}`} draggable onDragStartCapture={favDrag(f.kind, f.ref, f.uid).onDragStart} onDragOver={(e) => overTile(e, i)}>
         <button className="fav-remove" title="Remove from favorites" aria-label="Remove from favorites" onClick={() => remove(f.uid)}>×</button>
+        <span className="fav-move">
+          <button disabled={i === 0} title="Move earlier" aria-label="Move earlier" onClick={() => move(f.uid, -1)}>◂</button>
+          <button disabled={i === favs.length - 1} title="Move later" aria-label="Move later" onClick={() => move(f.uid, 1)}>▸</button>
+        </span>
         {body}
       </div>
     );
   };
   return (
-    <section className={over ? "fav-bar over" : "fav-bar"} aria-label="Favorites" onDragOver={(e) => { const t = Array.from(e.dataTransfer.types); if (t.includes(FAV_MIME) || t.includes("text/plain")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setOver(true); } }} onDragLeave={() => setOver(false)} onDrop={drop}>
+    <section className={over ? "fav-bar over" : "fav-bar"} aria-label="Favorites" onDragOver={(e) => { const t = Array.from(e.dataTransfer.types); if (t.includes(FAV_MIME) || t.includes("text/plain")) { e.preventDefault(); e.dataTransfer.dropEffect = e.dataTransfer.effectAllowed === "move" ? "move" : "copy"; setOver(true); if (!(e.target as HTMLElement).closest(".fav-tile")) setGap(favs.length); } }} onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) { setOver(false); setGap(null); } }} onDrop={drop}>
       <header>
         <h3>Favorites</h3>
         <small className="muted">Drag weapons, spells, features and items here, or click their ☆. Resources stay here too.</small>
         <button onClick={() => setHidden(true)}>Hide</button>
       </header>
       <div className="fav-tiles">
-        {favs.map(tile)}
+        {favs.map((f, i) => tile(f, i))}
         {favs.length === 0 && <p className="muted fav-empty">Nothing pinned yet. Drag a weapon, spell, feature or item here, or click its ☆.</p>}
         {/* The drop area stays big after the first favorite, so the next one has somewhere to land. */}
         {favs.length > 0 && <p className="muted fav-drop" aria-hidden="true">Drop here to add</p>}

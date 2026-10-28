@@ -2022,3 +2022,12 @@ button.board-bar { display: block; width: 100%; padding: 0; background: var(--bg
 .board-details { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; font: 600 11px var(--body); border-radius: 10px; }
 .details-default { margin-top: 4px; }
 .details-dialog { max-width: 860px; }
+
+/* Favorites reorder (C2): a gold bar where a drop lands, and move buttons for the keyboard. */
+.fav-tile { position: relative; }
+.fav-tile.drop-before::before, .fav-tile.drop-after::after { content: ""; position: absolute; top: 4px; bottom: 4px; width: 3px; border-radius: 2px; background: var(--gold); }
+.fav-tile.drop-before::before { left: -6px; }
+.fav-tile.drop-after::after { right: -6px; }
+.fav-move { position: absolute; top: 2px; right: 22px; display: flex; gap: 2px; opacity: 0; transition: opacity .15s; }
+.fav-tile:hover .fav-move, .fav-tile:focus-within .fav-move { opacity: 1; }
+.fav-move button { padding: 0 4px; font-size: 11px; line-height: 16px; }

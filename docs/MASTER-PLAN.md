@@ -133,6 +133,14 @@ parity check against Level up, the HP window and Play; Conditions move to a Play
 Build (a "Details" button by the portrait; blank details never count as an open choice); the right-hand lore panel
 in Manage becomes "i" icons; favorites reorder in Play with a drop marker and move buttons.
 
+**Done 2026-10-28** (all seven steps of the Linux plan's Stage 1): Manage and Content are two tabs; the character's
+books are on Content; Manage's "Level and hit points" left after a parity check (XP editing and the hit point dialog
+added to Play; the table is in commit 8f43acb); Conditions are a Play tab; character details are a dialog opened from
+the board's "Details" button, Play's description, the character badge and "Open notes", and blank details never count
+as a choice (the board says they are at their defaults); Manage's rows have an "i" instead of the lore panel;
+favorites reorder by dragging within the row (a gold marker shows where) or with move buttons (src/ui/favOrder.ts).
+Covered by e2e/smoke.spec.ts and e2e/board.spec.ts.
+
 ### C3. Backpack card with Inventory and Shop tabs (Linux plan Stage 2)
 
 The interface on top of A2.3: Inventory (sell, custom items, quantities) and Shop (search, categories, prices with

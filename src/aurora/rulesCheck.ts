@@ -411,7 +411,9 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
       const own = r.slots.filter((s) => s.root === `class:${x.c.classId}` && s.rule.type === "Spell" && !/cantrip/i.test(s.rule.name) && /spellcasting|pact magic|^magical secrets$/i.test(s.owner.name.replace(/^level \d+: /i, "")) && !/arcanum/i.test(s.rule.name));
       // A cantrip taken with Magical Secrets still counts against the spells known.
       const got = own.reduce((t, s) => t + s.chosen.filter((id) => (levelOf(id) > 0 || /magical secrets/i.test(s.owner.name)) && !arcanum.includes(levelOf(id))).length, 0);
-      if (own.length && got !== want) add("Spells known or prepared", `${x.el.name} ${x.c.level}: ${got}, the class table gives ${want}`);
+      // Short only by picks still open: that is an open choice (reported as one), not a wrong count.
+      const open = own.reduce((t, s) => t + Math.max(0, s.rule.number - s.chosen.length), 0);
+      if (own.length && got !== want && !(got < want && got + open >= want)) add("Spells known or prepared", `${x.el.name} ${x.c.level}: ${got}, the class table gives ${want}`);
     }
     const maxLv = x.ref.slots ? (x.ref.slots[x.c.level - 1] ?? []).filter((v) => v > 0).length : x.ref.pact ? x.ref.pact.level[x.c.level - 1] : 9;
     for (const p of line.spells) {

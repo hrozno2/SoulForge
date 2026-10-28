@@ -10,6 +10,7 @@ import { requestRoll, RollModeSwitch, type RollOptions } from "./Dice";
 import { ConditionsPanel } from "./ConditionsPanel";
 import { applyDamage, applyHealing } from "./hpModel";
 import { FormsPanel } from "./FormsPanel";
+import { HpRollsDialog } from "./HpRolls";
 import { Journal } from "./Journal";
 import { SchoolIcon } from "./schoolIcons";
 import { ConditionIcon } from "./conditionIcons";
@@ -111,13 +112,14 @@ function SaveMark({ on }: { on: boolean }) {
 }
 
 /** Small line icons for the header buttons. */
-function HeadIcon({ name }: { name: "star" | "starOn" | "up" | "meal" | "tent" }) {
+function HeadIcon({ name }: { name: "star" | "starOn" | "up" | "meal" | "tent" | "heart" }) {
   const p: Record<string, React.ReactNode> = {
     star: <path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />,
     starOn: <path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" fill="currentColor" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />,
     up: <><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" /><path d="M12 17V8m-4 4 4-4 4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></>,
     meal: <path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-2 1-3 4-3 7h3v11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />,
     tent: <path d="M3 20h18M12 4 4 20M12 4l8 16M12 4v16m-3 0 3-6 3 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />,
+    heart: <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />,
   };
   return <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">{p[name]}</svg>;
 }
@@ -711,6 +713,9 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
   const head = headerInfo(r);
   const [tab, setTab] = useState<Tab>("actions");
   const [side, setSide] = useState<"favorites" | "skills">("favorites");
+  const [xpOpen, setXpOpen] = useState(false);
+  const [xpAdd, setXpAdd] = useState("");
+  const [hpOpen, setHpOpen] = useState(false);
   const rests = useRests(r, ch, sheet, set);
   const hasSpells = sheet.casting.length > 0;
   const nextXp = XP_TABLE[Math.min(19, sheet.level)] ?? 0;
@@ -748,13 +753,28 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
           <div className="hero-icons">
             <button className={ch.play.inspiration ? "icon-btn on" : "icon-btn"} title={ch.play.inspiration ? "Heroic Inspiration: you have it" : "Heroic Inspiration"} aria-label="Inspiration" aria-pressed={ch.play.inspiration} onClick={() => set((c) => ({ ...c, play: { ...c.play, inspiration: !c.play.inspiration } }))}><HeadIcon name={ch.play.inspiration ? "starOn" : "star"} /></button>
             {sheet.level < 20 && ch.classes.length > 0 && <button className="icon-btn" title="Level up" aria-label="Level up" onClick={() => window.dispatchEvent(new Event("cf-levelup"))}><HeadIcon name="up" /></button>}
+            {ch.classes.length > 0 && <button className="icon-btn" title="Hit points: fixed or rolled, each level's roll" aria-label="Hit point rolls" onClick={() => setHpOpen(true)}><HeadIcon name="heart" /></button>}
             <button className="icon-btn" title={t("Short rest")} aria-label={t("Short rest")} onClick={rests.shortRest}><HeadIcon name="meal" /></button>
             <button className="icon-btn" title={t("Long rest")} aria-label={t("Long rest")} onClick={rests.longRest}><HeadIcon name="tent" /></button>
           </div>
           <div className="level-medal" title={`Level ${sheet.level}`}><b>{sheet.level}</b><small>Level</small></div>
-          <div className="xp"><div style={{ width: `${xpPct}%` }} /><span>{ch.xp} / {nextXp || "max"} XP</span></div>
+          <button className="xp" title="Change experience points" aria-label={`Change experience points: ${ch.xp} of ${nextXp || "max"}`} aria-expanded={xpOpen} onClick={() => setXpOpen(!xpOpen)}><div style={{ width: `${xpPct}%` }} /><span>{ch.xp} / {nextXp || "max"} XP</span></button>
         </div>
       </header>
+      {/* Experience and hit points (moved here from Manage, C2): XP set or added, and the hit point dialog. */}
+      {xpOpen && (
+        <div className="row xp-edit">
+          <label className="field"><span>Experience points</span>
+            <input type="number" min={0} value={ch.xp} onChange={(e) => set((c) => ({ ...c, xp: Math.max(0, Number(e.target.value) || 0) }))} />
+          </label>
+          <label className="field"><span>Add</span>
+            <input type="number" min={0} placeholder="XP" value={xpAdd} onChange={(e) => setXpAdd(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && Number(xpAdd) > 0) { set((c) => ({ ...c, xp: c.xp + Math.floor(Number(xpAdd)) })); setXpAdd(""); } }} />
+          </label>
+          <button disabled={!(Number(xpAdd) > 0)} onClick={() => { set((c) => ({ ...c, xp: c.xp + Math.floor(Number(xpAdd)) })); setXpAdd(""); }}>Add XP</button>
+          <span className="muted">XP says level {xpToLevel(ch.xp)}; your classes total {sheet.level}. Next level at {XP_TABLE[Math.min(19, sheet.level)] ?? "-"} XP.</span>
+        </div>
+      )}
+      {hpOpen && <HpRollsDialog r={r} ch={ch} set={set} onClose={() => setHpOpen(false)} />}
 
       {xpToLevel(ch.xp) > sheet.level && sheet.level < 20 && (
         <p className="notice levelup-banner">You have enough experience for level {xpToLevel(ch.xp)}. <button className="primary" onClick={() => window.dispatchEvent(new Event("cf-levelup"))}>Level up</button></p>

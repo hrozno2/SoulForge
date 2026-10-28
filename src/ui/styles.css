@@ -351,6 +351,9 @@ button.tiny { padding: 0 6px; }
 .xp { position: relative; height: 16px; min-width: 260px; background: color-mix(in srgb, var(--accent) 22%, var(--panel2)); border: 1px solid var(--line); overflow: hidden; }
 .xp div { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 60%, #000), var(--accent)); }
 .xp span { position: relative; font-size: 11px; letter-spacing: 0.06em; padding: 0 8px; line-height: 14px; }
+button.xp { display: block; padding: 0; text-align: left; cursor: pointer; color: inherit; font: inherit; }
+button.xp:hover, button.xp:focus-visible { border-color: var(--gold); }
+.xp-edit { align-items: flex-end; gap: 10px; margin: 6px 0 10px; }
 .play-buttons { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .inspire { border-radius: 16px; }
 .vital-row { display: grid; grid-template-columns: auto 1fr minmax(260px, 340px); gap: 14px; align-items: stretch; margin-bottom: 10px; }

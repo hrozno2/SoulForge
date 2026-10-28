@@ -1,68 +1,19 @@
-import { requestRoll } from "./Dice";
 import { TextArea, TextInput } from "./TextField";
 import { useEffect, useMemo, useState } from "react";
 import { PortraitCropper, PortraitPicker } from "./Portrait";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
-import { dieForLevel as dieOf, withHpRoll } from "../aurora/hpRolls";
-import { ABILITY_IDS, ABILITY_LABEL, XP_TABLE, uid, xpToLevel, type AbilityId, type AttackEdit, type Character } from "../aurora/character";
+import { ABILITY_IDS, ABILITY_LABEL, uid, type AbilityId, type AttackEdit, type Character } from "../aurora/character";
 import { buildSheet } from "../aurora/sheet";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { Html } from "./Html";
 import { useUi } from "./Learn";
 import { companionHtml } from "../aurora/companion";
 
-type Sub = "level" | "options" | "bonuses" | "additions" | "attacks" | "companions" | "info";
-const SUBS: [Sub, string][] = [["level", "Level and hit points"], ["info", "Character details"], ["options", "Options"], ["bonuses", "Custom bonuses"], ["additions", "Manual additions"], ["attacks", "Attacks"], ["companions", "Companions"]];
+type Sub = "options" | "bonuses" | "additions" | "attacks" | "companions" | "info";
+const SUBS: [Sub, string][] = [["info", "Character details"], ["options", "Options"], ["bonuses", "Custom bonuses"], ["additions", "Manual additions"], ["attacks", "Attacks"], ["companions", "Companions"]];
 
 export { CONDITIONS } from "./conditions";
-
-function Level({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
-  const total = r.totalLevel;
-  const xpLevel = xpToLevel(ch.xp);
-  const rollLevels = Array.from({ length: Math.max(0, total - 1) }, (_, i) => i + 2);
-  const dieForLevel = (n: number) => dieOf(ch, r.reg, n);
-  return (
-    <>
-      <div className="row">
-        <label className="field"><span>Experience points</span>
-          <input type="number" min={0} value={ch.xp} onChange={(e) => set((c) => ({ ...c, xp: Math.max(0, Number(e.target.value) || 0) }))} />
-        </label>
-        <span className={xpLevel > total ? "notice" : "muted"}>
-          XP says level {xpLevel}; your classes total {total}.{xpLevel > total ? " You can level up on the Build tab." : ""} Next level at {XP_TABLE[Math.min(19, total)] ?? "-"} XP.
-        </span>
-      </div>
-      <div className="row"><button className="primary" disabled={total >= 20 || ch.classes.length === 0} onClick={() => window.dispatchEvent(new Event("cf-levelup"))}>Level up...</button><span className="muted">A guided level up: features, hit points, spells and choices.</span></div>
-      <h3>Hit points</h3>
-      <div className="row">
-        {(["average", "roll"] as const).map((m) => (
-          <button key={m} className={ch.hpMode === m ? "pill active" : "pill"} onClick={() => set((c) => ({ ...c, hpMode: m }))}>
-            {m === "average" ? "Fixed (average)" : "Rolled"}
-          </button>
-        ))}
-        <span>Maximum HP: <b>{r.stats.get("hp")}</b></span>
-      </div>
-      {ch.hpMode === "roll" && (
-        <div className="rolls">
-          {rollLevels.map((n) => {
-            const die = dieForLevel(n);
-            return (
-              <label key={n} className="field coin">
-                <span>Lv {n} (d{die})</span>
-                <button type="button" className="roll-hp" title={`Roll a d${die} for level ${n}`} onClick={() => requestRoll(`Hit points, level ${n}`, `1d${die}`, (res) => set((c) => withHpRoll(c, n, res.total, "app", die)))}>Roll</button>
-                <input type="number" min={1} max={die} placeholder={String(Math.floor(die / 2) + 1)} value={ch.hpRolls[String(n)] ?? ""} onChange={(e) => set((c) => withHpRoll(c, n, Number(e.target.value) || undefined, "player", die))} />
-              </label>
-            );
-          })}
-          {rollLevels.some((n) => !ch.hpRolls[String(n)]) && (
-            <button type="button" className="primary" onClick={() => rollLevels.filter((n) => !ch.hpRolls[String(n)]).forEach((n) => { const die = dieForLevel(n); requestRoll(`Hit points, level ${n}`, `1d${die}`, (res) => set((c) => withHpRoll(c, n, res.total, "app", die))); })}>Roll the rest</button>
-          )}
-          {rollLevels.length === 0 && <p className="muted">Level 1 always takes the maximum of the hit die.</p>}
-        </div>
-      )}
-    </>
-  );
-}
 
 const FIELDS: [keyof Character["info"], string][] = [
   ["alignment", "Alignment"], ["deity", "Deity"], ["gender", "Gender"], ["age", "Age"], ["height", "Height"], ["weight", "Weight"], ["eyes", "Eyes"], ["hair", "Hair"], ["skin", "Skin"],
@@ -333,7 +284,7 @@ export function CompanionCard({ el }: { el: AElement }) {
 }
 
 export function ManageTab({ r, ch, set, onDetail, focusNotes = 0 }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; focusNotes?: number }) {
-  const [sub, setSub] = useState<Sub>(focusNotes ? "info" : "level");
+  const [sub, setSub] = useState<Sub>("info");
   // "Open notes" after an import: the character details, with the notes in view.
   useEffect(() => {
     if (!focusNotes) return;
@@ -345,7 +296,6 @@ export function ManageTab({ r, ch, set, onDetail, focusNotes = 0 }: { r: Resolve
   return (
     <div>
       <nav className="subtabs">{SUBS.map(([k, label]) => <button key={k} className={sub === k ? "subtab active" : "subtab"} onClick={() => setSub(k)}>{label}</button>)}</nav>
-      {sub === "level" && <Level r={r} ch={ch} set={set} />}
       {sub === "info" && <Info ch={ch} set={set} r={r} />}
       {sub === "options" && (<><Options r={r} ch={ch} set={set} onDetail={onDetail} />{other.length > 0 && (<><h3>Other choices</h3><SlotList slots={other} r={r} set={set} onDetail={onDetail} /></>)}</>)}
       {sub === "bonuses" && <Bonuses ch={ch} set={set} />}

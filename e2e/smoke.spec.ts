@@ -50,6 +50,22 @@ test.describe("Soul Forge smoke tests", () => {
     expect(await look()).toEqual(first);
   });
 
+  test("Play sets and adds experience and opens the hit point rolls (moved from Manage, C2)", async ({ page }) => {
+    await addTestContent(page);
+    await randomCharacter(page, 3);
+    await tab(page, "Play");
+    await page.getByRole("button", { name: /^Change experience points/ }).click();
+    await page.getByLabel("Experience points", { exact: true }).fill("900");
+    await page.getByLabel("Add", { exact: true }).fill("100");
+    await page.getByRole("button", { name: "Add XP" }).click();
+    await expect(page.getByLabel("Experience points", { exact: true })).toHaveValue("1000");
+    await page.getByRole("button", { name: "Hit point rolls" }).click();
+    const dialog = page.getByRole("dialog", { name: "Hit points" });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Rolled" }).click();
+    await expect(dialog.getByLabel("Roll for level 2")).toBeVisible();
+  });
+
   test("the dice tray builds a roll from clicks", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: /^dice$/i }).click();

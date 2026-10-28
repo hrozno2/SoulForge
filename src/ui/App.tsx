@@ -23,7 +23,10 @@ import { outdatedFiveTools } from "../aurora/content";
 import { DetailPanel } from "./DetailPanel";
 import { UpdateBanner } from "./UpdateBanner";
 import { DicePanel, setRollContext } from "./Dice";
-import { UiProvider } from "./Learn";
+import { LearnBody, UiProvider } from "./Learn";
+import { FloatingProvider, type FloatWindow } from "./Floating";
+import { BookIndex } from "../aurora/books";
+import type { ARegistry } from "../aurora/registry";
 import { ThemePicker } from "./Theme";
 import { HelpButton } from "./Help";
 import { AppMenu, GroupNav } from "./TopBar";
@@ -235,6 +238,7 @@ export function App() {
   const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play" && tab !== "manage" && !(tab === "build" && board);
 
   return (
+    <FloatingProvider characterId={id} render={(w) => <FloatingContent w={w} reg={content.reg} />}>
     <UiProvider reg={content.reg}>
       <LaunchIntro onDone={endIntro} />
     <div className="app">
@@ -367,5 +371,14 @@ export function App() {
       )}
     </div>
     </UiProvider>
+    </FloatingProvider>
   );
+}
+
+/** What a floating window shows (C4): a compendium entry's full text; the board's cards come with step 2. */
+function FloatingContent({ w, reg }: { w: FloatWindow; reg: ARegistry }) {
+  const books = useMemo(() => new BookIndex(reg), [reg]);
+  const el = w.kind === "entry" ? reg.get(w.ref) : undefined;
+  if (!el) return <p className="muted">This is not in the loaded content any more.</p>;
+  return <LearnBody el={el} books={books} />;
 }

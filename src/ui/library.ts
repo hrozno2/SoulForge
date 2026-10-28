@@ -4,10 +4,12 @@
  */
 import { backupFileName, isBackup, makeBackup, restoreBackup } from "../aurora/backup";
 import { saveFile } from "../store";
+import { allLayouts, restoreLayouts, type FloatWindow } from "./Floating";
 
 /** Saves every character in one file; says what happened. */
 export async function exportLibrary(): Promise<string> {
-  const backup = await makeBackup();
+  // The characters, and each one's card layout (C4), which is kept outside the character itself.
+  const backup = { ...(await makeBackup()), layouts: allLayouts() };
   const ok = await saveFile(backupFileName(), new TextEncoder().encode(JSON.stringify(backup, null, 2)), "application/json");
   return ok ? `Saved ${backup.characters.length} ${backup.characters.length === 1 ? "character" : "characters"} in one file.` : "Cancelled.";
 }
@@ -16,6 +18,7 @@ export async function exportLibrary(): Promise<string> {
 export async function importLibrary(value: unknown): Promise<string> {
   if (!isBackup(value)) throw new Error("That is not a Soul Forge library file.");
   const r = await restoreBackup(value, "merge");
+  restoreLayouts((value as { layouts?: Record<string, FloatWindow[]> }).layouts);
   return `Library restored: ${r.added} added, ${r.updated} updated, ${r.kept} already newer here.`;
 }
 

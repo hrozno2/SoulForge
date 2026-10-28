@@ -21,6 +21,8 @@ export interface FloatWindow {
   x: number; y: number; w: number; h: number;
   z: number;
   bagged: boolean;
+  /** Shrunk to its title bar (double-click the bar, as on 5e.tools). */
+  shrunk?: boolean;
 }
 export const MAX_WINDOWS = 10;
 
@@ -36,6 +38,11 @@ export interface FloatingApi {
   bagAll: () => void;
   emptyBag: () => void;
   tidy: () => void;
+  /** Shrinks a window to its bar or opens it again. */
+  shrink: (id: string) => void;
+  /** The window shown large over a blurred page (null: none). */
+  full: string | null;
+  setFull: (id: string | null) => void;
   notice: string;
 }
 
@@ -63,10 +70,16 @@ export function restoreLayouts(layouts: Record<string, FloatWindow[]> | undefine
   try { for (const [id, ws] of Object.entries(layouts ?? {})) if (!localStorage.getItem(KEY(id)) && Array.isArray(ws)) localStorage.setItem(KEY(id), JSON.stringify(ws)); } catch { /* storage unavailable */ }
 }
 
+/** The title bar's height: the part of a window that always stays inside the app window, to drag it back by. */
+const BAR = 38;
+/**
+ * A window may go partly out of the app window (C6.3), but never so far that its title bar cannot be grabbed: 120
+ * pixels of the bar stay in sight sideways, the whole bar in sight up and down.
+ */
 const clampTo = (w: FloatWindow): FloatWindow => {
   const vw = window.innerWidth, vh = window.innerHeight;
   const ww = Math.min(Math.max(280, w.w), vw - 16), hh = Math.min(Math.max(160, w.h), vh - 16);
-  return { ...w, w: ww, h: hh, x: Math.min(Math.max(8, w.x), vw - ww - 8), y: Math.min(Math.max(8, w.y), vh - hh - 8) };
+  return { ...w, w: ww, h: hh, x: Math.min(Math.max(120 - ww, w.x), vw - 120), y: Math.min(Math.max(0, w.y), vh - BAR) };
 };
 
 export function FloatingProvider({ characterId, children, render }: { characterId: string; children: ReactNode; render: (w: FloatWindow) => ReactNode }) {
@@ -99,8 +112,10 @@ export function FloatingProvider({ characterId, children, render }: { characterI
     });
     return ok;
   }, []);
+  const [full, setFull] = useState<string | null>(null);
   const api: FloatingApi = useMemo(() => ({
-    windows, notice, open,
+    windows, notice, open, full, setFull,
+    shrink: (id) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, shrunk: !w.shrunk } : w))),
     close: (id) => setWindows((ws) => ws.filter((w) => w.id !== id)),
     focus: (id) => setWindows((ws) => (ws.find((w) => w.id === id)?.z === top(ws) - 1 ? ws : ws.map((w) => (w.id === id ? { ...w, z: top(ws) } : w)))),
     move: (id, x, y, w, h) => setWindows((ws) => ws.map((o) => (o.id === id ? clampTo({ ...o, x, y, w: w ?? o.w, h: h ?? o.h }) : o))),
@@ -120,7 +135,7 @@ export function FloatingProvider({ characterId, children, render }: { characterI
         return placed;
       });
     }),
-  }), [windows, notice, open]);
+  }), [windows, notice, open, full]);
 
   return (
     <Ctx.Provider value={api}>
@@ -144,10 +159,12 @@ function FloatingLayer({ api, render }: { api: FloatingApi; render: (w: FloatWin
 }
 
 /** A window: a title bar to drag it by, the bag and close buttons, the content, a corner to resize it. */
-export function WindowFrame({ w, api, children, className = "" }: { w: FloatWindow; api: FloatingApi; children: ReactNode; className?: string }) {
+export function WindowFrame({ w, api, children, className = "", done }: { w: FloatWindow; api: FloatingApi; children: ReactNode; className?: string; done?: boolean }) {
   const drag = useRef<{ dx: number; dy: number; mode: "move" | "size"; w0: number; h0: number; x0: number; y0: number } | null>(null);
+  const isFull = api.full === w.id;
   const down = (mode: "move" | "size") => (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("button") && mode === "move") return;
+    if (isFull) return;
     api.focus(w.id);
     // No text selection while dragging or resizing (it painted the page blue, C6.1).
     e.preventDefault();
@@ -161,19 +178,33 @@ export function WindowFrame({ w, api, children, className = "" }: { w: FloatWind
     if (d.mode === "move") api.move(w.id, e.clientX - d.dx, e.clientY - d.dy);
     else api.move(w.id, w.x, w.y, d.w0 + e.clientX - d.x0, d.h0 + e.clientY - d.y0);
   };
-  const up = () => { drag.current = null; document.body.classList.remove("float-dragging"); };
+  const up = (e: React.PointerEvent) => {
+    const d = drag.current;
+    drag.current = null;
+    document.body.classList.remove("float-dragging");
+    // Let go over the Bag of Holding: into the bag (C6.3).
+    const bag = document.querySelector(".bag-of-holding")?.getBoundingClientRect();
+    if (d?.mode === "move" && bag && e.clientX >= bag.left && e.clientX <= bag.right && e.clientY >= bag.top && e.clientY <= bag.bottom) api.bag(w.id);
+  };
+  const style = isFull ? { zIndex: 1500 } : { left: w.x, top: w.y, width: w.w, height: w.shrunk ? undefined : w.h, zIndex: 400 + w.z };
   return (
-    <section className={`float-window float-${w.kind} ${className}`} role="dialog" aria-label={w.title} style={{ left: w.x, top: w.y, width: w.w, height: w.h, zIndex: 400 + w.z }} onPointerDown={() => api.focus(w.id)}>
-      <header className="float-bar" onPointerDown={down("move")} onPointerMove={moveTo} onPointerUp={up} onPointerCancel={up}>
-        <b>{w.title}</b>
-        <span className="float-tools">
-          <button title="Put it in the Bag of Holding" aria-label={`Put ${w.title} in the bag`} onClick={() => api.bag(w.id)}>▾</button>
-          <button title="Close" aria-label={`Close ${w.title}`} onClick={() => api.close(w.id)}>×</button>
-        </span>
-      </header>
-      <div className="float-body">{children}</div>
-      <span className="float-resize" aria-hidden="true" onPointerDown={down("size")} onPointerMove={moveTo} onPointerUp={up} onPointerCancel={up} />
-    </section>
+    <>
+      {isFull && createPortal(<div className="float-backdrop" onClick={() => api.setFull(null)} />, document.body)}
+      <section className={`float-window float-${w.kind} ${w.shrunk && !isFull ? "shrunk" : ""} ${isFull ? "full" : ""} ${className}`} role="dialog" aria-label={w.title} style={style} onPointerDown={() => api.focus(w.id)}>
+        <header className="float-bar" onPointerDown={down("move")} onPointerMove={moveTo} onPointerUp={up} onPointerCancel={up} onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest("button")) api.shrink(w.id); }} title="Drag to move; double-click to shrink to this bar">
+          <b>{w.title}</b>
+          <span className="float-tools">
+            <button title={isFull ? "Back to its place" : "Focus: large, everything else blurred"} aria-label={isFull ? `Back to its place: ${w.title}` : `Focus on ${w.title}`} onClick={() => api.setFull(isFull ? null : w.id)}>{isFull ? "⤡" : "⤢"}</button>
+            <button title="Put it in the Bag of Holding (or drag it onto the bag)" aria-label={`Put ${w.title} in the bag`} onClick={() => { if (isFull) api.setFull(null); api.bag(w.id); }}>▾</button>
+            {done
+              ? <button className="float-done" title="Done: put the card back" aria-label={`Done with ${w.title}`} onClick={() => { if (isFull) api.setFull(null); api.close(w.id); }}>Done</button>
+              : <button title="Close" aria-label={`Close ${w.title}`} onClick={() => { if (isFull) api.setFull(null); api.close(w.id); }}>×</button>}
+          </span>
+        </header>
+        {(!w.shrunk || isFull) && <div className="float-body">{children}</div>}
+        {!w.shrunk && !isFull && <span className="float-resize" aria-hidden="true" onPointerDown={down("size")} onPointerMove={moveTo} onPointerUp={up} onPointerCancel={up} />}
+      </section>
+    </>
   );
 }
 

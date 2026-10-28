@@ -29,11 +29,11 @@ test.describe("Build board", () => {
     await backside.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
     await expect(backside).toHaveCount(0);
     await expect(page.locator("[data-tile=race] h3")).toHaveText(name);
-    // Clicking the card opens it in a floating window (C4) to edit its choices; × closes it.
+    // Clicking the card opens it in a floating window (C4) to edit its choices; Done (C6.3) puts it back.
     await page.locator("[data-tile=race] .chosen-banner").click();
     const win = page.locator(".float-window.card-window-race");
     await expect(win).toBeVisible();
-    await win.getByRole("button", { name: /^Close / }).click();
+    await win.getByRole("button", { name: /^Done with / }).click();
     await expect(win).toHaveCount(0);
     await expect(page.locator("[data-tile=race] h3")).toHaveText(name);
 

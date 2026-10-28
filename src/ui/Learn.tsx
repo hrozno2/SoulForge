@@ -16,7 +16,12 @@ const Ctx = createContext<Ui | null>(null);
 export function UiProvider({ reg, children }: { reg: ARegistry; children: ReactNode }) {
   const books = useMemo(() => new BookIndex(reg), [reg]);
   const [el, setEl] = useState<AElement | null>(null);
-  const value = useMemo(() => ({ books, reg, learn: setEl }), [books, reg]);
+  // Every "i" opens its entry in a floating window (C6.3: always in front of the cards, as many as wanted); the popup
+  // only where there are no windows.
+  const floating = useFloating();
+  const open = floating?.open;
+  const learn = useMemo(() => (e: AElement) => { if (open) open({ kind: "entry", ref: e.id, title: e.name }); else setEl(e); }, [open]);
+  const value = useMemo(() => ({ books, reg, learn }), [books, reg, learn]);
   return (
     <Ctx.Provider value={value}>
       {children}

@@ -28,6 +28,9 @@
   --crimson: #58180d;
   --gilt: #c9ad6a;
   --stat-rule: #e69a28;
+  --arcane: #a57bdc;
+  --arcane2: #cdb4f0;
+  --leather: #6b4528;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
@@ -1842,20 +1845,27 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 /* Spell scrolls under level headings */
 .scroll-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 7px; margin-top: 6px; }
 .scroll-level { grid-column: 1 / -1; margin: 8px 2px 0; font: 600 12px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 3px; }
-.scroll-card { position: relative; border-radius: 4px 4px 10px 10px; background: linear-gradient(180deg, #f3e6c4, #e2cf9f); color: #2a2016; box-shadow: 0 2px 0 #b89a62, 0 4px 10px rgba(0,0,0,.35); border-top: 4px solid #c9ab6e; transition: transform .15s, box-shadow .15s; }
-.scroll-card::before, .scroll-card::after { content: ""; position: absolute; top: -7px; width: 10px; height: 10px; border-radius: 50%; background: #b8955a; box-shadow: inset 0 -2px 0 rgba(0,0,0,.2); }
-.scroll-card::before { left: -3px; } .scroll-card::after { right: -3px; }
-.scroll-card:hover { transform: translateY(-2px); box-shadow: 0 2px 0 #b89a62, 0 8px 16px rgba(0,0,0,.45); }
-.scroll-card.picked { background: linear-gradient(180deg, #fff3cf, #f0d999); box-shadow: 0 0 0 2px var(--gold), 0 4px 12px rgba(0,0,0,.4); }
-.scroll-card.dim { opacity: .55; }
-.scroll-main { width: 100%; display: flex; flex-direction: column; gap: 2px; padding: 7px 9px 8px; background: none; border: 0; color: inherit; text-align: left; text-transform: none; letter-spacing: 0; }
-.scroll-top { display: flex; align-items: center; gap: 6px; color: #6b4a22; }
-.scroll-lvl { min-width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: #7a3022; color: #fff; font: 700 10px var(--body); }
-.scroll-tick { margin-left: auto; margin-right: 22px; color: #7a3022; font-weight: 700; }
-.scroll-name { font: 700 13.5px var(--book); line-height: 1.15; }
-.scroll-meta { font: 500 10.5px var(--body); color: #6d5a3a; }
-.scroll-why { font: 600 10px var(--body); color: #8a2f1f; }
-.scroll-learn { position: absolute; top: 5px; right: 5px; width: 20px; height: 20px; font-size: 11px; background: rgba(60, 40, 20, .75); }
+/*
+ * A scroll is dark vellum on gilt rods, built only from the theme's tokens (C6.7: the bright parchment clashed with
+ * the app; no hard-coded colours, so every theme, present and future, dresses the scrolls too).
+ */
+.scroll-card { position: relative; margin: 5px 0; border-radius: 3px; color: var(--text);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 10%, var(--panel2)), color-mix(in srgb, var(--gold) 4%, var(--panel)));
+  border: 1px solid color-mix(in srgb, var(--gold) 28%, var(--line)); box-shadow: 0 3px 8px rgba(0,0,0,.35); transition: transform .15s, box-shadow .15s, border-color .15s; }
+.scroll-card::before, .scroll-card::after { content: ""; position: absolute; left: -4px; right: -4px; height: 6px; border-radius: 3px;
+  background: linear-gradient(180deg, var(--gold2), var(--gold) 55%, color-mix(in srgb, var(--gold) 50%, #000)); box-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.scroll-card::before { top: -4px; } .scroll-card::after { bottom: -4px; }
+.scroll-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--gold) 60%, var(--line)); box-shadow: 0 6px 14px rgba(0,0,0,.45); }
+.scroll-card.picked { border-color: var(--gold); background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 22%, var(--panel2)), color-mix(in srgb, var(--gold) 10%, var(--panel))); box-shadow: 0 0 0 1px var(--gold), 0 0 14px color-mix(in srgb, var(--gold) 30%, transparent); }
+.scroll-card.dim { opacity: .5; }
+.scroll-main { width: 100%; display: flex; flex-direction: column; gap: 2px; padding: 8px 9px 8px; background: none; border: 0; color: inherit; text-align: left; text-transform: none; letter-spacing: 0; }
+.scroll-top { display: flex; align-items: center; gap: 6px; color: var(--gold); }
+.scroll-lvl { min-width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 70%, var(--panel)); color: var(--accent-ink); font: 700 10px var(--body); }
+.scroll-tick { margin-left: auto; margin-right: 22px; color: var(--gold2); font-weight: 700; }
+.scroll-name { font: 700 13.5px var(--book); line-height: 1.15; color: var(--gold2); }
+.scroll-meta { font: 500 10.5px var(--body); color: var(--muted); }
+.scroll-why { font: 600 10px var(--body); color: var(--warn); }
+.scroll-learn { position: absolute; top: 5px; right: 5px; width: 20px; height: 20px; font-size: 11px; }
 /* Item type icons in the item list */
 .opt-type-ico { display: inline-grid; place-items: center; color: var(--gold); margin-right: 4px; }
 
@@ -2049,8 +2059,8 @@ button.board-bar { display: block; width: 100%; padding: 0; background: var(--bg
 .float-body { flex: 1; overflow: auto; padding: 10px 14px; }
 .float-resize { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; touch-action: none; background: linear-gradient(135deg, transparent 50%, color-mix(in srgb, var(--gold) 60%, transparent) 50%); }
 .float-notice { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 2000; padding: 8px 14px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--gold); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
-.bag-of-holding { position: fixed; left: 14px; bottom: 14px; z-index: 390; width: 250px; max-height: 50vh; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-radius: 12px; background: color-mix(in srgb, #2a1d3d 85%, var(--panel)); border: 1px solid color-mix(in srgb, #a57bdc 50%, transparent); box-shadow: 0 10px 30px rgba(0,0,0,.45); transition: transform .5s, opacity .5s; }
-.bag-head { display: flex; align-items: center; gap: 8px; color: #cdb4f0; }
+.bag-of-holding { position: fixed; left: 14px; bottom: 14px; z-index: 390; width: 250px; max-height: 50vh; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-radius: 12px; background: color-mix(in srgb, color-mix(in srgb, var(--arcane) 18%, var(--panel)) 85%, var(--panel)); border: 1px solid color-mix(in srgb, var(--arcane) 50%, transparent); box-shadow: 0 10px 30px rgba(0,0,0,.45); transition: transform .5s, opacity .5s; }
+.bag-head { display: flex; align-items: center; gap: 8px; color: var(--arcane2); }
 .bag-head b { font: 700 13px var(--display); }
 .bag-items { list-style: none; margin: 0; padding: 0; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
 .bag-item { display: flex; gap: 4px; filter: saturate(.35); opacity: .85; }
@@ -2073,13 +2083,20 @@ button.board-bar { display: block; width: 100%; padding: 0; background: var(--bg
 .class-tab small { font: 600 9.5px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .class-tab b { font: 700 14px var(--display); }
 .class-tab.on { border-bottom-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--panel2)); }
-.class-tab.multiclass { border-color: color-mix(in srgb, #a57bdc 55%, transparent); }
-.class-tab.multiclass small { color: #c3a6ec; }
-.class-tab.multiclass.on { border-bottom-color: #a57bdc; background: color-mix(in srgb, #a57bdc 16%, var(--panel2)); }
-.class-tab-body.multiclass { border-left: 3px solid #a57bdc; padding-left: 12px; background: linear-gradient(90deg, color-mix(in srgb, #a57bdc 8%, transparent), transparent 40%); }
+.class-tab.multiclass { border-color: color-mix(in srgb, var(--arcane) 55%, transparent); }
+.class-tab.multiclass small { color: var(--arcane2); }
+.class-tab.multiclass.on { border-bottom-color: var(--arcane); background: color-mix(in srgb, var(--arcane) 16%, var(--panel2)); }
+.class-tab-body.multiclass { border-left: 3px solid var(--arcane); padding-left: 12px; background: linear-gradient(90deg, color-mix(in srgb, var(--arcane) 8%, transparent), transparent 40%); }
 /* A card in a floating window: the card's own colour along the title bar. */
 .card-window .float-bar { border-bottom: 2px solid hsl(var(--hue, 40) 60% 55%); }
 .card-window .card-back-body { padding: 0; }
 
 /* While a window is dragged or resized, nothing on the page is selected (C6.1). */
 body.float-dragging, body.float-dragging * { user-select: none !important; -webkit-user-select: none !important; }
+
+/* Window frame (C6.3): a shrunk window is its bar; Focus shows one large over a blurred page; Done stands out. */
+.float-window.shrunk { height: auto !important; }
+.float-window.full { left: 5vw !important; top: 5vh; width: 90vw; height: 90vh; }
+.float-backdrop { position: fixed; inset: 0; z-index: 1490; background: rgba(0, 0, 0, .55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.float-tools .float-done { background: var(--gold); color: var(--bg); font: 700 12px var(--display); letter-spacing: .08em; text-transform: uppercase; padding: 0 14px; border-color: var(--gold); box-shadow: 0 0 0 1px rgba(0,0,0,.3), 0 2px 8px color-mix(in srgb, var(--gold) 45%, transparent); }
+.float-tools .float-done:hover { filter: brightness(1.1); }

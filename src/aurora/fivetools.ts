@@ -540,7 +540,9 @@ function featVariants(f: J, ctx: Ctx, out: AElement[]): boolean {
   for (const g of groups) {
     const list = String(g.name).replace(/\s*spells$/i, "");
     const rules: ARule[] = [];
-    const ability = g.ability?.choose ? undefined : g.ability;
+    // A chosen ability (Intelligence, Wisdom or Charisma): its first is the default until the player picks.
+    const ability = Array.isArray(g.ability?.choose) ? g.ability.choose[0] : g.ability;
+    rules.push(...castingAbilityChoice(g.ability, `${f.name} (${list})`, f.source, out));
     const known = (g.known?._ as J[]) ?? [];
     for (const k of known) if (k.choose) rules.push({ kind: "select", type: "Spell", name: `${list} cantrip`, supports: `${list}, 0`, number: k.count ?? 1, spellcasting: `${f.name} (${list})` });
     const inn = Object.values(g.innate?._?.daily ?? {}).flat() as J[];
@@ -1290,6 +1292,23 @@ function spellRefs(section: J | undefined): { level?: number; refs: unknown[] }[
 }
 
 /**
+ * "ability": {"choose": ["int", "wis", "cha"]}: the player picks the spellcasting ability for these spells (the first
+ * is the default), as Plutonium asks. Each pick sets "<casting>:spellcasting:ability:<ability>", which the engine
+ * reads for the spell DC and attack. One place for every owner: species, feats (each spell-list version of Magic
+ * Initiate too) and optional features.
+ */
+function castingAbilityChoice(ab: J, casting: string, ownerSource: string, out: AElement[]): ARule[] {
+  if (!Array.isArray(ab?.choose) || ab.choose.length < 2) return [];
+  const tag = `5et spell ability ${slug(ownerSource)} ${slug(casting)}`.toLowerCase();
+  for (const k of ab.choose as string[]) {
+    const full = abilFull(k);
+    const oid = `ID_5ET_SPELLABILITY_${slug(ownerSource)}_${slug(casting)}_${slug(full)}`;
+    if (!out.some((o) => o.id === oid)) out.push(base(oid, cap(full), "Spellcasting Ability", "5etools", { compendiumHidden: true, supports: [tag], rules: [{ kind: "stat", name: `${casting.toLowerCase()}:spellcasting:ability:${full.toLowerCase()}`, value: "1" } as ARule], description: `<p>${esc(cap(full))} is the spellcasting ability for ${esc(casting)}'s spells.</p>` }));
+  }
+  return [{ kind: "select", type: "Spellcasting Ability", name: `Spellcasting ability (${casting})`, supports: tag, number: 1 } as ARule];
+}
+
+/**
  * Rules for the spells a race, feat or feature adds. Fixed spells are resolved to element ids after conversion.
  * More than one entry in `additionalSpells` is a choice of one of them, as 5e.tools and Plutonium read it (Circle of
  * the Land's lands, Strixhaven Initiate's colleges, Divinely Favored's alignments): with `out`, each set becomes a
@@ -1314,17 +1333,7 @@ export function additionalSpellRules(adds: J[] | undefined, owner: string, owner
   for (const a of adds ?? []) {
     const ab = a.ability;
     if (!ability && ab) ability = typeof ab === "string" ? ab : Array.isArray(ab?.choose) ? ab.choose[0] : undefined;
-    // "ability": {"choose": ["int", "wis", "cha"]}: the player picks the spellcasting ability; the first is the default.
-    // Each pick sets "<owner>:spellcasting:ability:<ability>", which the engine reads for the spell DC and attack.
-    if (out && Array.isArray(ab?.choose) && ab.choose.length > 1) {
-      const tag = `5et spell ability ${slug(ownerSource)} ${slug(owner)}`.toLowerCase();
-      for (const k of ab.choose as string[]) {
-        const full = abilFull(k);
-        const oid = `ID_5ET_SPELLABILITY_${slug(ownerSource)}_${slug(owner)}_${slug(full)}`;
-        if (!out.some((o) => o.id === oid)) out.push(base(oid, cap(full), "Spellcasting Ability", "5etools", { compendiumHidden: true, supports: [tag], rules: [{ kind: "stat", name: `${owner.toLowerCase()}:spellcasting:ability:${full.toLowerCase()}`, value: "1" } as ARule], description: `<p>${esc(cap(full))} is the spellcasting ability for the spells of ${esc(owner)}.</p>` }));
-      }
-      if (!rules.some((r) => r.kind === "select" && r.type === "Spellcasting Ability")) rules.push({ kind: "select", type: "Spellcasting Ability", name: `Spellcasting ability (${owner})`, supports: tag, number: 1 } as ARule);
-    }
+    if (out && !rules.some((r) => r.kind === "select" && r.type === "Spellcasting Ability")) rules.push(...castingAbilityChoice(ab, owner, ownerSource, out));
     for (const kind of ["innate", "known", "prepared"] as const) {
       for (const { level, refs } of spellRefs(a[kind])) {
         for (const r of refs) {

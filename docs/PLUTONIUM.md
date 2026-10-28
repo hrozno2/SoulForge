@@ -101,3 +101,10 @@ the roll instead of the gear. Soul Forge now does the same: the 5e.tools convert
 "Starting gold instead" with a roll button (src/aurora/startingEquipment.ts, src/aurora/goldRoll.test.ts). The 2024
 classes have their gold option already (option B). Plutonium can also set a fixed starting gold in its config; not
 copied (a DM can type the coins).
+
+## Chosen spellcasting ability (A0.1, 2026-10-28)
+
+When `additionalSpells[].ability` is `{"choose": [...]}`, Plutonium asks the player which ability to cast with.
+Soul Forge's converter did so for species, feats and optional features, but not for feats split by spell list (the
+2024 Magic Initiate's Cleric, Druid and Wizard versions), which always cast with Intelligence. One helper now serves
+every owner (`castingAbilityChoice` in src/aurora/fivetools.ts); src/aurora/castingAbility.test.ts.

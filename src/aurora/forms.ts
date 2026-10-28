@@ -76,8 +76,15 @@ export function formStats(r: Resolved, beast: AElement, kind: FormKind): FormBlo
     }
   } else if (kind === "wild shape") notes.push("The beast's hit points; when they run out you return to your own.");
   if (kind === "companion") {
-    const add = r.stats.get("companion:ac");
-    if (add) { ac += add; notes.push(`AC +${add} from your features.`); }
+    // Aurora's companion statistics are the companion's own numbers worked out with the character's (the Steel
+    // Defender's "2 + your Intelligence modifier + five times your artificer level"), not bonuses on top. They share
+    // one name, so they are this companion's only when it is the character's only one; otherwise the stat block.
+    const only = r.active.filter((a) => a.el.type === "Companion").map((a) => a.el.id);
+    if (only.length === 1 && only[0] === beast.id) {
+      const cac = r.stats.get("companion:ac"), chp = r.stats.get("companion:hp:max");
+      if (cac > 0 && cac !== ac) { ac = cac; notes.push("AC worked out with your statistics."); }
+      if (chp > 0) { if (chp !== hp) notes.push("Hit points worked out with your level and statistics."); hp = chp; }
+    }
   }
   return { name: beast.name, kind, rules, ac, hp, tempHp, speed: set.speed?.value ?? "", abilities, saves, skills, notes };
 }

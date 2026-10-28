@@ -38,4 +38,17 @@ describe.skipIf(!C)("summoned companions", () => {
     const slot = r.slots.find((s) => s.rule.type === "Companion" && /primal companion/i.test(s.rule.name));
     expect(slot?.options.map((o) => o.name).sort()).toEqual(["Beast of the Land", "Beast of the Sea", "Beast of the Sky"]);
   }, 600000);
+
+  it("works out the Steel Defender for its artificer: AC 15, hit points 2 + Intelligence + 5 per level", async () => {
+    const { formStats } = await import("./forms");
+    let ch = newCharacter();
+    ch.classes = [{ classId: "ID_WOTC_TCOE_CLASS_ARTIFICER", level: 5 }];
+    ch.abilityBase = { ...ch.abilityBase, intelligence: 16 };
+    const slot = resolve(ch, reg).slots.find((s) => s.rule.type === "Archetype")!;
+    ch = { ...ch, selections: { [slot.key]: [slot.options.find((o) => /battle smith/i.test(o.name))!.id] } };
+    const r = resolve(ch, reg);
+    const sd = r.active.find((a) => a.el.type === "Companion")!.el;
+    const b = formStats(r, sd, "companion");
+    expect([b.ac, b.hp]).toEqual([15, 2 + 3 + 25]);
+  }, 600000);
 });

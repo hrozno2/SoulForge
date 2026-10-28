@@ -215,8 +215,9 @@ export function planFor(el: AElement, kind: "class" | "background", reg: ARegist
     const p = parseItems(found.text);
     plan.variants.push({ label: "Starting equipment", fixed: p.refs, gp: p.gp, choices: [] });
   }
-  // A 2014 class can take rolled gold instead of the gear (2024 classes have it as an option of their own).
-  if (kind === "class" && plan.variants.length && !isModern(el)) {
+  // A 2014 class can take rolled gold instead of the gear. Lettered options (2024: A the gear, B gold) carry their own
+  // gold choice, so only the older lists, and only from a 2014 book, get the roll.
+  if (kind === "class" && plan.variants.length && found.kind !== "letters" && !isModern(el)) {
     const roll = parseGoldRoll(el.setters["starting gold"]?.value ?? WEALTH_2014[el.name.toLowerCase()]);
     if (roll) plan.variants.push({ label: "Starting gold instead", fixed: [], gp: 0, choices: [], goldRoll: roll });
   }

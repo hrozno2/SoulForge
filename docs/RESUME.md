@@ -1,5 +1,28 @@
 # Where we left off
 
+## Night of 2026-10-27 to 28 (Chris: "keep going with the plan into the night as far as you can get")
+
+New standing rule: a Plutonium analysis is the first step of every feature (memory soulforge-plutonium-reference);
+copy its behaviour and rules facts, never its code (UNLICENSED). Decisions: shop multiplier per character; Drakim keeps
+Soul Forge's Orc (both builds are rules legal); older-build characters get a notice when something no longer lines up.
+
+Done, each committed and pushed (last: see git log), Soul Forge Test rebuilt after each:
+- A2.3 shop money (src/aurora/shop.ts) and C3 the shop on the backpack card; rarity prices and Plutonium's coin rule.
+- A2.13 older-build notice (src/aurora/olderBuild.ts, `checkedWith`).
+- C1.0 typing lag (src/ui/TextField.tsx), C1.0b character cards, C1.1 See options on narrow windows, C1.2 deselect
+  never folds, C1.3 Kind switch for mixed proficiency choices, C1.4 personality switch on the list layout, C1.5
+  spellbook and backpack switches, C1.6 cards drawn once content is in.
+- C2 navigation clean-up, all seven steps. C5.1 tutorial and settings text, C5.2 checked, C5.3 form cards in Play.
+- Full check (run on the evening's code): two gates failed and are fixed: old-key saves lost a +1 (upgradePlusTwo now
+  reads "<id>|<index>" keys), and the edition gate missed the Origin Feat bridge (one predicate,
+  `offeredAcrossEditions`). Both gates pass now.
+
+Open, needing Chris: C1.7 (launch animation details), C4 (design pass to show first), C5.4 (Linux flicker facts),
+UA2 (playtest article). Open, can be done: C5.3's PDF form cards, C5.5 more interface tests, C5.6 board re-draw cost.
+No release cut (none asked; releases only Mon to Thu, 9 to 17, with the full check).
+An e2e run under heavy load (the preview loading all content) once took 13 minutes and failed a narrow-window test;
+alone and rerun it passes. Avoid running e2e while the preview loads content.
+
 ## Overnight run, 2026-10-26 to 27 (Chris: "continue with the plan without usage restrictions ... keep going all night")
 
 Done today: A1.1 to A1.8 (all of A1), the "Coming soon" lock for unsupported playtest content, the class proficiency

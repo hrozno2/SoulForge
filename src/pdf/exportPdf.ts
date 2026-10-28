@@ -1,4 +1,5 @@
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { formStats, type FormKind } from "../aurora/forms";
 import { logEvent } from "../logbook";
 import fontkit from "@pdf-lib/fontkit";
 import type { AElement } from "../aurora/types";
@@ -16,6 +17,8 @@ export interface PdfOptions {
   spellCards: boolean;
   itemCards: boolean;
   featureCards: boolean;
+  /** Wild Shape forms and companions, each worked out for the character (C5.3, src/aurora/forms.ts). */
+  formCards?: boolean;
   tips?: boolean;
   /** The spell pages list every spell the character can prepare, not only the prepared ones. */
   allSpells?: boolean;
@@ -49,6 +52,7 @@ export const DEFAULT_PDF_OPTIONS: PdfOptions = {
   spellCards: true,
   itemCards: true,
   featureCards: true,
+  formCards: true,
   tips: true,
 };
 
@@ -252,7 +256,28 @@ export function cardSources(r: Resolved, sh: SheetData, scope: "prepared" | "all
     .sort((a, b) => Number(a.setters.level?.value ?? 0) - Number(b.setters.level?.value ?? 0) || a.name.localeCompare(b.name));
   const items = r.character.inventory.map((i) => ({ el: i.id ? r.reg.get(i.id) : undefined, qty: i.qty })).filter((x): x is { el: AElement; qty: number } => !!x.el);
   const features = sh.features.filter((x) => ["Feat", "Feat Feature", "Archetype Feature", "Class Feature", "Racial Trait"].includes(x.type));
-  return { spells, items, features };
+  // Forms: the beasts picked in Wild Shape's choices; companions: the rest the character has (granted or added).
+  const formIds = new Set(r.slots.filter((s) => s.rule.type === "Companion" && /\bws beast\b/.test(s.rule.supports ?? "")).flatMap((s) => s.chosen));
+  const companionIds = new Set([...r.active.filter((a) => a.el.type === "Companion" && !formIds.has(a.el.id)).map((a) => a.el.id), ...r.character.companions.map((c) => c.id)]);
+  const el = (id: string) => r.reg.get(id);
+  const forms = [...[...formIds].map((id) => ({ el: el(id), kind: "wild shape" as const })), ...[...companionIds].map((id) => ({ el: el(id), kind: "companion" as const }))]
+    .filter((x): x is { el: AElement; kind: "wild shape" | "companion" } => !!x.el);
+  return { spells, items, features, forms };
+}
+
+/** A form or companion card: its numbers for this character (formStats), then skills and how the numbers came about. */
+function formCard(r: Resolved, el: AElement, kind: FormKind): CardData {
+  const b = formStats(r, el, kind);
+  const sg = (n: number) => (n >= 0 ? `+${n}` : String(n));
+  const abil = Object.entries(b.abilities).map(([k, v]) => [k.slice(0, 3).toUpperCase(), `${v} (${sg(Math.floor((v - 10) / 2))})`] as [string, string]);
+  const skills = b.skills.filter((k) => k.bonus !== 0).sort((x, y) => y.bonus - x.bonus).slice(0, 8).map((k) => `${k.name.replace(/\b\w/g, (c) => c.toUpperCase())} ${sg(k.bonus)}`).join(", ");
+  return {
+    title: el.name,
+    subtitle: kind === "wild shape" ? `Wild Shape form (${b.rules} rules)` : "Companion",
+    stats: [["AC", String(b.ac)], ["HP", b.tempHp ? `${b.hp} + ${b.tempHp} temp` : String(b.hp)], ["Speed", b.speed || "-"], ...abil],
+    body: [skills && `Skills: ${skills}.`, ...b.notes].filter(Boolean).join(" "),
+    kind: "",
+  };
 }
 
 export async function buildPdf(r: Resolved, sh: SheetData, opts: PdfOptions, fonts: FontData): Promise<Uint8Array> {
@@ -260,7 +285,7 @@ export async function buildPdf(r: Resolved, sh: SheetData, opts: PdfOptions, fon
   const t0 = performance.now();
   try {
     const bytes = await buildPdfTranslated(r, sh, opts, fonts);
-    logEvent("export", `Soul Forge PDF for ${r.character.name || "a character"}: ${[opts.sheet && "sheet", opts.spellCards && "spell cards", opts.itemCards && "item cards", opts.featureCards && "feature cards", opts.tips && "tips"].filter(Boolean).join(", ")}${opts.translate ? `, translated to ${opts.translate.target}` : ""}; ${Math.round(bytes.length / 1024)} KB in ${Math.round(performance.now() - t0)} ms`);
+    logEvent("export", `Soul Forge PDF for ${r.character.name || "a character"}: ${[opts.sheet && "sheet", opts.spellCards && "spell cards", opts.itemCards && "item cards", opts.featureCards && "feature cards", opts.formCards !== false && "form cards", opts.tips && "tips"].filter(Boolean).join(", ")}${opts.translate ? `, translated to ${opts.translate.target}` : ""}; ${Math.round(bytes.length / 1024)} KB in ${Math.round(performance.now() - t0)} ms`);
     return bytes;
   } catch (e) {
     logEvent("export", `Soul Forge PDF failed: ${(e as Error).message}`);
@@ -313,6 +338,7 @@ async function buildPdfOnce(r: Resolved, sh: SheetData, opts: PdfOptions, fonts:
   if (opts.spellCards) cards.push(...src.spells.map(spellCard));
   if (opts.itemCards) cards.push(...src.items.map((x) => itemCard(x.el, x.qty)));
   if (opts.featureCards) cards.push(...src.features.map((x) => ({ title: x.name, subtitle: x.type, stats: x.usage ? ([["Uses", x.usage]] as [string, string][]) : [], body: x.text, kind: "" })));
+  if (opts.formCards !== false) cards.push(...src.forms.map((x) => formCard(r, x.el, x.kind)));
   if (cards.length) drawCards(pdf, f, cards, size);
   if (opts.tips) drawTips(pdf, f, r, sh, size);
 
@@ -320,7 +346,7 @@ async function buildPdfOnce(r: Resolved, sh: SheetData, opts: PdfOptions, fonts:
   return pdf.save();
 }
 
-export function cardCounts(r: Resolved, sh: SheetData, scope: "prepared" | "all" = "prepared"): { spells: number; items: number; features: number } {
+export function cardCounts(r: Resolved, sh: SheetData, scope: "prepared" | "all" = "prepared"): { spells: number; items: number; features: number; forms: number } {
   const s = cardSources(r, sh, scope);
-  return { spells: s.spells.length, items: s.items.length, features: s.features.length };
+  return { spells: s.spells.length, items: s.items.length, features: s.features.length, forms: s.forms.length };
 }

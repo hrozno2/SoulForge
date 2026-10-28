@@ -70,6 +70,7 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
           )}
           <label className="check"><input type="checkbox" checked={opts.itemCards} onChange={() => toggle("itemCards")} /> Item cards <small>{counts.items}</small></label>
           <label className="check"><input type="checkbox" checked={opts.featureCards} onChange={() => toggle("featureCards")} /> Feat and feature cards <small>{counts.features}</small></label>
+          {counts.forms > 0 && <label className="check" title="Each Wild Shape form you picked and each companion, with its numbers worked out for you"><input type="checkbox" checked={opts.formCards !== false} onChange={() => setOpts((o) => ({ ...o, formCards: o.formCards === false }))} /> Wild Shape form and companion cards <small>{counts.forms}</small></label>}
           <label className="check"><input type="checkbox" checked={!!opts.tips} onChange={() => setOpts((o) => ({ ...o, tips: !o.tips }))} /> Tips and tricks for play <small>1-2 pages</small></label>
           <div className="row">
             <span className="muted">Paper</span>

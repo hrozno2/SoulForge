@@ -585,7 +585,11 @@ function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, 
   // What a use of this feature spends ("consumes": Turn Undead spends a Channel Divinity), as Plutonium links them.
   const c = f.consumes as J | undefined;
   const setters = c?.name ? { consumes: set(String(c.name), { amount: String(Number(c.amount) || 1) }) } : undefined;
-  return base(id, f.name, type, srcName(ctx, f.source), { description: html, sheet: { display: !hide, descriptions: [{ text: html }] }, supports: [kind], ...(setters ? { setters } : {}) });
+  // A feature named after the creature it tags ("Steel Defender" and its {@creature steel defender|tce}) gives that
+  // creature as a companion (found by name and book once all content is in: registry.ts resolveCreatureRefs).
+  const own = [...JSON.stringify(f.entries ?? []).matchAll(/@creature ([^|}]+)(?:\|([^|}]*))?/g)].find((m) => m[1].trim().toLowerCase() === String(f.name).toLowerCase());
+  const rules: ARule[] = own ? [{ kind: "grant", type: "Companion", id: `CREATUREREF:${own[1].trim().toLowerCase()}|${(own[2] ?? "").trim().toLowerCase()}` } as ARule] : [];
+  return base(id, f.name, type, srcName(ctx, f.source), { description: html, sheet: { display: !hide, descriptions: [{ text: html }] }, supports: [kind], rules, ...(setters ? { setters } : {}) });
 }
 
 function languageElement(l: J, ctx: Ctx): AElement {
@@ -1250,11 +1254,29 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     // reads these references: an empty class or subclass source is the PHB, an empty feature source the subclass's).
     // Without a list, the features that name this class and subclass.
     const refs = ((s.subclassFeatures as unknown[]) ?? []).map((x) => String(typeof x === "string" ? x : (x as J).subclassFeature ?? "")).filter(Boolean);
-    const byRef = refs.map((uid) => {
+    const lookup = (uid: string): J | undefined => {
       const [name, className, classSource, shortName, subSource, level, source] = uid.split("|").map((p) => p.trim());
       const cs = (classSource || "PHB").toLowerCase(), ss = (subSource || "PHB").toLowerCase(), fs = (source || subSource || "PHB").toLowerCase();
       return data.sf.find((x) => x.name.toLowerCase() === name.toLowerCase() && String(x.className).toLowerCase() === className.toLowerCase() && String(x.classSource ?? "PHB").toLowerCase() === cs && String(x.subclassShortName).toLowerCase() === shortName.toLowerCase() && String(x.subclassSource ?? "PHB").toLowerCase() === ss && Number(x.level) === Number(level) && String(x.source).toLowerCase() === fs);
-    }).filter((x): x is J => !!x);
+    };
+    // The listed features, then every feature they refer to outside a "choose" block ("Battle Smith" at level 3 holds
+    // Steel Defender, Battle Ready and the tool proficiency as references): those are part of the subclass too.
+    const byRef: J[] = [];
+    const queue = refs.map(lookup).filter((x): x is J => !!x);
+    while (queue.length) {
+      const f = queue.shift()!;
+      if (byRef.includes(f)) continue;
+      byRef.push(f);
+      const walk = (x: unknown) => {
+        if (Array.isArray(x)) { for (const y of x) walk(y); return; }
+        if (!x || typeof x !== "object") return;
+        const e = x as J;
+        if (e.type === "options") return;
+        if (e.type === "refSubclassFeature") { const g = lookup(String(e.subclassFeature)); if (g && !byRef.includes(g)) queue.push(g); return; }
+        if (e.entries) walk(e.entries);
+      };
+      walk(f.entries);
+    }
     const features = byRef.length ? byRef : data.sf.filter((x) => x.className === c.name && x.subclassShortName === (s.shortName ?? s.name) && (x.subclassSource ?? s.source) === s.source && (x.classSource ?? c.source) === c.source);
     for (const f of features) {
       const fid = ftId("SF", `${s.shortName ?? s.name} ${f.name}`, f.source, `${f.level}${f.header ?? ""}`);

@@ -123,3 +123,16 @@ src/aurora/fivetools.ts and src/aurora/foundry.ts read. Not read, and why it is 
   Divinity: Turn Undead", or a usage of "Channel Divinity"), the sheet links each feature to its pool, and Play's
   "Use" spends from the pool's pips (src/aurora/consumes.test.ts). Found on the way: a sheet entry with uses but no
   text of its own lost its uses (Aurora's 2014 Channel Divinity had no pips).
+
+## Summoned companions (A0.1, 2026-10-28)
+
+Plutonium's Foundry data gives a feature that summons a "summon" activity whose profiles name the creature
+(`@creature[steel defender|efa]`; the 2024 Beast Master's Primal Companion names three beasts). Soul Forge now reads
+it: one creature is given as the feature's companion, several are a choice (src/aurora/foundry.ts), resolved by name
+and book in any loaded content (registry.ts `resolveCreatureRefs`, so 5e.tools' Battle Smith finds Aurora's Steel
+Defender when the 5e.tools bestiary lacks it). Where the Foundry data has no summon (Tasha's Battle Smith), a feature
+named after the creature it tags gives it.
+
+Found on the way, a regression from A2.12: a 5e.tools subclass took its features only from its own list, which names
+the header features; the features those headers refer to (the Battle Smith's Steel Defender, Battle Ready, its tool
+proficiency) were not converted. The subclass loop now follows those references (src/aurora/summons.test.ts).

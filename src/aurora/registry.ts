@@ -196,6 +196,7 @@ export class ARegistry {
       if (!el.lore) { const l = lore.get(twinKey(el)); if (l) el.lore = l; }
       if (!el.attacks?.length) { const a = attacks.get(twinKey(el)); if (a) el.attacks = a; }
     }
+    resolveCreatureRefs(this.byId);
     markComingSoon(this.byId);
     background2024Choices(this.byId);
     this.skillFixes = alignClassSkills(this.byId);
@@ -340,6 +341,37 @@ function improvementOptions(all: AElement[]): AElement[] {
  * +2 was impossible (A1.9). Such a choice becomes one pick of "+2 to one ability" or "+1 to two abilities", over the
  * same abilities, the way the class improvements already are. Only where the element's text says so ("by 2, or").
  */
+/**
+ * "CREATUREREF:<name>|<book>" (a summon in Plutonium's Foundry data, src/aurora/foundry.ts) to the creature's element:
+ * the named book's, else that name from any provider (Aurora's Steel Defender for 5e.tools' Battle Smith, whose
+ * creature the 5e.tools data may not include). A creature found nowhere is dropped, so nothing points at nothing.
+ */
+export function resolveCreatureRefs(byId: Map<string, AElement>): void {
+  let creatures: Map<string, AElement[]> | undefined;
+  const find = (ref: string): string | undefined => {
+    creatures ??= (() => {
+      const m = new Map<string, AElement[]>();
+      for (const e of byId.values()) if (e.type === "Companion") { const k = e.name.toLowerCase(); (m.get(k) ?? m.set(k, []).get(k)!).push(e); }
+      return m;
+    })();
+    const [name, book] = ref.slice("CREATUREREF:".length).split("|");
+    const list = creatures.get(name) ?? [];
+    // 5e.tools creatures carry the book in their id (ID_5ET_CREATURE_<BOOK>_<NAME>); else any provider's of that name.
+    return (list.find((e) => book && e.id.toLowerCase().startsWith(`id_5et_creature_${book}_`)) ?? list[0])?.id;
+  };
+  for (const el of byId.values()) {
+    if (!el.rules.some((r) => (r.kind === "grant" && String(r.id).startsWith("CREATUREREF:")) || (r.kind === "select" && String(r.supports ?? "").includes("CREATUREREF:")))) continue;
+    el.rules = el.rules.flatMap((r) => {
+      if (r.kind === "grant" && String(r.id).startsWith("CREATUREREF:")) { const id = find(String(r.id)); return id ? [{ ...r, id }] : []; }
+      if (r.kind === "select" && String(r.supports ?? "").includes("CREATUREREF:")) {
+        const ids = [...new Set(String(r.supports).split("|").map((x) => (x.startsWith("CREATUREREF:") ? find(x) : x)).filter((x): x is string => !!x))];
+        return ids.length ? [{ ...r, supports: ids.join("|") }] : [];
+      }
+      return [r];
+    });
+  }
+}
+
 function plusTwoChoices(all: AElement[]): AElement[] {
   const out: AElement[] = [];
   const asi = all.filter((e) => e.type === "Ability Score Improvement");

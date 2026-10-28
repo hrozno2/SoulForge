@@ -327,6 +327,15 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
               const dieFormula = scaleDie(String(part?.custom?.formula ?? ""));
               if (dieFormula) attacks.push({ ...base, die: "", dieFormula });
             }
+            // A summon (Plutonium's routing: the Steel Defender, the Primal Companion's beasts): the creature it calls
+            // becomes the feature's companion, a choice when there are several. Named here, found by name and book
+            // in any loaded content once everything is in (registry.ts resolveCreatureRefs).
+            if (a.type === "summon" && !el.rules.some((x) => (x.kind === "grant" || x.kind === "select") && x.type === "Companion")) {
+              const refs = ((a.profiles as J[]) ?? []).map((p) => /@creature\[([^\]|]+)(?:\|([^\]]*))?\]/i.exec(String(p.uuid ?? ""))).filter((m): m is RegExpExecArray => !!m).map((m) => `CREATUREREF:${m[1].trim().toLowerCase()}|${(m[2] ?? "").trim().toLowerCase()}`);
+              const uniq = [...new Set(refs)];
+              if (uniq.length === 1) added.push({ kind: "grant", type: "Companion", id: uniq[0] } as ARule);
+              else if (uniq.length > 1) added.push({ kind: "select", type: "Companion", name: `${e.name}: companion`, supports: uniq.join("|"), number: 1 } as ARule);
+            }
             if (a.type === "save") {
               const abil = String(a.save?.dc?.calculation ?? "");
               const featureStat = `${e.name.toLowerCase().replace(/\s*\(.*\)\s*$/, "")}:dc`;

@@ -243,4 +243,25 @@ describe("two hands", () => {
     expect(res.inventory.find((i) => i.uid === "a")!.twoHanded).toBe(false);
     expect(res.inventory.find((i) => i.uid === "a")!.equipped).toBe(false);
   });
+
+  it("flags a spell learned again in a later choice while another was free (repeatedPicks, spells)", async () => {
+    const { repeatedPicks } = await import("./rulesCheck");
+    const ch = newCharacter();
+    ch.classes = [{ classId: "ID_SF_CLASS_SPELLSINGER", level: 4 }];
+    const slots = resolve(ch, reg).slots.filter((s) => s.rule.type === "Spell" && /Cantrip/.test(s.rule.name));
+    const [first, later] = [slots.find((s) => s.rule.level === 1)!, slots.find((s) => s.rule.level === 4)!];
+    const dart = "ID_SF_SPELL_EMBER_DART";
+    const picked = { ...ch, selections: { [first.key]: [dart, "ID_SF_SPELL_SOFT_LIGHT"], [later.key]: [dart] } };
+    const r = resolve(picked, reg);
+    expect(repeatedPicks(r, r.slots.find((s) => s.key === later.key)!).join()).toMatch(/Ember Dart \(already learned in Cantrip/);
+    expect(repeatedPicks(r, r.slots.find((s) => s.key === first.key)!)).toEqual([]);
+  });
+
+  it("fills a level 20 Spellsinger without learning any spell twice (the test content has enough spells)", () => {
+    const ch = newCharacter();
+    ch.classes = [{ classId: "ID_SF_CLASS_SPELLSINGER", level: 20 }];
+    const r = resolve(autoFill(ch, reg), reg);
+    const ids = r.slots.filter((s) => s.rule.type === "Spell").flatMap((s) => s.chosen);
+    expect(ids.filter((x, i) => ids.indexOf(x) !== i)).toEqual([]);
+  });
 });

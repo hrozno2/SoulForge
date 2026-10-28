@@ -54,4 +54,46 @@
 		<setters><set name="level">1</set><set name="school">Divination</set><set name="time">1 action</set><set name="duration">Instantaneous</set><set name="range">1 mile</set>
 			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">false</set><set name="hasMaterialComponent">false</set><set name="isConcentration">false</set><set name="isRitual">true</set></setters>
 	</element>
+	<element name="Marching Cadence" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_MARCHING_CADENCE">
+		<supports>Spellsinger</supports>
+		<description><p>Up to three creatures that hear the beat gain 10 feet of walking speed until the spell ends.</p></description>
+		<setters><set name="level">1</set><set name="school">Transmutation</set><set name="time">1 bonus action</set><set name="duration">1 minute</set><set name="range">30 feet</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">false</set><set name="hasMaterialComponent">false</set><set name="isConcentration">false</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Wistful Refrain" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_WISTFUL_REFRAIN">
+		<supports>Spellsinger</supports>
+		<description><p>One creature must make a Wisdom saving throw or have disadvantage on its next attack roll each turn while it can hear you.</p></description>
+		<setters><set name="level">1</set><set name="school">Enchantment</set><set name="time">1 action</set><set name="duration">Concentration, up to 1 minute</set><set name="range">60 feet</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">false</set><set name="hasMaterialComponent">false</set><set name="isConcentration">true</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Ringing Note" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_RINGING_NOTE">
+		<supports>Spellsinger</supports>
+		<description><p>A clear note strikes a creature: it makes a Constitution saving throw and takes 1d10 thunder damage on a failed save.</p></description>
+		<setters><set name="level">1</set><set name="school">Evocation</set><set name="time">1 action</set><set name="duration">Instantaneous</set><set name="range">90 feet</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">false</set><set name="hasMaterialComponent">false</set><set name="isConcentration">false</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Harmony of Hands" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_HARMONY_OF_HANDS">
+		<supports>Spellsinger</supports>
+		<description><p>Up to four allies who join your song gain 5 temporary hit points and advantage on saving throws against being frightened.</p></description>
+		<setters><set name="level">2</set><set name="school">Abjuration</set><set name="time">1 action</set><set name="duration">10 minutes</set><set name="range">30 feet</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">false</set><set name="hasMaterialComponent">false</set><set name="isConcentration">false</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Silent Measure" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_SILENT_MEASURE">
+		<supports>Spellsinger</supports>
+		<description><p>No sound can be made or pass within a 20-foot sphere you choose.</p></description>
+		<setters><set name="level">2</set><set name="school">Illusion</set><set name="time">1 action</set><set name="duration">Concentration, up to 10 minutes</set><set name="range">120 feet</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">false</set><set name="hasMaterialComponent">false</set><set name="isConcentration">true</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Chorus of Echoes" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_CHORUS_OF_ECHOES">
+		<supports>Spellsinger</supports>
+		<description><p>Three echoing copies of your voice confuse enemies within 20 feet of a point: each must make a Wisdom saving throw or lose its reaction until the start of its next turn.</p></description>
+		<setters><set name="level">3</set><set name="school">Illusion</set><set name="time">1 action</set><set name="duration">Concentration, up to 1 minute</set><set name="range">60 feet</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">false</set><set name="hasMaterialComponent">false</set><set name="isConcentration">true</set><set name="isRitual">false</set></setters>
+	</element>
+	<element name="Anthem of Dawn" type="Spell" source="Hollow Realms" id="ID_SF_SPELL_ANTHEM_OF_DAWN">
+		<supports>Spellsinger</supports>
+		<description><p>Each ally in range regains 2d6 hit points, and each undead in range makes a Wisdom saving throw or takes 3d6 radiant damage.</p></description>
+		<setters><set name="level">3</set><set name="school">Evocation</set><set name="time">1 action</set><set name="duration">Instantaneous</set><set name="range">Self (30-foot radius)</set>
+			<set name="hasVerbalComponent">true</set><set name="hasSomaticComponent">false</set><set name="hasMaterialComponent">false</set><set name="isConcentration">false</set><set name="isRitual">false</set></setters>
+	</element>
 </elements>

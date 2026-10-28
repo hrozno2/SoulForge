@@ -157,6 +157,15 @@ export function repeatedPicks(r: Resolved, s: Resolved["slots"][number]): string
       if (got && got.from && got.from !== s.owner.id) out.push(`${s.rule.name}: ${r.reg.get(id)?.name} (already from ${r.reg.get(got.from)?.name ?? "another choice"}); choose another`);
     }
   }
+  // A spell already learned in an earlier choice (a Songbook at level 1 and again at level 3): the same owner grants
+  // both, so the check above cannot see it; the earlier choice keeps it, this one is the repeat.
+  if (s.rule.type === "Spell" && hasOther) {
+    const at = r.slots.indexOf(s);
+    for (const id of s.chosen) {
+      const earlier = r.slots.slice(0, at).find((o) => o.rule.type === "Spell" && o.key !== s.key && o.chosen.includes(id));
+      if (earlier) out.push(`${s.rule.name}: ${r.reg.get(id)?.name} (already learned in ${earlier.rule.name}${earlier.rule.level ? ` at level ${earlier.rule.level}` : ""}); choose another`);
+    }
+  }
   return out;
 }
 

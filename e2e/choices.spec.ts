@@ -7,21 +7,22 @@ test.use({ viewport: { width: 1600, height: 900 }, storageState: { cookies: [], 
 test("deselecting never folds a choice; picking folds it (C1.2)", async ({ page }) => {
   await addTestContent(page);
   await randomCharacter(page, 3);
+  // An Emberkin: its "Ember gift" is a one-pick choice shown as a list (the random species varies).
+  await page.evaluate(() => {
+    const p = JSON.parse(localStorage.getItem("charforge.current.v2")!);
+    p.ch.race = "ID_SF_RACE_EMBERKIN";
+    localStorage.setItem("charforge.current.v2", JSON.stringify(p));
+  });
+  await page.reload();
   await tab(page, "Build");
-  const subs = page.locator("nav.subtabs button");
-  let key: string | null = null;
-  for (let t = 0; t < (await subs.count()) && !key; t++) {
-    await subs.nth(t).click();
-    for (const head of await page.locator(".slot.done .slot-head").all()) {
-      const text = (await head.textContent()) ?? "";
-      if (/1\/1/.test(text)) { key = await head.locator("xpath=../..").getAttribute("data-slot"); break; }
-    }
-  }
-  expect(key, "a filled one-pick choice").not.toBeNull();
+  await page.locator("nav.subtabs button", { hasText: "Species" }).click();
+  const head = page.locator(".slot-head", { hasText: "Ember gift" });
+  const key = await head.locator("xpath=../..").getAttribute("data-slot");
+  expect(key, "Ember gift").not.toBeNull();
   const slot = page.locator(`[data-slot="${key}"] > .slot`);
   const body = slot.locator(".slot-body");
-  // Pick another option (a default one too becomes a real pick): it folds.
-  await slot.locator(".slot-head").click();
+  // Open it (an unfilled choice starts open), then pick another option (a default one too becomes a real pick): it folds.
+  if (!(await body.count())) await slot.locator(".slot-head").click();
   await expect(body).toBeVisible();
   await body.locator(".opt-row:not(.picked):not(.dim) .opt-main").first().click();
   await expect(body).toHaveCount(0);

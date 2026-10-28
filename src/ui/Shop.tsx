@@ -36,7 +36,7 @@ export function Shop({ r, ch, set }: { r: Resolved; ch: Character; set: SetChara
         {ch.rarityPrices && <span>Magic items by rarity</span>}
         {msg && <span className="notice" role="status">{msg}</span>}
       </div>
-      <Browse items={items} type="Item" chosen={[]} onPick={onBuy} disabledReason={why} defaultView="list" allowCards={false} viewKey="shop.Item" perPage={60}
+      <Browse items={items} type="Item" chosen={[]} onPick={onBuy} disabledReason={why} defaultView="list" allowCards={false} viewKey="shop.Item" defaultLocked="hide" perPage={60}
         rowLabel={(el) => (priceCp(el, !!ch.rarityPrices) !== undefined ? formatCp(buyCost(ch, el)) : undefined)}
         pickLabel={(el) => (priceCp(el, !!ch.rarityPrices) !== undefined ? `Buy · ${formatCp(buyCost(ch, el))}` : "Buy")} />
     </section>

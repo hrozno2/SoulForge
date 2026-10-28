@@ -125,6 +125,8 @@ export interface BrowseProps {
   hero?: { kicker: string; title: string };
   onHover?: (el: AElement) => void;
   pickLabel?: (el: AElement) => string;
+  /** Whether options that cannot be taken show grayed out or hide, until the player switches (kept per list). */
+  defaultLocked?: "show" | "hide";
   /** A short label at the end of each list row (the shop's price). */
   rowLabel?: (el: AElement) => string | undefined;
   perPage?: number;
@@ -158,11 +160,11 @@ const ITEM_ICON: Record<string, (p: { size?: number }) => React.ReactNode> = { W
 /** The drag data type for an element type, so a drop target can tell what is over it before the drop. */
 export const dragMime = (type: string) => `application/x-sf-${type.toLowerCase().replace(/[^a-z]/g, "")}`;
 
-export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap: swapProp, disabledReason: reasonProp, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, rowLabel, perPage = 48, defaultSort, draggable, barExtra, mini, viewKey, showAll, need }: BrowseProps) {
+export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap: swapProp, disabledReason: reasonProp, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, rowLabel, defaultLocked, perPage = 48, defaultSort, draggable, barExtra, mini, viewKey, showAll, need }: BrowseProps) {
   const { books, learn } = useUi();
   const [view, setView] = useStored<"cards" | "list">(viewKey ?? `view.${type}`, defaultView);
   const [sort, setSort] = useStored<SortMode>(`sort.${type}`, defaultSort ?? (type === "Spell" ? "level" : "recommended"));
-  const [lockMode, setLockMode] = useStored<"show" | "hide">(`locked.${type}`, "show");
+  const [lockMode, setLockMode] = useStored<"show" | "hide">(defaultLocked && viewKey ? `locked.${viewKey}` : `locked.${type}`, defaultLocked ?? "show");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState<Selected>({});

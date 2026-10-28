@@ -599,7 +599,7 @@ function textProficiencies(entries: unknown, out?: AElement[]): ARule[] {
   const TOOLS = new Set(Object.values(TOOL_KINDS).flat());
   for (const m of text.matchAll(/\byou (?:also )?gain proficiency (?:in|with) (.+?)(?:\.|,? (?:and you|if|but|while|when|which)\b|"|$)/gi)) {
     for (const raw of m[1].split(/,\s*(?:and\s+)?|\s+and\s+/)) {
-      const x = raw.trim().toLowerCase().replace(/^the\s+/, "");
+      const x = raw.trim().toLowerCase().replace(/[’‘`]/g, "'").replace(/^the\s+/, "");
       let r: RegExpExecArray | null;
       if ((r = /^(strength|dexterity|constitution|intelligence|wisdom|charisma) saving throws?$/.exec(x))) rules.push({ kind: "grant", type: "Proficiency", id: `ID_5ET_SAVE_${slug(r[1])}` });
       else if ((r = /^(light|medium|heavy) armor$/.exec(x))) rules.push({ kind: "grant", type: "Proficiency", id: ARMOR_IDS[r[1]] });

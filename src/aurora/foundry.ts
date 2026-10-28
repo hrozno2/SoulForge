@@ -109,7 +109,8 @@ export function scaleDie(formula: string): { count: string; faces: string } | un
 export function translateFormula(v: unknown): string | undefined {
   if (typeof v === "number") return String(v);
   if (typeof v === "boolean") return v ? "1" : "0";
-  let s = String(v ?? "").trim();
+  // A leading sign ("+ 10", Mobile's speed in Plutonium's data) is the change's own direction, not part of the number.
+  let s = String(v ?? "").trim().replace(/^\+\s*/, "");
   if (!s) return undefined;
   let bad = false;
   s = s.replace(/@[\w.]+/g, (t) => {

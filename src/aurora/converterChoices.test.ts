@@ -54,3 +54,14 @@ describe.skipIf(!C)("proficiencies from feature text", () => {
     for (const id of ids) expect(r.ids.has(id), id).toBe(true);
   }, 600000);
 });
+
+describe.skipIf(!C)("Plutonium effects with a signed value", () => {
+  it("gives the 5e.tools Mobile feat its +10 speed", () => {
+    const reg = loadTestContent(C!);
+    const feat = reg.ofType("Feat").find((f) => f.name === "Mobile" && f.id.startsWith("ID_5ET_") && /2014|Player's Handbook$/.test(f.source) || (f.name === "Mobile" && f.id === "ID_5ET_FEAT_PHB_MOBILE"));
+    if (!feat) return;
+    const ch = newCharacter(); ch.classes = [{ classId: "ID_WOTC_PHB_CLASS_FIGHTER", level: 1 }];
+    const base = resolve(ch, reg).stats.get("speed");
+    expect(resolve({ ...ch, extras: [feat.id] }, reg).stats.get("speed")).toBe(base + 10);
+  }, 600000);
+});

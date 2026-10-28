@@ -334,7 +334,9 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
               const refs = ((a.profiles as J[]) ?? []).map((p) => /@creature\[([^\]|]+)(?:\|([^\]]*))?\]/i.exec(String(p.uuid ?? ""))).filter((m): m is RegExpExecArray => !!m).map((m) => `CREATUREREF:${m[1].trim().toLowerCase()}|${(m[2] ?? "").trim().toLowerCase()}`);
               const uniq = [...new Set(refs)];
               if (uniq.length === 1) added.push({ kind: "grant", type: "Companion", id: uniq[0] } as ARule);
-              else if (uniq.length > 1) added.push({ kind: "select", type: "Companion", name: `${e.name}: companion`, supports: uniq.join("|"), number: 1 } as ARule);
+              // Several: an optional choice (the Beast Master's beast; a spell-like summon such as Phantasmal Creatures'
+              // spirits is temporary, and its creatures may not be loaded), never one the character must make.
+              else if (uniq.length > 1) added.push({ kind: "select", type: "Companion", name: `${e.name}: companion`, supports: uniq.join("|"), number: 1, optional: true } as ARule);
             }
             if (a.type === "save") {
               const abil = String(a.save?.dc?.calculation ?? "");

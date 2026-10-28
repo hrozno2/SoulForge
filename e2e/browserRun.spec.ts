@@ -27,12 +27,12 @@ test("browser run: random characters, every card checked", async ({ page }) => {
     const kinds = await spaces.evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.tile ?? ""));
     for (const kind of kinds) {
       await page.locator(`[data-tile=${kind}]`).click();
-      const back = page.locator(".card-back").first();
+      const back = page.locator(".card-window").first();
       if (!(await back.count())) continue;
       await page.screenshot({ path: `${dir}/${i}-${kind}.png` });
       const text = await back.innerText();
       if (/\bundefined\b|\bNaN\b|(^|\s)\?(\s|$)/.test(text)) report.push(`${i} ${kind}: odd text`);
-      await page.locator(".card-back button", { hasText: "Done" }).first().click();
+      await back.getByRole("button", { name: /^Close / }).click();
     }
     const verdict = await page.locator(".rules-check-head").innerText().catch(() => "");
     report.push(`${i}: ${verdict.replace(/\s+/g, " ").trim()}`);

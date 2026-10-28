@@ -29,11 +29,12 @@ test.describe("Build board", () => {
     await backside.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
     await expect(backside).toHaveCount(0);
     await expect(page.locator("[data-tile=race] h3")).toHaveText(name);
-    // Clicking the card turns it over to edit; × undoes nothing that was not changed, and closes it.
+    // Clicking the card opens it in a floating window (C4) to edit its choices; × closes it.
     await page.locator("[data-tile=race] .chosen-banner").click();
-    await expect(backside).toBeVisible();
-    await backside.getByRole("button", { name: "Undo the changes" }).click();
-    await expect(backside).toHaveCount(0);
+    const win = page.locator(".float-window.card-window-race");
+    await expect(win).toBeVisible();
+    await win.getByRole("button", { name: /^Close / }).click();
+    await expect(win).toHaveCount(0);
     await expect(page.locator("[data-tile=race] h3")).toHaveText(name);
 
     // Scores: point buy shows the points left, and a plus raises a score.
@@ -76,16 +77,16 @@ test("the shop on the backpack buys with the purse and the inventory sells back 
   await page.getByRole("button", { name: /Inventory/ }).first().click();
   await page.locator(".coin", { hasText: "GP" }).locator("input").fill("100");
   await page.getByRole("button", { name: /Shop/ }).first().click();
-  const shop = page.locator(".card-back .shop");
+  const shop = page.locator(".card-window .shop");
   await expect(shop.locator(".summary")).toContainText("100 gp");
   const row = shop.locator(".opt-row:not(.dim)", { has: page.locator(".opt-label") }).first();
   const name = (await row.locator(".opt-name").textContent())!.trim();
   await row.locator(".opt-main").click();
   await expect(shop.locator(".summary")).toContainText(`Bought ${name}`);
   await page.getByRole("button", { name: /Inventory/ }).first().click();
-  const line = page.locator(".card-back table.inv tr", { hasText: name }).first();
+  const line = page.locator(".card-window table.inv tr", { hasText: name }).first();
   await line.getByRole("button", { name: /^Sell/ }).click();
-  await expect(page.locator(".card-back table.inv tr", { hasText: name })).toHaveCount(0);
+  await expect(page.locator(".card-window table.inv tr", { hasText: name })).toHaveCount(0);
 });
 
 test("blank details never count as a choice; the board's Details button opens them (C2)", async ({ page }) => {

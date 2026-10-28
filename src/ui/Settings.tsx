@@ -1,8 +1,9 @@
 import { CLASS_ICON_CREDIT } from "./classIcons";
+import { gpuStatus, setGpuFast } from "../system";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { backupFileName, isBackup, makeBackup, restoreBackup } from "../aurora/backup";
+import { exportLibrary, importLibrary } from "./library";
 import { backupStore } from "../aurora/storage";
-import { pickFiles, saveFile } from "../store";
+import { pickFiles } from "../store";
 import { SCHOOL_CREDIT } from "./schoolIcons";
 import { CONDITION_CREDIT } from "./conditionIcons";
 import { LANGUAGES, setLanguage, t, type Lang } from "../i18n";
@@ -98,19 +99,14 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", esc);
   }, [onClose]);
   const [msg, setMsg] = useState("");
+  const [gpu, setGpu] = useState({ applies: false, on: false });
+  useEffect(() => { void gpuStatus().then(setGpu); }, []);
   const [dates, setDates] = useState<string[]>([]);
   useEffect(() => { backupStore.dates().then(setDates); }, []);
-  const backUp = async () => {
-    const json = JSON.stringify(await makeBackup(), null, 2);
-    const ok = await saveFile(backupFileName(), new TextEncoder().encode(json), "application/json");
-    setMsg(ok ? "Backup saved." : "Cancelled.");
-  };
+  const backUp = async () => setMsg(await exportLibrary());
   const restoreFrom = async (text: string) => {
     try {
-      const v = JSON.parse(text);
-      if (!isBackup(v)) throw new Error("That is not a Soul Forge backup file.");
-      const r = await restoreBackup(v, "merge");
-      setMsg(`Restored: ${r.added} added, ${r.updated} updated, ${r.kept} already newer here.`);
+      setMsg(await importLibrary(JSON.parse(text)));
     } catch (e) {
       setMsg(`Could not restore: ${(e as Error).message}`);
     }
@@ -202,6 +198,12 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           <label className="set-row">
             <span><b>Show the test controls</b><small className="muted"> The test build's bar at the top; off makes it look like the released app</small></span>
             <input type="checkbox" checked={!s.hideTestTools} onChange={(e) => updateSettings({ hideTestTools: !e.target.checked })} />
+          </label>
+        )}
+        {gpu.applies && (
+          <label className="set-row">
+            <span><b>Fast drawing on NVIDIA</b><small className="muted"> Experimental: keeps WebKit's GPU path, which older NVIDIA drivers crash on. Takes effect at the next start; if that start fails to draw, it turns itself off.</small></span>
+            <input type="checkbox" checked={gpu.on} onChange={async (e) => { const on = e.target.checked; await setGpuFast(on); setGpu((g) => ({ ...g, on })); }} />
           </label>
         )}
         <div className="set-row">

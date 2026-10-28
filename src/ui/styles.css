@@ -2038,3 +2038,45 @@ button.board-bar { display: block; width: 100%; padding: 0; background: var(--bg
 /* "Use" on a feature that spends another's uses (Play). */
 .feature-row .spend { padding: 1px 8px; font-size: 11.5px; }
 .feature-row .spend small { color: var(--muted); }
+
+/* ================= Floating windows and the Bag of Holding (C4, src/ui/Floating.tsx) ================= */
+.float-window { position: fixed; display: flex; flex-direction: column; background: var(--panel); border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent); border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.5); overflow: hidden; }
+.float-bar { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; background: color-mix(in srgb, var(--gold) 14%, var(--panel2)); border-bottom: 1px solid var(--line); cursor: grab; touch-action: none; user-select: none; }
+.float-bar:active { cursor: grabbing; }
+.float-bar b { flex: 1; font: 700 14px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.float-tools { display: flex; gap: 4px; }
+.float-tools button { padding: 0 8px; line-height: 22px; }
+.float-body { flex: 1; overflow: auto; padding: 10px 14px; }
+.float-resize { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; touch-action: none; background: linear-gradient(135deg, transparent 50%, color-mix(in srgb, var(--gold) 60%, transparent) 50%); }
+.float-notice { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 2000; padding: 8px 14px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--gold); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.bag-of-holding { position: fixed; left: 14px; bottom: 14px; z-index: 390; width: 250px; max-height: 50vh; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-radius: 12px; background: color-mix(in srgb, #2a1d3d 85%, var(--panel)); border: 1px solid color-mix(in srgb, #a57bdc 50%, transparent); box-shadow: 0 10px 30px rgba(0,0,0,.45); transition: transform .5s, opacity .5s; }
+.bag-head { display: flex; align-items: center; gap: 8px; color: #cdb4f0; }
+.bag-head b { font: 700 13px var(--display); }
+.bag-items { list-style: none; margin: 0; padding: 0; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+.bag-item { display: flex; gap: 4px; filter: saturate(.35); opacity: .85; }
+.bag-item:hover { filter: none; opacity: 1; }
+.bag-take { flex: 1; text-align: left; font-size: 12.5px; padding: 3px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bag-remove { padding: 0 7px; }
+.bag-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.bag-actions button { font-size: 11.5px; padding: 2px 8px; }
+/* The wormhole: the bag spins away into a point, then a fresh one drops in (transform and opacity only). */
+.bag-of-holding.swallow { transform: rotate(540deg) scale(.05); opacity: 0; transition: transform .6s cubic-bezier(.55,0,.8,.4), opacity .6s; }
+.reduce-motion .bag-of-holding, .reduce-motion .bag-of-holding.swallow { transition: none; }
+.learn-float { position: absolute; top: 12px; right: 52px; font-size: 12px; padding: 3px 10px; }
+.csearch-list li { display: flex; align-items: stretch; }
+.csearch-list li > button:first-child { flex: 1; }
+.csearch-float { padding: 0 10px; }
+
+/* Class card tabs (C4): the starting class plain, each multiclass its own violet look. */
+.class-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+.class-tab { display: flex; flex-direction: column; align-items: flex-start; padding: 4px 12px; border-radius: 8px 8px 0 0; border: 1px solid var(--line); border-bottom-width: 3px; background: var(--panel2); }
+.class-tab small { font: 600 9.5px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.class-tab b { font: 700 14px var(--display); }
+.class-tab.on { border-bottom-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--panel2)); }
+.class-tab.multiclass { border-color: color-mix(in srgb, #a57bdc 55%, transparent); }
+.class-tab.multiclass small { color: #c3a6ec; }
+.class-tab.multiclass.on { border-bottom-color: #a57bdc; background: color-mix(in srgb, #a57bdc 16%, var(--panel2)); }
+.class-tab-body.multiclass { border-left: 3px solid #a57bdc; padding-left: 12px; background: linear-gradient(90deg, color-mix(in srgb, #a57bdc 8%, transparent), transparent 40%); }
+/* A card in a floating window: the card's own colour along the title bar. */
+.card-window .float-bar { border-bottom: 2px solid hsl(var(--hue, 40) 60% 55%); }
+.card-window .card-back-body { padding: 0; }

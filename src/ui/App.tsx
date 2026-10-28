@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { logSystemOnce } from "../system";
 import { TextInput } from "./TextField";
 import { logEvent, timed } from "../logbook";
 import { withGrantedItems } from "../aurora/grantedItems";
@@ -22,7 +23,10 @@ import { outdatedFiveTools } from "../aurora/content";
 import { DetailPanel } from "./DetailPanel";
 import { UpdateBanner } from "./UpdateBanner";
 import { DicePanel, setRollContext } from "./Dice";
-import { UiProvider } from "./Learn";
+import { LearnBody, UiProvider } from "./Learn";
+import { FloatingProvider, type FloatWindow } from "./Floating";
+import { BookIndex } from "../aurora/books";
+import type { ARegistry } from "../aurora/registry";
 import { ThemePicker } from "./Theme";
 import { HelpButton } from "./Help";
 import { AppMenu, GroupNav } from "./TopBar";
@@ -105,6 +109,8 @@ export function App() {
   const content = useContent();
   // Launched on another tab than Home: the pack opens when the content is ready (the home screen signals otherwise).
   useEffect(() => { if (tab !== "start" && content.ready) launchReady(); }, [tab, content.ready]);
+  // The machine, in the log once per start (C5.7), after the first paint (also the NVIDIA switch's "it drew" signal).
+  useEffect(() => { requestAnimationFrame(() => requestAnimationFrame(() => void logSystemOnce())); }, []);
   // 5e.tools content imported by an older importer lacks files this version reads: ask for a fresh import, once per
   // launch, until it is done.
   const [reimportLater, setReimportLater] = useState(false);
@@ -232,6 +238,7 @@ export function App() {
   const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play" && tab !== "manage" && !(tab === "build" && board);
 
   return (
+    <FloatingProvider characterId={id} render={(w) => <FloatingContent w={w} reg={content.reg} />}>
     <UiProvider reg={content.reg}>
       <LaunchIntro onDone={endIntro} />
     <div className="app">
@@ -364,5 +371,14 @@ export function App() {
       )}
     </div>
     </UiProvider>
+    </FloatingProvider>
   );
+}
+
+/** What a floating window shows (C4): a compendium entry's full text; the board's cards come with step 2. */
+function FloatingContent({ w, reg }: { w: FloatWindow; reg: ARegistry }) {
+  const books = useMemo(() => new BookIndex(reg), [reg]);
+  const el = w.kind === "entry" ? reg.get(w.ref) : undefined;
+  if (!el) return <p className="muted">This is not in the loaded content any more.</p>;
+  return <LearnBody el={el} books={books} />;
 }

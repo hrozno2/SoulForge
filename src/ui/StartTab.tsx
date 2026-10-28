@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { exportLibrary, importLibrary, isBackup } from "./library";
 import { deleteCharacterRecord, listCharacters, type CharacterRecord } from "../aurora/storage";
 import { normalizeCharacter, uid, type Character } from "../aurora/character";
 import { downloadText, pickFiles } from "../store";
@@ -56,8 +57,11 @@ export function StartTab({
   const importJson = async (f: File | undefined) => {
     if (!f) return;
     try {
-      const raw = JSON.parse(await f.text()) as Character;
-      if (raw.version !== 2) throw new Error("This is not a Soul Forge character file. Foundry and Roll20 exports go through the Import button next to it.");
+      const parsed = JSON.parse(await f.text());
+      // A whole library (from "Export library" or a Settings backup) restores next to the characters here.
+      if (isBackup(parsed)) { setMsg(await importLibrary(parsed)); refresh(); return; }
+      const raw = parsed as Character;
+      if (raw.version !== 2) throw new Error("This is not a Soul Forge character or library file. Foundry and Roll20 exports go through the Import button next to it.");
       onOpen(uid(), normalizeCharacter(raw));
       setMsg("");
     } catch (e) {
@@ -80,7 +84,8 @@ export function StartTab({
         <div className="row">
           <button className="primary" onClick={onNew}>{t("New character")}</button>
           <button onClick={() => setAskLevel((v) => !v)} disabled={sourceCount === 0} aria-expanded={askLevel}>{t("Random character")}</button>
-          <button onClick={async () => { const f = await pickFiles(["json"]); if (f === null) fileRef.current?.click(); else if (f[0]) importJson(f[0]); }}>Open file (.json)</button>
+          <button title="A character file, or a whole library file" onClick={async () => { const f = await pickFiles(["json"]); if (f === null) fileRef.current?.click(); else if (f[0]) importJson(f[0]); }}>Open file (.json)</button>
+          <button title="Every character in one file, to keep or to carry to another device; open it here with Open file" onClick={async () => setMsg(await exportLibrary())}>Export library</button>
           <button onClick={async () => { const f = await pickFiles(["json"]); if (f === null) foreignRef.current?.click(); else if (f[0]) setMsg(await onImportForeign(f[0])); }}>Import Foundry / Roll20 / Plutonium</button>
           <input ref={fileRef} type="file" accept=".json" hidden onChange={(e) => { importJson(e.target.files?.[0]); e.target.value = ""; }} />
           <input ref={foreignRef} type="file" accept=".json" hidden onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) setMsg(await onImportForeign(f)); }} />

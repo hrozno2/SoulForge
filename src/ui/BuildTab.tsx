@@ -41,7 +41,8 @@ function ChosenOrCards({ kicker, title, label, items, value, onPick, onClear, on
  * The chosen classes with their levels and choices. `picker` off leaves picking a class to the caller (the build
  * board lists them beside); `compact` shows each class as a plain row, for when its card is already on show.
  */
-export function ClassPanel({ r, ch, set, onDetail, picker = true, compact = false }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; picker?: boolean; compact?: boolean }) {
+/** `only`: one class's choices (the class card's tab for it, C4); the class rows stay, for levels and removing. */
+export function ClassPanel({ r, ch, set, onDetail, picker = true, compact = false, only }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; picker?: boolean; compact?: boolean; only?: string }) {
   const classes = r.reg.ofType("Class").filter((c) => !c.compendiumHidden);
   const [adding, setAdding] = useState(false);
   const level = totalLevel(ch);
@@ -99,7 +100,7 @@ export function ClassPanel({ r, ch, set, onDetail, picker = true, compact = fals
           disabledReason={ch.classes.length ? (c) => multiclassLock(r, c) : undefined}
         />
       )}
-      {ch.classes.map((c) => {
+      {ch.classes.filter((c) => !only || c.classId === only).map((c) => {
         const slots = r.slots.filter((s) => tabOfSlot(s) === "class" && s.root === `class:${c.classId}`);
         const el = r.reg.get(c.classId);
         return (

@@ -5,6 +5,7 @@
  * training on the right. The same rules and choices as the tab layout (BuildTab), arranged differently.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { WindowFrame, useFloating } from "./Floating";
 import { detailsBlank } from "./ManageTab";
 import { Shop } from "./Shop";
 import { TextInput } from "./TextField";
@@ -650,6 +651,36 @@ function SourcePicker({ g, activeId, onPick, strip = false }: { g: Group; active
   );
 }
 
+/**
+ * The class card's body: one tab per class (C4, Chris 2026-10-28). The starting class's tab is the card's own; each
+ * further class is a "Multiclass" tab with its own look, holding that class's choices, training and features.
+ */
+function ClassTabs({ r, ch, set, ownSlots }: { r: Resolved; ch: Character; set: SetCharacter; ownSlots: (root: (root: string) => boolean) => Resolved["slots"] }) {
+  const [active, setActive] = useState(ch.classes[0]?.classId ?? "");
+  const cur = ch.classes.some((c) => c.classId === active) ? active : ch.classes[0]?.classId ?? "";
+  const i = ch.classes.findIndex((c) => c.classId === cur);
+  const extra = ownSlots((root) => root === `class:${cur}`).filter((s) => tabOfSlot(s) !== "class");
+  return (
+    <>
+      {ch.classes.length > 1 && (
+        <nav className="class-tabs" role="tablist" aria-label="Classes">
+          {ch.classes.map((c, n) => (
+            <button key={c.classId} role="tab" aria-selected={c.classId === cur} className={`class-tab ${n > 0 ? "multiclass" : ""} ${c.classId === cur ? "on" : ""}`} onClick={() => setActive(c.classId)}>
+              <small>{n === 0 ? "Starting class" : "Multiclass"}</small>
+              <b>{r.reg.get(c.classId)?.name ?? c.classId} {c.level}</b>
+            </button>
+          ))}
+        </nav>
+      )}
+      <div className={`class-tab-body ${i > 0 ? "multiclass" : ""}`}>
+        <ClassPanel r={r} ch={ch} set={set} onDetail={() => undefined} picker={false} compact only={cur} />
+        {extra.length > 0 && <><h3>{r.reg.get(cur)?.name} training and feats</h3><SlotList slots={extra} r={r} set={set} onDetail={() => undefined} /></>}
+        <PassiveFeatures r={r} root={(root) => root === `class:${cur}`} />
+      </div>
+    </>
+  );
+}
+
 /** The portrait in an arched frame at the top of the right column, with the name and what the character is. Click to change it. */
 function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
   const [open, setOpen] = useState(false);
@@ -774,8 +805,17 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   // The spellbook's and backpack's own view on their card back: only the prepare-spells picker, only the inventory
   // (C1.5) or the shop (C3), toggled by clicking the book, the pack or the purse; null shows everything.
   const [backView, setBackView] = useState<"prepare" | "inventory" | "shop" | null>(null);
-  /** Turns a filled card over to edit its choices (quickly; Done turns it back). */
-  const openBack = (kind: Kind) => { setFocus(kind); setBack({ kind, mode: "edit", snap: ch, from: null, name: "", phase: "open" }); };
+  /**
+   * Opens a filled card to edit its choices: a floating window (C4), several at once, draggable, into the Bag of
+   * Holding and back; without the window layer (tests), the card turns over in place as before.
+   */
+  const floating = useFloating();
+  const cardTitle = (kind: Kind) => (kind === "class" ? ch.classes.map((c) => r.reg.get(c.classId)?.name ?? "?").join(" / ") || "Class" : kind === "race" ? chosenEl.race?.name ?? "Species" : kind === "background" ? chosenEl.background?.name ?? "Background" : kind === "magic" ? "Your spells" : "Your inventory");
+  const openBack = (kind: Kind) => {
+    setFocus(kind);
+    if (floating) floating.open({ kind: "card", ref: kind, title: cardTitle(kind) });
+    else setBack({ kind, mode: "edit", snap: ch, from: null, name: "", phase: "open" });
+  };
   /** Done (keep) or × (undo everything since the card turned over). */
   const finish = (keep: boolean) => {
     const b = back;
@@ -1073,18 +1113,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     <>
           {kind === "race" && (chosenEl.race ? <><SlotList slots={ownSlots((root) => root === "race")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your species." /><PassiveFeatures r={r} root={(root) => root === "race"} /></> : <p className="muted">Choose a species from the list on the left, or drag one onto its space.</p>)}
           {kind === "class" && (ch.classes.length ? (
-            <>
-              <ClassPanel r={r} ch={ch} set={set} onDetail={() => undefined} picker={false} compact />
-              {ch.classes.map((c) => {
-                const extra = ownSlots((root) => root === `class:${c.classId}`).filter((s) => tabOfSlot(s) !== "class");
-                return (
-                  <section key={c.classId}>
-                    {extra.length > 0 && <><h3>{r.reg.get(c.classId)?.name} training and feats</h3><SlotList slots={extra} r={r} set={set} onDetail={() => undefined} /></>}
-                    <PassiveFeatures r={r} root={(root) => root === `class:${c.classId}`} />
-                  </section>
-                );
-              })}
-            </>
+            <ClassTabs r={r} ch={ch} set={set} ownSlots={ownSlots} />
           ) : <p className="muted">Choose a class from the list on the left, or drag one onto its space. Adding another class later makes a multiclass.</p>)}
           {kind === "background" && (chosenEl.background ? <><PersonalitySwitch r={r} set={set} /><SlotList slots={ownSlots((root) => root === "background")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your background." /><PassiveFeatures r={r} root={(root) => root === "background"} /></> : <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>)}
           {kind === "magic" && (caster ? (
@@ -1237,6 +1266,13 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         )}
       </section>
 
+      {/* The card windows (C4): each open card's choices, the same as its back, in a floating window. */}
+      {floating && floating.windows.filter((w) => w.kind === "card" && !w.bagged && ["race", "class", "background", "magic", "equipment"].includes(w.ref)).map((w) => createPortal(
+        <WindowFrame key={w.id} w={{ ...w, title: cardTitle(w.ref as Kind) }} api={floating} className={`card-window card-window-${w.ref}`}>
+          <div className="card-back-body" style={{ ["--hue" as string]: HUE[w.ref as Kind] }}>{choicesFor(w.ref as Kind)}</div>
+        </WindowFrame>,
+        document.body,
+      ))}
       <StatsPanel onMouseLeave={leave("right")} r={r} ch={ch} set={set} onIncreases={(root) => { setSide(null); openBack(root === "race" ? "race" : root === "background" ? "background" : "class"); }} />
     </div>
   );

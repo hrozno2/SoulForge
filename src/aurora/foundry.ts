@@ -109,7 +109,8 @@ export function scaleDie(formula: string): { count: string; faces: string } | un
 export function translateFormula(v: unknown): string | undefined {
   if (typeof v === "number") return String(v);
   if (typeof v === "boolean") return v ? "1" : "0";
-  let s = String(v ?? "").trim();
+  // A leading sign ("+ 10", Mobile's speed in Plutonium's data) is the change's own direction, not part of the number.
+  let s = String(v ?? "").trim().replace(/^\+\s*/, "");
   if (!s) return undefined;
   let bad = false;
   s = s.replace(/@[\w.]+/g, (t) => {
@@ -207,6 +208,8 @@ function changeRules(key: string, mode: string, value: unknown, out: AElement[])
   if ((m = /^system\.skills\.(\w+)\.bonuses\.(check|passive)$/.exec(key)) && SKILL[m[1]] && val) return [stat(m[2] === "passive" ? `${SKILL[m[1]]}:passive` : `${SKILL[m[1]]}:misc`, val)];
   if ((m = /^system\.bonuses\.(mwak|rwak|msak|rsak)\.(attack|damage)$/.exec(key)) && val) {
     if (m[1] === "rsak") return "display"; // the same bonus as msak: one spell attack line
+    // A die ("+ 1d8" to spell damage) is no flat bonus: it stays in the feature's text, not in a number.
+    if (/\d*d\d/.test(val)) return "display";
     return [stat(m[1] === "mwak" ? `melee:${m[2]}` : m[1] === "rwak" ? `ranged:${m[2]}` : `spellcasting:${m[2]}`, val)];
   }
   if (key === "system.bonuses.spell.dc" && val) return [stat("spellcasting:dc", val)];

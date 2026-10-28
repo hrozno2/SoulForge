@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useFloating } from "./Floating";
 import { useUi } from "./Learn";
 
 /** Search everything that is loaded from anywhere in the app. Ctrl or Cmd with K, or Alt with Q, jumps here. */
@@ -38,10 +39,13 @@ export function CompendiumSearch() {
     };
   }, []);
 
-  const pick = (i: number) => {
+  const floating = useFloating();
+  // Enter or a click reads it in the popup; Shift+Enter or "⧉" opens it in a window of its own (C4, as 5e.tools does).
+  const pick = (i: number, float = false) => {
     const el = hits[i];
     if (!el) return;
-    learn(el);
+    if (float && floating) floating.open({ kind: "entry", ref: el.id, title: el.name });
+    else learn(el);
     setOpen(false);
     setWide(false);
   };
@@ -68,7 +72,7 @@ export function CompendiumSearch() {
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") { e.preventDefault(); setAt((a) => Math.min(hits.length - 1, a + 1)); }
           else if (e.key === "ArrowUp") { e.preventDefault(); setAt((a) => Math.max(0, a - 1)); }
-          else if (e.key === "Enter") pick(at);
+          else if (e.key === "Enter") pick(at, e.shiftKey);
           else if (e.key === "Escape") { setOpen(false); setWide(false); }
         }}
       />
@@ -82,6 +86,7 @@ export function CompendiumSearch() {
                 <small>{h.type}</small>
                 <small className="muted">{h.source}</small>
               </button>
+              {floating && <button className="csearch-float" title="Open in a window of its own (Shift+Enter)" aria-label={`Open ${h.name} in a window`} onClick={() => pick(i, true)}>⧉</button>}
             </li>
           ))}
         </ul>

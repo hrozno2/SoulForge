@@ -410,6 +410,25 @@ function Uses({ f, ch, set }: { f: FeatureLine; ch: Character; set: SetCharacter
   );
 }
 
+/**
+ * "Use" on a feature that spends another's uses (Turn Undead spends a Channel Divinity; 5e.tools' "consumes", as
+ * Plutonium links an activity to its resource): one click takes the uses from the pool feature's pips.
+ */
+function Spends({ f, ch, set, sheet }: { f: FeatureLine; ch: Character; set: SetCharacter; sheet: SheetData }) {
+  const c = f.consumes;
+  const pool = c ? sheet.features.find((p) => p.id === c.id) : undefined;
+  const n = Number(/^(\d+)\s*\//.exec(pool?.usage ?? "")?.[1]) || 0;
+  if (!c || !pool || !n) return null;
+  const used = Math.min(n, ch.play.featureUses[pool.id] ?? 0);
+  const left = n - used;
+  return (
+    <button className="spend" disabled={left < c.amount} title={`Spends ${c.amount} ${c.name}: ${left} of ${n} left`}
+      onClick={() => set((x) => ({ ...x, play: { ...x.play, featureUses: { ...x.play.featureUses, [pool.id]: Math.min(n, (x.play.featureUses[pool.id] ?? 0) + c.amount) } } }))}>
+      Use <small>({left} {c.name} left)</small>
+    </button>
+  );
+}
+
 function FeatureRow({ f, ch, set, sheet }: { f: FeatureLine; ch: Character; set: SetCharacter; sheet: SheetData }) {
   const [open, setOpen] = useState(false);
   return (
@@ -421,6 +440,7 @@ function FeatureRow({ f, ch, set, sheet }: { f: FeatureLine; ch: Character; set:
       </button>
       <FavStar ch={ch} set={set} kind="feature" refId={f.id} />
       <Uses f={f} ch={ch} set={set} />
+      <Spends f={f} ch={ch} set={set} sheet={sheet} />
       <RollChips name={f.name} html={f.text} ctx={dcContext(sheet)} attackBonus={sheet.casting[0]?.attack} />
       {open && <p className="feature-text">{f.text || "No description."}</p>}
     </div>

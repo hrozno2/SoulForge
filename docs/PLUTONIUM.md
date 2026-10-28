@@ -119,4 +119,7 @@ src/aurora/fivetools.ts and src/aurora/foundry.ts read. Not read, and why it is 
 - classes `spellsKnownProgressionFixedAllowLowerLevel`: a Wizard's spellbook may take lower-level spells; the spell
   choices already allow every level up to the highest the class can cast.
 - class and subclass features `consumes` (139): which resource a feature uses up (Plutonium links a feature's activity
-  to the resource it spends). Worth doing for Play's resource tracking: **open** (A0.1 follow-up).
+  to the resource it spends). **Done 2026-10-28:** the converter keeps it, Aurora's content says it by name ("Channel
+  Divinity: Turn Undead", or a usage of "Channel Divinity"), the sheet links each feature to its pool, and Play's
+  "Use" spends from the pool's pips (src/aurora/consumes.test.ts). Found on the way: a sheet entry with uses but no
+  text of its own lost its uses (Aurora's 2014 Channel Divinity had no pips).

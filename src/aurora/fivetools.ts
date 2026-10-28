@@ -582,7 +582,10 @@ function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
 
 function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, hide = false): AElement {
   const html = entriesHtml(f.entries);
-  return base(id, f.name, type, srcName(ctx, f.source), { description: html, sheet: { display: !hide, descriptions: [{ text: html }] }, supports: [kind] });
+  // What a use of this feature spends ("consumes": Turn Undead spends a Channel Divinity), as Plutonium links them.
+  const c = f.consumes as J | undefined;
+  const setters = c?.name ? { consumes: set(String(c.name), { amount: String(Number(c.amount) || 1) }) } : undefined;
+  return base(id, f.name, type, srcName(ctx, f.source), { description: html, sheet: { display: !hide, descriptions: [{ text: html }] }, supports: [kind], ...(setters ? { setters } : {}) });
 }
 
 function languageElement(l: J, ctx: Ctx): AElement {

@@ -77,6 +77,8 @@ export interface FeatureLine {
   action?: string;
   /** Maximum uses if the element has a `:usage` style stat, else 0. */
   level: number;
+  /** The feature whose uses this one spends, and how many (Turn Undead spends a Channel Divinity). */
+  consumes?: { id: string; name: string; amount: number };
 }
 
 export interface SheetData {
@@ -142,7 +144,9 @@ export const stripHtml = (s: string): string =>
 
 function sheetText(a: ActiveElement, r: Resolved): { text: string; usage?: string; action?: string } {
   const sh = a.el.sheet;
-  if (!sh || !sh.descriptions.length) return { text: withSenses(a, r, stripHtml(a.el.description)) };
+  // No sheet text of its own: the description, but still the sheet's uses and action (Aurora's 2014 Channel Divinity
+  // has only "{{channel divinity:count}}/Short Rest").
+  if (!sh || !sh.descriptions.length) return { text: withSenses(a, r, stripHtml(a.el.description)), usage: sh?.usage ? fillTemplate(sh.usage, r) : undefined, action: sh?.action };
   // The description whose level is the highest not above the owner's level, plus level-less ones.
   const plain = sh.descriptions.filter((d) => d.level === undefined);
   const leveled = sh.descriptions.filter((d) => d.level !== undefined && d.level <= a.ownerLevel).sort((x, y) => x.level! - y.level!);
@@ -574,6 +578,18 @@ export function buildSheet(r: Resolved): SheetData {
       action: t.action,
       level: a.ownerLevel,
     });
+  }
+
+  // A feature that spends another's uses: the content says so ("consumes", from 5e.tools), or its name does ("Channel
+  // Divinity: Turn Undead" spends Channel Divinity, Aurora's way). Linked to the pool when the sheet has one with uses.
+  for (const f of features) {
+    const el = r.reg.get(f.id);
+    // Aurora also names the pool as the feature's usage ("Turn Undead", usage "Channel Divinity").
+    const usageNames = f.usage && !/\d/.test(f.usage) ? f.usage : undefined;
+    const named = el?.setters.consumes?.value ?? usageNames ?? /^([^:]{3,40}):\s*\S/.exec(f.name)?.[1] ?? /^([^:]{3,40}):\s*\S/.exec(el?.name ?? "")?.[1];
+    if (!named) continue;
+    const pool = features.find((p) => p !== f && p.usage && p.name.toLowerCase() === named.trim().toLowerCase());
+    if (pool) f.consumes = { id: pool.id, name: pool.name, amount: Number(el?.setters.consumes?.attrs?.amount) || 1 };
   }
 
   const carried =

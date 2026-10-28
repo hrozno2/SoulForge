@@ -11,23 +11,33 @@ import type { Finding } from "./rulesCheck";
 /** Choices still to make are shown by the Build tab's badges, not here. */
 const OPEN_CHOICE = /^A required choice is not made$/;
 
-/** Picks a choice holds that it no longer offers (or now rules out). */
+/** Picks a choice holds that it no longer offers (or now rules out), one line per choice: "Cantrip: A, B (now ruled out)". */
 export function picksNoLongerOffered(r: Resolved): Finding[] {
-  const out: Finding[] = [];
+  const lines = new Map<string, { gone: string[]; out: string[] }>();
   for (const s of r.slots) {
     if (s.rule.type === "List" || s.defaulted) continue;
     for (const id of s.chosen) {
       if (s.options.some((o) => o.id === id) && !s.blocked.has(id)) continue;
-      out.push({ rule: "A pick is no longer offered", detail: `${s.rule.name}: ${r.reg.get(id)?.name ?? id}${s.blocked.has(id) ? " (now ruled out)" : ""}` });
+      const line = lines.get(s.rule.name) ?? lines.set(s.rule.name, { gone: [], out: [] }).get(s.rule.name)!;
+      (s.blocked.has(id) ? line.out : line.gone).push(r.reg.get(id)?.name ?? id);
     }
   }
-  return out;
+  const uniq = (xs: string[]) => [...new Set(xs)].join(", ");
+  return [...lines].map(([name, l]) => ({
+    rule: "A pick is no longer offered",
+    detail: `${name}: ${[l.gone.length ? uniq(l.gone) : "", l.out.length ? `${uniq(l.out)} (now ruled out)` : ""].filter(Boolean).join("; ")}`,
+  }));
 }
 
 /** What no longer lines up for this character: picks no longer offered, then the rules check's findings. */
 export function misalignments(r: Resolved, findings: Finding[]): Finding[] {
   const seen = new Set<string>();
-  return [...picksNoLongerOffered(r), ...findings.filter((f) => !OPEN_CHOICE.test(f.rule))].filter((f) => {
+  const stale = picksNoLongerOffered(r);
+  // "Choice: Pick" pairs the stale lines already name; the rules check's "does not meet its requirements" for the same
+  // pick says it again.
+  const named = new Set(stale.flatMap((f) => { const [choice, rest] = f.detail.split(/: (.*)/s); return (rest ?? "").replace(/\s*\(now ruled out\)/g, "").split(/[;,]\s*/).map((p) => `${choice}: ${p.trim()}`); }));
+  const said = (f: Finding) => /does not meet its requirements/.test(f.rule) && named.has(f.detail.trim());
+  return [...stale, ...findings.filter((f) => !OPEN_CHOICE.test(f.rule) && !said(f))].filter((f) => {
     const k = `${f.rule}|${f.detail}`;
     return !seen.has(k) && !!seen.add(k);
   });

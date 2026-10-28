@@ -2,6 +2,19 @@
 
 What changed in each release. Newest first.
 
+## v0.21.0 (2026-10-28)
+
+- RESUME: the two releases of 2026-10-28
+- Ignore node_modules as a symlink too; drop the one the worktree branch carried
+- Foundry: a dice bonus to attacks or damage stays text, not a number
+- Foundry effects with a signed value ("+ 10": Mobile's speed) apply; smith's tools with a curly apostrophe (A0.1)
+- Converter: proficiencies a feature's text names exactly (saves, armor, martial weapons, a skill, a tool), as the Aurora twins grant (A0.1)
+- Board cards open as floating windows; the class card has a tab per class, multiclass tabs in their own style (C4 steps 2-3)
+- Floating windows and the Bag of Holding (C4 step 1): compendium entries open as windows like 5e.tools
+- Converter: languages chosen from a list; species start on their standard subrace (A0.1)
+- Home: Export library, and Open file restores a library file (C5.8)
+- System specs in the log and the bug report; an NVIDIA fast-drawing switch that turns itself off after a failed start (C5.7)
+
 ## v0.20.0 (2026-10-28)
 
 - C4 answers recorded; C5.7 system specs, C5.8 library export on Home added to the plan

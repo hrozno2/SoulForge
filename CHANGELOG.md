@@ -2,6 +2,61 @@
 
 What changed in each release. Newest first.
 
+## v0.20.0 (2026-10-28)
+
+- C4 answers recorded; C5.7 system specs, C5.8 library export on Home added to the plan
+- Class improvement choices: the usual feat list (search, filters, versions, locks), not a wall of buttons
+- Linux lag (C5.4): DMA-BUF renderer off only on NVIDIA; no animated drop-shadows or backdrop blur. UA2: infusions' days after death
+- RESUME: companion numbers, notice grouping, Jev skipped
+- Older-build notice: one line per choice, and no second line for the same ruled-out pick
+- Companion cards work out AC and hit point formulas ("5 + five times your Ranger level", "13 + your Wisdom modifier", "+ PB")
+- Companion cards: the content's worked-out AC and hit points (Steel Defender AC 15, HP 2 + Int + 5/level), not added on top
+- A summon with several creatures is an optional companion choice, never a required one
+- RESUME: the A2.12 regression for the next release notes
+- Summoned companions as Plutonium routes them; 5e.tools subclasses get the features their headers refer to again
+- Rules check: a spell count short only by open picks is the open choice, not a second finding
+- RESUME: FastCharacter import work
+- FastCharacter import: cantrips from attack lines and species traits; picks that repeat are taken back
+- RESUME: A0.1 cross-checks of the night
+- Play: features that spend another's uses (Turn Undead, a Channel Divinity) have a Use button, as Plutonium links them (A0.1)
+- Plutonium notes: field sweep of the 5e.tools converter; consumes left open for Play
+- Magic Initiate's spell-list versions let the player choose the casting ability, as Plutonium asks (A0.1)
+- Gold roll only for the older starting-equipment lists; lettered options have their own gold (fixes 15e5fc0's failing test)
+- 2014 classes can roll for starting gold instead of their gear, as Plutonium offers (A0.1)
+- C4 design pass for review: state model, behaviour, tests and four questions (docs/C4-DESIGN.md)
+- Interface tests for every creation path and the on-request browser run (C5.5)
+- PDF export: Wild Shape form and companion cards, worked out for the character (C5.3)
+- C5.6 measured: 8 to 15 ms a change in the production build, no hot spot; left until Linux numbers
+- RESUME: the night of 2026-10-27 to 28
+- Favorites reorder by dragging within the row or with move buttons (C2 step 7; C2 done)
+- Manage: no right-hand lore panel; each row has an i that opens the full description (C2 step 6)
+- Character details move to Build: a Details dialog from the board, Play, the badge and Open notes; blank details never count as a choice (C2 step 5)
+- Manage's "Level and hit points" leaves for Play, after a parity check (C2 step 3)
+- Navigation: Manage and Content are two tabs; the character's books move to Content; Conditions get a Play tab (C2 steps 1, 2, 4)
+- Play: forms worked out for the character as cards; 2024 Wild Shape keeps your hit points with temporary ones (C5.3)
+- Tutorial asks for all of Aurora and all of 5e.tools; Settings explains the content filters (C5.1, C5.2 checked)
+- Shop opens on what can be bought: unpriced and unaffordable items hidden until shown
+- Shop on the backpack card: buy with the purse, sell at half, multiplier and rarity prices per character (C3)
+- Home draws character cards only once the content is in, no gold placeholders (C1.6)
+- Board: spellbook and backpack switch their card back to Prepare spells or Inventory (C1.5)
+- Full check fixes: old-key saves keep both +1s; one cross-edition exception for policy, rules check and gate
+- Personality switch on the list layout's Background tab too (C1.4)
+- Mixed proficiency choices get a Kind switch (C1.3), as Plutonium sorts them
+- Choices: deselecting never folds a one-pick choice (C1.2)
+- See options: a second click closes the list and its panel on a narrow window (C1.1)
+- Character cards: HP bar, AC shield, speed; best three scores with the rest on hover (C1.0b)
+- Character text fields hand their text on after a pause (C1.0)
+- Shop money (A2.3) and older-build notice (A2.13), checked against Plutonium
+- Edition policy: Aurora's 2024 Origin Feat bridge for 2014 backgrounds; Stage B user data test
+- A2.12 subclass features by reference (Plutonium), class-only multiclass slots, inherit ability as Plutonium, XUA sources, gate pairs by book; Plutonium as the base in the plan
+- A4 playtest support (audit, naming, reference, granted items, inherit); A2.11 app logs
+- Plan: C1.0b character card layout (HP bar, AC shield, speed; three best scores, the rest on hover)
+- A3.2 every sheet: coverage test per field, printed sheets get fillable fields, player name, next level XP, unarmored AC
+- A3.1 class audit: attack ability from feature text (Hex Warrior, Pact of the Blade, Battle Ready), Gunner firearms; A3.3 parity coverage and fixes (effects with a duration, :misc double count, option progressions)
+- A2.5 scale dice in data attacks; A2.6 beast forms for the character; A2.7 log file on disk; A2.8 measured (render, Stage C); A3.3 coverage per element type
+- A2.10 Foundry export matches Foundry's own actor (Drakim): dnd5e item types, every feature, Foundry names
+- RESUME: v0.19.0 released
+
 ## v0.19.0 (2026-10-27)
 
 - A1.9 ability score increases: +2 to one ability and Foundry's check-box grid; A1.10; A2.9 modern technology filter; A2.4 round trip clean

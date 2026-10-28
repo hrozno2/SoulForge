@@ -72,3 +72,20 @@ My suggested answer comes first in each; any other answer changes the design abo
 Also worth a word: should the board's layout change at all when many cards are out (for example, the cards tile
 themselves side by side on a "Tidy up" button)? Suggested: a "Tidy up" button that lines the open cards up, nothing
 automatic.
+
+## Chris's answers (2026-10-28)
+
+1. **Only the board's cards float.** The lists on the left stay fixed; a card can be put in the bag to look at the
+   lists. **New:** the compendium (search) window can open entries as floating windows, as 5e.tools does.
+2. **Two cards of a kind compare.** Two class cards are two classes side by side to compare. A multiclass is not a
+   second card: it is a separate tab on the class card, a "multiclass card" with its own visual style.
+3. **The layout survives a restart, per character**, kept outside the character file. The whole library already
+   exports to one file and imports from it (Settings, "Back up all characters"); it moves to Home as well and will
+   carry the card layouts.
+4. **Mouse, trackpad and touch all matter** (pointer events).
+5. **"Tidy up"** lines the open cards up, and **"Put everything in the bag"** minimizes every card into the bag; the
+   board never rearranges on its own.
+
+So the state model above changes: `CardWindow.kind` gains "compendium" (an entry opened from the search window);
+a class card holds one tab per class of the character (the multiclass tabs), and a second class card is a comparison
+of a class the character does not have.

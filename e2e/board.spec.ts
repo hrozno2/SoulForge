@@ -53,6 +53,21 @@ test.describe("Build board", () => {
   });
 });
 
+test("the backpack on its card back switches to the inventory alone and back (C1.5)", async ({ page }) => {
+  await addTestContent(page);
+  await randomCharacter(page, 3);
+  await tab(page, "Build");
+  await page.locator("[data-tile=equipment]").click();
+  const pack = page.getByRole("button", { name: /Inventory/ }).first();
+  await expect(pack).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator(".board-lib-sub", { hasText: "All items" })).toBeVisible();
+  await pack.click();
+  await expect(pack).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".board-lib-sub", { hasText: "All items" })).toHaveCount(0);
+  await pack.click();
+  await expect(page.locator(".board-lib-sub", { hasText: "All items" })).toBeVisible();
+});
+
 test.describe("Build board on a narrow window", () => {
   test.use({ viewport: { width: 1100, height: 820 } });
   test("the lists open from the edge or a card, step aside while a pick lands, and close when the mouse leaves", async ({ page }) => {

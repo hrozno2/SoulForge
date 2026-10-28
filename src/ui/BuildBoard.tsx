@@ -22,7 +22,7 @@ import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
 import { ChosenBanner, hueOf } from "./PickCards";
 import { RulesCheckBar } from "./RulesCheck";
 import { multiclassLock } from "./multiclass";
-import { MagicTab } from "./MagicTab";
+import { MagicTab, PrepareSpells } from "./MagicTab";
 import { EquipmentTab, ITEM_KINDS, addItem } from "./EquipmentTab";
 import { requestRoll } from "./Dice";
 import { startingPlans } from "../aurora/startingEquipment";
@@ -750,6 +750,9 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const [flyHide, setFlyHide] = useState(false);
   /** The card turned over to its back (its choices): a new pick waiting for Done, or a card opened to edit. */
   const [back, setBack] = useState<Back | null>(null);
+  // The spellbook's and backpack's own view on their card back: only the prepare-spells picker or only the inventory
+  // (C1.5), toggled by clicking the book or the pack; null shows everything.
+  const [backView, setBackView] = useState<"prepare" | "inventory" | null>(null);
   /** Turns a filled card over to edit its choices (quickly; Done turns it back). */
   const openBack = (kind: Kind) => { setFocus(kind); setBack({ kind, mode: "edit", snap: ch, from: null, name: "", phase: "open" }); };
   /** Done (keep) or × (undo everything since the card turned over). */
@@ -863,6 +866,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const chosenEl: Record<"race" | "background", AElement | undefined> = { race: ch.race ? r.reg.get(ch.race) : undefined, background: ch.background ? r.reg.get(ch.background) : undefined };
   const firstClass = ch.classes[0] ? r.reg.get(ch.classes[0].classId) : undefined;
   const caster = sheet.casting.length > 0 || r.slots.some((s) => tabOfSlot(s) === "magic");
+  const prepares = sheet.casting.some((l) => l.prepare);
   const spellCount = sheet.casting.reduce((n, c) => n + c.cantripsKnown.length + c.spells.length, 0);
   // Spells are picked inside their own choices, so a new one is noticed by the count going up.
   const spellsBefore = useRef(spellCount);
@@ -1064,17 +1068,36 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           {kind === "background" && (chosenEl.background ? <><PersonalitySwitch r={r} set={set} /><SlotList slots={ownSlots((root) => root === "background")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your background." /><PassiveFeatures r={r} root={(root) => root === "background"} /></> : <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>)}
           {kind === "magic" && (caster ? (
             <>
-              <div className="card-back-art"><SpellBook f={spellFill} /><span>{spellNeed ? `${spellHave} of ${spellNeed}` : ""}</span></div>
-              <p className="muted card-back-count">{spellNeed ? `${spellHave} of ${spellNeed} spells chosen` : "No spells to choose yet"}</p>
-              <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} />
+              <div className="card-back-art">
+                {prepares ? (
+                  <button className={`card-back-toggle ${backView === "prepare" ? "on" : ""}`} aria-pressed={backView === "prepare"} title={backView === "prepare" ? "Back to all the spells" : "Show only the spells to prepare"} onClick={() => setBackView(backView === "prepare" ? null : "prepare")}>
+                    <SpellBook f={spellFill} /><small>Prepare spells</small>
+                  </button>
+                ) : <SpellBook f={spellFill} />}
+                <span>{spellNeed ? `${spellHave} of ${spellNeed}` : ""}</span>
+              </div>
+              {backView === "prepare" && prepares ? <PrepareSpells r={r} ch={ch} set={set} onDetail={() => undefined} /> : (
+                <>
+                  <p className="muted card-back-count">{spellNeed ? `${spellHave} of ${spellNeed} spells chosen` : "No spells to choose yet"}</p>
+                  <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} prepareElsewhere={prepares} />
+                </>
+              )}
             </>
           ) : <p className="muted">This character does not cast spells yet.</p>)}
           {kind === "equipment" && (
             <>
-              <div className="card-back-art"><Backpack f={packFill} /></div>
-              <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="adding" />
-              <h3 className="board-lib-sub">All items</h3>
-              <Browse items={items} type="Item" chosen={[]} onPick={(el) => addItem(set, el)} defaultView="cards" mini viewKey="board.Item" perPage={60} pickLabel={() => "Add"} />
+              <div className="card-back-art">
+                <button className={`card-back-toggle ${backView === "inventory" ? "on" : ""}`} aria-pressed={backView === "inventory"} title={backView === "inventory" ? "Back to adding items" : "Show only the inventory"} onClick={() => setBackView(backView === "inventory" ? null : "inventory")}>
+                  <Backpack f={packFill} /><small>Inventory</small>
+                </button>
+              </div>
+              {backView !== "inventory" && (
+                <>
+                  <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="adding" />
+                  <h3 className="board-lib-sub">All items</h3>
+                  <Browse items={items} type="Item" chosen={[]} onPick={(el) => addItem(set, el)} defaultView="cards" mini viewKey="board.Item" perPage={60} pickLabel={() => "Add"} />
+                </>
+              )}
               <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="inventory" />
             </>
           )}

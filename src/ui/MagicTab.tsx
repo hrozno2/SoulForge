@@ -51,6 +51,14 @@ function Prepared({ line, r, ch, set, onDetail }: { line: CastingLine; r: Resolv
   );
 }
 
+/** Only the prepare-spells picker, for each casting line that prepares (the spellbook's "Prepare spells" on the board, C1.5). */
+export function PrepareSpells({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
+  const sheet = useMemo(() => buildSheet(r), [r]);
+  const lines = sheet.casting.filter((l) => l.prepare);
+  if (!lines.length) return <p className="muted">Nothing to prepare: this character's spells are always ready.</p>;
+  return <>{lines.map((line) => <section key={line.name} className="card casting"><h2>{line.name}</h2><Prepared line={line} r={r} ch={ch} set={set} onDetail={onDetail} /></section>)}</>;
+}
+
 /** `prepareElsewhere`: the build board prepares spells on the spellbook's back, so the prepared list here is left out. */
 export function MagicTab({ r, ch, set, onDetail, prepareElsewhere = false }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; prepareElsewhere?: boolean }) {
   const sheet = useMemo(() => buildSheet(r), [r]);
@@ -76,7 +84,7 @@ export function MagicTab({ r, ch, set, onDetail, prepareElsewhere = false }: { r
             <h3>Spells and cantrips to learn</h3>
             <SlotList slots={mine} r={r} set={set} onDetail={onDetail} empty="No spells to choose at this level." />
             {line.prepare && !prepareElsewhere && <Prepared line={line} r={r} ch={ch} set={set} onDetail={onDetail} />}
-            {line.prepare && prepareElsewhere && <p className="muted">Prepare today's spells on the spellbook: click its card.</p>}
+            {line.prepare && prepareElsewhere && <p className="muted">Prepare today's spells with "Prepare spells" under the spellbook above.</p>}
             {line.granted.length > 0 && (
               <>
                 <h3>Always prepared</h3>

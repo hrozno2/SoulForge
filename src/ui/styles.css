@@ -1867,6 +1867,11 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 /* The spellbook or backpack stays pinned at the top of its card's back, so it is seen filling while you choose */
 .card-back-art { position: sticky; top: -12px; z-index: 3; margin: -12px -18px 8px; padding: 6px 0 4px; background: linear-gradient(180deg, var(--panel) 75%, transparent); align-items: center; gap: 10px; }
 .card-back-art .board-book, .card-back-art .board-pack { width: 104px; height: 104px; }
+/* The book and the pack on their card back are switches (C1.5): a label under each, lit while its own view shows. */
+.card-back-toggle { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 10px 6px; border-radius: 10px; background: none; border: 1px solid transparent; cursor: pointer; }
+.card-back-toggle:hover, .card-back-toggle:focus-visible { border-color: color-mix(in srgb, var(--gold) 50%, transparent); }
+.card-back-toggle.on { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, transparent); }
+.card-back-toggle small { font: 700 11px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--gold2); }
 .card-back-art span { font: 700 12px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--gold2); }
 .card-back-count { display: none; }
 /* Species and background emblems (line drawings) as ribbon and watermark */

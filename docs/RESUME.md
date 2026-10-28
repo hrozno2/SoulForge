@@ -17,8 +17,11 @@ Done, each committed and pushed (last: see git log), Soul Forge Test rebuilt aft
   reads "<id>|<index>" keys), and the edition gate missed the Origin Feat bridge (one predicate,
   `offeredAcrossEditions`). Both gates pass now.
 
-Open, needing Chris: C1.7 (launch animation details), C4 (design pass to show first), C5.4 (Linux flicker facts),
-UA2 (playtest article). Open, can be done: C5.3's PDF form cards, C5.5 more interface tests, C5.6 board re-draw cost.
+Later the same night: C5.3's PDF form cards, C5.5 (every creation path tested; the browser run, docs/BROWSER-RUN.md;
+it found repeated spells in the test content: rules check now flags a spell learned twice), C5.6 measured (8 to 15 ms,
+left for Linux numbers), the C4 design pass (docs/C4-DESIGN.md).
+Open, needing Chris: C4's four questions (docs/C4-DESIGN.md), C1.7 (launch animation details), C5.4 (Linux flicker
+facts), UA2 (playtest article).
 No release cut (none asked; releases only Mon to Thu, 9 to 17, with the full check).
 An e2e run under heavy load (the preview loading all content) once took 13 minutes and failed a narrow-window test;
 alone and rerun it passes. Avoid running e2e while the preview loads content.

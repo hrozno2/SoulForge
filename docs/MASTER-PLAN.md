@@ -163,6 +163,9 @@ respected. **Design pass first**, shown to Chris, with his open questions answer
 what two cards of one kind mean (multiclass or browsing), whether the layout survives a restart, touch and trackpad
 dragging on Mac and Linux.
 
+**Design pass written 2026-10-28: docs/C4-DESIGN.md** (state model, behaviour, tests, and the four questions with a
+suggested answer each). Waiting for Chris's answers before building.
+
 ### C5. Other interface work
 
 | # | Item | Where it comes from |

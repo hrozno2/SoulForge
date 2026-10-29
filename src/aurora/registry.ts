@@ -203,6 +203,7 @@ export class ARegistry {
     optionalFeatureChoices(this.byId);
     wildShapeChoices(this.byId);
     spellChoicePools(this.byId);
+    requiredChoices(this.byId);
     for (const el of improvementOptions([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
     for (const el of classAsiChoices([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
     for (const el of plusTwoChoices([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
@@ -381,6 +382,22 @@ export function resolveCreatureRefs(byId: Map<string, AElement>): void {
  * level 1 becomes "levels you have slots for". A Wizard's spellbook keeps its six 1st-level spells (they are written
  * in the book and stay), and Mystic Arcanum and the like (a fixed level above 1) keep their level.
  */
+/**
+ * Choices the content marks optional that the rules require (C7.5, Chris 2026-10-29). The Armorer's Armor Model
+ * (Guardian or Infiltrator) is the core of the subclass, not something to leave out. Each entry says why.
+ */
+const REQUIRED_DESPITE_FLAG: { name: RegExp; why: string }[] = [
+  { name: /^(power )?armor model\b/i, why: "Armorer: the armor's model is chosen when the subclass is taken (Tasha's, Eberron)" },
+];
+export function requiredChoices(byId: Map<string, AElement>): number {
+  let n = 0;
+  for (const el of byId.values()) {
+    if (!el.rules.some((r) => r.kind === "select" && r.optional && REQUIRED_DESPITE_FLAG.some((x) => x.name.test(r.name)))) continue;
+    el.rules = el.rules.map((r) => (r.kind === "select" && r.optional && REQUIRED_DESPITE_FLAG.some((x) => x.name.test(r.name)) ? (n++, { ...r, optional: false }) : r));
+  }
+  return n;
+}
+
 const CLASS_OWNED = new Set(["Class", "Archetype", "Class Feature", "Archetype Feature"]);
 
 export function spellChoicePools(byId: Map<string, AElement>): number {

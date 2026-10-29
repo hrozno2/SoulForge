@@ -69,7 +69,7 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
   const [open, setOpen] = useState(chosen.length < rule.number && !declined);
   const full = chosen.length >= rule.number || declined;
   // A variant or optional choice has a box: unticked, it is not taken, its picks go and it counts as done.
-  const canSkip = !slot.listItems && skippable(rule);
+  const canSkip = !slot.listItems && skippable(rule, slot.owner);
   const keys = slot.members ? slot.members.map((m) => m.key) : [slot.key];
   // An optional choice with a single option (a package such as a 2014 background's "2024 rules") is that option:
   // ticking the box takes it, with nothing more to pick.

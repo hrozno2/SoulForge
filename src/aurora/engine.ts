@@ -268,9 +268,15 @@ function mutualExclusions(el: AElement, reg: ARegistry): Set<string> {
  * level), with a count when the owner has two such choices. It does not move when content adds or reorders rules.
  */
 const KEYS = new WeakMap<AElement, string[]>();
-/** A choice the player may turn down: one marked optional, or a variant ("Variant Feature", "Optional class feature"). */
-export function skippable(rule: { name: string; optional?: boolean }): boolean {
-  return !!rule.optional || /\b(variant|optional)\b/i.test(rule.name);
+/**
+ * A choice the player may turn down: one marked optional, or a variant ("Variant Feature", "Optional class feature").
+ * Not a choice inside a variant that was taken (C7.5: the Variant Human's increase, skill and feat were left turned
+ * down): once the variant is the character's, what it asks for is required.
+ */
+export function skippable(rule: { name: string; optional?: boolean }, owner?: { type: string }): boolean {
+  if (rule.optional) return true;
+  if (owner && /variant/i.test(owner.type)) return false;
+  return /\b(variant|optional)\b/i.test(rule.name);
 }
 
 export function choiceKey(el: AElement, rule: SelectRule, idx: number): string {
@@ -391,7 +397,7 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         const optedIn = chosen.length > 0 || !!ch.taken?.includes(key);
         // A table of 2014 personality traits, ideals, bonds and flaws is turned off only by the player (one switch on
         // the background turns all four off: the 2024 rules have none).
-        const declined = isList ? !!ch.declined?.includes(key) : skippable(rule) && (!!ch.declined?.includes(key) || (!optedIn && !rule.default));
+        const declined = isList ? !!ch.declined?.includes(key) : skippable(rule, el) && (!!ch.declined?.includes(key) || (!optedIn && !rule.default));
         if (declined) { chosen = []; defaulted = false; }
         rawSlots.push({ key, owner: el, rule: isList || declined ? { ...rule, optional: true } : rule, ownerLevel, root, chosen, defaulted, declined, at: Math.max(at, rule.level ?? 0) });
         for (const id of isList ? [] : chosen) {

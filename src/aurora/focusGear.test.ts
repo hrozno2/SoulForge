@@ -16,3 +16,14 @@ describe("focus gear", () => {
     expect(resolveRef({ text: "Arcane Focus (Quarterstaff)", qty: 1 } as never, new ItemIndex(reg), "").pending).toBeUndefined();
   });
 });
+
+describe("artisan's tools or a musical instrument (the 2024 Monk)", () => {
+  it("stays open to both kinds, not only instruments", async () => {
+    const { resolveChosenTools } = await import("./startingEquipment");
+    const [it] = resolveChosenTools([{ name: "Artisan's Tools or Musical Instrument chosen for the tool proficiency above", qty: 1 }], [], reg);
+    expect(it.pending).toBe("artisanOrInstrument");
+    const names = genericOptions(reg, "artisanOrInstrument").map((e) => e.name);
+    expect(names).toEqual(expect.arrayContaining(genericOptions(reg, "instrument").map((e) => e.name)));
+    expect(names.length).toBe(genericOptions(reg, "artisan").length + genericOptions(reg, "instrument").length);
+  });
+});

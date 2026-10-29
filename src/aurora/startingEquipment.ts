@@ -546,6 +546,7 @@ export function focusNote(name: string): string | undefined {
 export function genericOptions(reg: ARegistry, kind: GenericKind, prefer = ""): AElement[] {
   const idx = new ItemIndex(reg);
   const out = new Map<string, AElement>();
+  if (kind === "artisanOrInstrument") return [...genericOptions(reg, "artisan", prefer), ...genericOptions(reg, "instrument", prefer)];
   for (const n of TOOL_KINDS[kind] ?? []) { const el = idx.find(n, prefer); if (el) out.set(el.name.toLowerCase(), el); }
   if (kind === "instrument") for (const el of reg.ofType("Item")) if (/musical instrument/i.test(el.setters.category?.value ?? "") && !el.compendiumHidden && !out.has(el.name.toLowerCase())) out.set(el.name.toLowerCase(), el);
   // A focus group: every item filed in it, one per name, the preferred book's copy first.
@@ -596,8 +597,12 @@ export function resolveChosenTools(items: ResolvedItem[], activeIds: Iterable<st
   return items.map((it) => {
     if (it.el) return it;
     // "Tool you choose for this background's tool proficiency" (Inheritor): whichever tool was chosen.
-    const kind = /gaming set/i.test(it.name) ? "gaming" : /musical instrument/i.test(it.name) ? "instrument" : /artisan/i.test(it.name) ? "artisan" : /\btools?\b.*\b(choose|choice)\b.*\bproficien/i.test(it.name) ? "any" : undefined;
+    // "Artisan's Tools or Musical Instrument chosen for the tool proficiency above" (the 2024 Monk) names two kinds:
+    // whichever of them was taken, else a pick from both (it read as an instrument only before).
+    const both = /artisan/i.test(it.name) && /musical instrument/i.test(it.name);
+    const kind = both ? "artisanOrInstrument" : /gaming set/i.test(it.name) ? "gaming" : /musical instrument/i.test(it.name) ? "instrument" : /artisan/i.test(it.name) ? "artisan" : /\btools?\b.*\b(choose|choice)\b.*\bproficien/i.test(it.name) ? "any" : undefined;
     if (kind === "any") chosen.any = [...chosen.gaming, ...chosen.instrument, ...chosen.artisan];
+    if (kind === "artisanOrInstrument") chosen.artisanOrInstrument = [...chosen.artisan, ...chosen.instrument];
     const pick = kind ? chosen[kind][used[kind] ?? 0] : undefined;
     // Nothing the character took settles it: an open choice of that kind, not the words as an item.
     if (kind && kind !== "any" && !pick) return { ...it, pending: kind };

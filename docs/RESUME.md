@@ -10,7 +10,15 @@ spell list per class), selling one to one, settlePending/choosePending (open ite
 v0.22.0 released after a full check (first run caught an importer regression from the spell pools: fixed with a
 one-step relocation in place(), import baseline rewritten for Zanna's improvement). After it, the rest of C6: the one
 print setting (SpellScope), fold slide (Fold), sticky spellbook (no second scroll box in a window, e2e guard), window
-flights and the leather bag, spell pages and gear flying in (flyInto). C6 is complete; next release v0.23.0.
+flights and the leather bag, spell pages and gear flying in (flyInto). C6 is complete. v0.23.0 released 2026-10-29
+03:00 after a full check (the first run reported Scholar's expertise for a Barbarian/Wizard with none of its skills:
+the rules check now follows stillToChoose; only a choice with no options at all is reported).
+
+Next engine item (found by the A0.1 cross-check of the spell pools, 2026-10-29): the 5e.tools 2014 Eldritch Knight and
+Arcane Trickster offer spells of every school. 5e.tools states the school limit only in the feature text, and Plutonium
+does not enforce it either (its known-spell picker reads only the counts); our Aurora copies do (abjuration/evocation,
+enchantment/illusion, with the "any school" picks at 3, 8, 14, 20). Fix in the converter: read "must be from the X and
+Y schools" plus the "any school" levels from the feature text, for every subclass written that way, with a guard test.
 
 ## 2026-10-28 morning: v0.20.0 and v0.21.0
 

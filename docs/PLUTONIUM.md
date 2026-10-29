@@ -143,3 +143,11 @@ proficiency) were not converted. The subclass loop now follows those references 
 converter: now a choice from that list, "other" or "any" opening it to every language, as Plutonium offers it. And a
 5e.tools species with subraces starts on its standard (nameless) subrace, so a fresh pick leaves nothing open
 (src/aurora/converterChoices.test.ts).
+
+
+## Spells known (checked 2026-10-29)
+
+Plutonium counts a class's known spells as one total (`spellsKnownProgression`, the new ones each level at the highest
+slot level, with options to allow lower or higher levels): Soul Forge's spellChoicePools makes the same one list. It
+does not enforce a subclass's school limit (Eldritch Knight, Arcane Trickster): the picker reads only the counts. Soul
+Forge's Aurora copies enforce it; the 5e.tools copies do not yet (RESUME, next engine item).

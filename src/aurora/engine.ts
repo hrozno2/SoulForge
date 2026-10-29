@@ -416,7 +416,11 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         // An optional choice (Customized Language) leaves an old pick to a required one of its kind that also offers it
         // and has none (the species' own Language): the pick was made for that one.
         const requiredTakes = (ids: string[]) => skippable(rule, el) && el.rules.some((r, j) => j !== idx && r.kind === "select" && r.type === rule.type && !skippable(r as SelectRule, el) && ch.selections[choiceKey(el, r as SelectRule, j)] === undefined && legacyOffered(reg, r as SelectRule, ids));
-        const oldFits = !!old && (rule.type === "List" || (old.every((id) => reg.get(id)?.type === rule.type) && legacyOffered(reg, rule, old) && !requiredTakes(old)));
+        // Whether the pick is among the options is asked only where the element has another choice of the same kind
+        // to mix it up with; elsewhere the kind settles it (options built at run time, such as a class's increases, are
+        // not all in the registry's list).
+        const twin = el.rules.some((r, j) => j !== idx && r.kind === "select" && r.type === rule.type);
+        const oldFits = !!old && (rule.type === "List" || (old.every((id) => reg.get(id)?.type === rule.type) && (!twin || (legacyOffered(reg, rule, old) && !requiredTakes(old)))));
         // The content moved its rules since (a species' Size was its 2nd rule, its languages the 6th): an old pick at
         // another position of this element, that position no longer holding a choice it fits, is this choice's when
         // it is the only one whose every pick is among this choice's options (2026-10-29: saved 2024 species lost

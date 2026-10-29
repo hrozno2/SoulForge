@@ -211,6 +211,7 @@ The full check, `npm run test:e2e`, Soul Forge Test, then a release.
 | C7.16 | Bug: the card windows lost the Source picker (which book's version) the card back had; one source strip for both. | Chris |
 | C7.17 | Card windows keep the card back's flair: gold frame with its dark inner edge, the card's colour from the top, a small label over the name. Done. | Chris |
 | C7.18 | Bug: a Wizard whose Intelligence goes up gets more spell choices it cannot fill; find what the engine does wrong. | Chris |
+| C7.19 | Audit: multiclass spell slots and spells known. src/aurora/multiclassAudit.test.ts builds every pair of caster classes (2014 and 2024, EK and AT included) at three level splits against the class tables: all agree. Done. | Chris |
 | C7.15 | Tutorial: updated for everything since (board, floating cards, bag, spellbook, export). | Chris |
 
 ---

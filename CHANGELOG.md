@@ -2,6 +2,16 @@
 
 What changed in each release. Newest first.
 
+## v0.22.0 (2026-10-29)
+
+- Importer: a pick with no open choice moves an earlier pick to another choice that takes it
+- C6.5 always-prepared marks with their source on cards and in sheet brackets (grantSource)
+- One spell list per class, 1:1 selling, open items picked in the gear box
+- C6.3 window frame, C6.7 themed spell scrolls, "i" opens floating entries
+- A choice with only one option is no selector: listed under What you get; the backpack always shows Starting gear, Inventory and Shop and opens on the gear (C6.1)
+- Ability scores: only +1 columns, the same ability twice is +2, no way buttons, the grid folds (C6.2); no doubled grid, no text selection while resizing, compendium clicks work in WebKit (C6.1)
+- Plan: C6.1 to C6.6 from Chris's test of the release
+
 ## v0.21.0 (2026-10-28)
 
 - RESUME: the two releases of 2026-10-28

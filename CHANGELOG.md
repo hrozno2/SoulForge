@@ -2,6 +2,32 @@
 
 What changed in each release. Newest first.
 
+## v0.24.0 (2026-10-29)
+
+- Random characters with a 2024 species and a 2014 background take the background's 2024 rules package (the release's coverage check found mixed origins)
+- C1.7 quicker launches: converted 5e.tools content is kept while the converter's code is the same (a hash, not the build), so updates that leave it alone and switching between the release and test apps no longer convert again (8 s); a rebuild says so at once on the launch screen
+- C7.18 the spellbook thickens with the spells learned (a higher score no longer thins it), says learned and prepared apart, and the choice checker asks for the spells still to prepare, opening the prepare list (Maine Dockers: "every choice is made" beside 5 of 13)
+- 5e.tools Eldritch Knight and Arcane Trickster keep the school limits (read from their Spellcasting text: two schools, any-school picks at 3, 8, 14, 20); every spell tagged with its school
+- C7.13 starting gear has its own icon (a few items), gear flies into the Inventory's backpack; C7.15 tutorial updated for windows, the bag, folding, ability boxes, hit points, the spellbook's counts, the backpack's parts and the export setting
+- C7.19 multiclass spellcasting audit: every pair of caster classes, both editions, three level splits, against the class tables (slots, pact slots, cantrips, known and prepared): all agree
+- C7.18 the spellbook counts learned and prepared spells apart, the prepared count opening the prepare list (the one sum grew with Intelligence with no way to the picks in view); prepared spells are at least one (minimum of one spell)
+- C7.18 (part) the spells to prepare never count higher than the spells there are to prepare from (prepareTarget), on the spellbook's count and the Prepared list
+- C7.12 upright spell scrolls (narrow, rods with knobs, ruled page, centred, concentration and ritual marks); C7.17 card windows keep the card back's look (gold frame, card colour, label over the name)
+- C7.14 inventory rows: actions on one line, Remove an × button
+- C7.11 ability increases from sets (a 2024 background's three): no combination list; the boxes show every ability a set allows, the ticks settle the set, a mix no set allows is refused (setBoxesSelections)
+- C7.10 hit points ask to be configured: a gold "Configure" bar (board and Play) and a "Hit points" line in the choice checker open the dialog until fixed or rolled is chosen (hpConfigured; random characters come configured)
+- C7.8 a quicker sheet preview: fonts and templates kept for the session, pdf.js loaded while the sheet fills, pages drawn as JPEG, the first preview without the typing delay
+- C7.9 "Print the entire spellbook" is an export setting (off by default): ticked, every prepare box blank but the always-prepared and the sheet says how many to prepare; the switch on the spellbook goes
+- C7.16 the card windows show the Source picker again (one strip for the new-pick dialog and the windows); test content gets a revised Wayfarer
+- C7.7 starting gear's "an arcane focus", "a druidic focus", "a holy symbol" are the player's pick of the group (no longer the group's first item); 5e.tools focuses filed in their group as Aurora's are
+- C7.7 starting gear's "an arcane focus", "a druidic focus", "a holy symbol" are the player's pick of the group (no longer the group's first item); 5e.tools focuses filed in their group as Aurora's are
+- C7.6 a list row's "i" stays in its line (every .options list); test content gets an option
+- C7.5 optional choices audited: a taken variant's own choices are required (the Variant Human's increase, skill and feat were turned down by default); the Armorer's Armor Model is required
+- C7.4 a 2014 background's origin feat comes once: the Variant Feature's Origin Feat and the 2024-rules package exclude each other
+- C7.1-C7.3: spell pools only for a class's own spells; windows out of the bag come back in sight; only real containers hold gear (no waterskins; quivers take arrows)
+- Plan: C7 from Chris's test of v0.23.0
+- Resume and Plutonium notes: v0.23.0, spells-known cross-check, next engine item (5e.tools EK/AT school limit)
+
 ## v0.23.0 (2026-10-29)
 
 - Rules check: a required choice the build rules out entirely asks for nothing (stillToChoose); only a choice with no options at all is reported

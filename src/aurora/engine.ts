@@ -269,6 +269,38 @@ function mutualExclusions(el: AElement, reg: ARegistry): Set<string> {
  */
 const KEYS = new WeakMap<AElement, string[]>();
 /**
+ * Whether old picks are among a choice's options, so a pick that only shares the kind is not read into it (a
+ * species' two Standard languages are not its optional "Customized Language" picks). A filter that depends on the
+ * character ("$(spellcasting:...)") is not judged here.
+ */
+function legacyOffered(reg: ARegistry, rule: SelectRule, ids: string[]): boolean {
+  if (!rule.supports || rule.supports.includes("$(")) return true;
+  const offered = new Set(reg.find(rule.type, rule.supports).map((e) => e.id));
+  return ids.every((id) => offered.has(id));
+}
+
+/** An old position-keyed pick ("<id>|<n>") that moved: see its use in walk. Undefined unless exactly one fits. */
+function movedLegacy(ch: Character, reg: ARegistry, el: AElement, rule: SelectRule, idx: number): string[] | undefined {
+  if (rule.type === "List" || !rule.supports) return undefined;
+  const prefix = `${el.id}|`;
+  const keys = Object.keys(ch.selections).filter((k) => k.startsWith(prefix) && /^\d+$/.test(k.slice(prefix.length)) && Number(k.slice(prefix.length)) !== idx);
+  if (!keys.length) return undefined;
+  const offered = new Set(reg.find(rule.type, rule.supports).map((e) => e.id));
+  const fitsAt = (n: number, ids: string[]) => {
+    const r = el.rules[n];
+    // An optional choice at that position does not hold on to it against this required one (see the optional side),
+    // nor one switched off by an option the character does not use (Tasha's "Customized Language").
+    const off = (x: { requirements?: string }) => { const q = (x.requirements ?? "").trim(); return /^ID_[A-Z0-9_]+$/.test(q) && !ch.options.includes(q); };
+    return !!r && r.kind === "select" && !off(r as { requirements?: string }) && ids.every((id) => reg.get(id)?.type === r.type) && legacyOffered(reg, r as SelectRule, ids) && !(skippable(r as SelectRule, el) && !skippable(rule, el) && legacyOffered(reg, rule, ids));
+  };
+  const found = keys.filter((k) => {
+    const ids = ch.selections[k] ?? [];
+    return ids.length > 0 && !fitsAt(Number(k.slice(prefix.length)), ids) && ids.every((id) => offered.has(id));
+  });
+  return found.length === 1 ? ch.selections[found[0]] : undefined;
+}
+
+/**
  * A choice the player may turn down: one marked optional, or a variant ("Variant Feature", "Optional class feature").
  * Not a choice inside a variant that was taken (C7.5: the Variant Human's increase, skill and feat were left turned
  * down): once the variant is the character's, what it asks for is required.
@@ -381,8 +413,16 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         // A character saved before stable keys has its picks under the rule's position. They are read only when every
         // pick is of this choice's kind, so a pick that now sits at another position is never taken for this one.
         const old = ch.selections[key] === undefined ? ch.selections[legacy] : undefined;
-        const oldFits = !!old && (rule.type === "List" || old.every((id) => reg.get(id)?.type === rule.type));
-        let chosen = (ch.selections[key] ?? (oldFits ? old! : [])).slice(0, rule.number);
+        // An optional choice (Customized Language) leaves an old pick to a required one of its kind that also offers it
+        // and has none (the species' own Language): the pick was made for that one.
+        const requiredTakes = (ids: string[]) => skippable(rule, el) && el.rules.some((r, j) => j !== idx && r.kind === "select" && r.type === rule.type && !skippable(r as SelectRule, el) && ch.selections[choiceKey(el, r as SelectRule, j)] === undefined && legacyOffered(reg, r as SelectRule, ids));
+        const oldFits = !!old && (rule.type === "List" || (old.every((id) => reg.get(id)?.type === rule.type) && legacyOffered(reg, rule, old) && !requiredTakes(old)));
+        // The content moved its rules since (a species' Size was its 2nd rule, its languages the 6th): an old pick at
+        // another position of this element, that position no longer holding a choice it fits, is this choice's when
+        // it is the only one whose every pick is among this choice's options (2026-10-29: saved 2024 species lost
+        // their size and languages).
+        const moved = ch.selections[key] === undefined && !oldFits ? movedLegacy(ch, reg, el, rule, idx) : undefined;
+        let chosen = (ch.selections[key] ?? (oldFits ? old! : moved ?? [])).slice(0, rule.number);
         let defaulted = false;
         // A default the character already has from elsewhere is not given again: the choice opens instead (Battle Smith's
         // smith's tools for an Artificer who has them: choose another artisan's tool).

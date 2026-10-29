@@ -1,5 +1,6 @@
 /** The kinds of starting gear a pack or background may name without saying which one. */
-export type GenericKind = "instrument" | "gaming" | "artisan";
+/** A kind of item the gear names without saying which: tools, and spellcasting focuses (C7.7). */
+export type GenericKind = "instrument" | "gaming" | "artisan" | "arcane" | "druidic" | "holy";
 
 export const ABILITY_IDS = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const;
 export type AbilityId = (typeof ABILITY_IDS)[number];

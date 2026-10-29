@@ -475,6 +475,9 @@ function convertItem(i: J, ctx: Ctx): AElement | null {
       setters.holds = set([...new Set(holdsCap.item.flatMap((g) => Object.keys(g).map((k) => k.split("|")[0].replace(/\s*\(.*\)$/, ""))))].join("; "));
     }
   }
+  // A spellcasting focus is filed in its group, as Aurora files it (C7.7: "an arcane focus" in starting gear offers them).
+  const scf = ({ arcane: "Arcane Focus", druid: "Druidic Focus", holy: "Holy Symbol" } as Record<string, string>)[String(m.scfType ?? "")];
+  if (scf) setters.container = set(scf);
   if (m.weight !== undefined) setters.weight = set(`${m.weight} lb.`, { lb: String(m.weight) });
   // A magic item without a price of its own keeps its base item's as "base cost" (a +1 Longsword is not 15 gp); the
   // shop prices it by rarity on top when the character uses rarity prices, as Plutonium does (src/aurora/shop.ts).

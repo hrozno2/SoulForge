@@ -338,7 +338,18 @@ export function weaponChoices(reg: ARegistry, kind: { category: "simple" | "mart
 }
 
 /** Turn a reference into an item plus a quantity, using bundle sizes like "Arrows (20)". */
+/** The focus groups gear can name without saying which (C7.7): the player picks one, as Aurora groups them. */
+export const FOCUS_KINDS: Record<"arcane" | "druidic" | "holy", string> = { arcane: "Arcane Focus", druidic: "Druidic Focus", holy: "Holy Symbol" };
+const focusKindOf = (text: string) => {
+  const t = text.trim().toLowerCase().replace(/^(?:an?|any|one|worn)\s+/, "").replace(/\s+of your choice$/, "");
+  return (Object.entries(FOCUS_KINDS).find(([, g]) => g.toLowerCase() === t)?.[0]) as keyof typeof FOCUS_KINDS | undefined;
+};
+
 export function resolveRef(ref: ItemRef, idx: ItemIndex, prefer: string, picked?: string): ResolvedItem {
+  // "An arcane focus", "a holy symbol": which one is the player's to pick, not the first of the group (C7.7). A named
+  // one ("Arcane Focus (Quarterstaff)") is that item.
+  const focus = focusKindOf(ref.text);
+  if (focus) return { name: FOCUS_KINDS[focus], qty: ref.qty, pending: focus };
   const kind = anyWeaponKind(ref.text);
   if (kind) {
     const list = weaponChoices(idx.registry, kind);
@@ -537,6 +548,15 @@ export function genericOptions(reg: ARegistry, kind: GenericKind, prefer = ""): 
   const out = new Map<string, AElement>();
   for (const n of TOOL_KINDS[kind] ?? []) { const el = idx.find(n, prefer); if (el) out.set(el.name.toLowerCase(), el); }
   if (kind === "instrument") for (const el of reg.ofType("Item")) if (/musical instrument/i.test(el.setters.category?.value ?? "") && !el.compendiumHidden && !out.has(el.name.toLowerCase())) out.set(el.name.toLowerCase(), el);
+  // A focus group: every item filed in it, one per name, the preferred book's copy first.
+  if (kind === "arcane" || kind === "druidic" || kind === "holy") {
+    for (const el of reg.ofType("Item")) {
+      if (el.compendiumHidden || (el.setters.container?.value ?? "").toLowerCase() !== FOCUS_KINDS[kind].toLowerCase()) continue;
+      const k = el.name.toLowerCase().replace(/^(arcane focus|druidic focus|holy symbol)[,:]?\s*/, "");
+      const have = out.get(k);
+      if (!have || (el.source === prefer && have.source !== prefer)) out.set(k, el);
+    }
+  }
   return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 

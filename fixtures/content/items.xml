@@ -67,6 +67,14 @@
 		<description><p>A stringed instrument.</p></description>
 		<setters><set name="category">Musical Instruments</set><set name="cost" currency="gp">35</set><set name="weight" lb="2">2 lb.</set></setters>
 	</element>
+	<element name="Glass Prism" type="Item" source="Hollow Realms" id="ID_SF_ITEM_GLASS_PRISM">
+		<description><p>A spellcasting focus of cut glass.</p></description>
+		<setters><set name="category">Spellcasting Focus</set><set name="container">Arcane Focus</set><set name="cost" currency="gp">10</set><set name="weight" lb="1">1 lb.</set></setters>
+	</element>
+	<element name="Bone Wand" type="Item" source="Hollow Realms" id="ID_SF_ITEM_BONE_WAND">
+		<description><p>A spellcasting focus carved from bone.</p></description>
+		<setters><set name="category">Spellcasting Focus</set><set name="container">Arcane Focus</set><set name="cost" currency="gp">10</set><set name="weight" lb="1">1 lb.</set></setters>
+	</element>
 	<element name="Trail Pack" type="Item" source="Hollow Realms" id="ID_SF_ITEM_TRAIL_PACK">
 		<description><p>Includes a torch, 50 feet of rope and 10 days of rations.</p></description>
 		<setters><set name="category">Equipment Packs</set><set name="cost" currency="gp">12</set><set name="weight" lb="30">30 lb.</set></setters>

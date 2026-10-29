@@ -1,5 +1,5 @@
 import type { Resolved } from "../aurora/engine";
-import { ABILITY_ORDER, boxesSelections, gridPicks, tickBox, tickUnified, unifiedBoxes, unifiedOf, type Ability, type Grid } from "../aurora/improvements";
+import { ABILITY_ORDER, boxesSelections, gridPicks, setBoxesSelections, tickBox, tickUnified, unifiedBoxes, unifiedOf, unifiedOfSet, type Ability, type Grid } from "../aurora/improvements";
 import { useState } from "react";
 import type { AElement } from "../aurora/types";
 import type { SetCharacter } from "./Slots";
@@ -29,20 +29,36 @@ export function ImprovementGrid({ grid, r, set }: { grid: Grid; r: Resolved; set
   const picks = mode ? gridPicks(ch, mode) : [];
   const cols = mode ? mode.columns.flatMap((c, ci) => Array.from({ length: c.count }, (_, n) => ({ c, ci, n }))) : [];
   const rows = ABILITY_ORDER.filter((a) => mode && (mode.columns.some((c) => c.options.has(a)) || mode.fixed.some((f) => f.ability === a)));
+  // Sets of abilities (a 2024 background's three): no list of combinations first (C7.11). The boxes show every ability
+  // any set allows; the ticks settle the set, and a mix no set allows is refused.
+  const each = grid.sets?.each;
+  const setNow = each?.find((w) => w.id === grid.sets?.chosen);
+  const setU = each ? (setNow ? unifiedOfSet(setNow) : each.map(unifiedOfSet).find(Boolean)) : undefined;
+  const [refused, setRefused] = useState("");
   // The usual pair of ways in one grid (C6.2): the ticks choose the way; no way buttons.
-  const uBase = unifiedOf(grid);
+  const uBase = setU ?? unifiedOf(grid);
   const u = showFeats ? undefined : uBase;
   // The boxes (C6.2): only +1 columns; the same ability in two of them is its +2. Ticks that are not yet a whole way
   // (one of a fixed set's three +1s) stay as a draft until they are.
   const [draft, setDraft] = useState<(Ability | undefined)[] | null>(null);
-  const saved = u ? unifiedBoxes(ch, u, grid.chosenMode) : [];
+  const saved = u ? (each && !setNow ? Array.from({ length: u.ones }, () => undefined) : unifiedBoxes(ch, u, grid.chosenMode)) : [];
   const boxes = u ? (draft && !grid.chosenMode ? draft : saved) : [];
-  const uRows = u ? ABILITY_ORDER.filter((a) => [...u.two.columns, ...u.one.columns].some((c) => c.options.has(a)) || u.one.fixed.some((f) => f.ability === a)) : [];
+  const uRows = u
+    ? ABILITY_ORDER.filter((a) => (each ? each.some((w) => w.abilities.has(a)) : [...u.two.columns, ...u.one.columns].some((c) => c.options.has(a)) || u.one.fixed.some((f) => f.ability === a)))
+    : [];
   const ticked = boxes.filter(Boolean) as Ability[];
   const twice = ticked.find((a, i) => ticked.indexOf(a) !== i);
   const uDone = !!u && (twice ? ticked.length === 2 + u.onesWithTwo : ticked.length === u.ones) && !!grid.chosenMode;
   const uTick = (i: number, a: Ability, on: boolean) => {
     const next = tickUnified(boxes, i, on ? a : undefined, u!);
+    if (each) {
+      const sel = setBoxesSelections(grid, next);
+      if (!sel) { setRefused(`No allowed set of abilities has ${[...new Set(next.filter(Boolean))].map((x) => cap(x!)).join(", ")} together.`); return; }
+      setRefused("");
+      setDraft(next);
+      set((c) => ({ ...c, selections: { ...c.selections, ...sel } }));
+      return;
+    }
     setDraft(next);
     set((c) => ({ ...c, selections: { ...c.selections, ...boxesSelections(u!, next) } }));
   };
@@ -65,7 +81,7 @@ export function ImprovementGrid({ grid, r, set }: { grid: Grid; r: Resolved; set
         <span className="chev">{isOpen ? "▾" : "▸"}</span>
       </button>
       {isOpen && <div className="slot-body">
-        {grid.sets && (
+        {grid.sets && !each && (
           <select className="grid-set" value={grid.sets.chosen ?? ""} aria-label="Abilities to raise" onChange={(e) => choose(grid.sets!.key, e.target.value, [grid.modeKey ?? "", ...allColumnKeys].filter(Boolean))}>
             <option value="" disabled>Choose the abilities...</option>
             {grid.sets.options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
@@ -87,6 +103,7 @@ export function ImprovementGrid({ grid, r, set }: { grid: Grid; r: Resolved; set
                 ))}
               </tbody>
             </table>
+            {refused && <p className="notice" role="status">{refused}</p>}
           </>
         )}
         {!uBase && grid.modeKey && (grid.modes.length > 1 || grid.others.length > 0) && (

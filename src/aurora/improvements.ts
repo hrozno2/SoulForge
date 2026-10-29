@@ -24,13 +24,16 @@ export interface GridColumn { amount: number; count: number; key: string; option
 /** One way to take the increase: a package (or the choice itself) and its columns; fixed increases are pre-ticked. */
 export interface GridMode { label: string; optionId?: string; columns: GridColumn[]; fixed: { ability: Ability; amount: number }[] }
 
+/** One set of abilities (a three-ability combination): the abilities it holds and its ways, for the boxes (C7.11). */
+export interface SetWays { id: string; abilities: Set<Ability>; modeKey: string; modes: GridMode[] }
+
 export interface Grid {
   /** The choice the grid stands for (the first of a sibling group). */
   anchor: Slot;
   /** Every choice the grid fills, so the list does not show them again. */
   keys: Set<string>;
   /** Choices of sets: the outer choice's key and its options (null when there is no set level). */
-  sets?: { key: string; options: { id: string; label: string }[]; chosen?: string };
+  sets?: { key: string; options: { id: string; label: string }[]; chosen?: string; each?: SetWays[] };
   /** The choice that picks a package (null when the grid's columns are the choices themselves). */
   modeKey?: string;
   modes: GridMode[];
@@ -119,7 +122,14 @@ export function findGrids(r: Resolved, slots: Slot[]): Grid[] {
       const modes = cur ? cur.inner!.packages.map((p) => modeOf(r, p)!) : [];
       const modeChosen = cur ? r.character.selections[cur.inner!.key]?.[0] : undefined;
       const keys = new Set([s.key, ...(cur ? [cur.inner!.key, ...modes.flatMap((m) => m.columns.map((c) => c.key))] : [])]);
-      out.push({ anchor: s, keys, sets: { key: s.key, options: s.options.map((o) => ({ id: o.id, label: o.name })), chosen }, modeKey: cur?.inner!.key, modes, others: [], chosenMode: modeChosen });
+      // Every set's abilities and ways, so the boxes can show every ability any set allows and settle the set from
+      // the ticks (C7.11, Chris 2026-10-29: no list of combinations to pick from first).
+      const each: SetWays[] = sets.map(({ o, inner }) => {
+        const ms = inner!.packages.map((p) => modeOf(r, p)!);
+        const abilities = new Set<Ability>(ms.flatMap((m) => [...m.columns.flatMap((c) => [...c.options.keys()]), ...m.fixed.map((f) => f.ability)]));
+        return { id: o.id, abilities, modeKey: inner!.key, modes: ms };
+      });
+      out.push({ anchor: s, keys, sets: { key: s.key, options: s.options.map((o) => ({ id: o.id, label: o.name })), chosen, each }, modeKey: cur?.inner!.key, modes, others: [], chosenMode: modeChosen });
       keys.forEach((k) => used.add(k));
       continue;
     }
@@ -255,4 +265,33 @@ export function tickUnified(boxes: (Ability | undefined)[], i: number, a: Abilit
     for (const j of others) { if (over <= 0) break; if (j !== i) { next[j] = undefined; over--; } }
   }
   return next;
+}
+
+/** The usual pair of ways for one set, as `unifiedOf` reads a grid. */
+export const unifiedOfSet = (w: SetWays): Unified | undefined => unifiedOf({ anchor: undefined as never, keys: new Set(), modeKey: w.modeKey, modes: w.modes, others: [] });
+
+/**
+ * The set the ticked abilities belong to (C7.11): the one taken now when it holds them all, else the first that does;
+ * none when no set allows that mix (the tick is refused).
+ */
+export function setForTicks(each: SetWays[], ticked: Ability[], current?: string): SetWays | undefined {
+  const fits = (w: SetWays) => ticked.every((a) => w.abilities.has(a)) && !!unifiedOfSet(w);
+  const cur = each.find((w) => w.id === current);
+  return cur && fits(cur) ? cur : each.find(fits);
+}
+
+/**
+ * The selections for boxes ticked across sets: the set that holds them, its old picks cleared when the set changes,
+ * and the ticks as that set's way. Undefined when no set allows the ticks.
+ */
+export function setBoxesSelections(grid: Grid, boxes: (Ability | undefined)[]): Record<string, string[]> | undefined {
+  const sets = grid.sets;
+  if (!sets?.each) return undefined;
+  const ticked = boxes.filter((a): a is Ability => !!a);
+  const w = setForTicks(sets.each, ticked, sets.chosen);
+  const u = w && unifiedOfSet(w);
+  if (!w || !u) return undefined;
+  const clear: Record<string, string[]> = {};
+  for (const o of sets.each) if (o.id !== w.id) { clear[o.modeKey] = []; for (const m of o.modes) for (const c of m.columns) clear[c.key] = []; }
+  return { ...clear, [sets.key]: ticked.length ? [w.id] : [], ...(ticked.length ? boxesSelections(u, boxes) : { [w.modeKey]: [] }) };
 }

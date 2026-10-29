@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { newCharacter, type Character } from "./character";
 import { resolve } from "./engine";
-import { boxesSelections, findGrids, tickBox, tickUnified, unifiedOf, unifiedSelections } from "./improvements";
+import { boxesSelections, findGrids, setBoxesSelections, tickBox, tickUnified, unifiedOf, unifiedSelections } from "./improvements";
 import { loadTestContent } from "../engine/testContent";
 
 const C = process.env.SOULFORGE_RULES;
@@ -42,6 +42,25 @@ describe.skipIf(!C)("ability score increase grids", () => {
     expect(findGrids(sage, sage.slots).some((g) => g.modes.length >= 2)).toBe(true);
     const custom = resolve(base((c) => { c.background = "ID_WOTC_DMG24_BACKGROUND_CUSTOM"; }), reg);
     expect(findGrids(custom, custom.slots).some((g) => g.sets && g.sets.options.length >= 10)).toBe(true);
+  }, 600000);
+
+  it("takes a Custom Background's three abilities from the ticks, no combination picked first (C7.11)", () => {
+    const ch = base((c) => { c.background = "ID_WOTC_DMG24_BACKGROUND_CUSTOM"; });
+    const r = resolve(ch, reg);
+    const g = findGrids(r, r.slots).find((x) => x.sets?.each?.length)!;
+    expect(new Set(g.sets!.each!.flatMap((w) => [...w.abilities])).size).toBe(6);
+    const before = { str: r.stats.get("strength"), wis: r.stats.get("wisdom"), cha: r.stats.get("charisma") };
+    // +2 Strength, +1 Wisdom: the ticks settle a set holding both.
+    const sel = setBoxesSelections(g, ["strength", "strength", "wisdom"])!;
+    expect(sel).toBeDefined();
+    const after = resolve({ ...ch, selections: { ...ch.selections, ...sel } }, reg);
+    expect(after.stats.get("strength")).toBe(before.str + 2);
+    expect(after.stats.get("wisdom")).toBe(before.wis + 1);
+    expect(after.stats.get("charisma")).toBe(before.cha);
+    // Three +1s anywhere among the six.
+    const sel2 = setBoxesSelections(g, ["dexterity", "intelligence", "charisma"])!;
+    const after2 = resolve({ ...ch, selections: { ...ch.selections, ...sel2 } }, reg);
+    expect(after2.stats.get("charisma")).toBe(before.cha + 1);
   }, 600000);
 
   it("never shows half-feats as ways of taking a class's increase: the feats stay a list", () => {

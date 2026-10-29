@@ -1,5 +1,14 @@
 # Where we left off
 
+## 2026-10-29 afternoon: v0.24.1
+
+Released after a full check (its first run caught the old-pick recovery dropping a class's run-time increases: the
+options test now applies only where an element has two choices of one kind). In it: per-class prepare lists that fold,
+Learned/Prepared tabs, the shop stall icon, compact Home cards with all six scores, new picks as card windows with
+"Put it back", A/B starting gear in one box, mundane weapons only, the 2024 Monk's tool-or-instrument, a greyed-out
+spellbook with nothing to choose, centred manual scores, and old position-keyed picks recovered (Chris's library:
+size and languages). Screenshots in docs/screenshots (v024-*) and the README. Open: nothing reported.
+
 ## 2026-10-29: v0.24.0 (C7, C1.7)
 
 v0.24.0 released after a full check and the release's own rules check (whose coverage pass found random characters

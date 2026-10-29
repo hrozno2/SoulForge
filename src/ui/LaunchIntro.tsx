@@ -133,7 +133,7 @@ export function LaunchIntro({ onDone }: { onDone?: () => void }) {
         <div className="launch-pack-shine" />
       </div>
       <div className="launch-flash" />
-      <div className="launch-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(prog.value * 100)} aria-label={prog.label}>
+      <div className={`launch-progress ${prog.busy ? "now" : ""}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(prog.value * 100)} aria-label={prog.label}>
         <div className={`launch-bar ${prog.busy ? "busy" : ""}`}><span style={{ transform: `scaleX(${Math.max(0.03, prog.value)})` }} /></div>
         <small>{prog.label}</small>
       </div>

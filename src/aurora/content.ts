@@ -20,6 +20,8 @@ const painted = () => new Promise<void>((r) => (typeof requestAnimationFrame ===
 
 /** Parses every cached file of every enabled index, in load order, into one registry. */
 declare const __BUILD_ID__: string;
+/** A hash of the converter's code (vite.config.ts): converted content is kept while it is the same (C1.7). */
+declare const __CONVERTER_ID__: string;
 
 /** A short hash of a text (FNV-1a), for cache keys. */
 function hashText(text: string): string {
@@ -55,7 +57,7 @@ export async function buildRegistry(
       // The converted elements are kept, and reused while the source, its files and the app build are the same:
       // converting is most of a launch's work (a few seconds), reading the kept result a fraction of it.
       const cacheUrl = `${source.url}#converted`;
-      const cacheKey = `${__BUILD_ID__}|${source.lastChecked}|${source.fileCount}|${urls.length}|${hashText(urls.join("\n"))}`;
+      const cacheKey = `${typeof __CONVERTER_ID__ === "string" ? __CONVERTER_ID__ : __BUILD_ID__}|${source.lastChecked}|${source.fileCount}|${urls.length}|${hashText(urls.join("\n"))}`;
       let t = performance.now();
       const kept = await idbFileCache.get(cacheUrl).catch(() => undefined);
       if (kept) {
@@ -90,8 +92,9 @@ export async function buildRegistry(
         n++;
       }
       times.parse += performance.now() - t;
-      // The one long step (seconds, after an update or a new import): said so, as it has no count of its own.
-      onProgress?.(n, total, `Preparing ${source.name}`);
+      // The one long step (seconds, after an update or a new import): said so, as it has no count of its own, and that
+      // it is a one-off (C1.7).
+      onProgress?.(n, total, `Rebuilding the rules database for ${source.name} after an update or a new import. This happens once; later launches are faster.`);
       await painted();
       t = performance.now();
       try {

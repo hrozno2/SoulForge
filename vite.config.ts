@@ -2,7 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
+import { createHash } from "node:crypto";
 import type { Plugin } from "vite";
 
 /**
@@ -49,12 +50,36 @@ function testContent(): Plugin {
 // The same policy the desktop app enforces, so the browser build and the tests run under it too.
 const csp: string = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8")).app.security.csp;
 
+/**
+ * The converter's own code, hashed: the 5e.tools converter and every module it imports (C1.7, Chris 2026-10-29:
+ * launches after an update were slow). Converted content is kept while this stays the same, so an update that does not
+ * touch the converter, or switching between the released app and the test app, reuses it instead of converting again.
+ */
+function converterId(): string {
+  const seen = new Set<string>();
+  const queue = [resolve("src/aurora/fivetools.ts")];
+  const hash = createHash("sha1");
+  while (queue.length) {
+    const f = queue.shift()!;
+    if (seen.has(f) || !existsSync(f)) continue;
+    seen.add(f);
+    const text = readFileSync(f, "utf8");
+    hash.update(text);
+    for (const m of text.matchAll(/from\s+"(\.{1,2}\/[^"]+)"/g)) {
+      const base = resolve(dirname(f), m[1]);
+      for (const cand of [base, `${base}.ts`, `${base}.tsx`, join(base, "index.ts")]) if (existsSync(cand) && statSync(cand).isFile()) { queue.push(cand); break; }
+    }
+  }
+  return hash.digest("hex").slice(0, 16);
+}
+
 export default defineConfig({
   plugins: [react(), testContent()],
   // One id per build (per start of the development server), so caches of converted content are redone after an
   // update: the converter's output depends on the code.
   define: {
     __BUILD_ID__: JSON.stringify(`${JSON.parse(readFileSync("package.json", "utf8")).version}-${Date.now()}`),
+    __CONVERTER_ID__: JSON.stringify(converterId()),
     // The version a character was last checked in (src/aurora/olderBuild.ts).
     __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync("package.json", "utf8")).version),
   },

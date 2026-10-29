@@ -2216,3 +2216,7 @@ body.float-dragging, body.float-dragging * { user-select: none !important; -webk
 button.spell-count.prep { cursor: pointer; }
 button.spell-count.prep.todo { background: color-mix(in srgb, var(--gold) 18%, transparent); border-color: var(--gold); }
 button.spell-count.prep.on { background: color-mix(in srgb, var(--gold) 28%, transparent); }
+
+/* A rebuild of the rules database (after an update) says so at once, and that it is a one-off (C1.7) */
+.launch-progress.now { animation-delay: 0s; }
+.launch-progress small { text-align: center; max-width: 100%; line-height: 1.35; }

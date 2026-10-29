@@ -323,7 +323,9 @@ function buildCasting(r: Resolved): CastingLine[] {
       dc: r.stats.get(`${key}:spellcasting:dc`),
       attack: r.stats.get(`${key}:spellcasting:attack`),
       prepare: e.prepare,
-      prepareMax: r.stats.get(`${key}:spellcasting:prepare`),
+      // "Ability modifier + level (minimum of one spell)": a low score never leaves a caster who prepares with none
+      // (C7.18; the content's formula has no floor).
+      prepareMax: e.prepare ? Math.max(1, r.stats.get(`${key}:spellcasting:prepare`)) : r.stats.get(`${key}:spellcasting:prepare`),
       slots,
       pactLevel: isPact ? r.stats.get(`${key}:spellcasting:slot`) || maxLevel : undefined,
       cantripsKnown: cantrips,

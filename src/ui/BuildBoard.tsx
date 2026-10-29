@@ -954,8 +954,12 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   // in by default does not count), and the spells prepared, out of what each allows. Nothing to pick leaves it thin.
   const preparing = sheet.casting.filter((c) => c.prepare && c.prepareMax > 0);
   const preparedOf = (c: (typeof sheet.casting)[number]) => Math.min(prepareTarget(r, c), (ch.prepared[c.name] ?? []).length);
-  const spellNeed = magicSlots.reduce((n, s) => n + s.rule.number, 0) + preparing.reduce((n, c) => n + prepareTarget(r, c), 0);
-  const spellHave = magicSlots.reduce((n, s) => n + (s.defaulted ? 0 : Math.min(s.chosen.length, s.rule.number)), 0) + preparing.reduce((n, c) => n + preparedOf(c), 0);
+  const learnNeed = magicSlots.reduce((n, s) => n + s.rule.number, 0);
+  const learnHave = magicSlots.reduce((n, s) => n + (s.defaulted ? 0 : Math.min(s.chosen.length, s.rule.number)), 0);
+  const prepNeed = preparing.reduce((n, c) => n + prepareTarget(r, c), 0);
+  const prepHave = preparing.reduce((n, c) => n + preparedOf(c), 0);
+  const spellNeed = learnNeed + prepNeed;
+  const spellHave = learnHave + prepHave;
   const spellFill = spellNeed ? spellHave / spellNeed : 0;
   const plans = useMemo(() => startingPlans(ch, r.reg), [ch, r.reg]);
   const packFill = useMemo(() => {
@@ -1150,7 +1154,16 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
                     <SpellBook f={spellFill} /><small>Prepare spells</small>
                   </button>
                 ) : <SpellBook f={spellFill} />}
-                <span>{spellNeed ? `${spellHave} of ${spellNeed}` : ""}</span>
+                {/* Learned and prepared counted apart (C7.18: one sum grew with Intelligence while the view showed only
+                    the spells to learn); the prepared count leads to the prepare list. */}
+                <span className="spell-counts">
+                  {learnNeed > 0 && <span className={`spell-count ${learnHave >= learnNeed ? "full" : ""}`}>Learned {learnHave}/{learnNeed}</span>}
+                  {prepNeed > 0 && (
+                    <button className={`spell-count prep ${prepHave >= prepNeed ? "full" : "todo"} ${backView === "prepare" ? "on" : ""}`} title="The spells prepared today: click to prepare them" onClick={() => setBackView(backView === "prepare" ? null : "prepare")}>
+                      Prepared {prepHave}/{prepNeed}{prepHave < prepNeed && backView !== "prepare" ? " · prepare ›" : ""}
+                    </button>
+                  )}
+                </span>
               </div>
               {backView === "prepare" && prepares ? <PrepareSpells r={r} ch={ch} set={set} onDetail={() => undefined} /> : (
                 <>

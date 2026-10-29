@@ -60,6 +60,13 @@ test("a caster who prepares picks today's spells on the spellbook", async ({ pag
   await expect(count).toContainText(/^Prepared spells 0 \//);
   await scroll.locator(".scroll-main").click();
   await expect(count).toContainText(/^Prepared spells 1 \//);
+  // Learned and prepared are counted apart; the prepared count leads to the prepare list (C7.18).
+  const prep = page.locator(".card-window .spell-count.prep");
+  await expect(prep).toContainText(/^Prepared 1\//);
+  await prep.click();
+  await expect(count).toHaveCount(0);
+  await prep.click();
+  await expect(count).toHaveCount(1);
   // The spellbook's printing is an export setting (C7.9), not a switch on the spellbook.
   await expect(page.locator(".card-window .spell-scope")).toHaveCount(0);
   await page.locator(".card-window").getByRole("button", { name: /^Done with / }).first().click();

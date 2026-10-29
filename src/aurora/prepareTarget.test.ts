@@ -17,3 +17,12 @@ describe("prepareTarget", () => {
     expect(prepareTarget(r, { ...line, prepareMax: pool + 5 })).toBe(pool);
   });
 });
+
+describe("prepared spells", () => {
+  it("are at least one, however low the casting ability (minimum of one spell)", () => {
+    const ch = newCharacter(); ch.classes = [{ classId: "ID_SF_CLASS_SPELLSINGER", level: 1 }];
+    ch.abilityBase.charisma = 6;
+    const line = buildSheet(resolve(ch, reg)).casting.find((c) => c.prepare)!;
+    expect(line.prepareMax).toBe(1);
+  });
+});

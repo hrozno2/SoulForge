@@ -2208,3 +2208,11 @@ body.float-dragging, body.float-dragging * { user-select: none !important; -webk
 .scroll-mark.ritual { color: var(--muted); border-color: var(--line); }
 .scroll-learn { top: 6px; right: 6px; }
 .scroll-card:hover { transform: translateY(-3px); }
+
+/* The spellbook's counts, learned and prepared apart; the prepared one opens the prepare list (C7.18) */
+.spell-counts { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.spell-count { font: 700 11.5px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--gold2); padding: 2px 9px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); background: none; }
+.spell-count.full { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
+button.spell-count.prep { cursor: pointer; }
+button.spell-count.prep.todo { background: color-mix(in srgb, var(--gold) 18%, transparent); border-color: var(--gold); }
+button.spell-count.prep.on { background: color-mix(in srgb, var(--gold) 28%, transparent); }

@@ -428,16 +428,46 @@ function StartingGear() {
   );
 }
 
-/** A coin purse with a few coins beside it, for the shop on the backpack's card back. */
+/**
+ * The shop (Chris 2026-10-29: more like a shop, more detail): a market stall with a striped awning, a hanging sign
+ * with a coin, potions and a scale on the counter, and a pile of coins beside it.
+ */
 function Purse() {
+  const stripes = [0, 1, 2, 3, 4, 5];
   return (
-    <svg className="board-pack" viewBox="0 0 120 120" role="img" aria-label="Coin purse">
-      <path d="M44 38c-4-8 2-14 16-14s20 6 16 14" fill="none" stroke="var(--gold2)" strokeWidth="4" strokeLinecap="round" />
-      <path d="M40 40h40l-4 8c18 8 26 22 22 38-3 12-16 18-38 18s-35-6-38-18c-4-16 4-30 22-38z" fill="hsl(30 40% 26%)" stroke="var(--gold)" strokeWidth="2.5" />
-      <path d="M42 48h36" stroke="var(--gold2)" strokeWidth="4" strokeLinecap="round" />
-      <ellipse cx="96" cy="100" rx="11" ry="4.5" fill="var(--gold)" stroke="#0006" />
-      <ellipse cx="96" cy="94" rx="11" ry="4.5" fill="var(--gold2)" stroke="#0006" />
-      <ellipse cx="22" cy="102" rx="9" ry="3.8" fill="var(--gold2)" stroke="#0006" />
+    <svg className="board-pack" viewBox="0 0 120 120" role="img" aria-label="Shop">
+      <ellipse cx="60" cy="108" rx="48" ry="5" fill="#0005" />
+      {/* posts and back wall */}
+      <rect x="20" y="40" width="5" height="64" fill="hsl(28 35% 28%)" />
+      <rect x="95" y="40" width="5" height="64" fill="hsl(28 35% 28%)" />
+      <rect x="25" y="44" width="70" height="36" fill="hsl(28 30% 18%)" />
+      {/* shelf with jars */}
+      <rect x="27" y="62" width="66" height="3" fill="hsl(28 40% 35%)" />
+      <rect x="32" y="53" width="6" height="9" rx="1.5" fill="hsl(200 50% 55%)" />
+      <rect x="42" y="55" width="6" height="7" rx="1.5" fill="hsl(130 40% 45%)" />
+      <rect x="74" y="54" width="7" height="8" rx="1.5" fill="hsl(280 35% 55%)" />
+      {/* awning */}
+      {stripes.map((i) => <path key={i} d={`M${14 + i * 15.33} 30h15.33l-2 14h-11.33z`} fill={i % 2 ? "hsl(42 70% 82%)" : "hsl(355 60% 42%)"} />)}
+      <path d="M14 30h92" stroke="var(--gold)" strokeWidth="2.5" />
+      {stripes.map((i) => <path key={`s${i}`} d={`M${16 + i * 15.33} 44q5.67 6 11.33 0`} fill={i % 2 ? "hsl(42 70% 82%)" : "hsl(355 60% 42%)"} />)}
+      <path d="M22 30L60 14L98 30" fill="none" stroke="hsl(28 35% 28%)" strokeWidth="4" strokeLinejoin="round" />
+      {/* hanging sign with a coin */}
+      <path d="M53 46v6M67 46v6" stroke="var(--gold2)" strokeWidth="1.2" />
+      <rect x="49" y="51" width="22" height="13" rx="2" fill="hsl(28 40% 30%)" stroke="var(--gold)" strokeWidth="1.5" />
+      <circle cx="60" cy="57.5" r="4" fill="var(--gold2)" stroke="#0006" />
+      {/* counter */}
+      <rect x="16" y="80" width="88" height="24" rx="2" fill="hsl(28 40% 32%)" stroke="var(--gold)" strokeWidth="2" />
+      <path d="M16 88h88" stroke="hsl(28 40% 22%)" strokeWidth="1.5" />
+      {/* potions on the counter */}
+      <path d="M30 80c-4 0-6-4-4-8l2-3v-4h4v4l2 3c2 4 0 8-4 8z" fill="hsl(355 70% 50%)" stroke="#0007" />
+      <path d="M40 80c-3 0-5-3-3-6l1-2v-5h3v5l1 2c2 3 0 6-2 6z" fill="hsl(200 70% 55%)" stroke="#0007" />
+      {/* scale */}
+      <path d="M78 62v18M70 66h16" stroke="var(--gold2)" strokeWidth="1.8" />
+      <path d="M67 66l-3 6h6zM89 66l-3 6h6z" fill="none" stroke="var(--gold2)" strokeWidth="1.4" />
+      {/* coin pile */}
+      <ellipse cx="104" cy="104" rx="9" ry="3.5" fill="var(--gold)" stroke="#0006" />
+      <ellipse cx="104" cy="100" rx="9" ry="3.5" fill="var(--gold2)" stroke="#0006" />
+      <ellipse cx="104" cy="96" rx="8" ry="3.2" fill="var(--gold)" stroke="#0006" />
     </svg>
   );
 }
@@ -1178,22 +1208,22 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           {kind === "background" && (chosenEl.background ? <><PersonalitySwitch r={r} set={set} /><SlotList slots={ownSlots((root) => root === "background")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your background." /><PassiveFeatures r={r} root={(root) => root === "background"} /></> : <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>)}
           {kind === "magic" && (caster ? (
             <>
-              <div className="card-back-art">
-                {prepares ? (
-                  <button className={`card-back-toggle ${backView === "prepare" ? "on" : ""}`} aria-pressed={backView === "prepare"} title={backView === "prepare" ? "Back to all the spells" : "Show only the spells to prepare"} onClick={() => setBackView(backView === "prepare" ? null : "prepare")}>
-                    <SpellBook f={spellFill} /><small>Prepare spells</small>
-                  </button>
-                ) : <SpellBook f={spellFill} />}
-                {/* Learned and prepared counted apart (C7.18: one sum grew with Intelligence while the view showed only
-                    the spells to learn); the prepared count leads to the prepare list. */}
-                <span className="spell-counts">
-                  {learnNeed > 0 && <span className={`spell-count ${learnHave >= learnNeed ? "full" : ""}`}>Learned {learnHave}/{learnNeed}</span>}
-                  {prepNeed > 0 && (
-                    <button className={`spell-count prep ${prepHave >= prepNeed ? "full" : "todo"} ${backView === "prepare" ? "on" : ""}`} title="The spells prepared today: click to prepare them" onClick={() => setBackView(backView === "prepare" ? null : "prepare")}>
-                      Prepared {prepHave}/{prepNeed}{prepHave < prepNeed && backView !== "prepare" ? " · prepare ›" : ""}
+              {/* The book, then two tabs under it as the backpack has (Chris 2026-10-29): the spells learned, and the spells
+                  prepared, each with its count; the Prepared tab says each class's own count, as each class prepares
+                  by its own level and ability (a multiclass Artificer 3/3 · Cleric 0/5, not one sum). */}
+              <div className="card-back-art spell-art">
+                <SpellBook f={spellFill} />
+                {prepares && (
+                  <div className="spell-tabs" role="tablist" aria-label="Spells">
+                    <button role="tab" aria-selected={backView !== "prepare"} className={`spell-tab ${backView !== "prepare" ? "on" : ""} ${learnHave >= learnNeed ? "full" : "todo"}`} onClick={() => setBackView(null)}>
+                      <b>Learned</b><small>{learnHave}/{learnNeed}</small>
                     </button>
-                  )}
-                </span>
+                    <button role="tab" aria-selected={backView === "prepare"} className={`spell-tab prep ${backView === "prepare" ? "on" : ""} ${prepHave >= prepNeed ? "full" : "todo"}`} onClick={() => setBackView("prepare")}>
+                      <b>Prepared</b><small>{prepHave}/{prepNeed}</small>
+                      {preparing.length > 1 && <small className="spell-tab-each">{preparing.map((c) => `${c.name} ${preparedOf(c)}/${prepareTarget(r, c)}`).join(" · ")}</small>}
+                    </button>
+                  </div>
+                )}
               </div>
               {backView === "prepare" && prepares ? <PrepareSpells r={r} ch={ch} set={set} onDetail={() => undefined} /> : (
                 <>

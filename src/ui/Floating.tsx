@@ -99,6 +99,12 @@ const BAR = 38;
  * A window may go partly out of the app window (C6.3), but never so far that its title bar cannot be grabbed: 120
  * pixels of the bar stay in sight sideways, the whole bar in sight up and down.
  */
+/** Wholly inside the app window, as a window taken out of the bag is. */
+const inSight = (w: FloatWindow): FloatWindow => {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const ww = Math.min(Math.max(280, w.w), vw - 16), hh = Math.min(Math.max(160, w.h), vh - 16);
+  return { ...w, w: ww, h: hh, x: Math.min(Math.max(8, w.x), vw - ww - 8), y: Math.min(Math.max(8, w.y), vh - hh - 8) };
+};
 const clampTo = (w: FloatWindow): FloatWindow => {
   const vw = window.innerWidth, vh = window.innerHeight;
   const ww = Math.min(Math.max(280, w.w), vw - 16), hh = Math.min(Math.max(160, w.h), vh - 16);
@@ -143,7 +149,8 @@ export function FloatingProvider({ characterId, children, render }: { characterI
     focus: (id) => setWindows((ws) => (ws.find((w) => w.id === id)?.z === top(ws) - 1 ? ws : ws.map((w) => (w.id === id ? { ...w, z: top(ws) } : w)))),
     move: (id, x, y, w, h) => setWindows((ws) => ws.map((o) => (o.id === id ? clampTo({ ...o, x, y, w: w ?? o.w, h: h ?? o.h }) : o))),
     bag: (id) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, bagged: true } : w))),
-    unbag: (id) => { fromBag.add(id); setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, bagged: false, z: top(ws) } : w))); },
+    // Out of the bag it comes back wholly in sight, wherever it was dragged before (C7.2).
+    unbag: (id) => { fromBag.add(id); setWindows((ws) => ws.map((w) => (w.id === id ? { ...inSight(w), bagged: false, z: top(ws) } : w))); },
     bagAll: () => setWindows((ws) => ws.map((w) => ({ ...w, bagged: true }))),
     emptyBag: () => setWindows((ws) => ws.filter((w) => !w.bagged)),
     // Lines the open windows up in rows from the top left, each its own size, wrapping at the window's edge.

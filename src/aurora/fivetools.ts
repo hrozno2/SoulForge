@@ -465,7 +465,16 @@ function convertItem(i: J, ctx: Ctx): AElement | null {
   // built on one ("+1 Laser Rifle") takes its base item's age.
   const supports: string[] = /^futuristic$/i.test(String(m.age ?? "")) ? ["scifi"] : /^(modern|renaissance)$/i.test(String(m.age ?? "")) ? ["modern"] : [];
   // Something that holds other things (a backpack, a pouch, a bag of holding), for "Kept in" in the inventory.
-  if (m.containerCapacity) supports.push("container");
+  // Only one that holds gear: a weight, or a volume of half a cubic foot or more (a bucket, a barrel). A liquid's small
+  // measure (a waterskin, a flask, a vial) holds no gear; a quiver or a scroll case holds only what it is made for (C7.3).
+  const holdsCap = m.containerCapacity as { weight?: number[]; volume?: number[]; item?: Record<string, number>[] } | undefined;
+  if (holdsCap) {
+    if (holdsCap.weight?.length || Math.max(0, ...(holdsCap.volume ?? [])) >= 0.5) supports.push("container");
+    else if (holdsCap.item?.length) {
+      supports.push("container-for");
+      setters.holds = set([...new Set(holdsCap.item.flatMap((g) => Object.keys(g).map((k) => k.split("|")[0].replace(/\s*\(.*\)$/, ""))))].join("; "));
+    }
+  }
   if (m.weight !== undefined) setters.weight = set(`${m.weight} lb.`, { lb: String(m.weight) });
   // A magic item without a price of its own keeps its base item's as "base cost" (a +1 Longsword is not 15 gp); the
   // shop prices it by rarity on top when the character uses rarity prices, as Plutonium does (src/aurora/shop.ts).

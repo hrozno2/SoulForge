@@ -22,6 +22,13 @@ describe("spell choice pools", () => {
     expect(spellChoicePools(new Map([["X", el]]))).toBe(1);
     expect(el.rules.map((r: any) => r.supports)).toEqual(["$(spellcasting:list), $(spellcasting:slots)", "$(spellcasting:list), 1", "$(spellcasting:list), 6", "$(spellcasting:list), 0"]);
   });
+
+  it("leaves a feat's or species trait's spells alone: their own list, their own level (C7.1)", () => {
+    for (const type of ["Feat", "Racial Trait", "Feat Feature"]) {
+      const el = { id: "F", type, name: "Magic Initiate", rules: [sel("Level 1 spell (Magic Initiate)", "$(spellcasting:list), 1")] } as unknown as AElement;
+      expect(spellChoicePools(new Map([["F", el]]))).toBe(0);
+    }
+  });
 });
 
 const C = process.env.SOULFORGE_RULES;

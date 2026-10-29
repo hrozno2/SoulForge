@@ -381,10 +381,14 @@ export function resolveCreatureRefs(byId: Map<string, AElement>): void {
  * level 1 becomes "levels you have slots for". A Wizard's spellbook keeps its six 1st-level spells (they are written
  * in the book and stay), and Mystic Arcanum and the like (a fixed level above 1) keep their level.
  */
+const CLASS_OWNED = new Set(["Class", "Archetype", "Class Feature", "Archetype Feature"]);
+
 export function spellChoicePools(byId: Map<string, AElement>): number {
   let n = 0;
   for (const el of byId.values()) {
-    if (!el.rules.some((r) => r.kind === "select" && r.type === "Spell")) continue;
+    // A class's or subclass's own spells only: a feat, species trait or other feature that grants spells (Magic
+    // Initiate and every one like it) keeps its own list with its own level (C7.1).
+    if (!CLASS_OWNED.has(el.type) || !el.rules.some((r) => r.kind === "select" && r.type === "Spell")) continue;
     el.rules = el.rules.map((r) => {
       if (r.kind !== "select" || r.type !== "Spell" || !r.spellcasting || /^spellbook/i.test(r.name)) return r;
       const m = /^(\s*\$\(spellcasting:list\)\s*,\s*)1\s*$/.exec(r.supports ?? "");

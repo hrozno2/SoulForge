@@ -80,4 +80,10 @@ test("a window shrinks to its bar, focuses over a blur, goes partly out of sight
   await page.mouse.up();
   await expect(page.locator(".float-window")).toHaveCount(0);
   await expect(page.locator(".bag-item")).toHaveCount(1);
+  // Taken out again, it is wholly in sight though it went in half out of the window (C7.2).
+  await page.locator(".bag-take").first().click();
+  const back = (await page.locator(".float-window").first().boundingBox())!;
+  expect(back.x).toBeGreaterThanOrEqual(0);
+  expect(back.y + back.height).toBeLessThanOrEqual(vp.height);
+  expect(back.x + back.width).toBeLessThanOrEqual(vp.width);
 });

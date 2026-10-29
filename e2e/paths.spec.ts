@@ -238,3 +238,14 @@ test("Home's characters can be compact for small screens (Chris 2026-10-29)", as
   await expect(page.locator(".char-cards.compact")).toHaveCount(1);
   expect((await card.boundingBox())!.height).toBeLessThan(tall * 0.7);
 });
+
+test("the spellbook is greyed out while there is nothing to choose (Chris 2026-10-29)", async ({ page }) => {
+  await addTestContent(page);
+  await page.getByRole("button", { name: /new character/i }).click();
+  await tab(page, "Build");
+  await expect(page.locator("[data-tile=magic]")).toHaveClass(/disabled/);
+  await page.locator(".board-acc-head", { hasText: "Class" }).click();
+  await page.locator(".board-acc.open .mini-card", { hasText: "Spellsinger" }).locator(".mini-main").click();
+  await closeFresh(page);
+  await expect(page.locator("[data-tile=magic]")).not.toHaveClass(/disabled/);
+});

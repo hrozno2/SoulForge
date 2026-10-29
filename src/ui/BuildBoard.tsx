@@ -1138,7 +1138,8 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     const Icon = ICON[kind];
     const isOpen = open === kind;
     const el = kind === "race" ? chosenEl.race : kind === "background" ? chosenEl.background : kind === "class" ? firstClass : undefined;
-    const disabled = kind === "magic" && !caster;
+    // The spellbook is greyed out while there is nothing to learn or prepare (Chris 2026-10-29), granted spells or not.
+    const disabled = kind === "magic" && (!caster || spellNeed === 0);
     const name = kind === "class" && ch.classes.length ? ch.classes.map((c) => r.reg.get(c.classId)?.name ?? c.classId).join(" / ") : el?.name ?? (kind === "magic" ? "Spellbook" : kind === "equipment" ? "Backpack" : "");
     // A chosen species, class or background shows as its full card, the same as the cards in the lists.
     if (el && (kind === "race" || kind === "class" || kind === "background")) {
@@ -1192,7 +1193,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
             <>
               <small className="board-kicker">Choose</small>
               <h3>{TITLE[kind]}</h3>
-              <p className="board-blurb">{disabled ? "No spellcasting yet." : ASK[kind]}</p>
+              <p className="board-blurb">{disabled ? (caster ? "No spells to choose." : "No spellcasting yet.") : ASK[kind]}</p>
             </>
           )}
         </div>

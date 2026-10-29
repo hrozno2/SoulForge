@@ -58,9 +58,11 @@ describe("planning and applying", () => {
   it("builds choice groups for an older style class", () => {
     const plan = planFor(reg.get("C_CLR")!, "class", reg)!;
     expect(plan.variants[0].choices[0].options).toHaveLength(2);
-    const pick1 = variantItems(plan.variants[0], [1], idx, "B", true).map((i) => i.name);
+    const items = variantItems(plan.variants[0], [1], idx, "B", true);
+    const pick1 = items.map((i) => i.name);
     expect(pick1).toContain("Shield");
-    expect(pick1).toContain("Amulet"); // holy symbol resolves to the amulet
+    // A holy symbol is the player's pick of the group, not the amulet by default (C7.7).
+    expect(items.find((i) => i.name === "Holy Symbol")?.pending).toBe("holy");
   });
 
   it("matches arrow bundles and unknown items become custom items", () => {

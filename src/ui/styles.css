@@ -2155,3 +2155,9 @@ body.float-dragging, body.float-dragging * { user-select: none !important; -webk
 .options li { display: flex; align-items: stretch; }
 .options li > button:not(.learn) { flex: 1; min-width: 0; }
 .options li > button.learn { flex: none; width: 34px; display: grid; place-items: center; padding: 0; border-bottom: 1px solid var(--line); font: 700 12px var(--book); color: var(--gold); }
+
+/* Hit points not set up yet (C7.10): a gold bar asking to configure them */
+.board-bar.hp.configure > span { background: linear-gradient(90deg, var(--gold), var(--gold2)); }
+.board-bar.hp.configure b { color: var(--bg); text-shadow: none; }
+.hp-bar.configure > div { background: linear-gradient(90deg, var(--gold), var(--gold2)); }
+.hp-bar.configure { cursor: pointer; }

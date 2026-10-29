@@ -1,9 +1,9 @@
 import { companionBonuses } from "../aurora/companion";
 import { TextArea, TextInput } from "./TextField";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, headerInfo, type CastingLine, type FeatureLine, type SheetData } from "../aurora/sheet";
-import { ABILITY_LABEL, ABILITY_SHORT, XP_TABLE, itemLabel, uid, xpToLevel, type AbilityId, type Character, type Resource } from "../aurora/character";
+import { ABILITY_LABEL, ABILITY_SHORT, XP_TABLE, hpConfigured, itemLabel, uid, xpToLevel, type AbilityId, type Character, type Resource } from "../aurora/character";
 import type { AElement } from "../aurora/types";
 import { Html } from "./Html";
 import { requestRoll, RollModeSwitch, type RollOptions } from "./Dice";
@@ -169,7 +169,12 @@ function Vitals({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetC
     <div className="vitals">
       <div className="hp-main">
         <small>{t("Hit Points")}</small>
-        <div className={pct < 25 ? "hp-bar big low" : "hp-bar big"}><div style={{ width: `${hpPart}%` }} />{ch.play.tempHp > 0 && <div className="temp-fill" style={{ left: `${hpPart}%`, width: `${tempPart}%` }} />}<span>{hp} / {sheet.hp}</span></div>
+        {hpConfigured(ch) ? (
+          <div className={pct < 25 ? "hp-bar big low" : "hp-bar big"}><div style={{ width: `${hpPart}%` }} />{ch.play.tempHp > 0 && <div className="temp-fill" style={{ left: `${hpPart}%`, width: `${tempPart}%` }} />}<span>{hp} / {sheet.hp}</span></div>
+        ) : (
+          // Gold until fixed or rolled hit points are chosen (C7.10).
+          <button type="button" className="hp-bar big configure" title="Choose fixed or rolled hit points" onClick={() => window.dispatchEvent(new CustomEvent("cf-hp"))}><div style={{ width: "100%" }} /><span>{sheet.hp} · Configure</span></button>
+        )}
         {ch.play.tempHp > 0 && (
           <div className="temp-line" title="Temporary hit points are lost first and do not stack">
             <span className="temp-pill">+{ch.play.tempHp} temp</span>
@@ -764,6 +769,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
   const [xpOpen, setXpOpen] = useState(false);
   const [xpAdd, setXpAdd] = useState("");
   const [hpOpen, setHpOpen] = useState(false);
+  useEffect(() => { const on = () => setHpOpen(true); window.addEventListener("cf-hp", on); return () => window.removeEventListener("cf-hp", on); }, []);
   const rests = useRests(r, ch, sheet, set);
   const hasSpells = sheet.casting.length > 0;
   const nextXp = XP_TABLE[Math.min(19, sheet.level)] ?? 0;

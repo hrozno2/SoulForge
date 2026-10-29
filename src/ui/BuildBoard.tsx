@@ -12,7 +12,7 @@ import { TextInput } from "./TextField";
 import { createPortal } from "react-dom";
 import type { AElement } from "../aurora/types";
 import { stillToChoose, type Resolved } from "../aurora/engine";
-import { ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, totalLevel, type AbilityId, type Character } from "../aurora/character";
+import { ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, hpConfigured, totalLevel, type AbilityId, type Character } from "../aurora/character";
 import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as pbSpent } from "../aurora/pointBuy";
 import { buildSheet } from "../aurora/sheet";
 import { formatRelease, groupVariants, hiddenBy, type Group } from "../aurora/books";
@@ -38,7 +38,7 @@ import { D20, Head, Pack, Scroll, Sword, Wand } from "./icons";
 type Back = { kind: Kind; mode: "new" | "edit"; snap: Character; from: DOMRect | null; name: string; phase: "flying" | "open" };
 
 /** One thing still to choose, and where it is chosen. */
-type LeftItem = { kind: Kind; text: string; list: boolean };
+type LeftItem = { kind: Kind; text: string; list: boolean; act?: () => void; label?: string };
 type Kind = "race" | "class" | "background" | "magic" | "equipment";
 const TITLE: Record<Kind, string> = { race: "Species", class: "Class", background: "Background", magic: "Spells and magic", equipment: "Equipment" };
 const ASK: Record<Kind, string> = {
@@ -691,6 +691,8 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
   const dieNames = sh.hitDice.map((h) => `d${h.die}`).join("+");
   const [crop, setCrop] = useState<File | null>(null);
   const [hpOpen, setHpOpen] = useState(false);
+  // The choice checker's "Hit points" line opens the dialog (C7.10).
+  useEffect(() => { const on = () => setHpOpen(true); window.addEventListener("cf-hp", on); return () => window.removeEventListener("cf-hp", on); }, []);
   const race = ch.race ? r.reg.get(ch.race)?.name : "";
   const what = [race, ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join(" / ")].filter(Boolean).join(" · ");
   const pick = (url: string) => { set((c) => ({ ...c, portrait: url })); setOpen(false); };
@@ -709,9 +711,16 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
         </span>
         {sh.hp > 0 && (
           <div className="board-bars">
-            <button type="button" className="board-bar hp" title={`Hit points ${hp} of ${sh.hp}${ch.play.tempHp ? `, ${ch.play.tempHp} temporary` : ""}. Click for the hit point rolls.`} onClick={() => setHpOpen(true)}>
-              <span style={{ width: `${(100 * hp) / sh.hp}%` }} /><b>HP {hp}/{sh.hp}{ch.play.tempHp ? ` +${ch.play.tempHp}` : ""}</b>
-            </button>
+            {hpConfigured(ch) ? (
+              <button type="button" className="board-bar hp" title={`Hit points ${hp} of ${sh.hp}${ch.play.tempHp ? `, ${ch.play.tempHp} temporary` : ""}. Click for the hit point rolls.`} onClick={() => setHpOpen(true)}>
+                <span style={{ width: `${(100 * hp) / sh.hp}%` }} /><b>HP {hp}/{sh.hp}{ch.play.tempHp ? ` +${ch.play.tempHp}` : ""}</b>
+              </button>
+            ) : (
+              // Gold, asking to be set up, until the player picks fixed or rolled hit points (C7.10).
+              <button type="button" className="board-bar hp configure" title="Choose fixed or rolled hit points" onClick={() => setHpOpen(true)}>
+                <span style={{ width: "100%" }} /><b>HP {sh.hp} · Configure</b>
+              </button>
+            )}
             {dice > 0 && (
               <div className="board-bar hd" title={`Hit dice ${diceLeft} of ${dice} (${dieNames})`}>
                 <span style={{ width: `${(100 * diceLeft) / dice}%` }} /><b>Hit dice {diceLeft}/{dice} {dieNames}</b>
@@ -972,11 +981,13 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     ...(!ch.classes.length ? [{ kind: "class" as Kind, text: "Choose a class", list: true }] : []),
     ...(!ch.background ? [{ kind: "background" as Kind, text: "Choose a background", list: true }] : []),
     ...r.slots.filter((sl) => stillToChoose(sl, r)).map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: false })),
+    // Hit points: fixed or rolled, until the player picks (C7.10).
+    ...(ch.classes.length && !hpConfigured(ch) ? [{ kind: "class" as Kind, text: "Hit points: choose fixed or rolled", list: false, label: "Hit points", act: () => window.dispatchEvent(new CustomEvent("cf-hp")) }] : []),
     ...(plans.length && packFill < 1 && !plans.every((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))) ? [{ kind: "equipment" as Kind, text: "Starting equipment", list: false }] : []),
   ];
   // Each space's count of what is left: every choice its species, class or background asks for (languages,
   // skills, feats and score increases included), and the spells still to pick.
-  const todo = Object.fromEntries(ORDER.map((k) => [k, leftItems.filter((it) => it.kind === k && k !== "equipment").length])) as Record<Kind, number>;
+  const todo = Object.fromEntries(ORDER.map((k) => [k, leftItems.filter((it) => it.kind === k && k !== "equipment" && !it.act).length])) as Record<Kind, number>;
 
   // Choices that belong to each space: everything its species, class or background asks except spells (under magic).
   const ownSlots = (test: (root: string) => boolean) => r.slots.filter((s) => test(s.root) && tabOfSlot(s) !== "magic");
@@ -1243,7 +1254,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
             <button aria-haspopup={leftItems.length ? "true" : undefined}>{leftItems.length ? `${leftItems.length} ${leftItems.length === 1 ? "choice" : "choices"} left` : "✓ Every choice is made"}</button>
             {leftItems.length > 0 && (
               <ul className="board-left-pop">
-                {leftItems.map((it, k) => <li key={k}><button onClick={() => goTo(it)}><span className="board-left-kind">{TITLE[it.kind]}</span><span>{it.text}</span></button></li>)}
+                {leftItems.map((it, k) => <li key={k}><button onClick={() => (it.act ? it.act() : goTo(it))}><span className="board-left-kind">{it.label ?? TITLE[it.kind]}</span><span>{it.text}</span></button></li>)}
               </ul>
             )}
           </div>

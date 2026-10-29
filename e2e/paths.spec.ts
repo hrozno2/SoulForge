@@ -199,3 +199,25 @@ test("a card window keeps the source picker for a card in more than one book (C7
   await page.locator("[data-tile=background]").click();
   await expect(page.locator(".float-window.card-window-background .card-back-source")).toBeVisible();
 });
+
+test("hit points ask to be configured until fixed or rolled is chosen (C7.10)", async ({ page }) => {
+  await addTestContent(page);
+  await page.getByRole("button", { name: /new character/i }).click();
+  await tab(page, "Build");
+  await page.locator(".board-acc-head", { hasText: "Class" }).click();
+  await page.locator(".board-acc.open .mini-card", { hasText: "Warden" }).locator(".mini-main").click();
+  const back = page.getByRole("dialog", { name: /choices/ });
+  if (await back.waitFor({ timeout: 2000 }).then(() => true, () => false)) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
+  const bar = page.locator(".board-bar.hp");
+  await expect(bar).toHaveClass(/configure/);
+  await expect(bar).toContainText("Configure");
+  // The choice checker lists it, and its line opens the dialog.
+  await page.locator(".board-left-btn button").first().hover();
+  await page.locator(".board-left-pop button", { hasText: "Hit points" }).click();
+  const dialog = page.getByRole("dialog", { name: "Hit points" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Fixed (average)" }).click();
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await expect(bar).not.toHaveClass(/configure/);
+  await expect(page.locator(".board-left-pop button", { hasText: "Hit points" })).toHaveCount(0);
+});

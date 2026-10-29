@@ -131,5 +131,7 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
     c = { ...c, hpMode: "roll", hpRolls: rolls, hpRollLog: log };
   }
   c.name = "Random adventurer";
+  // A random character is finished: its hit points are settled, fixed or rolled (C7.10).
+  c.hpChosen = true;
   return c;
 }

@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import type { Resolved } from "../aurora/engine";
-import type { Character } from "../aurora/character";
+import { hpConfigured, type Character } from "../aurora/character";
 import { hpBreakdown, rollAudit, withHpRoll } from "../aurora/hpRolls";
 import { requestRoll } from "./Dice";
 import type { SetCharacter } from "./Slots";
@@ -25,9 +25,10 @@ export function HpRollsDialog({ r, ch, set, onClose }: { r: Resolved; ch: Charac
       <div className="modal-page themed hp-rolls" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
         <h2>Hit points <small className="muted">maximum {total}</small></h2>
+        {!hpConfigured(ch) && <p className="notice">Choose how your hit points grow: a fixed amount each level (the average of the die), or rolled.</p>}
         <div className="row">
           {(["average", "roll"] as const).map((m) => (
-            <button key={m} className={ch.hpMode === m ? "pill active" : "pill"} onClick={() => set((c) => ({ ...c, hpMode: m }))}>{m === "average" ? "Fixed (average)" : "Rolled"}</button>
+            <button key={m} className={hpConfigured(ch) && ch.hpMode === m ? "pill active" : "pill"} aria-pressed={ch.hpChosen ? ch.hpMode === m : undefined} onClick={() => set((c) => ({ ...c, hpMode: m, hpChosen: true }))}>{m === "average" ? "Fixed (average)" : "Rolled"}</button>
           ))}
           {ch.hpMode === "roll" && lines.some((l) => l.level > 1 && l.how === "average") && (
             <button className="primary" onClick={() => lines.filter((l) => l.level > 1 && l.how === "average").forEach((l) => roll(l.level, l.die))}>Roll the rest</button>

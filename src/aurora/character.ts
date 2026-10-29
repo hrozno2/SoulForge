@@ -207,6 +207,8 @@ export interface Character {
   /** Content added by hand outside the normal rules: extra languages, feats, spells, features. */
   extras: string[];
   hpMode: "average" | "roll";
+  /** The player chose fixed or rolled hit points (C7.10); until then the hit point bar asks to configure them. */
+  hpChosen?: boolean;
   /** Hit point roll for each level from 2 up, by character level number as a string. */
   hpRolls: Record<string, number>;
   /**
@@ -348,3 +350,10 @@ export function itemLabel(it: InvItem, name?: string): string {
   const base = it.label?.trim() || name || it.custom?.name || it.id;
   return it.magic && !/[+]\d/.test(base) ? `${base} +${it.magic}` : base;
 }
+
+/**
+ * Whether the player has settled how hit points work (C7.10, Chris 2026-10-29: players did not know they could change
+ * them): chosen in the hit point dialog, or plainly so from an older save (rolled, or rolls recorded).
+ */
+export const hpConfigured = (ch: Pick<Character, "hpChosen" | "hpMode" | "hpRolls">): boolean =>
+  !!ch.hpChosen || ch.hpMode === "roll" || Object.keys(ch.hpRolls ?? {}).length > 0;

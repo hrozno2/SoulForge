@@ -2267,3 +2267,14 @@ button.spell-count.prep.on { background: color-mix(in srgb, var(--gold) 28%, tra
 
 /* A new pick's window: "Put it back" restores what the space held before (Chris 2026-10-29) */
 .fresh-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; padding: 6px 10px; border-radius: 6px; background: color-mix(in srgb, var(--gold) 12%, transparent); border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); font: 600 13px var(--body); color: var(--gold2); }
+
+/* Option A or B in one box with radios (Chris 2026-10-29), the chosen option's picks underneath */
+.equip-group .equip-card { border: 0; padding: 0; margin-top: 8px; background: none; box-shadow: none; }
+.equip-group .equip-card > .row > b:first-child { display: none; }
+.equip-option { align-items: flex-start; }
+.equip-option small { display: block; line-height: 1.35; }
+
+/* Manual scores: the number centred in its box (Chris 2026-10-29: it sat to the left) */
+.board-num { display: inline-grid; place-items: center; text-align: center; }
+.board-num.rolls .board-num-value { width: 100%; text-align: center; }
+.board-num-in { text-align: center; }

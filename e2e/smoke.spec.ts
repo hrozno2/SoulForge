@@ -283,17 +283,19 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(page.locator("table tbody tr")).toHaveCount(0);
     const origins = page.locator(".equip-origin");
     await expect(origins).toHaveCount(2);
-    await origins.first().getByRole("button", { name: "Add", exact: true }).first().click();
+    await origins.first().getByRole("button", { name: /^(Add these|Use these instead)$/ }).first().click();
     // The class folds, the background is still open, and the panel is still there.
     await expect(page.locator(".equip-origin-done")).toHaveCount(1);
     await expect(page.locator(".equip-origin:not(.equip-origin-done)")).toHaveCount(1);
-    await page.locator(".equip-origin:not(.equip-origin-done)").getByRole("button", { name: "Add", exact: true }).first().click();
+    await page.locator(".equip-origin:not(.equip-origin-done)").getByRole("button", { name: /^(Add these|Use these instead)$/ }).first().click();
     await expect(page.locator(".equip-done")).toBeVisible();
     // Change the class option: the earlier one is marked as added, and choosing the other replaces it.
     await page.getByRole("button", { name: "Add more..." }).click();
     await page.locator(".equip-origin-done").first().getByRole("button", { name: "Change" }).click();
     await expect(page.locator(".equip-card.chosen")).toHaveCount(1);
-    await page.locator(".equip-card:not(.chosen)").first().getByRole("button", { name: /instead/ }).click();
+    // A and B in one box: the other option's radio, then "Use these instead".
+    await page.locator(".equip-option", { hasNot: page.locator(".done-mark") }).first().locator("input").check();
+    await page.locator(".equip-group .equip-card:not(.chosen)").first().getByRole("button", { name: /instead/ }).click();
     await expect(page.locator(".equip-done")).toBeVisible();
     // Gear you add is marked, counted, and the panel stays open.
     await page.getByRole("button", { name: "Add more..." }).click();

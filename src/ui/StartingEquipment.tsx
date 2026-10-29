@@ -42,7 +42,6 @@ function VariantCard({ plan, v, idx, prefer, settle, onAdd, added, replaces }: {
       <div className="row">
         <b>{v.label}</b>
         {added && <span className="done-mark">✓ Added</span>}
-        {v.choices.length === 0 && !v.goldRoll && !added && <button className="primary" onClick={() => onAdd(items, v.gp)}>{replaces ? "Use this instead" : "Add"}</button>}
         {v.goldRoll && !added && (
           <button className="primary" title="Roll the class's starting gold and take it instead of the gear" onClick={() => { const g = v.goldRoll!; requestRoll(`Starting gold (${plan.title})`, g.dice, (res) => onAdd([], res.total * g.times)); }}>
             Roll {v.goldRoll.dice}{v.goldRoll.times > 1 ? ` × ${v.goldRoll.times}` : ""} gp
@@ -71,8 +70,40 @@ function VariantCard({ plan, v, idx, prefer, settle, onAdd, added, replaces }: {
       ))}
       {!added && raw.map((it, i) => it.pending && <PendingPick key={i} kind={it.pending} name={it.name} reg={idx.registry} prefer={prefer} value={generic[i]} onPick={(id) => setGeneric((g) => ({ ...g, [i]: id }))} />)}
       <Preview items={items} gp={v.gp} />
-      {v.choices.length > 0 && !added && <button className="primary" onClick={() => onAdd(items, v.gp)}>{replaces ? "Use these instead" : "Add these"}</button>}
+      {/* Add comes after the picks, at the foot of the box. */}
+      {!v.goldRoll && !added && <button className="primary" onClick={() => onAdd(items, v.gp)}>{replaces ? "Use these instead" : "Add these"}</button>}
       <label className="check small"><input type="checkbox" checked={open} onChange={() => setOpen(!open)} /> open packs into separate items</label>
+    </div>
+  );
+}
+
+/**
+ * A class's or background's options in one box, as the older "(a) or (b)" lists are (Chris 2026-10-29: "use that for
+ * everything"): Option A or B as a radio list with what each holds, then the chosen one's picks and its Add button.
+ */
+function VariantGroup({ plan, variants, idx, settle, mine, add }: { plan: EquipPlan; variants: EquipVariant[]; idx: ItemIndex; settle: (items: ResolvedItem[]) => ResolvedItem[]; mine: string[]; add: (items: ResolvedItem[], gp: number, label: string, plan?: EquipPlan) => void }) {
+  const keyOf = (v: EquipVariant) => `${plan.title}, ${v.label.toLowerCase()}`;
+  const [pick, setPick] = useState(() => Math.max(0, variants.findIndex((v) => mine.includes(keyOf(v)))));
+  if (!variants.length) return null;
+  const card = (v: EquipVariant) => <VariantCard key={v.label} plan={plan} v={v} idx={idx} prefer={plan.source} settle={settle} onAdd={(items, gp) => add(items, gp, keyOf(v), plan)} added={mine.includes(keyOf(v))} replaces={mine.length > 0} />;
+  if (variants.length === 1) return card(variants[0]);
+  const summary = (v: EquipVariant) => {
+    const items = variantItems(v, [], idx, plan.source, false);
+    const names = items.map((i) => `${i.qty > 1 ? `${i.qty} ` : ""}${i.name}`);
+    return [...names, v.gp ? `${v.gp} GP` : ""].filter(Boolean).join(", ");
+  };
+  return (
+    <div className="equip-card equip-group">
+      <b>Starting equipment</b>
+      <div className="choice-group">
+        {variants.map((v, i) => (
+          <label key={v.label} className="check equip-option">
+            <input type="radio" name={`${plan.title}-options`} checked={pick === i} onChange={() => setPick(i)} />
+            <span><b>{v.label}</b>{mine.includes(keyOf(v)) && <span className="done-mark"> ✓ Added</span>}<small className="muted"> {summary(v)}</small></span>
+          </label>
+        ))}
+      </div>
+      {card(variants[Math.min(pick, variants.length - 1)])}
     </div>
   );
 }
@@ -152,7 +183,8 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
         <div key={p.kind} className="equip-origin">
           <h3>{p.kind === "class" ? "Class" : "Background"}: {p.title}</h3>
           <div className="equip-grid">
-            {p.variants.map((v) => <VariantCard key={v.label} plan={p} v={v} idx={idx} prefer={p.source} settle={settle} onAdd={(items, gp) => add(items, gp, `${p.title}, ${v.label.toLowerCase()}`, p)} added={mine.includes(`${p.title}, ${v.label.toLowerCase()}`)} replaces={mine.length > 0} />)}
+            <VariantGroup plan={p} variants={p.variants.filter((v) => !v.goldRoll)} idx={idx} settle={settle} mine={mine} add={add} />
+            {p.variants.filter((v) => v.goldRoll).map((v) => <VariantCard key={v.label} plan={p} v={v} idx={idx} prefer={p.source} settle={settle} onAdd={(items, gp) => add(items, gp, `${p.title}, ${v.label.toLowerCase()}`, p)} added={mine.includes(`${p.title}, ${v.label.toLowerCase()}`)} replaces={mine.length > 0} />)}
           </div>
         </div>
         );

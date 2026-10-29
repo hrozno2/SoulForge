@@ -202,6 +202,7 @@ export class ARegistry {
     this.skillFixes = alignClassSkills(this.byId);
     optionalFeatureChoices(this.byId);
     wildShapeChoices(this.byId);
+    spellSchoolTags(this.byId);
     spellChoicePools(this.byId);
     requiredChoices(this.byId);
     for (const el of improvementOptions([...this.byId.values()])) if (!this.byId.has(el.id)) this.byId.set(el.id, el);
@@ -396,6 +397,20 @@ export function requiredChoices(byId: Map<string, AElement>): number {
     el.rules = el.rules.map((r) => (r.kind === "select" && r.optional && REQUIRED_DESPITE_FLAG.some((x) => x.name.test(r.name)) ? (n++, { ...r, optional: false }) : r));
   }
   return n;
+}
+
+/**
+ * Every spell carries its school as a tag ("Evocation School"), from either provider, so a choice can be limited by
+ * school (a 5e.tools Eldritch Knight's abjuration and evocation picks).
+ */
+export function spellSchoolTags(byId: Map<string, AElement>): void {
+  for (const el of byId.values()) {
+    if (el.type !== "Spell") continue;
+    const school = (el.setters.school?.value ?? "").trim();
+    if (!school) continue;
+    const tag = `${school.charAt(0).toUpperCase()}${school.slice(1).toLowerCase()} School`;
+    if (!el.supports.includes(tag)) el.supports = [...el.supports, tag];
+  }
 }
 
 const CLASS_OWNED = new Set(["Class", "Archetype", "Class Feature", "Archetype Feature"]);

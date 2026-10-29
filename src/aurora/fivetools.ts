@@ -1013,7 +1013,25 @@ function deltas(totals: number[]): number[] {
  * Tables become per-level stat steps so everything flows through the same rules. `shares`: the caster's levels
  * count toward the multiclass spell slots.
  */
-function castingRules(c: J, name: string, lists: string[], classLevel: string): { spellcasting?: AElement["spellcasting"]; rules: ARule[]; shares: boolean } {
+/**
+ * A subclass that learns spells of two schools only, with "any school" picks at set levels (the Eldritch Knight's
+ * abjuration and evocation, the Arcane Trickster's enchantment and illusion): read from its Spellcasting text, as
+ * 5e.tools gives it only there (Chris 2026-10-29: keep the limits the Aurora copies have).
+ */
+export function schoolLimit(text: string): { schools: string[]; anyAt: number[] } | undefined {
+  const m = /must (?:choose from|be) (?:the |an? )?(\w+) (?:and|or) (\w+) spells?/i.exec(text);
+  if (!m) return undefined;
+  const any = /(?:gained|learn) at ((?:\d+(?:st|nd|rd|th),?\s*(?:and |or )?)+)level[^.]*any school/i.exec(text);
+  const anyAt = any ? [...any[1].matchAll(/(\d+)/g)].map((x) => Number(x[1])) : [];
+  // "Three 1st-level wizard spells of your choice, two of which you must choose from...": the first one is free.
+  const first = /know (\w+) 1st-level [\w ]*spells of your choice, (\w+) of which/i.exec(text);
+  const words: Record<string, number> = { one: 1, two: 2, three: 3, four: 4 };
+  if (first && words[first[1].toLowerCase()] - words[first[2].toLowerCase()] > 0 && !anyAt.includes(3)) anyAt.unshift(3);
+  const cap1 = (x: string) => x.charAt(0).toUpperCase() + x.slice(1).toLowerCase();
+  return { schools: [cap1(m[1]), cap1(m[2])], anyAt: [...new Set(anyAt)].sort((a, b) => a - b) };
+}
+
+function castingRules(c: J, name: string, lists: string[], classLevel: string, limit?: { schools: string[]; anyAt: number[] }): { spellcasting?: AElement["spellcasting"]; rules: ARule[]; shares: boolean } {
   const rules: ARule[] = [];
   if (!c.spellcastingAbility && !c.casterProgression) return { rules, shares: false };
   const lname = name.toLowerCase();
@@ -1048,7 +1066,16 @@ function castingRules(c: J, name: string, lists: string[], classLevel: string): 
     const known = (c.spellsKnownProgression as number[] | undefined) ?? tableColumn(c, /^spells known/);
     const fixed = c.spellsKnownProgressionFixed as number[] | undefined;
     const knownSteps = fixed ?? (known ? deltas(known) : undefined);
-    if (knownSteps) knownSteps.forEach((n, i) => { if (n > 0) rules.push({ kind: "select", type: "Spell", name: prepared && fixed ? `Spellbook (${name})` : `Spell known (${name})`, supports: "$(spellcasting:list), $(spellcasting:slots)", number: n, level: i + 1, spellcasting: name }); });
+    if (knownSteps) knownSteps.forEach((n, i) => {
+      if (n <= 0) return;
+      const label = prepared && fixed ? `Spellbook (${name})` : `Spell known (${name})`;
+      if (!limit) { rules.push({ kind: "select", type: "Spell", name: label, supports: "$(spellcasting:list), $(spellcasting:slots)", number: n, level: i + 1, spellcasting: name }); return; }
+      // A school-limited subclass: its picks of its two schools, and the one "any school" pick at the levels it has one.
+      const free = limit.anyAt.includes(i + 1) ? Math.min(1, n) : 0;
+      const schools = limit.schools.map((x) => `${x} School`).join("||");
+      if (n - free > 0) rules.push({ kind: "select", type: "Spell", name: `Spell known (${name}: ${limit.schools.join(" or ").toLowerCase()})`, supports: `$(spellcasting:list), $(spellcasting:slots), (${schools})`, number: n - free, level: i + 1, spellcasting: name });
+      if (free) rules.push({ kind: "select", type: "Spell", name: `Spell known (${name}: any school)`, supports: "$(spellcasting:list), $(spellcasting:slots)", number: free, level: i + 1, spellcasting: name });
+    });
     // Spells of a set level learned at set class levels (the Warlock's Mystic Arcanum: one 6th-level spell at 11...).
     for (const [lv, byLevel] of Object.entries((c.spellsKnownProgressionFixedByLevel as Record<string, Record<string, number>>) ?? {})) {
       for (const [spellLevel, n] of Object.entries(byLevel)) rules.push({ kind: "select", type: "Spell", name: `Level ${spellLevel} spell (${name} ${lv})`, supports: `$(spellcasting:list), ${spellLevel}`, number: Number(n) || 1, level: Number(lv), spellcasting: name });
@@ -1337,7 +1364,8 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     srules.push(...optionalFeatureRules(s, srules));
     // A subclass that casts (Eldritch Knight, Arcane Trickster): its list is the class whose spells it expands with.
     const expandedFrom = [...JSON.stringify(s.additionalSpells ?? []).matchAll(/class=([A-Za-z ]+)/g)].map((m) => m[1].trim());
-    const subCasting = castingRules(s, s.shortName ?? s.name, expandedFrom.length ? [...new Set(expandedFrom)] : [c.name], lname);
+    const castText = features.filter((f) => /spellcasting/i.test(String(f.name))).map((f) => JSON.stringify(f.entries ?? "")).join(" ").replace(/\{@\w+ ([^|}]*)[^}]*\}/g, "$1");
+    const subCasting = castingRules(s, s.shortName ?? s.name, expandedFrom.length ? [...new Set(expandedFrom)] : [c.name], lname, schoolLimit(castText));
     srules.push(...subCasting.rules);
     out.push(base(sid, s.name, "Archetype", srcName(ctx, s.source), { supports: [subTag], rules: srules, spellcasting: subCasting.spellcasting, description: entriesHtml(s.entries ?? []) }));
   }

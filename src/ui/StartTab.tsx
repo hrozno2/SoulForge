@@ -143,9 +143,8 @@ function CharCard({ rec, reg, current, onOpen, onDuplicate, onExport, onDelete }
         level: r.totalLevel, hp: sh.hp, ac: sh.ac.value, speed: sh.speed,
         // Current hit points as the Play tab keeps them (unset: full).
         hpNow: Math.max(0, Math.min(sh.hp, ch.play.hp ?? sh.hp)),
-        // The three best scores on the card, the other three behind the "+" (in the sheet's order).
-        top: [...sh.abilities].sort((a, b) => b.score - a.score).slice(0, 3),
-        rest: sh.abilities.filter((a) => ![...sh.abilities].sort((x, y) => y.score - x.score).slice(0, 3).includes(a)),
+        // All six scores, in the sheet's order.
+        all: sh.abilities,
       };
     } catch {
       return null;
@@ -178,15 +177,9 @@ function CharCard({ rec, reg, current, onOpen, onDuplicate, onExport, onDelete }
                 </span>
                 <span className="cc-speed" title="Walking speed"><small>Speed</small><b>{info.speed}</b></span>
               </span>
-              {/* Second row: the three best ability scores; the "+" shows the other three on hover. */}
-              <span className="cc-row">
-                {info.top.map((a) => <span key={a.id} className="cc-ab"><small>{a.id.slice(0, 3).toUpperCase()}</small><b>{a.score}</b><em>{SIGNED(a.mod)}</em></span>)}
-                <span className="cc-more" aria-label={`Other abilities: ${info.rest.map((a) => `${a.id} ${a.score}`).join(", ")}`}>
-                  +
-                  <span className="cc-rest">
-                    {info.rest.map((a) => <span key={a.id} className="cc-ab"><small>{a.id.slice(0, 3).toUpperCase()}</small><b>{a.score}</b><em>{SIGNED(a.mod)}</em></span>)}
-                  </span>
-                </span>
+              {/* Second row: all six ability scores in the sheet's order (Chris 2026-10-29: they fit, no "+"). */}
+              <span className="cc-row cc-abilities">
+                {info.all.map((a) => <span key={a.id} className="cc-ab"><small>{a.id.slice(0, 3).toUpperCase()}</small><b>{a.score}</b><em>{SIGNED(a.mod)}</em></span>)}
               </span>
             </span>
           )}

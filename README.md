@@ -48,6 +48,16 @@ Original code, not affiliated with Aurora Builder or Wizards of the Coast.
 
 ## Screenshots
 
+New in 0.24: floating card windows, the Bag of Holding, the spellbook, the backpack and the shop (taken with the
+built-in test content).
+
+| | |
+|---|---|
+| ![Home](docs/screenshots/v024-01-home-character-cards.png) Home: your characters as cards | ![New pick](docs/screenshots/v024-02-new-pick-card-window.png) A new pick opens as a card window |
+| ![Spellbook](docs/screenshots/v024-03-spellbook-scrolls.png) The spellbook: learned and prepared | ![Starting gear](docs/screenshots/v024-04-starting-gear-and-bag-of-holding.png) Starting gear, a card in the Bag of Holding |
+| ![Shop](docs/screenshots/v024-05-shop.png) The backpack's shop | ![Focus](docs/screenshots/v024-06-focus-mode.png) Focus on one card |
+| ![Play](docs/screenshots/v024-07-character-sheet-play.png) Play: the character sheet | ![Export](docs/screenshots/v024-08-export.png) Export: fill a sheet or print Soul Forge's own |
+
 | | |
 |---|---|
 | ![Home](docs/screenshots/home.png) Home | ![Build](docs/screenshots/build.png) Build |

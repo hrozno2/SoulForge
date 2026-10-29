@@ -151,9 +151,12 @@ export function EquipmentTab({ r, ch, set, onDetail, listBeside = false, part = 
                     )}
                   </td>
                   <td>
-                    {el?.extract && el.extract.length > 0 && <button onClick={() => extract(it, el)}>Open pack</button>}
-                    <SellButton ch={ch} set={set} uid={it.uid} el={el} />
-                    <button onClick={() => remove(it.uid)}>Remove</button>
+                    {/* Sell and the rest in one line; Remove an × so narrow rows do not clump (C7.14). */}
+                    <span className="inv-actions">
+                      {el?.extract && el.extract.length > 0 && <button onClick={() => extract(it, el)}>Open pack</button>}
+                      <SellButton ch={ch} set={set} uid={it.uid} el={el} />
+                      <button className="board-ico inv-remove" title="Remove from the inventory" aria-label={`Remove ${name}`} onClick={() => remove(it.uid)}>×</button>
+                    </span>
                   </td>
                 </tr>
               );

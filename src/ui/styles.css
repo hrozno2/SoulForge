@@ -2161,3 +2161,7 @@ body.float-dragging, body.float-dragging * { user-select: none !important; -webk
 .board-bar.hp.configure b { color: var(--bg); text-shadow: none; }
 .hp-bar.configure > div { background: linear-gradient(90deg, var(--gold), var(--gold2)); }
 .hp-bar.configure { cursor: pointer; }
+
+/* Inventory row actions on one line, Remove as an × (C7.14) */
+.inv-actions { display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+.inv-actions .inv-remove { flex: none; }

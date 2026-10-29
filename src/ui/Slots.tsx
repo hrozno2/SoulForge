@@ -4,6 +4,7 @@ import { ImprovementGrid } from "./ImprovementGrid";
 import { requestRoll } from "./Dice";
 import { D20 } from "./icons";
 import { Browse } from "./Browse";
+import { Fold, useScrollOnFold } from "./Fold";
 import type { AElement } from "../aurora/types";
 import { skippable, type Resolved, type SelectSlot } from "../aurora/engine";
 import type { Character } from "../aurora/character";
@@ -155,8 +156,10 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
     });
     one();
   };
+  // A choice that folds after its last pick slides shut and brings its head into view, so the next choice is seen.
+  const headRef = useScrollOnFold<HTMLDivElement>(full && !open);
   return (
-    <div className={`slot ${full ? "done" : "todo"} ${slot.listItems ? "has-roll" : ""} ${canSkip ? "has-take" : ""} ${declined ? "declined" : ""}`}>
+    <div ref={headRef} className={`slot ${full ? "done" : "todo"} ${slot.listItems ? "has-roll" : ""} ${canSkip ? "has-take" : ""} ${declined ? "declined" : ""}`}>
       {canSkip && <input type="checkbox" className="slot-take" checked={!declined} title={declined ? "Not taken (optional): tick to take it" : "Untick to not take it"} aria-label={`Take ${rule.name}`} onChange={(e) => setTaking(e.target.checked)} />}
       {slot.listItems && slot.listItems.length > 1 && <button className="slot-roll" title={`Roll on the table (d${slot.listItems.length})`} aria-label={`Roll ${rule.name}`} onClick={rollTable}><D20 size={16} /></button>}
       <button className="slot-head" onClick={() => !declined && setOpen(!open)}>
@@ -171,7 +174,7 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
         </span>
         <span className="chev">{declined ? "" : open ? "▾" : "▸"}</span>
       </button>
-      {open && !declined && (
+      <Fold open={open && !declined}>
         <div className="slot-body">
           {slot.listItems ? (
             <ul className="options">
@@ -202,7 +205,7 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
           )}
           <button className="ghost slot-done" onClick={() => setOpen(false)}>Done</button>
         </div>
-      )}
+      </Fold>
     </div>
   );
 }

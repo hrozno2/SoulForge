@@ -2112,3 +2112,10 @@ body.float-dragging, body.float-dragging * { user-select: none !important; -webk
 /* Whole spellbook or prepared only, for sheets and cards (C6.5) */
 .spell-scope { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
 .spell-scope .pill { padding: 2px 9px; font-size: 11px; }
+
+/* Fold and unfold (C6.4): a quick slide, everything below moves with it; off with reduce motion */
+.fold { display: grid; grid-template-rows: 1fr; opacity: 1; transition: grid-template-rows .18s ease, opacity .18s ease; }
+.fold.shut { grid-template-rows: 0fr; opacity: 0; }
+.fold-inner { min-height: 0; overflow: hidden; }
+.fold.settled { display: block; }
+.fold.settled > .fold-inner { overflow: visible; }

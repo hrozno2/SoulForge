@@ -213,6 +213,7 @@ The full check, `npm run test:e2e`, Soul Forge Test, then a release.
 | C7.18 | Bug: a Wizard whose Intelligence goes up gets more spell choices it cannot fill; find what the engine does wrong. Done. | Chris |
 | C7.19 | Audit: multiclass spell slots and spells known. src/aurora/multiclassAudit.test.ts builds every pair of caster classes (2014 and 2024, EK and AT included) at three level splits against the class tables: all agree. Done. | Chris |
 | C7.20 | Each class's prepared spells fold to one line once all are picked (Maine Dockers: the Cleric's list sat unseen under the Artificer's); Learned and Prepared tabs under the book; the shop icon a market stall; Home's characters can be compact (a switch, and on their own below 560 px). Done. | Chris |
+| C7.21 | One status panel on the left of the Build board, replacing three things: the "Every choice is made / N choices left" button, the rules check line at the top, and the "still to choose" list on the left. It says whether the character follows the rules (with the rules check's findings), lists the choices still open, highlighted, and each line is a link to its place (the card window, the list, the hit point dialog, the prepare list). | Chris 2026-10-29 |
 | C7.15 | Tutorial: updated for everything since (board, floating cards, bag, spellbook, export). Done. | Chris |
 
 ---

@@ -209,6 +209,8 @@ The full check, `npm run test:e2e`, Soul Forge Test, then a release.
 | C7.13 | Starting gear gets its own icon (a few items, simple), not the backpack; things fly into the Inventory's backpack. | Chris |
 | C7.14 | Equipment: Remove becomes an × button, so narrow rows do not clump. | Chris |
 | C7.16 | Bug: the card windows lost the Source picker (which book's version) the card back had; one source strip for both. | Chris |
+| C7.17 | Card windows keep the card back's flair: gold frame with its dark inner edge, the card's colour from the top, a small label over the name. Done. | Chris |
+| C7.18 | Bug: a Wizard whose Intelligence goes up gets more spell choices it cannot fill; find what the engine does wrong. | Chris |
 | C7.15 | Tutorial: updated for everything since (board, floating cards, bag, spellbook, export). | Chris |
 
 ---

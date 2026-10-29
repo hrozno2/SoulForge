@@ -1291,7 +1291,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
 
       {/* The card windows (C4): each open card's choices, the same as its back, in a floating window. */}
       {floating && floating.windows.filter((w) => w.kind === "card" && !w.bagged && ["race", "class", "background", "magic", "equipment"].includes(w.ref)).map((w) => createPortal(
-        <WindowFrame key={w.id} w={{ ...w, title: cardTitle(w.ref as Kind) }} api={floating} done className={`card-window card-window-${w.ref}`}>
+        <WindowFrame key={w.id} w={{ ...w, title: cardTitle(w.ref as Kind) }} api={floating} done kicker={TITLE[w.ref as Kind]} hue={HUE[w.ref as Kind]} className={`card-window card-window-${w.ref}`}>
           <div className="card-back-body" style={{ ["--hue" as string]: HUE[w.ref as Kind] }}>{sourceStrip(w.ref as Kind)}{choicesFor(w.ref as Kind)}</div>
         </WindowFrame>,
         document.body,

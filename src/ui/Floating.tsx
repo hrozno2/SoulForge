@@ -189,7 +189,7 @@ function FloatingLayer({ api, render }: { api: FloatingApi; render: (w: FloatWin
 }
 
 /** A window: a title bar to drag it by, the bag and close buttons, the content, a corner to resize it. */
-export function WindowFrame({ w, api, children, className = "", done }: { w: FloatWindow; api: FloatingApi; children: ReactNode; className?: string; done?: boolean }) {
+export function WindowFrame({ w, api, children, className = "", done, kicker, hue }: { w: FloatWindow; api: FloatingApi; children: ReactNode; className?: string; done?: boolean; kicker?: string; hue?: number }) {
   const drag = useRef<{ dx: number; dy: number; mode: "move" | "size"; w0: number; h0: number; x0: number; y0: number } | null>(null);
   const isFull = api.full === w.id;
   const frame = useRef<HTMLElement>(null);
@@ -230,13 +230,13 @@ export function WindowFrame({ w, api, children, className = "", done }: { w: Flo
     const bag = document.querySelector(".bag-of-holding")?.getBoundingClientRect();
     if (d?.mode === "move" && bag && e.clientX >= bag.left && e.clientX <= bag.right && e.clientY >= bag.top && e.clientY <= bag.bottom) leave("bag");
   };
-  const style = isFull ? { zIndex: 1500 } : { left: w.x, top: w.y, width: w.w, height: w.shrunk ? undefined : w.h, zIndex: 400 + w.z };
+  const style = { ...(isFull ? { zIndex: 1500 } : { left: w.x, top: w.y, width: w.w, height: w.shrunk ? undefined : w.h, zIndex: 400 + w.z }), ...(hue !== undefined ? { ["--hue" as string]: hue } : {}) };
   return (
     <>
       {isFull && createPortal(<div className="float-backdrop" onClick={() => api.setFull(null)} />, document.body)}
       <section ref={frame} className={`float-window float-${w.kind} ${w.shrunk && !isFull ? "shrunk" : ""} ${isFull ? "full" : ""} ${className}`} role="dialog" aria-label={w.title} style={style} onPointerDown={() => api.focus(w.id)}>
         <header className="float-bar" onPointerDown={down("move")} onPointerMove={moveTo} onPointerUp={up} onPointerCancel={up} onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest("button")) api.shrink(w.id); }} title="Drag to move; double-click to shrink to this bar">
-          <b>{w.title}</b>
+          {kicker ? <span className="float-title"><small>{kicker}</small><b>{w.title}</b></span> : <b>{w.title}</b>}
           <span className="float-tools">
             <button title={isFull ? "Back to its place" : "Focus: large, everything else blurred"} aria-label={isFull ? `Back to its place: ${w.title}` : `Focus on ${w.title}`} onClick={() => api.setFull(isFull ? null : w.id)}>{isFull ? "⤡" : "⤢"}</button>
             <button title="Put it in the Bag of Holding (or drag it onto the bag)" aria-label={`Put ${w.title} in the bag`} onClick={() => leave("bag")}>▾</button>

@@ -337,7 +337,14 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
                   <button className="scroll-main" onClick={() => { if (owner) return; if (!picked) flyInto("spellbook"); onPick(e); }} aria-pressed={picked} title={picked ? "In your spellbook: click to take it out" : undefined}>
                     <span className="scroll-top"><span className="scroll-lvl">{level === "0" ? "Cantrip" : level ? `Level ${level}` : "Spell"}</span><SchoolIcon school={s.school?.value} size={16} /><span className="scroll-tick">{picked || owner ? "✓" : ""}</span></span>
                     <b className="scroll-name">{e.name}</b>
-                    <small className="scroll-meta">{[shortTime(s.time?.value ?? ""), shortRange(s.range?.value ?? "")].filter(Boolean).join(" · ")}{conc ? " · C" : ""}{s.isRitual?.value === "true" ? " · R" : ""}</small>
+                    <small className="scroll-meta">{[shortTime(s.time?.value ?? ""), shortRange(s.range?.value ?? "")].filter(Boolean).join(" · ")}</small>
+                    {/* Concentration and ritual as marks of their own, seen at a glance (C7.12). */}
+                    {(conc || s.isRitual?.value === "true") && (
+                      <span className="scroll-marks">
+                        {conc && <span className="scroll-mark conc" title="Concentration: ends if you lose concentration or cast another such spell">Concentration</span>}
+                        {s.isRitual?.value === "true" && <span className="scroll-mark ritual" title="Ritual: can be cast without a slot, taking ten minutes longer">Ritual</span>}
+                      </span>
+                    )}
                     {why && !owner && <small className="scroll-why">{why}</small>}
                   </button>
                   <button className="board-ico scroll-learn" title="Learn more" aria-label={`Learn more about ${e.name}`} onClick={() => learn(e)}>i</button>

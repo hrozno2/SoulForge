@@ -2,6 +2,16 @@
 
 What changed in each release. Newest first.
 
+## v0.23.0 (2026-10-29)
+
+- Rules check: a required choice the build rules out entirely asks for nothing (stillToChoose); only a choice with no options at all is reported
+- Plan and resume: C6 complete
+- C6.6 a chosen spell flies as a page into the spellbook and leaves a grey outline that takes it back out; bought and added gear flies into the backpack (flyInto, one helper)
+- C6.4 window flights: cards flip out of their slot (the slot an empty outline) and fly back on Done, windows shoot into and out of the bag; the Bag of Holding is a leather bag (theme tokens); off with reduce motion
+- C6.6 the spellbook and backpack stay in view in their windows: no second scroll box inside a window (e2e guard for every sticky element)
+- C6.4 choices fold and unfold with a quick slide, the folded head scrolled into view (Fold, off with reduce motion)
+- C6.5 one print setting by the spellbook: whole spellbook or prepared only, for sheets and spell cards
+
 ## v0.22.0 (2026-10-29)
 
 - Importer: a pick with no open choice moves an earlier pick to another choice that takes it

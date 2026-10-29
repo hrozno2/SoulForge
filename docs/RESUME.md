@@ -1,5 +1,18 @@
 # Where we left off
 
+## 2026-10-29: v0.24.0 (C7, C1.7)
+
+v0.24.0 released after a full check and the release's own rules check (whose coverage pass found random characters
+with a 2024 species and a 2014 background not taking the "2024 rules" package: randomCharacter now takes it). In it:
+all of C7 (Chris's test of v0.23.0: spell pools only for a class's own spells, unbag in sight, real containers only,
+one origin feat, optional choices audited (Variant Human's choices were turned down by default), the "i" in its line,
+focus picks in starting gear, the source picker in card windows, a quicker sheet preview, the spellbook print setting
+in export, HP "Configure", ability boxes without combination lists, upright scrolls, the starting gear icon, the ×
+remove, the tutorial, the card windows' look, learned and prepared counted apart with a "Prepare spells" checker line,
+at least one prepared spell, the multiclass spellcasting audit), the 5e.tools EK/AT school limits, and C1.7 (converted
+content kept while the converter's code is the same; the launch screen says when it rebuilds).
+Open: nothing reported. Usage was about 81% of the week at release (Chris's limit for the session: 90%).
+
 ## 2026-10-28 night: C6 fixes and v0.22.0 (Chris: fixes, engine and stability first; up to 80% weekly usage tonight)
 
 Done: C6.1 resize no longer selects text, "i" opens floating entries; C6.2 ability boxes (+1 columns only, doubled =

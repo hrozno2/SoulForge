@@ -1856,7 +1856,6 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
   background: linear-gradient(180deg, var(--gold2), var(--gold) 55%, color-mix(in srgb, var(--gold) 50%, #000)); box-shadow: 0 1px 2px rgba(0,0,0,.5); }
 .scroll-card::before { top: -4px; } .scroll-card::after { bottom: -4px; }
 .scroll-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--gold) 60%, var(--line)); box-shadow: 0 6px 14px rgba(0,0,0,.45); }
-.scroll-card.picked { border-color: var(--gold); background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 22%, var(--panel2)), color-mix(in srgb, var(--gold) 10%, var(--panel))); box-shadow: 0 0 0 1px var(--gold), 0 0 14px color-mix(in srgb, var(--gold) 30%, transparent); }
 .scroll-card.dim { opacity: .5; }
 .scroll-main { width: 100%; display: flex; flex-direction: column; gap: 2px; padding: 8px 9px 8px; background: none; border: 0; color: inherit; text-align: left; text-transform: none; letter-spacing: 0; }
 .scroll-top { display: flex; align-items: center; gap: 6px; color: var(--gold); }
@@ -2140,3 +2139,13 @@ body.float-dragging, body.float-dragging * { user-select: none !important; -webk
 .bag-of-holding::before { content: ""; position: absolute; left: 18px; right: 18px; top: 5px; height: 3px; border-radius: 2px; background: repeating-linear-gradient(90deg, var(--gold) 0 6px, color-mix(in srgb, var(--gold) 50%, #000) 6px 9px); opacity: .8; }
 .bag-head { color: var(--gold2); }
 .bag-item .bag-take { background: color-mix(in srgb, var(--leather) 40%, var(--panel)); }
+
+/* Flights into the spellbook and backpack (C6.6) */
+.flight { position: fixed; z-index: 2000; pointer-events: none; border-radius: 4px; }
+.flight-spellbook { background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 30%, var(--panel2)), color-mix(in srgb, var(--gold) 12%, var(--panel))); border: 1px solid var(--gold); box-shadow: 0 6px 18px rgba(0,0,0,.45); }
+.flight-backpack { background: color-mix(in srgb, var(--leather) 70%, var(--panel)); border: 1px solid var(--gold); border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,.45); }
+/* A chosen spell's page went into the book: a grey outline is left; clicking it takes the page back out (C6.6) */
+.scroll-card.picked { background: transparent; border: 1.5px dashed color-mix(in srgb, var(--muted) 70%, transparent); box-shadow: none; }
+.scroll-card.picked::before, .scroll-card.picked::after { opacity: 0; }
+.scroll-card.picked .scroll-main > :not(.scroll-top), .scroll-card.picked .scroll-lvl { opacity: .45; filter: grayscale(1); }
+.scroll-card.picked:hover { border-color: var(--gold); }

@@ -43,13 +43,22 @@ test("a caster who prepares picks today's spells on the spellbook", async ({ pag
   await page.locator(".board-acc-head", { hasText: "Class" }).click();
   await page.locator(".board-acc.open .mini-card", { hasText: "Spellsinger" }).locator(".mini-main").click();
   const back = page.getByRole("dialog", { name: /choices/ });
-  if (await back.count()) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
+  // The new pick's choices open a moment after the pick lands: wait for them, then put them away.
+  if (await back.waitFor({ timeout: 2000 }).then(() => true, () => false)) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
   await page.locator("[data-tile=magic]").click();
   const book = page.getByRole("button", { name: /Prepare spells/ });
   await book.click();
   const count = page.locator(".card-window h3", { hasText: "Prepared spells" });
   await expect(count).toContainText(/^Prepared spells 0 \//);
-  await page.locator(".card-window .scroll-card:not(.dim) .scroll-main, .card-window .pick-card:not(.dim) button.pick-select").first().click();
+  const scroll = page.locator(".card-window .scroll-card:not(.dim)").first();
+  await scroll.locator(".scroll-main").click();
+  // The page flies into the book (C6.6), a grey outline is left; clicking the outline takes it back out.
+  await page.waitForSelector(".flight-spellbook", { state: "attached", timeout: 2000 });
+  await expect(count).toContainText(/^Prepared spells 1 \//);
+  await expect(scroll).toHaveClass(/picked/);
+  await scroll.locator(".scroll-main").click();
+  await expect(count).toContainText(/^Prepared spells 0 \//);
+  await scroll.locator(".scroll-main").click();
   await expect(count).toContainText(/^Prepared spells 1 \//);
   // One print setting for sheets and cards, by the spellbook and in the export panel alike (C6.5).
   await page.locator(".card-window .spell-scope").getByRole("button", { name: "Prepared only" }).click();
@@ -101,7 +110,8 @@ test("an item of your choice in the starting gear is picked inside its box (C6)"
   await page.locator(".board-acc-head", { hasText: "Class" }).click();
   await page.locator(".board-acc.open .mini-card", { hasText: "Spellsinger" }).locator(".mini-main").click();
   const back = page.getByRole("dialog", { name: /choices/ });
-  if (await back.count()) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
+  // The new pick's choices open a moment after the pick lands: wait for them, then put them away.
+  if (await back.waitFor({ timeout: 2000 }).then(() => true, () => false)) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
   await page.locator("[data-tile=equipment]").click();
   const box = page.locator(".card-window .equip-card", { hasText: "Musical Instrument" }).first();
   const pick = box.getByLabel(/^Choose the Musical Instrument/);
@@ -121,7 +131,8 @@ test("the spellbook stays in view while the spells scroll (C6.6)", async ({ page
   await page.locator(".board-acc-head", { hasText: "Class" }).click();
   await page.locator(".board-acc.open .mini-card", { hasText: "Spellsinger" }).locator(".mini-main").click();
   const back = page.getByRole("dialog", { name: /choices/ });
-  if (await back.count()) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
+  // The new pick's choices open a moment after the pick lands: wait for them, then put them away.
+  if (await back.waitFor({ timeout: 2000 }).then(() => true, () => false)) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
   await page.locator("[data-tile=magic]").click();
   const win = page.locator(".float-window.card-window-magic");
   const art = win.locator(".card-back-art");

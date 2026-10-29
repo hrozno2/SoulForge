@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { flyInto } from "./flight";
 import type { Resolved } from "../aurora/engine";
 import type { Character } from "../aurora/character";
 import type { AElement } from "../aurora/types";
@@ -25,7 +26,7 @@ export function Shop({ r, ch, set }: { r: Resolved; ch: Character; set: SetChara
     const res = buy(ch, el);
     setMsg(res.ok ? `Bought ${el.name} for ${formatCp(buyCost(ch, el))}.` : res.reason);
     // Paid from the character as it is when the change lands, so two quick clicks pay twice.
-    if (res.ok) set((c) => { const now = buy(c, el); return now.ok ? now.character : c; });
+    if (res.ok) { flyInto("backpack"); set((c) => { const now = buy(c, el); return now.ok ? now.character : c; }); }
   };
   return (
     <section className="card shop">

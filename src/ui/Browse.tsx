@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { flyInto } from "./flight";
 import type { AElement } from "../aurora/types";
 import { BOOK_KIND_LABEL, bookKind, formatRelease, groupVariants, hasRecommendation, hiddenBy, sortGroups, type Group, type SortMode, type Variant } from "../aurora/books";
 import { applyFacets, facetCounts, facetsFor, type Selected } from "../aurora/facets";
@@ -333,7 +334,7 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
               const conc = s.isConcentration?.value === "true" || /concentration/i.test(s.duration?.value ?? "");
               return [heading,
                 <div key={g.key} className={`scroll-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} title={owner ?? why} onMouseEnter={() => onHover?.(e)} {...drag(e, why, owner)}>
-                  <button className="scroll-main" onClick={() => !owner && onPick(e)} aria-pressed={picked}>
+                  <button className="scroll-main" onClick={() => { if (owner) return; if (!picked) flyInto("spellbook"); onPick(e); }} aria-pressed={picked} title={picked ? "In your spellbook: click to take it out" : undefined}>
                     <span className="scroll-top"><span className="scroll-lvl">{level === "0" ? "Cantrip" : level ? `Level ${level}` : "Spell"}</span><SchoolIcon school={s.school?.value} size={16} /><span className="scroll-tick">{picked || owner ? "✓" : ""}</span></span>
                     <b className="scroll-name">{e.name}</b>
                     <small className="scroll-meta">{[shortTime(s.time?.value ?? ""), shortRange(s.range?.value ?? "")].filter(Boolean).join(" · ")}{conc ? " · C" : ""}{s.isRitual?.value === "true" ? " · R" : ""}</small>

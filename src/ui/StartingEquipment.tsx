@@ -1,3 +1,4 @@
+import { flyInto } from "./flight";
 import { requestRoll } from "./Dice";
 import { useMemo, useState } from "react";
 import type { AElement } from "../aurora/types";
@@ -93,6 +94,7 @@ export function StartingEquipment({ r, ch, set, onDetail }: { r: Resolved; ch: C
   const addedFor = (title: string, list: string[]) => list.filter((l) => l.startsWith(`${title}, `));
   const allDone = (list: string[]) => plans.length > 0 && plans.every((p) => addedFor(p.title, list).length > 0);
   const add = (items: ResolvedItem[], gp: number, label: string, plan?: EquipPlan) => {
+    flyInto("backpack");
     set((c) => {
       // Choosing another option for the same class or background takes the earlier one back out first.
       const earlier = plan ? addedFor(plan.title, c.equipmentAdded ?? []) : [];

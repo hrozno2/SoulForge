@@ -13,6 +13,7 @@ import { buildSheet } from "../aurora/sheet";
 import { ClassIcon, hasClassIcon } from "./classIcons";
 import { hueOf } from "./PickCards";
 import { dropCardsIfWaiting, launchReady } from "./LaunchIntro";
+import { updateSettings, useSettings } from "./Settings";
 
 function ago(ms: number): string {
   const m = Math.round((Date.now() - ms) / 60000);
@@ -36,6 +37,7 @@ export function StartTab({
   onImportForeign: (file: File) => Promise<string>;
 }) {
   const [list, setList] = useState<CharacterRecord[]>([]);
+  const compact = !!useSettings().homeCompact;
   const [listed, setListed] = useState(false);
   // The launch intro's cards drop in here when the list arrives after the pack has burst.
   useEffect(() => { if (list.length && contentReady) requestAnimationFrame(dropCardsIfWaiting); }, [list.length, contentReady]);
@@ -97,7 +99,14 @@ export function StartTab({
           </div>
         )}
         {msg && <p className="notice">{msg}</p>}
-        <div className="char-cards">
+        {list.length > 0 && (
+          <div className="row char-cards-view">
+            <button className={compact ? "pill" : "pill active"} aria-pressed={!compact} onClick={() => updateSettings({ homeCompact: false })}>Cards</button>
+            <button className={compact ? "pill active" : "pill"} aria-pressed={compact} onClick={() => updateSettings({ homeCompact: true })}>Compact</button>
+          </div>
+        )}
+        {/* Compact: one short line per character, for small screens (Chris 2026-10-29); also on its own below 560 px. */}
+        <div className={`char-cards ${compact ? "compact" : ""}`}>
           {/* Cards are drawn once the rules content is in, never before with an empty registry: they would show as
               blank gold placeholders and change under the player's eyes (C1.6). What lands is final. */}
           {!contentReady && list.length > 0 && <p className="muted">Loading your characters...</p>}

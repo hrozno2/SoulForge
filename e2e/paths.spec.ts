@@ -59,6 +59,9 @@ test("a caster who prepares picks today's spells on the spellbook", async ({ pag
   // The page flies into the book (C6.6), a grey outline is left; clicking the outline takes it back out.
   await page.waitForSelector(".flight-spellbook", { state: "attached", timeout: 2000 });
   await expect(count).toContainText(/^Prepared spells 1 \//);
+  // All prepared: the list folds to its line (Chris 2026-10-29); a click opens it to change.
+  await expect(scroll).toHaveCount(0);
+  await count.locator(".prep-toggle").click();
   await expect(scroll).toHaveClass(/picked/);
   await scroll.locator(".scroll-main").click();
   await expect(count).toContainText(/^Prepared spells 0 \//);
@@ -230,4 +233,17 @@ test("hit points ask to be configured until fixed or rolled is chosen (C7.10)", 
   await dialog.getByRole("button", { name: "Close" }).click();
   await expect(bar).not.toHaveClass(/configure/);
   await expect(page.locator(".board-left-pop button", { hasText: "Hit points" })).toHaveCount(0);
+});
+
+test("Home's characters can be compact for small screens (Chris 2026-10-29)", async ({ page }) => {
+  await addTestContent(page);
+  await page.getByRole("button", { name: /random character/i }).click();
+  await page.getByLabel("Character level").fill("3");
+  await page.getByRole("button", { name: "Create", exact: true }).click();
+  await tab(page, "Home");
+  const card = page.locator(".char-card").first();
+  const tall = (await card.boundingBox())!.height;
+  await page.getByRole("button", { name: "Compact", exact: true }).click();
+  await expect(page.locator(".char-cards.compact")).toHaveCount(1);
+  expect((await card.boundingBox())!.height).toBeLessThan(tall * 0.7);
 });

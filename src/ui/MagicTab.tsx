@@ -1,5 +1,6 @@
 import { isAvailable, usedAfterClick } from "./pips";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Fold } from "./Fold";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, grantSource, preparePool, type CastingLine } from "../aurora/sheet";
@@ -58,12 +59,32 @@ function Prepared({ line, r, ch, set, onDetail }: { line: CastingLine; r: Resolv
       const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
       return { ...c, prepared: { ...c.prepared, [line.name]: next } };
     });
+  // Folds to one line once every spell this class prepares is picked, so the next class's list underneath is seen
+  // (Chris 2026-10-29: a multiclass Cleric's list sat unseen below the Artificer's); a click opens it to change.
+  const target = Math.min(line.prepareMax, pool.length);
+  const done = valid.length >= target && target > 0;
+  const [open, setOpen] = useState(!done);
+  const wasDone = useRef(done);
+  useEffect(() => {
+    if (done && !wasDone.current) setOpen(false);
+    if (!done) setOpen(true);
+    wasDone.current = done;
+  }, [done]);
+  const names = valid.map((id) => pool.find((p) => p.id === id)?.name).filter(Boolean).join(" · ");
   return (
     <>
       <AlwaysPrepared line={line} r={r} onDetail={onDetail} />
-      <h3>Prepared spells <span className={valid.length > line.prepareMax ? "warn" : "muted"}>{valid.length} / {line.prepareMax}</span></h3>
-      {pool.length < line.prepareMax && <p className="muted small-text">You may prepare {line.prepareMax}, but only {pool.length} {pool.length === 1 ? "spell is" : "spells are"} there to prepare from{/spellbook/i.test(line.name) || line.name === "Wizard" ? ": add spells to your spellbook" : ""}.</p>}
-      <Browse items={pool} type="Spell" chosen={valid} onPick={(e) => toggle(e.id)} onHover={onDetail} defaultView="cards" perPage={60} />
+      <h3 className="prep-head">
+        <button className={`prep-toggle ${done ? "done" : "todo"}`} aria-expanded={open} onClick={() => setOpen(!open)}>
+          Prepared spells <span className={valid.length > line.prepareMax ? "warn" : "muted"}>{valid.length} / {line.prepareMax}</span>
+          {!open && names && <small className="prep-names">{names}</small>}
+          <span className="chev">{open ? "▾" : "▸"}</span>
+        </button>
+      </h3>
+      <Fold open={open}>
+        {pool.length < line.prepareMax && <p className="muted small-text">You may prepare {line.prepareMax}, but only {pool.length} {pool.length === 1 ? "spell is" : "spells are"} there to prepare from{/spellbook/i.test(line.name) || line.name === "Wizard" ? ": add spells to your spellbook" : ""}.</p>}
+        <Browse items={pool} type="Spell" chosen={valid} onPick={(e) => toggle(e.id)} onHover={onDetail} defaultView="cards" perPage={60} />
+      </Fold>
     </>
   );
 }

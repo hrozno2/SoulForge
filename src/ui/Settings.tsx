@@ -25,6 +25,8 @@ export interface AppSettings {
   showModern: boolean;
   /** Printed sheets list every spell the character can prepare, with blank boxes to mark each day. */
   allSpells: boolean;
+  /** Home's character cards drawn compact (small screens; Chris 2026-10-29). */
+  homeCompact?: boolean;
   /** The Build tab's layout: the build board (lists, board and scores side by side), or the older tabs along the top. */
   buildLayout: "board" | "tabs";
   /** The test build only: hide the test bar so the app looks like the released one. */

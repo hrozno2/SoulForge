@@ -212,6 +212,7 @@ The full check, `npm run test:e2e`, Soul Forge Test, then a release.
 | C7.17 | Card windows keep the card back's flair: gold frame with its dark inner edge, the card's colour from the top, a small label over the name. Done. | Chris |
 | C7.18 | Bug: a Wizard whose Intelligence goes up gets more spell choices it cannot fill; find what the engine does wrong. Done. | Chris |
 | C7.19 | Audit: multiclass spell slots and spells known. src/aurora/multiclassAudit.test.ts builds every pair of caster classes (2014 and 2024, EK and AT included) at three level splits against the class tables: all agree. Done. | Chris |
+| C7.20 | Each class's prepared spells fold to one line once all are picked (Maine Dockers: the Cleric's list sat unseen under the Artificer's); Learned and Prepared tabs under the book; the shop icon a market stall; Home's characters can be compact (a switch, and on their own below 560 px). Done. | Chris |
 | C7.15 | Tutorial: updated for everything since (board, floating cards, bag, spellbook, export). Done. | Chris |
 
 ---

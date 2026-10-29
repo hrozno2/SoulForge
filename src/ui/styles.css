@@ -2231,3 +2231,30 @@ button.spell-count.prep.on { background: color-mix(in srgb, var(--gold) 28%, tra
 .spell-tab.todo small:not(.spell-tab-each) { color: var(--gold); }
 .spell-tab.full small:not(.spell-tab-each) { color: var(--ok); }
 .spell-tab .spell-tab-each { font-size: 10.5px; color: var(--muted); }
+
+/* A class's prepared spells fold to one line once all are picked (Chris 2026-10-29) */
+.prep-head { margin: 10px 0 6px; }
+.prep-toggle { width: 100%; display: flex; align-items: baseline; gap: 10px; padding: 8px 12px; text-align: left; background: var(--panel2); border: 1px solid var(--line); border-left: 4px solid var(--gold); border-radius: 4px; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; }
+.prep-toggle.done { border-left-color: var(--ok); }
+.prep-toggle .prep-names { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--gold2); font: 500 13px var(--body); letter-spacing: 0; text-transform: none; text-align: right; }
+.prep-toggle .chev { margin-left: auto; color: var(--muted); }
+
+/* Home's compact characters (Chris 2026-10-29): short rows with the class mark, name, what it is and the hit points;
+   chosen with the Compact switch, and on their own on a small screen. */
+.char-cards-view { gap: 6px; margin-top: 10px; }
+.char-cards.compact { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.char-cards.compact .char-card-body { min-height: 0 !important; padding: 10px 12px 10px 54px !important; }
+.char-cards.compact .pick-watermark, .char-cards.compact .char-card-portrait, .char-cards.compact .char-card-bg { display: none; }
+.char-cards.compact .ribbon { transform: scale(.7); transform-origin: top left; left: 10px; }
+.char-cards.compact .char-card-body .ribbon { left: 10px; }
+.char-cards.compact .char-card-name { font-size: 15px; }
+.char-cards.compact .char-card-what { font-size: 12px; }
+.char-cards.compact .char-card-stats .cc-row + .cc-row { display: none; }
+.char-cards.compact .cc-ac, .char-cards.compact .cc-speed { display: none; }
+@media (max-width: 560px) {
+  .char-cards { grid-template-columns: 1fr; gap: 8px; }
+  .char-cards .char-card-body { min-height: 0 !important; padding: 10px 12px 10px 54px !important; }
+  .char-cards .pick-watermark, .char-cards .char-card-portrait, .char-cards .char-card-bg { display: none; }
+  .char-cards .ribbon { transform: scale(.7); transform-origin: top left; }
+  .char-cards .char-card-stats .cc-row + .cc-row, .char-cards .cc-ac, .char-cards .cc-speed { display: none; }
+}

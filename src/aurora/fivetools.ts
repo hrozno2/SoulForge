@@ -487,7 +487,9 @@ function convertItem(i: J, ctx: Ctx): AElement | null {
   const bc = ownless ? cost(b.value) : undefined;
   if (bc) setters["base cost"] = bc;
   if (magic && (m.miscTags ?? []).includes("CNS")) setters.consumable = set("true");
-  if (magic) setters.rarity = set(`${cap(String(m.rarity))}${m.reqAttune ? " (requires attunement)" : ""}`);
+  // Every item with a real rarity keeps it, the common magic weapons too (a Staff of Adornment is not a plain staff:
+  // starting gear's "any simple weapon" offered it, Chris 2026-10-29).
+  if (magic || (m.rarity && m.rarity !== "none" && m.rarity !== "unknown")) setters.rarity = set(`${cap(String(m.rarity))}${m.reqAttune ? " (requires attunement)" : ""}`);
   if (weapon) {
     if (m.dmg1) setters.damage = set(String(m.dmg1), { type: DMG[m.dmgType] ?? "" });
     if (m.dmg2) setters.versatile = set(String(m.dmg2));

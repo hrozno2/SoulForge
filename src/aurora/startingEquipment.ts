@@ -326,6 +326,10 @@ export function anyWeaponKind(text: string): { category: "simple" | "martial"; r
 export function weaponChoices(reg: ARegistry, kind: { category: "simple" | "martial"; reach?: "melee" | "ranged" }): AElement[] {
   const seen = new Map<string, AElement>();
   for (const w of reg.ofType("Weapon")) {
+    // Mundane weapons only (Chris 2026-10-29: "+3" weapons were offered): nothing with a rarity or a "+1" in its name,
+    // nothing hidden, no firearms or futuristic gear (their own content filters).
+    const rarity = (w.setters.rarity?.value ?? "").toLowerCase();
+    if (w.compendiumHidden || (rarity && !/^(none|mundane)/.test(rarity)) || /(^|\s)\+\d/.test(w.name) || w.supports.includes("scifi") || w.supports.includes("modern")) continue;
     const tags = `${w.supports.join(" ")} ${w.setters.proficiency?.value ?? ""}`.toLowerCase();
     if (!tags.includes(kind.category)) continue;
     const ranged = /ranged/.test(tags);

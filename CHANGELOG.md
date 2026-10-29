@@ -2,6 +2,21 @@
 
 What changed in each release. Newest first.
 
+## v0.24.1 (2026-10-29)
+
+- Old picks: the options test applies only where an element has two choices of one kind (a class's run-time increases were dropped; full check's saved-characters gate)
+- README: screenshots of 0.24 (card windows, Bag of Holding, spellbook, backpack and shop, focus, play, export)
+- Old position-keyed picks survive the content moving its rules: a moved pick is found when it is the only one among a choice's options; an old pick is read only into a choice that offers it; an optional or switched-off choice does not claim it from the required one (Chris's library: 2024 species lost size and languages)
+- Starting gear: Option A or B in one box with radios (as the older lists), Add at the foot; manual scores centred
+- Starting gear's weapon picker offers mundane weapons only (no +N or named magic weapons); 5e.tools items keep a real rarity even when common
+- The spellbook is greyed out while there is nothing to learn or prepare
+- Starting gear naming two kinds ("Artisan's Tools or Musical Instrument", the 2024 Monk) offers both, or the one taken as the tool proficiency; it offered instruments only
+- A new pick from the lists opens as a card window like every other card (it lands in its space; the window has "Put it back"; the lists move on to the next empty space); e2e closeFresh helper
+- Home cards show all six ability scores in the sheet's order (no "+")
+- Each class's prepared spells fold to one line once all are picked, so the next class's list is seen; Home's characters can be compact (a switch, and on their own on small screens)
+- Spellbook: Learned and Prepared tabs under the book with their counts, the Prepared tab saying each class's own count (a multiclass prepares per class: Artificer 3/3 · Cleric 0/5); the shop icon is a market stall
+- Resume: v0.24.0
+
 ## v0.24.0 (2026-10-29)
 
 - Random characters with a 2024 species and a 2014 background take the background's 2024 rules package (the release's coverage check found mixed origins)

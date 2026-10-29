@@ -12,6 +12,7 @@ import { translateCompanion, translateFill } from "../sheets/translateFill";
 import { DLDM_PAGES, fillDldm, type DldmPage } from "../sheets/dldm";
 import { fillCompanion } from "../sheets/companion";
 import { SheetPreview } from "./SheetPreview";
+import { warmPdf } from "../pdf/preview";
 import { SheetManager } from "./SheetManager";
 import { OFFICIAL_DOWNLOADS, SHEET_LINKS, SHEET_SEARCH } from "../sheets/links";
 import { addSheetFiles, downloadOfficialSheet, mergeDuplicateSheets } from "../sheets/templates";
@@ -132,12 +133,17 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
     return h;
   }, [r, sheet, allSpells]);
   const previewKey = current ? `${current.id}|${pages.join(",")}|${companion}|${printed}` : "";
+  const firstPreview = useRef(true);
   useEffect(() => {
     if (!current) { setPreviewBytes(null); return; }
     let live = true;
+    warmPdf();
+    // The first preview starts at once; later ones wait a moment for typing to settle (C7.8).
+    const wait = firstPreview.current ? 0 : 250;
+    firstPreview.current = false;
     const t = window.setTimeout(() => {
       build(true).then((res) => { if (live) { setPreviewBytes(res.bytes); setPreviewNote(""); } }).catch((e) => { if (live) { setPreviewBytes(null); setPreviewNote((e as Error).message); } });
-    }, 250);
+    }, wait);
     return () => { live = false; window.clearTimeout(t); };
   }, [previewKey]); // eslint-disable-line react-hooks/exhaustive-deps
 

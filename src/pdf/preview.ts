@@ -13,6 +13,9 @@ async function pdfjs() {
   return lib;
 }
 
+/** Starts loading pdf.js ahead of a preview, while the sheet is still being filled (C7.8). */
+export function warmPdf(): void { void pdfjs(); }
+
 export interface PdfPages {
   count: number;
   /** A data address of the page picture, `width` pixels wide. */
@@ -36,7 +39,8 @@ export async function openPdf(bytes: Uint8Array): Promise<PdfPages> {
       canvas.width = Math.floor(viewport.width);
       canvas.height = Math.floor(viewport.height);
       await p.render({ canvas, viewport }).promise;
-      return canvas.toDataURL("image/png");
+      // JPEG: a full page encodes several times faster than PNG, and a preview needs no lossless copy (C7.8).
+      return canvas.toDataURL("image/jpeg", 0.88);
     },
     async words(index) {
       const p = await doc.getPage(index + 1);

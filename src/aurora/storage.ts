@@ -192,12 +192,19 @@ export async function listTemplates(): Promise<TemplateRecord[]> {
   }
 }
 
+// The last sheets read, kept for the session: a 16 MB template was read from the database for every preview (C7.8).
+const tplCache = new Map<string, ArrayBuffer>();
 export async function templateBytes(id: string): Promise<ArrayBuffer> {
+  const hit = tplCache.get(id);
+  if (hit) return hit;
   const db = await openDb();
-  return (await wrap(db.transaction("templateBytes").objectStore("templateBytes").get(id))) as ArrayBuffer;
+  const bytes = (await wrap(db.transaction("templateBytes").objectStore("templateBytes").get(id))) as ArrayBuffer;
+  if (bytes) { if (tplCache.size >= 3) tplCache.delete(tplCache.keys().next().value!); tplCache.set(id, bytes); }
+  return bytes;
 }
 
 export async function saveTemplate(rec: TemplateRecord, bytes: ArrayBuffer): Promise<void> {
+  tplCache.delete(rec.id);
   const db = await openDb();
   const tx = db.transaction(["templates", "templateBytes"], "readwrite");
   tx.objectStore("templates").put(rec);
@@ -206,6 +213,7 @@ export async function saveTemplate(rec: TemplateRecord, bytes: ArrayBuffer): Pro
 }
 
 export async function deleteTemplate(id: string): Promise<void> {
+  tplCache.delete(id);
   const db = await openDb();
   const tx = db.transaction(["templates", "templateBytes"], "readwrite");
   tx.objectStore("templates").delete(id);

@@ -9,6 +9,14 @@
 		</setters>
 	</element>
 
+	<element name="Hollow Realms Revised" type="Source" source="Hollow Realms Revised" id="ID_SF_SOURCE_HOLLOW_REALMS_REVISED">
+		<setters>
+			<set name="release">20250101</set>
+			<set name="abbreviation">HRR</set>
+			<set name="official">false</set>
+		</setters>
+	</element>
+
 	<element name="Background Ability Score Improvement" type="Grants" source="Internal" id="ID_INTERNAL_GRANTS_BACKGROUND_ASI" />
 
 	<!-- Saving throws -->

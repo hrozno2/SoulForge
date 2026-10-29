@@ -181,3 +181,18 @@ test("Manage's options keep their \"i\" in the option's line (C7.6)", async ({ p
   expect(Math.abs(info.y - main.y)).toBeLessThan(6);
   expect(info.x).toBeGreaterThan(main.x + main.width - 4);
 });
+
+test("a card window keeps the source picker for a card in more than one book (C7.16)", async ({ page }) => {
+  await addTestContent(page);
+  await page.getByRole("button", { name: /new character/i }).click();
+  await tab(page, "Build");
+  await page.locator(".board-acc-head", { hasText: "Background" }).click();
+  await page.locator(".board-acc.open .mini-card", { hasText: "Wayfarer" }).first().locator(".mini-main").click();
+  const back = page.getByRole("dialog", { name: /choices/ });
+  if (await back.waitFor({ timeout: 2000 }).then(() => true, () => false)) {
+    await expect(back.locator(".card-back-source")).toBeVisible();
+    await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
+  }
+  await page.locator("[data-tile=background]").click();
+  await expect(page.locator(".float-window.card-window-background .card-back-source")).toBeVisible();
+});

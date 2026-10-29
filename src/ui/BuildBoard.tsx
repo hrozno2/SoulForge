@@ -1113,6 +1113,17 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     else { setSide(null); openBack(it.kind); }
     window.setTimeout(() => (it.list ? document.querySelector(".board-acc.open") : document.querySelector(".board-focus"))?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
+  /**
+   * The open card's book: switching it changes the card to that version, and its choices with it. Shown wherever a
+   * card's choices are, the new-pick dialog and the floating card alike (C7.16: the card windows had lost it).
+   */
+  const sourceStrip = (kind: Kind) => {
+    const el = kind === "class" ? firstClass : kind === "race" ? chosenEl.race : kind === "background" ? chosenEl.background : undefined;
+    const g = el ? groupOf(el) : undefined;
+    return el && g && g.variants.length > 1 ? (
+      <div className="card-back-source"><small>Source</small><SourcePicker strip g={g} activeId={el.id} onPick={(to) => switchVersion(kind, el, to)} /></div>
+    ) : null;
+  };
   /** A card's back: the choices its species, class or background asks for, the spells, or the inventory. */
   const choicesFor = (kind: Kind) => (
     <>
@@ -1256,15 +1267,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
                   <small>{TITLE[back.kind]}</small>
                   <h2>{back.kind === "class" ? firstClass?.name : back.kind === "race" ? chosenEl.race?.name : back.kind === "background" ? chosenEl.background?.name : back.kind === "magic" ? "Your spells" : "Your inventory"}</h2>
                 </div>
-                {(() => {
-                  // The open card's book: switching it changes the card to that version, and its choices with it.
-                  const kind = back.kind;
-                  const el = kind === "class" ? firstClass : kind === "race" ? chosenEl.race : kind === "background" ? chosenEl.background : undefined;
-                  const g = el ? groupOf(el) : undefined;
-                  return el && g && g.variants.length > 1 ? (
-                    <div className="card-back-source"><small>Source</small><SourcePicker strip g={g} activeId={el.id} onPick={(to) => switchVersion(kind as Kind, el, to)} /></div>
-                  ) : null;
-                })()}
+                {sourceStrip(back.kind)}
                 <div className="card-back-ctl">
                   <button className="primary" onClick={() => finish(true)}>Done</button>
                   <button className="board-ico" title={back.mode === "new" ? "Put it back" : "Undo the changes"} aria-label={back.mode === "new" ? "Put it back" : "Undo the changes"} onClick={() => finish(false)}>×</button>
@@ -1280,7 +1283,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
       {/* The card windows (C4): each open card's choices, the same as its back, in a floating window. */}
       {floating && floating.windows.filter((w) => w.kind === "card" && !w.bagged && ["race", "class", "background", "magic", "equipment"].includes(w.ref)).map((w) => createPortal(
         <WindowFrame key={w.id} w={{ ...w, title: cardTitle(w.ref as Kind) }} api={floating} done className={`card-window card-window-${w.ref}`}>
-          <div className="card-back-body" style={{ ["--hue" as string]: HUE[w.ref as Kind] }}>{choicesFor(w.ref as Kind)}</div>
+          <div className="card-back-body" style={{ ["--hue" as string]: HUE[w.ref as Kind] }}>{sourceStrip(w.ref as Kind)}{choicesFor(w.ref as Kind)}</div>
         </WindowFrame>,
         document.body,
       ))}

@@ -37,4 +37,15 @@
 	<element name="Intelligence +1" type="Ability Score Improvement" source="Hollow Realms" id="ID_SF_ASI_INT"><supports>SF Background ASI</supports><rules><stat name="intelligence" value="1" /></rules></element>
 	<element name="Wisdom +1" type="Ability Score Improvement" source="Hollow Realms" id="ID_SF_ASI_WIS"><supports>SF Background ASI</supports><rules><stat name="wisdom" value="1" /></rules></element>
 	<element name="Charisma +1" type="Ability Score Improvement" source="Hollow Realms" id="ID_SF_ASI_CHA"><supports>SF Background ASI</supports><rules><stat name="charisma" value="1" /></rules></element>
+	<element name="Wayfarer" type="Background" source="Hollow Realms Revised" id="ID_SF_BACKGROUND_WAYFARER_REVISED">
+		<description>
+			<p>You spent years on the road between the hollow towns.</p>
+			<ul class="unstyled"><li><strong>Equipment:</strong> a traveler's pack, a walking staff and 10 GP</li></ul>
+		</description>
+		<rules>
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_ATHLETICS" />
+			<grant type="Proficiency" id="ID_PROFICIENCY_SKILL_PERCEPTION" />
+			<grant type="Background Feature" id="ID_SF_BGFEATURE_ROADWISE" />
+		</rules>
+	</element>
 </elements>

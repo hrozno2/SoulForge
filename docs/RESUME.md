@@ -7,8 +7,10 @@ Done: C6.1 resize no longer selects text, "i" opens floating entries; C6.2 abili
 screen with the bar kept, drop on the bag); C6.5 always-prepared marks with the source (grantSource) on cards and in
 brackets on sheets; C6.7 themed spell scrolls with a token guard (themeTokens.test). Engine: spellChoicePools (one
 spell list per class), selling one to one, settlePending/choosePending (open items picked in the gear box).
-Left from C6: C6.4 animations (flip out, bag, leather bag, fold slide), C6.5 the one print selector (whole spellbook or
-prepared only), C6.6 sticky spellbook and page/item flights.
+v0.22.0 released after a full check (first run caught an importer regression from the spell pools: fixed with a
+one-step relocation in place(), import baseline rewritten for Zanna's improvement). After it, the rest of C6: the one
+print setting (SpellScope), fold slide (Fold), sticky spellbook (no second scroll box in a window, e2e guard), window
+flights and the leather bag, spell pages and gear flying in (flyInto). C6 is complete; next release v0.23.0.
 
 ## 2026-10-28 morning: v0.20.0 and v0.21.0
 

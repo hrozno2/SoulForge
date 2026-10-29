@@ -2120,3 +2120,23 @@ body.float-dragging, body.float-dragging * { user-select: none !important; -webk
 .fold-inner { min-height: 0; overflow: hidden; }
 .fold.settled { display: block; }
 .fold.settled > .fold-inner { overflow: visible; }
+
+/* A card out on the table (C6.4): its slot is an empty outline until the card flies back */
+.board-space.card-out > * { visibility: hidden; }
+.board-space.card-out { outline: 2px dashed color-mix(in srgb, var(--gold) 45%, transparent); outline-offset: -6px; border-radius: 12px; }
+
+/* The Bag of Holding is a leather bag (C6.4): grained leather, a stitched seam, a drawstring at its mouth and a faint
+   glow of the magic inside; theme tokens only. */
+.bag-of-holding {
+  background:
+    radial-gradient(120% 80% at 30% 10%, color-mix(in srgb, var(--leather) 75%, #fff 8%), transparent 60%),
+    repeating-radial-gradient(circle at 40% 60%, color-mix(in srgb, var(--leather) 92%, #000) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, color-mix(in srgb, var(--leather) 85%, #000), color-mix(in srgb, var(--leather) 55%, #000));
+  border: 2px solid color-mix(in srgb, var(--leather) 45%, #000);
+  outline: 1.5px dashed color-mix(in srgb, var(--gold) 55%, transparent); outline-offset: -7px;
+  border-radius: 14px 14px 26px 26px; padding: 14px 14px 12px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.5), 0 0 22px color-mix(in srgb, var(--arcane) 22%, transparent), inset 0 2px 0 rgba(255,255,255,.08);
+}
+.bag-of-holding::before { content: ""; position: absolute; left: 18px; right: 18px; top: 5px; height: 3px; border-radius: 2px; background: repeating-linear-gradient(90deg, var(--gold) 0 6px, color-mix(in srgb, var(--gold) 50%, #000) 6px 9px); opacity: .8; }
+.bag-head { color: var(--gold2); }
+.bag-item .bag-take { background: color-mix(in srgb, var(--leather) 40%, var(--panel)); }

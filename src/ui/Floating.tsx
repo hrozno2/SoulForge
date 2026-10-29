@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 /**
@@ -25,6 +25,29 @@ export interface FloatWindow {
   shrunk?: boolean;
 }
 export const MAX_WINDOWS = 10;
+
+/*
+ * Window flights (C6.4, Chris 2026-10-28): a card flips up out of its slot when opened and flies back into it when
+ * closed, every time; a window shoots into the Bag of Holding and out of it again. One mechanism for every window:
+ * where a window lives when it is not open (its slot, the bag, or nowhere: a fade) and one flight to or from it,
+ * transform and opacity only, so it stays smooth on Linux. Off with reduce motion (Settings).
+ */
+const reducedMotion = () => document.documentElement.classList.contains("reduce-motion");
+/** The board slot a card window belongs to, when it has one. */
+const homeOf = (w: FloatWindow) => (w.kind === "card" ? document.querySelector(`[data-tile="${w.ref}"]`) : null);
+const bagEl = () => document.querySelector(".bag-of-holding");
+/** Windows just taken out of the bag: their flight starts at the bag, not the slot. */
+const fromBag = new Set<string>();
+function fly(el: HTMLElement | null, target: Element | null, dir: "out" | "in", flip: boolean): Promise<void> {
+  if (!el || reducedMotion() || typeof el.animate !== "function") return Promise.resolve();
+  const a = el.getBoundingClientRect();
+  const b = target?.getBoundingClientRect();
+  const away = b
+    ? `translate(${b.left + b.width / 2 - (a.left + a.width / 2)}px, ${b.top + b.height / 2 - (a.top + a.height / 2)}px) scale(${Math.max(0.05, b.width / a.width)}, ${Math.max(0.05, b.height / a.height)})${flip ? " rotateY(75deg)" : ""}`
+    : "scale(.92)";
+  const frames = [{ transform: `perspective(1200px) ${away}`, opacity: b ? 0.35 : 0 }, { transform: "perspective(1200px) none", opacity: 1 }];
+  return el.animate(dir === "out" ? frames : [...frames].reverse(), { duration: 230, easing: "cubic-bezier(.2,.8,.2,1)", fill: dir === "in" ? "forwards" : "none" }).finished.then(() => undefined, () => undefined);
+}
 
 export interface FloatingApi {
   windows: FloatWindow[];
@@ -120,7 +143,7 @@ export function FloatingProvider({ characterId, children, render }: { characterI
     focus: (id) => setWindows((ws) => (ws.find((w) => w.id === id)?.z === top(ws) - 1 ? ws : ws.map((w) => (w.id === id ? { ...w, z: top(ws) } : w)))),
     move: (id, x, y, w, h) => setWindows((ws) => ws.map((o) => (o.id === id ? clampTo({ ...o, x, y, w: w ?? o.w, h: h ?? o.h }) : o))),
     bag: (id) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, bagged: true } : w))),
-    unbag: (id) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, bagged: false, z: top(ws) } : w))),
+    unbag: (id) => { fromBag.add(id); setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, bagged: false, z: top(ws) } : w))); },
     bagAll: () => setWindows((ws) => ws.map((w) => ({ ...w, bagged: true }))),
     emptyBag: () => setWindows((ws) => ws.filter((w) => !w.bagged)),
     // Lines the open windows up in rows from the top left, each its own size, wrapping at the window's edge.
@@ -162,6 +185,20 @@ function FloatingLayer({ api, render }: { api: FloatingApi; render: (w: FloatWin
 export function WindowFrame({ w, api, children, className = "", done }: { w: FloatWindow; api: FloatingApi; children: ReactNode; className?: string; done?: boolean }) {
   const drag = useRef<{ dx: number; dy: number; mode: "move" | "size"; w0: number; h0: number; x0: number; y0: number } | null>(null);
   const isFull = api.full === w.id;
+  const frame = useRef<HTMLElement>(null);
+  // Out of its slot (or the bag) when it appears; back into it when it goes.
+  useLayoutEffect(() => {
+    const start = fromBag.delete(w.id) ? bagEl() : homeOf(w);
+    void fly(frame.current, start, "out", w.kind === "card" && start !== bagEl());
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const leaving = useRef(false);
+  const leave = (to: "close" | "bag") => {
+    if (leaving.current) return;
+    leaving.current = true;
+    if (isFull) api.setFull(null);
+    const target = to === "bag" ? bagEl() : homeOf(w);
+    void fly(frame.current, target, "in", to === "close" && w.kind === "card").then(() => (to === "bag" ? api.bag(w.id) : api.close(w.id)));
+  };
   const down = (mode: "move" | "size") => (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("button") && mode === "move") return;
     if (isFull) return;
@@ -184,21 +221,21 @@ export function WindowFrame({ w, api, children, className = "", done }: { w: Flo
     document.body.classList.remove("float-dragging");
     // Let go over the Bag of Holding: into the bag (C6.3).
     const bag = document.querySelector(".bag-of-holding")?.getBoundingClientRect();
-    if (d?.mode === "move" && bag && e.clientX >= bag.left && e.clientX <= bag.right && e.clientY >= bag.top && e.clientY <= bag.bottom) api.bag(w.id);
+    if (d?.mode === "move" && bag && e.clientX >= bag.left && e.clientX <= bag.right && e.clientY >= bag.top && e.clientY <= bag.bottom) leave("bag");
   };
   const style = isFull ? { zIndex: 1500 } : { left: w.x, top: w.y, width: w.w, height: w.shrunk ? undefined : w.h, zIndex: 400 + w.z };
   return (
     <>
       {isFull && createPortal(<div className="float-backdrop" onClick={() => api.setFull(null)} />, document.body)}
-      <section className={`float-window float-${w.kind} ${w.shrunk && !isFull ? "shrunk" : ""} ${isFull ? "full" : ""} ${className}`} role="dialog" aria-label={w.title} style={style} onPointerDown={() => api.focus(w.id)}>
+      <section ref={frame} className={`float-window float-${w.kind} ${w.shrunk && !isFull ? "shrunk" : ""} ${isFull ? "full" : ""} ${className}`} role="dialog" aria-label={w.title} style={style} onPointerDown={() => api.focus(w.id)}>
         <header className="float-bar" onPointerDown={down("move")} onPointerMove={moveTo} onPointerUp={up} onPointerCancel={up} onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest("button")) api.shrink(w.id); }} title="Drag to move; double-click to shrink to this bar">
           <b>{w.title}</b>
           <span className="float-tools">
             <button title={isFull ? "Back to its place" : "Focus: large, everything else blurred"} aria-label={isFull ? `Back to its place: ${w.title}` : `Focus on ${w.title}`} onClick={() => api.setFull(isFull ? null : w.id)}>{isFull ? "⤡" : "⤢"}</button>
-            <button title="Put it in the Bag of Holding (or drag it onto the bag)" aria-label={`Put ${w.title} in the bag`} onClick={() => { if (isFull) api.setFull(null); api.bag(w.id); }}>▾</button>
+            <button title="Put it in the Bag of Holding (or drag it onto the bag)" aria-label={`Put ${w.title} in the bag`} onClick={() => leave("bag")}>▾</button>
             {done
-              ? <button className="float-done" title="Done: put the card back" aria-label={`Done with ${w.title}`} onClick={() => { if (isFull) api.setFull(null); api.close(w.id); }}>Done</button>
-              : <button title="Close" aria-label={`Close ${w.title}`} onClick={() => { if (isFull) api.setFull(null); api.close(w.id); }}>×</button>}
+              ? <button className="float-done" title="Done: put the card back" aria-label={`Done with ${w.title}`} onClick={() => leave("close")}>Done</button>
+              : <button title="Close" aria-label={`Close ${w.title}`} onClick={() => leave("close")}>×</button>}
           </span>
         </header>
         {(!w.shrunk || isFull) && <div className="float-body">{children}</div>}

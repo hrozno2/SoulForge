@@ -125,6 +125,8 @@ test("the spellbook stays in view while the spells scroll (C6.6)", async ({ page
   await page.locator("[data-tile=magic]").click();
   const win = page.locator(".float-window.card-window-magic");
   const art = win.locator(".card-back-art");
+  // The window flies out of its slot first (C6.4): measure once it has landed.
+  await win.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
   const top0 = (await art.boundingBox())!.y;
   await win.locator(".float-body").evaluate((b) => { b.scrollTop = 400; });
   await page.waitForTimeout(100);
@@ -139,4 +141,20 @@ test("the spellbook stays in view while the spells scroll (C6.6)", async ({ page
     return out;
   }));
   expect(caught).toEqual([]);
+});
+
+test("a card flies out of its slot, the slot stands empty, and Done flies it back (C6.4)", async ({ page }) => {
+  await addTestContent(page);
+  await page.getByRole("button", { name: /new character/i }).click();
+  await tab(page, "Build");
+  const tile = page.locator("[data-tile=equipment]");
+  await tile.click();
+  const win = page.locator(".float-window.card-window-equipment");
+  await expect(win).toBeVisible();
+  expect(await win.evaluate((el) => el.getAnimations().length)).toBeGreaterThan(0);
+  await expect(tile).toHaveClass(/card-out/);
+  await win.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+  await win.getByRole("button", { name: /^Done with / }).click();
+  await expect(win).toHaveCount(0);
+  await expect(tile).not.toHaveClass(/card-out/);
 });

@@ -811,6 +811,8 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
    * Holding and back; without the window layer (tests), the card turns over in place as before.
    */
   const floating = useFloating();
+  /** A card that is out on the table: its slot stands empty, an outline, until it flies back (C6.4). */
+  const cardOut = (kind: string) => !!floating?.windows.some((w) => w.kind === "card" && w.ref === kind && !w.bagged);
   const cardTitle = (kind: Kind) => (kind === "class" ? ch.classes.map((c) => r.reg.get(c.classId)?.name ?? "?").join(" / ") || "Class" : kind === "race" ? chosenEl.race?.name ?? "Species" : kind === "background" ? chosenEl.background?.name ?? "Background" : kind === "magic" ? "Your spells" : "Your inventory");
   const openBack = (kind: Kind) => {
     setFocus(kind);
@@ -1046,7 +1048,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         </>
       );
       return (
-        <div key={kind} data-tile={kind} className={`board-space board-${kind} filled has-card ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""}`} onClick={() => openBack(kind)} {...drop(kind)}>
+        <div key={kind} data-tile={kind} className={`board-space board-${kind} filled has-card ${cardOut(kind) ? "card-out" : ""} ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""}`} onClick={() => openBack(kind)} {...drop(kind)}>
           {/* Learn more and Remove sit in the card's corner, so the card keeps its room for the text. */}
           <div className="board-corner" onClick={(e) => e.stopPropagation()}>
             {todo[kind] > 0 && <button className="board-todo-pill" title="Choices still to make here" onClick={() => setFocus(kind)}>{todo[kind]} to choose</button>}
@@ -1066,7 +1068,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
       <div
         key={kind}
         data-tile={kind}
-        className={`board-space board-${kind} ${filled[kind] ? "filled" : "empty"} ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""} ${disabled ? "disabled" : ""}`}
+        className={`board-space board-${kind} ${filled[kind] ? "filled" : "empty"} ${cardOut(kind) ? "card-out" : ""} ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""} ${disabled ? "disabled" : ""}`}
         data-accepts={(DROP_TYPES[kind] ?? []).map(dragMime).join(" ")}
         onClick={() => { if (disabled) return; if (kind === "magic" || kind === "equipment") openBack(kind); else toggleList(kind); }}
         {...drop(kind)}

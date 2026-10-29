@@ -2149,3 +2149,9 @@ body.float-dragging, body.float-dragging * { user-select: none !important; -webk
 .scroll-card.picked::before, .scroll-card.picked::after { opacity: 0; }
 .scroll-card.picked .scroll-main > :not(.scroll-top), .scroll-card.picked .scroll-lvl { opacity: .45; filter: grayscale(1); }
 .scroll-card.picked:hover { border-color: var(--gold); }
+
+/* A list row's "i" sits at the end of its row, not on a line of its own (C7.6): the row's button takes the room, the
+   "i" its own width; every list built on .options gets it. */
+.options li { display: flex; align-items: stretch; }
+.options li > button:not(.learn) { flex: 1; min-width: 0; }
+.options li > button.learn { flex: none; width: 34px; display: grid; place-items: center; padding: 0; border-bottom: 1px solid var(--line); font: 700 12px var(--book); color: var(--gold); }

@@ -24,4 +24,7 @@
 		<requirements>[level:4]</requirements>
 		<description><p>Your unarmed strikes deal 1d6 damage.</p></description>
 	</element>
+	<element name="Hollow Tides" type="Option" source="Hollow Realms" id="ID_SF_OPTION_HOLLOW_TIDES">
+		<description><p>An optional table rule: rests by the sea restore one extra hit die.</p></description>
+	</element>
 </elements>

@@ -169,3 +169,15 @@ test("a card flies out of its slot, the slot stands empty, and Done flies it bac
   await expect(win).toHaveCount(0);
   await expect(tile).not.toHaveClass(/card-out/);
 });
+
+test("Manage's options keep their \"i\" in the option's line (C7.6)", async ({ page }) => {
+  await addTestContent(page);
+  await page.getByRole("button", { name: /new character/i }).click();
+  await tab(page, "Manage");
+  const row = page.locator("ul.options li").filter({ has: page.locator("button.learn") }).first();
+  await expect(row).toHaveCount(1);
+  const main = (await row.locator("button:not(.learn)").boundingBox())!;
+  const info = (await row.locator("button.learn").boundingBox())!;
+  expect(Math.abs(info.y - main.y)).toBeLessThan(6);
+  expect(info.x).toBeGreaterThan(main.x + main.width - 4);
+});

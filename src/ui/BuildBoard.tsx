@@ -984,7 +984,10 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const prepHave = preparing.reduce((n, c) => n + preparedOf(c), 0);
   const spellNeed = learnNeed + prepNeed;
   const spellHave = learnHave + prepHave;
-  const spellFill = spellNeed ? spellHave / spellNeed : 0;
+  // The book thickens with the spells learned, the lasting choices; today's preparation is counted beside it, so a
+  // higher score that lets more spells be prepared never makes the book thinner (C7.18, Maine Dockers).
+  const spellFill = learnNeed ? learnHave / learnNeed : prepNeed ? prepHave / prepNeed : 0;
+  const spellLine = !spellNeed ? "No spells to choose yet" : [learnNeed ? `${learnHave} of ${learnNeed} learned` : "", prepNeed ? `${prepHave} of ${prepNeed} prepared` : ""].filter(Boolean).join(" · ");
   const plans = useMemo(() => startingPlans(ch, r.reg), [ch, r.reg]);
   const packFill = useMemo(() => {
     const added = ch.equipmentAdded ?? [];
@@ -1009,6 +1012,9 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     ...(!ch.classes.length ? [{ kind: "class" as Kind, text: "Choose a class", list: true }] : []),
     ...(!ch.background ? [{ kind: "background" as Kind, text: "Choose a background", list: true }] : []),
     ...r.slots.filter((sl) => stillToChoose(sl, r)).map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: false })),
+    // Spells to prepare: the build is not ready to play while a caster has none prepared (C7.18: "every choice is
+    // made" stood beside a spellbook missing its prepared spells). The line opens the prepare list.
+    ...(prepHave < prepNeed ? [{ kind: "magic" as Kind, text: `Prepare spells: ${prepHave} of ${prepNeed}`, list: false, act: () => { openBack("magic"); setBackView("prepare"); } }] : []),
     // Hit points: fixed or rolled, until the player picks (C7.10).
     ...(ch.classes.length && !hpConfigured(ch) ? [{ kind: "class" as Kind, text: "Hit points: choose fixed or rolled", list: false, label: "Hit points", act: () => window.dispatchEvent(new CustomEvent("cf-hp")) }] : []),
     ...(plans.length && packFill < 1 && !plans.every((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))) ? [{ kind: "equipment" as Kind, text: "Starting equipment", list: false }] : []),
@@ -1123,7 +1129,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
               <h3>{name}</h3>
               {kind === "class" && el && CLASS_TAGS[el.name] && <div className="pick-tags">{CLASS_TAGS[el.name].map((t) => <span key={t}>{t}</span>)}</div>}
               {el && <p className="board-blurb">{blurb(el.description, 120)}</p>}
-              {kind === "magic" && <p className="board-blurb">{spellNeed ? `${spellHave} of ${spellNeed} spells chosen` : "No spells to choose yet"}</p>}
+              {kind === "magic" && <p className="board-blurb">{spellLine}</p>}
               {kind === "equipment" && <p className="board-blurb">{ch.inventory.length} {ch.inventory.length === 1 ? "item" : "items"}{plans.length > 0 ? (packFill >= 1 ? " · packed for the road" : ` · starting gear ${plans.filter((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))).length} of ${plans.length}`) : ""}</p>}
             </>
           ) : (
@@ -1191,7 +1197,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
               </div>
               {backView === "prepare" && prepares ? <PrepareSpells r={r} ch={ch} set={set} onDetail={() => undefined} /> : (
                 <>
-                  <p className="muted card-back-count">{spellNeed ? `${spellHave} of ${spellNeed} spells chosen` : "No spells to choose yet"}</p>
+                  <p className="muted card-back-count">{spellLine}</p>
                   <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} prepareElsewhere={prepares} />
                 </>
               )}

@@ -46,7 +46,9 @@ test("a caster who prepares picks today's spells on the spellbook", async ({ pag
   // The new pick's choices open a moment after the pick lands: wait for them, then put them away.
   if (await back.waitFor({ timeout: 2000 }).then(() => true, () => false)) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
   await page.locator("[data-tile=magic]").click();
-  const book = page.getByRole("button", { name: /Prepare spells/ });
+  const book = page.locator(".card-window .card-back-toggle", { hasText: "Prepare spells" });
+  // Nothing prepared yet: the choice checker asks for it (C7.18).
+  await expect(page.locator(".board-left-pop button", { hasText: "Prepare spells" })).toHaveCount(1);
   await book.click();
   const count = page.locator(".card-window h3", { hasText: "Prepared spells" });
   await expect(count).toContainText(/^Prepared spells 0 \//);
@@ -60,6 +62,7 @@ test("a caster who prepares picks today's spells on the spellbook", async ({ pag
   await expect(count).toContainText(/^Prepared spells 0 \//);
   await scroll.locator(".scroll-main").click();
   await expect(count).toContainText(/^Prepared spells 1 \//);
+  // The choice checker asks for the spells still to prepare (C7.18): nothing prepared yet at the start of this test.
   // Learned and prepared are counted apart; the prepared count leads to the prepare list (C7.18).
   const prep = page.locator(".card-window .spell-count.prep");
   await expect(prep).toContainText(/^Prepared 1\//);

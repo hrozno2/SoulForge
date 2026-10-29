@@ -136,8 +136,10 @@ export function checkChoiceWindows(r: Resolved): Finding[] {
       max = Math.max(max, r.stats.get(`${key}:spellcasting:slot`));
       if (max > 0) for (const o of open) { const lv = Number(o.setters.level?.value ?? 0); if (lv > max) add("Choice offers a spell above what can be cast", `${s.rule.name}: ${o.name} (level ${lv}, max ${max})`); }
     }
-    // A required choice always has something to take.
-    if (!s.rule.optional && s.chosen.length < s.rule.number && !open.some((o) => !s.chosen.includes(o.id))) add("A required choice has nothing to take", `${s.rule.name} [${s.rule.type}]`);
+    // A required choice always offers something. Options the character's own build rules out (a Wizard's Scholar
+    // expertise without any of its skills) leave it asking for nothing, as stillToChoose says for the whole app: by the
+    // rules the feature then does nothing. Only a choice with no options at all is a hole in the content.
+    if (!s.rule.optional && s.chosen.length < s.rule.number && s.options.length === 0) add("A required choice has nothing to take", `${s.rule.name} [${s.rule.type}]`);
   }
   return out;
 }

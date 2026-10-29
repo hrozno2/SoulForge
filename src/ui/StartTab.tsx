@@ -169,7 +169,7 @@ function CharCard({ rec, reg, current, onOpen, onDuplicate, onExport, onDelete }
               <span className="cc-row">
                 <span className="cc-hp" title={`Hit points ${info.hpNow} of ${info.hp}`}>
                   <span className={`cc-hp-bar ${info.hp && info.hpNow / info.hp < 0.25 ? "low" : ""}`}><i style={{ width: `${info.hp ? Math.round((info.hpNow / info.hp) * 100) : 0}%` }} /></span>
-                  <b>{info.hpNow}<small> / {info.hp}</small></b>
+                  <b><em className="cc-hp-label">HP </em>{info.hpNow}<small> / {info.hp}</small></b>
                 </span>
                 <span className="cc-ac" title="Armor class">
                   <svg viewBox="0 0 24 28" aria-hidden="true"><path d="M12 1 2 5v8c0 6.5 4.3 11.6 10 14 5.7-2.4 10-7.5 10-14V5z" /></svg>

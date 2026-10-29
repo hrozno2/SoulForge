@@ -23,11 +23,9 @@ test.describe("Build board", () => {
     const rows = page.locator(".board-acc.open .mini-card:not(.picked) .mini-name");
     const name = (await rows.first().textContent())!.trim();
     await rows.first().click();
-    // The pick lands in its space and opens as a card window like any other (Chris 2026-10-29), with "Put it back";
-    // Done closes it and the pick stays.
+    // The pick lands in its space and opens as a card window like any other (Chris 2026-10-29): Apply keeps it.
     const fresh = page.locator(".float-window.card-window-race");
-    await expect(fresh.locator(".fresh-bar")).toBeVisible();
-    await fresh.getByRole("button", { name: /^Done with / }).click();
+    await fresh.getByRole("button", { name: /^Apply / }).click();
     await expect(fresh).toHaveCount(0);
     await expect(page.locator("[data-tile=race] h3")).toHaveText(name);
     // Clicking the card opens it in a floating window (C4) to edit its choices; Done (C6.3) puts it back.
@@ -124,10 +122,10 @@ test.describe("Build board on a narrow window", () => {
     // A card's See options brings the lists out.
     await page.locator("[data-tile=race]").getByRole("button", { name: /see options/i }).click();
     await expect(board).toHaveClass(/side-left/);
-    // A pick opens its card window; "Put it back" takes the pick back: the species space is empty again.
+    // A pick opens its card window; × takes the pick back: the species space is empty again.
     await page.locator(".board-acc.open .mini-card .mini-main").first().click();
     const win = page.locator(".float-window.card-window-race");
-    await win.getByRole("button", { name: "Put it back" }).click();
+    await win.getByRole("button", { name: /^Take back / }).click();
     await expect(win).toHaveCount(0);
     await expect(page.locator("[data-tile=race]")).not.toHaveClass(/filled/);
     await expect(board).toHaveClass(/side-left/);

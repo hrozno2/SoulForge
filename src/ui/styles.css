@@ -2250,13 +2250,16 @@ button.spell-count.prep.on { background: color-mix(in srgb, var(--gold) 28%, tra
 .char-cards.compact .char-card-name { font-size: 15px; }
 .char-cards.compact .char-card-what { font-size: 12px; }
 .char-cards.compact .char-card-stats .cc-row + .cc-row { display: none; }
-.char-cards.compact .cc-ac, .char-cards.compact .cc-speed { display: none; }
+/* Compact: the hit points as a badge with the number, beside armor class and speed (Chris 2026-10-29). */
 @media (max-width: 560px) {
   .char-cards { grid-template-columns: 1fr; gap: 8px; }
   .char-cards .char-card-body { min-height: 0 !important; padding: 10px 12px 10px 54px !important; }
   .char-cards .pick-watermark, .char-cards .char-card-portrait, .char-cards .char-card-bg { display: none; }
   .char-cards .ribbon { transform: scale(.7); transform-origin: top left; }
-  .char-cards .char-card-stats .cc-row + .cc-row, .char-cards .cc-ac, .char-cards .cc-speed { display: none; }
+  .char-cards .char-card-stats .cc-row + .cc-row { display: none; }
+  .char-cards .cc-hp-bar { display: none; }
+  .char-cards .cc-row > .cc-hp { flex: 0 0 auto; min-width: 0; justify-content: center; }
+  .char-cards .cc-hp-label { display: inline; }
 }
 
 /* Home cards: all six ability scores share the row (Chris 2026-10-29) */
@@ -2278,3 +2281,9 @@ button.spell-count.prep.on { background: color-mix(in srgb, var(--gold) 28%, tra
 .board-num { display: inline-grid; place-items: center; text-align: center; }
 .board-num.rolls .board-num-value { width: 100%; text-align: center; }
 .board-num-in { text-align: center; }
+
+.cc-hp-label { display: none; font-style: normal; color: var(--gold); font-size: .8em; letter-spacing: .06em; }
+.char-cards.compact .cc-hp-bar { display: none; }
+.char-cards.compact .cc-row > .cc-hp { flex: 0 0 auto; min-width: 0; justify-content: center; padding: 3px 10px; }
+.char-cards.compact .cc-hp-label { display: inline; }
+.char-cards.compact .cc-hp small { display: none; }

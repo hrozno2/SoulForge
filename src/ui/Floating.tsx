@@ -189,7 +189,7 @@ function FloatingLayer({ api, render }: { api: FloatingApi; render: (w: FloatWin
 }
 
 /** A window: a title bar to drag it by, the bag and close buttons, the content, a corner to resize it. */
-export function WindowFrame({ w, api, children, className = "", done, kicker, hue }: { w: FloatWindow; api: FloatingApi; children: ReactNode; className?: string; done?: boolean; kicker?: string; hue?: number }) {
+export function WindowFrame({ w, api, children, className = "", done, kicker, hue, onCancel }: { w: FloatWindow; api: FloatingApi; children: ReactNode; className?: string; done?: boolean; kicker?: string; hue?: number; onCancel?: () => void }) {
   const drag = useRef<{ dx: number; dy: number; mode: "move" | "size"; w0: number; h0: number; x0: number; y0: number } | null>(null);
   const isFull = api.full === w.id;
   const frame = useRef<HTMLElement>(null);
@@ -240,7 +240,13 @@ export function WindowFrame({ w, api, children, className = "", done, kicker, hu
           <span className="float-tools">
             <button title={isFull ? "Back to its place" : "Focus: large, everything else blurred"} aria-label={isFull ? `Back to its place: ${w.title}` : `Focus on ${w.title}`} onClick={() => api.setFull(isFull ? null : w.id)}>{isFull ? "⤡" : "⤢"}</button>
             <button title="Put it in the Bag of Holding (or drag it onto the bag)" aria-label={`Put ${w.title} in the bag`} onClick={() => leave("bag")}>▾</button>
-            {done
+            {/* A new pick (onCancel): Apply keeps it, × takes it back (Chris 2026-10-29). Otherwise Done, or × to close. */}
+            {onCancel ? (
+              <>
+                <button className="float-done" title="Apply: keep this pick" aria-label={`Apply ${w.title}`} onClick={() => leave("close")}>Apply</button>
+                <button title="Take this pick back" aria-label={`Take back ${w.title}`} onClick={() => { if (isFull) api.setFull(null); onCancel(); }}>×</button>
+              </>
+            ) : done
               ? <button className="float-done" title="Done: put the card back" aria-label={`Done with ${w.title}`} onClick={() => leave("close")}>Done</button>
               : <button title="Close" aria-label={`Close ${w.title}`} onClick={() => leave("close")}>×</button>}
           </span>

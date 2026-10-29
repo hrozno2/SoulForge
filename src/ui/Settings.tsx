@@ -32,7 +32,7 @@ export interface AppSettings {
 }
 
 const KEY = "charforge.settings";
-const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true, showSciFi: false, showModern: false, allSpells: true, buildLayout: "board", hideTestTools: false };
+const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true, showSciFi: false, showModern: false, allSpells: false, buildLayout: "board", hideTestTools: false };
 
 function read(): AppSettings {
   try {

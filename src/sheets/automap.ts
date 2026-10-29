@@ -272,7 +272,7 @@ export function autoFill(fields: AutoField[], d: FillData, sink: Sink): AutoResu
   put("age", d.body.age); put("height", d.body.height); put("weight", d.body.weight); put("eyes", d.body.eyes); put("skin", d.body.skin); put("hair", d.body.hair); put("faction", d.body.deity);
   put("extra", d.notes); put("allies", d.body.allies);
   put("backstory", d.backstory); put("appearance", d.appearance); put("notes", d.notes); put("treasure", d.magicItems.map((m) => m.name).join(", "));
-  put("attacksText", d.casting ? `Spell save DC ${d.casting.dc}, spell attack ${d.casting.attack}` : "");
+  put("attacksText", [d.casting ? `Spell save DC ${d.casting.dc}, spell attack ${d.casting.attack}` : "", ...d.otherCasting].filter(Boolean).join("\n"));
   if (d.casting) { put("casting.ability", d.casting.ability); put("casting.mod", d.casting.mod); put("casting.dc", d.casting.dc); put("casting.attack", d.casting.attack); put("casting.class", d.className); }
   // Slot fields are numbered either by level or by a running number; rank the numbers to get the level.
   const slotNums = [...new Set([...plan.keys()].map((k) => k.match(/^slots\.(\d+)\./)?.[1]).filter(Boolean).map(Number))].sort((a, b) => a - b);

@@ -242,7 +242,8 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     for (const p of byGrantFirst) {
       if (seen.has(nameOf(p.id))) continue;
       seen.add(nameOf(p.id));
-      const x = row(p, !!p.granted || !c.prepare || !!(p as { prepared?: boolean }).prepared);
+      // The entire spellbook printed: every prepare box blank but the always-prepared ones, to mark each day (C7.9).
+      const x = row(p, !!p.granted || !c.prepare || (!opts.allSpells && !!(p as { prepared?: boolean }).prepared));
       if (x && ownDc(c)) x.notes = [ownDc(c), x.notes].filter(Boolean).join(", ");
       if (x) spells.push(x);
     }
@@ -314,7 +315,11 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     // Every weapon the character carries, equipped or not (a Longbow on the back is still an attack, issue #3).
     weapons: sh.attacksCarried.map((a) => ({ name: a.name, bonus: signed(a.bonus), damage: `${a.damage} ${a.damageType}`.trim(), notes: [a.properties, a.notes].filter(Boolean).join("; ") })),
     defenses: [sh.defenses.resistances.length && `Resistances: ${sh.defenses.resistances.join(", ")}.`, sh.defenses.immunities.length && `Immunities: ${sh.defenses.immunities.join(", ")}.`, sh.defenses.vulnerabilities.length && `Vulnerabilities: ${sh.defenses.vulnerabilities.join(", ")}.`].filter(Boolean).join(" "),
-    casting, otherCasting: sh.casting.slice(1).filter((c) => main && (c.dc !== main.dc || c.attack !== main.attack)).map((c) => `${c.name}: save DC ${c.dc}, attack ${signed(c.attack)}${c.ability ? ` (${c.ability.charAt(0).toUpperCase()}${c.ability.slice(1)})` : ""}`), spells, spellbook, armorWorn: armor?.el?.name ?? "", weaponsText, otherGear: gear, magicItems: magic,
+    casting, otherCasting: [
+      ...sh.casting.slice(1).filter((c) => main && (c.dc !== main.dc || c.attack !== main.attack)).map((c) => `${c.name}: save DC ${c.dc}, attack ${signed(c.attack)}${c.ability ? ` (${c.ability.charAt(0).toUpperCase()}${c.ability.slice(1)})` : ""}`),
+      // How many to prepare, where the whole spellbook is printed with blank boxes (C7.9).
+      ...(opts.allSpells ? sh.casting.filter((c) => c.prepare && c.prepareMax > 0).map((c) => `${c.name}: prepare ${c.prepareMax} spells each day (mark them in the spell list)`) : []),
+    ], spells, spellbook, armorWorn: armor?.el?.name ?? "", weaponsText, otherGear: gear, magicItems: magic,
     coins: { cp: String(ch.coins.cp), sp: String(ch.coins.sp), ep: String(ch.coins.ep), gp: String(ch.coins.gp), pp: String(ch.coins.pp) },
     carryCapacity: String(sh.weight.capacity), pushDrag: String(sh.weight.capacity * 2),
     backstory: [ch.info.backstory, ch.info.allies && `Allies: ${ch.info.allies}`].filter(Boolean).join("\n\n"),

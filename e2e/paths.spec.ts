@@ -60,12 +60,15 @@ test("a caster who prepares picks today's spells on the spellbook", async ({ pag
   await expect(count).toContainText(/^Prepared spells 0 \//);
   await scroll.locator(".scroll-main").click();
   await expect(count).toContainText(/^Prepared spells 1 \//);
-  // One print setting for sheets and cards, by the spellbook and in the export panel alike (C6.5).
-  await page.locator(".card-window .spell-scope").getByRole("button", { name: "Prepared only" }).click();
+  // The spellbook's printing is an export setting (C7.9), not a switch on the spellbook.
+  await expect(page.locator(".card-window .spell-scope")).toHaveCount(0);
   await page.locator(".card-window").getByRole("button", { name: /^Done with / }).first().click();
   await tab(page, "Export");
   await page.getByRole("button", { name: "Export PDF..." }).click();
-  await expect(page.locator(".spell-scope").getByRole("button", { name: "Prepared only" })).toHaveAttribute("aria-pressed", "true");
+  const whole = page.getByLabel("Print the entire spellbook");
+  await expect(whole).not.toBeChecked();
+  await whole.check();
+  await expect(whole).toBeChecked();
 });
 
 test("a character exported for Foundry comes back through the importer", async ({ page }) => {

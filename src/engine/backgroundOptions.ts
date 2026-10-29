@@ -32,6 +32,18 @@ export function background2024Choices(byId: Map<string, AElement>): number {
       { kind: "grant", type: "Grants", id: BACKGROUND_ASI_MARKER } as ARule,
     ],
   });
+  // A background feature that is only an origin feat (the 2024 "Origin Feat" a 2014 background's Variant Feature
+  // offers) and this package each give the origin feat: one or the other, never both (C7.4, Chris 2026-10-29: the
+  // background showed the origin feat twice). Each requires the other's absence, which the engine reads as a mutual
+  // exclusion, so the one not taken shows why it is blocked.
+  const pkg = byId.get(BACKGROUND_2024_ID)!;
+  for (const f of byId.values()) {
+    if (f.type !== "Background Feature" || f.id === BACKGROUND_2024_ID) continue;
+    const selects = f.rules.filter((r) => r.kind === "select");
+    if (selects.length !== 1 || selects[0].type !== "Feat" || !/origin/i.test(`${selects[0].name} ${(selects[0] as { supports?: string }).supports ?? ""}`)) continue;
+    f.requirements = f.requirements ? `(${f.requirements}),!${BACKGROUND_2024_ID}` : `!${BACKGROUND_2024_ID}`;
+    pkg.requirements = pkg.requirements ? `${pkg.requirements},!${f.id}` : `!${f.id}`;
+  }
   let added = 0;
   for (const bg of byId.values()) {
     if (bg.type !== "Background" || isModern(bg) || /custom/i.test(bg.name)) continue;

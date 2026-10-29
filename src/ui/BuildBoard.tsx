@@ -404,6 +404,30 @@ function SpellBook({ f }: { f: number }) {
  * A rucksack that fills with gear as the starting equipment goes in, and empties as it comes out: papers in the
  * front pocket, rope at the side, a bedroll buckled on top, a sword, a pouch and herbs, a scroll in the side sleeve.
  */
+/**
+ * Starting gear (C7.13, Chris 2026-10-29: not a second backpack): a few things laid out, simple, a sword, a coil of
+ * rope, a torch and a wrapped bundle.
+ */
+function StartingGear() {
+  return (
+    <svg className="board-pack" viewBox="0 0 120 120" role="img" aria-label="Starting gear">
+      <ellipse cx="60" cy="104" rx="44" ry="6" fill="#0005" />
+      {/* bundle */}
+      <path d="M30 60c0-8 8-14 22-14s22 6 22 14v26c0 6-10 10-22 10s-22-4-22-10z" fill="hsl(30 35% 32%)" stroke="var(--gold)" strokeWidth="2" />
+      <path d="M30 70c8 5 36 5 44 0M52 46v50" stroke="var(--gold2)" strokeWidth="3" fill="none" />
+      {/* rope */}
+      <circle cx="88" cy="84" r="14" fill="none" stroke="hsl(40 45% 55%)" strokeWidth="5" />
+      <circle cx="88" cy="84" r="7" fill="none" stroke="hsl(40 45% 45%)" strokeWidth="4" />
+      {/* torch */}
+      <path d="M84 30l10 34" stroke="hsl(28 40% 35%)" strokeWidth="6" strokeLinecap="round" />
+      <path d="M82 28c-4-8 2-14 6-18 1 6 8 8 4 16-2 4-8 5-10 2z" fill="hsl(28 90% 55%)" stroke="hsl(20 90% 40%)" strokeWidth="1.5" />
+      {/* sword */}
+      <path d="M14 98L48 22" stroke="hsl(210 10% 75%)" strokeWidth="5" strokeLinecap="round" />
+      <path d="M14 98l-4 9M8 92l14 7" stroke="var(--gold)" strokeWidth="4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** A coin purse with a few coins beside it, for the shop on the backpack's card back. */
 function Purse() {
   return (
@@ -1179,10 +1203,10 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
                   no way back): starting gear and adding items, the inventory, the shop. */}
               <div className="card-back-art" role="tablist" aria-label="Backpack">
                 <button role="tab" className={`card-back-toggle ${backView !== "inventory" && backView !== "shop" ? "on" : ""}`} aria-selected={backView !== "inventory" && backView !== "shop"} title="Starting equipment, adventuring packs and any item to add" onClick={() => setBackView(null)}>
-                  <Backpack f={packFill} /><small>Starting gear</small>
+                  <StartingGear /><small>Starting gear</small>
                 </button>
                 <button role="tab" className={`card-back-toggle ${backView === "inventory" ? "on" : ""}`} aria-selected={backView === "inventory"} title="What the character carries" onClick={() => setBackView("inventory")}>
-                  <Backpack f={1} /><small>Inventory</small>
+                  <span className="inv-pack"><Backpack f={packFill} /></span><small>Inventory</small>
                 </button>
                 <button role="tab" className={`card-back-toggle ${backView === "shop" ? "on" : ""}`} aria-selected={backView === "shop"} title="Buy items with your coins, sell from the inventory" onClick={() => setBackView("shop")}>
                   <Purse /><small>Shop</small>

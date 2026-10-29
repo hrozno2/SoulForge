@@ -10,7 +10,8 @@ if (typeof document !== "undefined") document.addEventListener("pointerdown", (e
 const reduced = () => document.documentElement.classList.contains("reduce-motion");
 const TARGET = {
   spellbook: [".card-window-magic .card-back-art svg", "[data-tile=magic]"],
-  backpack: [".card-window-equipment .card-back-art svg", "[data-tile=equipment]"],
+  // Into the Inventory's backpack, not the starting gear (C7.13).
+  backpack: [".card-window-equipment .inv-pack svg", "[data-tile=equipment]"],
 };
 
 export function flyInto(to: keyof typeof TARGET, from: Element | null = lastPress): void {

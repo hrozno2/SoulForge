@@ -194,25 +194,25 @@ The full check, `npm run test:e2e`, Soul Forge Test, then a release.
 
 | # | What | From |
 | --- | --- | --- |
-| C7.1 | Bug: spell choices from separate features stay separate lists (Magic Initiate and every feature like it); only a class's own spells are one pool. | Chris 2026-10-29 |
-| C7.2 | Bug: a window taken out of the Bag of Holding comes back fully on screen. | Chris |
-| C7.3 | Bug: items could be put "in" a waterskin (any item offered as a container); only real containers hold things. | Chris |
-| C7.4 | Bug: the background shows the origin feat twice (the "variant feature" origin feat and the 2024-rules origin feat). | Chris |
-| C7.5 | Bug: every optional feature really optional (Artificer's Armor Model is required); audit what is marked optional. | Chris |
-| C7.6 | Bug: Manage's Options view puts the "i" on its own line; it belongs in the option's line. | Chris |
-| C7.7 | Bug: starting gear choices all appear in the starting gear box (an arcane focus or a component pouch, a druidic focus, a holy symbol: open kinds get a picker). Rules checked. | Chris |
-| C7.8 | Bug: the Export tab's sheet preview is slow to load. | Chris |
-| C7.9 | Spellbook printing moves to the export settings: a "Print the entire spellbook" box; ticked, the sheet lists every spell with blank prepared boxes and says how many can be prepared; unticked, prepared spells only (the switch by the spellbook goes). | Chris |
-| C7.10 | HP: until the player picks fixed or rolled, the hit point bar is gold and says "Configure" (a button opening the HP dialog); the choice checker lists it and opens the dialog. Afterwards red as now. | Chris |
-| C7.11 | Ability increase choices (origin feats, ASI): no dropdown of combinations; every applicable ability in the boxes, the boxes refusing what the rules do not allow. | Chris |
-| C7.12 | Spell scrolls: narrow and vertical, like real scrolls (rolled ends top and bottom), more like a page; concentration shown. | Chris |
-| C7.13 | Starting gear gets its own icon (a few items, simple), not the backpack; things fly into the Inventory's backpack. | Chris |
-| C7.14 | Equipment: Remove becomes an × button, so narrow rows do not clump. | Chris |
-| C7.16 | Bug: the card windows lost the Source picker (which book's version) the card back had; one source strip for both. | Chris |
+| C7.1 | Bug: spell choices from separate features stay separate lists (Magic Initiate and every feature like it); only a class's own spells are one pool. Done. | Chris 2026-10-29 |
+| C7.2 | Bug: a window taken out of the Bag of Holding comes back fully on screen. Done. | Chris |
+| C7.3 | Bug: items could be put "in" a waterskin (any item offered as a container); only real containers hold things. Done. | Chris |
+| C7.4 | Bug: the background shows the origin feat twice (the "variant feature" origin feat and the 2024-rules origin feat). Done. | Chris |
+| C7.5 | Bug: every optional feature really optional (Artificer's Armor Model is required); audit what is marked optional. Done. | Chris |
+| C7.6 | Bug: Manage's Options view puts the "i" on its own line; it belongs in the option's line. Done. | Chris |
+| C7.7 | Bug: starting gear choices all appear in the starting gear box (an arcane focus or a component pouch, a druidic focus, a holy symbol: open kinds get a picker). Rules checked. Done. | Chris |
+| C7.8 | Bug: the Export tab's sheet preview is slow to load. Done. | Chris |
+| C7.9 | Spellbook printing moves to the export settings: a "Print the entire spellbook" box; ticked, the sheet lists every spell with blank prepared boxes and says how many can be prepared; unticked, prepared spells only (the switch by the spellbook goes). Done. | Chris |
+| C7.10 | HP: until the player picks fixed or rolled, the hit point bar is gold and says "Configure" (a button opening the HP dialog); the choice checker lists it and opens the dialog. Afterwards red as now. Done. | Chris |
+| C7.11 | Ability increase choices (origin feats, ASI): no dropdown of combinations; every applicable ability in the boxes, the boxes refusing what the rules do not allow. Done. | Chris |
+| C7.12 | Spell scrolls: narrow and vertical, like real scrolls (rolled ends top and bottom), more like a page; concentration shown. Done. | Chris |
+| C7.13 | Starting gear gets its own icon (a few items, simple), not the backpack; things fly into the Inventory's backpack. Done. | Chris |
+| C7.14 | Equipment: Remove becomes an × button, so narrow rows do not clump. Done. | Chris |
+| C7.16 | Bug: the card windows lost the Source picker (which book's version) the card back had; one source strip for both. Done. | Chris |
 | C7.17 | Card windows keep the card back's flair: gold frame with its dark inner edge, the card's colour from the top, a small label over the name. Done. | Chris |
-| C7.18 | Bug: a Wizard whose Intelligence goes up gets more spell choices it cannot fill; find what the engine does wrong. | Chris |
+| C7.18 | Bug: a Wizard whose Intelligence goes up gets more spell choices it cannot fill; find what the engine does wrong. Done. | Chris |
 | C7.19 | Audit: multiclass spell slots and spells known. src/aurora/multiclassAudit.test.ts builds every pair of caster classes (2014 and 2024, EK and AT included) at three level splits against the class tables: all agree. Done. | Chris |
-| C7.15 | Tutorial: updated for everything since (board, floating cards, bag, spellbook, export). | Chris |
+| C7.15 | Tutorial: updated for everything since (board, floating cards, bag, spellbook, export). Done. | Chris |
 
 ---
 

@@ -62,6 +62,7 @@ function Prepared({ line, r, ch, set, onDetail }: { line: CastingLine; r: Resolv
     <>
       <AlwaysPrepared line={line} r={r} onDetail={onDetail} />
       <h3>Prepared spells <span className={valid.length > line.prepareMax ? "warn" : "muted"}>{valid.length} / {line.prepareMax}</span></h3>
+      {pool.length < line.prepareMax && <p className="muted small-text">You may prepare {line.prepareMax}, but only {pool.length} {pool.length === 1 ? "spell is" : "spells are"} there to prepare from{/spellbook/i.test(line.name) || line.name === "Wizard" ? ": add spells to your spellbook" : ""}.</p>}
       <Browse items={pool} type="Spell" chosen={valid} onPick={(e) => toggle(e.id)} onHover={onDetail} defaultView="cards" perPage={60} />
     </>
   );

@@ -526,6 +526,15 @@ const SAID: [string, string, (v: number) => string][] = [
  * exported sheets' brackets (C6.5). A feature named only for its spells ("Domain Spells", "Oath of Devotion Spells")
  * names what it belongs to instead, when that says more.
  */
+/**
+ * How many spells a line can prepare now: its number by the rules, but never more than it has to prepare from (C7.18,
+ * Chris 2026-10-29: a Wizard's higher Intelligence asked for more prepared spells than the spellbook held, so the
+ * spellbook's count could never be met). A choice never asks for more than it offers.
+ */
+export function prepareTarget(r: Resolved, line: CastingLine): number {
+  return Math.min(line.prepareMax, preparePool(r, line).length);
+}
+
 export function grantSource(r: Resolved, p: Pick<SpellPick, "from">): string | undefined {
   const el = p.from ? r.reg.get(p.from) : undefined;
   if (!el) return undefined;

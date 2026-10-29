@@ -14,7 +14,7 @@ import type { AElement } from "../aurora/types";
 import { stillToChoose, type Resolved } from "../aurora/engine";
 import { ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, hpConfigured, totalLevel, type AbilityId, type Character } from "../aurora/character";
 import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as pbSpent } from "../aurora/pointBuy";
-import { buildSheet } from "../aurora/sheet";
+import { buildSheet, prepareTarget } from "../aurora/sheet";
 import { formatRelease, groupVariants, hiddenBy, type Group } from "../aurora/books";
 import { SlotList, tabOfSlot, type SetCharacter, PersonalitySwitch } from "./Slots";
 import { PassiveFeatures } from "./PassiveFeatures";
@@ -953,8 +953,8 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   // The spellbook fills with what the player has picked: spells and cantrips to learn (a choice the content filled
   // in by default does not count), and the spells prepared, out of what each allows. Nothing to pick leaves it thin.
   const preparing = sheet.casting.filter((c) => c.prepare && c.prepareMax > 0);
-  const preparedOf = (c: (typeof sheet.casting)[number]) => Math.min(c.prepareMax, (ch.prepared[c.name] ?? []).length);
-  const spellNeed = magicSlots.reduce((n, s) => n + s.rule.number, 0) + preparing.reduce((n, c) => n + c.prepareMax, 0);
+  const preparedOf = (c: (typeof sheet.casting)[number]) => Math.min(prepareTarget(r, c), (ch.prepared[c.name] ?? []).length);
+  const spellNeed = magicSlots.reduce((n, s) => n + s.rule.number, 0) + preparing.reduce((n, c) => n + prepareTarget(r, c), 0);
   const spellHave = magicSlots.reduce((n, s) => n + (s.defaulted ? 0 : Math.min(s.chosen.length, s.rule.number)), 0) + preparing.reduce((n, c) => n + preparedOf(c), 0);
   const spellFill = spellNeed ? spellHave / spellNeed : 0;
   const plans = useMemo(() => startingPlans(ch, r.reg), [ch, r.reg]);

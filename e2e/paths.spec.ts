@@ -51,6 +51,12 @@ test("a caster who prepares picks today's spells on the spellbook", async ({ pag
   await expect(count).toContainText(/^Prepared spells 0 \//);
   await page.locator(".card-window .scroll-card:not(.dim) .scroll-main, .card-window .pick-card:not(.dim) button.pick-select").first().click();
   await expect(count).toContainText(/^Prepared spells 1 \//);
+  // One print setting for sheets and cards, by the spellbook and in the export panel alike (C6.5).
+  await page.locator(".card-window .spell-scope").getByRole("button", { name: "Prepared only" }).click();
+  await page.locator(".card-window").getByRole("button", { name: /^Done with / }).first().click();
+  await tab(page, "Export");
+  await page.getByRole("button", { name: "Export PDF..." }).click();
+  await expect(page.locator(".spell-scope").getByRole("button", { name: "Prepared only" })).toHaveAttribute("aria-pressed", "true");
 });
 
 test("a character exported for Foundry comes back through the importer", async ({ page }) => {

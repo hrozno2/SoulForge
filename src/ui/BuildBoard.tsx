@@ -31,6 +31,7 @@ import { requestRoll } from "./Dice";
 import { startingPlans } from "../aurora/startingEquipment";
 import { useUi } from "./Learn";
 import { useSettings } from "./Settings";
+import { SpellScope } from "./SpellScope";
 import { PortraitCropper, PortraitPicker } from "./Portrait";
 import { D20, Head, Pack, Scroll, Sword, Wand } from "./icons";
 
@@ -1127,6 +1128,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
                   </button>
                 ) : <SpellBook f={spellFill} />}
                 <span>{spellNeed ? `${spellHave} of ${spellNeed}` : ""}</span>
+                {prepares && <SpellScope />}
               </div>
               {backView === "prepare" && prepares ? <PrepareSpells r={r} ch={ch} set={set} onDetail={() => undefined} /> : (
                 <>

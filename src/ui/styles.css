@@ -2108,3 +2108,7 @@ body.float-dragging, body.float-dragging * { user-select: none !important; -webk
 /* An always-prepared spell's mark (C6.5) */
 .chip.always-prepared { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
 .always-mark { color: var(--gold); font-size: 10px; }
+
+/* Whole spellbook or prepared only, for sheets and cards (C6.5) */
+.spell-scope { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
+.spell-scope .pill { padding: 2px 9px; font-size: 11px; }

@@ -11,7 +11,8 @@ import type { SetCharacter } from "./Slots";
 import { CompanionCard, CONDITIONS } from "./ManageTab";
 import { requestRoll, type RollOptions } from "./Dice";
 import { isAvailable, usedAfterClick } from "./pips";
-import { getSettings, updateSettings } from "./Settings";
+import { getSettings, useSettings } from "./Settings";
+import { SpellScope, spellScopeOf } from "./SpellScope";
 import { TranslateOptions, useTranslation } from "./TranslateOptions";
 import { TemplateExport } from "./SheetExport";
 
@@ -24,9 +25,10 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
   const [opts, setOpts] = useState<PdfOptions>(() => ({ ...DEFAULT_PDF_OPTIONS, paper: getSettings().paper }));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
-  const counts = cardCounts(r, sheet, opts.spellCardScope);
   const prepares = sheet.casting.some((c) => c.prepare);
-  const [allSpells, setAllSpells] = useState(getSettings().allSpells);
+  // One setting for sheets and cards alike (C6.5), also on the spellbook.
+  const allSpells = useSettings().allSpells;
+  const counts = cardCounts(r, sheet, spellScopeOf(prepares && allSpells));
   const tr = useTranslation();
   const toggle = (k: "sheet" | "spellCards" | "itemCards" | "featureCards") => setOpts((o) => ({ ...o, [k]: !o[k] }));
   const run = async () => {
@@ -36,7 +38,7 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
       const { loadFonts } = await import("../pdf/fonts");
       let failed = 0;
       const translate = tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`), (f) => (failed = f));
-      const bytes = await buildPdf(r, sheet, { ...opts, translate, allSpells: prepares && allSpells }, await loadFonts());
+      const bytes = await buildPdf(r, sheet, { ...opts, spellCardScope: spellScopeOf(prepares && allSpells), translate, allSpells: prepares && allSpells }, await loadFonts());
       const base = (r.character.name || "character").replace(/[^\p{L}\p{N}]+/gu, "-");
       const ok = await saveFile(`${base}.pdf`, bytes, "application/pdf");
       setMsg([ok ? "PDF saved." : "Cancelled.", failed ? `${failed} pieces of text could not be translated and stayed in English.` : ""].join(" ").trim());
@@ -52,22 +54,12 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
       {open && (
         <div className="subcard">
           <TranslateOptions tr={tr} />
-          {prepares && (
-            <label className="check" title="For casters who prepare spells each day: the sheet's spell table lists every spell you can prepare, with today's prepared ones marked. Spells that do not fit continue on extra pages.">
-              <input type="checkbox" checked={allSpells} onChange={(e) => { updateSettings({ allSpells: e.target.checked }); setAllSpells(e.target.checked); }} /> List every spell I can prepare, with blank boxes to mark each day
-            </label>
-          )}
+          {prepares && <SpellScope />}
           <TemplateExport r={r} sheet={sheet} tr={tr} allSpells={prepares && allSpells} />
           <h3>Soul Forge style PDF</h3>
           <p className="muted">A sheet in Soul Forge's own layout, with optional cards and play tips. Use this if you have no official sheet loaded.</p>
           <label className="check"><input type="checkbox" checked={opts.sheet} onChange={() => toggle("sheet")} /> Character sheet</label>
           <label className="check"><input type="checkbox" checked={opts.spellCards} onChange={() => toggle("spellCards")} /> Spell cards <small>{counts.spells}</small></label>
-          {opts.spellCards && prepares && (
-            <div className="row indent">
-              <span className="muted">Cards for</span>
-              {(["prepared", "all"] as const).map((k) => <button key={k} className={(opts.spellCardScope ?? "prepared") === k ? "pill active" : "pill"} onClick={() => setOpts((o) => ({ ...o, spellCardScope: k }))}>{k === "prepared" ? "Prepared spells only" : "Every spell I can prepare"}</button>)}
-            </div>
-          )}
           <label className="check"><input type="checkbox" checked={opts.itemCards} onChange={() => toggle("itemCards")} /> Item cards <small>{counts.items}</small></label>
           <label className="check"><input type="checkbox" checked={opts.featureCards} onChange={() => toggle("featureCards")} /> Feat and feature cards <small>{counts.features}</small></label>
           {counts.forms > 0 && <label className="check" title="Each Wild Shape form you picked and each companion, with its numbers worked out for you"><input type="checkbox" checked={opts.formCards !== false} onChange={() => setOpts((o) => ({ ...o, formCards: o.formCards === false }))} /> Wild Shape form and companion cards <small>{counts.forms}</small></label>}

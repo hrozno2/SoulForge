@@ -2089,7 +2089,8 @@ button.board-bar { display: block; width: 100%; padding: 0; background: var(--bg
 .class-tab-body.multiclass { border-left: 3px solid var(--arcane); padding-left: 12px; background: linear-gradient(90deg, color-mix(in srgb, var(--arcane) 8%, transparent), transparent 40%); }
 /* A card in a floating window: the card's own colour along the title bar. */
 .card-window .float-bar { border-bottom: 2px solid hsl(var(--hue, 40) 60% 55%); }
-.card-window .card-back-body { padding: 0; }
+/* In a window the window scrolls, not the body: a second scroll box caught the sticky spellbook and backpack (C6.6). */
+.card-window .card-back-body { padding: 0; overflow: visible; }
 
 /* While a window is dragged or resized, nothing on the page is selected (C6.1). */
 body.float-dragging, body.float-dragging * { user-select: none !important; -webkit-user-select: none !important; }

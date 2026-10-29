@@ -113,3 +113,30 @@ test("an item of your choice in the starting gear is picked inside its box (C6)"
   await expect(page.locator(".card-window table.inv tr", { hasText: "Lute" })).toHaveCount(1);
   await expect(page.locator(".card-window .pending-pick")).toHaveCount(0);
 });
+
+test("the spellbook stays in view while the spells scroll (C6.6)", async ({ page }) => {
+  await addTestContent(page);
+  await page.getByRole("button", { name: /new character/i }).click();
+  await tab(page, "Build");
+  await page.locator(".board-acc-head", { hasText: "Class" }).click();
+  await page.locator(".board-acc.open .mini-card", { hasText: "Spellsinger" }).locator(".mini-main").click();
+  const back = page.getByRole("dialog", { name: /choices/ });
+  if (await back.count()) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
+  await page.locator("[data-tile=magic]").click();
+  const win = page.locator(".float-window.card-window-magic");
+  const art = win.locator(".card-back-art");
+  const top0 = (await art.boundingBox())!.y;
+  await win.locator(".float-body").evaluate((b) => { b.scrollTop = 400; });
+  await page.waitForTimeout(100);
+  const scrolled = await win.locator(".float-body").evaluate((b) => b.scrollTop);
+  expect(scrolled).toBeGreaterThan(0);
+  expect(Math.abs((await art.boundingBox())!.y - top0)).toBeLessThan(20);
+  // The whole class: nothing sticky in any window sits inside a second scroll box (it would stick to that instead).
+  await page.locator("[data-tile=equipment]").click();
+  const caught = await page.evaluate(() => [...document.querySelectorAll(".float-body *")].filter((el) => getComputedStyle(el).position === "sticky").flatMap((el) => {
+    const out: string[] = [];
+    for (let e = el.parentElement; e && !e.classList.contains("float-body"); e = e.parentElement) if (getComputedStyle(e).overflowY !== "visible") out.push(`${el.className} inside ${e.className}`);
+    return out;
+  }));
+  expect(caught).toEqual([]);
+});

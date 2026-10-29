@@ -8,6 +8,7 @@ import type { ARegistry } from "./registry";
 import type { AElement } from "./types";
 import { ItemIndex, addToInventory, anyWeaponKind, resolveChosenTools, autoEquip, ledgerOf, startingPlans, variantItems, weaponChoices } from "./startingEquipment";
 import { isModern as modern } from "./edition";
+import { BACKGROUND_2024_ID } from "../engine/backgroundOptions";
 
 const SHORT: Record<string, AbilityId> = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" };
 
@@ -80,6 +81,13 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
   const first = [...new Set([p1[0], ...p2, ...p1.slice(1)].filter(Boolean))] as AbilityId[];
   const rest = ABILITY_IDS.filter((a) => !first.includes(a)).sort(() => rng() - 0.5);
   [...first, ...rest].forEach((a, i) => (c.abilityBase[a] = [15, 14, 13, 12, 10, 8][i]));
+  // A 2024 species with a 2014 background (one forced on it): the background's "2024 rules" package is taken, as a
+  // player must, so the increases and the origin feat come from somewhere (the rules check's "Origin editions mixed").
+  const bgEl = c.background ? reg.get(c.background) : undefined;
+  if (race && bgEl && modern(race) && !modern(bgEl)) {
+    const pkg = resolve(c, reg).slots.find((s) => s.root === "background" && s.options.some((o) => o.id === BACKGROUND_2024_ID));
+    if (pkg && !pkg.blocked.has(BACKGROUND_2024_ID)) c = { ...c, taken: [...(c.taken ?? []), pkg.key], selections: { ...c.selections, [pkg.key]: [BACKGROUND_2024_ID] } };
+  }
   const wanted = (force.prefer ?? []).map((x) => x.toLowerCase());
   const preferFn = (_slot: string, option: string) => (wanted.some((w) => option.toLowerCase() === w || option.toLowerCase().startsWith(`${w} (`)) ? 100 : rng());
   c = autoFill(c, reg, preferFn, shown);

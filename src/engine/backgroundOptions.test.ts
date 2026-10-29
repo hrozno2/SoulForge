@@ -58,3 +58,13 @@ describe.skipIf(!C)("2014 background with the 2024 rules", () => {
     expect(r.stats.get("strength")).toBe(10);
   });
 });
+
+describe.skipIf(!process.env.SOULFORGE_RULES)("random characters with a 2024 species and a 2014 background", () => {
+  it("take the background's 2024 rules package, so the origin is not mixed", async () => {
+    const { randomCharacter } = await import("../aurora/randomCharacter");
+    const reg = loadTestContent(process.env.SOULFORGE_RULES!);
+    const ch = randomCharacter(reg, 3, { legacy: true, playtest: false, unusual: false }, () => 0.5, { classId: "ID_WOTC_PHB_CLASS_BARD", raceId: "ID_WOTC_PHB24_RACE_AASIMAR", backgroundId: "ID_BACKGROUND_SAILOR" });
+    const r = resolve(ch, reg);
+    expect(checkCharacter(r, buildSheet(r), []).some((f) => f.rule === "Origin editions mixed")).toBe(false);
+  }, 600000);
+});

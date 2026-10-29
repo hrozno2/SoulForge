@@ -61,3 +61,12 @@ export async function randomCharacter(page: Page, level = 3): Promise<void> {
   await page.getByLabel("Character level").fill(String(level));
   await page.getByRole("button", { name: "Create", exact: true }).click();
 }
+
+/** A new pick opens its card window (with "Put it back"): Done closes it, so the board is free again. */
+export async function closeFresh(page: Page): Promise<void> {
+  const win = page.locator(".float-window", { has: page.locator(".fresh-bar") }).first();
+  if (await win.waitFor({ timeout: 3000 }).then(() => true, () => false)) {
+    await win.getByRole("button", { name: /^Done with / }).click();
+    await win.waitFor({ state: "detached", timeout: 3000 }).catch(() => undefined);
+  }
+}

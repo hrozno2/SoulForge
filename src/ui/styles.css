@@ -2264,3 +2264,6 @@ button.spell-count.prep.on { background: color-mix(in srgb, var(--gold) 28%, tra
 .cc-row.cc-abilities > .cc-ab { flex: 1 1 0; min-width: 0; padding: 3px 2px; }
 .cc-row.cc-abilities .cc-ab b { font-size: 17px; }
 .cc-row.cc-abilities .cc-ab small { font-size: 9px; letter-spacing: .06em; }
+
+/* A new pick's window: "Put it back" restores what the space held before (Chris 2026-10-29) */
+.fresh-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; padding: 6px 10px; border-radius: 6px; background: color-mix(in srgb, var(--gold) 12%, transparent); border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); font: 600 13px var(--body); color: var(--gold2); }

@@ -876,6 +876,22 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   /** A card that is out on the table: its slot stands empty, an outline, until it flies back (C6.4). */
   const cardOut = (kind: string) => !!floating?.windows.some((w) => w.kind === "card" && w.ref === kind && !w.bagged);
   const cardTitle = (kind: Kind) => (kind === "class" ? ch.classes.map((c) => r.reg.get(c.classId)?.name ?? "?").join(" / ") || "Class" : kind === "race" ? chosenEl.race?.name ?? "Species" : kind === "background" ? chosenEl.background?.name ?? "Background" : kind === "magic" ? "Your spells" : "Your inventory");
+  // What a space held before a new pick, while its window is open: "Put it back" restores it.
+  const [fresh, setFresh] = useState<Partial<Record<Kind, Character>>>({});
+  useEffect(() => {
+    const open = new Set(floating?.windows.filter((w) => w.kind === "card").map((w) => w.ref) ?? []);
+    setFresh((f) => (Object.keys(f).some((k) => !open.has(k)) ? Object.fromEntries(Object.entries(f).filter(([k]) => open.has(k))) : f));
+  }, [floating?.windows]);
+  const putBack = (kind: Kind, windowId: string) => {
+    const snap = fresh[kind];
+    if (!snap) return;
+    set(() => snap);
+    setFresh((f) => { const n = { ...f }; delete n[kind]; return n; });
+    floating?.close(windowId);
+    // Back to the list it came from, open beside the cards.
+    setOpen(kind);
+    setSide("left");
+  };
   const openBack = (kind: Kind) => {
     setFocus(kind);
     // A card opens on its first view (the backpack on its starting gear), not on the last one left open.
@@ -964,6 +980,16 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     // puts the pick back and leaves the player in the same list.
     const core: Kind[] = ["race", "class", "background"];
     setFocus(kind);
+    if (core.includes(kind) && floating) {
+      // A new pick opens as a card window like any other card (Chris 2026-10-29: the first pick still opened the old
+      // fixed card): it lands in its space, its window opens with "Put it back" for what was there before, and the
+      // lists move on to the next empty space.
+      setFresh((f) => ({ ...f, [kind]: f[kind] ?? ch }));
+      fly(from, el.name, kind);
+      setOpen(core.find((k) => k !== kind && !filled[k]) ?? null);
+      window.setTimeout(() => openBack(kind), reduced() ? 0 : 450);
+      return;
+    }
     if (core.includes(kind)) {
       // A big choice flies up and turns over: its back holds its choices, and Done lands it (× takes it back).
       // A second pick while this card is open (a double click, a change of mind) keeps the first "before": × still
@@ -1365,7 +1391,12 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
       {/* The card windows (C4): each open card's choices, the same as its back, in a floating window. */}
       {floating && floating.windows.filter((w) => w.kind === "card" && !w.bagged && ["race", "class", "background", "magic", "equipment"].includes(w.ref)).map((w) => createPortal(
         <WindowFrame key={w.id} w={{ ...w, title: cardTitle(w.ref as Kind) }} api={floating} done kicker={TITLE[w.ref as Kind]} hue={HUE[w.ref as Kind]} className={`card-window card-window-${w.ref}`}>
-          <div className="card-back-body" style={{ ["--hue" as string]: HUE[w.ref as Kind] }}>{sourceStrip(w.ref as Kind)}{choicesFor(w.ref as Kind)}</div>
+          <div className="card-back-body" style={{ ["--hue" as string]: HUE[w.ref as Kind] }}>
+            {fresh[w.ref as Kind] && (
+              <div className="fresh-bar"><span>Just picked.</span><button title="Take this pick back: the space holds what it held before" onClick={() => putBack(w.ref as Kind, w.id)}>Put it back</button></div>
+            )}
+            {sourceStrip(w.ref as Kind)}{choicesFor(w.ref as Kind)}
+          </div>
         </WindowFrame>,
         document.body,
       ))}

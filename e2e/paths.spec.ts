@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
-import { addTestContent, randomCharacter, tab } from "./helpers";
+import { addTestContent, closeFresh, randomCharacter, tab } from "./helpers";
 
 // Creation paths not covered elsewhere (C5.5): multiclass, preparing spells, the Foundry round trip, the settings.
 test.use({ viewport: { width: 1600, height: 900 }, storageState: { cookies: [], origins: [{ origin: "http://localhost:4173", localStorage: [{ name: "charforge.tutorial", value: "never" }, { name: "charforge.settings", value: JSON.stringify({ buildLayout: "board" }) }] }] } });
@@ -42,9 +42,7 @@ test("a caster who prepares picks today's spells on the spellbook", async ({ pag
   await tab(page, "Build");
   await page.locator(".board-acc-head", { hasText: "Class" }).click();
   await page.locator(".board-acc.open .mini-card", { hasText: "Spellsinger" }).locator(".mini-main").click();
-  const back = page.getByRole("dialog", { name: /choices/ });
-  // The new pick's choices open a moment after the pick lands: wait for them, then put them away.
-  if (await back.waitFor({ timeout: 2000 }).then(() => true, () => false)) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
+  await closeFresh(page);
   await page.locator("[data-tile=magic]").click();
   // Two tabs under the book: Learned and Prepared, each with its count.
   const book = page.locator(".card-window .spell-tab.prep");
@@ -125,9 +123,7 @@ test("an item of your choice in the starting gear is picked inside its box (C6)"
   await tab(page, "Build");
   await page.locator(".board-acc-head", { hasText: "Class" }).click();
   await page.locator(".board-acc.open .mini-card", { hasText: "Spellsinger" }).locator(".mini-main").click();
-  const back = page.getByRole("dialog", { name: /choices/ });
-  // The new pick's choices open a moment after the pick lands: wait for them, then put them away.
-  if (await back.waitFor({ timeout: 2000 }).then(() => true, () => false)) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
+  await closeFresh(page);
   await page.locator("[data-tile=equipment]").click();
   const box = page.locator(".card-window .equip-card", { hasText: "Musical Instrument" }).first();
   const pick = box.getByLabel(/^Choose the Musical Instrument/);
@@ -146,9 +142,7 @@ test("the spellbook stays in view while the spells scroll (C6.6)", async ({ page
   await tab(page, "Build");
   await page.locator(".board-acc-head", { hasText: "Class" }).click();
   await page.locator(".board-acc.open .mini-card", { hasText: "Spellsinger" }).locator(".mini-main").click();
-  const back = page.getByRole("dialog", { name: /choices/ });
-  // The new pick's choices open a moment after the pick lands: wait for them, then put them away.
-  if (await back.waitFor({ timeout: 2000 }).then(() => true, () => false)) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
+  await closeFresh(page);
   await page.locator("[data-tile=magic]").click();
   const win = page.locator(".float-window.card-window-magic");
   const art = win.locator(".card-back-art");
@@ -204,11 +198,9 @@ test("a card window keeps the source picker for a card in more than one book (C7
   await tab(page, "Build");
   await page.locator(".board-acc-head", { hasText: "Background" }).click();
   await page.locator(".board-acc.open .mini-card", { hasText: "Wayfarer" }).first().locator(".mini-main").click();
-  const back = page.getByRole("dialog", { name: /choices/ });
-  if (await back.waitFor({ timeout: 2000 }).then(() => true, () => false)) {
-    await expect(back.locator(".card-back-source")).toBeVisible();
-    await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
-  }
+  // The new pick's own window has the picker too.
+  await expect(page.locator(".float-window.card-window-background .card-back-source")).toBeVisible();
+  await closeFresh(page);
   await page.locator("[data-tile=background]").click();
   await expect(page.locator(".float-window.card-window-background .card-back-source")).toBeVisible();
 });
@@ -219,8 +211,7 @@ test("hit points ask to be configured until fixed or rolled is chosen (C7.10)", 
   await tab(page, "Build");
   await page.locator(".board-acc-head", { hasText: "Class" }).click();
   await page.locator(".board-acc.open .mini-card", { hasText: "Warden" }).locator(".mini-main").click();
-  const back = page.getByRole("dialog", { name: /choices/ });
-  if (await back.waitFor({ timeout: 2000 }).then(() => true, () => false)) await back.locator(".card-back-ctl").getByRole("button", { name: "Done" }).click();
+  await closeFresh(page);
   const bar = page.locator(".board-bar.hp");
   await expect(bar).toHaveClass(/configure/);
   await expect(bar).toContainText("Configure");

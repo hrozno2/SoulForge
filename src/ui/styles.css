@@ -2287,3 +2287,17 @@ button.spell-count.prep.on { background: color-mix(in srgb, var(--gold) 28%, tra
 .char-cards.compact .cc-row > .cc-hp { flex: 0 0 auto; min-width: 0; justify-content: center; padding: 3px 10px; }
 .char-cards.compact .cc-hp-label { display: inline; }
 .char-cards.compact .cc-hp small { display: none; }
+
+/* The top bar in a narrow window (Chris 2026-10-30: the tabs ran under the search and character buttons): it tightens
+   step by step, the logo loses its words, and if the tabs still do not fit they scroll sideways instead of overlapping. */
+.topbar .tabs-nav { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.topbar .tabs-nav::-webkit-scrollbar { display: none; }
+.topbar > :not(.tabs-nav) { flex-shrink: 0; }
+@media (max-width: 1250px) {
+  .topbar { gap: 10px; padding: 0 14px; }
+  .topbar .tabs-nav .tab { padding-left: 12px; padding-right: 12px; letter-spacing: .08em; }
+}
+@media (max-width: 1100px) {
+  .topbar .brand { font-size: 0; gap: 0; }
+  .topbar .tabs-nav .tab { padding-left: 9px; padding-right: 9px; letter-spacing: .04em; }
+}

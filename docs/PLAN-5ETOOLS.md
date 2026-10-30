@@ -13,6 +13,7 @@ Three sources, three jobs:
 | SRD (bundled, checked against the SRD API) | yes, bundled, works with no import | yes | Free core rules out of the box; a licensed baseline |
 | Aurora elements | no (no importer, nothing loaded) | yes | Comparison source: parity gates, twin checks, bug hunting |
 | Plutonium | no | read only, as now | Reference for behaviour, never data (unlicensed) |
+| Other SRD sources (SRD PDFs, SRD API, Open5e) | no | cached copies | Rules and bug checks for SRD content (D3b) |
 
 ## Where we start (measured, 2026-10-29 full check)
 
@@ -87,6 +88,30 @@ D0 (first step) settles this: copy the exact attribution statements from the off
    agree, the third is a finding.
 4. The full check's summary reports "against the SRD" counts. Every finding is fixed at the cause and guarded (the macro
    rule).
+
+### D3b. Every source compared (Chris 2026-10-30)
+
+All sources are used for bug finding and rules checking, in the test app and the full check (never in the release
+app). Which sources are compared depends on the content:
+
+| Content | Sources compared | Which decides a disagreement |
+| --- | --- | --- |
+| SRD content (5e.tools entries flagged `srd`/`srd52`) | the official SRD PDFs (5.1, 5.2.1), the SRD API (dnd5eapi.co), Open5e's SRD documents (if its license checks out, D0), 5e.tools, Aurora, and Plutonium's handling | The official SRD text; the others are findings |
+| Non-SRD content | 5e.tools, Aurora, and Plutonium's handling | Two of three agreeing; a three-way split goes to Chris with the book reference |
+
+1. **SRD sources compared with each other first.** The SRD API and Open5e are compared against the official SRD text
+   (names, numbers, class tables, spell facts). Their own errors are noted in `docs/SRD-DIFF.md` and not used as facts.
+2. **Then our engine against them.** For SRD content, the engine's results (built from 5e.tools) must match the SRD.
+   Aurora's twin and Plutonium's handling are compared too: a mismatch there is a bug in that source's conversion or
+   in our reading of it.
+3. **Plutonium as behaviour, not data.** It stays read only and unlicensed: we compare how it routes a mechanic (choices,
+   prepared spells, multiclass tables, starting gear) with ours, as written up in docs/PLUTONIUM.md, and never copy
+   its code.
+4. **Non-SRD content**: 5e.tools against Aurora (the parity gate) and against Plutonium's handling. A finding where two
+   agree against our engine is a bug; where the sources disagree with each other it goes into a list for Chris.
+5. **In the full check** these become gates with counts in the summary ("SRD sources agree", "engine against the SRD",
+   "5e.tools against Aurora", "against Plutonium's handling"). Counts may only go down; every finding is fixed at the
+   cause and guarded.
 
 ### D4. Close the parity gap (5e.tools stands on its own)
 1. List the 350 features whose mechanics are borrowed from Aurora, grouped by kind of mechanic (choice from a list,

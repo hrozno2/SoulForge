@@ -229,6 +229,7 @@ closed and enough Aurora-free test rounds have passed. The test app gets its own
 | D1 | Two apps, two databases (`app.charforge.test`), a release/test build flavour; Aurora code in the test flavour only | Release bundle has no Aurora parser; test app passes every gate |
 | D2 | SRD bundle built from 5e.tools' `srd`/`srd52` entries, loaded with no import, confirmed against the SRD API | A character builds from the bundle alone, rules check clean |
 | D3 | SRD API as a third check: cached offline, a full-check gate "against the SRD" (class tables, spells, species, items, conditions) | Gate in the full check, findings fixed at the cause |
+| D3b | Every source compared: for SRD content the official SRD PDFs, SRD API, Open5e, 5e.tools, Aurora and Plutonium's handling (the SRD text decides); for the rest 5e.tools, Aurora and Plutonium's handling (two of three decide, a split goes to Chris) | Full-check gates with counts that only go down |
 | D4 | Close the parity gap: the 350 borrowed mechanics into the converter by kind; choices 89, grants 10, numbers 1 to 0 | All parity counts 0; the gate fails if one rises |
 | D5 | Aurora-free testing: `full-check --no-aurora`; a 5e.tools-only switch in the test app | Five clean `--no-aurora` full checks and two weeks of Chris's testing |
 | D6 | Saved characters move from Aurora ids to their 5e.tools twins on load | 400 saved characters and Chris's library: no unexplained sheet change |

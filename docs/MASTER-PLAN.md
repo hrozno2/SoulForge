@@ -216,6 +216,24 @@ The full check, `npm run test:e2e`, Soul Forge Test, then a release.
 | C7.21 | One status panel on the left of the Build board, replacing three things: the "Every choice is made / N choices left" button, the rules check line at the top, and the "still to choose" list on the left. It says whether the character follows the rules (with the rules check's findings), lists the choices still open, highlighted, and each line is a link to its place (the card window, the list, the hit point dialog, the prepare list). | Chris 2026-10-29 |
 | C7.15 | Tutorial: updated for everything since (board, floating cards, bag, spellbook, export). Done. | Chris |
 
+## Stage D: 5e.tools as the only source; Aurora for testing only (Chris 2026-10-30)
+
+The detailed plan is docs/PLAN-5ETOOLS.md. In short: 5e.tools becomes the app's only content; the SRD (5.1 and 5.2,
+CC-BY-4.0) is bundled and checked against the SRD API (dnd5eapi.co), which also becomes a third rules check; Aurora's
+files and importer stay in the test app only, as a comparison source, and leave the release app once the parity gap is
+closed and enough Aurora-free test rounds have passed. The test app gets its own identity and database.
+
+| # | What | Done when |
+| --- | --- | --- |
+| D0 | Licenses: exact SRD 5.1 / 5.2.1 attribution statements into docs/LICENSES.md and the About box | Chris confirms |
+| D1 | Two apps, two databases (`app.charforge.test`), a release/test build flavour; Aurora code in the test flavour only | Release bundle has no Aurora parser; test app passes every gate |
+| D2 | SRD bundle built from 5e.tools' `srd`/`srd52` entries, loaded with no import, confirmed against the SRD API | A character builds from the bundle alone, rules check clean |
+| D3 | SRD API as a third check: cached offline, a full-check gate "against the SRD" (class tables, spells, species, items, conditions) | Gate in the full check, findings fixed at the cause |
+| D4 | Close the parity gap: the 350 borrowed mechanics into the converter by kind; choices 89, grants 10, numbers 1 to 0 | All parity counts 0; the gate fails if one rises |
+| D5 | Aurora-free testing: `full-check --no-aurora`; a 5e.tools-only switch in the test app | Five clean `--no-aurora` full checks and two weeks of Chris's testing |
+| D6 | Saved characters move from Aurora ids to their 5e.tools twins on load | 400 saved characters and Chris's library: no unexplained sheet change |
+| D7 | The release app drops Aurora (importer, files, settings); the test app keeps it | Chris's go-ahead after D5 and D6 |
+
 ---
 
 ## Budget

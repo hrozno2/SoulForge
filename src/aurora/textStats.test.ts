@@ -91,7 +91,7 @@ describe("lasting numbers read from a feature's text", () => {
 describe("attunement slots", () => {
   const slots = (...rules: object[]) => {
     const reg = new ARegistry();
-    reg.addElements([{ id: "ID_T_CLASS", name: "T", type: "Class", source: "t", supports: [], setters: {}, rules } as unknown as AElement]);
+    reg.addElements([{ id: "ID_T_CLASS", name: "T", type: "Class", source: "t", description: "", supports: [], setters: {}, rules: rules.map((r) => ({ requirements: "", ...r })) } as unknown as AElement]);
     reg.build();
     return resolve({ ...newCharacter(), classes: [{ classId: "ID_T_CLASS", level: 1 }] }, reg).stats.get("attunement:max");
   };

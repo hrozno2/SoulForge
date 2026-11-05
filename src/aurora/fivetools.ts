@@ -382,6 +382,51 @@ function withFallbacks(data: J, rules: ARule[], idBase: string): ARule[] {
 }
 
 /**
+ * The few lasting choices 5e.tools words only in prose, with nothing in its data or side data to read: a list of named
+ * options (2024 Hunter's Prey, Aspect of the Wilds), a damage type (Elemental Affinity, Elemental Adept), a dragon
+ * (Dragon Ancestor), another feat of a category (Additional Fighting Style), kensei weapons. Wordings of a choice made
+ * in play are left alone on purpose: "whenever you activate your Rage", an aura's type, a benefit "until you finish a rest".
+ */
+export function proseChoiceRules(f: J, idBase: string, level: number | undefined, ctx: Ctx, out: AElement[]): ARule[] {
+  const rules: ARule[] = [];
+  const entries = (Array.isArray(f.entries) ? f.entries : []) as unknown[];
+  const raw = JSON.stringify(entries);
+  const lvl = level === undefined ? {} : { level };
+  const choice = (label: string, options: { name: string; rules?: ARule[]; entries?: unknown[] }[]) => {
+    const ids = options.map((o) => {
+      const oid = `${idBase}_CHOICE_${slug(o.name)}`;
+      if (!out.some((e) => e.id === oid)) out.push(o.entries ? featureElement({ ...f, name: o.name, entries: o.entries }, "5et subclass feature", "Training Option", oid, ctx, false, out) : base(oid, o.name, "Training Option", "5etools", { compendiumHidden: true, rules: o.rules ?? [] }));
+      return oid;
+    });
+    rules.push({ kind: "select", type: "Training Option", name: label, supports: ids.join("|"), number: 1, ...lvl });
+  };
+  const first = typeof entries[0] === "string" ? stripTags(entries[0]) : "";
+  if (/^you gain one of the following (?:feature )?options of your choice\./.test(first)) {
+    const named = entries.slice(1).flatMap((e) => { const x = e as J; return x?.name ? [x] : ((x?.entries as J[]) ?? []).filter((y) => y?.name); });
+    if (named.length > 1) choice(`${f.name}: choose one`, named.map((x) => ({ name: String(x.name), entries: x.entries as unknown[] })));
+  }
+  const text = stripTags(raw);
+  const types = /(?:"|\. |, )choose one of (?:the following|those) (?:damage )?types: ([^.]+)\./i.exec(text);
+  if (types && !/your allies/i.test(text)) {
+    const names = types[1].replace(/\bor\b/g, "").split(",").map((x) => x.trim()).filter(Boolean);
+    const resists = /you have resistance to that damage type/i.test(text);
+    choice(`${f.name}: damage type`, names.map((n) => ({ name: cap(n.toLowerCase()), rules: resists ? [{ kind: "grant", type: "Condition", id: `ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_${slug(n)}` } as ARule] : [] })));
+  }
+  if (/you choose one type of dragon as your ancestor/i.test(text)) {
+    const table = entries.find((e) => (e as J)?.type === "table") as J | undefined;
+    if (table) choice(`${f.name}: dragon`, (table.rows as unknown[][]).map((row) => ({ name: cap(`${stripTags(String(row[0]))} (${stripTags(String(row[1]))})`) })));
+  }
+  const feats = /You gain another \{@filter [^|}]*\|feats\|category=(\w+)\} of your choice/.exec(raw);
+  if (feats) rules.push({ kind: "select", type: "Feat", name: `${f.name} feat`, supports: `5et feat,(category ${feats[1]})`, number: 1, ...lvl });
+  if (/choose two types of weapons to be your kensei weapons/i.test(raw)) {
+    const pick = (lv: number, number: number) => rules.push({ kind: "select", type: "Proficiency", name: "Kensei weapon", supports: "5et weapon", number, level: lv });
+    pick(level ?? 3, 2);
+    for (const lv of [6, 11, 17]) pick(lv, 1);
+  }
+  return rules;
+}
+
+/**
  * Ability score increases. A list of more than one entry is a choice between them (the 2024 backgrounds: +2 and +1,
  * or +1 to three; the 2024 Ability Score Improvement feat: +2 to one, or +1 to two), as 5e.tools lists alternatives
  * everywhere; given `sets`, each becomes an option and the character takes one.
@@ -607,6 +652,7 @@ function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
   rules.push(...spells.rules);
   // The options a feat teaches (Martial Adept's maneuvers, Metamagic Adept's options, Fighting Initiate's style).
   rules.push(...optionalFeatureRules(f, rules));
+  rules.push(...proseChoiceRules(f, ftId("FEAT", f.name, f.source), undefined, ctx, out));
   const html = entriesHtml(f.entries);
   return base(ftId("FEAT", f.name, f.source), f.name, "Feat", srcName(ctx, f.source), {
     // A feat the rules let a character take more than once (Elemental Adept, Ability Score Improvement).
@@ -1431,6 +1477,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       const had = out.some((o) => o.id === fid);
       if (!had) out.push(featureElement(f, "5et subclass feature", "Archetype Feature", fid, ctx, f.name === (s.name), out));
       srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
+      srules.push(...proseChoiceRules(f, fid, f.level, ctx, out));
       srules.push(...refRules(f.entries, `${f.name} (${s.shortName ?? s.name} ${f.level})`, f.level, { cf: data.cf, sf: data.sf, ctx, out, progressed: !!(s.optionalfeatureProgression as J[] | undefined)?.length }, true));
     }
     srules.push(...additionalSpellRules(s.additionalSpells, s.name, s.source, out).rules);

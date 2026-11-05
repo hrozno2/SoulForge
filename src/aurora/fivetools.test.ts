@@ -5,7 +5,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
-import { convertFiveTools, entriesHtml } from "./fivetools";
+import { convertFiveTools, entriesHtml, proseChoiceRules } from "./fivetools";
 import { ARegistry } from "./registry";
 import { resolve } from "./engine";
 import { autoFill } from "./autofill";
@@ -252,5 +252,30 @@ describe("entryData: a feature's fields as Foundry data", () => {
     expect(fallback.default).toMatch(/_OPTION_1$/);
     const open = build("Expertise", { expertise: [{ anyProficientSkill: 2 }, { anyProficientSkill: 1, "thieves' tools": true }] }).feature.rules.find((r) => r.kind === "select") as { default?: string };
     expect(open.default).toBeUndefined();
+  });
+});
+
+describe("choices only worded in prose", () => {
+  const ctx = { books: {}, spellClasses: {}, baseItems: new Map() } as never;
+  const run = (entries: unknown[], level?: number) => { const out: never[] = []; return { out: out as { id: string; name: string; rules: { id?: string }[] }[], rules: proseChoiceRules({ name: "F", source: "XPHB", entries }, "X", level, ctx, out) as { type: string; name: string; supports: string; number: number; level?: number }[] }; };
+  it("a list of named options", () => {
+    const { rules, out } = run(["You gain one of the following feature options of your choice. Whenever you finish a {@variantrule Short Rest|XPHB|Short} rest, you can replace it.", { type: "entries", entries: [{ type: "entries", name: "Colossus Slayer", entries: ["A."] }, { type: "entries", name: "Horde Breaker", entries: ["B."] }] }], 3);
+    expect(rules).toHaveLength(1);
+    expect(out.map((e) => e.name)).toEqual(["Colossus Slayer", "Horde Breaker"]);
+    expect(rules[0].level).toBe(3);
+  });
+  it("a damage type, granting resistance only when the text says so", () => {
+    const affinity = run(["Choose one of those types: Acid, Cold, or Fire.", "You have {@variantrule Resistance|XPHB} to that damage type, and more."]);
+    expect(affinity.out.map((e) => e.name)).toEqual(["Acid", "Cold", "Fire"]);
+    expect(affinity.out[0].rules[0].id).toBe("ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_ACID");
+    expect(run(["When you gain this feat, choose one of the following damage types: acid, cold, or fire."]).out[0].rules).toEqual([]);
+  });
+  it("leaves choices made in play alone", () => {
+    for (const text of ["Your Rage taps into animals. Whenever you activate your Rage, you gain one of the following options of your choice.", "Choose one of the following damage types: Acid or Cold. You and your allies have {@variantrule Resistance|XPHB} to that damage type while in your Aura.", "Choose a damage type when you activate this aura: acid or cold."])
+      expect(run([text, { type: "entries", name: "A", entries: ["x"] }, { type: "entries", name: "B", entries: ["y"] }]).rules).toEqual([]);
+  });
+  it("kensei weapons and another feat of a category", () => {
+    expect(run(["Choose two types of weapons to be your kensei weapons: one melee."], 3).rules.map((r) => [r.level, r.number])).toEqual([[3, 2], [6, 1], [11, 1], [17, 1]]);
+    expect(run(["You gain another {@filter Fighting Style feat|feats|category=FS} of your choice."], 7).rules[0].supports).toBe("5et feat,(category FS)");
   });
 });

@@ -144,8 +144,11 @@ default (Tools of the Trade, Iron Mind). Naming the choices in the parity report
 in a feature's text were offered on top of the owner's progression (a Battle Master picked 3 + 3 maneuvers at 3rd level;
 also Runes, Elemental Disciplines, Arcane Shots). And a Barbarian's climb speed no longer doubles Fast Movement with Aurora
 loaded. Choices 52, grants 9, numbers 1; sheets 436 of 500, the rest only DC hints beside features. parity.md now names each
-side's choices. Left, truly in prose: 2024 Hunter's Prey and Defensive Tactics, Elemental Adept, Kensei weapons, Dragon
-Ancestor, Aspect of the Wilds, Elemental Affinity; 2024 Eldritch Knight and Arcane Trickster's spell picks (13 vs 0 needs a look).
+side's choices. A narrow reader then took the lasting choices worded only in prose (proseChoiceRules: 2024 Hunter's Prey and Defensive
+Tactics, Aspect of the Wilds, Elemental Affinity, Elemental Adept, Dragon Ancestor, Additional Fighting Style, Kensei weapons);
+choices 45. Most "choose one" wording is a choice made in play and is left alone on purpose. Of the 45, many are the same
+decision filed differently: 2024 Eldritch Knight and Arcane Trickster prepare their spells where Aurora counts picks (13 vs 0 is
+not a gap). Left to look at: Rune Shaper, Strike of the Giants, Planar Wanderer, Armor Model, Wildfire Spirit, companions.
 
 1. List the 350 features whose mechanics are borrowed from Aurora, grouped by kind of mechanic (choice from a list,
    school or list limits, grants by level, numbers from text, companions, resources). Each group becomes one converter

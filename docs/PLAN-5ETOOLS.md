@@ -37,8 +37,8 @@ Three sources, three jobs:
 - **SRD API (5e-bits)**: code MIT; its data "released using the Open Gaming License Version 1.0a" (README of
   5e-bits/5e-database, now moved to 5e-bits/5e-srd-api). We use the API only as a check in the test app. The SRD text
   we bundle comes from the SRD itself under CC-BY-4.0, not from the API's database.
-- **5e.tools data**: not openly licensed; the user loads it, as now. SRD-flagged entries are SRD text, which is what
-  we may bundle. 5e.tools' own markup and non-SRD entries are not bundled.
+- **5e.tools data**: not openly licensed; the user loads it, as now. Its `srd`/`srd52` marks say an entry is in the SRD,
+  **not that its text is the SRD's** (found 2026-11-05, below). 5e.tools' own markup and non-SRD entries are not bundled.
 - Trademarks: no "D&D" branding in the app's name or icons beyond the compatibility statement.
 
 D0 (first step) settles this: copy the exact attribution statements from the official SRD 5.1 and 5.2.1 PDFs into
@@ -67,7 +67,16 @@ D0 (first step) settles this: copy the exact attribution statements from the off
    parser in the release bundle" check; D1 builds the flavour and moves the test bar behind it.
 
 ### D2. The SRD bundle, ready with no import
-1. A build step (`scripts/srd-bundle.mjs`) takes the 5e.tools entries flagged `srd`/`srd52`, runs them through the
+
+State 2026-11-05: built but not shipped. `RULES_TIER=srd-bundle npx vitest run src/aurora/srdBundle.test.ts` writes
+`<cache>/srd/srd-5.1.json` and `srd-5.2.json` (2.0 and 2.4 MB, all 12 classes and 9 species each, 100 random characters
+each with no rule findings). The tier fails on purpose: flagged entries keep the book's wording, and 17 of them name
+things the SRD does not license (Strahd in Divine Sense, Tiamat in the Orb of Dragonkind, the Monster Manual in Wild Shape,
+a beholder in the Deck of Illusions). A word list only catches names; other text may also differ from the SRD. **Nothing
+is bundled until Chris decides how the text is sourced:** the official SRD's text matched by name (the plan's licence
+position, needs D0's PDFs), or the mechanics with no descriptions. The loader waits for that decision too.
+
+1. A build step (`src/aurora/srdBundle.ts` and the `srd-bundle` tier) takes the 5e.tools entries flagged `srd`/`srd52`, runs them through the
    converter and writes `public/srd/srd-5.1.json` and `srd-5.2.json`: elements in the engine's format, with the CC-BY
    attribution in the header.
 2. The app loads the bundle when no user content is loaded, and alongside it otherwise. User 5e.tools content takes

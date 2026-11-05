@@ -10,7 +10,10 @@ background, hit points, prepared spells and starting gear.
 D1 done: Soul Forge Test is `app.charforge.test` with its own storage, copied once from the shared store (the released
 app's data is untouched, and the two no longer sync). `__TEST_FLAVOR__` (VITE_FLAVOR=test) drops the test bar from the
 release bundle (e2e/flavor.spec.ts). The Aurora importer leaves the release flavour at D7, not D1, because 5e.tools still
-borrows mechanics from it. Next: D0 needs Chris's yes for the SRD PDF downloads; D2 after that.
+borrows mechanics from it.
+
+D2 generator built, nothing shipped: 5e.tools' SRD-flagged entries keep the book's wording (17 name non-SRD things). Waiting
+for Chris: yes to the SRD PDF downloads (D0), and how the bundle's text is sourced (docs/PLAN-5ETOOLS.md, D2).
 
 ## 2026-10-29 afternoon: v0.24.1
 

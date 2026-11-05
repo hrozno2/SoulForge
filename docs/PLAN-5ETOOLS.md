@@ -129,12 +129,14 @@ app). Which sources are compared depends on the content:
 
 Measure changed 2026-11-05: most of the 350 borrowed mechanics are stats only Aurora's own description text reads, so they
 need no port. What matters is the sheet: `RULES_TIER=parity-effect` builds 500 random characters with 5e.tools alone and
-with Aurora too, and compares them (<cache>/engine/parity-effect.md). It went from 224 to 433 identical, by reading from
+with Aurora too, and compares them (<cache>/engine/parity-effect.md). It went from 224 to about 430 identical, by reading from
 text and class tables: half proficiency, armor class formulas, saves, speeds, initiative, trainings, languages, attunement,
 score caps, the Martial Arts die, Rage damage and table uses (src/aurora/textMechanics.ts, applyTableMechanics). The floor
 is in the test and may only rise. Left: DC hints shown beside features (59 of the differences, display only), and a
 Barbarian's climb speed where Aurora's side double-counts Fast Movement (50, should be 40). Borrowed 309 and choices 90,
-grants 10, numbers 1 are still to do. The 2026-10-29 count of 89 choices was on older data: the unchanged code gives 90.
+grants 10, numbers 1 are still to do. The 2026-10-29 count of 89 choices was on older data: the unchanged code gave 90, and
+70 after the species language fix and leaving defaulted choices out of the count. Next: "pick one" features 5e.tools writes
+as options (Hunter's Prey, Totem Spirit, Storm Aura), which a 5e.tools character cannot choose at all.
 
 1. List the 350 features whose mechanics are borrowed from Aurora, grouped by kind of mechanic (choice from a list,
    school or list limits, grants by level, numbers from text, companions, resources). Each group becomes one converter

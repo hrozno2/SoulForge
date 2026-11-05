@@ -182,3 +182,12 @@ describe("inline tags", () => {
     expect(entriesHtml("{@book Chapter 5|PHB|5}")).toBe("<p>Chapter 5</p>");
   });
 });
+
+describe("languages of a species that lists none", () => {
+  const offered = (source: string) => convertFiveTools({ files: { "races.json": { race: [{ name: "Test Folk", source, speed: 30, size: ["M"] }] } } as never }).find((e) => e.type === "Race")!.rules.find((r) => r.kind === "select" && r.type === "Language") as { number: number };
+  it("Common and two under the 2024 rules, Common and one in the books before them", () => {
+    expect(offered("XPHB").number).toBe(2);
+    expect(offered("MPMM").number).toBe(1);
+    expect(offered("VRGR").number).toBe(1);
+  });
+});

@@ -47,7 +47,8 @@ function profile(reg: ARegistry, el: AElement, ch: Character) {
   const choices = new Map<string, number>();
   // The two providers file one decision under different types (Aurora's Draconic Ancestry is a Racial Trait
   // choice, 5e.tools' a Sub Race), so decisions are counted, with spells and cantrips apart.
-  for (const s of r.slots) if (!baseSlots.has(s.key) && !s.rule.optional && s.rule.type !== "List") {
+  // A choice with one sensible answer already made (a species' only subrace) decides nothing.
+  for (const s of r.slots) if (!baseSlots.has(s.key) && !s.rule.optional && !s.defaulted && s.rule.type !== "List") {
     const kind = s.rule.type === "Spell" ? (/cantrip|, ?0\b/i.test(`${s.rule.name} ${s.rule.supports}`) ? "cantrips" : "spells") : "decisions";
     choices.set(kind, (choices.get(kind) ?? 0) + (kind === "decisions" ? 1 : s.rule.number));
   }

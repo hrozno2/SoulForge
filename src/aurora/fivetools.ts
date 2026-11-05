@@ -9,6 +9,7 @@
 import { applyFoundry } from "./foundry";
 import { applyLore } from "./lore";
 import { applyTextAttacks, applyTextDc, applyTextStats, applyTextUses } from "./textMechanics";
+import { isModern } from "./edition";
 import type { AElement, ARule, SetterValue } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -794,11 +795,11 @@ export function resolveCopies(files: Record<string, J>): Record<string, J> {
 function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const id = ftId("RACE", r.name, r.source);
   const rules: ARule[] = [...speedRules(r.speed), ...abilityRules(r.ability, r.name, { out, idBase: id }), ...trainingRules(r, r.name, out, ctx, id), ...defenseRules(r)];
-  // A species that lists no languages (the Ravenloft lineages, for one) leaves them to the character's origin: under
-  // the 2024 rules, Common and two standard languages.
+  // A species that lists no languages leaves them to the character's origin: under the 2024 rules Common and two
+  // standard languages; in the books before them (Monsters of the Multiverse, the Ravenloft lineages) Common and one.
   if (!r.languageProficiencies?.length) {
     rules.push({ kind: "grant", type: "Language", id: "ID_5ET_LANGUAGE_COMMON" });
-    rules.push({ kind: "select", type: "Language", name: `${r.name} language`, supports: "standard", number: 2 });
+    rules.push({ kind: "select", type: "Language", name: `${r.name} language`, supports: "standard", number: isModern({ id: id, source: String(r.source) }) ? 2 : 1 });
   }
   // A species on the custom-lineage rule chooses its increases (the background's, under the 2024 rules, instead).
   if (r.lineage && !abilityRules(r.ability, r.name).length) {

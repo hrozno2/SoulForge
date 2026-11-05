@@ -226,7 +226,7 @@ closed and enough Aurora-free test rounds have passed. The test app gets its own
 | # | What | Done when |
 | --- | --- | --- |
 | D0 | Licenses: exact SRD 5.1 / 5.2.1 attribution statements into docs/LICENSES.md and the About box | Chris confirms |
-| D1 | Two apps, two databases (`app.charforge.test`), a release/test build flavour; Aurora code in the test flavour only | Release bundle has no Aurora parser; test app passes every gate |
+| D1 (done 2026-11-05) | Two apps, two databases (`app.charforge.test`), a release/test build flavour; the test bar in the test flavour only (the Aurora code leaves at D7, see the plan) | Release bundle has no test controls; test app passes every gate |
 | D2 | SRD bundle built from 5e.tools' `srd`/`srd52` entries, loaded with no import, confirmed against the SRD API | A character builds from the bundle alone, rules check clean |
 | D3 | SRD API as a third check: cached offline, a full-check gate "against the SRD" (class tables, spells, species, items, conditions) | Gate in the full check, findings fixed at the cause |
 | D3b | Every source compared: for SRD content the official SRD PDFs, SRD API, Open5e, 5e.tools, Aurora and Plutonium's handling (the SRD text decides); for the rest 5e.tools, Aurora and Plutonium's handling (two of three decide, a split goes to Chris) | Full-check gates with counts that only go down |

@@ -38,7 +38,7 @@ import { useUpdater } from "../updater";
 import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
 import { ImportNotes, ImportReport, importReportText } from "./ImportReport";
 import { APP_VERSION, OlderBuildNotice, ruleProblems } from "./RulesCheck";
-import { loadTestContent, makeTestBatch, testExport, testToolsEnabled } from "./TestTools";
+import { loadTestContent, makeTestBatch, testExport } from "./TestTools";
 import { listCharacters } from "../aurora/storage";
 import { Tutorial, tutorialWanted } from "./Tutorial";
 import { CompendiumSearch } from "./CompendiumSearch";
@@ -291,10 +291,10 @@ export function App() {
           <button className="menu-item" onClick={() => { setTutorialStep(0); setTutorialMin(false); setTutorialOpen(true); }}>Show the tutorial</button>
           <button className="menu-item" onClick={() => updater.check(true)}>Check for updates</button>
           <button className="menu-item" onClick={() => setBugOpen(true)}>Report a bug...</button>
-          {testToolsEnabled && settings.hideTestTools && <button className="menu-item" onClick={() => updateSettings({ hideTestTools: false })}>Show test controls</button>}
+          {__TEST_FLAVOR__ && settings.hideTestTools && <button className="menu-item" onClick={() => updateSettings({ hideTestTools: false })}>Show test controls</button>}
         </AppMenu>
       </header>
-      {testToolsEnabled && !settings.hideTestTools && (
+      {__TEST_FLAVOR__ && !settings.hideTestTools && (
         <div className="test-bar noprint">
           <b>Test build</b>
           <small title="If this is older than the build you expect, quit the app (Cmd+Q) and open it again.">{import.meta.env.VITE_TEST_BUILD}</small>

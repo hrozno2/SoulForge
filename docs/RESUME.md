@@ -5,8 +5,12 @@
 One status panel on the left of the Build board replaces the count button, the rules bar above the board and the
 "still to choose" list. While a list is open its choices fold to one line. Findings are not links yet (a finding names
 no place). The panel and the top bar's Build badge read one list (src/ui/openChoices.ts); the badge used to leave out
-background, hit points, prepared spells and starting gear. Next: Stage D (docs/PLAN-5ETOOLS.md); D0 needs Chris's yes
-for the SRD PDF downloads, D1 does not.
+background, hit points, prepared spells and starting gear.
+
+D1 done: Soul Forge Test is `app.charforge.test` with its own storage, copied once from the shared store (the released
+app's data is untouched, and the two no longer sync). `__TEST_FLAVOR__` (VITE_FLAVOR=test) drops the test bar from the
+release bundle (e2e/flavor.spec.ts). The Aurora importer leaves the release flavour at D7, not D1, because 5e.tools still
+borrows mechanics from it. Next: D0 needs Chris's yes for the SRD PDF downloads; D2 after that.
 
 ## 2026-10-29 afternoon: v0.24.1
 

@@ -1,5 +1,5 @@
 /**
- * Tools only in the test build (scripts/test-app.sh sets VITE_TEST_TOOLS=1): make 10 varied test characters, and
+ * Tools only in the test build (scripts/test-app.sh sets VITE_FLAVOR=test): make 10 varied test characters, and
  * export every test character as JSON, the 2024 sheet, the 2014 sheet and the Soul Forge sheet in one zip.
  */
 import type { ARegistry } from "../aurora/registry";
@@ -14,7 +14,6 @@ import { buildPdf, DEFAULT_PDF_OPTIONS } from "../pdf/exportPdf";
 import { saveFile } from "../store";
 import { getSettings } from "./Settings";
 
-export const testToolsEnabled = import.meta.env.VITE_TEST_TOOLS === "1";
 
 export async function makeTestBatch(reg: ARegistry): Promise<{ id: string; ch: Character }[]> {
   const p = getSettings();

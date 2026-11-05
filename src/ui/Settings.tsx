@@ -196,7 +196,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           </label>
           <p className="muted">What you already picked stays visible even when its book is hidden here.</p>
         </fieldset>
-        {import.meta.env.VITE_TEST_TOOLS === "1" && (
+        {__TEST_FLAVOR__ && (
           <label className="set-row">
             <span><b>Show the test controls</b><small className="muted"> The test build's bar at the top; off makes it look like the released app</small></span>
             <input type="checkbox" checked={!s.hideTestTools} onChange={(e) => updateSettings({ hideTestTools: !e.target.checked })} />

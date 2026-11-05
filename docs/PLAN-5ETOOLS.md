@@ -60,8 +60,11 @@ D0 (first step) settles this: copy the exact attribution statements from the off
 2. A build flavour: `VITE_FLAVOR=release | test`. The Aurora importer, the Aurora-only gates and the test bar are
    compiled into the test flavour only (dead code removed from the release build). `scripts/test-app.sh` builds `test`,
    the release workflow builds `release`.
-3. Check: the release bundle contains no Aurora parser (a size and string test in CI); the test app still loads
-   Aurora and passes every gate.
+3. Check: the release bundle has no test controls (e2e/flavor.spec.ts); the test app still loads Aurora and passes every
+   gate.
+4. Order changed in the doing (2026-11-05): the release app still loads Aurora, because 5e.tools borrows 350 features'
+   mechanics from it until D4 closes that gap. So the Aurora importer leaves the release flavour at D7, with the "no Aurora
+   parser in the release bundle" check; D1 builds the flavour and moves the test bar behind it.
 
 ### D2. The SRD bundle, ready with no import
 1. A build step (`scripts/srd-bundle.mjs`) takes the 5e.tools entries flagged `srd`/`srd52`, runs them through the

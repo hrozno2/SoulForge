@@ -81,6 +81,8 @@ export default defineConfig({
     __BUILD_ID__: JSON.stringify(`${JSON.parse(readFileSync("package.json", "utf8")).version}-${Date.now()}`),
     __CONVERTER_ID__: JSON.stringify(converterId()),
     // The version a character was last checked in (src/aurora/olderBuild.ts).
+    // Which app this build is (Stage D1): a literal, so the bundler drops the test tools from the release build.
+    __TEST_FLAVOR__: JSON.stringify(process.env.VITE_FLAVOR === "test"),
     __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync("package.json", "utf8")).version),
   },
   build: {

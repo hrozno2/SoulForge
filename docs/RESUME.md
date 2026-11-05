@@ -12,6 +12,10 @@ app's data is untouched, and the two no longer sync). `__TEST_FLAVOR__` (VITE_FL
 release bundle (e2e/flavor.spec.ts). The Aurora importer leaves the release flavour at D7, not D1, because 5e.tools still
 borrows mechanics from it.
 
+D4 started: characters with only 5e.tools had wrong sheets for 276 of 500 (AC, skills, Monk's unarmed strike, saves, speed,
+trainings); now 67 differ, none in the numbers except one on Aurora's side. Also fixed: attunement slots added 3 to a stated
+total (Thief 13 had 7), and filter links read as raw searches in card text. See D4 in docs/PLAN-5ETOOLS.md.
+
 D2 generator built, nothing shipped: 5e.tools' SRD-flagged entries keep the book's wording (17 name non-SRD things). Waiting
 for Chris: yes to the SRD PDF downloads (D0), and how the bundle's text is sourced (docs/PLAN-5ETOOLS.md, D2).
 

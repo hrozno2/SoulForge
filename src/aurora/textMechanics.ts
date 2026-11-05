@@ -66,7 +66,7 @@ export function applyTextUses(out: AElement[]): number {
  * which the sheet already shows).
  */
 export function dcFromText(text: string): string | undefined {
-  const m = new RegExp(`DC (?:8 plus|equals 8 \\+|= 8 \\+|is 8 \\+|of 8 \\+) your (?:(${ABILITY}) modifier (?:and|\\+) (?:your )?proficiency bonus|proficiency bonus \\+ your (${ABILITY}) modifier)`, "i").exec(text);
+  const m = new RegExp(`DC (?:8 plus|equals 8 plus|equals 8 \\+|= 8 \\+|is 8 \\+|is 8 plus|of 8 \\+) your (?:(${ABILITY}) modifier (?:and|\\+) (?:your )?proficiency bonus|proficiency bonus \\+ your (${ABILITY}) modifier)`, "i").exec(text);
   const ability = m?.[1] ?? m?.[2];
   return ability ? `8 + {proficiency} + {${ability.toLowerCase()}:modifier}` : undefined;
 }
@@ -129,6 +129,163 @@ export function applyTextAttacks(out: AElement[]): number {
     if (!a) continue;
     el.attacks = [a];
     n++;
+  }
+  return n;
+}
+
+const ABILITIES = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"];
+const SKILLS_OF: Record<string, string[]> = {
+  strength: ["athletics"],
+  dexterity: ["acrobatics", "sleight of hand", "stealth"],
+  constitution: [],
+  intelligence: ["arcana", "history", "investigation", "nature", "religion"],
+  wisdom: ["animal handling", "insight", "medicine", "perception", "survival"],
+  charisma: ["deception", "intimidation", "performance", "persuasion"],
+};
+const SPEEDS = ["climb", "fly", "swim", "burrow"];
+const skillId = (s: string, kind: "5ET" | "AURORA") => (kind === "5ET" ? `ID_5ET_SKILL_${s.toUpperCase().replace(/ /g, "_")}` : `ID_PROFICIENCY_SKILL_${s.toUpperCase().replace(/ /g, "")}`);
+const stat = (name: string, value: string, extra: Partial<ARule> = {}) => ({ kind: "stat", name, value, ...extra }) as ARule;
+/** Sentences without the opening that only says when a feature arrives ("When you join the College at 3rd level, ..."). */
+const sentences = (text: string) => text.split(/(?<=[.!?])\s+/).map((s) => s.replace(/^(?:when you (?:join|choose|adopt|select|reach)\b[^,]*,|(?:at|by|beginning at|starting at|starting when you\b[^,]*at) \d+\w* level,)\s*/i, ""));
+/** A sentence that only holds some of the time ("when you rage, your speed increases") is not a passive statistic. */
+const CONDITIONAL = /\b(when|whenever|until|if|for \d+|for the duration|as a(?:n)? (?:bonus )?action|until)\b/i;
+
+/** Half proficiency on the checks that lack it: Jack of All Trades (any check), Remarkable Athlete (three abilities). */
+export function halfProficiencyFromText(text: string): ARule[] {
+  const m = /half your proficiency bonus(?:,? \(?round(?:ed)? (down|up)\)?)?,? to any ((?:strength|dexterity|constitution|intelligence|wisdom|charisma)(?:,? (?:or )?(?:strength|dexterity|constitution|intelligence|wisdom|charisma))*)? ?(?:ability )?check/i.exec(text);
+  if (!m) return [];
+  const value = m[1]?.toLowerCase() === "up" ? "proficiency:half:up" : "proficiency:half";
+  const named = (m[2] ?? "").toLowerCase().match(new RegExp(ABILITY, "g"));
+  const skills = (named ?? ABILITIES).flatMap((a) => SKILLS_OF[a]);
+  const out = skills.map((s) => stat(`${s}:misc`, value, { requirements: `!${skillId(s, "5ET")},!${skillId(s, "AURORA")}` }));
+  // The 2014 wording is any ability check, and initiative is one; the 2024 wording is checks that use a skill.
+  if (!named && !/uses a skill/i.test(text)) out.push(stat("initiative", value, { bonus: "proficiency" }));
+  return out;
+}
+
+/** An armor class formula of the character's own: "your AC equals 10 + your Dexterity modifier + your Wisdom modifier". */
+export function armorClassFromText(id: string, name: string, text: string): ARule[] {
+  const m = new RegExp(`your (?:base )?(?:armor class|ac)(?: equals| is| of)(?: equal to)? (\\d+)(?: (?:\\+|plus) (?:your )?(${ABILITY})(?: modifier)?(?: (?:\\+|and|plus) (?:your )?(${ABILITY}))?)?`, "i").exec(text);
+  if (!m) return [];
+  const calc = `ac:${name.toLowerCase()} ${id.toLowerCase()}`;
+  const parts = [stat(calc, m[1], { bonus: "base" })];
+  if (m[2]) parts.push(stat(calc, `${m[2].toLowerCase()}:modifier`, { bonus: "primary ability" }));
+  if (m[3]) parts.push(stat(calc, `${m[3].toLowerCase()}:modifier`, { bonus: "secondary ability" }));
+  const equipped = /(?:or|and not) wielding a shield/i.test(text) ? "[armor:none],[shield:none]" : "[armor:none]";
+  return [...parts, stat("ac:calculation", calc, { bonus: "calculation", equipped, alt: name })];
+}
+
+/** Saving throw proficiencies the feature simply gives. "Wisdom or Charisma" is a choice, and is left to the choice's own rule. */
+export function savesFromText(text: string): ARule[] {
+  const grant = (a: string) => ({ kind: "grant", type: "Proficiency", id: `ID_5ET_SAVE_${a.toUpperCase()}` }) as ARule;
+  if (/(?:you (?:also )?(?:gain|have)|grants? you) proficiency in all saving throws/i.test(text)) return ABILITIES.map(grant);
+  const m = new RegExp(`(?:you (?:also )?(?:gain|have)|grants? you) proficiency in (${ABILITY})(?: and (${ABILITY}))? saving throws`, "i").exec(text);
+  return m ? [m[1], m[2]].filter(Boolean).map((a) => grant(a.toLowerCase())) : [];
+}
+
+/** A lasting bonus to speed, and a speed of another kind "equal to your speed". */
+export function speedFromText(text: string): ARule[] {
+  const out: ARule[] = [];
+  // A benefit of something the character turns on ("as a Bonus Action... for 10 minutes... your Speed increases") lasts
+  // only while it does, however its own sentence reads.
+  if (/\bas an? (?:bonus |magic )?action\b|\bfor (?:\d+|one|ten) (?:minute|hour|round)s?\b/i.test(text)) return out;
+  for (const s of sentences(text)) {
+    const up = /your (?:walking )?speed increases by (\d+) feet(?: while you (?:aren't|are not) wearing (heavy armor|armor)(?: or wielding a shield)?)?/i.exec(s);
+    if (up && !CONDITIONAL.test(s)) {
+      const equipped = !up[2] ? undefined : /heavy/i.test(up[2]) ? "![armor:heavy]" : "[armor:none],[shield:none]";
+      const levels = /certain monk levels/i.test(text);
+      const value = levels ? "monk:unarmored movement" : up[1];
+      if (levels) for (const [v, level] of [[10, 1], [15, 6], [20, 10], [25, 14], [30, 18]] as const) out.push(stat("monk:unarmored movement", String(v), { bonus: "base", ...(level > 1 ? { level } : {}) }));
+      out.push(stat("innate speed:misc", value, { equipped, requirements: "[innate speed:1]" }));
+      for (const k of SPEEDS) out.push(stat(`innate speed:${k}:misc`, value, { equipped, requirements: `[innate speed:${k}:1]` }));
+    }
+    const kinds: Record<string, string> = { climbing: "climb", climb: "climb", swimming: "swim", swim: "swim", flying: "fly", fly: "fly", burrowing: "burrow", burrow: "burrow" };
+    for (const m of s.matchAll(/((?:climbing|climb|swimming|swim|flying|fly|burrowing|burrow) speed(?: and an? (?:climbing|climb|swimming|swim|flying|fly|burrowing|burrow) speed)?) equal to your (?:walking )?speed/gi)) {
+      if (!/you (?:also )?(?:gain|have)/i.test(s) || CONDITIONAL.test(s)) continue;
+      for (const k of m[1].toLowerCase().match(/climbing|climb|swimming|swim|flying|fly|burrowing|burrow/g) ?? []) out.push(stat(`innate speed:${kinds[k]}`, "speed"));
+    }
+  }
+  return out;
+}
+
+/** A lasting bonus to initiative. */
+export function initiativeFromText(text: string): ARule[] {
+  let m = new RegExp(`bonus to (?:your )?initiative(?: rolls)? equal to your (${ABILITY}) modifier`, "i").exec(text);
+  if (m) return [stat("initiative", `${m[1].toLowerCase()}:modifier`)];
+  m = /\+(\d+) bonus to initiative/i.exec(text);
+  if (m) return [stat("initiative", m[1])];
+  if (/when you roll initiative, you can add your proficiency bonus/i.test(text)) return [stat("initiative", "proficiency", { bonus: "proficiency" })];
+  return [];
+}
+
+/** Attuning to more items, and ability scores raised past 20 at the top of a class: totals the sheet shows. */
+export function limitsFromText(text: string): ARule[] {
+  const out: ARule[] = [];
+  const attune = /attune to up to (\w+) magic items/i.exec(text);
+  if (attune && COUNT[attune[1].toLowerCase()]) out.push(stat("attunement:max", String(COUNT[attune[1].toLowerCase()]), { bonus: "base" }));
+  const caps = new RegExp(`your (${ABILITY}) and (${ABILITY}) scores increase by (\\d+)(?:, to a maximum of (\\d+)|\\. your maximum for those scores is now (\\d+))`, "i").exec(text);
+  if (caps) for (const a of [caps[1], caps[2]].map((x) => x.toLowerCase())) out.push(stat(a, caps[3]), stat(`${a}:max:extra`, String(Number(caps[4] ?? caps[5]) - 20)));
+  return out;
+}
+
+const SKILL_NAMES = Object.values(SKILLS_OF).flat();
+
+/**
+ * Trainings the feature simply gives, by kind: "You gain proficiency with medium armor, shields, and martial weapons",
+ * "with the disguise kit and the poisoner's kit", "in the Insight and Medicine skills". A sentence offering a choice
+ * ("or", "of your choice") or holding only sometimes is left out, as is one about another creature.
+ */
+export function trainingsFromText(text: string): { armor: string[]; weapons: string[]; tools: string[]; skills: string[] } {
+  const out = { armor: [] as string[], weapons: [] as string[], tools: [] as string[], skills: [] as string[] };
+  for (const s of sentences(text)) {
+    if (/\bor\b|your choice|\b(?:one|two|three) (?:type|kind|skill|tool)/i.test(s) || CONDITIONAL.test(s)) continue;
+    // "You gain a Disguise Kit and a Poisoner's Kit, and you have proficiency with them."
+    const them = /\byou gain ([^.]+?),? and you have proficiency with them/i.exec(s);
+    const w = them ?? (/\byou\b/i.test(s) ? /\b(?:proficiency|training) with ([^.]+)/i.exec(s) : null);
+    if (w && /\byou (?:also )?(?:gain|have)\b/i.test(s)) for (const part of w[1].replace(/\btraining with\b/gi, "and").split(/,|\band\b/).map((x) => x.replace(/^\s*(?:the|a|an)\s+/i, "").trim().toLowerCase()).filter(Boolean)) {
+      const armor = /^(light|medium|heavy) armor$/.exec(part);
+      if (armor) out.armor.push(armor[1]);
+      else if (/^shields?$/.test(part)) out.armor.push("shield");
+      else if (/^(simple|martial) weapons$/.test(part)) out.weapons.push(part.split(" ")[0]);
+      else if (/(?:kit|tools|supplies|set|utensils)$/.test(part)) out.tools.push(part);
+    }
+    const k = /\byou (?:also )?(?:gain|have) proficiency in (?:the )?([^.]+?) skills?\b/i.exec(s);
+    if (k) for (const part of k[1].split(/,|\band\b/).map((x) => x.trim().toLowerCase())) if (SKILL_NAMES.includes(part)) out.skills.push(part);
+  }
+  return out;
+}
+
+/** Languages the feature simply teaches: "You know Druidic", "You learn Sylvan". `known` is the language names loaded. */
+export function languagesFromText(text: string, known: string[]): string[] {
+  const words = (x: string) => x.replace(/[’']/g, "['’]").replace(/[.*+?^${}()|[\]\\]/g, (c) => (c === "[" || c === "]" ? c : `\\${c}`));
+  return known.filter((k) => sentences(text).some((s) => !/\bor\b/i.test(s) && !CONDITIONAL.test(s) && new RegExp(`\\byou (?:also )?(?:know|learn|learned) (?:the )?${words(k)}\\b`, "i").test(s)));
+}
+
+/**
+ * The lasting numbers a feature's text states and the engine reads (Stage D4): what 5e.tools states only in prose and a
+ * character otherwise had only when Aurora was loaded too (Jack of All Trades, Unarmored Defense, Diamond Soul, Fast
+ * Movement). Whatever the Foundry pass already set stays as it is.
+ */
+export function applyTextStats(out: AElement[], ids: { tool(name: string): string; weapon(kind: string): string | undefined; armor(kind: string): string; skill(name: string): string; language(name: string): string }): number {
+  let n = 0;
+  const languages = out.filter((e) => e.type === "Language").map((e) => e.name);
+  for (const el of out) {
+    if (el.origin !== "5etools" || !USES_TYPES.has(el.type)) continue;
+    const text = plain(el.description ?? "");
+    const has = (name: string) => el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase() === name);
+    const has2 = (id?: string) => el.rules.some((r) => r.kind === "grant" && r.id === id);
+    const add = [...halfProficiencyFromText(text), ...armorClassFromText(el.id, el.name, text), ...savesFromText(text), ...speedFromText(text).filter((r) => r.kind !== "stat" || !/misc$/.test(r.name) || !el.rules.some((x) => x.kind === "stat" && /^(?:innate )?speed(?::misc)?$/i.test(x.name))), ...initiativeFromText(text), ...limitsFromText(text)]
+      .filter((r) => (r.kind === "stat" ? !has(r.name.toLowerCase()) || r.name === "ac:calculation" : !has2((r as { id?: string }).id)));
+    const train = trainingsFromText(text);
+    const grants = [
+      ...train.armor.map((k) => ["Proficiency", ids.armor(k)]),
+      ...train.weapons.map((k) => ["Proficiency", ids.weapon(k)]),
+      ...train.tools.map((k) => ["Proficiency", ids.tool(k)]),
+      ...train.skills.map((k) => ["Proficiency", ids.skill(k)]),
+      ...languagesFromText(text, languages).map((k) => ["Language", ids.language(k)]),
+    ].filter(([, id]) => id && !has2(id)).map(([type, id]) => ({ kind: "grant", type, id }) as ARule);
+    add.push(...grants);
+    if (add.length && !(has("ac:calculation") && add.some((r) => r.kind === "stat" && r.name === "ac:calculation"))) { el.rules = [...el.rules, ...add]; n++; }
   }
   return n;
 }

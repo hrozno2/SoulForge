@@ -174,3 +174,11 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     expect(sheet.attacks.find((a) => a.name === "Longsword")!.bonus).toBe(3 + 2);
   });
 });
+
+describe("inline tags", () => {
+  it("a filter link shows its words, not its search; a named link shows what it is told to", () => {
+    expect(entriesHtml("any {@filter simple weapon|items|source=phb|category=basic|type=simple weapon}")).toBe("<p>any simple weapon</p>");
+    expect(entriesHtml("{@spell fireball|phb|a fire spell} and {@spell shield|phb}")).toBe("<p>a fire spell and shield</p>");
+    expect(entriesHtml("{@book Chapter 5|PHB|5}")).toBe("<p>Chapter 5</p>");
+  });
+});

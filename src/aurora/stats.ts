@@ -155,7 +155,8 @@ export class StatBook {
     if (sp) return this.get(`innate speed:${sp[1]}`) + (this.get(`innate speed:${sp[1]}`) > 0 ? this.aggregate(`innate speed:${sp[1]}:misc`) : 0) + this.aggregate(`${name}:misc`) + this.aggregate(name);
 
     if (name === "hp") return inp.baseHp(this.get("constitution:modifier")) + this.aggregate("hp");
-    if (name === "attunement:max") return 3 + this.aggregate(name);
+    // Content gives either the new total ("up to four magic items", bonus "base") or a step on top of the usual three.
+    if (name === "attunement:max") return (this.contribs.get(name)?.some((c) => c.bonus === "base" && !c.inline) ? 0 : 3) + this.aggregate(name);
     if (name === "attunement:current") return inp.attunedCount;
 
     // Spellcasting save DC, attack bonus and ability modifier, per spellcasting entry.

@@ -79,6 +79,8 @@ export function borrowMechanics(byId: Map<string, AElement>): MechanicsReport {
     }
     return set;
   };
+  // Uses a 5e.tools feature states are that feature's whole count: another feature's twin must not add to them.
+  const ownUses = new Set(all.filter((e) => e.origin === "5etools").flatMap((e) => e.rules.filter((r) => r.kind === "stat" && r.name.toLowerCase().endsWith(":uses")).map((r) => (r as { name: string }).name.toLowerCase())));
   const keyOf = (el: AElement) => `${el.type}|${norm(el.name)}|${isModern(el) ? "2024" : "2014"}`;
   const aurora = new Map<string, AElement[]>();
   for (const el of all) if (el.origin !== "5etools" && FEATURE_TYPES.has(el.type)) (aurora.get(keyOf(el)) ?? aurora.set(keyOf(el), []).get(keyOf(el))!).push(el);
@@ -98,10 +100,12 @@ export function borrowMechanics(byId: Map<string, AElement>): MechanicsReport {
     const setHere = new Set(el.rules.filter((r) => r.kind === "stat").map((r) => family((r as { name: string }).name)));
     for (const rid of rootsById.get(el.id) ?? []) for (const n of statsUnder(rid)) setHere.add(family(n));
     const givenHere = conceptsOf(el);
+    // A copy with its own armor class formula borrows none of its twin's, whatever the twin calls the parts.
+    const ownAc = el.rules.some((r) => r.kind === "stat" && r.name === "ac:calculation");
     const added: ARule[] = [];
     for (const r of twin.rules) {
       if (!portable(r, byId)) continue;
-      if (r.kind === "stat" && !setHere.has(family(r.name))) added.push(r);
+      if (r.kind === "stat" && !setHere.has(family(r.name)) && !(ownAc && /^ac:/.test(r.name.toLowerCase())) && !ownUses.has(r.name.toLowerCase())) added.push(r);
       if (r.kind === "grant" && r.id) {
         const target = byId.get(r.id);
         const k = target ? conceptOf(target) : conceptOfMarker(r.id);

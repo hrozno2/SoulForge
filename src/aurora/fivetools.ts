@@ -8,7 +8,7 @@
  */
 import { applyFoundry } from "./foundry";
 import { applyLore } from "./lore";
-import { applyTextAttacks, applyTextDc, applyTextUses } from "./textMechanics";
+import { applyTextAttacks, applyTextDc, applyTextStats, applyTextUses } from "./textMechanics";
 import type { AElement, ARule, SetterValue } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -40,9 +40,11 @@ function tag(raw: string): string {
     .replace(/\{@dc\s+([^}|]*)[^}]*\}/g, "DC $1")
     .replace(/\{@hit\s+([^}|]*)[^}]*\}/g, (_m, n: string) => (/^[+-]/.test(n.trim()) ? n.trim() : `+${n.trim()}`))
     .replace(/\{@(?:damage|dice|scaledamage|scaledice|chance)\s+([^}|]*)(?:\|[^}]*)?\}/g, "$1")
-    .replace(/\{@(\w+)\s+([^}]*)\}/g, (_m, _t: string, rest: string) => {
+    .replace(/\{@(\w+)\s+([^}]*)\}/g, (_m, t: string, rest: string) => {
       const parts = rest.split("|");
-      const shown = parts[2] ?? parts[0];
+      // "{@spell name|source|shown}" names first, but "{@filter shown|page|type=x}" shows its first part: the rest of it
+      // is a search, which a card read as "any source=phb" (2014 Monk's Martial Arts).
+      const shown = /^(filter|book|adventure|5etools|link)$/.test(t) ? parts[0] : parts[2] ?? parts[0];
       return shown.replace(/\s*\[[^\]]*\]/g, "");
     });
 }
@@ -1005,6 +1007,43 @@ function tableColumn(c: J, re: RegExp): number[] | undefined {
   return undefined;
 }
 
+/**
+ * What a class's table states for a feature, level by level (Stage D4): the Martial Arts die, and the uses of a feature
+ * whose text gives none of its own ("the number of times shown in the Rages column"), matched by the column's name.
+ */
+function applyTableMechanics(c: J, out: AElement[]): void {
+  const prefix = `ID_5ET_CF_${slug(c.source)}_${slug(c.name)}_`;
+  const feats = out.filter((e) => e.id.startsWith(prefix));
+  const norm = (s: string) => stripTags(s).toLowerCase().replace(/s$/, "");
+  const steps = (values: number[]) => values.flatMap((v, i) => (v > 0 && v !== (i ? values[i - 1] : 0) ? [{ v, level: i + 1 }] : []));
+  for (const g of [...((c.classTableGroups as J[]) ?? [])]) {
+    (g.colLabels ?? []).forEach((label: string, col: number) => {
+      if (!g.rows) return;
+      if (/^martial arts$/i.test(stripTags(label))) {
+        const el = feats.find((e) => e.name === "Martial Arts");
+        if (!el || el.rules.some((r) => r.kind === "stat" && r.name === "martial arts:dice")) return;
+        const faces = (g.rows as J[]).map((r) => Number(r[col]?.toRoll?.[0]?.faces ?? 0));
+        el.rules = [...el.rules, ...steps(faces).map(({ v, level }) => ({ kind: "stat", name: "martial arts:dice", value: String(v), bonus: "martial arts", ...(level > 1 ? { level } : {}) }) as ARule)];
+        return;
+      }
+      // The Rage Damage column: the number the sheet shows beside Rage.
+      if (/^rage damage$/i.test(stripTags(label))) {
+        const el = feats.find((e) => e.name === "Rage");
+        if (!el || el.rules.some((r) => r.kind === "stat" && r.name === "barbarian rage:damage")) return;
+        el.rules = [...el.rules, ...steps((g.rows as J[]).map((r) => cellNumber(r[col]))).map(({ v, level }) => ({ kind: "stat", name: "barbarian rage:damage", value: String(v), bonus: "base", ...(level > 1 ? { level } : {}) }) as ARule)];
+        return;
+      }
+      for (const el of feats) {
+        const uses = `${el.name.toLowerCase()}:uses`;
+        const at = el.rules.findIndex((r) => r.kind === "stat" && r.name === uses && r.bonus === "text uses" && r.value === "1");
+        if (at < 0 || norm(el.name) !== norm(label)) continue;
+        const counts = (g.rows as J[]).map((r) => cellNumber(r[col]));
+        el.rules = [...el.rules.filter((_, i) => i !== at), ...steps(counts).map(({ v, level }) => ({ kind: "stat", name: uses, value: String(v), bonus: "text uses", ...(level > 1 ? { level } : {}) }) as ARule)];
+      }
+    });
+  }
+}
+
 function deltas(totals: number[]): number[] {
   return totals.map((v, i) => v - (i === 0 ? 0 : totals[i - 1]));
 }
@@ -1661,6 +1700,8 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   // What the side data does not give, from the feature's own text (limited uses, save DCs, attacks).
   applyTextUses(out);
   applyTextDc(out);
+  applyTextStats(out, { tool: (n) => toolId(n, out), weapon: (k) => weaponId(k, out), armor: (k) => ARMOR_IDS[k], skill: (n) => `ID_5ET_SKILL_${slug(n)}`, language: (n) => `ID_5ET_LANGUAGE_${slug(n)}` });
+  for (const c of classes) applyTableMechanics(c, out);
   applyTextAttacks(out);
   resolveSpellRefs(out, spellIds);
   resolveLooseRefs(out);

@@ -14,7 +14,9 @@ borrows mechanics from it.
 
 D4 started: characters with only 5e.tools had wrong sheets for 276 of 500 (AC, skills, Monk's unarmed strike, saves, speed,
 trainings); now 67 differ, none in the numbers except one on Aurora's side. Also fixed: attunement slots added 3 to a stated
-total (Thief 13 had 7), and filter links read as raw searches in card text. See D4 in docs/PLAN-5ETOOLS.md.
+total (Thief 13 had 7), filter links read as raw searches in card text, species with no language list got one too many
+before the 2024 rules, and "options" blocks: with a count they lost their choice when the options were only reachable through
+it, with no count they forced a choice among features the character simply has. See D4 in docs/PLAN-5ETOOLS.md.
 
 D2 generator built, nothing shipped: 5e.tools' SRD-flagged entries keep the book's wording (17 name non-SRD things). Waiting
 for Chris: yes to the SRD PDF downloads (D0), and how the bundle's text is sourced (docs/PLAN-5ETOOLS.md, D2).

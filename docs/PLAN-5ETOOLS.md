@@ -135,8 +135,11 @@ score caps, the Martial Arts die, Rage damage and table uses (src/aurora/textMec
 is in the test and may only rise. Left: DC hints shown beside features (59 of the differences, display only), and a
 Barbarian's climb speed where Aurora's side double-counts Fast Movement (50, should be 40). Borrowed 309 and choices 90,
 grants 10, numbers 1 are still to do. The 2026-10-29 count of 89 choices was on older data: the unchanged code gave 90, and
-70 after the species language fix and leaving defaulted choices out of the count. Next: "pick one" features 5e.tools writes
-as options (Hunter's Prey, Totem Spirit, Storm Aura), which a 5e.tools character cannot choose at all.
+67 after the species language fix, leaving defaulted choices out of the count, and reading "options" blocks properly (with a
+count: a choice whose features are made on the spot, so 2014 Hunter's Prey and Totem Spirit can be chosen; with no count: the
+character has them all, as a Psi Warrior's powers). Next: choices written only in prose, with no options block (2024 Hunter's
+Prey, College of Lore's "three skills of your choice", Elemental Adept, Kensei weapons), and the species' separate damage
+resistance choice beside a Dragonborn's ancestry.
 
 1. List the 350 features whose mechanics are borrowed from Aurora, grouped by kind of mechanic (choice from a list,
    school or list limits, grants by level, numbers from text, companions, resources). Each group becomes one converter

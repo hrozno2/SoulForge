@@ -191,3 +191,28 @@ describe("languages of a species that lists none", () => {
     expect(offered("VRGR").number).toBe(1);
   });
 });
+
+describe("a subclass feature that is a choice of other features", () => {
+  it("offers them, though the subclass's own list does not name them", () => {
+    const f = (name: string, entries: unknown[] = ["Text."]) => ({ name, source: "PHB", className: "Ranger", classSource: "PHB", subclassShortName: "Hunter", subclassSource: "PHB", level: 3, entries });
+    const els = convertFiveTools({ files: { "class/class-ranger.json": {
+      class: [{ name: "Ranger", source: "PHB", hd: { number: 1, faces: 10 }, classFeatures: [], subclassTitle: "Conclave" }],
+      subclass: [{ name: "Hunter", shortName: "Hunter", source: "PHB", className: "Ranger", classSource: "PHB", subclassFeatures: ["Hunter|Ranger||Hunter||3", "Hunter's Prey|Ranger||Hunter||3"] }],
+      subclassFeature: [f("Hunter"), f("Hunter's Prey", ["Choose one.", { type: "options", count: 1, entries: [{ type: "refSubclassFeature", subclassFeature: "Colossus Slayer|Ranger||Hunter||3" }, { type: "refSubclassFeature", subclassFeature: "Giant Killer|Ranger||Hunter||3" }] }]), f("Colossus Slayer"), f("Giant Killer")],
+    } } as never });
+    const choice = els.find((e) => e.type === "Archetype")!.rules.find((r) => r.kind === "select" && r.name.startsWith("Hunter's Prey")) as { supports: string };
+    expect(choice.supports.split("|").map((id) => els.find((e) => e.id === id)?.name)).toEqual(["Colossus Slayer", "Giant Killer"]);
+  });
+  it("with no count, the character has them all", () => {
+    const f = (name: string, entries: unknown[] = ["Text."]) => ({ name, source: "TCE", className: "Fighter", classSource: "PHB", subclassShortName: "Psi Warrior", subclassSource: "TCE", level: 3, entries });
+    const els = convertFiveTools({ files: { "class/class-fighter.json": {
+      class: [{ name: "Fighter", source: "PHB", hd: { number: 1, faces: 10 }, classFeatures: [], subclassTitle: "Archetype" }],
+      subclass: [{ name: "Psi Warrior", shortName: "Psi Warrior", source: "TCE", className: "Fighter", classSource: "PHB", subclassFeatures: ["Psionic Power|Fighter||Psi Warrior|TCE|3"] }],
+      subclassFeature: [f("Psionic Power", ["The powers below.", { type: "options", entries: [{ type: "refSubclassFeature", subclassFeature: "Protective Field|Fighter||Psi Warrior|TCE|3" }, { type: "refSubclassFeature", subclassFeature: "Psionic Strike|Fighter||Psi Warrior|TCE|3" }] }]), f("Protective Field"), f("Psionic Strike")],
+    } } as never });
+    const rules = els.find((e) => e.type === "Archetype")!.rules;
+    expect(rules.some((r) => r.kind === "select")).toBe(false);
+    const given = rules.filter((r) => r.kind === "grant").map((r) => els.find((e) => e.id === (r as { id: string }).id)?.name);
+    expect(given).toEqual(expect.arrayContaining(["Protective Field", "Psionic Strike"]));
+  });
+});

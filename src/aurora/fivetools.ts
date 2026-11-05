@@ -1167,7 +1167,14 @@ function refRules(entries: unknown, label: string, level: number, data: { cf: J[
       const [name, , csrc, short, ssrc, lv, src] = String(ref.subclassFeature).split("|");
       const book = src || ssrc || csrc || "PHB";
       const hit = data.out.find((o) => ["", "1", "2", "3", "4"].some((h) => o.id === ftId("SF", `${short ?? ""} ${name}`, book, `${lv ?? ""}${h}`)));
-      return hit ? { id: hit.id, type: "Archetype Feature" } : undefined;
+      if (hit) return { id: hit.id, type: "Archetype Feature" };
+      // A feature only reachable through a "choose" block (Hunter's Prey's Colossus Slayer): the subclass's own list
+      // leaves it out, so it is made here. Without it the choice had no options and vanished.
+      const f = data.sf.find((x) => x.name === name && x.subclassShortName === short && String(x.level) === lv && x.source === book);
+      if (!f) return undefined;
+      const id = ftId("SF", `${short} ${name}`, f.source, `${f.level}${f.header ?? ""}`);
+      data.out.push(featureElement(f, "5et subclass feature", "Archetype Feature", id, data.ctx, false, data.out));
+      return { id, type: "Archetype Feature" };
     }
     if (ref.type === "refOptionalfeature") {
       const [name, src] = String(ref.optionalfeature).split("|");
@@ -1181,6 +1188,12 @@ function refRules(entries: unknown, label: string, level: number, data: { cf: J[
     const e = x as J;
     if (e.type === "options" && Array.isArray(e.entries)) {
       const refs = (e.entries as J[]).map(idOf).filter(Boolean) as { id: string; type: string }[];
+      // No count means no choice: the character has them all (a Psi Warrior's three powers), or, for optional features,
+      // the block only lists what a choice elsewhere may now take (Tasha's extra maneuvers and metamagic).
+      if (e.count === undefined) {
+        for (const r of refs) if (r.type !== "Optional Feature") rules.push({ kind: "grant", type: r.type, id: r.id, level });
+        return;
+      }
       if (refs.length) {
         const types = [...new Set(refs.map((r) => r.type))];
         rules.push({ kind: "select", type: types[0], name: `${label}: choose ${e.count ?? 1}`, supports: refs.filter((r) => r.type === types[0]).map((r) => r.id).join("|"), number: Number(e.count) || 1, level });

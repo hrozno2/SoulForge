@@ -23,7 +23,8 @@ import { ClassPanel } from "./BuildTab";
 import { Browse, KindTag, blurb, dragMime } from "./Browse";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
 import { ChosenBanner, hueOf } from "./PickCards";
-import { RulesCheckBar } from "./RulesCheck";
+import { RulesCheckView, useRulesCheck } from "./RulesCheck";
+import { openChoices, packFillOf, preparedCount, type BoardKind } from "./openChoices";
 import { multiclassLock } from "./multiclass";
 import { MagicTab, PrepareSpells } from "./MagicTab";
 import { EquipmentTab, ITEM_KINDS, addItem } from "./EquipmentTab";
@@ -39,7 +40,7 @@ type Back = { kind: Kind; mode: "new" | "edit"; snap: Character; from: DOMRect |
 
 /** One thing still to choose, and where it is chosen. */
 type LeftItem = { kind: Kind; text: string; list: boolean; act?: () => void; label?: string };
-type Kind = "race" | "class" | "background" | "magic" | "equipment";
+type Kind = BoardKind;
 const TITLE: Record<Kind, string> = { race: "Species", class: "Class", background: "Background", magic: "Spells and magic", equipment: "Equipment" };
 const ASK: Record<Kind, string> = {
   race: "Who are your ancestors? What languages do they speak?",
@@ -1036,8 +1037,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const preparedOf = (c: (typeof sheet.casting)[number]) => Math.min(prepareTarget(r, c), (ch.prepared[c.name] ?? []).length);
   const learnNeed = magicSlots.reduce((n, s) => n + s.rule.number, 0);
   const learnHave = magicSlots.reduce((n, s) => n + (s.defaulted ? 0 : Math.min(s.chosen.length, s.rule.number)), 0);
-  const prepNeed = preparing.reduce((n, c) => n + prepareTarget(r, c), 0);
-  const prepHave = preparing.reduce((n, c) => n + preparedOf(c), 0);
+  const { have: prepHave, need: prepNeed } = preparedCount(r, sheet);
   const spellNeed = learnNeed + prepNeed;
   const spellHave = learnHave + prepHave;
   // The book thickens with the spells learned, the lasting choices; today's preparation is counted beside it, so a
@@ -1045,36 +1045,12 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const spellFill = learnNeed ? learnHave / learnNeed : prepNeed ? prepHave / prepNeed : 0;
   const spellLine = !spellNeed ? "No spells to choose yet" : [learnNeed ? `${learnHave} of ${learnNeed} learned` : "", prepNeed ? `${prepHave} of ${prepNeed} prepared` : ""].filter(Boolean).join(" · ");
   const plans = useMemo(() => startingPlans(ch, r.reg), [ch, r.reg]);
-  const packFill = useMemo(() => {
-    const added = ch.equipmentAdded ?? [];
-    const have = new Set(ch.inventory.map((i) => i.id));
-    // What each pack put in that is still in the bag.
-    const kept = (label: string) => {
-      const items = ch.equipmentLedger?.[label]?.items ?? [];
-      return items.length ? items.filter((i) => have.has(i.id)).length / items.length : 1;
-    };
-    if (plans.length) {
-      const per = plans.map((p) => { const mine = added.filter((l) => l.startsWith(`${p.title}, `)); return mine.length ? Math.max(...mine.map(kept)) : 0; });
-      const extra = Math.min(0.15, ch.inventory.filter((i) => !added.some((l) => (ch.equipmentLedger?.[l]?.items ?? []).some((x) => x.id === i.id))).length * 0.03);
-      return Math.min(1, per.reduce((a, b) => a + b, 0) / plans.length + extra);
-    }
-    return Math.min(1, ch.inventory.length / 12);
-  }, [ch.inventory, ch.equipmentAdded, ch.equipmentLedger, plans]);
+  const packFill = useMemo(() => packFillOf(ch, plans), [ch, plans]);
   const filled: Record<Kind, boolean> = { race: !!chosenEl.race, class: !!firstClass, background: !!chosenEl.background, magic: spellCount > 0, equipment: ch.inventory.length > 0 };
-  // What is left, for the summary under the closed lists: missing picks first, then each open choice.
-  const kindOfSlot = (sl: (typeof r.slots)[number]): Kind => (tabOfSlot(sl) === "magic" ? "magic" : sl.root === "race" ? "race" : sl.root === "background" ? "background" : "class");
-  const leftItems: LeftItem[] = [
-    ...(!ch.race ? [{ kind: "race" as Kind, text: "Choose a species", list: true }] : []),
-    ...(!ch.classes.length ? [{ kind: "class" as Kind, text: "Choose a class", list: true }] : []),
-    ...(!ch.background ? [{ kind: "background" as Kind, text: "Choose a background", list: true }] : []),
-    ...r.slots.filter((sl) => stillToChoose(sl, r)).map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: false })),
-    // Spells to prepare: the build is not ready to play while a caster has none prepared (C7.18: "every choice is
-    // made" stood beside a spellbook missing its prepared spells). The line opens the prepare list.
-    ...(prepHave < prepNeed ? [{ kind: "magic" as Kind, text: `Prepare spells: ${prepHave} of ${prepNeed}`, list: false, act: () => { openBack("magic"); setBackView("prepare"); } }] : []),
-    // Hit points: fixed or rolled, until the player picks (C7.10).
-    ...(ch.classes.length && !hpConfigured(ch) ? [{ kind: "class" as Kind, text: "Hit points: choose fixed or rolled", list: false, label: "Hit points", act: () => window.dispatchEvent(new CustomEvent("cf-hp")) }] : []),
-    ...(plans.length && packFill < 1 && !plans.every((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))) ? [{ kind: "equipment" as Kind, text: "Starting equipment", list: false }] : []),
-  ];
+  // What is left, for the status panel. The prepare and hit point lines go to their own places.
+  const leftItems: LeftItem[] = openChoices(r, sheet).map((it) => ({ ...it, act: it.target === "prepare" ? () => { openBack("magic"); setBackView("prepare"); } : it.target === "hp" ? () => window.dispatchEvent(new CustomEvent("cf-hp")) : undefined }));
+  const choicesLeft = `${leftItems.length} ${leftItems.length === 1 ? "choice" : "choices"} left`;
+  const rulesCheck = useRulesCheck(r);
   // Each space's count of what is left: every choice its species, class or background asks for (languages,
   // skills, feats and score increases included), and the spells still to pick.
   const todo = Object.fromEntries(ORDER.map((k) => [k, leftItems.filter((it) => it.kind === k && k !== "equipment" && !it.act).length])) as Record<Kind, number>;
@@ -1296,12 +1272,34 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
       <button className="board-handle left" aria-label="Show the lists" aria-expanded={side === "left"} onClick={() => setSide(side === "left" ? null : "left")}>
         <span className="board-handle-plus">+</span><span className="board-handle-label">Lists</span>
         {leftItems.length > 0 && <span className="board-acc-badge">{leftItems.length}</span>}
+        {/* The panel is inside this drawer in a narrow window: a rule problem must still show from outside it. */}
+        {rulesCheck.rules.length > 0 && <span className="board-acc-badge bad" aria-label={`${rulesCheck.rules.length} against the rules`}>!</span>}
       </button>
       <button className="board-handle right" aria-label="Show the scores" aria-expanded={side === "right"} onClick={() => setSide(side === "right" ? null : "right")}>
         <span className="board-handle-plus">+</span><span className="board-handle-label">Scores</span>
         {scoresLeft > 0 && <span className="board-acc-badge">{scoresLeft}</span>}
       </button>
       <nav className="board-lib" aria-label="Lists" onMouseLeave={leave("left")}>
+        {/* One status panel (C7.21): whether the character follows the rules, and each choice still open as a link to
+            its place. While a list is open the choices fold to one line, so the list keeps the room. */}
+        <section className={`board-status ${leftItems.length ? "todo" : "done"}`} aria-label="Character status">
+          <RulesCheckView r={r} res={rulesCheck} />
+          {!leftItems.length ? (
+            <>
+              <p className="ok">✓ Every choice is made. Export your sheet when you are ready.</p>
+              {open === null && detailsBlank(ch) && <p className="muted details-default">The character's details are at their defaults (blank). <button className="ghost" onClick={() => window.dispatchEvent(new CustomEvent("cf-details"))}>Add details</button></p>}
+            </>
+          ) : open !== null ? (
+            <button className="board-status-more" onClick={() => setOpen(null)}>{choicesLeft}<span className="chev">▾</span></button>
+          ) : (
+            <>
+              <h3>{choicesLeft}</h3>
+              <ul>
+                {leftItems.map((it, i) => <li key={i}><button onClick={() => (it.act ? it.act() : goTo(it))}><span className="board-left-kind">{it.label ?? TITLE[it.kind]}</span><span>{it.text}</span></button></li>)}
+              </ul>
+            </>
+          )}
+        </section>
         {(["race", "class", "background"] as Kind[]).map((kind) => {
           const Icon = ICON[kind];
           const isOpen = open === kind;
@@ -1317,46 +1315,14 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
             </section>
           );
         })}
-        {open === null && (
-          <section className="board-left-summary" aria-label="Still to choose">
-            <h3>Still to choose</h3>
-            {leftItems.length ? (
-              <ul>
-                {leftItems.map((it, i) => (
-                  <li key={i}>
-                    <button onClick={() => goTo(it)}>
-                      <span className="board-left-kind">{TITLE[it.kind]}</span>
-                      <span>{it.text}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <>
-                <p className="ok">Everything is chosen. Export your sheet when you are ready.</p>
-                {detailsBlank(ch) && <p className="muted details-default">The character's details are at their defaults (blank). <button className="ghost" onClick={() => window.dispatchEvent(new CustomEvent("cf-details"))}>Add details</button></p>}
-              </>
-            )}
-          </section>
-        )}
       </nav>
 
       <section className="board-main">
-        <RulesCheckBar r={r} />
         <header className="board-hero">
           <div>
             <small>Ready, set,</small>
             <h2>Start your story...</h2>
             <p className="muted">Your character is a species, a class and a background. Click an entry in a list or drag it onto its space.</p>
-          </div>
-          {/* What is left to choose: a count that unfolds into the list on hover, each line a shortcut to it. */}
-          <div className={`board-left-btn ${leftItems.length ? "todo" : "done"}`}>
-            <button aria-haspopup={leftItems.length ? "true" : undefined}>{leftItems.length ? `${leftItems.length} ${leftItems.length === 1 ? "choice" : "choices"} left` : "✓ Every choice is made"}</button>
-            {leftItems.length > 0 && (
-              <ul className="board-left-pop">
-                {leftItems.map((it, k) => <li key={k}><button onClick={() => (it.act ? it.act() : goTo(it))}><span className="board-left-kind">{it.label ?? TITLE[it.kind]}</span><span>{it.text}</span></button></li>)}
-              </ul>
-            )}
           </div>
         </header>
         <div className="board-spaces">

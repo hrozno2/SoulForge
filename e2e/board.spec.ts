@@ -101,7 +101,7 @@ test("blank details never count as a choice; the board's Details button opens th
   await tab(page, "Build");
   // A finished random character with no details: nothing is left to choose, and the board says the details are blank.
   await expect(page.locator(".details-default")).toContainText("details are at their defaults");
-  await expect(page.locator(".board p.ok", { hasText: "Everything is chosen" })).toBeVisible();
+  await expect(page.locator(".board-status p.ok", { hasText: "Every choice is made" })).toBeVisible();
   await page.getByRole("button", { name: "Details", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Character details" });
   await dialog.getByLabel("Ideals").fill("Freedom");
@@ -184,4 +184,29 @@ test("Report a bug shows what would be sent, with each part optional", async ({ 
   await expect(dialog.getByRole("button", { name: "Open a GitHub issue" })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Save report to file" })).toBeVisible();
   await expect(dialog).not.toContainText("/Users/");
+
+});
+
+test("one status panel says the rules verdict and links every open choice (C7.21)", async ({ page }) => {
+  const seen = watchProblems(page);
+  await addTestContent(page);
+  await page.getByRole("button", { name: /new character/i }).first().click();
+  await tab(page, "Build");
+  const panel = page.getByRole("region", { name: "Character status" });
+  await expect(panel).toHaveCount(1);
+  // The other two places are gone: nothing above the board, no count button in the header.
+  await expect(page.locator(".board-main .rules-check, .board-hero button")).toHaveCount(0);
+  // A new character starts with the species list open: the panel stays, folded to one line that brings the choices back.
+  await expect(panel.locator("ul")).toHaveCount(0);
+  await panel.locator(".board-status-more").click();
+  await expect(panel.locator("h3")).toHaveText(/\d+ choices? left/);
+  await page.screenshot({ path: "test-results/status-panel.png" });
+  // The top bar's badge counts the same list.
+  await expect(page.locator("header nav").getByRole("button", { name: /^Build/ }).locator(".badge")).toHaveText(String(await panel.locator("li").count()));
+  // Its line is a link to its place.
+  await panel.locator("li button", { hasText: "Choose a class" }).click();
+  await expect(page.locator(".board-acc.open .board-acc-title", { hasText: "Class" })).toBeVisible();
+  await expect(panel.locator("ul")).toHaveCount(0);
+  expect(seen.csp).toEqual([]);
+  expect(seen.errors).toEqual([]);
 });

@@ -1596,17 +1596,21 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-magic .board-space-text, .board-equipment .board-space-text { text-shadow: none; }
 
 /* Under the closed lists: what is still to choose, each a shortcut to its place */
-.board-left-summary { background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: 8px; padding: 10px 12px; margin-top: 4px; }
-.board-left-summary h3 { margin: 0 0 6px; font-size: 14px; }
+.board-status { flex: none; background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.board-status.todo { border-top-color: var(--accent); }
+.board-status .rules-check { margin: 0; }
+.board-status .rules-check-head { padding: 5px 8px; }
+.board-status h3 { margin: 0; font-size: 14px; color: var(--accent); }
+.board-status-more { display: flex; justify-content: space-between; text-align: left; background: color-mix(in srgb, var(--accent) 14%, var(--panel2)); border: 1px solid var(--accent); border-radius: 6px; padding: 5px 8px; color: var(--text); font: 600 12.5px var(--body); }
 .board-left-list ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .board-left-list li button { width: 100%; display: flex; gap: 8px; align-items: baseline; text-align: left; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; color: var(--text); font: 400 12.5px var(--body); letter-spacing: 0; text-transform: none; }
 .board-left-list li button:hover { border-color: var(--gold); }
 .board-left-list summary.warn { color: var(--warn); }
-.board-left-summary ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.board-left-summary li button { width: 100%; display: flex; gap: 8px; align-items: baseline; text-align: left; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; color: var(--text); font: 400 13px var(--body); letter-spacing: 0; text-transform: none; }
-.board-left-summary li button:hover { border-color: var(--gold); }
+.board-status ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 38vh; overflow: auto; }
+.board-status li button { width: 100%; display: flex; gap: 8px; align-items: baseline; text-align: left; background: color-mix(in srgb, var(--accent) 12%, var(--panel2)); border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 6px; padding: 6px 8px; color: var(--text); font: 400 13px var(--body); letter-spacing: 0; text-transform: none; }
+.board-status li button:hover { border-color: var(--gold); }
 .board-left-kind { flex: none; font: 600 10.5px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); min-width: 74px; }
-.board-left-summary .ok { color: var(--ok); margin: 0; font-size: 13px; }
+.board-status .ok { color: var(--ok); margin: 0; font-size: 13px; }
 /* Smaller cards (the background) keep to one line of description and a compact feat line */
 .board-background.has-card .chosen-banner { padding-top: 24px; }
 .board-background.has-card .pick-blurb { -webkit-line-clamp: 1; margin-bottom: 4px; }
@@ -1724,14 +1728,6 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 
 /* What is left to choose, beside the board's title */
 .board-hero { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
-.board-left-btn { position: relative; flex: none; margin-top: 6px; z-index: 20; }
-.board-left-btn > button { padding: 7px 14px; border-radius: 18px; font: 700 12px var(--body); letter-spacing: .08em; text-transform: uppercase; }
-.board-left-btn.todo > button { background: var(--accent); color: var(--accent-ink); border: 1px solid rgba(255,255,255,.25); }
-.board-left-btn.done > button { background: color-mix(in srgb, var(--ok) 18%, var(--panel2)); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 50%, transparent); cursor: default; }
-.board-left-pop { position: absolute; right: 0; top: 100%; width: min(380px, 80vw); max-height: 60vh; overflow: auto; list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 4px; background: var(--bg); border: 1px solid var(--gold); border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.6); opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity .15s, transform .15s; }
-.board-left-btn:hover .board-left-pop, .board-left-btn:focus-within .board-left-pop { opacity: 1; transform: none; pointer-events: auto; }
-.board-left-pop li button { width: 100%; display: flex; gap: 8px; align-items: baseline; text-align: left; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; color: var(--text); font: 400 12.5px var(--body); letter-spacing: 0; text-transform: none; }
-.board-left-pop li button:hover { border-color: var(--gold); }
 
 .fx-flash { border-radius: 14px; background: radial-gradient(ellipse, rgba(255,255,255,.95), rgba(255,240,200,.6) 40%, rgba(255,220,150,0) 70%); mix-blend-mode: screen; }
 

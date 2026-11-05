@@ -48,7 +48,9 @@ test("a caster who prepares picks today's spells on the spellbook", async ({ pag
   const book = page.locator(".card-window .spell-tab.prep");
   const learned = page.locator(".card-window .spell-tab", { hasText: "Learned" });
   // Nothing prepared yet: the choice checker asks for it (C7.18).
-  await expect(page.locator(".board-left-pop button", { hasText: "Prepare spells" })).toHaveCount(1);
+  // A list may still be open, which folds the panel's choices to one line.
+  await page.locator(".board-status-more").click({ timeout: 2000 }).catch(() => undefined);
+  await expect(page.locator(".board-status li button", { hasText: "Prepare spells" })).toHaveCount(1);
   await book.click();
   const count = page.locator(".card-window h3", { hasText: "Prepared spells" });
   await expect(count).toContainText(/^Prepared spells 0 \//);
@@ -216,14 +218,15 @@ test("hit points ask to be configured until fixed or rolled is chosen (C7.10)", 
   await expect(bar).toHaveClass(/configure/);
   await expect(bar).toContainText("Configure");
   // The choice checker lists it, and its line opens the dialog.
-  await page.locator(".board-left-btn button").first().hover();
-  await page.locator(".board-left-pop button", { hasText: "Hit points" }).click();
+  // A list may still be open, which folds the panel's choices to one line.
+  await page.locator(".board-status-more").click({ timeout: 2000 }).catch(() => undefined);
+  await page.locator(".board-status li button", { hasText: "Hit points" }).click();
   const dialog = page.getByRole("dialog", { name: "Hit points" });
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "Fixed (average)" }).click();
   await dialog.getByRole("button", { name: "Close" }).click();
   await expect(bar).not.toHaveClass(/configure/);
-  await expect(page.locator(".board-left-pop button", { hasText: "Hit points" })).toHaveCount(0);
+  await expect(page.locator(".board-status li button", { hasText: "Hit points" })).toHaveCount(0);
 });
 
 test("Home's characters can be compact for small screens (Chris 2026-10-29)", async ({ page }) => {

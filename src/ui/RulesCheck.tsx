@@ -59,7 +59,11 @@ export function useRulesCheck(r: Resolved): RulesCheckResult {
 
 /** A bar on the Build tab: "Follows the rules", or each problem and what rule it breaks. */
 export function RulesCheckBar({ r }: { r: Resolved }) {
-  const res = useRulesCheck(r);
+  return <RulesCheckView r={r} res={useRulesCheck(r)} />;
+}
+
+/** The same bar for a caller that already has the check's result (the Build board's status panel). */
+export function RulesCheckView({ r, res }: { r: Resolved; res: RulesCheckResult }) {
   const [open, setOpen] = useState(false);
   if (!r.character.classes.length) return null;
   const n = res.rules.length + res.content.length;

@@ -1,5 +1,13 @@
 # Where we left off
 
+## 2026-11-05: C7.21 (unreleased, on main with the changes since v0.24.1)
+
+One status panel on the left of the Build board replaces the count button, the rules bar above the board and the
+"still to choose" list. While a list is open its choices fold to one line. Findings are not links yet (a finding names
+no place). The panel and the top bar's Build badge read one list (src/ui/openChoices.ts); the badge used to leave out
+background, hit points, prepared spells and starting gear. Next: Stage D (docs/PLAN-5ETOOLS.md); D0 needs Chris's yes
+for the SRD PDF downloads, D1 does not.
+
 ## 2026-10-29 afternoon: v0.24.1
 
 Released after a full check (its first run caught the old-pick recovery dropping a class's run-time increases: the

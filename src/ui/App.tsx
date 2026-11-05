@@ -8,6 +8,8 @@ import { ConfirmHost } from "./Confirm";
 import { BugReport } from "./BugReport";
 import { t } from "../i18n";
 import { tabOfSlot } from "./Slots";
+import { openChoices } from "./openChoices";
+import { buildSheet } from "../aurora/sheet";
 import { TAB_ICONS } from "./icons";
 import { newCharacter, normalizeCharacter, uid, type Character } from "../aurora/character";
 import { resolve, stillToChoose } from "../aurora/engine";
@@ -224,6 +226,17 @@ export function App() {
   const board = settings.buildLayout !== "tabs";
   // The build board holds spells and equipment too, so their own tabs go and Build counts what they had open.
   useEffect(() => { if (board && (tab === "magic" || tab === "equipment")) setTab("build"); }, [board, tab]);
+  // The board's badge counts what its status panel lists (C7.21).
+  const boardOpen = useMemo(() => {
+    if (!board) return [];
+    try {
+      return openChoices(r, buildSheet(r));
+    } catch (e) {
+      // The badge must not take the whole app down with a sheet that cannot be built.
+      logEvent("build", `open choices failed: ${(e as Error).message}`);
+      return [];
+    }
+  }, [board, r]);
   const prevOpen = useRef({ build: pending, magic: magicList.length, id });
   useEffect(() => {
     const prev = prevOpen.current;
@@ -248,7 +261,7 @@ export function App() {
           Soul Forge
         </strong>
         <GroupNav current={tab} onPick={setTab} groups={(() => {
-          const defs = TABS.map(([key, label]) => ({ key, label: t(label), icon: (() => { const I = TAB_ICONS[key]; return I ? <I size={15} /> : undefined; })(), badge: key === "build" ? pending + (board ? magicList.length + (equipPending ? 1 : 0) : 0) : key === "magic" ? magicList.length : key === "equipment" ? (equipPending ? 1 : undefined) : undefined, badgeTitle: key === "build" && (pending || (board && magicList.length)) ? tip("Build", board ? [...pendingList, ...magicList] : pendingList) : key === "magic" && magicList.length ? tip("Magic", magicList) : key === "equipment" && equipPending ? "Starting equipment is not chosen yet" : undefined }));
+          const defs = TABS.map(([key, label]) => ({ key, label: t(label), icon: (() => { const I = TAB_ICONS[key]; return I ? <I size={15} /> : undefined; })(), badge: key === "build" ? (board ? boardOpen.length : pending) : key === "magic" ? magicList.length : key === "equipment" ? (equipPending ? 1 : undefined) : undefined, badgeTitle: key === "build" && (board ? boardOpen.length : pending) ? tip("Build", board ? boardOpen.map((o) => o.text) : pendingList) : key === "magic" && magicList.length ? tip("Magic", magicList) : key === "equipment" && equipPending ? "Starting equipment is not chosen yet" : undefined }));
           const pick = (...keys: Tab[]) => keys.map((k) => defs.find((d) => d.key === k)!).filter(Boolean);
           return [
             { key: "home", label: t("Home"), items: pick("start") },

@@ -261,7 +261,7 @@ function setBy(el: AElement, byId: Map<string, AElement>): Set<string> {
  * Applies the Foundry files (path to parsed JSON) to the converted elements. `ftId` is the converter's id function.
  * Returns the report (also kept in lastFoundryReport for the tests).
  */
-export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: string, n: string, s: string, x?: string) => string): FoundryReport {
+export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: string, n: string, s: string, x?: string) => string, entryRules?: (data: J, el: AElement) => ARule[]): FoundryReport {
   const report: FoundryReport = { applied: 0, unmatched: [], unknownPaths: new Map(), untranslatable: new Map() };
   collectScales(files);
   const byId = new Map(out.map((e) => [e.id, e]));
@@ -299,6 +299,13 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
         for (const el of targets) {
           const already = setBy(el, byId);
           const added: ARule[] = [];
+          // "entryData": fields the 5e.tools entry states only in prose, written as that entry's own fields (Blessings
+          // of Knowledge: two languages and two of four skills). Plutonium copies them onto the entity and reads them
+          // like its own, so they go through the converter's readers. What the element already has stays single.
+          if (e.entryData && entryRules) {
+            const same = (a: ARule, b: ARule) => (a.kind === "grant" && b.kind === "grant" && a.id === b.id) || (a.kind === "select" && b.kind === "select" && a.type === b.type && a.supports === b.supports);
+            for (const rule of entryRules(e.entryData as J, el)) if (!el.rules.some((x) => same(x, rule))) added.push(rule);
+          }
           for (const eff of (e.effects as J[]) ?? []) {
             if (eff.transfer === false || eff.disabled) continue; // applied when used, not always on
             // An effect that lasts a while (Slasher's "Slashed" for a turn, Gloom Stalker's first-turn speed) is put on

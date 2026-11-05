@@ -45,17 +45,19 @@ function profile(reg: ARegistry, el: AElement, ch: Character) {
   for (const d of ["auran", "aquan", "ignan", "terran"]) if (concepts.delete(`language:${d}`)) concepts.add("language:primordial");
   const baseSlots = new Set(bare.slots.map((s) => s.key));
   const choices = new Map<string, number>();
+  const named: string[] = [];
   // The two providers file one decision under different types (Aurora's Draconic Ancestry is a Racial Trait
   // choice, 5e.tools' a Sub Race), so decisions are counted, with spells and cantrips apart.
   // A choice with one sensible answer already made (a species' only subrace) decides nothing.
   for (const s of r.slots) if (!baseSlots.has(s.key) && !s.rule.optional && !s.defaulted && s.rule.type !== "List") {
     const kind = s.rule.type === "Spell" ? (/cantrip|, ?0\b/i.test(`${s.rule.name} ${s.rule.supports}`) ? "cantrips" : "spells") : "decisions";
     choices.set(kind, (choices.get(kind) ?? 0) + (kind === "decisions" ? 1 : s.rule.number));
+    named.push(s.rule.name);
   }
   const stat = (n: string) => r.stats.get(n) - bare.stats.get(n);
   const nums: Record<string, number> = {};
   for (const n of ["speed", "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma", "darkvision"]) { const v = stat(n); if (v) nums[n] = v; }
-  return { concepts, choices, nums };
+  return { concepts, choices, nums, named };
 }
 
 it.skipIf(!C || process.env.RULES_TIER !== "parity")("post-import audit", () => {
@@ -119,7 +121,7 @@ it.skipIf(!C || process.env.RULES_TIER !== "parity")("post-import audit", () => 
       if (onlyA.length || onlyF.length) add("twins differ: grants", `${label}: only Aurora ${onlyA.join(", ") || "-"}; only 5e.tools ${onlyF.join(", ") || "-"}`);
       const ct = new Set([...a.choices.keys(), ...f.choices.keys()]);
       const cd = [...ct].filter((x) => (a.choices.get(x) ?? 0) !== (f.choices.get(x) ?? 0)).map((x) => `${x} ${a.choices.get(x) ?? 0} vs ${f.choices.get(x) ?? 0}`);
-      if (cd.length) add("twins differ: choices", `${label}: Aurora vs 5e.tools ${cd.join("; ")}`);
+      if (cd.length) add("twins differ: choices", `${label}: Aurora vs 5e.tools ${cd.join("; ")} [Aurora: ${a.named.join(", ")} | 5e.tools: ${f.named.join(", ")}]`);
       const nk = new Set([...Object.keys(a.nums), ...Object.keys(f.nums)]);
       const nd = [...nk].filter((x) => (a.nums[x] ?? 0) !== (f.nums[x] ?? 0)).map((x) => `${x} ${a.nums[x] ?? 0} vs ${f.nums[x] ?? 0}`);
       if (nd.length) add("twins differ: numbers", `${label}: Aurora vs 5e.tools ${nd.join("; ")}`);

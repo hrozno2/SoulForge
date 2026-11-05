@@ -367,6 +367,21 @@ function trainingRules(e: J, label: string, out: AElement[], ctx: Ctx, idBase: s
 }
 
 /**
+ * In a feature's Foundry fields, a fixed training followed by a choice is a fallback, not a decision: "You gain
+ * proficiency with alchemist's supplies; if you already have it, another artisan's tool" (Tools of the Trade),
+ * "proficiency in Wisdom saves, or Intelligence or Charisma if you have it" (Iron Mind). The fixed one is the default.
+ */
+function withFallbacks(data: J, rules: ARule[], idBase: string): ARule[] {
+  const isFixed = (entry: J) => Object.values(entry ?? {}).every((v) => v === true);
+  return rules.map((r) => {
+    if (r.kind !== "select" || r.type !== "Training Option") return r;
+    const field = TRAINING_FIELDS.find((f) => r.supports.startsWith(`${idBase}_${slug(f)}_OPTION_`));
+    const list = field ? (data[field] as J[]) : undefined;
+    return list?.length === 2 && isFixed(list[0]) && !isFixed(list[1]) ? { ...r, default: `${idBase}_${slug(field!)}_OPTION_1` } : r;
+  });
+}
+
+/**
  * Ability score increases. A list of more than one entry is a choice between them (the 2024 backgrounds: +2 and +1,
  * or +1 to three; the 2024 Ability Score Improvement feat: +2 to one, or +1 to two), as 5e.tools lists alternatives
  * everywhere; given `sets`, each becomes an option and the character takes one.
@@ -1152,7 +1167,7 @@ function castingRules(c: J, name: string, lists: string[], classLevel: string, l
  * refSubclassFeature ("Name|Class|ClassSource|Subclass|SubclassSource|Level|Source") and refOptionalfeature
  * ("Name|Source"). With `optionsOnly`, plain references are left alone (the subclass loop converts those already).
  */
-function refRules(entries: unknown, label: string, level: number, data: { cf: J[]; sf: J[]; ctx: Ctx; out: AElement[] }, optionsOnly = false): ARule[] {
+function refRules(entries: unknown, label: string, level: number, data: { cf: J[]; sf: J[]; ctx: Ctx; out: AElement[]; progressed?: boolean }, optionsOnly = false): ARule[] {
   const rules: ARule[] = [];
   const idOf = (ref: J): { id: string; type: string } | undefined => {
     if (ref.type === "refClassFeature") {
@@ -1194,6 +1209,9 @@ function refRules(entries: unknown, label: string, level: number, data: { cf: J[
         for (const r of refs) if (r.type !== "Optional Feature") rules.push({ kind: "grant", type: r.type, id: r.id, level });
         return;
       }
+      // Optional features counted here ("choose three maneuvers") are the same picks the owner's progression already
+      // offers ({"3": 3, "7": 5}): both together gave a Battle Master six maneuvers at 3rd level.
+      if (data.progressed && refs.every((r) => r.type === "Optional Feature")) return;
       if (refs.length) {
         const types = [...new Set(refs.map((r) => r.type))];
         rules.push({ kind: "select", type: types[0], name: `${label}: choose ${e.count ?? 1}`, supports: refs.filter((r) => r.type === types[0]).map((r) => r.id).join("|"), number: Number(e.count) || 1, level });
@@ -1302,7 +1320,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     rules.push({ kind: "grant", type: "Class Feature", id: fid, level });
     // "Choose one of these" blocks inside the feature (the 2024 Cleric's Divine Order: Protector or Thaumaturge) are
     // a choice; a feature it simply refers to (Monk's Focus: Flurry of Blows) is given with it.
-    rules.push(...refRules(feat.entries, `${name} (${c.name} ${level})`, level, { cf: data.cf, sf: data.sf, ctx, out }));
+    rules.push(...refRules(feat.entries, `${name} (${c.name} ${level})`, level, { cf: data.cf, sf: data.sf, ctx, out, progressed: !!(c.optionalfeatureProgression as J[] | undefined)?.length }));
   }
   // The replaced feature itself requires the optional one's absence, as Aurora's content does (a requirement on the
   // class's own grant would not see a choice the class itself offers).
@@ -1413,7 +1431,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       const had = out.some((o) => o.id === fid);
       if (!had) out.push(featureElement(f, "5et subclass feature", "Archetype Feature", fid, ctx, f.name === (s.name), out));
       srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
-      srules.push(...refRules(f.entries, `${f.name} (${s.shortName ?? s.name} ${f.level})`, f.level, { cf: data.cf, sf: data.sf, ctx, out }, true));
+      srules.push(...refRules(f.entries, `${f.name} (${s.shortName ?? s.name} ${f.level})`, f.level, { cf: data.cf, sf: data.sf, ctx, out, progressed: !!(s.optionalfeatureProgression as J[] | undefined)?.length }, true));
     }
     srules.push(...additionalSpellRules(s.additionalSpells, s.name, s.source, out).rules);
     srules.push(...optionalFeatureRules(s, srules));
@@ -1710,7 +1728,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   }
   for (const c of classes) convertClass(c, { cf, sc, sf }, ctx, out);
   // Foundry mechanics first, so the reference passes below also mend what they grant (Auran becomes Primordial).
-  if (foundryFiles.length) applyFoundry(foundryFiles, out, ftId);
+  if (foundryFiles.length) applyFoundry(foundryFiles, out, ftId, (data, el) => [...withFallbacks(data, trainingRules({ ...data, entries: undefined }, el.name, out, ctx, el.id), el.id), ...defenseRules(data, el.name), ...additionalSpellRules(data.additionalSpells, el.name, el.source ?? "", out).rules]);
   // What the side data does not give, from the feature's own text (limited uses, save DCs, attacks).
   applyTextUses(out);
   applyTextDc(out);

@@ -15,7 +15,7 @@ import { loadTestContent, walkDir } from "./testContent";
 
 const C = process.env.SOULFORGE_RULES;
 // A change to what random characters pick shifts the draw, so the same mechanics can score a few apart: read the report.
-const FLOOR = 427;
+const FLOOR = 430;
 
 /** Every leaf of a value that differs, with array indexes left out of the path so like differences group together. */
 function diff(a: unknown, b: unknown, path: string, out: { path: string; alone: unknown; both: unknown }[]) {

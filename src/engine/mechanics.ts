@@ -102,10 +102,13 @@ export function borrowMechanics(byId: Map<string, AElement>): MechanicsReport {
     const givenHere = conceptsOf(el);
     // A copy with its own armor class formula borrows none of its twin's, whatever the twin calls the parts.
     const ownAc = el.rules.some((r) => r.kind === "stat" && r.name === "ac:calculation");
+    // A copy that raises walking speed itself borrows no raise to the other speeds: "speed increases by 10 feet" is
+    // walking speed, and a climb speed "equal to your walking speed" already has it (Fast Movement with Bestial Soul: 50).
+    const ownWalk = el.rules.some((r) => r.kind === "stat" && /^(?:innate )?speed(?::misc)?$/i.test(r.name));
     const added: ARule[] = [];
     for (const r of twin.rules) {
       if (!portable(r, byId)) continue;
-      if (r.kind === "stat" && !setHere.has(family(r.name)) && !(ownAc && /^ac:/.test(r.name.toLowerCase())) && !ownUses.has(r.name.toLowerCase())) added.push(r);
+      if (r.kind === "stat" && !setHere.has(family(r.name)) && !(ownAc && /^ac:/.test(r.name.toLowerCase())) && !ownUses.has(r.name.toLowerCase()) && !(ownWalk && /^innate speed:(?:climb|fly|swim|burrow):misc$/i.test(r.name))) added.push(r);
       if (r.kind === "grant" && r.id) {
         const target = byId.get(r.id);
         const k = target ? conceptOf(target) : conceptOfMarker(r.id);

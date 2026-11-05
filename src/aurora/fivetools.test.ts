@@ -203,6 +203,16 @@ describe("a subclass feature that is a choice of other features", () => {
     const choice = els.find((e) => e.type === "Archetype")!.rules.find((r) => r.kind === "select" && r.name.startsWith("Hunter's Prey")) as { supports: string };
     expect(choice.supports.split("|").map((id) => els.find((e) => e.id === id)?.name)).toEqual(["Colossus Slayer", "Giant Killer"]);
   });
+  it("does not offer optional features twice when a progression already does", () => {
+    const f = { name: "Maneuvers", source: "PHB", className: "Fighter", classSource: "PHB", subclassShortName: "Battle Master", subclassSource: "PHB", level: 3, entries: ["Choose.", { type: "options", count: 3, entries: [{ type: "refOptionalfeature", optionalfeature: "Riposte" }] }] };
+    const els = convertFiveTools({ files: { "class/class-fighter.json": {
+      class: [{ name: "Fighter", source: "PHB", hd: { number: 1, faces: 10 }, classFeatures: [], subclassTitle: "Archetype" }],
+      subclass: [{ name: "Battle Master", shortName: "Battle Master", source: "PHB", className: "Fighter", classSource: "PHB", subclassFeatures: ["Maneuvers|Fighter||Battle Master||3"], optionalfeatureProgression: [{ name: "Maneuvers", featureType: ["MV:B"], progression: { "3": 3, "7": 5 } }] }],
+      subclassFeature: [f],
+    } } as never });
+    const picks = els.find((e) => e.type === "Archetype")!.rules.filter((r) => r.kind === "select" && r.type === "Optional Feature") as { number: number; level?: number }[];
+    expect(picks.map((r) => [r.level, r.number])).toEqual([[3, 3], [7, 2]]);
+  });
   it("with no count, the character has them all", () => {
     const f = (name: string, entries: unknown[] = ["Text."]) => ({ name, source: "TCE", className: "Fighter", classSource: "PHB", subclassShortName: "Psi Warrior", subclassSource: "TCE", level: 3, entries });
     const els = convertFiveTools({ files: { "class/class-fighter.json": {
@@ -214,5 +224,33 @@ describe("a subclass feature that is a choice of other features", () => {
     expect(rules.some((r) => r.kind === "select")).toBe(false);
     const given = rules.filter((r) => r.kind === "grant").map((r) => els.find((e) => e.id === (r as { id: string }).id)?.name);
     expect(given).toEqual(expect.arrayContaining(["Protective Field", "Psionic Strike"]));
+  });
+});
+
+describe("entryData: a feature's fields as Foundry data", () => {
+  const build = (name: string, entryData: unknown) => {
+    const f = { name, source: "PHB", className: "Cleric", classSource: "PHB", subclassShortName: "Knowledge", subclassSource: "PHB", level: 1 };
+    const els = convertFiveTools({ files: {
+      "class/class-cleric.json": {
+        class: [{ name: "Cleric", source: "PHB", hd: { number: 1, faces: 8 }, classFeatures: [], subclassTitle: "Domain" }],
+        subclass: [{ name: "Knowledge Domain", shortName: "Knowledge", source: "PHB", className: "Cleric", classSource: "PHB", subclassFeatures: [`${name}|Cleric||Knowledge||1`] }],
+        subclassFeature: [{ ...f, entries: ["Text only."] }],
+      },
+      "class/foundry.json": { subclassFeature: [{ ...f, entryData }] },
+    } as never });
+    return { els, feature: els.find((e) => e.name === name)! };
+  };
+  it("gives the choices the text only words", () => {
+    const { feature } = build("Blessings of Knowledge", { languageProficiencies: [{ any: 2 }], skillProficiencies: [{ choose: { from: ["arcana", "history"], count: 2 } }], armorProficiencies: [{ heavy: true }], resist: ["psychic"] });
+    const selects = feature.rules.filter((r) => r.kind === "select") as { type: string; number: number; supports: string }[];
+    expect(selects.map((r) => [r.type, r.number])).toEqual(expect.arrayContaining([["Language", 2], ["Proficiency", 2]]));
+    expect(feature.rules.some((r) => r.kind === "grant" && /ARMOR_HEAVY|HEAVY/.test(r.id ?? ""))).toBe(true);
+    expect(feature.rules.some((r) => r.kind === "grant" && /DAMAGE_RESISTANCE_PSYCHIC/.test(r.id ?? ""))).toBe(true);
+  });
+  it("defaults a fixed training followed by a fallback, and leaves a real either-or open", () => {
+    const fallback = build("Iron Mind", { savingThrowProficiencies: [{ wis: true }, { choose: { from: ["int", "cha"] } }] }).feature.rules.find((r) => r.kind === "select") as { default?: string };
+    expect(fallback.default).toMatch(/_OPTION_1$/);
+    const open = build("Expertise", { expertise: [{ anyProficientSkill: 2 }, { anyProficientSkill: 1, "thieves' tools": true }] }).feature.rules.find((r) => r.kind === "select") as { default?: string };
+    expect(open.default).toBeUndefined();
   });
 });

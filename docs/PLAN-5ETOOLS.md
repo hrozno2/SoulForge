@@ -129,7 +129,7 @@ app). Which sources are compared depends on the content:
 
 Measure changed 2026-11-05: most of the 350 borrowed mechanics are stats only Aurora's own description text reads, so they
 need no port. What matters is the sheet: `RULES_TIER=parity-effect` builds 500 random characters with 5e.tools alone and
-with Aurora too, and compares them (<cache>/engine/parity-effect.md). It went from 224 to about 430 identical, by reading from
+with Aurora too, and compares them (<cache>/engine/parity-effect.md). It went from 224 to 436 identical, by reading from
 text and class tables: half proficiency, armor class formulas, saves, speeds, initiative, trainings, languages, attunement,
 score caps, the Martial Arts die, Rage damage and table uses (src/aurora/textMechanics.ts, applyTableMechanics). The floor
 is in the test and may only rise. Left: DC hints shown beside features (59 of the differences, display only), and a
@@ -137,9 +137,15 @@ Barbarian's climb speed where Aurora's side double-counts Fast Movement (50, sho
 grants 10, numbers 1 are still to do. The 2026-10-29 count of 89 choices was on older data: the unchanged code gave 90, and
 67 after the species language fix, leaving defaulted choices out of the count, and reading "options" blocks properly (with a
 count: a choice whose features are made on the spot, so 2014 Hunter's Prey and Totem Spirit can be chosen; with no count: the
-character has them all, as a Psi Warrior's powers). Next: choices written only in prose, with no options block (2024 Hunter's
-Prey, College of Lore's "three skills of your choice", Elemental Adept, Kensei weapons), and the species' separate damage
-resistance choice beside a Dragonborn's ancestry.
+character has them all, as a Psi Warrior's powers). Then 2026-11-05: 5e.tools' class/foundry.json states many of the prose choices as data in "entryData" (Blessings of Knowledge:
+two languages, two of four skills), and it was wrongly filed as bookkeeping. Plutonium copies it onto the entity and reads it
+like the entity's own fields, and so does applyFoundry now. A fixed training followed by a choice is a fallback with a
+default (Tools of the Trade, Iron Mind). Naming the choices in the parity report showed a real bug: counted optional features
+in a feature's text were offered on top of the owner's progression (a Battle Master picked 3 + 3 maneuvers at 3rd level;
+also Runes, Elemental Disciplines, Arcane Shots). And a Barbarian's climb speed no longer doubles Fast Movement with Aurora
+loaded. Choices 52, grants 9, numbers 1; sheets 436 of 500, the rest only DC hints beside features. parity.md now names each
+side's choices. Left, truly in prose: 2024 Hunter's Prey and Defensive Tactics, Elemental Adept, Kensei weapons, Dragon
+Ancestor, Aspect of the Wilds, Elemental Affinity; 2024 Eldritch Knight and Arcane Trickster's spell picks (13 vs 0 needs a look).
 
 1. List the 350 features whose mechanics are borrowed from Aurora, grouped by kind of mechanic (choice from a list,
    school or list limits, grants by level, numbers from text, companions, resources). Each group becomes one converter

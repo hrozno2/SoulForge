@@ -10,7 +10,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { holder, loadTestContent } from "./testContent";
-import { it } from "vitest";
+import { expect, it } from "vitest";
 import type { ARegistry } from "../aurora/registry";
 import type { Character } from "../aurora/character";
 import { resolve } from "../aurora/engine";
@@ -62,6 +62,9 @@ function profile(reg: ARegistry, el: AElement, ch: Character) {
 
 it.skipIf(!C || process.env.RULES_TIER !== "parity")("post-import audit", () => {
   const reg = load();
+  // Raw 5e.tools markup in any text a player reads: a tag or template nothing filled in ("{#itemEntry ...}").
+  const raw = reg.all().filter((e) => e.origin === "5etools" && /\{[@#=]|\{\{item\./.test(`${e.description ?? ""} ${(e.sheet?.descriptions ?? []).map((d) => d.text).join(" ")}`)).map((e) => `${e.type} ${e.name}: ${/.{0,30}(?:\{[@#=]|\{\{item\.).{0,50}/.exec(`${e.description ?? ""} ${(e.sheet?.descriptions ?? []).map((d) => d.text).join(" ")}`)?.[0]}`);
+  expect(raw.slice(0, 40)).toEqual([]);
   writeFileSync(join(C!, "engine", "mechanics.md"), ["# Borrowed mechanics", "", ...reg.mechanics.borrowed.map((b) => `- ${b.name} (${b.id}) from ${b.from}: ${b.rules.join(", ")}`)].join("\n"));
   console.log(`PARITY borrowed mechanics for ${reg.mechanics.borrowed.length} features`);
   const books = new BookIndex(reg);

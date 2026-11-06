@@ -29,23 +29,40 @@ const cap = (s: string) => s.replace(/(^|[^\w'’])(\w)/g, (_, a, c) => a + c.to
 
 // ---------------------------------------------------------------- text
 
+/**
+ * Which "|" part of an inline tag the text shows, where it is not the usual third ("{@spell name|source|shown}"). A tag
+ * with none shows its first part. Set to a part the tag lacks when it never has one: reading its third part put the book's
+ * code or a chapter number in the text ("the ground becomes 3" for "{@quickref difficult terrain||3}"). Every tag in the
+ * data is decided in the guard in fivetools.test.ts.
+ */
+const TAG_SHOWN: Record<string, number> = { filter: 99, book: 99, adventure: 99, "5etools": 99, link: 99, card: 99, deity: 3, quickref: 4, classFeature: 5, subclassFeature: 7, subclass: 99, tip: 99, color: 99 };
+
 function tag(raw: string): string {
+  // Tags can nest ("{@note ... {@link this is incorrect|url}}"): the innermost go first.
+  let out = raw;
+  for (let i = 0; i < 4 && out.includes("{@"); i++) { const next = tagOnce(out); if (next === out) break; out = next; }
+  return out;
+}
+
+function tagOnce(raw: string): string {
   return raw
     .replace(/\{@h\}/g, "<i>Hit:</i> ")
-    .replace(/\{@atk ([^}]*)\}/g, (_m, t: string) => {
+    .replace(/\{@atk ([^{}]*)\}/g, (_m, t: string) => {
       const map: Record<string, string> = { mw: "Melee Weapon Attack:", rw: "Ranged Weapon Attack:", "mw,rw": "Melee or Ranged Weapon Attack:", ms: "Melee Spell Attack:", rs: "Ranged Spell Attack:", m: "Melee Attack:", r: "Ranged Attack:" };
       return `<i>${map[t] ?? "Attack:"}</i>`;
     })
-    .replace(/\{@(b|bold)\s+([^}]*)\}/g, "<b>$2</b>")
-    .replace(/\{@(i|italic)\s+([^}]*)\}/g, "<i>$2</i>")
-    .replace(/\{@dc\s+([^}|]*)[^}]*\}/g, "DC $1")
-    .replace(/\{@hit\s+([^}|]*)[^}]*\}/g, (_m, n: string) => (/^[+-]/.test(n.trim()) ? n.trim() : `+${n.trim()}`))
-    .replace(/\{@(?:damage|dice|scaledamage|scaledice|chance)\s+([^}|]*)(?:\|[^}]*)?\}/g, "$1")
-    .replace(/\{@(\w+)\s+([^}]*)\}/g, (_m, t: string, rest: string) => {
+    .replace(/\{@(b|bold)\s+([^{}]*)\}/g, "<b>$2</b>")
+    .replace(/\{@(i|italic)\s+([^{}]*)\}/g, "<i>$2</i>")
+    .replace(/\{@dc\s+([^{}|]*)[^{}]*\}/g, "DC $1")
+    .replace(/\{@hit\s+([^{}|]*)[^{}]*\}/g, (_m, n: string) => (/^[+-]/.test(n.trim()) ? n.trim() : `+${n.trim()}`))
+    // "{@damage 2d6|shown}": the roll, or what the text shows instead.
+    .replace(/\{@(?:damage|dice)\s+([^{}|]*)(?:\|([^{}|]*))?[^{}]*\}/g, (_m, roll: string, shown?: string) => shown || roll)
+    // "{@scaledamage 8d6|3-9|1d6}": the first part is the spell's whole damage, the last what each slot level adds.
+    .replace(/\{@(?:scaledamage|scaledice)\s+([^{}|]*)\|[^{}|]*\|([^{}|]*)[^{}]*\}/g, "$2")
+    .replace(/\{@chance\s+([^{}|]*)(?:\|([^{}|]*))?[^{}]*\}/g, (_m, n: string, shown?: string) => shown || `${n} percent`)
+    .replace(/\{@(\w+)\s+([^{}]*)\}/g, (_m, t: string, rest: string) => {
       const parts = rest.split("|");
-      // "{@spell name|source|shown}" names first, but "{@filter shown|page|type=x}" shows its first part: the rest of it
-      // is a search, which a card read as "any source=phb" (2014 Monk's Martial Arts).
-      const shown = /^(filter|book|adventure|5etools|link)$/.test(t) ? parts[0] : parts[2] ?? parts[0];
+      const shown = parts[TAG_SHOWN[t] ?? 2] || parts[0];
       return shown.replace(/\s*\[[^\]]*\]/g, "");
     });
 }
@@ -474,6 +491,25 @@ interface Ctx {
   spellClasses: Record<string, Record<string, string[]>>;
   /** Base items by "name|source" for items that build on one. */
   baseItems: Map<string, J>;
+  /** Shared item text ("itemEntry"), by "name|source" in lower case. */
+  itemEntries?: Map<string, J>;
+}
+
+/**
+ * An item's "{#itemEntry Armor of Resistance|XDMG}" is shared text, kept once for all its colors and damage types. It is
+ * filled from the item's own fields, as 5e.tools renders it: "{{item.resist}}", "{{getFullImmRes item.resist}}".
+ */
+function withItemEntries(i: J, ctx: Ctx): J {
+  if (!Array.isArray(i.entries) || !JSON.stringify(i.entries).includes("{#itemEntry")) return i;
+  const value = (k: string) => { const v = i[k]; return Array.isArray(v) ? v.join(" and ") : String(v ?? ""); };
+  const fill = (x: unknown): unknown => typeof x === "string" ? x.replace(/\{\{(?:getFullImmRes )?item\.(\w+)\}\}/g, (_m, k: string) => value(k)) : Array.isArray(x) ? x.map(fill) : x && typeof x === "object" ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, fill(v)])) : x;
+  const entries = (i.entries as unknown[]).flatMap((e) => {
+    const m = typeof e === "string" ? /^\{#itemEntry ([^|}]+)(?:\|([^}]*))?\}$/.exec(e) : null;
+    if (!m) return [e];
+    const t = ctx.itemEntries?.get(`${m[1]}|${m[2] || "DMG"}`.toLowerCase());
+    return t ? (fill(t.entriesTemplate) as unknown[]) : [];
+  });
+  return { ...i, entries };
 }
 
 /**
@@ -511,8 +547,9 @@ const cost = (cp: number | undefined): SetterValue | undefined => {
   return set(String(cp), { currency: "cp" });
 };
 
-function convertItem(i: J, ctx: Ctx): AElement | null {
-  if (!i.name) return null;
+function convertItem(raw: J, ctx: Ctx): AElement | null {
+  if (!raw.name) return null;
+  const i = withItemEntries(raw, ctx);
   // Magic variants and many entries reuse a base item for their weapon or armor statistics.
   const b: J = i.baseItem ? (ctx.baseItems.get(String(i.baseItem).toLowerCase()) ?? {}) : {};
   const m: J = { ...b, ...i };
@@ -1680,6 +1717,7 @@ function expandVariant(v: J, ctx: Ctx): J[] {
 /** Converts every recognised file. Unknown files are ignored. */
 export function convertFiveTools(input: FiveToolsInput): AElement[] {
   const ctx: Ctx = { books: {}, spellClasses: {}, baseItems: new Map() };
+  ctx.itemEntries = new Map((Object.values(input.files as Record<string, J>).flatMap((f) => (f?.itemEntry as J[]) ?? [])).map((e) => [`${e.name}|${e.source}`.toLowerCase(), e]));
   // The Foundry files (Plutonium's mechanics) hold "feat", "item", "classFeature"... lists of mechanics, not content:
   // set aside here and applied to the converted elements at the end (foundry.ts).
   const isFoundry = (p: string) => /(^|\/)foundry(-[a-z]+)?\.json$/i.test(p);

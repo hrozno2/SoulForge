@@ -279,3 +279,27 @@ describe("choices only worded in prose", () => {
     expect(run(["You gain another {@filter Fighting Style feat|feats|category=FS} of your choice."], 7).rules[0].supports).toBe("5et feat,(category FS)");
   });
 });
+
+describe("item entries", () => {
+  it("fills shared item text from the item's own fields, and leaves no template behind", () => {
+    const els = convertFiveTools({ files: { "items-base.json": { itemEntry: [{ name: "Ring of Resistance", source: "XDMG", entriesTemplate: ["You have Resistance to {{getFullImmRes item.resist}} damage. A {{item.detail1}} gem."] }] }, "items.json": { item: [{ name: "Ring of Acid Resistance", source: "XDMG", rarity: "rare", resist: ["acid"], detail1: "pearl", entries: ["{#itemEntry Ring of Resistance|XDMG}"] }] } } as never });
+    const ring = els.find((e) => e.name === "Ring of Acid Resistance")!;
+    expect(ring.description).toContain("Resistance to acid damage. A pearl gem.");
+    expect(ring.description).not.toMatch(/\{[#{@=]/);
+  });
+});
+
+describe("inline tags show what the book shows", () => {
+  const show = (t: string) => entriesHtml([t]).replace(/<[^>]+>/g, "");
+  it.each([
+    ["{@scaledamage 8d6|3-9|1d6}", "1d6"], ["{@scaledice 6d10|1-9|2d10}", "2d10"],
+    ["{@chance 25}", "25 percent"], ["{@chance 10|one in ten||a|b}", "one in ten"],
+    ["{@quickref difficult terrain||3}", "difficult terrain"], ["{@quickref Cover||3||total cover}", "total cover"],
+    ["{@classFeature Divine Sense|Paladin|PHB|1}", "Divine Sense"], ["{@classFeature Flash of Genius|Artificer|EFA|7|EFA|the flash}", "the flash"],
+    ["{@subclassFeature Guardian|Artificer|EFA|Armorer|EFA|3|EFA}", "Guardian"], ["{@subclass Armorer|Artificer|EFA|EFA}", "Armorer"],
+    ["{@card Fool|Deck of Many Things|BMT}", "Fool"], ["{@deity Lliira|Faerûnian|scag}", "Lliira"],
+    ["{@dice 1d34|Playing Card}", "Playing Card"], ["{@damage 2d6}", "2d6"],
+    ["{@note Wrong, {@link this is incorrect.|https://x.y/z}}", "Wrong, this is incorrect."],
+    ["{@spell fire shield||warm shield}", "warm shield"], ["{@item dart|phb|darts}", "darts"], ["{@spell Identify|XPHB}", "Identify"], ["{@filter demons|bestiary|tag=demon}", "demons"],
+  ])("%s", (raw, want) => { expect(show(raw)).toBe(want); });
+});

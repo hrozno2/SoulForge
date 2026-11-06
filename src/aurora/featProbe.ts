@@ -12,21 +12,25 @@ type Json = Record<string, any>;
 const AB: Record<string, string> = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" };
 const ARMOR: Record<string, string> = { light: "ID_PROFICIENCY_ARMOR_PROFICIENCY_LIGHT_ARMOR", medium: "ID_PROFICIENCY_ARMOR_PROFICIENCY_MEDIUM_ARMOR", heavy: "ID_PROFICIENCY_ARMOR_PROFICIENCY_HEAVY_ARMOR", shield: "ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELDS" };
 const CASTER = ["ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE", "ID_INTERNAL_GRANTS_PACT_MAGIC_FEATURE", "ID_INTERNAL_GRANTS_SPELLCASTING"];
+/** 5e.tools' names for the same things: its armor and weapon training, and each class's casting feature. */
+const ARMOR_5ET: Record<string, string> = { light: "ID_5ET_PROF_ARMOR_LIGHT", medium: "ID_5ET_PROF_ARMOR_MEDIUM", heavy: "ID_5ET_PROF_ARMOR_HEAVY", shield: "ID_5ET_PROF_ARMOR_SHIELD" };
+const WEAPONS_5ET = ["ID_5ET_PROF_WEAPON_MARTIAL", "ID_5ET_PROF_WEAPON_SIMPLE"];
 interface Probe { level: number; scores: Record<string, number>; ids: Set<string>; caster: boolean }
 const ctx = (p: Probe): ReqCtx => ({
   level: p.level,
-  hasId: (id) => p.ids.has(id) || (p.caster && (CASTER.includes(id) || /^ID_INTERNAL_GRANTS_(SPELLCASTING|PACT)/.test(id))),
+  hasId: (id) => p.ids.has(id) || (p.caster && (CASTER.includes(id) || /^ID_INTERNAL_GRANTS_(SPELLCASTING|PACT)/.test(id) || /^ID_5ET_CF_.*_(SPELLCASTING|PACT_MAGIC)_\d+$/.test(id))),
   hasType: (t) => (p.caster && /spell/i.test(t)),
   stat: (n) => p.scores[n] ?? (p.caster && /spellcasting/.test(n) ? 1 : 0),
 });
-const full = (): Probe => ({ level: 20, scores: Object.fromEntries(Object.values(AB).map((a) => [a, 20])), ids: new Set(Object.values(ARMOR)), caster: true });
+const full = (): Probe => ({ level: 20, scores: Object.fromEntries(Object.values(AB).map((a) => [a, 20])), ids: new Set([...Object.values(ARMOR), ...Object.values(ARMOR_5ET), ...WEAPONS_5ET]), caster: true });
 export function probeFeats(reg: ARegistry, feats: Json[]): { checked: number; findings: string[]; notProbed: string[] } {
   const BOOK: Record<string, RegExp> = { PHB: /^Player’s Handbook$/, XPHB: /^Player’s Handbook \(2024\)$/, XGE: /^Xanathar/, TCE: /^Tasha/ };
   const out: string[] = []; const skipped: string[] = []; let checked = 0;
   const norm = (x: string) => x.toLowerCase().replace(/[’']/g, "'");
   for (const f of feats.filter((x) => BOOK[x.source])) {
     const modern = f.source === "XPHB";
-    const same = reg.ofType("Feat").filter((e) => norm(e.name) === norm(f.name) && isModern(e) === modern);
+    // 5e.tools makes a feat with several spell lists one entry each: "Magic Initiate (Cleric)".
+    const same = reg.ofType("Feat").filter((e) => (norm(e.name) === norm(f.name) || norm(e.name).startsWith(`${norm(f.name)} (`)) && isModern(e) === modern);
     const el = same.find((e) => BOOK[f.source].test(e.source)) ?? same[0];
     if (!el) { out.push(`${f.source} ${f.name}: not in the content`); continue; }
     const pre: Json[] = f.prerequisite ?? [];
@@ -57,7 +61,7 @@ export function probeFeats(reg: ARegistry, feats: Json[]): { checked: number; fi
     }
     if (kinds.has("proficiency")) {
       for (const p of pre) for (const pr of (p.proficiency ?? []) as Json[]) if (pr.armor && ARMOR[pr.armor]) {
-        const ids = new Set(full().ids); ids.delete(ARMOR[pr.armor]);
+        const ids = new Set(full().ids); ids.delete(ARMOR[pr.armor]); ids.delete(ARMOR_5ET[pr.armor]);
         if (meets(req, ctx({ ...full(), ids }))) say(`allowed without ${pr.armor} armor training`);
       }
     }
@@ -71,7 +75,8 @@ export function probeFeats(reg: ARegistry, feats: Json[]): { checked: number; fi
         if (name === "small race") continue;
         const sub = rc.subrace ? (({ drow: "dark" } as Record<string, string>)[String(rc.subrace).toLowerCase()] ?? String(rc.subrace).toLowerCase()) : "";
         const ids = new Set(full().ids);
-        for (const e of reg.all()) if (/^(Race|Sub Race|Race Variant)$/.test(e.type) && e.name.toLowerCase().includes(name) && (!sub || e.name.toLowerCase().includes(sub))) ids.add(e.id);
+        // Aurora says "Dark Elf"; 5e.tools says "Drow".
+        for (const e of reg.all()) if (/^(Race|Sub Race|Race Variant)$/.test(e.type) && ((e.name.toLowerCase().includes(name) && (!sub || e.name.toLowerCase().includes(sub))) || (sub === "dark" && /drow/i.test(e.name)) || (name === "dark elf" && /drow/i.test(e.name)))) ids.add(e.id);
         if (!meets(req, ctx({ ...full(), ids }))) say(`not allowed for ${sub ? `${sub} ` : ""}${name}`);
       }
     }

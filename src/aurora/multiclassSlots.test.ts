@@ -16,7 +16,10 @@ describe("multiclass spell slots without a stated caster level", () => {
     expect(multiclassCasterLevel(pass([["Paladin", "ID_PHB_CLASS_PALADIN", 3], ["Wizard", "ID_PHB_CLASS_WIZARD", 2]]))).toBe(3);
   });
   it("counts a third for the Eldritch Knight", () => {
-    expect(multiclassCasterLevel(pass([["Fighter", "ID_PHB_CLASS_FIGHTER", 7], ["Wizard", "ID_PHB_CLASS_WIZARD", 1]]))).toBe(3);
+    expect(multiclassCasterLevel(pass([["Fighter", "ID_PHB_CLASS_FIGHTER", 7], ["Wizard", "ID_PHB_CLASS_WIZARD", 1]], { "fighter:spellcasting:slots:1": 4 }))).toBe(3);
+  });
+  it("does not count a Fighter whose subclass only has a few spells", () => {
+    expect(multiclassCasterLevel(pass([["Fighter", "ID_PHB_CLASS_FIGHTER", 7], ["Wizard", "ID_PHB_CLASS_WIZARD", 1]]))).toBe(0);
   });
   it("leaves a single class and a stated level alone", () => {
     expect(multiclassCasterLevel(pass([["Wizard", "ID_PHB_CLASS_WIZARD", 5]]))).toBe(0);

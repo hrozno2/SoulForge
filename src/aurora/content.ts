@@ -212,7 +212,7 @@ const trimSlash = (u: string) => u.replace(/\/+$/, "");
  * A bestiary file cut down to its beasts (Wild Shape's forms, companions): the rest of the bestiary is for the DM and
  * would only fill the cache. Copies ("_copy") stay, since what they copy decides what they are.
  */
-function beastsOnly(text: string): string {
+export function beastsOnly(text: string): string {
   try {
     const json = JSON.parse(text) as { monster?: { type?: unknown; _copy?: unknown }[] };
     const isBeast = (m: { type?: unknown; _copy?: unknown }) => !!m._copy || /^beast$/i.test(String(typeof m.type === "object" && m.type ? (m.type as { type?: unknown }).type : m.type));

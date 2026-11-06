@@ -21,7 +21,8 @@ const MARKER = /^ID_(INTERNAL|SIZE)_|_MULTICLASS|_GRANTS_|_OPTION_/;
 
 /** IDs named in a requirement expression ("ID_A,(ID_B||!ID_C)", "[level:5]" and the like are not IDs). */
 function requirementIds(req: string): string[] {
-  return [...req.matchAll(/!?(ID_[A-Z0-9_]+)/g)].map((m) => m[1]);
+  // "Not having X" is met when X does not exist (a 5e.tools rule also guards against Aurora's id for the same skill).
+  return [...req.matchAll(/(!?)(ID_[A-Z0-9_]+)/g)].filter((m) => !m[1]).map((m) => m[2]);
 }
 
 export function lintContent(reg: ARegistry): LintFinding[] {

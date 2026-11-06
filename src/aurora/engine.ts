@@ -368,7 +368,9 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
           lists: sc.list.length ? sc.list : [sc.name],
           owner: classOwner?.id ?? el.id,
           level: ownerLevel,
-          fromClass: !!classOwner,
+          // A feat taken at a class's level is still a feat: it does not make the class a caster (a Fighter with Ritual
+          // Caster counted a third of its levels on the multiclass table).
+          fromClass: !!classOwner && el.type !== "Feat" && el.type !== "Feat Feature",
         });
         spellAbility[key] = lc(sc.ability ?? "");
       }
@@ -595,8 +597,12 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
   // Only classes' spellcasting shares the table (PHB, Multiclassing): a species' or feat's spells (the playtest
   // Eladrin's) do not make a single-class caster a multiclass one.
   const own = [...pass.spellcasting.values()].filter((e) => e.fromClass !== false && !(pass.stats.get(`${lc(e.name)}:spellcasting:slots:count`) > 0));
-  const byOwner = new Map(own.map((e) => [e.owner, e]));
-  if (byOwner.size < 2) return stated > 0 ? stated : 0;
+  const nameOf = (e: (typeof own)[number]) => lc(reg?.get(e.owner)?.name ?? (e.owner.match(/CLASS_([A-Z]+)$/i)?.[1] ?? e.name));
+  // Full and half casters count by their class. Any other only with slots of its own: a Monk's or Fighter's subclass with a
+  // few spells adds nothing (Arcana Unleashed's Arcane Archer), an Eldritch Knight does.
+  const hasSlots = (e: (typeof own)[number]) => Array.from({ length: 9 }, (_, i) => pass.stats.get(`${lc(e.name)}:spellcasting:slots:${i + 1}`)).some((n) => n > 0);
+  const byOwner = new Map(own.filter((e) => FULL_CASTERS.has(nameOf(e)) || HALF_CASTERS.has(nameOf(e)) || hasSlots(e)).map((e) => [e.owner, e]));
+  if (byOwner.size < 2) return 0;
   let total = 0;
   let unknown = false;
   for (const e of byOwner.values()) {

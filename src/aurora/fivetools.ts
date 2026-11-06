@@ -696,7 +696,8 @@ function featVariants(f: J, ctx: Ctx, out: AElement[]): boolean {
     const name = `${f.name} (${list})`;
     const html = entriesHtml(f.entries);
     out.push({
-      ...base(ftId("FEAT", name, f.source), name, "Feat", srcName(ctx, f.source), { supports: ["5et feat", ...(f.category ? [`category ${f.category}`] : [])], rules, description: html, sheet: { display: true, descriptions: [{ text: html }] } }),
+      // Each version keeps the feat's prerequisite (2014 Ritual Caster and Spell Sniper had none).
+      ...base(ftId("FEAT", name, f.source), name, "Feat", srcName(ctx, f.source), { supports: ["5et feat", ...(f.category ? [`category ${f.category}`] : [])], rules, requirements: prerequisiteOf(f.prerequisite as J[] | undefined, out), description: html, sheet: { display: true, descriptions: [{ text: html }] } }),
       spellcasting: { name: `${f.name} (${list})`, ability: ability ? cap(abilFull(ability)) : "Intelligence", prepare: false, list: [list], extendLists: [] },
     });
   }
@@ -744,6 +745,14 @@ function resolvePrerequisites(out: AElement[]): void {
     if (e.type === "Race" || e.type === "Sub Race") { add("race", key, e.id); const sub = /\((.+)\)$/.exec(e.name)?.[1]; if (sub) add("race", `${key}:${slug(sub)}`, e.id); if (e.type === "Sub Race") add("subrace", slug(e.name), e.id); }
     if (e.type === "Background") add("background", key, e.id);
     if (e.type === "Class Feature" || e.type === "Archetype Feature") add("feature", key, e.id);
+  }
+  // Condition immunities are granted as markers (Boon of Poison Mastery, Blackrazor), and had no element to point at.
+  const made = new Set<string>();
+  for (const e of [...out]) for (const r of e.rules) {
+    const m = r.kind === "grant" ? /^ID_INTERNAL_CONDITION_CONDITION_IMMUNITY_([A-Z_]+)$/.exec(r.id ?? "") : null;
+    if (!m || made.has(m[0])) continue;
+    made.add(m[0]);
+    if (!out.some((o) => o.id === m[0])) out.push(base(m[0], `${cap(m[1].toLowerCase())} immunity`, "Condition", "5etools", { compendiumHidden: true, description: `<p>Immune to ${m[1].toLowerCase()}.</p>` }));
   }
   for (const e of out) {
     if (!e.requirements?.includes("@")) continue;
@@ -1829,7 +1838,12 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
     if (/(^|\/)sources\.json$/.test(path) && json && typeof json === "object" && !Array.isArray(json)) {
       for (const [src, spells] of Object.entries(json as J)) {
         const bucket = (ctx.spellClasses[src] ??= {});
-        for (const [spell, v] of Object.entries(spells as J)) bucket[spell.toLowerCase()] = (((v as J).class ?? []) as J[]).map((c) => c.name);
+        // "classVariant" is a list a later book adds: it counts in the spell's own book, and for a class that book brought
+        // (Tasha's Artificer has Absorb Elements). Tasha's optional additions to older classes' lists do not count.
+        for (const [spell, v] of Object.entries(spells as J)) {
+          const own = ((v as J).classVariant ?? []) as J[];
+          bucket[spell.toLowerCase()] = [...new Set([...(((v as J).class ?? []) as J[]), ...own.filter((c) => !c.definedInSource || [src.toLowerCase(), String(c.source).toLowerCase()].includes(String(c.definedInSource).toLowerCase()))].map((c) => String(c.name)))];
+        }
       }
     }
     for (const b of json?.baseitem ?? []) ctx.baseItems.set(`${b.name}|${b.source}`.toLowerCase(), b);

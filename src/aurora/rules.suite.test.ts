@@ -10,9 +10,9 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { loadContentSet, type ContentSet } from "../engine/testContent";
 import { describe, expect, it } from "vitest";
 import { PDFDocument, PDFTextField } from "pdf-lib";
-import { loadRegistry } from "./fixture";
 import { resolve } from "./engine";
 import { buildSheet } from "./sheet";
 import { autoFill } from "./autofill";
@@ -99,11 +99,14 @@ function sheetShows(bytes: Uint8Array, ch: Character, sh: ReturnType<typeof buil
 }
 
 describe.skipIf(!CACHE)("rules", () => {
-  const reg = CACHE ? loadRegistry(join(CACHE, "elements-master")) : undefined!;
+  // RULES_CONTENT picks the content set; every test below runs on it. The default stays Aurora's, as the suite began.
+  const CONTENT = (process.env.RULES_CONTENT ?? "aurora") as ContentSet;
+  const reg = CACHE ? loadContentSet(CACHE, CONTENT) : undefined!;
   REG = reg;
   const ref: RefClass[] = CACHE ? JSON.parse(readFileSync(join(CACHE, "rules-ref.json"), "utf8")) : [];
   const sheets = CACHE ? join(CACHE, "sheets") : "";
   const font = { regular: readFileSync("node_modules/dejavu-fonts-ttf/ttf/DejaVuSansCondensed.ttf"), bold: readFileSync("node_modules/dejavu-fonts-ttf/ttf/DejaVuSansCondensed-Bold.ttf") };
+  let pdfsDone = 0;
   let seed = SEED;
   const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
   const filters = { legacy: true, playtest: false, unusual: false };
@@ -128,7 +131,9 @@ describe.skipIf(!CACHE)("rules", () => {
     const save = (name: string, bytes: Uint8Array | string) => files.push([name, bytes]);
     save("character.json", JSON.stringify(ch, null, 2));
     // RULES_NOPDF=1 (for big runs): the rules and the JSON round trip only; the other tiers fill and read every sheet.
-    if (process.env.RULES_NOPDF) {
+    // RULES_PDF_LIMIT: the first few fill every sheet, the rest skip it. A sheet takes minutes and depends little on the
+    // content, so the other content sets fill a sample.
+    if (process.env.RULES_NOPDF || (process.env.RULES_PDF_LIMIT && ++pdfsDone > Number(process.env.RULES_PDF_LIMIT))) {
       if (OUT && found.length) for (const [name, bytes] of files) writeFileSync(join(OUT, `${safe}-${name}`), bytes);
       if (!BIG || found.length) report.push(`\n### ${label}\n${found.length ? found.map((f) => `- ${f.rule}: ${f.detail}`).join("\n") : "- no findings"}`);
       return found;
@@ -328,19 +333,21 @@ describe.skipIf(!CACHE)("rules", () => {
     if (!CACHE) return;
     const dir = join(CACHE, "imports");
     if (!existsSync(dir)) return;
-    const basePath = join(dir, "baseline.json");
+    const basePath = join(dir, CONTENT === "aurora" ? "baseline.json" : `baseline-${CONTENT}.json`);
     const baseline: Record<string, number> = existsSync(basePath) ? JSON.parse(readFileSync(basePath, "utf8")) : {};
     const now: Record<string, number> = {};
     const worse: string[] = [];
-    for (const f of readdirSync(dir).filter((x) => x.endsWith(".json") && x !== "baseline.json").sort()) {
+    for (const f of readdirSync(dir).filter((x) => x.endsWith(".json") && !x.startsWith("baseline")).sort()) {
       let res;
       try { res = importForeignCharacter(JSON.parse(readFileSync(join(dir, f), "utf8")), reg); } catch (e) { worse.push(`${f}: ${(e as Error).message}`); continue; }
       now[f] = res.todo.length;
       report.push(`\n### import ${f}\n- left to choose: ${res.todo.join("; ") || "nothing"}\n- not in the content: ${res.missing.length}`);
       // The snapshot: what the file became. A change shows as a difference to review (IMPORT_BASELINE=1 accepts it).
       const snap = importSnapshot(res);
-      const snapPath = join(dir, "snapshots", `${f}.snapshot.json`);
-      mkdirSync(join(dir, "snapshots"), { recursive: true });
+      // Each content set has its own: the same file becomes different ids and spellings.
+      const snapDir = join(dir, CONTENT === "aurora" ? "snapshots" : `snapshots-${CONTENT}`);
+      const snapPath = join(snapDir, `${f}.snapshot.json`);
+      mkdirSync(snapDir, { recursive: true });
       if (!existsSync(snapPath) || process.env.IMPORT_BASELINE) writeFileSync(snapPath, JSON.stringify(snap, null, 2));
       else {
         const was = JSON.parse(readFileSync(snapPath, "utf8")) as Record<string, unknown>;
@@ -358,14 +365,17 @@ describe.skipIf(!CACHE)("rules", () => {
   // The content linter: problems in the content itself. Each is either corrected in contentFixes.ts or accepted
   // there with a reason; anything else fails.
   it("content linter", () => {
-    const found = lintContent(reg).filter((f) => !LINT_ACCEPTED.some((id) => f.detail.includes(id)));
+    // The app keeps only a bestiary's beasts, so a summoned undead or fiend (Wand of Orcus, Semblance of Life) has no entry to pick.
+    const found = lintContent(reg).filter((f) => !LINT_ACCEPTED.some((id) => f.detail.includes(id))).filter((f) => !(CONTENT !== "aurora" && f.kind === "empty choice" && /chooses a Companion/.test(f.detail)));
     report.push(`\n### content linter\n${found.length ? found.map((f) => `- ${f.kind}: ${f.name} (${f.id}): ${f.detail}`).join("\n") : "- no findings"}`);
     expect(found.map((f) => `${f.name}: ${f.detail}`)).toEqual([]);
   });
 
   // Spell lists: every spell of the 2014 Player's Handbook, Xanathar's, Tasha's and the 2024 Player's Handbook has
   // the classes 5e.tools gives it (the base lists, not Tasha's optional expanded lists).
-  it("spell lists match 5e.tools", () => {
+  // The built-in rules answer to the SRD's PDFs instead (srdBundle.test.ts).
+  const isSrd = /^srd/.test(CONTENT);
+  it.skipIf(isSrd)("spell lists match 5e.tools", () => {
     const file = join(CACHE ?? "", "spell-lists.json");
     if (!existsSync(file)) return;
     const src = JSON.parse(readFileSync(file, "utf8"));
@@ -377,7 +387,7 @@ describe.skipIf(!CACHE)("rules", () => {
       const ed = modern ? ["XPHB"] : ["PHB", "TCE"];
       for (const [name, v] of Object.entries<{ class?: { name: string; source: string }[]; classVariant?: { name: string; source: string; definedInSource?: string }[] }>(src[book] ?? {})) {
         // The 2024 Artificer (Eberron: Forge of the Artificer) is not in the content, so its lists are not compared.
-        const want = new Set([...(v.class ?? []).filter((c) => ed.includes(c.source)), ...(v.classVariant ?? []).filter((c) => ed.includes(c.source) && (c.definedInSource !== "TCE" || book === "TCE"))].map((c) => c.name).filter((c) => CLASSES.includes(c) && !(modern && c === "Artificer")));
+        const want = new Set([...(v.class ?? []).filter((c) => ed.includes(c.source)), ...(v.classVariant ?? []).filter((c) => ed.includes(c.source) && (c.definedInSource !== "TCE" || book === "TCE" || c.source === "TCE"))].map((c) => c.name).filter((c) => CLASSES.includes(c) && !(modern && c === "Artificer")));
         const same = reg.ofType("Spell").filter((e) => norm(e.name) === norm(name) && isModern(e) === modern);
         const el = same.find((e) => BOOK[book].test(e.source)) ?? same[0];
         if (!el) { found.push(`${book} ${name}: not in the content`); continue; }
@@ -392,7 +402,7 @@ describe.skipIf(!CACHE)("rules", () => {
   });
 
   // Feat prerequisites: the content's requirements allow and refuse the same characters 5e.tools' prerequisites do.
-  it("feat prerequisites match 5e.tools", () => {
+  it.skipIf(isSrd)("feat prerequisites match 5e.tools", () => {
     const file = join(CACHE ?? "", "feats-ref.json");
     if (!existsSync(file)) return;
     const res = probeFeats(reg, JSON.parse(readFileSync(file, "utf8")).feat);

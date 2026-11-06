@@ -307,7 +307,9 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
             for (const rule of entryRules(e.entryData as J, el)) if (!el.rules.some((x) => same(x, rule))) added.push(rule);
           }
           for (const eff of (e.effects as J[]) ?? []) {
-            if (eff.transfer === false || eff.disabled) continue; // applied when used, not always on
+            // Applied when used, not always on. An enchantment goes on an item, and alternatives are listed side by side
+            // (Enhanced Arcane Focus's +1 and +2 added up to +3 for every Artificer).
+            if (eff.transfer === false || eff.disabled || eff.type === "enchantment" || eff.enchantmentRiderParent) continue;
             // An effect that lasts a while (Slasher's "Slashed" for a turn, Gloom Stalker's first-turn speed) is put on
             // a target or applied when used, not carried by the character.
             const dur = (eff.duration ?? {}) as J;

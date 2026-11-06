@@ -186,7 +186,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   const ALIAS: Record<string, string> = { [norm("Improved Warding Flare")]: norm("Improved Flare") };
   const near = (want0: string) => {
     const want = ALIAS[cd(want0)] ?? cd(want0);
-    if (short.has(want)) return true;
+    if (short.has(want) || short.has(cd(want0))) return true;
     if ([...short].some((n) => Math.abs(n.length - want.length) <= 2 && edits(n, want) <= 2)) return true;
     if (want.length >= 8 && [...short].some((n) => n.includes(want) || n === `${want} feature replacement`)) return true;
     return false;
@@ -324,12 +324,15 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const subMatches = exact.length ? exact : x.ref.subclasses.filter((s) => [s.name, s.shortName].some((n) => word(norm(sub.name), norm(n)) || word(norm(n), norm(sub.name))));
     const subEd = isModern(sub) ? ["XPHB", "EFA"] : [];
     // A playtest subclass is not the published one of the same name (the playtest Rune Knight's features differ).
-    const refSub = isPlaytest(sub) ? undefined : subMatches.find((s) => subEd.length ? subEd.includes(s.source) : !["XPHB", "EFA"].includes(s.source)) ?? subMatches[0] ?? x.ref.subclasses.find((s) => [s.name, s.shortName].some((n) => norm(n) === norm(sub.name) || norm(sub.name).includes(norm(n)) || norm(n).includes(norm(sub.name))));
-    if (!refSub) continue;
-    for (const f of refSub.features) {
-      if (f.level > x.c.level || f.optional || skip.test(f.name) || norm(f.name) === norm(refSub.name) || norm(f.name) === norm(refSub.shortName)) continue;
-      if (!near(norm(f.name))) add("Subclass feature missing", `${sub.name} ${f.level}: ${f.name}`);
-    }
+    // Reprints share a name (2024's Knowledge Domain from Heroes of Faerûn, 2014's copied for the 2024 Cleric): the one this
+    // subclass is, of those of its rules, is the one with the least missing.
+    if (isPlaytest(sub)) continue;
+    const sameRules = subMatches.filter((s) => (subEd.length ? subEd.includes(s.source) : !["XPHB", "EFA"].includes(s.source)));
+    const named = x.ref.subclasses.filter((s) => [s.name, s.shortName].some((n) => norm(sub.name).includes(norm(n)) || norm(n).includes(norm(sub.name))));
+    const candidates = sameRules.length && !isModern(sub) ? sameRules : subMatches.length ? subMatches : named;
+    if (!candidates.length) continue;
+    const missing = candidates.map((refSub) => refSub.features.filter((f) => !(f.level > x.c.level || f.optional || skip.test(f.name) || norm(f.name) === norm(refSub.name) || norm(f.name) === norm(refSub.shortName)) && !near(norm(f.name))));
+    for (const f of missing.reduce((a, b) => (b.length < a.length ? b : a))) add("Subclass feature missing", `${sub.name} ${f.level}: ${f.name}`);
   }
 
   // Feats from level choices: one at each Ability Score Improvement level the class has reached, and the Epic Boon.
@@ -372,7 +375,8 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   const ours = (line: (typeof sh.casting)[number]) => slotRow(line.slots.map((s) => s.total));
   if (nonPact.length === 1) {
     const x = nonPact[0];
-    const line = sh.casting.find((l) => norm(l.name).includes(norm(x.el.name)) || norm(x.el.name).includes(norm(l.name))) ?? sh.casting.find((l) => l.slots.length && !l.pactLevel);
+    // Its own line first: "Artificer Initiate" (a feat) also has the class in its name.
+    const line = sh.casting.find((l) => norm(l.name) === norm(x.el.name)) ?? sh.casting.find((l) => norm(l.name).includes(norm(x.el.name)) || norm(x.el.name).includes(norm(l.name))) ?? sh.casting.find((l) => l.slots.length && !l.pactLevel);
     const want = x.ref!.slots ? slotRow(x.ref!.slots[x.c.level - 1] ?? []) : slotRow(THIRD[x.c.level] ?? []);
     if (line && want !== ours(line)) add("Spell slots", `${x.el.name} ${x.c.level}: ${ours(line) || "none"}, the class table gives ${want || "none"}`);
     if (!line && want) add("Spell slots", `${x.el.name} ${x.c.level} has no spellcasting line; the table gives ${want}`);

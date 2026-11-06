@@ -7,7 +7,7 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { convertFiveTools, entriesHtml, proseChoiceRules } from "./fivetools";
 import { ARegistry } from "./registry";
-import { resolve } from "./engine";
+import { multiclassCasterLevel, resolve } from "./engine";
 import { autoFill } from "./autofill";
 import { buildSheet } from "./sheet";
 import { newCharacter } from "./character";
@@ -417,5 +417,40 @@ describe("what a species gives", () => {
   });
   it("a size that varies is a choice", () => {
     expect(race({ size: ["V"] }).el.rules.some((x) => x.kind === "select" && x.type === "Size")).toBe(true);
+  });
+});
+
+describe("what is not always on", () => {
+  it("an enchantment and what rides on it stay off the character (Enhanced Arcane Focus was +3 for every Artificer)", () => {
+    const els = convertFiveTools({ files: {
+      "feats.json": { feat: [{ name: "X", source: "PHB", entries: ["x"] }] },
+      "foundry-feats.json": { feat: [{ name: "X", source: "PHB", effects: [{ foundryId: "a", type: "enchantment", changes: [{ key: "system.bonuses.msak.attack", mode: "ADD", value: "+ 1" }] }, { name: "Rider", enchantmentRiderParent: "a", transfer: true, changes: [{ key: "system.bonuses.msak.attack", mode: "ADD", value: "+ 1" }] }] }] },
+    } as never });
+    expect(els.find((e) => e.name === "X")!.rules.filter((r) => r.kind === "stat" && /attack/.test(r.name))).toHaveLength(0);
+  });
+  it("a condition immunity has an element to point at", () => {
+    const els = convertFiveTools({ files: { "feats.json": { feat: [{ name: "X", source: "PHB", conditionImmune: ["poisoned"], entries: ["x"] }] } } as never });
+    expect(els.find((e) => e.id === "ID_INTERNAL_CONDITION_CONDITION_IMMUNITY_POISONED")?.type).toBe("Condition");
+  });
+});
+
+describe("a spell's class lists", () => {
+  const spell = (src: string, list: Record<string, unknown>) => convertFiveTools({ files: { "spells/sources.json": { [src]: { X: list } }, "spells/spells.json": { spell: [{ name: "X", source: src, level: 1, school: "A", time: [{ number: 1, unit: "action" }], range: { type: "point", distance: { type: "self" } }, duration: [{ type: "instant" }], entries: ["x"] }] } } as never }).find((e) => e.name === "X")!.supports;
+  it("what a later book adds counts in the spell's own book, and for a class that book brought", () => {
+    expect(spell("XGE", { classVariant: [{ name: "Wizard", source: "PHB", definedInSource: "XGE" }, { name: "Artificer", source: "TCE", definedInSource: "TCE" }] })).toEqual(expect.arrayContaining(["Wizard", "Artificer"]));
+    expect(spell("PHB", { class: [{ name: "Wizard", source: "PHB" }], classVariant: [{ name: "Bard", source: "PHB", definedInSource: "TCE" }] })).not.toContain("Bard");
+  });
+});
+
+describe("the shared spell slot table", () => {
+  const pass = (entries: { name: string; owner: string; level: number; fromClass: boolean }[], stats: Record<string, number> = {}) => ({ spellcasting: new Map(entries.map((e) => [e.name, e])), stats: { get: (n: string) => stats[n] ?? 0 } }) as never;
+  const reg = { get: (id: string) => ({ name: id, source: "PHB", id }) } as never;
+  it("one class that casts has its own table, whatever feats add", () => {
+    expect(multiclassCasterLevel(pass([{ name: "ranger", owner: "Ranger", level: 3, fromClass: true }, { name: "aasimar", owner: "Aasimar", level: 3, fromClass: false }], { "multiclass:spellcasting:level": 1 }), reg)).toBe(0);
+  });
+  it("a third-caster subclass counts when it has slots, not for a few spells", () => {
+    const two = (stats: Record<string, number>) => multiclassCasterLevel(pass([{ name: "wizard", owner: "Wizard", level: 3, fromClass: true }, { name: "k", owner: "Fighter", level: 9, fromClass: true }], { "wizard:spellcasting:slots:1": 4, ...stats }), reg);
+    expect(two({ "k:spellcasting:slots:1": 3 })).toBe(6);
+    expect(two({})).toBe(0);
   });
 });

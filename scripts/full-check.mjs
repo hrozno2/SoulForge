@@ -50,6 +50,16 @@ for (const [name, tier, file] of [["edition gate", "editions", "src/engine/editi
   steps.push(await run(name, "npx", ["vitest", "run", ...file.split(" "), "--silent=false"], { RULES_TIER: tier }));
 }
 
+// Every content set, not only Aurora's: 5e.tools (what the release moves to) gets the same big batch; the built-in rules are
+// small, so a share of it covers them. The sweep touches every element of every set.
+steps.push(await run("every element of every content set", "npx", ["vitest", "run", "src/engine/coverage.test.ts", "--silent=false"], { RULES_TIER: "sweep" }));
+for (const [set, share] of [["5etools", 1], ["srd", 0.1]]) {
+  steps.push(await run(`rules check on ${set}`, "node", ["scripts/rules-check.mjs", seed], { RULES_CONTENT: set, RULES_PDF_LIMIT: "2" }));
+  const dir = join(out, `big-${set}`);
+  mkdirSync(dir, { recursive: true });
+  steps.push(await run(`${Math.round(count * share)} random characters on ${set}`, "npx", ["vitest", "run", "src/aurora/rules.suite.test.ts", "-t", "a big batch|writes the report"], { RULES_CONTENT: set, RULES_BIG: String(Math.round(count * share)), RULES_NOPDF: "1", RULES_SEED: seed, RULES_OUT: dir }));
+}
+
 const ok = steps.every((s) => s.ok);
 const summary = [`# Full check, ${new Date().toISOString().slice(0, 16).replace("T", " ")}`, "", `Seed ${seed}. ${ok ? "Everything passed." : "Something failed: see the step and its log."}`, "", ...steps.flatMap((s) => [`## ${s.ok ? "Passed" : "FAILED"}: ${s.name} (${s.mins} min)`, ...s.facts.map((f) => `- ${f}`), ""])];
 writeFileSync(join(out, "summary.md"), summary.join("\n"));

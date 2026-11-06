@@ -170,6 +170,8 @@ State 2026-11-06: **500 of 500 sheets agree with and without Aurora**; 64 differ
 4. Plutonium first for each group (how it routes that mechanic), as for every feature.
 
 ### D5. Testing without Aurora
+
+Started 2026-11-06: `RULES_CONTENT=5etools` runs the whole rules suite without Aurora, and `RULES_TIER=sweep` reaches every element (docs/TEST-COVERAGE.md); both are in the full check, so no `--no-aurora` switch is needed. First runs found: 112 Xanathar's and Tasha's spells on no class list (`classVariant` unread), Enhanced Arcane Focus at +3 for every Artificer, 2014 Ritual Caster and Spell Sniper with no prerequisite, a feat's or small subclass's spells counting a class on the shared slot table, the same feat from two books, condition immunities with no element. The exit criteria below stand; none is met yet.
 1. A full check variant, `full-check.mjs --no-aurora`: the engine with 5e.tools and the SRD bundle only, the same
    random characters, rules check, saved characters and importer tests, with the SRD API and Aurora parity as the
    checks. It runs alongside the normal one.

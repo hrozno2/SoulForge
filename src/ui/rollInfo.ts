@@ -38,7 +38,7 @@ export function findDc(text: string, ctx: DcContext): number | undefined {
 
 export function parseRollInfo(html: string, ctx: DcContext): RollInfo {
   const text = plain(html);
-  const info: RollInfo = { saves: [], damage: [], healing: [], cantripScaling: /when you reach (?:5th|level 5)/i.test(text) };
+  const info: RollInfo = { saves: [], damage: [], healing: [], cantripScaling: /when you reach (?:5th|levels? 5)/i.test(text) };
   if (/spell attack/i.test(text)) info.attack = "spell";
   else if (/weapon attack/i.test(text)) info.attack = "weapon";
   const dc = findDc(text, ctx);

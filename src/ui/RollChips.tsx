@@ -13,7 +13,8 @@ export function spellRolls(name: string, html: string, ctx: DcContext, attackBon
   const out: { label: string; expr: string; opts?: { kind: "attack" } }[] = [];
   if (info.attack === "spell" && attackBonus !== undefined) out.push({ label: `${name} attack`, expr: `1d20${attackBonus >= 0 ? "+" : ""}${attackBonus}`, opts: { kind: "attack" } });
   for (const d of info.damage) out.push({ label: `${name} ${d.type || "damage"}`, expr: scaleDamage(d.expr, { cantrip: spell.level === 0, cantripScaling: info.cantripScaling, characterLevel: spell.characterLevel, castLevel: spell.castLevel, spellLevel: spell.level, upcast: info.upcast }) });
-  for (const h of info.healing) out.push({ label: `${name} healing`, expr: h });
+  // Healing rises with the slot as damage does (a 2024 Cure Wounds at 2nd level is 4d8).
+  for (const h of info.healing) out.push({ label: `${name} healing`, expr: scaleDamage(h, { cantrip: spell.level === 0, cantripScaling: info.cantripScaling, characterLevel: spell.characterLevel, castLevel: spell.castLevel, spellLevel: spell.level, upcast: info.upcast }) });
   return out;
 }
 
@@ -35,12 +36,13 @@ export function RollChips({ name, html, ctx, attackBonus, spell }: {
     ...d,
     expr: spell ? scaleDamage(d.expr, { cantrip: spell.level === 0, cantripScaling: info.cantripScaling, characterLevel: spell.characterLevel, castLevel: spell.castLevel, spellLevel: spell.level, upcast: info.upcast }) : d.expr,
   }));
-  if (attack === undefined && !dmg.length && !info.healing.length && !info.saves.length) return null;
+  const heal = info.healing.map((h) => (spell ? scaleDamage(h, { cantrip: spell.level === 0, cantripScaling: info.cantripScaling, characterLevel: spell.characterLevel, castLevel: spell.castLevel, spellLevel: spell.level, upcast: info.upcast }) : h));
+  if (attack === undefined && !dmg.length && !heal.length && !info.saves.length) return null;
   return (
     <div className="roll-chips-row">
       {attack !== undefined && <button className="roll-chip atk" onClick={() => requestRoll(`${name} attack`, `1d20${attack >= 0 ? "+" : ""}${attack}`, undefined, { kind: "attack" })}>Attack {sign(attack)}</button>}
       {dmg.map((d, i) => <button key={i} className="roll-chip dmg" onClick={() => requestRoll(`${name} ${d.type || "damage"}`, d.expr)}>{d.expr}{d.type ? ` ${d.type}` : " damage"}</button>)}
-      {info.healing.map((h, i) => <button key={`h${i}`} className="roll-chip heal" onClick={() => requestRoll(`${name} healing`, h)}>Heal {h}</button>)}
+      {heal.map((h, i) => <button key={`h${i}`} className="roll-chip heal" onClick={() => requestRoll(`${name} healing`, h)}>Heal {h}</button>)}
       {info.saves.map((s) => <span key={s.ability} className="roll-chip save" title={`${s.ability} saving throw`}>{s.dc !== undefined ? `DC ${s.dc} ` : ""}{SHORT[s.ability]} save</span>)}
     </div>
   );

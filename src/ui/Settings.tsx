@@ -1,3 +1,4 @@
+import { SRD_ATTRIBUTION } from "../aurora/srdAttribution";
 import { CLASS_ICON_CREDIT } from "./classIcons";
 import { gpuStatus, setGpuFast } from "../system";
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -208,6 +209,12 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             <input type="checkbox" checked={gpu.on} onChange={async (e) => { const on = e.target.checked; await setGpuFast(on); setGpu((g) => ({ ...g, on })); }} />
           </label>
         )}
+        <fieldset className="set-about">
+          <legend>About</legend>
+          <p className="muted">Soul Forge is compatible with fifth edition.</p>
+          <p className="muted">{SRD_ATTRIBUTION["5.1"]}</p>
+          <p className="muted">{SRD_ATTRIBUTION["5.2"]}</p>
+        </fieldset>
         <div className="set-row">
           <span><b>Backups</b><small className="muted"> Every character in one file</small></span>
           <span className="set-ctl">

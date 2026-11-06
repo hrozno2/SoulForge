@@ -75,9 +75,9 @@ export function StartTab({
     <div>
       {contentReady && sourceCount === 0 && (
         <section className="card callout">
-          <h2>Add content first</h2>
-          <p>Soul Forge ships without rules content. Add the AuroraLegacy link to download species, classes, spells and items.</p>
-          <button className="primary" onClick={goContent}>Go to Content</button>
+          <h2>The free rules are ready</h2>
+          <p>Soul Forge comes with the free SRD rules for both editions, so you can build a character right away. To use your other books, add them on the Content tab.</p>
+          <button onClick={goContent}>Go to Content</button>
         </section>
       )}
       <section className="card">
@@ -85,7 +85,7 @@ export function StartTab({
         <Hint id="home-1">Characters save on this computer as you work. Export gives you a file to back up or share.</Hint>
         <div className="row">
           <button className="primary" onClick={onNew}>{t("New character")}</button>
-          <button onClick={() => setAskLevel((v) => !v)} disabled={sourceCount === 0} aria-expanded={askLevel}>{t("Random character")}</button>
+          <button onClick={() => setAskLevel((v) => !v)} aria-expanded={askLevel}>{t("Random character")}</button>
           <button title="A character file, or a whole library file" onClick={async () => { const f = await pickFiles(["json"]); if (f === null) fileRef.current?.click(); else if (f[0]) importJson(f[0]); }}>Open file (.json)</button>
           <button title="Every character in one file, to keep or to carry to another device; open it here with Open file" onClick={async () => setMsg(await exportLibrary())}>Export library</button>
           <button onClick={async () => { const f = await pickFiles(["json"]); if (f === null) foreignRef.current?.click(); else if (f[0]) setMsg(await onImportForeign(f[0])); }}>Import Foundry / Roll20 / Plutonium</button>

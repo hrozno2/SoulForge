@@ -47,6 +47,7 @@ D0 (first step) settles this: copy the exact attribution statements from the off
 ## The steps
 
 ### D0. Licenses and the attribution (before anything ships)
+Done 2026-11-06: PDFs downloaded, statements copied into docs/LICENSES.md, Settings (About) and each bundle file. Chris to confirm before release.
 1. Fetch the official SRD 5.1 and SRD 5.2.1 PDFs (ask Chris before the download), copy their attribution statements
    verbatim into `docs/LICENSES.md`, the About box and the bundle's header.
 2. Decide the SRD edition per element: an entry flagged `srd52` is bundled as SRD 5.2 (2024), `srd` as 5.1 (2014).
@@ -68,13 +69,14 @@ D0 (first step) settles this: copy the exact attribution statements from the off
 
 ### D2. The SRD bundle, ready with no import
 
-State 2026-11-05: built but not shipped. `RULES_TIER=srd-bundle npx vitest run src/aurora/srdBundle.test.ts` writes
-`<cache>/srd/srd-5.1.json` and `srd-5.2.json` (2.0 and 2.4 MB, all 12 classes and 9 species each, 100 random characters
-each with no rule findings). The tier fails on purpose: flagged entries keep the book's wording, and 17 of them name
-things the SRD does not license (Strahd in Divine Sense, Tiamat in the Orb of Dragonkind, the Monster Manual in Wild Shape,
-a beholder in the Deck of Illusions). A word list only catches names; other text may also differ from the SRD. **Nothing
-is bundled until Chris decides how the text is sourced:** the official SRD's text matched by name (the plan's licence
-position, needs D0's PDFs), or the mechanics with no descriptions. The loader waits for that decision too.
+State 2026-11-06: **built and loaded, not released.** Chris chose official SRD text and approved the downloads. `RULES_TIER=srd-bundle
+npx vitest run src/aurora/srdBundle.test.ts` writes `public/srd/srd-5.1.json` and `srd-5.2.json` only if it passes: all 12 classes and
+9 species each, nothing naming a term in NOT_IN_SRD, 0 findings over 100 random characters each. Every description sentence is
+looked up in the official PDF's text (src/aurora/srdText.ts, <cache>/srd/pdf); what is not there is dropped (626 and 529 sentences,
+listed in <cache>/srd/srd-*.dropped.txt). The app reads the bundle first, so the user's own copy replaces it by id (addSrdBundle in
+content.ts). A new install says the free rules are ready; e2e/firstrun.spec.ts builds a character with nothing imported. Licences:
+docs/LICENSES.md, with one open point for Chris's review before a release. The check also found live display bugs for every 5e.tools
+user, fixed in ecbad37: upcast dice, "25 percent", difficult terrain, nested tags, 121 items with raw templates.
 
 1. A build step (`src/aurora/srdBundle.ts` and the `srd-bundle` tier) takes the 5e.tools entries flagged `srd`/`srd52`, runs them through the
    converter and writes `public/srd/srd-5.1.json` and `srd-5.2.json`: elements in the engine's format, with the CC-BY
@@ -88,6 +90,7 @@ position, needs D0's PDFs), or the mechanics with no descriptions. The loader wa
    rules check clean. A first-run test covers it.
 
 ### D3. The SRD API as a third check (test app and CI only)
+Step 1 done 2026-11-06 (`scripts/srd-api-cache.mjs`, 4.3 MB in <cache>/srd-api, monsters left out). The gate is next.
 1. `scripts/srd-api-cache.mjs` downloads the API's data once into `~/.soulforge-test/srd-api/` (2014 and 2024
    endpoints), so tests run offline and stay deterministic.
 2. New gate "against the SRD", in the full check: for SRD content, our engine's results agree with the API on

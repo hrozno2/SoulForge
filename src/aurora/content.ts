@@ -33,6 +33,22 @@ function hashText(text: string): string {
 /** The time each step of the last content load took, in milliseconds. */
 export let lastLoadTimes: Record<string, number> = {};
 
+/** Reads the bundled SRD rules into the registry. Returns what went wrong; outside a page (tests) there is nothing to read. */
+export async function addSrdBundle(reg: ARegistry, get: typeof fetch | undefined = typeof window === "undefined" ? undefined : window.fetch.bind(window)): Promise<string[]> {
+  if (!get) return [];
+  const errors: string[] = [];
+  for (const name of ["srd-5.1.json", "srd-5.2.json"]) {
+    try {
+      const r = await get(`${import.meta.env.BASE_URL}srd/${name}`);
+      if (!r.ok) throw new Error(`status ${r.status}`);
+      reg.addElements(((await r.json()) as { elements: AElement[] }).elements);
+    } catch (e) {
+      errors.push(`The built-in rules (${name}) could not be read: ${(e as Error).message}`);
+    }
+  }
+  return errors;
+}
+
 export async function buildRegistry(
   sources: SourceConfig[],
   xml: XmlApi = browserXml(),
@@ -52,6 +68,8 @@ export async function buildRegistry(
     total += urls.length;
   }
   let n = 0;
+  // The free SRD rules (Stage D2), first: a later element with the same id wins, so the user's own copy replaces them.
+  errors.push(...(await addSrdBundle(reg)));
   for (const { source, urls } of plan) {
     if (source.format === "5etools") {
       // The converted elements are kept, and reused while the source, its files and the app build are the same:

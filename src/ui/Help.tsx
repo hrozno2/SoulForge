@@ -4,7 +4,7 @@ const TIPS: Record<string, { title: string; items: string[] }> = {
   start: {
     title: "Home",
     items: [
-      "Add content first: the Content tab takes the AuroraLegacy link and keeps it updated.",
+      "The free SRD rules are built in. The Content tab adds your other books.",
       "Random character builds a full level 1 character you can edit.",
       "Characters save by themselves. Export gives you a .json file you can back up or share.",
     ],

@@ -110,7 +110,7 @@ Picked entries land in a source called *Picked from 5etools*. Everything you pic
 
 Whole data folders, ZIPs and loose `.json` files can also be imported from disk. Classes come in through that route (they need many linked files).
 
-You can also import character files from Foundry, Roll20 and Plutonium on the Home tab.
+You can also import character files from Foundry, Roll20 and Plutonium on the Home tab. For Roll20 both sheets are read, the older 5e sheet and the 2024 sheet, and files saved by VTTES or betterR20.
 
 ## 7. Themes
 

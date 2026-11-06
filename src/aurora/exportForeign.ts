@@ -193,24 +193,54 @@ function exportFoundryActor(r: Resolved): Record<string, unknown> {
   };
 }
 
+/** Where a feature comes from, in the OGL sheet's words. */
+const R20SOURCE = (type: string) => (/^(Class Feature|Archetype Feature|Class)/.test(type) ? "Class" : /^(Racial Trait|Sub Race|Race)/.test(type) ? "Racial" : /Feat/.test(type) ? "Feat" : /Background/.test(type) ? "Background" : "Other");
+
+/**
+ * A Roll20 character for its D&D 5e OGL sheet, in the field names and values a real saved sheet has (Chris's own files
+ * in the imports cache): a skill is "(@{pb}*@{x_type})" with its type 1 or 2, a multiclass needs its flag, spell flags are
+ * template snippets. Numbers an attack worked out here are written as literals, because a sheet does not recalculate a
+ * row until someone edits it. The file reads in both ways of bringing a character in: VTTES (character.name, bio) and
+ * betterR20 (character.attributes.name, blobBio).
+ */
 export function exportRoll20(r: Resolved): Record<string, unknown> {
   const sheet = buildSheet(r);
   const { c, race, background, subclass, classes } = details(r);
   const attribs: { name: string; current: string | number; max: string; id: string }[] = [];
   const set = (name: string, current: string | number) => attribs.push({ name, current, max: "", id: `-${rid(19)}` });
-  set("character_name", c.name || "Character");
+  const name = c.name || "Character";
+  set("character_name", name);
+  set("version", "4.21");
+  set("l1mancer_status", "completed");
   const main = classes[0];
   set("class", main?.name ?? "");
-  set("base_level", sheet.level);
+  set("base_level", main?.level ?? sheet.level);
   set("level", sheet.level);
   set("subclass", subclass);
-  classes.slice(1, 4).forEach((k, i) => { set(`multiclass${i + 1}`, k.name); set(`multiclass${i + 1}_lvl`, k.level); });
+  set("class_display", [subclass, main?.name].filter(Boolean).join(" "));
+  const die = main ? Number(String(r.reg.get(main.id)?.setters.hd?.value ?? "").replace(/^d/, "")) : 0;
+  if (die) set("hitdietype", die);
+  // base_level is the main class's level; the sheet adds the others while their flags are on.
+  classes.slice(1, 4).forEach((k, i) => { set(`multiclass${i + 1}`, k.name); set(`multiclass${i + 1}_lvl`, k.level); set(`multiclass${i + 1}_flag`, "1"); });
   set("race", race);
   set("background", background);
-  for (const a of ABILITY_IDS) { set(a, sheet.abilities.find((x) => x.id === a)!.score); if (sheet.abilities.find((x) => x.id === a)!.saveProficient) set(`${a}_save_prof`, `(@{pb})`); }
-  for (const s of sheet.skills) if (s.level !== "none") { set(`${R20SKILL(s.name.toLowerCase())}_prof`, "(@{pb}*@{ability_flag})"); if (s.level === "expertise") set(`${R20SKILL(s.name.toLowerCase())}_type`, 2); }
+  set("pb", sheet.proficiency);
+  set("speed", sheet.speed);
+  set("ac", sheet.ac.value);
+  for (const a of ABILITY_IDS) {
+    const line = sheet.abilities.find((x) => x.id === a)!;
+    set(a, line.score);
+    set(`${a}_base`, line.score);
+    if (line.saveProficient) set(`${a}_save_prof`, "(@{pb})");
+  }
+  for (const s of sheet.skills) if (s.level !== "none") {
+    const k = R20SKILL(s.name.toLowerCase());
+    set(`${k}_prof`, `(@{pb}*@{${k}_type})`);
+    set(`${k}_type`, s.level === "expertise" ? 2 : 1);
+  }
   set("hp", c.play.hp ?? sheet.hp);
   attribs[attribs.length - 1].max = String(sheet.hp);
+  if (c.play.tempHp) set("hp_temp", c.play.tempHp);
   for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) set(k, c.coins[k]);
   set("alignment", c.info.alignment ?? "");
   for (const [k, v] of Object.entries({ age: c.info.age, height: c.info.height, weight: c.info.weight, eyes: c.info.eyes, hair: c.info.hair, skin: c.info.skin, gender: c.info.gender, personality_traits: c.info.traits, ideals: c.info.ideals, bonds: c.info.bonds, flaws: c.info.flaws })) set(k, v ?? "");
@@ -218,19 +248,61 @@ export function exportRoll20(r: Resolved): Record<string, unknown> {
   const row = (section: string, fields: Record<string, string | number>) => {
     const id = `-${rid(19)}`;
     for (const [k, v] of Object.entries(fields)) set(`repeating_${section}_${id}_${k}`, v);
+    return id;
   };
+  const caster = sheet.casting[0];
+  if (caster?.ability) set("spellcasting_ability", `@{${caster.ability.toLowerCase()}_mod}+`);
+  // The inventory, in the words the sheet's own compendium drop writes: its weapons make attacks, its armor gives AC.
   for (const it of c.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;
-    row("inventory", { itemname: itemLabel(it, el?.name) || "Item", itemcount: it.qty, equipped: it.equipped ? 1 : 0 });
+    const st = el?.setters;
+    const mods: string[] = [];
+    if (el?.type === "Weapon" && st?.damage) {
+      mods.push(`Item Type: ${el.supports.includes("ranged") ? "Ranged" : "Melee"} Weapon`, `Damage: ${st.damage.value}`);
+      if (st.damage.attrs?.type) mods.push(`Damage Type: ${st.damage.attrs.type[0].toUpperCase()}${st.damage.attrs.type.slice(1)}`);
+      if (st.versatile) mods.push(`Alternate Damage: ${st.versatile.value}`);
+      if (st.range) mods.push(`Range: ${st.range.value}`);
+      if (st.attackBonus) mods.push(`Attack +${st.attackBonus.value}`, `Damage +${st.damageBonus?.value ?? st.attackBonus.value}`);
+    } else if (el?.type === "Armor" && st?.armorClass) {
+      mods.push(`Item Type: ${st.armor?.value === "Shield" ? "Shield" : `${st.armor?.value ?? "Light"} Armor`}`, `AC: ${String(st.armorClass.value).replace(/^\+/, "")}`);
+    } else mods.push(`Item Type: ${st?.category?.value ?? "Adventuring Gear"}`);
+    const props = el?.type === "Weapon" ? el.supports.filter((x) => /^[a-z-]+$/.test(x) && !/^(simple|martial|ranged)$/.test(x)).join(", ") : "";
+    row("inventory", { itemname: itemLabel(it, el?.name) || "Item", itemcount: it.qty, equipped: it.equipped ? 1 : 0, itemweight: st?.weight?.attrs?.lb ?? "", itemcontent: stripTags(el?.description ?? it.custom?.description ?? ""), itemmodifiers: mods.join(", "), itemproperties: props, hasattack: el?.type === "Weapon" ? 1 : 0, useasresource: 0, inventorysubflag: 0 });
   }
+  // Attacks with the numbers worked out here: the sheet shows these until someone edits the row.
+  for (const a of sheet.attacks) {
+    const dice = /^\s*(\d*d\d+|\d+)(?:\s*([+-])\s*(\d+))?/.exec(a.damage);
+    const flat = dice?.[3] ? `${dice[2]}${dice[3]}` : "";
+    const range = a.elId ? r.reg.get(a.elId)?.setters.range?.value : undefined;
+    row("attack", { atkname: a.name, atkflag: "{{attack=1}}", atkattr_base: "0", atkmod: a.bonus, atkprofflag: "0", atkbonus: `${a.bonus >= 0 ? "+" : ""}${a.bonus}`, atkrange: range ?? "", dmgflag: "{{damage=1}} {{dmg1flag=1}}", dmgbase: dice?.[1] ?? a.damage, dmgattr: "0", dmgmod: flat, dmgtype: a.damageType, atkdmgtype: `${a.damage} ${a.damageType} `, atk_desc: a.notes ?? "", "options-flag": 0 });
+  }
+  // Spells: with their facts and text. "(A)" is how the sheet's players mark what does not count as prepared.
   const seen = new Set<string>();
-  for (const line of sheet.casting) for (const p of [...line.cantripsKnown, ...line.spells, ...line.granted]) {
-    const el = r.reg.get(p.id);
-    if (!el || seen.has(el.id)) continue;
-    seen.add(el.id);
-    const lvl = Number(el.setters.level?.value) || 0;
-    row(lvl === 0 ? "spell-cantrip" : `spell-${lvl}`, { spellname: el.name, spelllevel: lvl === 0 ? "cantrip" : lvl });
+  for (const line of sheet.casting) {
+    const always = new Set(line.granted.map((p) => p.id));
+    for (const p of [...line.cantripsKnown, ...line.spells, ...line.granted]) {
+      const el = r.reg.get(p.id);
+      if (!el || seen.has(el.id)) continue;
+      seen.add(el.id);
+      const st = el.setters;
+      const lvl = Number(st.level?.value) || 0;
+      const flag = (k: string) => st[k]?.value === "true";
+      const conc = flag("isConcentration") || /concentration/i.test(st.duration?.value ?? "");
+      row(lvl === 0 ? "spell-cantrip" : `spell-${lvl}`, {
+        spellname: `${el.name}${lvl && always.has(p.id) ? " (A)" : ""}`, spelllevel: lvl === 0 ? "cantrip" : lvl, spellschool: (st.school?.value ?? "").toLowerCase(), spellcastingtime: st.time?.value ?? "", spellrange: st.range?.value ?? "", spellduration: (st.duration?.value ?? "").replace(/^Concentration, /, "").replace(/^u/, "U"),
+        spellcomp_v: flag("hasVerbalComponent") ? "{{v=1}}" : "0", spellcomp_s: flag("hasSomaticComponent") ? "{{s=1}}" : "0", spellcomp_m: flag("hasMaterialComponent") ? "{{m=1}}" : "0", spellcomp_materials: st.materialComponent?.value ?? "",
+        spellconcentration: conc ? "{{concentration=1}}" : "0", spellritual: flag("isRitual") ? "{{ritual=1}}" : "0", spelldescription: stripTags(el.description ?? ""), spell_ability: "spell", spelloutput: "SPELLCARD", spellprepared: lvl && !always.has(p.id) && line.prepare ? 1 : 0, "details-flag": 0, "options-flag": 0,
+      });
+    }
   }
-  for (const f of sheet.features.filter((x) => x.type === "Feat")) row("traits", { name: f.name, source: "Feat", description: stripTags(f.text) });
-  return { schema_version: 3, type: "character", character: { oldId: rid(19), name: c.name || "Character", avatar: "", bio: html(c.info.backstory ?? ""), gmnotes: "", defaulttoken: "", tags: "", controlledby: "", inplayerjournals: "", attribs, abilities: [] } };
+  // Everything the character has from its class, species, background and feats, not only feats.
+  for (const f of sheet.features) {
+    const source = R20SOURCE(f.type);
+    row("traits", { name: f.name, source, source_type: source === "Class" ? main?.name ?? "" : "", description: stripTags(f.text), "options-flag": 0, display_flag: "on" });
+  }
+  const pr = sheet.proficiencies;
+  for (const [list, type] of [[pr.languages, "LANGUAGE"], [pr.armor, "ARMOR"], [pr.weapons, "WEAPON"], [pr.other, "OTHER"]] as const) for (const n of list) row("proficiencies", { name: n, prof_type: type, "options-flag": 0 });
+  for (const n of pr.tools) row("tool", { toolname: n, toolbonus_base: "(@{pb})", toolattr_base: "?{Attribute?|Strength,@{strength_mod}|Dexterity,@{dexterity_mod}|Constitution,@{constitution_mod}|Intelligence,@{intelligence_mod}|Wisdom,@{wisdom_mod}|Charisma,@{charisma_mod}}", "options-flag": 0 });
+  const bio = html(c.info.backstory ?? "");
+  return { schema_version: 3, type: "character", character: { oldId: rid(19), name, avatar: "", bio, gmnotes: "", defaulttoken: "", tags: "", controlledby: "", inplayerjournals: "", attributes: { name }, blobBio: bio, blobGmNotes: "", blobDefaultToken: "", attribs, abilities: [] } };
 }

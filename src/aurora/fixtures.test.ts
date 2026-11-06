@@ -134,6 +134,19 @@ describe("test ruleset", () => {
 });
 
 describe("export to other tools", () => {
+  it("Roll20: the fields are those of a real saved sheet, and a multiclass counts", () => {
+    const k = [...reg.ofType("Class")];
+    const c2 = build(reg.ofType("Race")[0].id, reg.ofType("Background")[0].id, k[0].id, 3);
+    c2.classes.push({ classId: k[1].id, level: 2 });
+    c2.name = "Two Classes";
+    const out = exportRoll20(resolve(c2, reg)) as { character: { attribs: { name: string; current: unknown }[]; attributes: { name: string }; blobBio: string } };
+    const v = (n: string) => out.character.attribs.find((a) => a.name === n)?.current;
+    expect([v("base_level"), v("level"), v("multiclass1_flag"), v("multiclass1_lvl"), v("version")]).toEqual([3, 5, "1", 2, "4.21"]);
+    expect(out.character.attributes.name).toBe("Two Classes");
+    for (const a of out.character.attribs) if (/_prof$/.test(a.name) && !/_save_/.test(a.name) && a.current) expect(a.current).toMatch(/^\(@\{pb\}\*@\{[a-z_]+_type\}\)$/);
+    const back = importForeignCharacter(JSON.parse(JSON.stringify(out)), reg);
+    expect(back.character.classes.map((x) => x.level)).toEqual([3, 2]);
+  });
   const ch = build(reg.ofType("Race")[0].id, reg.ofType("Background")[0].id, reg.ofType("Class")[0].id, 5);
   ch.name = "Round Trip";
   const r = resolve(ch, reg);

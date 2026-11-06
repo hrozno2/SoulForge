@@ -5,6 +5,7 @@
  * reports what it could not place.
  */
 import { logEvent } from "../logbook";
+import { isRoll20Store, storeToAttribs, type Attrib } from "./roll20Store";
 import { repeatedPicks } from "./rulesCheck";
 import { ABILITY_IDS, newCharacter, uid, type AbilityId, type Character } from "./character";
 import type { AElement } from "./types";
@@ -34,6 +35,8 @@ export function detectCharacterFormat(data: unknown): "foundry" | "roll20" | "ch
   if (d.version === 2 && d.abilityBase) return "charforge";
   if (d.system && Array.isArray(d.items)) return "foundry";
   if (Array.isArray(d.attribs) || Array.isArray(d.character?.attribs) || Array.isArray(d.attributes)) return "roll20";
+  // betterR20's own file holds one character or a list.
+  if (Array.isArray(d.characters) && Array.isArray(d.characters[0]?.attribs)) return "roll20";
   return "unknown";
 }
 
@@ -1399,12 +1402,20 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
 
 // ---------------------------------------------------------------- Roll20
 
-interface Attrib { name: string; current?: unknown; max?: unknown }
-
 export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   const b = new Importer(reg);
-  const raw = data.attribs ?? data.character?.attribs ?? data.attributes;
-  const attribs: Attrib[] = Array.isArray(raw) ? raw : [];
+  // The character itself: Roll20's and VTTES's file (character), or betterR20's (character, or characters to choose from;
+  // it keeps the name in attributes and the bio in blobBio).
+  const many = Array.isArray(data.characters) ? (data.characters as Json[]) : [];
+  const entry: Json = data.character ?? many[0] ?? data;
+  if (many.length > 1) b.notes.push(`This file holds ${many.length} characters; the first was imported.`);
+  const raw = entry.attribs ?? entry.attributes;
+  const given: Attrib[] = Array.isArray(raw) ? raw : [];
+  // The 2024 sheet keeps everything in one attribute: read as the older sheet's attributes, which win if both exist.
+  const storeAttr = given.find((a) => a?.name === "store");
+  const has2024Store = !!storeAttr && isRoll20Store(storeAttr.current);
+  const stated = new Set(given.map((a) => a?.name));
+  const attribs: Attrib[] = has2024Store ? [...given.filter((a) => a !== storeAttr), ...storeToAttribs(storeAttr!.current).filter((a) => !stated.has(a.name))] : given;
   const flat = new Map<string, Attrib>();
   const rows = new Map<string, Map<string, Record<string, string>>>();
   const rowRe = /^repeating_([a-z0-9-]+?)_(-[A-Za-z0-9_-]{19})_(.+)$/;
@@ -1420,7 +1431,7 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
     } else flat.set(a.name, a);
   }
   const val = (name: string) => String(flat.get(name)?.current ?? "").trim();
-  b.ch.name = String(data.name ?? data.character?.name ?? val("character_name") ?? "");
+  b.ch.name = String(entry.name ?? (Array.isArray(entry.attributes) ? undefined : entry.attributes?.name) ?? val("character_name") ?? "");
 
   const scores: Partial<Record<AbilityId, number>> = {};
   for (const a of ABILITY_IDS) {
@@ -1428,22 +1439,24 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
     const n = Number(val(a) || val(`${a}_base`) || 10);
     if (Number.isFinite(n) && n > 0) scores[a] = n;
   }
-  const lvl = Math.min(20, Math.max(1, Number(val("base_level") || val("level")) || 1));
   const className = val("class").replace(/\d+/g, "").trim();
   // The class features the sheet lists tell the 2014 and the 2024 class apart.
   const traitRows = [...(rows.get("traits")?.values() ?? [])];
   const featureNames = new Set(traitRows.filter((f) => /class/i.test(f.source ?? "")).map((f) => featureKey(f.name ?? "")).filter(Boolean));
   b.speciesTraits = new Set(traitRows.filter((f) => /rac/i.test(f.source ?? "")).map((f) => featureKey(f.name ?? "")).filter(Boolean));
-  const cls = className ? classByFeatures(reg, className, featureNames) : undefined;
+  const cls = className ? classByFeatures(reg, className, featureNames, has2024Store ? "2024" : undefined) : undefined;
   if (cls) b.edition = isModern(cls) ? "2024" : "2014";
   // Multiclass levels sit in multiclass1..3 with their own level; the main class level is what is left.
   const extraClasses: { name: string; level: number }[] = [];
   for (const i of [1, 2, 3]) {
     const n = val(`multiclass${i}`);
     const l = Number(val(`multiclass${i}_lvl`)) || 0;
-    if (n && l > 0) extraClasses.push({ name: n, level: l });
+    // A class whose box is switched off on the sheet is not counted by it either.
+    if (n && l > 0 && val(`multiclass${i}_flag`) !== "0") extraClasses.push({ name: n, level: l });
   }
-  const mainLevel = Math.max(1, lvl - extraClasses.reduce((t, c) => t + c.level, 0));
+  // "level" is the sheet's total; "base_level" is the first class alone.
+  const others = extraClasses.reduce((t, c) => t + c.level, 0);
+  const mainLevel = Math.min(20, Math.max(1, val("level") ? Number(val("level")) - others : Number(val("base_level")) || 1));
   if (cls) {
     b.ch.classes.push({ classId: cls.id, level: mainLevel });
     b.matched.push(`${cls.name} (class)`);
@@ -1540,7 +1553,7 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   info.ideals = val("ideals");
   info.bonds = val("bonds");
   info.flaws = val("flaws");
-  const bio = String(data.bio ?? data.character?.bio ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const bio = String(entry.bio ?? entry.blobBio ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   if (bio) info.backstory = bio.slice(0, 3000);
   const xp = Number(val("xp"));
   if (Number.isFinite(xp) && xp > 0) b.ch.xp = xp;

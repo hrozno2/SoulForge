@@ -519,15 +519,24 @@ function withItemEntries(i: J, ctx: Ctx): J {
 // Playtest codes as Plutonium tells them: "UA..." (Unearthed Arcana) and "XUA..." (the One D&D playtest).
 const srcName = (ctx: Ctx, code: string) => ctx.books[code] ?? (/^X?UA[A-Z0-9]/.test(code) ? `Unearthed Arcana: ${code.replace(/^X?UA/, "").replace(/([a-z])([A-Z0-9])/g, "$1 $2").replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")}` : code);
 
+/** "10 minutes", "1 mile": 5e.tools gives a number and a unit, and its unit is not always the right number ("1 miles", "8 hour"). */
+function counted(amount: unknown, unit: unknown): string {
+  const u = String(unit ?? "");
+  if (amount === undefined || amount === null || amount === "") return u.trim();
+  if (u === "feet" || u === "foot") return `${amount} ${Number(amount) === 1 ? "foot" : "feet"}`;
+  if (!/^(?:round|minute|hour|day|week|month|year|mile|turn|action)s?$/.test(u)) return `${amount} ${u}`;
+  return `${amount} ${u.replace(/s$/, "")}${Number(amount) === 1 ? "" : "s"}`;
+}
+
 function convertSpell(s: J, ctx: Ctx): AElement {
   const comp = s.components ?? {};
-  const time = (s.time?.[0] ? `${s.time[0].number ?? 1} ${s.time[0].unit}` : "").replace(/^1 action$/, "Action").replace(/^1 bonus$/, "Bonus Action").replace(/^1 reaction$/, "Reaction");
+  const time = (s.time?.[0] ? counted(s.time[0].number ?? 1, s.time[0].unit) : "").replace(/^1 action$/, "Action").replace(/^1 bonus$/, "Bonus Action").replace(/^1 reaction$/, "Reaction");
   const r = s.range;
   // An area around the caster is "Self (15-foot cone)": its size is not a range (the sheet read "15 feet").
   const area = /^(cone|radius|sphere|hemisphere|line|cube|emanation)$/.test(String(r?.type)) && r?.distance?.amount ? `Self (${r.distance.amount}-${String(r.distance.type).replace(/^feet$/, "foot").replace(/^miles?$/, "mile")} ${r.type})` : "";
-  const range = area || (r?.type === "special" ? "Special" : r?.distance ? (r.distance.type === "self" || r.type === "self" ? "Self" : `${r.distance.amount ?? ""} ${r.distance.type}`.trim()) : "");
+  const range = area || (r?.type === "special" ? "Special" : r?.distance ? (r.distance.type === "self" || r.type === "self" ? "Self" : counted(r.distance.amount, r.distance.type)) : "");
   const d = s.duration?.[0];
-  const dur = d ? (d.type === "instant" ? "Instantaneous" : d.type === "permanent" ? "Until dispelled" : d.type === "special" ? "Special" : `${d.concentration ? "Concentration, up to " : ""}${d.duration?.amount ?? ""} ${d.duration?.type ?? ""}`.trim()) : "";
+  const dur = d ? (d.type === "instant" ? "Instantaneous" : d.type === "permanent" ? "Until dispelled" : d.type === "special" ? "Special" : `${d.concentration ? "Concentration, up to " : ""}${counted(d.duration?.amount, d.duration?.type)}`.trim()) : "";
   const classes = ctx.spellClasses[s.source]?.[String(s.name).toLowerCase()] ?? s.classes?.fromClassList?.map((c: J) => c.name) ?? [];
   const mat = comp.m ? (typeof comp.m === "string" ? comp.m : comp.m.text ?? "") : "";
   const setters: Record<string, SetterValue> = {

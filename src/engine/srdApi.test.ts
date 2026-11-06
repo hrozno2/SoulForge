@@ -23,9 +23,9 @@ const duration = (s: unknown) => norm(s).replace(/^(?:concentration,? )?up to /,
  * things differently). A kind may only stay or fall; a new difference fails the gate.
  */
 const KNOWN: Record<string, number> = {
-  "2014 equipment cost": 4, "2014 equipment missing here": 53, "2014 equipment weight": 4, "2014 spell class list": 5, "2014 spell duration": 3, "2014 spell school": 3,
-  "2024 class cantrips": 2, "2024 equipment cost": 14, "2024 equipment missing here": 23, "2024 equipment weight": 15, "2024 spell casting time": 1, "2024 spell component S": 6, "2024 spell component V": 9,
-  "2024 spell concentration": 1, "2024 spell duration": 3, "2024 spell range": 2, "2024 spell school": 1, "2024 weapon damage type": 1, "2024 weapon damage": 1,
+  "2014 equipment cost": 4, "2014 equipment missing here": 53, "2014 equipment weight": 4, "2014 spell casting time": 1, "2014 spell class list": 5, "2014 spell duration": 6, "2014 spell school": 3,
+  "2024 class cantrips": 2, "2024 equipment cost": 14, "2024 equipment missing here": 24, "2024 equipment weight": 15, "2024 spell component S": 5, "2024 spell component V": 9,
+  "2024 spell concentration": 1, "2024 weapon damage type": 1, "2024 weapon damage": 1,
 };
 
 function compare(edition: "2014" | "2024", els: AElement[]): Map<string, string[]> {

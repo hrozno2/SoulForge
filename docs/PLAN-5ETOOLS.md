@@ -47,7 +47,7 @@ D0 (first step) settles this: copy the exact attribution statements from the off
 ## The steps
 
 ### D0. Licenses and the attribution (before anything ships)
-Done 2026-11-06: PDFs downloaded, statements copied into docs/LICENSES.md, Settings (About) and each bundle file. Chris to confirm before release.
+Done 2026-11-06: PDFs downloaded, statements copied into docs/LICENSES.md, Settings (About) and each bundle file. Chris confirmed: it may ship as long as it stays matched in content to the SRD entries, and where we differ we follow the SRD.
 1. Fetch the official SRD 5.1 and SRD 5.2.1 PDFs (ask Chris before the download), copy their attribution statements
    verbatim into `docs/LICENSES.md`, the About box and the bundle's header.
 2. Decide the SRD edition per element: an entry flagged `srd52` is bundled as SRD 5.2 (2024), `srd` as 5.1 (2014).
@@ -78,6 +78,8 @@ content.ts). A new install says the free rules are ready; e2e/firstrun.spec.ts b
 docs/LICENSES.md, with one open point for Chris's review before a release. The check also found live display bugs for every 5e.tools
 user, fixed in ecbad37: upcast dice, "25 percent", difficult terrain, nested tags, 121 items with raw templates.
 
+Then 2026-11-06, Chris: follow the SRD wherever we differ. src/aurora/srdPdf.ts reads the PDFs as structure and src/aurora/srdFollow.ts applies them: exact spell lists, spell facts and text, item rarity, gear tables, the text of items, features, species, feats and backgrounds. The build fails if a spell or listed entry is missing or extra, or a class table has a feature we lack. docs/SRD-DIFF.md has the state. Live bugs for every 5e.tools user found on the way: "8 hour", "10 minute" and "1 miles" in spell facts.
+
 1. A build step (`src/aurora/srdBundle.ts` and the `srd-bundle` tier) takes the 5e.tools entries flagged `srd`/`srd52`, runs them through the
    converter and writes `public/srd/srd-5.1.json` and `srd-5.2.json`: elements in the engine's format, with the CC-BY
    attribution in the header.
@@ -93,7 +95,7 @@ user, fixed in ecbad37: upcast dice, "25 percent", difficult terrain, nested tag
 Steps 1 and 4 done 2026-11-06 (`scripts/srd-api-cache.mjs`, 4.3 MB in <cache>/srd-api, monsters left out). `RULES_TIER=srd-api` (src/engine/srdApi.test.ts, in the
 full check) compares spells, equipment, hit dice, saves, slots, cantrips, species speed and names. It found one real bug (an area spell's range read "15 feet", not "Self
 (15-foot cone)"); the rest were settled against the PDFs in docs/SRD-DIFF.md, nearly all API mistakes, and a kind's count may only fall. Not yet compared: spells known, features
-by level, subclass levels, species traits, feat prerequisites, conditions. Step 3 (the API in the rules check) is also still to do.
+by level, subclass levels, species traits, feat prerequisites, conditions against the API: features by level are now checked against the PDFs' class tables instead (better source), and species traits and feats follow the PDFs' text. Step 3 (the API in the rules check) is still to do.
 1. `scripts/srd-api-cache.mjs` downloads the API's data once into `~/.soulforge-test/srd-api/` (2014 and 2024
    endpoints), so tests run offline and stay deterministic.
 2. New gate "against the SRD", in the full check: for SRD content, our engine's results agree with the API on

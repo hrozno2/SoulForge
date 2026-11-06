@@ -4,6 +4,8 @@
  * one entry of each. Names follow the SRD where it names a thing differently ("Melf's Acid Arrow" is "Acid Arrow").
  */
 import { convertFiveTools } from "./fivetools";
+import { followSrd, type FollowReport } from "./srdFollow";
+import type { SrdSection } from "./srdPdf";
 import { OWN_TEXT_TYPES, srdDescription } from "./srdText";
 import type { AElement } from "./types";
 
@@ -44,22 +46,26 @@ export function srdFiles(files: Files, edition: SrdEdition): { files: Files; ren
 const swapNames = (text: string, renames: [string, string][]) => renames.reduce((t, [from, to]) => t.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), to), text);
 
 /** The bundle's elements for one edition: converted, labelled as the SRD, with the SRD's names and only its words. */
-export function srdElements(files: Files, edition: SrdEdition, corpus?: string, dropped?: string[]): AElement[] {
+export function srdElements(files: Files, edition: SrdEdition, corpus?: string, dropped?: string[], sections?: SrdSection[], follow?: { report?: FollowReport }, tableRows?: string[]): AElement[] {
   const { files: marked, renames } = srdFiles(files, edition);
   // Longest first, so a name inside a longer one is not swapped half way.
   const swaps = [...renames].sort((a, b) => b[0].length - a[0].length);
+  const named = convertFiveTools({ files: marked as never }).map((el) => ({ ...el, name: swapNames(el.name, swaps), ...(el.description ? { description: swapNames(el.description, swaps) } : {}) }));
+  // The SRD decides: what the PDF has replaces what 5e.tools' copy says, before the word check reads the rest.
+  let following = named;
+  let fromPdf = new Set<AElement>();
+  if (sections) { const f = followSrd(named, sections, edition, corpus, tableRows); following = f.elements; fromPdf = f.report.fromPdf; if (follow) follow.report = f.report; }
   const text = (el: AElement, html: string) => {
-    const named = swapNames(html, swaps);
     // The generic Ability Score Improvement feat is the app's own wording of a rule, as are the types in OWN_TEXT_TYPES.
-    if (!corpus || OWN_TEXT_TYPES.has(el.type) || el.name === "Ability Score Improvement") return named;
-    const r = srdDescription(named, corpus, NOT_IN_SRD);
+    if (!corpus || OWN_TEXT_TYPES.has(el.type) || el.name === "Ability Score Improvement") return html;
+    const r = srdDescription(html, corpus, NOT_IN_SRD);
     for (const d of r.dropped) dropped?.push(`${el.type} | ${el.name} | ${d}`);
     return r.html;
   };
-  return convertFiveTools({ files: marked as never }).map((el) => ({
+  return following.map((el) => ({
     ...el,
-    name: swapNames(el.name, swaps),
-    description: el.description ? text(el, el.description) : el.description,
+    // What came from the PDF is the SRD's by definition.
+    description: el.description && !fromPdf.has(el) ? text(el, el.description) : el.description,
     ...(el.sheet ? { sheet: { ...el.sheet, descriptions: el.sheet.descriptions?.map((d) => ({ ...d, text: d.text ? text(el, d.text) : d.text })) } } : {}),
     source: SRD_SOURCE[edition],
   }));

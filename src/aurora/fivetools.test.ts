@@ -314,3 +314,15 @@ describe("spell range", () => {
     expect(rangeOf({ type: "point", distance: { type: "self" } })).toBe("Self");
   });
 });
+
+describe("spell facts read in the right number", () => {
+  const facts = (extra: Record<string, unknown>) => convertFiveTools({ files: { "spells.json": { spell: [{ name: "X", source: "PHB", level: 1, school: "A", time: [{ number: 1, unit: "action" }], range: { type: "point", distance: { type: "feet", amount: 30 } }, duration: [{ type: "timed", duration: { type: "hour", amount: 8 } }], entries: ["x"], ...extra }] } } as never }).find((e) => e.name === "X")!.setters;
+  it("plural when more than one, singular for one", () => {
+    expect(facts({}).duration.value).toBe("8 hours");
+    expect(facts({ duration: [{ type: "timed", duration: { type: "minute", amount: 10 }, concentration: true }] }).duration.value).toBe("Concentration, up to 10 minutes");
+    expect(facts({ duration: [{ type: "timed", duration: { type: "minute", amount: 1 } }] }).duration.value).toBe("1 minute");
+    expect(facts({ range: { type: "point", distance: { type: "miles", amount: 1 } } }).range.value).toBe("1 mile");
+    expect(facts({ time: [{ number: 10, unit: "minute" }] }).time.value).toBe("10 minutes");
+    expect(facts({ time: [{ number: 1, unit: "bonus" }] }).time.value).toBe("Bonus Action");
+  });
+});

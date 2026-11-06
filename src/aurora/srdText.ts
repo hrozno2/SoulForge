@@ -37,7 +37,7 @@ const inSrd = (text: string, corpus: string) => {
   return hit / (words.length - RUN + 1) >= NEARLY;
 };
 /** What the converter itself writes rather than copies: facts in the app's own words. */
-const OWN_WORDS = /^(?:Spells?: |Equipment: |Hit die |\(a\) |\([ab]\) |You can use the \w+ mastery property of |You have a \+\d bonus to |While holding this shield, you have a \+\d bonus |You have resistance to \w+ damage while |When you drink this potion, you have resistance to \w+ damage )|, from (?:PHB|XPHB)\.$/i;
+const OWN_WORDS = /^(?:You gain a feature from your \w+ subclass\.$|You gain a level \d \w+ spell of your choice\.$|Spells?: |Equipment: |Hit die |\(a\) |\([ab]\) |You can use the \w+ mastery property of |You have a \+\d bonus to |While holding this shield, you have a \+\d bonus |You have resistance to \w+ damage while |When you drink this potion, you have resistance to \w+ damage )|, from (?:PHB|XPHB)\.$/i;
 
 /**
  * The description with only what the SRD says. A block whose sentences are all there stays as it was, with its

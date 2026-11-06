@@ -330,3 +330,25 @@ export function srdClassTables(xml: string): Map<string, SrdClassRow[]> {
   }
   return out;
 }
+
+/** "Core Bard Traits" (5.2.1): bold labels on the left, values beside them, as label to value. */
+export function srdCoreTraits(xml: string): Map<string, Record<string, string>> {
+  const runs = runsOf(xml);
+  const out = new Map<string, Record<string, string>>();
+  for (let i = 0; i < runs.length; i++) {
+    const m = /^Core (\w+) Traits$/.exec(runs[i].text);
+    if (!m) continue;
+    const t: Record<string, string> = {};
+    let label = "";
+    let inLabel = false;
+    for (let j = i + 1; j < runs.length && !isHeading(runs[j]) && !isBody(runs[j]) && !/Features$/.test(runs[j].text); j++) {
+      const r = runs[j];
+      if (/^<b>/.test(r.html)) { label = inLabel ? `${label} ${r.text}` : r.text; inLabel = true; t[label] = ""; continue; }
+      if (inLabel) { const v = t[label]; delete t[label]; label = label.replace(/\s+/g, " ").trim(); t[label] = v; }
+      inLabel = false;
+      if (label) t[label] = `${t[label] ?? ""} ${r.text}`.trim();
+    }
+    out.set(m[1], t);
+  }
+  return out;
+}

@@ -14,6 +14,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { srdClassTables, srdSections, srdSpell, srdTableRows } from "./srdPdf";
 import { followSrd, gearRow, type FollowReport } from "./srdFollow";
+import { compareMechanics } from "./srdMechanics";
 
 describe("srdFiles", () => {
   const files = { "a.json": { _meta: { x: 1 }, itemProperty: [{ abbreviation: "F" }], spell: [{ name: "Light", srd: true }, { name: "Melf's Acid Arrow", srd: "Acid Arrow" }, { name: "New", srd52: true }, { name: "Hex" }], magicvariant: [{ name: "+1 Weapon", inherits: { srd: true } }, { name: "Odd", inherits: {} }] } };
@@ -137,6 +138,10 @@ describe.skipIf(!C || process.env.RULES_TIER !== "srd-bundle")("the bundle", () 
       }
       writeFileSync(join(C!, "srd", `srd-${edition}.weapons.txt`), weaponLines.join("\n"));
       expect(weaponLines).toEqual([]);
+      // What classes, species, backgrounds and feats give, against the SRD's words.
+      const mech = compareMechanics(elements, srdSections(xmlText), xmlText, edition);
+      writeFileSync(join(C!, "srd", `srd-${edition}.mechanics.txt`), mech.join("\n"));
+      expect(mech).toEqual([]);
       // Every spell the SRD has is here with its facts; nothing else is; every class table's features are here.
       const spells = elements.filter((e) => e.type === "Spell");
       const pdfSpells = srdSections(xmlText).map(srdSpell).filter((x) => !!x);

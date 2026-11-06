@@ -303,3 +303,14 @@ describe("inline tags show what the book shows", () => {
     ["{@spell fire shield||warm shield}", "warm shield"], ["{@item dart|phb|darts}", "darts"], ["{@spell Identify|XPHB}", "Identify"], ["{@filter demons|bestiary|tag=demon}", "demons"],
   ])("%s", (raw, want) => { expect(show(raw)).toBe(want); });
 });
+
+describe("spell range", () => {
+  const rangeOf = (range: unknown) => convertFiveTools({ files: { "spells/spells-x.json": { spell: [{ name: "S", source: "PHB", level: 1, school: "V", time: [{ number: 1, unit: "action" }], range, components: { v: true }, duration: [{ type: "instant" }], entries: ["x"] }] } } } as never).find((e) => e.type === "Spell")!.setters?.range?.value;
+  it("an area around the caster is Self with its size; a point is a range", () => {
+    expect(rangeOf({ type: "cone", distance: { type: "feet", amount: 15 } })).toBe("Self (15-foot cone)");
+    expect(rangeOf({ type: "radius", distance: { type: "feet", amount: 10 } })).toBe("Self (10-foot radius)");
+    expect(rangeOf({ type: "point", distance: { type: "feet", amount: 150 } })).toBe("150 feet");
+    expect(rangeOf({ type: "point", distance: { type: "touch" } })).toBe("touch");
+    expect(rangeOf({ type: "point", distance: { type: "self" } })).toBe("Self");
+  });
+});

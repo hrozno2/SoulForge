@@ -523,7 +523,9 @@ function convertSpell(s: J, ctx: Ctx): AElement {
   const comp = s.components ?? {};
   const time = (s.time?.[0] ? `${s.time[0].number ?? 1} ${s.time[0].unit}` : "").replace(/^1 action$/, "Action").replace(/^1 bonus$/, "Bonus Action").replace(/^1 reaction$/, "Reaction");
   const r = s.range;
-  const range = r?.type === "special" ? "Special" : r?.distance ? (r.distance.type === "self" || r.type === "self" ? "Self" : `${r.distance.amount ?? ""} ${r.distance.type}`.trim()) : "";
+  // An area around the caster is "Self (15-foot cone)": its size is not a range (the sheet read "15 feet").
+  const area = /^(cone|radius|sphere|hemisphere|line|cube|emanation)$/.test(String(r?.type)) && r?.distance?.amount ? `Self (${r.distance.amount}-${String(r.distance.type).replace(/^feet$/, "foot").replace(/^miles?$/, "mile")} ${r.type})` : "";
+  const range = area || (r?.type === "special" ? "Special" : r?.distance ? (r.distance.type === "self" || r.type === "self" ? "Self" : `${r.distance.amount ?? ""} ${r.distance.type}`.trim()) : "");
   const d = s.duration?.[0];
   const dur = d ? (d.type === "instant" ? "Instantaneous" : d.type === "permanent" ? "Until dispelled" : d.type === "special" ? "Special" : `${d.concentration ? "Concentration, up to " : ""}${d.duration?.amount ?? ""} ${d.duration?.type ?? ""}`.trim()) : "";
   const classes = ctx.spellClasses[s.source]?.[String(s.name).toLowerCase()] ?? s.classes?.fromClassList?.map((c: J) => c.name) ?? [];

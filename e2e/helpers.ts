@@ -43,7 +43,9 @@ export async function tab(page: Page, name: string): Promise<void> {
 }
 
 /** Adds the test content through the Content tab and waits for it to load. */
-export async function addTestContent(page: Page): Promise<void> {
+export async function addTestContent(page: Page, opts: { keepSrd?: boolean } = {}): Promise<void> {
+  // Tests of the fixture rules see only them; a random character from the built-in rules would be a different class.
+  if (!opts.keepSrd) await page.route("**/srd/*.json", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ elements: [] }) }));
   await serveFixtures(page);
   await page.goto("/");
   await tab(page, "Content");

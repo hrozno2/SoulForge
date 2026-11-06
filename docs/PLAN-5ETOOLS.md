@@ -90,7 +90,10 @@ user, fixed in ecbad37: upcast dice, "25 percent", difficult terrain, nested tag
    rules check clean. A first-run test covers it.
 
 ### D3. The SRD API as a third check (test app and CI only)
-Step 1 done 2026-11-06 (`scripts/srd-api-cache.mjs`, 4.3 MB in <cache>/srd-api, monsters left out). The gate is next.
+Steps 1 and 4 done 2026-11-06 (`scripts/srd-api-cache.mjs`, 4.3 MB in <cache>/srd-api, monsters left out). `RULES_TIER=srd-api` (src/engine/srdApi.test.ts, in the
+full check) compares spells, equipment, hit dice, saves, slots, cantrips, species speed and names. It found one real bug (an area spell's range read "15 feet", not "Self
+(15-foot cone)"); the rest were settled against the PDFs in docs/SRD-DIFF.md, nearly all API mistakes, and a kind's count may only fall. Not yet compared: spells known, features
+by level, subclass levels, species traits, feat prerequisites, conditions. Step 3 (the API in the rules check) is also still to do.
 1. `scripts/srd-api-cache.mjs` downloads the API's data once into `~/.soulforge-test/srd-api/` (2014 and 2024
    endpoints), so tests run offline and stay deterministic.
 2. New gate "against the SRD", in the full check: for SRD content, our engine's results agree with the API on

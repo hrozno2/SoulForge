@@ -47,9 +47,9 @@ export interface FollowReport { facts: string[]; texts: string[]; removed: strin
 /** A row of a gear table as facts. Its order differs per edition, so each fact is found by its shape. */
 export function gearRow(row: string): { cost?: string; currency?: string; lb?: number; dice?: string; type?: string; ac?: string; str?: string; stealth?: boolean } {
   const cost = /([\d,]+) ?(CP|SP|EP|GP|PP)\b/i.exec(row);
-  const lb = /(\d*[½¼⅛]|\d+(?:\/\d+)?) ?lb\b/i.exec(row);
+  const lb = /([\d,]*[½¼⅛]|[\d,]+(?:\/\d+)?) ?lb\b/i.exec(row);
   const dmg = /\b(\d+d\d+|1) (Bludgeoning|Piercing|Slashing)\b/i.exec(row);
-  const num = (x: string) => (/[½¼⅛]$/.test(x) ? Number(x.slice(0, -1) || 0) + ({ "½": 0.5, "¼": 0.25, "⅛": 0.125 } as Record<string, number>)[x.slice(-1)] : x.includes("/") ? Number(x.split("/")[0]) / Number(x.split("/")[1]) : Number(x));
+  const num = (raw: string) => { const x = raw.replace(/,/g, ""); return (/[½¼⅛]$/.test(x) ? Number(x.slice(0, -1) || 0) + ({ "½": 0.5, "¼": 0.25, "⅛": 0.125 } as Record<string, number>)[x.slice(-1)] : x.includes("/") ? Number(x.split("/")[0]) / Number(x.split("/")[1]) : Number(x)); };
   const ac = /\b(\d+)(?: \+ Dex(?: modifier)?(?: \(max 2\))?)?(?= |$)/.exec(row.replace(cost?.[0] ?? "\u0000", " ").replace(lb?.[0] ?? "\u0000", " "));
   const str = /\bStr(?:ength)? (\d+)/i.exec(row);
   return { ...(cost ? { cost: cost[1].replace(/,/g, ""), currency: cost[2].toLowerCase() } : {}), ...(lb ? { lb: num(lb[1]) } : {}), ...(dmg ? { dice: dmg[1], type: dmg[2].toLowerCase() } : {}), ...(ac ? { ac: ac[1] } : {}), ...(str ? { str: str[1] } : {}), stealth: /Disadvantage/i.test(row) };

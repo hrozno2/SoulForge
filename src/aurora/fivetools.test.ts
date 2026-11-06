@@ -368,3 +368,54 @@ describe("a class's starting gear", () => {
     expect(gear({ defaultData: [{ A: [{ equipmentTypes: ["instrumentMusical", "toolArtisan"] }], B: [{ value: 5000 }] }] })).toContain("Artisan's Tools or Musical Instrument chosen for the tool proficiency above");
   });
 });
+
+describe("spell facts with more than one way", () => {
+  const facts = (extra: Record<string, unknown>) => convertFiveTools({ files: { "spells.json": { spell: [{ name: "X", source: "PHB", level: 1, school: "A", time: [{ number: 1, unit: "action" }], range: { type: "point", distance: { type: "self" } }, duration: [{ type: "instant" }], entries: ["x"], ...extra }] } } as never }).find((e) => e.name === "X")!.setters;
+  it("two casting times, and an ending by trigger", () => {
+    expect(facts({ time: [{ number: 1, unit: "action", note: "Overgrowth" }, { number: 8, unit: "hour", note: "Enrichment" }] }).time.value).toBe("Action (Overgrowth) or 8 hours (Enrichment)");
+    expect(facts({ duration: [{ type: "permanent", ends: ["dispel", "trigger"] }] }).duration.value).toBe("Until dispelled or triggered");
+  });
+});
+
+describe("choices worded only in prose", () => {
+  const conv = (files: Record<string, unknown>) => convertFiveTools({ files: files as never });
+  const feat = (over: Record<string, unknown>) => conv({ "feats.json": { feat: [{ name: "X", source: "XPHB", entries: ["x"], ...over }] } }).find((e) => e.name === "X")!;
+  it("a feat's weapon mastery comes from the class's list", () => {
+    const r = feat({ entries: ["You gain the following benefits.", { type: "entries", name: "Mastery Property", entries: ["Your training allows you to use the mastery property of one kind of Simple or Martial weapon of your choice, provided you have proficiency with it."] }] }).rules.find((x) => x.kind === "select" && x.type === "Class Feature");
+    expect(r).toMatchObject({ supports: "5et weapon mastery", number: 1 });
+  });
+  it("one of the benefits listed below", () => {
+    const r = feat({ entries: ["When you take this feat, choose one of the benefits listed below.", { type: "entries", name: "A", entries: ["a"] }, { type: "entries", name: "B", entries: ["b"] }] }).rules.find((x) => x.kind === "select" && x.type === "Training Option");
+    expect(String((r as { supports: string }).supports).split("|")).toHaveLength(2);
+  });
+  it("a spellcasting ability named in the text", () => {
+    expect(feat({ entries: ["Your spellcasting ability for this feat is Intelligence, Wisdom, or Charisma (choose when you select this feat)."] }).rules.some((x) => x.kind === "select" && x.type === "Spellcasting Ability")).toBe(true);
+  });
+  it("Custom Lineage's variable trait is darkvision or a skill, not both", () => {
+    const els = conv({ "races.json": { race: [{ name: "L", source: "TCE", size: ["M"], speed: 30, darkvision: 60, skillProficiencies: [{ any: 1 }], entries: [], _versions: [{ name: "L; Darkvision", source: "TCE", skillProficiencies: null }, { name: "L; Skill Proficiency", source: "TCE", darkvision: null }] }] } });
+    const r = els.find((e) => e.name === "L" && e.type === "Race")!;
+    expect(r.rules.filter((x) => x.kind === "grant" && x.type === "Vision")).toHaveLength(0);
+    expect(r.rules.some((x) => x.kind === "select" && x.type === "Proficiency")).toBe(false);
+    const dark = els.find((e) => e.name === "Darkvision" && e.type === "Sub Race")!;
+    expect(dark.rules.some((x) => x.kind === "grant" && x.type === "Vision")).toBe(true);
+    const skill = els.find((e) => e.name === "Skill Proficiency" && e.type === "Sub Race")!;
+    expect(skill.rules.some((x) => x.kind === "select" && x.type === "Proficiency")).toBe(true);
+  });
+});
+
+describe("what a species gives", () => {
+  const race = (over: Record<string, unknown>, extra: Record<string, unknown> = {}) => { const els = convertFiveTools({ files: { "races.json": { race: [{ name: "R", source: "XPHB", size: ["M"], speed: 30, entries: [], ...over }], ...extra } } as never }); return { el: els.find((e) => e.name === "R" && e.type === "Race")!, els }; };
+  it("a feat: of a category (2024 Human), or any (Variant Human's subrace)", () => {
+    expect(race({ feats: [{ anyFromCategory: { category: ["O"], count: 1 } }] }).el.rules.find((x) => x.kind === "select" && x.type === "Feat")).toMatchObject({ supports: "5et feat,(category O)", number: 1 });
+    const v = race({}, { subrace: [{ name: "Variant", raceName: "R", raceSource: "XPHB", source: "XPHB", feats: [{ any: 1 }] }] }).els.find((e) => e.type === "Sub Race")!;
+    expect(v.rules.some((x) => x.kind === "select" && x.type === "Feat")).toBe(true);
+  });
+  it("what the versions set is not asked of the species as well", () => {
+    const { el, els } = race({ resist: [{ choose: { from: ["acid", "fire"] } }], _versions: [{ name: "R; Acid", source: "XPHB", resist: ["acid"] }, { name: "R; Fire", source: "XPHB", resist: ["fire"] }] });
+    expect(el.rules.filter((x) => x.kind === "select" && /resist/i.test(x.name ?? ""))).toHaveLength(0);
+    expect(els.filter((e) => e.type === "Sub Race").every((e) => e.rules.some((x) => x.kind === "grant" && /RESISTANCE/.test(x.id ?? "")))).toBe(true);
+  });
+  it("a size that varies is a choice", () => {
+    expect(race({ size: ["V"] }).el.rules.some((x) => x.kind === "select" && x.type === "Size")).toBe(true);
+  });
+});

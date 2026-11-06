@@ -204,3 +204,4 @@ describe("the SRD's PDF as structure", () => {
     expect(report.removed).toEqual(["Spell | Not In The SRD"]);
   });
 });
+it("a weight in the thousands is read whole", () => { expect(gearRow("Elephant 1,320 lb. 200 GP")).toMatchObject({ lb: 1320, cost: "200" }); });

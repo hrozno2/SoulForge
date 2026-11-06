@@ -111,6 +111,8 @@ by level, subclass levels, species traits, feat prerequisites, conditions agains
 
 ### D3b. Every source compared (Chris 2026-10-30)
 
+Done 2026-11-06 for spell facts and gear: `RULES_TIER=sources` (src/engine/sources.test.ts, in the full check). The three-source idea of D3 step 3 lives here rather than in the rules check: the PDF decides, and who disagrees says whose mistake it is. It found a real conversion bug: a spell with two casting times read only the first. Not done: Open5e (needs its licence read and a download; Chris's call). Plutonium stays a read-only reference for routing, not a gate.
+
 All sources are used for bug finding and rules checking, in the test app and the full check (never in the release
 app). Which sources are compared depends on the content:
 
@@ -157,6 +159,8 @@ Tactics, Aspect of the Wilds, Elemental Affinity, Elemental Adept, Dragon Ancest
 choices 45. Most "choose one" wording is a choice made in play and is left alone on purpose. Of the 45, many are the same
 decision filed differently: 2024 Eldritch Knight and Arcane Trickster prepare their spells where Aurora counts picks (13 vs 0 is
 not a gap). Left to look at: Rune Shaper, Strike of the Giants, Planar Wanderer, Armor Model, Wildfire Spirit, companions.
+
+State 2026-11-06: **500 of 500 sheets agree with and without Aurora**; 64 differ only in a DC note Aurora adds beside a feature, which changes no number. The twins' 44 remaining differences are each judged in src/engine/parity.test.ts: 38 explained (5e.tools right, one decision filed differently, or a choice made in play), 6 open, and a new one fails the gate. Open: Simic Hybrid's Animal Enhancement, Rune Shaper's rune count (2 rows), Beast Master's companion (2 rows, the builder holds no creatures), Storm Herald's three picks. Reading them found live bugs for 5e.tools-only characters: the 2024 Human and Variant Human had no feat; Dragonborn, Tiefling and Kobold asked a damage type, skill or cantrip that their lineage already sets; Custom Lineage got darkvision and the skill; a merged twin doubled Squat Nimbleness's speed; Weapon Master had no mastery; Strike of the Giants had no choice. Borrowed mechanics stand at 296 and matter only as far as sheets show them, which is now nothing: they go when Aurora leaves (D7).
 
 1. List the 350 features whose mechanics are borrowed from Aurora, grouped by kind of mechanic (choice from a list,
    school or list limits, grants by level, numbers from text, companions, resources). Each group becomes one converter

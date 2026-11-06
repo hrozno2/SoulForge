@@ -9,7 +9,7 @@ The PDFs are read as structure (`src/aurora/srdPdf.ts`, using poppler's `pdftoht
 | What | State |
 |---|---|
 | Which spells | Exact: 319 and 339, the build fails if one is missing or extra |
-| Spell facts | Level, school, casting time, range, duration, ritual, concentration, components, material and class lists come from the PDF where they differ. Example: Flaming Sphere is Conjuration, Commune with Nature Instantaneous, Dream's range Special, Power Word Heal has no somatic component, most 2024 area spells read "Self" |
+| Spell facts | Level, school, casting time, range, duration, ritual, concentration, components, material and class lists come from the PDF where they differ. Example: Flaming Sphere is Conjuration, Commune with Nature Instantaneous, Dream's range Special, Power Word Heal has no somatic component, many 2024 area spells read "Self" |
 | Spell text | From the PDF where it differs: 5.2.1's Reincarnate table has "Roll again." instead of Aasimar, Polymorph has its saving throw back |
 | Other text | Magic items, features, species and their traits, feats, backgrounds, subclasses: found by heading or bold lead-in, the section whose words overlap most; the PDF's text is used where it differs |
 | Gear | Cost, weight, damage and armor class from the PDF's tables where a row is found (Burglar's Pack is 42 lb., here 47.5 before). Gear the SRD does not name leaves (Dulcimer) |
@@ -17,12 +17,28 @@ The PDFs are read as structure (`src/aurora/srdPdf.ts`, using poppler's `pdftoht
 | Features by level | All 12 classes in both editions agree with the class tables. Left: sub-features we list by name under a parent (Flurry of Blows), and Wizard 20 "Signature Spells" against the SRD's singular |
 | What was not checked | Variants with no section (+1 Longsword, Ring of Acid Resistance) keep the converter's short facts; they pass the word check. Gear with no table row keeps 5e.tools' numbers (`gear row` in the follow report, 94 and 39, mostly name forms such as "Arrow") |
 | Weapon properties and masteries | Checked against the tables at every build, both editions: no difference, once the 2024 Lance kept its two-handed property |
-| Class proficiencies, species basics, backgrounds, feat prerequisites, starting gear | Read side by side once, by eye, for 2024 (2014 only by sample); no check at build time yet. Found and fixed: Cleric's gold (5e.tools' data says 70 GP, its own line and the SRD 7), Monk's tool or instrument, and feats' prerequisites |
+| Class proficiencies, species basics, backgrounds, feat prerequisites | Checked at every build, both editions (`src/aurora/srdMechanics.ts`): hit die, saves, armor, weapons, skills, tools, speed, darkvision, background skills and feat, feat prerequisites. No differences |
+| Starting gear | Read side by side once for 2024; no check at build time. Found and fixed: Cleric's gold (5e.tools' data says 70 GP, its own line and the SRD 7), Monk's tool or instrument |
 | Not bundled | Bestiary |
 
-The 2024 SRD also contains names that the plan assumed it did not: Tiamat in Dragon Orb. Text from the PDF is the SRD's own, so it stays.
+The SRDs also contain names the plan assumed they did not: Tiamat in both, Beholder in 5.1's Deck of Illusions. Text from the PDF is the SRD's own, so it stays.
 
 The conditions on the Play tab (`src/ui/conditions.ts`) are short reminders in the app's own words, not SRD text, and are not checked here.
+
+## Every source (`RULES_TIER=sources`, `<cache>/engine/sources.md`)
+
+Spell facts and gear, with the PDF deciding: who disagrees says what a difference is. Each kind may only fall.
+
+| Who differs | 5.1 | 5.2.1 | Verdict |
+|---|---|---|---|
+| 5e.tools' copy alone | 0 | 4 | Flaming Sphere's school, Commune with Nature's duration, Dream's range, Power Word Heal's somatic. Aurora, the API and the PDF agree. These are what 5e.tools' data says, not a conversion mistake; whether the printed book says the same was not checked. The bundle follows the SRD; a user's own 5e.tools copy keeps its values |
+| 5e.tools and Aurora against the PDF | 0 | 1 | Goodberry's range |
+| Aurora alone | 0 | 1 | Transport via Plants; test only |
+| API alone | 4 | 24 | Not used |
+| Gear, 5e.tools alone | 0 | 1 | Stabling: 5 SP in the PDF, 5 CP in 5e.tools' data |
+| Gear, Aurora alone | 8 | 11 | Animals' carrying weights and a few prices; test only |
+
+Open5e is not compared: reading it needs its licence checked and a download. Plutonium is compared by reading how it routes a mechanic (docs/PLUTONIUM.md); it holds no SRD facts to compare.
 
 ## Against the SRD API (`RULES_TIER=srd-api`, full list in `<cache>/engine/srd-api.md`)
 

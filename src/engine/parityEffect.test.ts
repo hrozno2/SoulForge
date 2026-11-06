@@ -15,7 +15,7 @@ import { loadTestContent, walkDir } from "./testContent";
 
 const C = process.env.SOULFORGE_RULES;
 // A change to what random characters pick shifts the draw, so the same mechanics can score a few apart: read the report.
-const FLOOR = 430;
+const FLOOR = 500;
 
 /** Every leaf of a value that differs, with array indexes left out of the path so like differences group together. */
 function diff(a: unknown, b: unknown, path: string, out: { path: string; alone: unknown; both: unknown }[]) {
@@ -46,13 +46,16 @@ it.skipIf(!C || process.env.RULES_TIER !== "parity-effect")("what Aurora changes
   const rng = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const N = Number(process.env.PARITY_EFFECT_N ?? 500);
   const paths = new Map<string, { n: number; samples: string[] }>();
-  let same = 0, crashed = 0;
+  let same = 0, crashed = 0, hints = 0;
   for (let i = 0; i < N; i++) {
     try {
       const ch = randomCharacter(alone, 1 + (i % 20), {} as never, rng);
       const out: { path: string; alone: unknown; both: unknown }[] = [];
       diff(buildSheet(resolve(ch, alone)), buildSheet(resolve(ch, both)), "sheet", out);
-      if (!out.length) same++;
+      // A DC beside a feature's text is Aurora's own note ("Martial Arts... (DC 15)"): counted apart, it changes no number.
+      const isHint = (d: { path: string; alone: unknown; both: unknown }) => /features\[\]\.text$/.test(d.path) && String(d.both).replace(/\s*\(DC \d+\)/g, "") === String(d.alone);
+      if (out.some(isHint)) hints++;
+      if (!out.filter((d) => !isHint(d)).length) same++;
       const who = ch.classes.map((c) => `${alone.get(c.classId)?.name} ${c.level}`).join("/");
       for (const d of out) {
         const e = paths.get(d.path) ?? { n: 0, samples: [] };
@@ -66,7 +69,7 @@ it.skipIf(!C || process.env.RULES_TIER !== "parity-effect")("what Aurora changes
       }
     } catch { crashed++; }
   }
-  const lines = [`# What Aurora changes on 5e.tools characters`, "", `${N} characters, ${same} with the same sheet, ${crashed} failed to build.`, ""];
+  const lines = [`# What Aurora changes on 5e.tools characters`, "", `${N} characters, ${same} with the same sheet, ${hints} of them differing in a DC note only, ${crashed} failed to build.`, ""];
   for (const [p, e] of [...paths].sort((a, b) => b[1].n - a[1].n)) lines.push(`## ${p} (${e.n})`, ...e.samples.map((s) => `- ${s}`), "");
   writeFileSync(join(C!, "engine", "parity-effect.md"), lines.join("\n"));
   console.log(`PARITY same sheet with and without Aurora: ${same} of ${N}`);

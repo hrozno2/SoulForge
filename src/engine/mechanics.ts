@@ -108,7 +108,7 @@ export function borrowMechanics(byId: Map<string, AElement>): MechanicsReport {
     const added: ARule[] = [];
     for (const r of twin.rules) {
       if (!portable(r, byId)) continue;
-      if (r.kind === "stat" && !setHere.has(family(r.name)) && !(ownAc && /^ac:/.test(r.name.toLowerCase())) && !ownUses.has(r.name.toLowerCase()) && !(ownWalk && /^innate speed:(?:climb|fly|swim|burrow):misc$/i.test(r.name))) added.push(r);
+      if (r.kind === "stat" && !setHere.has(family(r.name)) && !(ownAc && /^ac:/.test(r.name.toLowerCase())) && !ownUses.has(r.name.toLowerCase()) && !(ownWalk && /^(?:innate )?speed(?::misc)?$/i.test(r.name)) && !(ownWalk && /^innate speed:(?:climb|fly|swim|burrow):misc$/i.test(r.name))) added.push(r);
       if (r.kind === "grant" && r.id) {
         const target = byId.get(r.id);
         const k = target ? conceptOf(target) : conceptOfMarker(r.id);

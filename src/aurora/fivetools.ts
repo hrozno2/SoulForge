@@ -433,6 +433,17 @@ export function proseChoiceRules(f: J, idBase: string, level: number | undefined
     const table = entries.find((e) => (e as J)?.type === "table") as J | undefined;
     if (table) choice(`${f.name}: dragon`, (table.rows as unknown[][]).map((row) => ({ name: cap(`${stripTags(String(row[0]))} (${stripTags(String(row[1]))})`) })));
   }
+  // "When you take this feat, choose one of the benefits listed below" (Strike of the Giants).
+  if (/choose one of the benefits listed below/i.test(first)) {
+    const named = entries.slice(1).filter((e) => (e as J)?.name) as J[];
+    if (named.length > 1) choice(`${f.name}: choose one`, named.map((x) => ({ name: String(x.name), entries: x.entries as unknown[] })));
+  }
+  // A feat's own weapon mastery (2024 Weapon Master), from the same list a class's comes from. A class has its own table.
+  const mastery = /mastery propert(?:y|ies) of (one|two|three) kinds? of [^.]*weapons?[^.]* of your choice/i.exec(text);
+  if (mastery && level === undefined) rules.push({ kind: "select", type: "Class Feature", name: `Weapon Mastery (${f.name})`, supports: "5et weapon mastery", number: { one: 1, two: 2, three: 3 }[mastery[1].toLowerCase()]! });
+  // A spellcasting ability named only in prose (Eldritch Adept, Rune Shaper).
+  const casts = /your spellcasting ability for (?:this feat|the invocation) is (intelligence|wisdom|charisma), (intelligence|wisdom|charisma), or (intelligence|wisdom|charisma) \(choose/i.exec(text);
+  if (casts && level === undefined) rules.push(...castingAbilityChoice({ choose: [casts[1], casts[2], casts[3]].map((x) => x.slice(0, 3).toLowerCase()) }, String(f.name), String(f.source), out));
   const feats = /You gain another \{@filter [^|}]*\|feats\|category=(\w+)\} of your choice/.exec(raw);
   if (feats) rules.push({ kind: "select", type: "Feat", name: `${f.name} feat`, supports: `5et feat,(category ${feats[1]})`, number: 1, ...lvl });
   if (/choose two types of weapons to be your kensei weapons/i.test(raw)) {
@@ -530,13 +541,15 @@ function counted(amount: unknown, unit: unknown): string {
 
 function convertSpell(s: J, ctx: Ctx): AElement {
   const comp = s.components ?? {};
-  const time = (s.time?.[0] ? counted(s.time[0].number ?? 1, s.time[0].unit) : "").replace(/^1 action$/, "Action").replace(/^1 bonus$/, "Bonus Action").replace(/^1 reaction$/, "Reaction");
+  // More than one way to cast: "Action (Overgrowth) or 8 hours (Enrichment)".
+  const oneTime = (t: J) => counted(t.number ?? 1, t.unit).replace(/^1 action$/, "Action").replace(/^1 bonus$/, "Bonus Action").replace(/^1 reaction$/, "Reaction") + (t.note ? ` (${t.note})` : "");
+  const time = ((s.time as J[] | undefined) ?? []).map(oneTime).join(" or ");
   const r = s.range;
   // An area around the caster is "Self (15-foot cone)": its size is not a range (the sheet read "15 feet").
   const area = /^(cone|radius|sphere|hemisphere|line|cube|emanation)$/.test(String(r?.type)) && r?.distance?.amount ? `Self (${r.distance.amount}-${String(r.distance.type).replace(/^feet$/, "foot").replace(/^miles?$/, "mile")} ${r.type})` : "";
   const range = area || (r?.type === "special" ? "Special" : r?.distance ? (r.distance.type === "self" || r.type === "self" ? "Self" : counted(r.distance.amount, r.distance.type)) : "");
   const d = s.duration?.[0];
-  const dur = d ? (d.type === "instant" ? "Instantaneous" : d.type === "permanent" ? "Until dispelled" : d.type === "special" ? "Special" : `${d.concentration ? "Concentration, up to " : ""}${counted(d.duration?.amount, d.duration?.type)}`.trim()) : "";
+  const dur = d ? (d.type === "instant" ? "Instantaneous" : d.type === "permanent" ? `Until dispelled${(d.ends as string[] | undefined)?.includes("trigger") ? " or triggered" : ""}` : d.type === "special" ? "Special" : `${d.concentration ? "Concentration, up to " : ""}${counted(d.duration?.amount, d.duration?.type)}`.trim()) : "";
   const classes = ctx.spellClasses[s.source]?.[String(s.name).toLowerCase()] ?? s.classes?.fromClassList?.map((c: J) => c.name) ?? [];
   const mat = comp.m ? (typeof comp.m === "string" ? comp.m : comp.m.text ?? "") : "";
   const setters: Record<string, SetterValue> = {
@@ -705,7 +718,7 @@ function prerequisiteOf(list: J[] | undefined, out: AElement[]): string | undefi
     if (ab) all.push(any(ab.map((o) => { const e = Object.entries(o).map(([k, v]) => `[${k}:${v}]`); return e.length > 1 ? `(${e.join(",")})` : e[0]; })));
     if (p.level) all.push(`[level:${typeof p.level === "object" ? p.level.level : p.level}]`);
     if (p.feat) all.push(any((p.feat as string[]).map((x) => { const [name, , shown] = String(x).split("|"); return `@feat:${slug(shown ?? name)}`; })));
-    if (p.race) all.push(any((p.race as J[]).map((x) => `@race:${slug(x.name)}${x.subrace ? `:${slug(x.subrace)}` : ""}`)));
+    if (p.race) all.push(any((p.race as J[]).map((x) => (/^small race$/i.test(x.name) ? "ID_5ET_SIZE_SMALL" : `@race:${slug(x.name)}${x.subrace ? `:${slug(x.subrace)}` : ""}`))));
     if (p.background) all.push(any((p.background as J[]).map((x) => `@background:${slug(x.name)}`)));
     if (p.feature) all.push(any((p.feature as string[]).map((x) => `@feature:${slug(x)}`)));
     if (p.spellcasting) all.push("[type:spell]");
@@ -840,7 +853,9 @@ function expandVersions(list: J[]): J[] {
       const filled = JSON.parse(JSON.stringify(v._abstract).replace(/\{\{(\w+)\}\}/g, (m, k) => vars[k] ?? m));
       const { _variables, ...rest } = impl;
       void _variables;
-      out.push({ ...filled, ...rest });
+      // Fizban's Chromatic Dragonborn keeps its damage type among the variables, not beside them.
+      const inVars = Array.isArray((vars as unknown as J).resist) ? { resist: (vars as unknown as J).resist } : {};
+      out.push({ ...filled, ...inVars, ...rest });
     }
   }
   return out;
@@ -953,7 +968,7 @@ export function resolveCopies(files: Record<string, J>): Record<string, J> {
 
 function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const id = ftId("RACE", r.name, r.source);
-  const rules: ARule[] = [...speedRules(r.speed), ...abilityRules(r.ability, r.name, { out, idBase: id }), ...trainingRules(r, r.name, out, ctx, id), ...defenseRules(r)];
+  const rules: ARule[] = [...speedRules(r.speed), ...abilityRules(r.ability, r.name, { out, idBase: id }), ...trainingRules(r, r.name, out, ctx, id), ...defenseRules(r), ...featRules(r)];
   // A species that lists no languages leaves them to the character's origin: under the 2024 rules Common and two
   // standard languages; in the books before them (Monsters of the Multiverse, the Ravenloft lineages) Common and one.
   if (!r.languageProficiencies?.length) {
@@ -989,7 +1004,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   // after Aurora replaced them (the 2024 Aasimar's size choice lost its options). A species of more than one size
   // (the Dhampir: Small or Medium) lets the player choose.
   const SIZE_NAMES: Record<string, string> = { T: "Tiny", S: "Small", M: "Medium", L: "Large" };
-  const sizeIds = (Array.isArray(r.size) ? r.size : [r.size]).filter((x: string) => SIZE_NAMES[x]).map((x: string) => {
+  const sizeIds = (Array.isArray(r.size) ? r.size : [r.size]).flatMap((x: string) => (x === "V" ? ["S", "M"] : [x])).filter((x: string) => SIZE_NAMES[x]).map((x: string) => {
     const sid = `ID_5ET_SIZE_${SIZE_NAMES[x].toUpperCase()}`;
     if (!out.some((o) => o.id === sid)) out.push(base(sid, SIZE_NAMES[x], "Size", "5etools", { compendiumHidden: true, supports: ["5et size"] }));
     return sid;
@@ -1027,6 +1042,17 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   // Each becomes a required choice; it carries only what differs from the base species.
   const versions = expandVersions((r._versions as J[]) ?? []).map((v) => applyVersion(r, v)).filter(Boolean) as J[];
   if (versions.length) {
+    // What the versions set for themselves is not also asked of the species: a Dragonborn's damage type comes with its
+    // ancestry, a Kobold's skill or cantrip with its legacy. Asking both let the two disagree.
+    const varies = (k: string) => versions.some((v) => JSON.stringify(v[k]) !== JSON.stringify(r[k]));
+    const dropFromBase = (given: ARule[]) => { const keys = new Set(given.map((x) => JSON.stringify(x))); for (let i = rules.length - 1; i >= 0; i--) if (keys.has(JSON.stringify(rules[i]))) rules.splice(i, 1); };
+    if (varies("resist")) dropFromBase(defenseRules(r));
+    // Only when a version goes without it: a Drow's longer darkvision adds to the Elf's.
+    const darkVaries = !!r.darkvision && versions.some((v) => !v.darkvision);
+    if (darkVaries) { const at = rules.findIndex((x) => x.kind === "grant" && x.id === `${id}_DARKVISION`); if (at >= 0) rules.splice(at, 1); }
+    if (varies("skillProficiencies")) dropFromBase(trainingRules({ skillProficiencies: r.skillProficiencies }, r.name, out, ctx, id));
+    const spellsVary = !setsInVersions && varies("additionalSpells");
+    if (spellsVary) dropFromBase(racialSpells.rules);
     const baseIds = new Set(rules.filter((x) => x.kind !== "grant" || x.type !== "Racial Trait").map((x) => JSON.stringify(x)));
     const baseTraits = new Set(((r.entries as J[]) ?? []).map((e) => JSON.stringify(e)));
     rules.push({ kind: "select", type: "Sub Race", name: `${r.name} ${/legacy/i.test(versions[0].name) ? "legacy" : /ancestry/i.test(versions[0].name) ? "ancestry" : "lineage"}`, supports: `5et version of ${id}`, number: 1 });
@@ -1034,12 +1060,12 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
       const vname = String(v.name).split(";").pop()!.trim() || String(v.name);
       const vid = ftId("RACEVERSION", `${r.name} ${vname}`, v.source ?? r.source);
       const vrules: ARule[] = [...speedRules(v.speed), ...abilityRules(v.ability, vname, { out, idBase: vid }), ...trainingRules(v, vname, out, ctx, vid), ...defenseRules(v, r.name)].filter((x) => !baseIds.has(JSON.stringify(x)));
-      if (v.darkvision && v.darkvision !== r.darkvision) {
+      if (v.darkvision && (darkVaries || v.darkvision !== r.darkvision)) {
         const dv = `${vid}_DARKVISION`;
         out.push(base(dv, `Darkvision (${v.darkvision} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));
         vrules.push({ kind: "grant", type: "Vision", id: dv });
       }
-      const vSpells = JSON.stringify(v.additionalSpells) !== JSON.stringify(r.additionalSpells) ? additionalSpellRules(v.additionalSpells, vname, v.source ?? r.source, out) : { rules: [] as ARule[], ability: undefined };
+      const vSpells = spellsVary || JSON.stringify(v.additionalSpells) !== JSON.stringify(r.additionalSpells) ? additionalSpellRules(v.additionalSpells, vname, v.source ?? r.source, out) : { rules: [] as ARule[], ability: undefined };
       vrules.push(...vSpells.rules);
       const changed = ((v.entries as J[]) ?? []).filter((e) => !baseTraits.has(JSON.stringify(e)));
       vrules.push(...traitList(changed, vid, ctx, v.source ?? r.source, out, "5et trait", "Racial Trait"));
@@ -1050,7 +1076,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   out.push(base(id, r.name, "Race", srcName(ctx, r.source), { rules, setters: raceSetters, compendiumHidden: ((r.traitTags as string[]) ?? []).includes("NPC Race"), spellcasting: racialSpells.rules.length ? castingFor(r.name, racialSpells.ability) : undefined, description: entriesHtml(r.entries), supports: [] }));
   for (const s of mine) {
     const sid = ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source);
-    const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name, { out, idBase: sid }), ...trainingRules(s, s.name ?? r.name, out, ctx, sid), ...defenseRules(s)];
+    const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name, { out, idBase: sid }), ...trainingRules(s, s.name ?? r.name, out, ctx, sid), ...defenseRules(s), ...featRules(s)];
     if (abilityRules(s.ability, s.name ?? r.name).length) srules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
     if (s.speed) srules.push(...speedRules(s.speed));
     srules.push(...traitList(s.entries, sid, ctx, s.source, out, "5et trait", "Racial Trait"));
@@ -1111,14 +1137,14 @@ function equipmentHtml(se: unknown): string {
   return `<h5>EQUIPMENT</h5><ul>${lis.map((l) => `<li>${l}</li>`).join("")}</ul>`;
 }
 
-function convertBackground(b: J, ctx: Ctx, out: AElement[]): void {
-  const id = ftId("BG", b.name, b.source);
-  const rules: ARule[] = [...trainingRules(b, b.name, out, ctx, id), ...abilityRules(b.ability, "Ability score increase", { out, idBase: id }).map((x) => ({ ...x, requirements: x.requirements ?? `!${MARK_SPECIES_ASI}` }))];
-  for (const f of (b.feats as J[]) ?? []) for (const k of Object.keys(f)) {
+/** Feats a background or species gives: named ones, any of a category (the 2024 Human's origin feat), or any (Variant Human). */
+function featRules(owner: J): ARule[] {
+  const rules: ARule[] = [];
+  for (const f of (owner.feats as J[]) ?? []) for (const k of Object.keys(f)) {
     // "Any feat of a category" (the Haunted One's Dark Gift) is a choice limited to that category.
     if (k === "anyFromCategory") {
       const cats = ((f[k]?.category as string[]) ?? []).map((c) => `category ${c}`);
-      rules.push({ kind: "select", type: "Feat", name: `${b.name} feat`, supports: cats.length ? `5et feat,(${cats.join("||")})` : "5et feat", number: f[k]?.count ?? 1 });
+      rules.push({ kind: "select", type: "Feat", name: `${owner.name} feat`, supports: cats.length ? `5et feat,(${cats.join("||")})` : "5et feat", number: f[k]?.count ?? 1 });
       continue;
     }
     if (k === "any") continue;
@@ -1126,7 +1152,14 @@ function convertBackground(b: J, ctx: Ctx, out: AElement[]): void {
     const [fbase, variant] = fname.split(";").map((x) => x.trim());
     rules.push({ kind: "grant", type: "Feat", id: ftId("FEAT", variant ? `${cap(fbase)} (${cap(variant)})` : cap(fbase), (fsrc ?? "PHB").toUpperCase()) });
   }
-  for (const f of (b.feats as J[]) ?? []) if (f.any) rules.push({ kind: "select", type: "Feat", name: "Origin feat", supports: "5et feat", number: 1 });
+  for (const f of (owner.feats as J[]) ?? []) if (f.any) rules.push({ kind: "select", type: "Feat", name: "Origin feat", supports: "5et feat", number: f.any });
+  return rules;
+}
+
+function convertBackground(b: J, ctx: Ctx, out: AElement[]): void {
+  const id = ftId("BG", b.name, b.source);
+  const rules: ARule[] = [...trainingRules(b, b.name, out, ctx, id), ...abilityRules(b.ability, "Ability score increase", { out, idBase: id }).map((x) => ({ ...x, requirements: x.requirements ?? `!${MARK_SPECIES_ASI}` }))];
+  rules.push(...featRules(b));
   rules.push(...traitList(b.entries, id, ctx, b.source, out, "5et trait", "Background Feature"));
   out.push(base(id, b.name, "Background", srcName(ctx, b.source), { rules, description: entriesHtml(b.entries) + equipmentHtml(b.startingEquipment) }));
 }

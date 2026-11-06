@@ -50,7 +50,7 @@ export function srdElements(files: Files, edition: SrdEdition, corpus?: string, 
   const { files: marked, renames } = srdFiles(files, edition);
   // Longest first, so a name inside a longer one is not swapped half way.
   const swaps = [...renames].sort((a, b) => b[0].length - a[0].length);
-  const named = convertFiveTools({ files: marked as never }).map((el) => ({ ...el, name: swapNames(el.name, swaps), ...(el.description ? { description: swapNames(el.description, swaps) } : {}) }));
+  const named = convertFiveTools({ files: marked as never }).map((el) => ({ ...el, name: swapNames(el.name, swaps), ...(el.description ? { description: swapNames(el.description, swaps).replace(/, from X?PHB\./, ".") } : {}) }));
   // The SRD decides: what the PDF has replaces what 5e.tools' copy says, before the word check reads the rest.
   let following = named;
   let fromPdf = new Set<AElement>();

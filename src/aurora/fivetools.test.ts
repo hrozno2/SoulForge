@@ -326,3 +326,45 @@ describe("spell facts read in the right number", () => {
     expect(facts({ time: [{ number: 1, unit: "bonus" }] }).time.value).toBe("Bonus Action");
   });
 });
+
+describe("a feat's prerequisites", () => {
+  const feats = (prerequisite: unknown, extra: Record<string, unknown> = {}) => convertFiveTools({ files: { "feats.json": { feat: [{ name: "X", source: "PHB", prerequisite, entries: ["x"] }] }, ...extra } as never }).find((e) => e.name === "X")!.requirements;
+  it("the list is any one of them, an entry all of its parts", () => {
+    expect(feats([{ level: 4, ability: [{ str: 13 }] }, { level: 4, ability: [{ dex: 13 }] }])).toBe("(([str:13],[level:4])||([dex:13],[level:4]))");
+    expect(feats([{ ability: [{ str: 13 }, { dex: 13 }] }])).toBe("([str:13]||[dex:13])");
+    expect(feats([{ level: 19 }])).toBe("[level:19]");
+  });
+  it("armor training and casting", () => {
+    expect(feats([{ proficiency: [{ armor: "medium" }] }])).toBe("ID_5ET_PROF_ARMOR_MEDIUM");
+    expect(feats([{ spellcasting: true }])).toBe("[type:spell]");
+  });
+  it("what names another element finds it, and what names nothing here stops nobody", () => {
+    const withRace = feats([{ race: [{ name: "halfling" }] }], { "races.json": { race: [{ name: "Halfling", source: "PHB", entries: [] }] } });
+    expect(withRace).toMatch(/^ID_5ET_RACE/);
+    expect(feats([{ race: [{ name: "halfling" }] }])).toBe("[level:0]");
+    expect(feats([{ campaign: ["Eberron"] }])).toBeUndefined();
+  });
+});
+
+describe("a weapon's facts", () => {
+  const weapon = (extra: Record<string, unknown>) => convertFiveTools({ files: { "items-base.json": { baseitem: [{ name: "W", source: "XPHB", type: "M", weaponCategory: "martial", weapon: true, dmg1: "1d10", dmgType: "P", ...extra }] } } as never }).find((e) => e.name === "W")!;
+  it("a property with a note counts (the 2024 Lance), and two hands fill two hands", () => {
+    const w = weapon({ property: ["H", { uid: "2H|XPHB", note: "unless mounted" }] });
+    expect(w.supports).toContain("two-handed");
+    expect(w.supports.join()).not.toContain("object");
+    expect(w.setters.slot.value).toBe("twohand");
+  });
+  it("keeps its range", () => {
+    expect(weapon({ property: ["A"], range: "150/600", type: "R" }).setters.range.value).toBe("150/600");
+  });
+});
+
+describe("a class's starting gear", () => {
+  const gear = (startingEquipment: unknown) => convertFiveTools({ files: { "class/class-x.json": { class: [{ name: "X", source: "XPHB", hd: { faces: 8 }, classFeatures: [], startingEquipment }] } } as never }).find((e) => e.name === "X" && e.type === "Class")!.description;
+  it("the book's line decides the gold over a mistyped number", () => {
+    expect(gear({ defaultData: [{ A: [{ value: 7000 }], B: [{ value: 11000 }] }], entries: ["(A) 7 GP; or (B) 110 GP"] })).toContain("(A) 7 GP; or (B) 110 GP");
+  });
+  it("one of two kinds of tool is offered", () => {
+    expect(gear({ defaultData: [{ A: [{ equipmentTypes: ["instrumentMusical", "toolArtisan"] }], B: [{ value: 5000 }] }] })).toContain("Artisan's Tools or Musical Instrument chosen for the tool proficiency above");
+  });
+});

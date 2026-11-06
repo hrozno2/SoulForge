@@ -16,7 +16,9 @@ The PDFs are read as structure (`src/aurora/srdPdf.ts`, using poppler's `pdftoht
 | Magic items | Rarity and attunement from the line under the heading (2024 Plate Armor of Etherealness needs no attunement). Items the SRD gives once appear once per variant with that text |
 | Features by level | All 12 classes in both editions agree with the class tables. Left: sub-features we list by name under a parent (Flurry of Blows), and Wizard 20 "Signature Spells" against the SRD's singular |
 | What was not checked | Variants with no section (+1 Longsword, Ring of Acid Resistance) keep the converter's short facts; they pass the word check. Gear with no table row keeps 5e.tools' numbers (`gear row` in the follow report, 94 and 39, mostly name forms such as "Arrow") |
-| Not bundled | Bestiary. Weapon properties, skill lists and starting equipment were not compared with the PDF yet |
+| Weapon properties and masteries | Checked against the tables at every build, both editions: no difference, once the 2024 Lance kept its two-handed property |
+| Class proficiencies, species basics, backgrounds, feat prerequisites, starting gear | Read side by side once, by eye, for 2024 (2014 only by sample); no check at build time yet. Found and fixed: Cleric's gold (5e.tools' data says 70 GP, its own line and the SRD 7), Monk's tool or instrument, and feats' prerequisites |
+| Not bundled | Bestiary |
 
 The 2024 SRD also contains names that the plan assumed it did not: Tiamat in Dragon Orb. Text from the PDF is the SRD's own, so it stays.
 

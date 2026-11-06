@@ -604,13 +604,15 @@ function convertItem(raw: J, ctx: Ctx): AElement | null {
   if (weapon) {
     if (m.dmg1) setters.damage = set(String(m.dmg1), { type: DMG[m.dmgType] ?? "" });
     if (m.dmg2) setters.versatile = set(String(m.dmg2));
-    const props = ((m.property as string[]) ?? []).map((p) => String(p).split("|")[0]);
+    // A property can be an object with a note: {uid: "2H|XPHB", note: "unless mounted"} (the 2024 Lance).
+    const props = ((m.property as unknown[]) ?? []).map((p) => String(typeof p === "string" ? p : (p as J)?.uid ?? "").split("|")[0]).filter(Boolean);
     for (const p of props) supports.push(PROP[p] ?? p.toLowerCase());
     if (t === "R" || props.includes("A")) supports.push("ranged");
     const cat = m.weaponCategory === "martial" ? "MARTIAL" : "SIMPLE";
     supports.push(cat.toLowerCase());
     setters.proficiency = set(`ID_5ET_PROF_WEAPON_${cat},${ftId("PROF_WEAPON", m.name.replace(/^[+-]\d+ /, ""), "ALL")}`);
-    setters.slot = set("onehand");
+    setters.slot = set(props.includes("2H") ? "twohand" : "onehand");
+    if (m.range) setters.range = set(String(m.range));
     // The 2024 mastery property ("Topple|XPHB"), in the id the sheet reads masteries by.
     for (const ms of (m.mastery as string[]) ?? []) supports.push(`ID_WOTC_PHB24_WEAPON_PROPERTY_${String(ms).split("|")[0].toUpperCase().replace(/[^A-Z]+/g, "_")}`);
     if (m.bonusWeapon) setters.attackBonus = set(String(parseInt(m.bonusWeapon, 10) || 0));
@@ -688,13 +690,61 @@ function featVariants(f: J, ctx: Ctx, out: AElement[]): boolean {
   return true;
 }
 
-function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
-  const reqs: string[] = [];
-  for (const p of (f.prerequisite as J[]) ?? []) {
+/**
+ * A feat's prerequisites as a requirement string. 5e.tools' list is "any one of these" (2024 Grappler: Strength 13 or
+ * Dexterity 13, each written with its level), and everything inside one entry is needed. What names another element waits
+ * as a token until all are converted (resolvePrerequisites). What depends on the game world (campaign, "other") is
+ * left to the text, as Plutonium shows it.
+ */
+function prerequisiteOf(list: J[] | undefined, out: AElement[]): string | undefined {
+  const any = (xs: string[]) => (xs.length > 1 ? `(${xs.join("||")})` : xs[0]);
+  const alternatives: string[] = [];
+  for (const p of list ?? []) {
+    const all: string[] = [];
     const ab = p.ability as J[] | undefined;
-    if (ab) reqs.push(`(${ab.map((o) => Object.entries(o).map(([k, v]) => `[${k}:${v}]`).join(",")).join("||")})`);
-    if (p.level) reqs.push(`[level:${typeof p.level === "object" ? p.level.level : p.level}]`);
+    if (ab) all.push(any(ab.map((o) => { const e = Object.entries(o).map(([k, v]) => `[${k}:${v}]`); return e.length > 1 ? `(${e.join(",")})` : e[0]; })));
+    if (p.level) all.push(`[level:${typeof p.level === "object" ? p.level.level : p.level}]`);
+    if (p.feat) all.push(any((p.feat as string[]).map((x) => { const [name, , shown] = String(x).split("|"); return `@feat:${slug(shown ?? name)}`; })));
+    if (p.race) all.push(any((p.race as J[]).map((x) => `@race:${slug(x.name)}${x.subrace ? `:${slug(x.subrace)}` : ""}`)));
+    if (p.background) all.push(any((p.background as J[]).map((x) => `@background:${slug(x.name)}`)));
+    if (p.feature) all.push(any((p.feature as string[]).map((x) => `@feature:${slug(x)}`)));
+    if (p.spellcasting) all.push("[type:spell]");
+    if (p.spellcasting2020 || p.spellcastingFeature) all.push("(@feature:SPELLCASTING||@feature:PACT_MAGIC)");
+    if (p.proficiency) {
+      const ids = (p.proficiency as J[]).flatMap((x) => [...(x.armor ? [ARMOR_IDS[String(x.armor).toLowerCase()]] : []), ...(x.weapon ? [weaponId(String(x.weapon).toLowerCase(), out)] : []), ...(x.weaponGroup ? [weaponId(String(x.weaponGroup).toLowerCase(), out)] : [])]).filter((x): x is string => !!x);
+      if (ids.length) all.push(any(ids));
+    }
+    if (all.length) alternatives.push(all.length > 1 ? `(${all.join(",")})` : all[0]);
+    // An entry with nothing we can check (only a campaign) is met.
+    else return undefined;
   }
+  return alternatives.length ? any(alternatives) : undefined;
+}
+
+/** The tokens prerequisiteOf left, as the ids of what now exists. What names nothing here does not stop anyone. */
+function resolvePrerequisites(out: AElement[]): void {
+  const byKind = new Map<string, Map<string, string[]>>();
+  const add = (kind: string, key: string, id: string) => { if (!byKind.has(kind)) byKind.set(kind, new Map()); const m = byKind.get(kind)!; if (!m.has(key)) m.set(key, []); m.get(key)!.push(id); };
+  for (const e of out) {
+    const key = slug(e.name.replace(/\s*\(.*\)$/, ""));
+    if (e.type === "Feat") { add("feat", slug(e.name), e.id); add("feat", key, e.id); }
+    if (e.type === "Race" || e.type === "Sub Race") { add("race", key, e.id); const sub = /\((.+)\)$/.exec(e.name)?.[1]; if (sub) add("race", `${key}:${slug(sub)}`, e.id); if (e.type === "Sub Race") add("subrace", slug(e.name), e.id); }
+    if (e.type === "Background") add("background", key, e.id);
+    if (e.type === "Class Feature" || e.type === "Archetype Feature") add("feature", key, e.id);
+  }
+  for (const e of out) {
+    if (!e.requirements?.includes("@")) continue;
+    e.requirements = e.requirements.replace(/@(feat|race|background|feature):([A-Z0-9_:]+)/g, (_, kind: string, key: string) => {
+      let ids = byKind.get(kind)?.get(key);
+      if (!ids && kind === "race" && key.includes(":")) { const sub = key.split(":")[1]; ids = [...(byKind.get("subrace") ?? [])].filter(([k]) => k.includes(sub)).flatMap(([, v]) => v); }
+      const unique = [...new Set(ids ?? [])];
+      return unique.length ? (unique.length > 1 ? `(${unique.join("||")})` : unique[0]) : "[level:0]";
+    });
+  }
+}
+
+function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
+  const reqs = prerequisiteOf(f.prerequisite as J[] | undefined, out);
   const rules = [...abilityRules(f.ability, f.name, { out, idBase: ftId("FEAT", f.name, f.source) }), ...trainingRules(f, f.name, out, ctx, ftId("FEAT", f.name, f.source)), ...defenseRules(f)];
   const spells = additionalSpellRules(f.additionalSpells, f.name, f.source, out);
   rules.push(...spells.rules);
@@ -707,7 +757,7 @@ function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
     ...(f.repeatable ? { setters: { "allow duplicate": set("true") } } : {}),
     spellcasting: spells.rules.length ? castingFor(f.name, spells.ability) : undefined,
     supports: ["5et feat", ...(f.category ? [`category ${f.category}`] : [])], rules,
-    requirements: reqs.length ? reqs.join(",") : undefined, description: html,
+    requirements: reqs, description: html,
     sheet: { display: true, descriptions: [{ text: html }] },
   });
 }
@@ -1026,6 +1076,8 @@ function gearText(it: unknown): string {
   const q = Number(x.quantity) || 1;
   if (x.value !== undefined) return `${Math.round(Number(x.value) / 100)} GP`;
   const worth = x.containsValue ? ` (with ${Math.round(Number(x.containsValue) / 100)} GP)` : "";
+  // "One of these kinds" (the 2024 Monk), worded so the starting-gear builder offers both.
+  if (Array.isArray(x.equipmentTypes)) return `${(x.equipmentTypes as string[]).map((t) => titleCase(EQUIPMENT_TYPES[t] ?? t)).sort().join(" or ")} chosen for the tool proficiency above`;
   if (x.equipmentType && !x.displayName) {
     const noun = EQUIPMENT_TYPES[String(x.equipmentType)] ?? String(x.equipmentType);
     return `${q > 1 ? `${q} ${noun}s` : `${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun}`}${worth}`;
@@ -1044,7 +1096,11 @@ function equipmentHtml(se: unknown): string {
   if (!Array.isArray(data) || !data.length) return "";
   const lettered = data.length === 1 && Object.keys(data[0]).every((k) => /^[A-Z]$/.test(k));
   if (lettered) {
-    const parts = Object.entries(data[0]).map(([k, items]) => `(${k}) ${(items as unknown[]).map(gearText).filter(Boolean).join(", ")}`);
+    // The book's own line decides the gold: 5e.tools' data has the 2024 Cleric's 7 GP as 7000 copper, which is 70 GP.
+    const lines = Array.isArray(se) ? [] : (se as J)?.entries;
+    const line = Array.isArray(lines) ? lines.join(" ") : "";
+    const gold = (k: string, text: string) => { const m = new RegExp(`\\(${k}\\)[^;]*?(\\d[\\d,]*) ?GP`).exec(line); return m ? text.replace(/\b\d[\d,]* GP$/, `${m[1]} GP`) : text; };
+    const parts = Object.entries(data[0]).map(([k, items]) => `(${k}) ${(items as unknown[]).map(gearText).filter(Boolean).map((t) => gold(k, t)).join(", ")}`);
     return `<ul><li><strong>Equipment:</strong> ${esc(`Choose ${Object.keys(data[0]).join(" or ")}: ${parts.join("; or ")}`)}</li></ul>`;
   }
   const lis = data.map((group) => {
@@ -1836,6 +1892,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   const fluff = new Map<string, J[]>();
   for (const [, json] of all) if (json && typeof json === "object" && !Array.isArray(json)) for (const [k, v] of Object.entries(json as J)) if (/Fluff$/.test(k) && Array.isArray(v)) (fluff.get(k) ?? fluff.set(k, []).get(k)!).push(...v);
   if (fluff.size) lastLoreReport = applyLore(fluff, out, ftId, entriesHtml);
+  resolvePrerequisites(out);
   return out;
 }
 

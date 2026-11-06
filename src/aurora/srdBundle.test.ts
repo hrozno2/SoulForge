@@ -119,6 +119,24 @@ describe.skipIf(!C || process.env.RULES_TIER !== "srd-bundle")("the bundle", () 
       writeFileSync(join(out, `srd-${edition}.json`), bundle);
       writeFileSync(join(out, `srd-${edition}.dropped.txt`), dropped.join("\n"));
       writeFileSync(join(out, `srd-${edition}.report.txt`), [`dropped sentences ${dropped.length}`, `elements with text ${elements.filter((e) => e.description?.replace(/<[^>]+>/g, "").trim()).length}`, `elements ${elements.length}`, `other source ${otherSource.join(", ")}`, `not in the SRD ${lines.length}`, ...lines, `findings ${findings.length}`, ...new Set(findings)].join("\n"));
+      // A weapon's properties and mastery, against the SRD's table (a property may wrap to the next row).
+      const rows = srdTableRows(xmlText);
+      const PROPS = ["ammunition", "finesse", "heavy", "light", "loading", "reach", "thrown", "two-handed", "versatile"];
+      const MASTERY = ["cleave", "graze", "nick", "push", "sap", "slow", "topple", "vex"];
+      const weaponLines: string[] = [];
+      for (const w of elements.filter((e) => e.type === "Weapon" && !e.setters?.rarity && e.setters?.damage)) {
+        const i = rows.findIndex((x) => x.toLowerCase().startsWith(`${w.name.toLowerCase()} `) && /\dd\d|\b1 piercing|—/i.test(x));
+        if (i < 0) continue;
+        // A row whose properties wrap goes on in the next rows: those have no dice of their own.
+        const more: string[] = [];
+        for (let k = i + 1; k <= i + 2 && !/\blb\b|\bgp\b/i.test(rows[i]) && rows[k] && !/\dd\d|\b1 piercing/i.test(rows[k]) && !/^[A-Z][a-z]+ (?:Melee|Ranged)|^Armor$/.test(rows[k]); k++) more.push(rows[k]);
+        const row = `${rows[i]} ${more.join(" ")}`.toLowerCase().slice(w.name.length);
+        const has = (p: string) => new RegExp(`\\b${p}\\b`).test(row);
+        for (const p of PROPS) if (has(p) !== w.supports.includes(p)) weaponLines.push(`${w.name}: ${p}, SRD ${has(p)}: ${rows[i]}`);
+        if (edition === "5.2") for (const m of MASTERY) if (has(m) !== w.supports.some((x) => x.endsWith(`_PROPERTY_${m.toUpperCase()}`))) weaponLines.push(`${w.name}: mastery ${m}, SRD ${has(m)}: ${rows[i]}`);
+      }
+      writeFileSync(join(C!, "srd", `srd-${edition}.weapons.txt`), weaponLines.join("\n"));
+      expect(weaponLines).toEqual([]);
       // Every spell the SRD has is here with its facts; nothing else is; every class table's features are here.
       const spells = elements.filter((e) => e.type === "Spell");
       const pdfSpells = srdSections(xmlText).map(srdSpell).filter((x) => !!x);

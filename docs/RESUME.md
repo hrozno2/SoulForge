@@ -1,5 +1,10 @@
 # Where we left off
 
+## 2026-11-06: Stage D, the built-in rules (unreleased, on main)
+
+D0, D2 and the SRD part of D3 are done; nothing is released. Chris decided the bundle may ship as long as it stays matched in content to the SRD's entries, following the SRD where we differ. src/aurora/srdPdf.ts reads the PDFs as structure, srdFollow.ts applies them, `RULES_TIER=srd-bundle` builds public/srd only if every check holds. docs/SRD-DIFF.md has the state and what is not checked. Pilot stays unmerged on local-llm-pilot.
+Next: D3 step 3 (the API in the rules check), D3b (every source compared; Open5e needs its licence read first), rest of D4 (docs/PLAN-5ETOOLS.md), D5-D7. A full check is needed before any release: many changes since v0.24.1.
+
 ## 2026-11-05: C7.21 (unreleased, on main with the changes since v0.24.1)
 
 One status panel on the left of the Build board replaces the count button, the rules bar above the board and the

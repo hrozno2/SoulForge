@@ -202,6 +202,19 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("a class's own always-prepared spells come at their level (2024 Paladin's Divine Smite, Ranger's Hunter's Mark)", () => {
+    const granted = (cls: string, level: number) => {
+      const c = reg!.ofType("Class").find((x) => x.name === cls && x.source.includes("2024"))!;
+      const ch = newCharacter(); ch.classes = [{ classId: c.id, level }];
+      return buildSheet(resolve(ch, reg!)).casting.flatMap((k) => k.granted.map((p) => reg!.get(p.id)?.name));
+    };
+    expect(granted("Paladin", 1)).toEqual([]);
+    expect(granted("Paladin", 2)).toEqual(["Divine Smite"]);
+    expect(granted("Paladin", 5).sort()).toEqual(["Divine Smite", "Find Steed"]);
+    expect(granted("Ranger", 1)).toEqual(["Hunter's Mark"]);
+    expect(granted("Warlock", 9)).toContain("Contact Other Plane");
+  });
+
   it("a 2014 Bard's Magical Secrets takes spells from any class, out of the spells known", () => {
     const bard = reg!.ofType("Class").find((c) => c.name === "Bard" && !c.source.includes("2024"))!;
     const at = (level: number) => { const ch = newCharacter(); ch.classes = [{ classId: bard.id, level }]; return resolve(ch, reg!).slots.filter((s) => s.rule.type === "Spell" && s.rule.spellcasting === "Bard" && !/^Cantrip/.test(s.rule.name)); };

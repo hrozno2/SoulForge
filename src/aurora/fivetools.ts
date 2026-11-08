@@ -1711,6 +1711,12 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     const m = /choose (two|three|\d+) (?:additional )?spells from any class/i.exec(t);
     if (m && /included in the number in the spells known column|count as \w+ spells for you/i.test(t)) secrets.set(Number(f.level), ({ two: 2, three: 3 } as Record<string, number>)[m[1].toLowerCase()] ?? Number(m[1]));
   }
+  // The class's own spells (2024: the Paladin's Divine Smite at 2 and Find Steed at 5, the Ranger's Hunter's Mark,
+  // the Druid's Speak with Animals, the Warlock's Contact Other Plane, always prepared), at its class level. Before,
+  // only species, feats and subclasses read this, and a 5e.tools Paladin had no Divine Smite. Magical Secrets is in
+  // the same field as extra picks, but the rule takes them out of the spells known: that is done just below.
+  const ownSpells = ((c.additionalSpells as J[] | undefined) ?? []).filter((a) => !(secrets.size && /magical secrets/i.test(String(a.name ?? ""))));
+  if (ownSpells.length) rules.push(...additionalSpellRules(ownSpells, c.name, c.source, out).rules);
   for (const r of casting.rules) {
     const n = r.kind === "select" && r.name === `Spell known (${c.name})` ? secrets.get(Number(r.level)) : undefined;
     if (!n || r.kind !== "select") { rules.push(r); continue; }

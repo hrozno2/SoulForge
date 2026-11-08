@@ -11,6 +11,7 @@ import { normalizeCharacter } from "../aurora/character";
 import { resolve } from "../aurora/engine";
 import type { ARegistry } from "../aurora/registry";
 import { buildSheet } from "../aurora/sheet";
+import { nameKey } from "./concepts";
 import { migrateToFiveTools } from "./migrate";
 import { loadContentSet, loadTestContent } from "./testContent";
 
@@ -22,14 +23,15 @@ const walkDir = (d: string, test: (f: string) => boolean, out: string[] = [], de
 
 /** The numbers and names a player reads off the sheet. */
 function facts(sh: ReturnType<typeof buildSheet>, r: ReturnType<typeof resolve>, reg: ARegistry) {
-  const names = (t: RegExp) => [...new Set(r.active.filter((a) => t.test(a.el.type)).map((a) => a.el.name.toLowerCase()))].sort();
-  const spells = [...new Set(sh.casting.flatMap((c) => [...c.cantripsKnown, ...c.spells, ...c.granted]).map((p) => (reg.get(p.id)?.name ?? p.id).toLowerCase().replace(/[’‘]/g, "'")))].sort();
+  // Names as either writes them: "Thieves’ Cant" and "Thieves' Cant", "Shadow-Touched" and "Shadow Touched" are one.
+  const names = (t: RegExp) => [...new Set(r.active.filter((a) => t.test(a.el.type)).map((a) => nameKey(a.el.name)))].sort();
+  const spells = [...new Set(sh.casting.flatMap((c) => [...c.cantripsKnown, ...c.spells, ...c.granted]).map((p) => nameKey(reg.get(p.id)?.name ?? p.id)))].sort();
   return {
     hp: sh.hp, ac: sh.ac.value, prof: sh.proficiency, speed: sh.speed, init: sh.initiative,
     scores: sh.abilities.map((a) => a.score), saves: sh.abilities.map((a) => a.save), skills: sh.skills.map((k) => k.bonus),
     // A feat by its name alone ("Magic Initiate (Cleric)" is 5e.tools' Magic Initiate), and the 2024 Ability Score
     // Improvement is no feat in Aurora's copy: neither is a change a player sees.
-    feats: [...new Set(names(/^Feat$/).map((n) => n.replace(/\s*\(.*\)$/, "")).filter((n) => !/^ability score improvement/.test(n)))].sort(), spells, languages: names(/^Language$/),
+    feats: [...new Set(r.active.filter((a) => a.el.type === "Feat").map((a) => nameKey(a.el.name.replace(/\s*\(.*\)$/, ""))).filter((n) => !/^ability score improvement/.test(n)))].sort(), spells, languages: names(/^Language$/),
   };
 }
 
@@ -44,6 +46,8 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")("saved characters move
   const byField = new Map<string, number>();
   const noTwin = new Map<string, number>();
   const unplaced = new Map<string, number>();
+  const open = new Map<string, number>();
+  const against = new Map<string, number>();
   let n = 0;
   for (const f of picked) {
     let ch;
@@ -56,6 +60,8 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")("saved characters move
     const r1 = resolve(m.ch, five);
     const after = facts(buildSheet(r1), r1, five);
     for (const x of m.noTwin) noTwin.set(`${x.type}: ${x.name}`, (noTwin.get(`${x.type}: ${x.name}`) ?? 0) + 1);
+    for (const x of m.againstRules) against.set(x.replace(/^[^:]*\d+\)?: /, ""), (against.get(x.replace(/^[^:]*\d+\)?: /, "")) ?? 0) + 1);
+    for (const x of m.open) open.set(x, (open.get(x) ?? 0) + 1);
     for (const x of m.unplaced) unplaced.set(`${x.choice}: ${x.name}`, (unplaced.get(`${x.choice}: ${x.name}`) ?? 0) + 1);
     const diffs = (Object.keys(before) as (keyof typeof before)[]).filter((k) => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
     for (const k of diffs) byField.set(k, (byField.get(k) ?? 0) + 1);
@@ -70,7 +76,7 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")("saved characters move
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "migrate.md"), [
     "# Saved characters moved to 5e.tools ids", "", `${n} characters, ${changed.length} with a changed sheet.`, "",
-    "## Changed fields", ...top(byField), "", "## No 5e.tools twin", ...top(noTwin), "", "## Picks with no place", ...top(unplaced), "",
+    "## Changed fields", ...top(byField), "", "## No 5e.tools twin", ...top(noTwin), "", "## Picks with no place", ...top(unplaced), "", "## Choices left open", ...top(open), "", "## Kept against 5e.tools' rules", ...top(against), "",
     "## Changed sheets", ...changed.slice(0, 200).map((c) => `- ${c}`), "",
   ].join("\n"));
   const base = join(dir, "migrate-count.json");

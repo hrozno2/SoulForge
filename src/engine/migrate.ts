@@ -23,6 +23,10 @@ export interface Migration {
   noTwin: { id: string; name: string; type: string }[];
   /** Old picks whose twin no choice of the rebuilt character offers. */
   unplaced: { id: string; name: string; choice: string }[];
+  /** Choices the rebuilt character leaves open, with a few of their options: where the unplaced picks should go. */
+  open: string[];
+  /** Picks kept although 5e.tools' rules rule them out, as "choice: pick (why)". */
+  againstRules: string[];
 }
 
 const isFive = (e: AElement | undefined) => !!e && (e.origin === "5etools" || e.id.startsWith("ID_5ET"));
@@ -76,6 +80,14 @@ export function fiveToolsTwins(reg: ARegistry): (id: string) => string | undefin
   };
 }
 
+/** "+2, +1" and "+2 to one score and +1 to another" are one shape; "+1, +1, +1" and "+1 to three different scores". */
+function shapeOf(name: string): string {
+  const n = name.toLowerCase();
+  if (/\+2/.test(n)) return /\+1/.test(n) ? "2-1" : "2";
+  const ones = (n.match(/\+1/g) ?? []).length;
+  return /three/.test(n) || ones >= 3 ? "1-1-1" : /two|another/.test(n) || ones === 2 ? "1-1" : "1";
+}
+
 const ABILITY = /\b(strength|dexterity|constitution|intelligence|wisdom|charisma)\b/i;
 
 /** `ch` built on `from` (both providers) moved onto `to` (5e.tools without Aurora). */
@@ -100,7 +112,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // picks: the two providers build them differently, so they are filled below to give the old scores.
   const old = resolve(ch, from);
   const target = buildSheet(old).abilities.map((a) => a.score);
-  type Pick = { id: string; name: string; owner: string; ownerName: string; choice: string; ability: boolean; spell: boolean; casting?: string };
+  type Pick = { id: string; name: string; owner: string; ownerName: string; choice: string; ability: boolean; spell: boolean; casting?: string; concept?: string; at: number };
   const pool: Pick[] = [];
   const lists: { owner: string; name: string; values: string[] }[] = [];
   const isAbility = (name: string, type: string) => type === "Ability Score Improvement" || /^ability score (improvement|increase)/i.test(name) || (ABILITY.test(name) && /\+\d|increase|improvement/i.test(name));
@@ -113,7 +125,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       // By what the pick is, not by its choice's name: Aurora's "Ability Score Improvement (Barbarian 4)" holds feats.
       const ability = el?.type !== "Feat" && (s.rule.type === "Ability Score Improvement" || isAbility(el?.name ?? "", el?.type ?? ""));
       const t = ability ? id : map(id, false);
-      pool.push({ id: t ?? id, name: el?.name ?? id, owner: map(s.owner.id, false)!, ownerName: nameKey(s.owner.name), choice: s.rule.name, ability, spell: el?.type === "Spell", casting: s.rule.spellcasting });
+      pool.push({ id: t ?? id, name: el?.name ?? id, owner: map(s.owner.id, false)!, ownerName: nameKey(s.owner.name), choice: s.rule.name, ability, spell: el?.type === "Spell", casting: s.rule.spellcasting, concept: el ? conceptOf(el) : undefined, at: s.at ?? 0 });
     }
   }
   const picks = pool.filter((p) => !p.ability);
@@ -137,14 +149,28 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // infusion Class Features for 5e.tools' Optional Features); or the owner's name with the pick's ("Magic Initiate
   // (Bard)" for Magic Initiate's "Bard").
   type Slot = ReturnType<typeof resolve>["slots"][number];
-  const fits = (s: Slot, p: Pick): string | undefined => {
+  const fits = (s: Slot, p: Pick, anyway = false): string | undefined => {
     // A spell stays with its spellcasting: a Warlock's spells known are not a Sorcerer's.
     if (p.spell && p.casting && s.rule.spellcasting && p.casting.toLowerCase() !== s.rule.spellcasting.toLowerCase()) return undefined;
-    const open = s.options.filter((o) => !s.blocked.has(o.id));
+    // `anyway`: the player's pick that 5e.tools' rules rule out (Polearm Master at 4th level without Strength or
+    // Dexterity 13, which Aurora's copy did not ask) is kept, marked against the rules as any such pick is.
+    const open = anyway ? s.options : s.options.filter((o) => !s.blocked.has(o.id));
     const byId = open.find((o) => o.id === p.id);
     if (byId) return byId.id;
     const n = nameKey(p.name);
-    return (open.find((o) => nameKey(o.name) === n) ?? open.find((o) => nameKey(o.name) === nameKey(`${s.owner.name} (${p.name})`)))?.id;
+    // The same concept, whoever names it: Aurora's "Skill Expertise (Acrobatics)" Class Feature is 5e.tools' expertise.
+    const c = p.concept;
+    const byConcept = c ? open.find((o) => conceptOf(o) === c) : undefined;
+    if (byConcept) return byConcept.id;
+    const exact = open.find((o) => nameKey(o.name) === n) ?? open.find((o) => nameKey(o.name) === nameKey(`${s.owner.name} (${p.name})`));
+    if (exact) return exact.id;
+    // A near name, when only one option has it: "Rock Gnome" is "Rock Gnome Lineage", "Wisdom" is "+1 Wisdom";
+    // "Resilient (Strength)" is "Saving throw proficiency (Strength)" by what the brackets name.
+    const one = (xs: typeof open) => (xs.length === 1 ? xs[0].id : undefined);
+    const inName = n.length > 3 ? one(open.filter((o) => ` ${nameKey(o.name)} `.includes(` ${n} `))) : undefined;
+    if (inName) return inName;
+    const br = /\(([^)]+)\)\s*$/.exec(p.name)?.[1];
+    return br ? one(open.filter((o) => nameKey(/\(([^)]+)\)\s*$/.exec(o.name)?.[1] ?? "") === nameKey(br))) : undefined;
   };
   const room = (s: Slot) => s.rule.type !== "List" && (next.selections[s.key]?.length ?? 0) < s.rule.number;
   // The owner's picks go first, to a fixed point (an invocation chosen opens its own feat choice, which its feat
@@ -152,7 +178,8 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // by twin or by name (Aurora's Lessons of the First Ones is a Class Feature, 5e.tools' an Optional Feature). The
   // narrowest choices go first, so a choice of any skill does not take the picks a class's short list needs.
   const ownerOf = (s: Slot, p: Pick) => p.owner === s.owner.id || p.ownerName === nameKey(s.owner.name);
-  const pass = (ownerOnly: boolean): boolean => {
+  type Mode = { owner?: boolean; level?: boolean; anyway?: boolean };
+  const pass = (mode: Mode): boolean => {
     const r = resolve(next, to);
     let placed = false;
     for (const s of r.slots) {
@@ -164,17 +191,20 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       const have = next.selections[s.key] ?? [];
       for (let i = 0; i < picks.length && have.length < s.rule.number; i++) {
         const p = picks[i];
-        if (ownerOnly && !ownerOf(s, p)) continue;
-        const id = fits(s, p);
+        if (mode.owner && !ownerOf(s, p)) continue;
+        if (mode.level && p.at !== s.at) continue;
+        const id = fits(s, p, mode.anyway);
         if (id && !have.includes(id)) { have.push(id); picks.splice(i--, 1); placed = true; }
       }
       if (have.length) next.selections[s.key] = have;
-      // Any owner: one choice at a time, so what it opens is offered to its own picks first.
-      if (!ownerOnly && placed) return true;
+      // Beyond the owner's own: one choice at a time, so what it opens is offered to its own picks first.
+      if (!mode.owner && placed) return true;
     }
     return placed;
   };
-  const place = () => { for (let round = 0; round < 80; round++) if (!pass(true) && !pass(false)) break; };
+  // Owner and level, owner, level (then a pick the rules now rule out, kept in its own level's choice only), anywhere.
+  const MODES: Mode[] = [{ owner: true, level: true }, { owner: true }, { level: true }, { level: true, anyway: true }, {}];
+  const place = () => { for (let round = 0; round < 120; round++) if (!MODES.some((m) => pass(m))) break; };
 
   // Ability increases: each open choice whose options raise scores (or choose how they are raised) takes the option
   // that brings the scores closest to the old sheet's, looking one choice ahead for a pattern ("+2 and +1").
@@ -195,10 +225,13 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
         t = { ...t, selections: { ...t.selections, [opened.key]: [sub.id] } };
       }
       const g = gap(t);
-      if (!out || g < out.gap) out = { id: o.id, gap: g };
+      // On a tie, the old pick's own pattern: "+1, +1, +1" is "+1 to three different scores", not "+2 and +1".
+      if (!out || g < out.gap || (g === out.gap && sameShape(o.name) && !sameShape(from.get(out.id)?.name ?? to.get(out.id)?.name ?? ""))) out = { id: o.id, gap: g };
     }
     return out;
   };
+  const shapes = pool.filter((p) => p.ability && /\+\d.*\+\d|\+\d to|three|two/i.test(p.name)).map((p) => shapeOf(p.name));
+  const sameShape = (name: string) => shapes.includes(shapeOf(name));
   const fillScores = (only?: (s: Slot) => boolean) => {
   const skipped = new Set<string>();
   for (let round = 0; round < 40 && gap(next) > 0; round++) {
@@ -212,10 +245,34 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
 
   // The species', background's and feats' own increases first, so a feat's score requirement holds when it is
   // placed (Charger: Strength or Dexterity 13); then the picks; then the class improvements a feat did not take.
+  // A choice of a set ("expertise: AnyProficientSkill, or AnyProficientSkill and thieves' tools"; a lineage) that no
+  // pick names: the option whose own choices then take the most old picks.
+  const fillSets = () => {
+    for (let round = 0; round < 20; round++) {
+      const r = resolve(next, to);
+      let done = false;
+      for (const s of r.slots.filter((x) => room(x) && !x.rule.optional && x.rule.type === "Training Option" && x.options.length <= 8)) {
+        let bestId: string | undefined, bestN = 0;
+        for (const o of s.options.filter((x) => !s.blocked.has(x.id))) {
+          const t: Character = { ...next, selections: { ...next.selections, [s.key]: [...(next.selections[s.key] ?? []), o.id] } };
+          const opened = resolve(t, to).slots.filter((x) => !r.slots.some((y) => y.key === x.key));
+          const n = picks.filter((p) => opened.some((x) => fits(x, p))).length;
+          if (n > bestN) { bestN = n; bestId = o.id; }
+        }
+        if (bestId) { next.selections[s.key] = [...(next.selections[s.key] ?? []), bestId]; done = true; break; }
+      }
+      if (!done) break;
+      place();
+    }
+  };
+  // Picks first (a feat's own +1 counts before the species' pattern is chosen), then the scores, then again.
+  place();
   fillScores((x) => x.rule.type === "Ability Score Improvement");
   place();
+  fillSets();
   fillScores();
   place();
+  fillScores();
 
   // Spells a 2024 caster prepares rather than counts as picks: the old picks of that spellcasting become prepared.
   {
@@ -236,5 +293,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // "Channel Divinity: Divine Spark" is "Divine Spark" where 5e.tools grants it.
   const had = (n: string) => names.has(nameKey(n)) || names.has(nameKey(n.replace(/^[^:]+:\s*/, "")));
   const unplaced = picks.filter((p) => !final.ids.has(p.id) && !had(p.name)).map((p) => ({ id: p.id, name: p.name, choice: p.choice }));
-  return { ch: next, moved, noTwin: [...noTwin.values()], unplaced };
+  const open = final.slots.filter((x) => room(x) && !x.rule.optional && x.options.length).map((x) => `${x.owner.name}: ${x.rule.name} [${x.options.slice(0, 4).map((o) => o.name).join("; ")}${x.options.length > 4 ? "; …" : ""}]`);
+  const againstRules = final.slots.flatMap((x) => x.chosen.filter((id) => x.blocked.has(id)).map((id) => `${x.rule.name}: ${to.get(id)?.name ?? id} (${x.whyBlocked?.(id) ?? "against the rules"})`));
+  return { ch: next, moved, noTwin: [...noTwin.values()], unplaced, open, againstRules };
 }

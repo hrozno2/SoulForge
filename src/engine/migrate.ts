@@ -170,6 +170,14 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const withOwner = new Set([nameKey(`${s.owner.name} ${p.name}`), `${p.ownerName} ${n}`]);
     const exact = open.find((o) => nameKey(o.name) === n) ?? open.find((o) => withOwner.has(nameKey(o.name)));
     if (exact) return exact.id;
+    const kind = (to.get(p.id) ?? from.get(p.id))?.type;
+    // A feat 5e.tools holds as versions ("Spell Sniper (Wizard)" and five more): the version its own old pick names
+    // (the class Aurora's copy asked), else the first.
+    const versions = open.filter((o) => o.type === kind && nameKey(o.name).startsWith(`${n} `) && /\)$/.test(o.name));
+    if (kind === "Feat" && versions.length > 1) {
+      const own = new Set(pool.filter((q) => q.ownerName === n).map((q) => nameKey(q.name)));
+      return (versions.find((o) => own.has(nameKey(/\(([^)]+)\)$/.exec(o.name)?.[1] ?? ""))) ?? versions[0]).id;
+    }
     // Near names never fill a choice of increases: those are set to the old scores below ("Resilient (Strength)" is
     // the saving throw, not Resilient's "+1 Strength").
     // Only a pick that is an ability's bare name does (Fey Touched's "Intelligence" is its "+1 Intelligence").
@@ -181,7 +189,6 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     // A near name, when only one option has it: "Rock Gnome" is "Rock Gnome Lineage", "Wisdom" is "+1 Wisdom";
     // "Resilient (Strength)" is "Saving throw proficiency (Strength)" by what the brackets name. Never across kinds:
     // the spell Light is not the feat Light Bringer (it took a Cleric's 4th-level feat).
-    const kind = (to.get(p.id) ?? from.get(p.id))?.type;
     const same = (o: (typeof open)[number]) => !kind || o.type === kind || (kind !== "Spell" && kind !== "Feat" && o.type !== "Spell" && o.type !== "Feat");
     const one = (xs: typeof open) => { const ys = xs.filter(same); return ys.length === 1 ? ys[0].id : undefined; };
     const inName = n.length > 3 ? one(open.filter((o) => ` ${nameKey(o.name)} `.includes(` ${n} `))) : undefined;

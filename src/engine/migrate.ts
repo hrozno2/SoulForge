@@ -251,7 +251,8 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   const abilityish = (s: Slot) => !s.rule.optional && room(s) && raising(s).length > 0;
   const best = (c: Character, s: Slot, depth: number): { id: string; gap: number } | undefined => {
     let out: { id: string; gap: number } | undefined;
-    for (const o of raising(s).filter((x) => !(c.selections[s.key] ?? []).includes(x.id)).slice(0, 12)) {
+    // Every option: the 2014 improvement has 21 (six "+2", fifteen pairs), and "+1 Dexterity, +1 Charisma" is the 14th.
+    for (const o of raising(s).filter((x) => !(c.selections[s.key] ?? []).includes(x.id))) {
       let t: Character = { ...c, selections: { ...c.selections, [s.key]: [...(c.selections[s.key] ?? []), o.id] } };
       // A pattern ("+2 to one score and +1 to another") opens the choices that raise: fill them the same way.
       for (let d = 0; d < depth; d++) {

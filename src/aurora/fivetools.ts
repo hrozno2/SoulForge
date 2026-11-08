@@ -796,7 +796,7 @@ function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
   const reqs = prerequisiteOf(f.prerequisite as J[] | undefined, out);
   const rules = [...abilityRules(f.ability, f.name, { out, idBase: ftId("FEAT", f.name, f.source) }), ...trainingRules(f, f.name, out, ctx, ftId("FEAT", f.name, f.source)), ...defenseRules(f)];
   const spells = additionalSpellRules(f.additionalSpells, f.name, f.source, out);
-  rules.push(...spells.rules);
+  rules.push(...tableSpellChoices(f, spells.rules));
   // The options a feat teaches (Martial Adept's maneuvers, Metamagic Adept's options, Fighting Initiate's style).
   rules.push(...optionalFeatureRules(f, rules));
   rules.push(...proseChoiceRules(f, ftId("FEAT", f.name, f.source), undefined, ctx, out));
@@ -1772,6 +1772,34 @@ export function additionalSpellRules(adds: J[] | undefined, owner: string, owner
   return { rules, ability };
 }
 
+/**
+ * "You know a number of runes equal to half your proficiency bonus (rounded down), chosen from the Rune Spells table"
+ * (Rune Shaper): 5e.tools lists every spell of that table as granted, but the text makes them a choice. The table's
+ * spells become choices, one at character level 1 and one more each time half the proficiency bonus grows (9, 17);
+ * spells outside the table stay granted. Aurora models it the same way with three selects.
+ */
+export function tableSpellChoices(f: J, rules: ARule[]): ARule[] {
+  const text = JSON.stringify(f.entries ?? []);
+  const m = text.match(/know a number of (\w+) equal to half your proficiency bonus \(rounded down\), chosen from the ([^.]+?) table/i);
+  if (!m) return rules;
+  const tables: J[] = [];
+  const walk = (x: unknown): void => {
+    if (Array.isArray(x)) x.forEach(walk);
+    else if (x && typeof x === "object") { if ((x as J).type === "table") tables.push(x as J); Object.values(x as J).forEach(walk); }
+  };
+  walk(f.entries);
+  const names = new Set(tables.flatMap((t) => [...JSON.stringify(t.rows ?? []).matchAll(/\{@spell ([^|}]+)/gi)].map((x) => x[1].trim().toLowerCase())));
+  const inTable = (r: ARule) => r.kind === "grant" && String(r.id).startsWith("SPELLREF:") && names.has(String(r.id).slice(9).split("|")[0]);
+  const options = rules.filter(inTable).map((r) => String((r as { id: string }).id));
+  if (options.length < 2) return rules;
+  const kept = rules.filter((r) => !inTable(r));
+  const noun = titleCase(m[1].replace(/s$/i, ""));
+  const spellcasting = (rules.find(inTable) as { spellcasting?: string }).spellcasting;
+  const nth = ["", "2nd ", "3rd "];
+  kept.push(...[1, 9, 17].map((level, i) => ({ kind: "select", type: "Spell", name: `${nth[i]}${noun} Spell (${f.name})`, supports: options.join("|"), number: 1, ...(i ? { level } : {}), spellcasting } as ARule)));
+  return kept;
+}
+
 /** Innate casting for a species or feat: no spell list of its own, just the ability that sets the save DC. */
 function castingFor(name: string, ability?: string): AElement["spellcasting"] {
   return { name, ability: cap(abilFull(ability ?? "int")), prepare: false, list: [], extendLists: [] };
@@ -2021,12 +2049,22 @@ function resolveLooseRefs(out: AElement[]): void {
 /** Turns SPELLREF placeholders into spell element ids; a spell that was not imported is dropped quietly. */
 function resolveSpellRefs(out: AElement[], spellIds: Record<string, { id: string; source: string }[]>): void {
   for (const el of out) {
-    if (!el.rules.some((r) => r.kind === "grant" && String(r.id).startsWith("SPELLREF:"))) continue;
-    el.rules = el.rules.flatMap((r) => {
-      if (r.kind !== "grant" || !String(r.id).startsWith("SPELLREF:")) return [r];
-      const [name, src, owner] = String(r.id).slice(9).split("|");
+    if (!el.rules.some((r) => (r.kind === "grant" && String(r.id).startsWith("SPELLREF:")) || (r.kind === "select" && String(r.supports).includes("SPELLREF:")))) continue;
+    const resolve = (ref: string) => {
+      const [name, src, owner] = ref.slice(9).split("|");
       const list = spellIds[name] ?? [];
-      const hit = list.find((x) => src && x.source === src) ?? list.find((x) => x.source === owner) ?? list.find((x) => x.source === "xphb") ?? list.find((x) => x.source === "phb") ?? list[0];
+      return list.find((x) => src && x.source === src) ?? list.find((x) => x.source === owner) ?? list.find((x) => x.source === "xphb") ?? list.find((x) => x.source === "phb") ?? list[0];
+    };
+    el.rules = el.rules.flatMap((r) => {
+      // A choice among named spells (tableSpellChoices): "SPELLREF:a|src|owner|SPELLREF:b|…" becomes the ids of every
+      // version of those spells, so the edition rule offers the choice's own edition's copy (a 2014 choice drops 2024-only
+      // spells, and resolving to one copy left the Rune Carver's choice empty).
+      if (r.kind === "select" && String(r.supports).includes("SPELLREF:")) {
+        const ids = String(r.supports).split(/\|(?=SPELLREF:)/).flatMap((ref) => (spellIds[ref.slice(9).split("|")[0]] ?? []).map((x) => x.id));
+        return ids.length ? [{ ...r, supports: [...new Set(ids)].join("|") }] : [];
+      }
+      if (r.kind !== "grant" || !String(r.id).startsWith("SPELLREF:")) return [r];
+      const hit = resolve(String(r.id));
       return hit ? [{ ...r, id: hit.id }] : [];
     });
   }

@@ -188,6 +188,28 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("a Rune Shaper knows half the proficiency bonus in runes, not the whole table", () => {
+    const bg = reg!.ofType("Background").find((b) => b.name === "Rune Carver");
+    if (!bg) return;
+    const runeSlots = (level: number) => {
+      const ch = newCharacter();
+      ch.classes = [{ classId: reg!.ofType("Class").find((c) => c.name === "Wizard" && c.source.includes("2024"))!.id, level }];
+      ch.background = bg.id;
+      const r = resolve(ch, reg!);
+      const feat = r.active.find((a) => a.el.name === "Rune Shaper" && a.el.type === "Feat");
+      expect(feat, `level ${level}`).toBeDefined();
+      const granted = r.active.filter((a) => a.el.type === "Spell" && a.from === feat!.el.id).map((a) => a.el.name.toLowerCase());
+      expect(granted, `level ${level}`).toEqual(["comprehend languages"]);
+      return r.slots.filter((s) => s.owner?.id === feat!.el.id && s.rule.type === "Spell");
+    };
+    for (const [level, n] of [[1, 1], [8, 1], [9, 2], [17, 3]] as const) {
+      const slots = runeSlots(level);
+      expect(slots, `level ${level}`).toHaveLength(n);
+      expect(slots[0].options.map((o) => o.name.toLowerCase()), `level ${level}`).toContain("burning hands");
+      expect(slots[0].options, `level ${level}`).toHaveLength(13);
+    }
+  });
+
   it("gives a Warlock pact slots", () => {
     const wl = reg!.ofType("Class").find((c) => c.name === "Warlock" && c.source.includes("2024"))!;
     let ch = newCharacter();

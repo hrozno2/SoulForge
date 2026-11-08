@@ -213,6 +213,9 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const rank = (pl: { s: Slot }, p: Pick): { rank: number; id: string } | undefined => {
       const own = ownerOf(pl.s, p), lvl = p.at === pl.s.at;
       const ok = fits(pl.s, p);
+      // A feat goes only to its owner's choice or its own level's: an old pick whose choice 5e.tools no longer asks
+      // (a background feat it now gives outright) must not take another level's feat (it pushed Spell Sniper out).
+      if (ok && !own && !lvl && from.get(p.id)?.type === "Feat" || ok && !own && !lvl && to.get(p.id)?.type === "Feat") return undefined;
       if (ok) return { rank: own && lvl ? 0 : own ? 1 : lvl ? 2 : 4, id: ok };
       const anyway = lvl ? fits(pl.s, p, true) : undefined;
       return anyway ? { rank: 3, id: anyway } : undefined;
@@ -228,7 +231,9 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       }
       return false;
     };
-    for (let i = 0; i < picks.length; i++) if (edges[i].length) take(i, new Set());
+    // The picks with the best places first, so a pick on its own owner's choice keeps it against one from elsewhere.
+    const byRank = picks.map((_, i) => i).filter((i) => edges[i].length).sort((x, y) => edges[x][0].rank - edges[y][0].rank);
+    for (const i of byRank) take(i, new Set());
     const used = new Set<number>();
     for (let j = 0; j < places.length; j++) {
       const i = owner[j];

@@ -202,6 +202,19 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("the same increase picked in two improvements counts twice (+1 Strength, +1 Constitution at 4, 6 and 8)", () => {
+    const f = reg!.ofType("Class").find((c) => c.name === "Fighter" && !c.source.includes("2024"))!;
+    let ch = newCharacter(); ch.classes = [{ classId: f.id, level: 8 }];
+    for (let round = 0; round < 12; round++) {
+      const s = resolve(ch, reg!).slots.find((x) => !ch.selections[x.key]?.length && /Ability Score Improvement/.test(x.rule.name));
+      if (!s) break;
+      const o = /or feat/.test(s.rule.name) ? s.options.find((x) => x.name === "Ability Score Improvement" && !s.blocked.has(x.id))! : s.options.find((x) => x.name === "+1 Strength, +1 Constitution")!;
+      ch = { ...ch, selections: { ...ch.selections, [s.key]: [o.id] } };
+    }
+    const sc = buildSheet(resolve(ch, reg!)).abilities.map((a) => a.score);
+    expect([sc[0], sc[2]]).toEqual([11, 11]);
+  });
+
   it("a background's several feats are a choice of one (Rewarded; the Haunted One's Survivor or a Dark Gift)", () => {
     const feats = (bgName: string) => {
       const bg = reg!.ofType("Background").find((b) => b.name === bgName);

@@ -455,6 +455,13 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
           if (rule.type === "Spell") {
             spellPicks.push({ id, casting: rule.spellcasting ?? "", granted: false, prepared: false, hint: rule.supports, from: el.id });
           }
+          // An increase picked in two choices counts twice: 5e.tools' "+1 Strength, +1 Constitution" at 4th and 8th
+          // level, or "+1 Strength" in two feats' choices, are one element each, and an element is had once, so the
+          // second pick was lost. Only a pure increase (stat rules alone) repeats this way.
+          if (seen.has(id) && target.type === "Ability Score Improvement" && target.rules.length && target.rules.every((r) => r.kind === "stat")) {
+            const tctx = makeCtx(prev, ownerLevel, ch, reg, empty, target.id);
+            for (const r of target.rules) if (r.kind === "stat" && (r.level === undefined || r.level <= ownerLevel) && meets(r.requirements, tctx)) stats.add(r.name, { value: r.value, bonus: r.bonus, from: target.name, alt: r.alt, inline: r.inline });
+          }
           visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0), below);
         }
       }

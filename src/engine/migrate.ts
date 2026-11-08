@@ -179,8 +179,11 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       return hit.length === 1 ? hit[0].id : undefined;
     }
     // A near name, when only one option has it: "Rock Gnome" is "Rock Gnome Lineage", "Wisdom" is "+1 Wisdom";
-    // "Resilient (Strength)" is "Saving throw proficiency (Strength)" by what the brackets name.
-    const one = (xs: typeof open) => (xs.length === 1 ? xs[0].id : undefined);
+    // "Resilient (Strength)" is "Saving throw proficiency (Strength)" by what the brackets name. Never across kinds:
+    // the spell Light is not the feat Light Bringer (it took a Cleric's 4th-level feat).
+    const kind = (to.get(p.id) ?? from.get(p.id))?.type;
+    const same = (o: (typeof open)[number]) => !kind || o.type === kind || (kind !== "Spell" && kind !== "Feat" && o.type !== "Spell" && o.type !== "Feat");
+    const one = (xs: typeof open) => { const ys = xs.filter(same); return ys.length === 1 ? ys[0].id : undefined; };
     const inName = n.length > 3 ? one(open.filter((o) => ` ${nameKey(o.name)} `.includes(` ${n} `))) : undefined;
     if (inName) return inName;
     // What the brackets name, as an option's brackets, its name, or inside its name: "Cloud's Jaunt (Cloud Giant)"

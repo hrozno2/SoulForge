@@ -202,6 +202,28 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("a background's several feats are a choice of one (Rewarded; the Haunted One's Survivor or a Dark Gift)", () => {
+    const feats = (bgName: string) => {
+      const bg = reg!.ofType("Background").find((b) => b.name === bgName);
+      if (!bg) return undefined;
+      const ch = newCharacter(); ch.background = bg.id; ch.classes = [{ classId: reg!.ofType("Class").find((c) => c.name === "Fighter" && c.source.includes("2024"))!.id, level: 1 }];
+      const r = resolve(ch, reg!);
+      return { had: r.active.filter((a) => a.el.type === "Feat").map((a) => a.el.name), slot: r.slots.find((s) => s.rule.name === `${bgName} feat`) };
+    };
+    const rew = feats("Rewarded");
+    if (rew) {
+      expect(rew.had).not.toContain("Skilled");
+      expect(rew.slot!.options.map((o) => o.name.replace(/ \(.*\)$/, "")).filter((n, i, a) => a.indexOf(n) === i).sort()).toEqual(["Lucky", "Magic Initiate", "Skilled"]);
+    }
+    const ho = feats("Haunted One");
+    if (ho) {
+      expect(ho.had).not.toContain("Survivor");
+      const names = ho.slot!.options.map((o) => o.name);
+      expect(names).toContain("Survivor");
+      expect(names.length).toBeGreaterThan(2);
+    }
+  });
+
   it("a 2014 Ranger picks favored enemies (1, 6, 14) and terrains (1, 6, 10)", () => {
     const ranger = reg!.ofType("Class").find((c) => c.name === "Ranger" && !c.source.includes("2024"))!;
     const slots = (level: number, re: RegExp) => { const ch = newCharacter(); ch.classes = [{ classId: ranger.id, level }]; return resolve(ch, reg!).slots.filter((s) => re.test(s.rule.name)); };

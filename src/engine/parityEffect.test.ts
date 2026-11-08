@@ -47,15 +47,20 @@ it.skipIf(!C || process.env.RULES_TIER !== "parity-effect")("what Aurora changes
   const N = Number(process.env.PARITY_EFFECT_N ?? 500);
   const paths = new Map<string, { n: number; samples: string[] }>();
   let same = 0, crashed = 0, hints = 0;
+  // Every difference that is not a DC note, in full: the samples below keep only six per path.
+  const real: string[] = [];
   for (let i = 0; i < N; i++) {
     try {
       const ch = randomCharacter(alone, 1 + (i % 20), {} as never, rng);
       const out: { path: string; alone: unknown; both: unknown }[] = [];
       diff(buildSheet(resolve(ch, alone)), buildSheet(resolve(ch, both)), "sheet", out);
-      // A DC beside a feature's text is Aurora's own note ("Martial Arts... (DC 15)"): counted apart, it changes no number.
-      const isHint = (d: { path: string; alone: unknown; both: unknown }) => /features\[\]\.text$/.test(d.path) && String(d.both).replace(/\s*\(DC \d+\)/g, "") === String(d.alone);
+      // A DC or damage note beside a feature's text is Aurora's own ("Martial Arts... (DC 15)", "(damage +8)"): counted
+      // apart, it changes no number.
+      const isHint = (d: { path: string; alone: unknown; both: unknown }) => /features\[\]\.text$/.test(d.path) && String(d.both).replace(/\s*\((?:DC \d+|damage [+-]\d+)\)/g, "") === String(d.alone);
       if (out.some(isHint)) hints++;
       if (!out.filter((d) => !isHint(d)).length) same++;
+      const who0 = ch.classes.map((c) => `${alone.get(c.classId)?.name} ${c.level}`).join("/");
+      for (const d of out.filter((x) => !isHint(x))) { const [a, b] = [String(JSON.stringify(d.alone)), String(JSON.stringify(d.both))]; let at = 0; while (at < a.length && a[at] === b[at]) at++; real.push(`${who0} ${ch.race ? alone.get(ch.race)?.name : ""}: ${d.path}: ${a.slice(Math.max(0, at - 40), at + 80)} -> ${b.slice(Math.max(0, at - 40), at + 80)}`); }
       const who = ch.classes.map((c) => `${alone.get(c.classId)?.name} ${c.level}`).join("/");
       for (const d of out) {
         const e = paths.get(d.path) ?? { n: 0, samples: [] };
@@ -70,6 +75,7 @@ it.skipIf(!C || process.env.RULES_TIER !== "parity-effect")("what Aurora changes
     } catch { crashed++; }
   }
   const lines = [`# What Aurora changes on 5e.tools characters`, "", `${N} characters, ${same} with the same sheet, ${hints} of them differing in a DC note only, ${crashed} failed to build.`, ""];
+  if (real.length) lines.push(`## Not a DC note (${real.length})`, ...real.map((x) => `- ${x}`), "");
   for (const [p, e] of [...paths].sort((a, b) => b[1].n - a[1].n)) lines.push(`## ${p} (${e.n})`, ...e.samples.map((s) => `- ${s}`), "");
   writeFileSync(join(C!, "engine", "parity-effect.md"), lines.join("\n"));
   console.log(`PARITY same sheet with and without Aurora: ${same} of ${N}`);

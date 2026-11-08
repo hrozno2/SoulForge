@@ -1282,7 +1282,28 @@ function equipmentHtml(se: unknown): string {
 /** Feats a background or species gives: named ones, any of a category (the 2024 Human's origin feat), or any (Variant Human). */
 function featRules(owner: J): ARule[] {
   const rules: ARule[] = [];
-  for (const f of (owner.feats as J[]) ?? []) for (const k of Object.keys(f)) {
+  const featId = (k: string) => {
+    const [fname, fsrc] = k.split("|");
+    const [fbase, variant] = fname.split(";").map((x) => x.trim());
+    return ftId("FEAT", variant ? `${cap(fbase)} (${cap(variant)})` : cap(fbase), (fsrc ?? "PHB").toUpperCase());
+  };
+  // More than one entry is a choice of one, as 5e.tools lists alternatives everywhere (the Book of Many Things'
+  // Rewarded: Lucky, Magic Initiate or Skilled). Before, all three were given.
+  const list = (owner.feats as J[]) ?? [];
+  const named = (f: J) => { const ks = Object.keys(f); return ks.length === 1 && f[ks[0]] === true && !["any", "anyFromCategory"].includes(ks[0]) ? ks[0] : undefined; };
+  if (list.length > 1 && list.every((f) => named(f))) {
+    rules.push({ kind: "select", type: "Feat", name: `${owner.name} feat`, supports: list.map((f) => featId(named(f)!)).join("|"), number: 1 });
+    return rules;
+  }
+  // A named feat or any of a category (the Haunted One: "Survivor or a Dark Gift feat of your choice"): one choice.
+  const cat = list.find((f) => f.anyFromCategory && (f.anyFromCategory.count ?? 1) === 1);
+  if (list.length > 1 && cat && list.every((f) => f === cat || named(f))) {
+    const cats = ((cat.anyFromCategory.category as string[]) ?? []).map((c) => `category ${c}`);
+    const ids = list.filter((f) => f !== cat).map((f) => featId(named(f)!));
+    rules.push({ kind: "select", type: "Feat", name: `${owner.name} feat`, supports: `(${ids.join("||")})||(5et feat,(${cats.join("||")}))`, number: 1 });
+    return rules;
+  }
+  for (const f of list) for (const k of Object.keys(f)) {
     // "Any feat of a category" (the Haunted One's Dark Gift) is a choice limited to that category.
     if (k === "anyFromCategory") {
       const cats = ((f[k]?.category as string[]) ?? []).map((c) => `category ${c}`);
@@ -1290,9 +1311,7 @@ function featRules(owner: J): ARule[] {
       continue;
     }
     if (k === "any") continue;
-    const [fname, fsrc] = k.split("|");
-    const [fbase, variant] = fname.split(";").map((x) => x.trim());
-    rules.push({ kind: "grant", type: "Feat", id: ftId("FEAT", variant ? `${cap(fbase)} (${cap(variant)})` : cap(fbase), (fsrc ?? "PHB").toUpperCase()) });
+    rules.push({ kind: "grant", type: "Feat", id: featId(k) });
   }
   for (const f of (owner.feats as J[]) ?? []) if (f.any) rules.push({ kind: "select", type: "Feat", name: "Origin feat", supports: "5et feat", number: f.any });
   return rules;
@@ -2219,6 +2238,15 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
 function resolveLooseRefs(out: AElement[]): void {
   const ids = new Set(out.map((e) => e.id));
   const ELEMENTAL = /^ID_5ET_LANGUAGE_(AURAN|AQUAN|IGNAN|TERRAN)$/;
+  // In a choice too: the Book of Many Things' Rewarded offers "Magic Initiate", which the data holds as its versions.
+  const versions = (id: string) => out.filter((e) => e.type === "Feat" && e.id.startsWith(`${id}_`)).map((e) => e.id);
+  for (const el of out) for (let i = 0; i < el.rules.length; i++) {
+    const r = el.rules[i];
+    if (r.kind !== "select" || r.type !== "Feat" || !/^ID_[A-Z0-9_|]+$/.test(String(r.supports))) continue;
+    const parts = String(r.supports).split("|").filter(Boolean);
+    if (parts.every((x) => ids.has(x))) continue;
+    el.rules[i] = { ...r, supports: parts.flatMap((x) => (ids.has(x) ? [x] : versions(x))).join("|") } as ARule;
+  }
   for (const el of out) {
     if (!el.rules.some((r) => r.kind === "grant" && !ids.has(r.id))) continue;
     el.rules = el.rules.map((r) => {

@@ -904,7 +904,7 @@ function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, 
   // creature as a companion (found by name and book once all content is in: registry.ts resolveCreatureRefs).
   const fb: ARule[] = [];
   const own = [...JSON.stringify(f.entries ?? []).matchAll(/@creature ([^|}]+)(?:\|([^|}]*))?/g)].find((m) => m[1].trim().toLowerCase() === String(f.name).toLowerCase());
-  const rules: ARule[] = [...(own ? [{ kind: "grant", type: "Companion", id: `CREATUREREF:${own[1].trim().toLowerCase()}|${(own[2] ?? "").trim().toLowerCase()}` } as ARule] : []), ...textProficiencies(f.entries, out, fb)];
+  const rules: ARule[] = [...(own ? [{ kind: "grant", type: "Companion", id: `CREATUREREF:${own[1].trim().toLowerCase()}|${(own[2] ?? "").trim().toLowerCase()}` } as ARule] : []), ...textProficiencies(f.entries, out, fb), ...creatureChoiceRules(f)];
   if (ctx) for (const rule of fb) (ctx.fallbacks ??= []).push({ to: id, rule });
   return base(id, f.name, type, srcName(ctx, f.source), { description: html, sheet: { display: !hide, descriptions: [{ text: html }] }, supports: [kind], rules, ...(setters ? { setters } : {}) });
 }
@@ -1278,7 +1278,49 @@ function convertMonster(m: J, ctx: Ctx): AElement {
     senses: set([...(m.senses ?? []), m.passive ? `passive Perception ${m.passive}` : ""].filter(Boolean).join(", ")), languages: set((m.languages ?? []).join(", ")), challenge: set(String(m.cr?.cr ?? m.cr ?? "")),
     traits: set(traits), actions: set(act),
   };
-  return base(ftId("CREATURE", m.name, m.source), m.name, "Companion", srcName(ctx, m.source), { setters, supports: ["5et creature", String(type ?? "")], description: "" });
+  return base(ftId("CREATURE", m.name, m.source), m.name, "Companion", srcName(ctx, m.source), { setters, supports: ["5et creature", String(type ?? ""), ...(typeof m.type === "object" && m.type?.swarmSize ? ["swarm"] : [])], description: "" });
+}
+
+const CR_ORDER = ["0", "1/8", "1/4", "1/2", ...Array.from({ length: 30 }, (_, i) => String(i + 1))];
+
+/**
+ * The creature a feature lets the player choose, as a Companion choice (Stage D4: Beast Master had none):
+ * - "Choose its stat block: {@creature Beast of the Land}, {@creature Beast of the Sea}, or {@creature Beast of the
+ *   Sky}" (Primal Companion): one of the named creatures, found by name and book once all content is in;
+ * - "Choose a {@filter beast that is no larger than Medium …|bestiary|challenge rating=[&0;&1/4]|type=beast|size=…|
+ *   miscellaneous=!swarm}" (Ranger's Companion): the creatures the filter's type, size, challenge rating and swarm
+ *   terms find, in the registry's filter words (offered() gives a creature's type, size letter and rating).
+ */
+export function creatureChoiceRules(f: J): ARule[] {
+  const raw = JSON.stringify(f.entries ?? []);
+  const rules: ARule[] = [];
+  for (const sentence of raw.split(/(?<=[.!?])\s+|","/)) {
+    // "When you cast the spell, you choose one of … {@creature Skeleton} or {@creature Zombie}" (Necromancy Spellbook,
+    // Pact of the Chain) is a choice made in play, not one the character holds.
+    if (!/\bchoose\b/i.test(sentence) || /\bwhen(?:ever)? you (?:cast|summon|use|activate)\b/i.test(sentence)) continue;
+    const named = [...sentence.matchAll(/\{@creature ([^|}]+)(?:\|([^|}]*))?[^}]*\}/g)];
+    if (named.length >= 2 && /\bor\b/.test(sentence)) {
+      rules.push({ kind: "select", type: "Companion", name: String(f.name), supports: named.map((m) => `CREATUREREF:${m[1].trim().toLowerCase()}|${(m[2] ?? "").trim().toLowerCase()}`).join("|"), number: 1 } as ARule);
+      continue;
+    }
+    const fl = /\{@filter [^|}]*\|bestiary\|([^}]*)\}/i.exec(sentence);
+    if (!fl || !/\bchoose an? \{@filter/i.test(sentence)) continue;
+    const params = Object.fromEntries(fl[1].split("|").map((p) => p.split("=")).filter((p) => p.length === 2).map(([k, v]) => [k.trim().toLowerCase(), v.trim().toLowerCase()]));
+    // No provider tag: with Aurora loaded the lists show Aurora's copy of a creature, so both must fit. Sizes are
+    // letters in 5e.tools ("M") and words in Aurora ("Medium").
+    const SIZE_WORD: Record<string, string> = { f: "fine", d: "diminutive", t: "tiny", s: "small", m: "medium", l: "large", h: "huge", g: "gargantuan" };
+    const parts: string[] = [];
+    if (params.type) parts.push(params.type.split(";").length > 1 ? `(${params.type.split(";").join("||")})` : params.type);
+    if (params.size) parts.push(`(${params.size.split(";").flatMap((x) => [x, SIZE_WORD[x]].filter(Boolean)).join("||")})`);
+    const cr = /^\[&?([^;\]]*);&?([^\]]*)\]$/.exec(params["challenge rating"] ?? "");
+    if (cr) {
+      const lo = Math.max(0, CR_ORDER.indexOf(cr[1] || "0")), hi = CR_ORDER.indexOf(cr[2]);
+      if (hi >= lo) parts.push(`(${CR_ORDER.slice(lo, hi + 1).join("||")})`);
+    }
+    if (/!swarm/.test(params.miscellaneous ?? "")) parts.push("!swarm");
+    if (parts.length) rules.push({ kind: "select", type: "Companion", name: String(f.name), supports: parts.join(","), number: 1 } as ARule);
+  }
+  return rules;
 }
 
 // classes -------------------------------------------------------------
@@ -1726,6 +1768,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       };
       walk(f.entries);
     }
+    const variantsOf: { name: string; by: string }[] = [];
     const features = byRef.length ? byRef : data.sf.filter((x) => x.className === c.name && x.subclassShortName === (s.shortName ?? s.name) && (x.subclassSource ?? s.source) === s.source && (x.classSource ?? c.source) === c.source);
     for (const f of features) {
       const fid = ftId("SF", `${s.shortName ?? s.name} ${f.name}`, f.source, `${f.level}${f.header ?? ""}`);
@@ -1733,9 +1776,23 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       // granted by both.
       const had = out.some((o) => o.id === fid);
       if (!had) out.push(featureElement(f, "5et subclass feature", "Archetype Feature", fid, ctx, f.name === (s.name), out));
-      srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
+      // An optional subclass feature (Tasha's Blessed Strikes, Primal Companion) is a choice, as a class's is, and the
+      // feature it replaces goes when it is taken. Granted, a Cleric had Divine Strike and Blessed Strikes both.
+      if (f.isClassFeatureVariant) {
+        srules.push({ kind: "select", type: "Archetype Feature", name: `Optional class feature: ${f.name} (${s.shortName ?? s.name} ${f.level})`, supports: fid, number: 1, level: f.level, optional: true });
+        const replaced = /replaces the (.+?) feature/i.exec(stripTags(JSON.stringify(f.entries ?? [])))?.[1]?.toLowerCase();
+        if (replaced) variantsOf.push({ name: replaced, by: fid });
+      } else srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
       srules.push(...proseChoiceRules(f, fid, f.level, ctx, out));
       srules.push(...refRules(f.entries, `${f.name} (${s.shortName ?? s.name} ${f.level})`, f.level, { cf: data.cf, sf: data.sf, ctx, out, progressed: !!(s.optionalfeatureProgression as J[] | undefined)?.length }, true));
+    }
+    // The replaced feature requires the optional one's absence (Divine Strike: !Blessed Strikes), as for a class.
+    for (const { name, by } of variantsOf) {
+      for (const f of features) {
+        if (String(f.name).toLowerCase() !== name || f.isClassFeatureVariant) continue;
+        const el = out.find((o) => o.id === ftId("SF", `${s.shortName ?? s.name} ${f.name}`, f.source, `${f.level}${f.header ?? ""}`));
+        if (el && !String(el.requirements ?? "").includes(`!${by}`)) el.requirements = el.requirements ? `${el.requirements},!${by}` : `!${by}`;
+      }
     }
     srules.push(...additionalSpellRules(s.additionalSpells, s.name, s.source, out).rules);
     srules.push(...optionalFeatureRules(s, srules));

@@ -202,6 +202,51 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("an optional subclass feature is a choice and replaces its feature (Blessed Strikes for Divine Strike)", () => {
+    const cleric = reg!.ofType("Class").find((c) => c.name === "Cleric" && !c.source.includes("2024"))!;
+    let ch = newCharacter();
+    ch.classes = [{ classId: cleric.id, level: 8 }];
+    let r = resolve(ch, reg!);
+    const sub = r.slots.find((s) => s.options.some((o) => o.name === "Life Domain"))!;
+    ch = { ...ch, selections: { [sub.key]: [sub.options.find((o) => o.name === "Life Domain")!.id] } };
+    r = resolve(ch, reg!);
+    const names = () => r.active.map((a) => a.el.name);
+    expect(names()).toContain("Divine Strike");
+    expect(names()).not.toContain("Blessed Strikes");
+    const opt = r.slots.find((s) => /Optional class feature: Blessed Strikes/.test(s.rule.name))!;
+    expect(opt.rule.optional).toBe(true);
+    ch = { ...ch, selections: { ...ch.selections, [opt.key]: [opt.options[0].id] } };
+    r = resolve(ch, reg!);
+    expect(names()).toContain("Blessed Strikes");
+    expect(names()).not.toContain("Divine Strike");
+  });
+
+  it("a Beast Master chooses a companion: a small beast in 2014, one of three primal beasts in 2024", () => {
+    const seen = new Set<boolean>();
+    for (const ranger of reg!.ofType("Class").filter((c) => c.name === "Ranger")) {
+      let ch = newCharacter();
+      ch.classes = [{ classId: ranger.id, level: 3 }];
+      let r = resolve(ch, reg!);
+      const sub = r.slots.find((s) => s.options.some((o) => o.name === "Beast Master" || o.name === "Beast Master Conclave"));
+      if (!sub) continue;
+      const bm = sub.options.find((o) => /^Beast Master/.test(o.name))!;
+      ch = { ...ch, selections: { [sub.key]: [bm.id] } };
+      r = resolve(ch, reg!);
+      const pet = r.slots.filter((s) => s.rule.type === "Companion");
+      expect(pet.length, `${ranger.source} ${bm.source}`).toBeGreaterThan(0);
+      const names = new Set(pet.flatMap((s) => s.options.map((o) => o.name)));
+      seen.add(/2024/.test(ranger.source));
+      if (/2024/.test(ranger.source)) expect([...names].sort(), ranger.source).toEqual(["Beast of the Land", "Beast of the Sea", "Beast of the Sky"]);
+      else {
+        expect(names.has("Wolf"), ranger.source).toBe(true);
+        expect(names.has("Swarm of Rats"), "no swarms").toBe(false);
+        expect(names.has("Black Bear"), "nothing above CR 1/4").toBe(false);
+        expect(names.has("Giant Eagle"), "nothing above Medium").toBe(false);
+      }
+    }
+    expect([...seen].sort()).toEqual([false, true]);
+  });
+
   it("a Simic Hybrid takes an animal enhancement at 1st level and another at 5th", () => {
     const race = reg!.ofType("Race").find((r) => r.name === "Simic Hybrid");
     if (!race) return;

@@ -366,8 +366,12 @@ export function resolveCreatureRefs(byId: Map<string, AElement>): void {
     if (!el.rules.some((r) => (r.kind === "grant" && String(r.id).startsWith("CREATUREREF:")) || (r.kind === "select" && String(r.supports ?? "").includes("CREATUREREF:")))) continue;
     el.rules = el.rules.flatMap((r) => {
       if (r.kind === "grant" && String(r.id).startsWith("CREATUREREF:")) { const id = find(String(r.id)); return id ? [{ ...r, id }] : []; }
+      // A choice among named creatures ("CREATUREREF:beast of the land|tce|CREATUREREF:…"): split before each ref, so a
+      // ref's own "|book" stays with it, and each creature found brings its twin of the other provider, so the lists'
+      // one-copy rule keeps the copy it shows (the 5e.tools copy alone left Primal Companion empty with Aurora loaded).
       if (r.kind === "select" && String(r.supports ?? "").includes("CREATUREREF:")) {
-        const ids = [...new Set(String(r.supports).split("|").map((x) => (x.startsWith("CREATUREREF:") ? find(x) : x)).filter((x): x is string => !!x))];
+        const withTwins = (id: string | undefined) => { const e = id ? byId.get(id) : undefined; return e ? (creatures!.get(e.name.toLowerCase()) ?? []).filter((x) => x.id === id || twinKey(x) === twinKey(e)).map((x) => x.id) : []; };
+        const ids = [...new Set(String(r.supports).split(/\|(?=CREATUREREF:)/).flatMap((x) => (x.startsWith("CREATUREREF:") ? withTwins(find(x)) : x.split("|"))).filter((x): x is string => !!x))];
         return ids.length ? [{ ...r, supports: ids.join("|") }] : [];
       }
       return [r];

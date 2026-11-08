@@ -77,7 +77,7 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")("saved characters move
   writeFileSync(join(dir, "migrate.md"), [
     "# Saved characters moved to 5e.tools ids", "", `${n} characters, ${changed.length} with a changed sheet.`, "",
     "## Changed fields", ...top(byField), "", "## No 5e.tools twin", ...top(noTwin), "", "## Picks with no place", ...top(unplaced), "", "## Choices left open", ...top(open), "", "## Kept against 5e.tools' rules", ...top(against), "",
-    "## Changed sheets", ...changed.slice(0, 200).map((c) => `- ${c}`), "",
+    "## Changed sheets", ...changed.map((c) => `- ${c}`), "",
   ].join("\n"));
   const base = join(dir, "migrate-count.json");
   const was = existsSync(base) ? (JSON.parse(readFileSync(base, "utf8")) as { changed: number }).changed : Infinity;

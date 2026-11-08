@@ -165,7 +165,10 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const c = p.concept;
     const byConcept = c ? open.find((o) => conceptOf(o) === c) : undefined;
     if (byConcept) return byConcept.id;
-    const exact = open.find((o) => nameKey(o.name) === n) ?? open.find((o) => nameKey(o.name) === nameKey(`${s.owner.name} (${p.name})`));
+    // Or the owner's name with the pick's, either owner: "Magic Initiate (Druid)" for Magic Initiate's "Druid" (the
+    // feat's own choice under Aurora, its versions under 5e.tools), "Light Bringer: Light" for Light Bringer's "Light".
+    const withOwner = new Set([nameKey(`${s.owner.name} ${p.name}`), `${p.ownerName} ${n}`]);
+    const exact = open.find((o) => nameKey(o.name) === n) ?? open.find((o) => withOwner.has(nameKey(o.name)));
     if (exact) return exact.id;
     // Near names never fill a choice of increases: those are set to the old scores below ("Resilient (Strength)" is
     // the saving throw, not Resilient's "+1 Strength").

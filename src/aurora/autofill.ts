@@ -31,6 +31,23 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
   // later choice with nothing to take.
   const needed = demanded(resolve(ch, reg), reg);
   for (let n = total === 0 ? 0 : 1; n <= total; n++) cur = fillLevel(cur, n);
+  // A pick a later level makes a repeat (Resilient's Wisdom save at 4th level, then Slippery Mind gives it at 15th):
+  // building level by level cannot see it coming. Taken back and chosen again with the whole character in view.
+  for (let round = 0; round < 3 && total > 0; round++) {
+    const r = resolve(cur, reg);
+    let dropped = false;
+    for (const s of r.slots) {
+      const repeats = repeatedPicks(r, s);
+      if (!repeats.length) continue;
+      const drop = s.chosen.filter((id) => repeats.some((t) => t.includes(`: ${reg.get(id)?.name} (`)));
+      if (!drop.length) continue;
+      cur = { ...cur, selections: { ...cur.selections, [s.key]: s.chosen.filter((id) => !drop.includes(id)) } };
+      for (const id of drop) bad.add(`${s.key} ${id}`);
+      dropped = true;
+    }
+    if (!dropped) break;
+    cur = fillLevel(cur, total);
+  }
   return prepareSpells(cur);
 
   /**

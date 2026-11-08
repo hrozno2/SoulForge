@@ -202,6 +202,17 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("a feature that lets the character cast a spell shows it (Empty Body's Astral Projection)", () => {
+    const monk = reg!.ofType("Class").find((c) => c.name === "Monk" && !c.source.includes("2024"))!;
+    const spells = (level: number) => { const ch = newCharacter(); ch.classes = [{ classId: monk.id, level }]; return buildSheet(resolve(ch, reg!)).casting.flatMap((c) => [...c.granted, ...c.spells].map((p) => reg!.get(p.id)?.name)); };
+    expect(spells(17)).not.toContain("Astral Projection");
+    expect(spells(18)).toContain("Astral Projection");
+    // A Spellcasting feature's examples are not spells the character has.
+    const wiz = reg!.ofType("Class").find((c) => c.name === "Wizard" && !c.source.includes("2024"))!;
+    const ch = newCharacter(); ch.classes = [{ classId: wiz.id, level: 1 }];
+    expect(resolve(ch, reg!).active.filter((a) => a.el.type === "Spell").map((a) => a.el.name)).toEqual([]);
+  });
+
   it("the same increase picked in two improvements counts twice (+1 Strength, +1 Constitution at 4, 6 and 8)", () => {
     const f = reg!.ofType("Class").find((c) => c.name === "Fighter" && !c.source.includes("2024"))!;
     let ch = newCharacter(); ch.classes = [{ classId: f.id, level: 8 }];

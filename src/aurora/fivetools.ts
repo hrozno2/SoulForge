@@ -948,7 +948,7 @@ function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, 
   // creature as a companion (found by name and book once all content is in: registry.ts resolveCreatureRefs).
   const fb: ARule[] = [];
   const own = [...JSON.stringify(f.entries ?? []).matchAll(/@creature ([^|}]+)(?:\|([^|}]*))?/g)].find((m) => m[1].trim().toLowerCase() === String(f.name).toLowerCase());
-  const rules: ARule[] = [...(own ? [{ kind: "grant", type: "Companion", id: `CREATUREREF:${own[1].trim().toLowerCase()}|${(own[2] ?? "").trim().toLowerCase()}` } as ARule] : []), ...textProficiencies(f.entries, out, fb), ...creatureChoiceRules(f)];
+  const rules: ARule[] = [...(own ? [{ kind: "grant", type: "Companion", id: `CREATUREREF:${own[1].trim().toLowerCase()}|${(own[2] ?? "").trim().toLowerCase()}` } as ARule] : []), ...textProficiencies(f.entries, out, fb), ...creatureChoiceRules(f), ...castableSpells(f)];
   if (ctx) for (const rule of fb) (ctx.fallbacks ??= []).push({ to: id, rule });
   return base(id, f.name, type, srcName(ctx, f.source), { description: html, sheet: { display: !hide, descriptions: [{ text: html }] }, supports: [kind], rules, ...(setters ? { setters } : {}) });
 }
@@ -1342,6 +1342,31 @@ function convertMonster(m: J, ctx: Ctx): AElement {
     traits: set(traits), actions: set(act),
   };
   return base(ftId("CREATURE", m.name, m.source), m.name, "Companion", srcName(ctx, m.source), { setters, supports: ["5et creature", String(type ?? ""), ...(typeof m.type === "object" && m.type?.swarmSize ? ["swarm"] : [])], description: "" });
+}
+
+/**
+ * A spell a feature lets the character cast, named only in its text: "you can spend 8 ki points to cast the {@spell
+ * astral projection} spell" (Empty Body), "you can cast {@spell misty step}" (Misty Escape). The spell is granted,
+ * as Aurora shows it; before, a 5e.tools Monk's sheet had no Astral Projection. A Spellcasting
+ * feature's examples ("you can cast cure wounds using either slot") and features with spell data of their own are
+ * left alone.
+ */
+export function castableSpells(f: J): ARule[] {
+  // Class and subclass features only: a species', background's or feat's spells are in its own spell data (Earth
+  // Genasi's Pass without Trace came twice, on a line of its own).
+  if (!f.className || /spellcasting|pact magic/i.test(String(f.name ?? "")) || f.additionalSpells) return [];
+  const text = JSON.stringify(f.entries ?? []);
+  const seen = new Set<string>();
+  const rules: ARule[] = [];
+  for (const m of text.matchAll(/\byou can (?:also )?(?:spend [^."]{1,40}? to |use [^."]{1,40}? to |expend [^."]{1,40}? to )?cast (?:the )?\{@spell ([^|}]+)(?:\|([^|}]*))?[^}]*\}/gi)) {
+    const name = m[1].trim().toLowerCase();
+    if (seen.has(name)) continue;
+    seen.add(name);
+    // No spellcasting named: the sheet places it on the class whose list has it (Misty Escape on the Warlock's line,
+    // with its DC), or on a line of its own (Empty Body). Named after the feature, it made a line and a DC of its own.
+    rules.push({ kind: "grant", type: "Spell", id: `SPELLREF:${name}|${(m[2] ?? "").trim().toLowerCase()}|${String(f.source ?? "").toLowerCase()}` } as ARule);
+  }
+  return rules;
 }
 
 const CR_ORDER = ["0", "1/8", "1/4", "1/2", ...Array.from({ length: 30 }, (_, i) => String(i + 1))];

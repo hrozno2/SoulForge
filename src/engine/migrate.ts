@@ -169,7 +169,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     if (exact) return exact.id;
     // Near names never fill a choice of increases: those are set to the old scores below ("Resilient (Strength)" is
     // the saving throw, not Resilient's "+1 Strength").
-    if (s.rule.type === "Ability Score Improvement") return undefined;
+    // Only a pick that is an ability's bare name does (Fey Touched's "Intelligence" is its "+1 Intelligence").
+    if (s.rule.type === "Ability Score Improvement") {
+      if (!/^(strength|dexterity|constitution|intelligence|wisdom|charisma)$/.test(n)) return undefined;
+      const hit = open.filter((o) => new RegExp(`^\\+\\d ${n}$`).test(nameKey(o.name).replace(/^(\d)/, "+$1")) || nameKey(o.name) === `1 ${n}` || nameKey(o.name) === `2 ${n}`);
+      return hit.length === 1 ? hit[0].id : undefined;
+    }
     // A near name, when only one option has it: "Rock Gnome" is "Rock Gnome Lineage", "Wisdom" is "+1 Wisdom";
     // "Resilient (Strength)" is "Saving throw proficiency (Strength)" by what the brackets name.
     const one = (xs: typeof open) => (xs.length === 1 ? xs[0].id : undefined);

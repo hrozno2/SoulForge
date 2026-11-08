@@ -183,6 +183,7 @@ Started 2026-11-06: `RULES_CONTENT=5etools` runs the whole rules suite without A
    - Chris's whole library migrated (D6) with no character changing its sheet unexpectedly.
 
 ### D6. Saved characters move to 5e.tools ids
+Started 2026-11-08 (0740229): `migrateToFiveTools` (src/engine/migrate.ts) and the `RULES_TIER=migrate` report. Root ids map by twin key, concept, then name (gear by either provider's names); picks are replayed onto the rebuilt character (owner first, narrowest choice first, spells with their spellcasting, 2024 casters' spells prepared); ability increases are filled to the old scores. The report found a converter gap at once (2014 Magical Secrets). Not wired into loading.
 1. A migration on load: every Aurora id in a character (race, classes, background, selections, options, extras,
    inventory, spells) maps to its 5e.tools twin, using the twin map the parity gate already builds; picks keep their
    choices (stable keys follow the twin's rules, the old-pick recovery helps). An id with no twin keeps working in the

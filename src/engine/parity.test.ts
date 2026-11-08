@@ -35,7 +35,7 @@ const EXPLAINED: Record<string, string> = {
   "choices Race Astral Elf": FILED_DIFFERENTLY, "grants Race Giff": FIVE_RIGHT, "grants Race Grung": "Aurora adds a whistle-stick training that 5e.tools' data does not have; book not checked",
   "choices Race Aarakocra": FIVE_RIGHT, "choices Race Aasimar": FIVE_RIGHT, "choices Race Deep Gnome": FIVE_RIGHT, "choices Race Duergar": FIVE_RIGHT, "choices Race Githyanki": FIVE_RIGHT, "choices Race Hexblood": FIVE_RIGHT,
   "choices Race Eladrin": "Aurora asks a spellcasting ability for Fey Step; 5e.tools' data has none",
-  "choices Background Custom Background": FILED_DIFFERENTLY, "choices Background Witherbloom Student": FILED_DIFFERENTLY,
+  "choices Background Witherbloom Student": FILED_DIFFERENTLY,
   "grants Background Clan Crafter": "5e.tools: Dwarvish or another language, as a set to choose; Aurora gives Dwarvish", "choices Background Clan Crafter": "5e.tools: Dwarvish or another language, as a set to choose; Aurora gives Dwarvish", "choices Background Rewarded": FILED_DIFFERENTLY,
   "choices Archetype Death Domain": FILED_DIFFERENTLY, "choices Archetype Circle of the Land": FILED_DIFFERENTLY, "choices Archetype College of Lore": FILED_DIFFERENTLY, "choices Archetype Path of the Giant": FILED_DIFFERENTLY, "choices Archetype Arcane Archer": FILED_DIFFERENTLY, "choices Archetype Way of the Kensei": FILED_DIFFERENTLY,
   "choices Archetype Eldritch Knight": "2024: they prepare their spells; Aurora counts picks", "choices Archetype Arcane Trickster": "2024: they prepare their spells; Aurora counts picks",
@@ -50,7 +50,6 @@ const OPEN: Record<string, string> = {
   "choices Background Rune Carver": "Rune Shaper: gives every rune spell instead of half proficiency bonus many",
   "choices Feat Rune Shaper": "gives every rune spell instead of half proficiency bonus many",
   "choices Archetype Beast Master": "no companion pick: the builder does not hold creatures",
-  "choices Archetype Path of the Storm Herald": "three picks of an environment where the book has one",
 };
 const known = (row: string) => { const key = row.replace(/^twins differ: /, ""); return Object.keys({ ...EXPLAINED, ...OPEN }).find((k) => key.startsWith(k)); };
 

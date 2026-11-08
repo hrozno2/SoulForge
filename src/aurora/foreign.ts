@@ -522,6 +522,10 @@ class Importer {
       if (/resilient/i.test(slotName) || /^resilient/.test(n)) return h.saves.has(ab) ? 60 - total : -total;
       return total;
     }
+    // A saving throw choice (5e.tools' Resilient: "Saving Throw Proficiency (Constitution)"): a save the file is
+    // proficient in. The ones the character already has are not offered.
+    const save = /^saving throw proficiency \((\w+)\)$/.exec(n)?.[1] as AbilityId | undefined;
+    if (save && (ABILITY_IDS as readonly string[]).includes(save)) return h.saves.has(save) ? 100 : 0;
     if (h.skills.has(n)) return h.expertise.has(n) ? 95 : 90;
     // "Strength +1, Dexterity +1" style options: favour the abilities the character is best at.
     const mentioned = ABILITY_IDS.filter((a) => n.includes(a));
@@ -535,6 +539,28 @@ class Importer {
    * An option that brings armor or weapon training (the Protector divine order: heavy armor, martial weapons) fits
    * when the file lists that training and does not when the file lacks it.
    */
+  /**
+   * A "choose one set" option ("Two languages", "One language and one tool"): how many of the file's trainings the
+   * character does not have yet would find a place in it. The set that holds what the file lists wins; a set asking
+   * for more of a kind than the file has left counts against it a little, so an even fit beats an overfull one.
+   */
+  private setFit(o: AElement, had: Set<string | undefined>): number {
+    if (o.type !== "Training Option") return 0;
+    const slug = (x: string) => x.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const left = (kind: string, set: Set<string>) => [...set].filter((x) => !had.has(`${kind}:${slug(x)}`)).length;
+    const avail: Record<string, number> = { language: left("language", this.hints.languages), tool: left("tool", this.hints.tools), skill: left("skill", this.hints.skills) };
+    let sc = 0;
+    for (const r of o.rules) {
+      if (r.kind !== "select") continue;
+      const kind = r.type === "Language" ? "language" : /5et tool/.test(r.supports) ? "tool" : /5et skill/.test(r.supports) ? "skill" : undefined;
+      if (!kind) continue;
+      const fit = Math.min(r.number, avail[kind]);
+      avail[kind] -= fit;
+      sc += fit * 30 - (r.number - fit) * 5;
+    }
+    return sc;
+  }
+
   private trainingScore(o: AElement): number {
     const h = this.hints;
     if (!h.armor.size && !h.weapons.size) return 0;
@@ -634,7 +660,10 @@ class Importer {
     if (!facts.length) return start;
     // One node per open place in a training choice.
     const places: { key: string; options: Map<string, string> }[] = [];
-    for (const s of [...r.slots].sort((a, b) => a.key.localeCompare(b.key))) {
+    // The Custom Background standing in for one the content lacks comes last: what the file lists belongs first to the
+    // species and class that really give it (a Half-Elf's third language is the Half-Elf's, not the stand-in's).
+    const standIn = (s: (typeof r.slots)[number]) => Number(!!this.missingBackground && s.root === "background");
+    for (const s of [...r.slots].sort((a, b) => standIn(a) - standIn(b) || a.key.localeCompare(b.key))) {
       if (s.rule.optional || s.defaulted || !["Proficiency", "Language"].includes(s.rule.type)) continue;
       const free = s.rule.number - s.chosen.length;
       if (free <= 0) continue;
@@ -717,11 +746,12 @@ class Importer {
       const spellScore = (o: AElement) => (named(o) ? this.spellListScore(o) + this.grantedSpellScore(o) : 0);
       const candidates = open.options
         .filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !had(o) && !spent(o))
-        .map((o) => ({ o, sc: this.score(`${open.key} ${open.rule.name}`, o.name, scores, o) + this.trainingScore(o) + spellScore(o) + this.resistScore(o, r.ids) + (own.has(o.source) ? 0.5 : 0) }))
+        .map((o) => ({ o, sc: this.score(`${open.key} ${open.rule.name}`, o.name, scores, o) + this.trainingScore(o) + this.setFit(o, hadConcepts) + spellScore(o) + this.resistScore(o, r.ids) + (own.has(o.source) ? 0.5 : 0) }))
         .sort((a, b) => b.sc - a.sc);
       const best = candidates[0] ?? { o: open.options.find((o) => !taken.has(o.id)), sc: 0 };
       if (!best.o) break;
-      if (best.sc <= 0.5 && !/^\s*ability score/i.test(open.rule.name)) {
+      // The one guess allowed: a level's improvement with nothing to go on stays the score improvement, never another feat.
+      if (best.sc <= 0.5 && !(/^\s*ability score/i.test(open.rule.name) && (best.o.type !== "Feat" || /^ability score improvement/i.test(best.o.name)))) {
         skip.add(open.key);
         continue;
       }

@@ -191,7 +191,7 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     // A feat the character has from another choice or grant, at any level, is not offered again.
     // The same feat from the other provider counts as had too.
     // A feat the rules let a character take again (5e.tools "repeatable") stays open.
-    if (s.rule.type === "Feat") for (const e of options) if ((final.ids.has(e.id) || hadAsTwin(e) || final.active.some((a) => a.el.type === "Feat" && a.el.id !== e.id && a.el.name === e.name)) && !s.chosen.includes(e.id) && e.setters["allow duplicate"]?.value !== "true") { blocked.add(e.id); why.set(e.id, "you already have this feat"); }
+    if (s.rule.type === "Feat") for (const e of options) if ((final.ids.has(e.id) || hadAsTwin(e) || final.active.some((a) => a.el.type === "Feat" && a.el.id !== e.id && a.el.name === e.name && a.el.source !== e.source)) && !s.chosen.includes(e.id) && e.setters["allow duplicate"]?.value !== "true") { blocked.add(e.id); why.set(e.id, "you already have this feat"); }
     // Repeat copies (Aurora's Skilled and Skilled_2, its several Replicate Magic Item infusions, one name each): one
     // copy is offered at a time, the first the character can take and does not have; chosen ones stay.
     const byKey = new Map<string, typeof options>();

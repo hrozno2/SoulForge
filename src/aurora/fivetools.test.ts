@@ -117,6 +117,23 @@ describe("inline samples", () => {
   });
 });
 
+describe("a combined total of languages and tools", () => {
+  // The 2014 Custom Background: "Languages and Tool Proficiencies: Two of your choice" is one total of two.
+  it("asks once, and every set holds the same total", () => {
+    const els = convertFiveTools({ files: { "backgrounds.json": { background: [{
+      name: "Custom Background", source: "X", skillProficiencies: [{ any: 2 }], languageProficiencies: [{ anyStandard: 2 }],
+      skillToolLanguageProficiencies: [{ anyLanguage: 2 }, { anyLanguage: 1, anyTool: 1 }, { anyTool: 1 }],
+      entries: [{ type: "list", items: [{ type: "item", name: "Languages and Tool Proficiencies:", entry: "Two of your choice" }] }],
+    }] } } });
+    const bg = els.find((e) => e.type === "Background")!;
+    const selects = bg.rules.filter((r) => r.kind === "select");
+    expect(selects.filter((r) => r.kind === "select" && r.type === "Language")).toEqual([]);
+    const sets = els.filter((e) => e.type === "Training Option");
+    expect(sets.map((e) => e.name)).toEqual(["Two languages", "One language and one tool", "Two tools"]);
+    for (const o of sets) expect(o.rules.reduce((t, r) => t + (r.kind === "select" ? r.number : 0), 0), o.name).toBe(2);
+  });
+});
+
 describe.skipIf(!DIR)("real 5etools data", () => {
   const reg = DIR ? load(DIR) : undefined;
 
@@ -149,6 +166,26 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     expect(c.prepareMax).toBe(9);
     expect(c.cantripsKnown.length).toBe(4);
     expect(c.spells.length).toBe(6 + 2 * 4);
+  });
+
+  it("a Storm Herald chooses the environment once: the 6th and 14th level follow the 3rd", () => {
+    for (const barb of reg!.ofType("Class").filter((c) => c.name === "Barbarian")) {
+      let ch = newCharacter();
+      ch.classes = [{ classId: barb.id, level: 14 }];
+      let r = resolve(ch, reg!);
+      const sub = r.slots.find((s) => s.options.some((o) => o.name === "Path of the Storm Herald"));
+      if (!sub) continue;
+      ch.selections[sub.key] = [sub.options.find((o) => o.name === "Path of the Storm Herald")!.id];
+      r = resolve(ch, reg!);
+      const aura = r.slots.filter((s) => s.options.some((o) => o.id === "ID_5ET_SF_XGE_STORM_HERALD_SEA_3"));
+      expect(aura, barb.source).toHaveLength(1);
+      ch = { ...ch, selections: { ...ch.selections, [aura[0].key]: ["ID_5ET_SF_XGE_STORM_HERALD_SEA_3"] } };
+      r = resolve(ch, reg!);
+      const env = r.active.map((a) => a.el.id).filter((id) => /STORM_HERALD_(DESERT|SEA|TUNDRA)_/.test(id)).sort();
+      expect(env, barb.source).toEqual(["ID_5ET_SF_XGE_STORM_HERALD_SEA_14", "ID_5ET_SF_XGE_STORM_HERALD_SEA_3", "ID_5ET_SF_XGE_STORM_HERALD_SEA_6"]);
+      const at5 = resolve({ ...ch, classes: [{ classId: barb.id, level: 5 }] }, reg!).active.map((a) => a.el.id).filter((id) => /STORM_HERALD_(DESERT|SEA|TUNDRA)_/.test(id));
+      expect(at5, barb.source).toEqual(["ID_5ET_SF_XGE_STORM_HERALD_SEA_3"]);
+    }
   });
 
   it("gives a Warlock pact slots", () => {

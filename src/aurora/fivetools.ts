@@ -333,7 +333,8 @@ function describeSet(entry: J): string {
   const n = (v: unknown) => NUMBER_WORDS[Number(v) || 1] ?? String(v);
   for (const [k, v] of Object.entries(entry ?? {})) {
     if (k === "choose") parts.push(`one of ${(((v as J).from as string[]) ?? []).map((x) => plainName(x).toLowerCase()).join(", ")}`);
-    else if (k === "any" || k === "anyStandard" || k === "anyLanguage") parts.push(`${n(v)} of your choice`);
+    else if (k === "anyLanguage") parts.push(`${n(v)} language${Number(v) > 1 ? "s" : ""}`);
+    else if (k === "any" || k === "anyStandard") parts.push(`${n(v)} of your choice`);
     else if (k === "anyArtisansTool") parts.push(`${n(v)} artisan's tool${Number(v) > 1 ? "s" : ""}`);
     else if (k === "anyGamingSet") parts.push(`${n(v)} gaming set${Number(v) > 1 ? "s" : ""}`);
     else if (k === "anyMusicalInstrument") parts.push(`${n(v)} musical instrument${Number(v) > 1 ? "s" : ""}`);
@@ -347,13 +348,37 @@ function describeSet(entry: J): string {
 const TRAINING_FIELDS = ["skillProficiencies", "languageProficiencies", "toolProficiencies", "weaponProficiencies", "armorProficiencies", "savingThrowProficiencies", "skillToolLanguageProficiencies", "expertise"];
 
 /**
+ * "Languages and Tool Proficiencies: Two of your choice" (the 2014 Custom Background) is one total, which 5e.tools
+ * writes as a list of sets and, beside it, a separate languageProficiencies that would ask for two more languages.
+ * The sets are the rule; the separate field is dropped. A set that holds fewer than the others ("one tool" next to
+ * "two languages") holds the same total, so its last count is raised to match.
+ */
+function combinedTotal(e: J): J {
+  const sets = e.skillToolLanguageProficiencies as J[] | undefined;
+  const text = JSON.stringify(e.entries ?? "");
+  if (!Array.isArray(sets) || !/"name":"(Languages and Tool|Tool and Language) Proficiencies:?"/i.test(text)) return e;
+  const counts = (x: J) => Object.entries(x ?? {}).filter(([k, v]) => /^any/.test(k) && typeof v === "number") as [string, number][];
+  const plain = sets.every((x) => counts(x).length && counts(x).length === Object.keys(x ?? {}).length);
+  const max = Math.max(...sets.map((x) => counts(x).reduce((t, [, v]) => t + v, 0)));
+  const padded = !plain ? sets : sets.map((x) => {
+    const c = counts(x);
+    const total = c.reduce((t, [, v]) => t + v, 0);
+    return total >= max ? x : { ...x, [c[c.length - 1][0]]: c[c.length - 1][1] + max - total };
+  });
+  const { languageProficiencies, toolProficiencies, ...rest } = e;
+  void languageProficiencies; void toolProficiencies;
+  return { ...rest, skillToolLanguageProficiencies: padded };
+}
+
+/**
  * Everything an entry trains: skills, languages, tools, weapons, armor, saves, expertise, senses. In 5e.tools a list
  * with more than one entry is a choice between them ("Thieves' tools, or one gaming set and one musical
  * instrument"), so each entry becomes an option of its own and the character takes one. A language given as
  * "other" is the one the entry's text names (the Kalashtar's Quori); only when the text names none is it a choice.
  */
-function trainingRules(e: J, label: string, out: AElement[], ctx: Ctx, idBase: string): ARule[] {
+function trainingRules(e0: J, label: string, out: AElement[], ctx: Ctx, idBase: string): ARule[] {
   const rules: ARule[] = [];
+  const e = combinedTotal(e0);
   const single: J = { ...e };
   for (const f of TRAINING_FIELDS) {
     const list = e[f] as J[] | undefined;
@@ -504,6 +529,8 @@ interface Ctx {
   baseItems: Map<string, J>;
   /** Shared item text ("itemEntry"), by "name|source" in lower case. */
   itemEntries?: Map<string, J>;
+  /** Later parts of an earlier pick ("based on the environment you chose"): granted by that pick, added at the end. */
+  follow?: { to: string; rule: ARule }[];
 }
 
 /**
@@ -1389,10 +1416,32 @@ function refRules(entries: unknown, label: string, level: number, data: { cf: J[
     }
     return undefined;
   };
+  // "The benefits are based on the environment you chose for your Storm Aura": a later block of the same options is
+  // not a new choice. The earlier option of the same name grants each one at its level, so one pick at 3rd level
+  // decides 6th and 14th too (5e.tools wrote three choices of environment). A requirement on the subclass's own grant
+  // would not do: what reaches the character only through an element does not count for that element's requirements.
+  let follows = false;
+  const earlierOf = (ref: J): string | undefined => {
+    if (ref.type !== "refSubclassFeature") return undefined;
+    const [name, , , short, , lv] = String(ref.subclassFeature).split("|");
+    const first = data.sf.filter((x) => x.name === name && x.subclassShortName === short && Number(x.level) < Number(lv)).sort((a, b) => a.level - b.level)[0];
+    return first ? ftId("SF", `${short} ${name}`, first.source, `${first.level}${first.header ?? ""}`) : undefined;
+  };
   const walk = (x: unknown, inOptions: boolean) => {
-    if (Array.isArray(x)) { for (const y of x) walk(y, inOptions); return; }
+    if (Array.isArray(x)) {
+      if (x.some((y) => typeof y === "string" && /\byou chose for your\b/i.test(y))) follows = true;
+      for (const y of x) walk(y, inOptions);
+      return;
+    }
     if (!x || typeof x !== "object") return;
     const e = x as J;
+    if (e.type === "options" && Array.isArray(e.entries) && follows) {
+      const pairs = (e.entries as J[]).map((ref) => ({ r: idOf(ref), was: earlierOf(ref) }));
+      if (pairs.every((p) => p.r && p.was)) {
+        for (const p of pairs) (data.ctx.follow ??= []).push({ to: p.was!, rule: { kind: "grant", type: p.r!.type, id: p.r!.id, level } });
+        return;
+      }
+    }
     if (e.type === "options" && Array.isArray(e.entries)) {
       const refs = (e.entries as J[]).map(idOf).filter(Boolean) as { id: string; type: string }[];
       // No count means no choice: the character has them all (a Psi Warrior's three powers), or, for optional features,
@@ -1928,6 +1977,10 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   for (const c of classes) convertClass(c, { cf, sc, sf }, ctx, out);
   // Foundry mechanics first, so the reference passes below also mend what they grant (Auran becomes Primordial).
   if (foundryFiles.length) applyFoundry(foundryFiles, out, ftId, (data, el) => [...withFallbacks(data, trainingRules({ ...data, entries: undefined }, el.name, out, ctx, el.id), el.id), ...defenseRules(data, el.name), ...additionalSpellRules(data.additionalSpells, el.name, el.source ?? "", out).rules]);
+  for (const f of ctx.follow ?? []) {
+    const el = out.find((o) => o.id === f.to);
+    if (el && !el.rules.some((r) => r.kind === "grant" && f.rule.kind === "grant" && r.id === f.rule.id)) el.rules.push(f.rule);
+  }
   // What the side data does not give, from the feature's own text (limited uses, save DCs, attacks).
   applyTextUses(out);
   applyTextDc(out);

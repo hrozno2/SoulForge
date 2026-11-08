@@ -354,11 +354,14 @@ describe.skipIf(!CACHE)("rules", () => {
         const changed = Object.keys({ ...was, ...snap }).filter((k) => JSON.stringify(was[k]) !== JSON.stringify((snap as Record<string, unknown>)[k]));
         for (const k of changed) worse.push(`${f}: ${k} changed from ${JSON.stringify(was[k])} to ${JSON.stringify((snap as Record<string, unknown>)[k])}`);
       }
-      const found = (await check(`import ${f}`, res.character)).filter((x) => /export|round trip|sheet/i.test(x.rule));
+      const all = await check(`import ${f}`, res.character);
+      report.push(...all.map((x) => `- finding: ${x.rule}: ${x.detail}`));
+      const found = all.filter((x) => /export|round trip|sheet/i.test(x.rule));
       for (const x of found) worse.push(`${f}: ${x.rule}: ${x.detail}`);
       if (!process.env.IMPORT_BASELINE && baseline[f] !== undefined && res.todo.length > baseline[f]) worse.push(`${f}: ${res.todo.length} choices left open, the baseline is ${baseline[f]}: ${res.todo.join("; ")}`);
     }
     if (!existsSync(basePath) || process.env.IMPORT_BASELINE) writeFileSync(basePath, JSON.stringify(now, null, 2));
+    writeReport();
     expect(worse, worse.join("\n")).toEqual([]);
   }, LIMIT);
 

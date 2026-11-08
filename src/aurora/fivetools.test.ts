@@ -188,6 +188,44 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("a proficiency with a fallback (\"if you already have it, …\") is the choice's default, not a second grant", () => {
+    const envoy = reg!.all().filter((e) => e.name === "Royal Envoy" && e.id.startsWith("ID_5ET"));
+    expect(envoy.length).toBeGreaterThan(0);
+    for (const el of envoy) {
+      expect(el.rules.some((r) => r.kind === "grant" && r.id === "ID_5ET_SKILL_PERSUASION"), el.id).toBe(false);
+      const pick = el.rules.filter((r) => r.kind === "select" && r.type === "Proficiency");
+      expect(pick.map((r) => (r as { default?: string }).default), el.id).toEqual(["ID_5ET_SKILL_PERSUASION"]);
+    }
+    // The fallback that is a Training Option with its own default (Iron Mind) gets no plain grant beside it.
+    for (const el of reg!.all().filter((e) => e.name === "Iron Mind" && e.id.startsWith("ID_5ET"))) {
+      expect(el.rules.some((r) => r.kind === "grant" && /^ID_5ET_SAVE_/.test(String(r.id))), el.id).toBe(false);
+    }
+  });
+
+  it("a Simic Hybrid takes an animal enhancement at 1st level and another at 5th", () => {
+    const race = reg!.ofType("Race").find((r) => r.name === "Simic Hybrid");
+    if (!race) return;
+    const fighter = reg!.ofType("Class").find((c) => c.name === "Fighter" && c.source.includes("2024"))!;
+    const enh = (level: number, picks: Record<string, string[]> = {}) => {
+      const ch = newCharacter();
+      ch.race = race.id;
+      ch.classes = [{ classId: fighter.id, level }];
+      ch.selections = { ...picks };
+      const r = resolve(ch, reg!);
+      return { r, slots: r.slots.filter((s) => s.rule.type === "Training Option" && /Animal Enhancement/.test(s.rule.name)) };
+    };
+    expect(enh(4).slots).toHaveLength(1);
+    expect(enh(4).slots[0].options.map((o) => o.name).sort()).toEqual(["Manta Glide", "Nimble Climber", "Underwater Adaptation"]);
+    const first = enh(5).slots;
+    expect(first).toHaveLength(2);
+    const climber = first[0].options.find((o) => o.name === "Nimble Climber")!;
+    const { r, slots } = enh(5, { [first[0].key]: [climber.id] });
+    expect(slots[1].options).toHaveLength(6);
+    expect(slots[1].blocked.has(climber.id)).toBe(true);
+    expect(slots[0].blocked.has(climber.id)).toBe(false);
+    expect(r.stats.get("innate speed:climb")).toBe(r.stats.get("innate speed"));
+  });
+
   it("a Rune Shaper knows half the proficiency bonus in runes, not the whole table", () => {
     const bg = reg!.ofType("Background").find((b) => b.name === "Rune Carver");
     if (!bg) return;

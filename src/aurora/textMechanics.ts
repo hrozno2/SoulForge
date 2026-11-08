@@ -271,7 +271,9 @@ export function applyTextStats(out: AElement[], ids: { tool(name: string): strin
   const languages = out.filter((e) => e.type === "Language").map((e) => e.name);
   for (const el of out) {
     if (el.origin !== "5etools" || !USES_TYPES.has(el.type)) continue;
-    const text = plain(el.description ?? "");
+    // "You gain proficiency in X. If you already have it, …" is a choice with X as its default (fivetools.ts
+    // settleFallbacks), not a plain grant: that sentence is not read here.
+    const text = plain(el.description ?? "").replace(/[^.]*\bgain proficiency\b[^.]*\.\s*(?=if you (?:are )?already\b)/gi, "");
     const has = (name: string) => el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase() === name);
     const has2 = (id?: string) => el.rules.some((r) => r.kind === "grant" && r.id === id);
     const add = [...halfProficiencyFromText(text), ...armorClassFromText(el.id, el.name, text), ...savesFromText(text), ...speedFromText(text).filter((r) => r.kind !== "stat" || !/misc$/.test(r.name) || !el.rules.some((x) => x.kind === "stat" && /^(?:innate )?speed(?::misc)?$/i.test(x.name))), ...initiativeFromText(text), ...limitsFromText(text)]

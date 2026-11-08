@@ -480,6 +480,41 @@ export function proseChoiceRules(f: J, idBase: string, level: number | undefined
 }
 
 /**
+ * Options chosen at set character levels, written only in prose (Simic Hybrid's Animal Enhancement): "At 1st level,
+ * choose one of the following options:" and a list of named items; "At 5th level, … Choose one of the options you
+ * didn't take at 1st level, or one of the following options:" and another list. Each sentence becomes a choice at its
+ * level; the later one offers its own list and the earlier one's (what was taken there is blocked: timeline.ts). A "climbing/swimming speed
+ * equal to your walking speed" in an option is given as that speed.
+ */
+export function leveledOptionChoices(f: J, idBase: string, ctx: Ctx, out: AElement[]): ARule[] {
+  const entries = (Array.isArray(f.entries) ? f.entries : []) as unknown[];
+  const rules: ARule[] = [];
+  const byLevel = new Map<number, string[]>();
+  entries.forEach((e, i) => {
+    if (typeof e !== "string") return;
+    const m = /^At (\d+)(?:st|nd|rd|th) level,.*choose one of (?:the options you didn't take at (\d+)(?:st|nd|rd|th) level, or one of )?the following options:$/i.exec(stripTags(e));
+    const list = entries[i + 1] as J | undefined;
+    const items = ((list?.type === "list" ? list.items : []) as J[]).filter((x) => x?.name);
+    if (!m || items.length < 2) return;
+    const ids = items.map((x) => {
+      const oid = `${idBase}_CHOICE_${slug(String(x.name))}`;
+      if (!out.some((o) => o.id === oid)) {
+        const opt = featureElement({ name: x.name, source: f.source, entries: x.entries ?? [x.entry] }, "5et trait", "Training Option", oid, ctx, false, out);
+        const text = stripTags(JSON.stringify(x.entries ?? x.entry ?? ""));
+        for (const [mode, word] of [["climb", "climbing"], ["swim", "swimming"]] as const) if (new RegExp(`you have a ${word} speed equal to your walking speed`, "i").test(text)) opt.rules.push({ kind: "stat", name: `innate speed:${mode}`, value: "innate speed", bonus: "base" } as ARule);
+        out.push(opt);
+      }
+      return oid;
+    });
+    const level = Number(m[1]);
+    const earlier = m[2] ? byLevel.get(Number(m[2])) ?? [] : [];
+    byLevel.set(level, ids);
+    rules.push({ kind: "select", type: "Training Option", name: `${f.name} (level ${level})`, supports: [...earlier, ...ids].join("|"), number: 1, ...(level > 1 ? { level } : {}) } as ARule);
+  });
+  return rules;
+}
+
+/**
  * Ability score increases. A list of more than one entry is a choice between them (the 2024 backgrounds: +2 and +1,
  * or +1 to three; the 2024 Ability Score Improvement feat: +2 to one, or +1 to two), as 5e.tools lists alternatives
  * everywhere; given `sets`, each becomes an option and the character takes one.
@@ -531,6 +566,8 @@ interface Ctx {
   itemEntries?: Map<string, J>;
   /** Later parts of an earlier pick ("based on the environment you chose"): granted by that pick, added at the end. */
   follow?: { to: string; rule: ARule }[];
+  /** "You gain proficiency in X. If you already have it, …": X per element, settled once the side data is in. */
+  fallbacks?: { to: string; rule: ARule }[];
 }
 
 /**
@@ -815,14 +852,18 @@ function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
  * Proficiencies a feature's text gives that 5e.tools (and Plutonium's Foundry data) keep only as text: "You gain
  * proficiency in Wisdom saving throws", "with heavy armor and smith's tools", "in the Performance skill" (Forge Domain,
  * Bladesinging, Gloom Stalker, Samurai: their Aurora twins grant these). Only sentences naming exactly what they give;
- * "one type of weapon of your choice" and "you instead gain" are left alone.
+ * "one type of weapon of your choice" and "you instead gain" are left alone. A sentence followed by a fallback ("If
+ * you already have this proficiency, …": Royal Envoy, Tools of the Trade, Iron Mind) is not a plain grant: what it
+ * names goes to `fallbacks`, and settleFallbacks makes it the default of the element's choice.
  */
-function textProficiencies(entries: unknown, out?: AElement[]): ARule[] {
+function textProficiencies(entries: unknown, out?: AElement[], fallbacks?: ARule[]): ARule[] {
   if (!out) return [];
-  const rules: ARule[] = [];
+  const all: ARule[] = [];
   const text = stripTags(JSON.stringify(entries ?? [])).replace(/\\"/g, '"');
   const TOOLS = new Set(Object.values(TOOL_KINDS).flat());
   for (const m of text.matchAll(/\byou (?:also )?gain proficiency (?:in|with) (.+?)(?:\.|,? (?:and you|if|but|while|when|which)\b|"|$)/gi)) {
+    const fallback = /^\s*if you (?:are )?already (?:have|are proficient|proficient)/i.test(text.slice(m.index! + m[0].length));
+    const rules: ARule[] = fallback ? (fallbacks ?? []) : all;
     for (const raw of m[1].split(/,\s*(?:and\s+)?|\s+and\s+/)) {
       const x = raw.trim().toLowerCase().replace(/[’‘`]/g, "'").replace(/^the\s+/, "");
       let r: RegExpExecArray | null;
@@ -834,7 +875,24 @@ function textProficiencies(entries: unknown, out?: AElement[]): ARule[] {
       else if (TOOLS.has(x)) rules.push({ kind: "grant", type: "Proficiency", id: toolId(x, out) });
     }
   }
-  return rules;
+  return all;
+}
+
+/**
+ * What a fallback sentence names (textProficiencies) is the default of the element's choice that offers it (Royal
+ * Envoy: Persuasion, or another skill if the character has it). A Training Option choice with a default already says
+ * so (withFallbacks); an element with no such choice gets the plain grant.
+ */
+function settleFallbacks(out: AElement[], fallbacks: { to: string; rule: ARule }[]): void {
+  for (const f of fallbacks) {
+    const el = out.find((o) => o.id === f.to);
+    if (!el || f.rule.kind !== "grant") continue;
+    const id = f.rule.id;
+    if (el.rules.some((r) => r.kind === "select" && r.type === "Training Option" && r.default)) continue;
+    const i = el.rules.findIndex((r) => r.kind === "select" && !r.default && String(r.supports).split("|").includes(id));
+    if (i >= 0) el.rules[i] = { ...el.rules[i], default: id } as ARule;
+    else if (!el.rules.some((r) => r.kind === "grant" && r.id === id)) el.rules.push(f.rule);
+  }
 }
 
 function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, hide = false, out?: AElement[]): AElement {
@@ -844,8 +902,10 @@ function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, 
   const setters = c?.name ? { consumes: set(String(c.name), { amount: String(Number(c.amount) || 1) }) } : undefined;
   // A feature named after the creature it tags ("Steel Defender" and its {@creature steel defender|tce}) gives that
   // creature as a companion (found by name and book once all content is in: registry.ts resolveCreatureRefs).
+  const fb: ARule[] = [];
   const own = [...JSON.stringify(f.entries ?? []).matchAll(/@creature ([^|}]+)(?:\|([^|}]*))?/g)].find((m) => m[1].trim().toLowerCase() === String(f.name).toLowerCase());
-  const rules: ARule[] = [...(own ? [{ kind: "grant", type: "Companion", id: `CREATUREREF:${own[1].trim().toLowerCase()}|${(own[2] ?? "").trim().toLowerCase()}` } as ARule] : []), ...textProficiencies(f.entries, out)];
+  const rules: ARule[] = [...(own ? [{ kind: "grant", type: "Companion", id: `CREATUREREF:${own[1].trim().toLowerCase()}|${(own[2] ?? "").trim().toLowerCase()}` } as ARule] : []), ...textProficiencies(f.entries, out, fb)];
+  if (ctx) for (const rule of fb) (ctx.fallbacks ??= []).push({ to: id, rule });
   return base(id, f.name, type, srcName(ctx, f.source), { description: html, sheet: { display: !hide, descriptions: [{ text: html }] }, supports: [kind], rules, ...(setters ? { setters } : {}) });
 }
 
@@ -873,7 +933,9 @@ function traitList(entries: J[] | undefined, parentId: string, ctx: Ctx, source:
   for (const e of entries ?? []) {
     if (!e || typeof e !== "object" || !e.name) continue;
     const id = `${parentId}_T_${slug(e.name)}`;
-    out.push(featureElement({ name: e.name, source, entries: e.entries ?? [] }, kind, type, id, ctx));
+    const el = featureElement({ name: e.name, source, entries: e.entries ?? [] }, kind, type, id, ctx);
+    el.rules.push(...leveledOptionChoices({ name: e.name, source, entries: e.entries ?? [] }, id, ctx, out));
+    out.push(el);
     rules.push({ kind: "grant", type, id });
   }
   return rules;
@@ -2009,6 +2071,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
     const el = out.find((o) => o.id === f.to);
     if (el && !el.rules.some((r) => r.kind === "grant" && f.rule.kind === "grant" && r.id === f.rule.id)) el.rules.push(f.rule);
   }
+  settleFallbacks(out, ctx.fallbacks ?? []);
   // What the side data does not give, from the feature's own text (limited uses, save DCs, attacks).
   applyTextUses(out);
   applyTextDc(out);

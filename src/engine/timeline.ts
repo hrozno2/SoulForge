@@ -192,6 +192,9 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     // The same feat from the other provider counts as had too.
     // A feat the rules let a character take again (5e.tools "repeatable") stays open.
     if (s.rule.type === "Feat") for (const e of options) if ((final.ids.has(e.id) || hadAsTwin(e) || final.active.some((a) => a.el.type === "Feat" && a.el.id !== e.id && a.el.name === e.name && a.el.source !== e.source)) && !s.chosen.includes(e.id) && e.setters["allow duplicate"]?.value !== "true") { blocked.add(e.id); why.set(e.id, "you already have this feat"); }
+    // A training option the character already has from another choice is not offered again (Simic Hybrid's 5th-level
+    // enhancement offers the 1st-level ones too: "one of the options you didn't take").
+    if (s.rule.type === "Training Option") for (const e of options) if (final.ids.has(e.id) && !s.chosen.includes(e.id)) { blocked.add(e.id); why.set(e.id, "you already have this"); }
     // Repeat copies (Aurora's Skilled and Skilled_2, its several Replicate Magic Item infusions, one name each): one
     // copy is offered at a time, the first the character can take and does not have; chosen ones stay.
     const byKey = new Map<string, typeof options>();

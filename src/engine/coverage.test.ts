@@ -88,6 +88,9 @@ function sweep(reg: ARegistry, set: ContentSet, ref: RefClass[]) {
     if (!ch && type === "Archetype" && offeredNames.has(e.name)) { replaced.add(e.id); continue; }
     if (!ch) { find(`${type} no character can hold it`, e.name); continue; }
     try { check(`${type} ${e.name} (${e.source})`, ch); reached.add(e.id); } catch (err) { find("crashed", `${type} ${e.name}: ${String(err).slice(0, 120)}`); }
+    // A species or background is held at level 1; what it opens later (Simic Hybrid's 5th-level enhancement, the
+    // Aasimar's 3rd-level revelation) is tried at level 20 as well.
+    if ((type === "Race" || type === "Background") && ch.classes.length) try { check(`${type} ${e.name} (${e.source}) at level 20`, { ...ch, classes: [{ ...ch.classes[0], level: 20 }] }); } catch (err) { find("crashed", `${type} ${e.name} at 20: ${String(err).slice(0, 120)}`); }
   }
   // Every option of every choice, taken once, which may open more.
   for (let n = 0; pending.size && n < 40000; n++) {

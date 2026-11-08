@@ -46,7 +46,6 @@ const EXPLAINED: Record<string, string> = {
 };
 /** What 5e.tools-only characters really lack or get wrong: to close before Aurora leaves (D7), or to accept. */
 const OPEN: Record<string, string> = {
-  "choices Race Simic Hybrid": "Animal Enhancement (level 1 and 5) is prose only; 5e.tools-only characters get no pick",
   "choices Archetype Beast Master": "no companion pick: the builder does not hold creatures",
 };
 const known = (row: string) => { const key = row.replace(/^twins differ: /, ""); return Object.keys({ ...EXPLAINED, ...OPEN }).find((k) => key.startsWith(k)); };

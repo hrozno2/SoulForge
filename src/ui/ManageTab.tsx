@@ -10,6 +10,7 @@ import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { Html } from "./Html";
 import { useUi } from "./Learn";
 import { companionHtml } from "../aurora/companion";
+import { twinKey } from "../engine/timeline";
 
 type Sub = "options" | "bonuses" | "additions" | "attacks" | "companions";
 const SUBS: [Sub, string][] = [ ["options", "Options"], ["bonuses", "Custom bonuses"], ["additions", "Manual additions"], ["attacks", "Attacks"], ["companions", "Companions"]];
@@ -93,7 +94,11 @@ function LearnIcon({ el }: { el: AElement }) {
 }
 
 function Options({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
-  const opts = r.reg.ofType("Option");
+  // One entry per option: the 5e.tools copy of an option Aurora also has (Customized Ability Score Increases) is left
+  // out, unless it is the one this character has on.
+  const all = r.reg.ofType("Option");
+  const aurora = new Set(all.filter((o) => o.origin !== "5etools").map(twinKey));
+  const opts = all.filter((o) => o.origin !== "5etools" || ch.options.includes(o.id) || !aurora.has(twinKey(o)));
   if (!opts.length) return <p className="muted">No character options are loaded. Options such as optional rules come from content files.</p>;
   return (
     <ul className="options boxed">

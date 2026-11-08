@@ -149,9 +149,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // infusion Class Features for 5e.tools' Optional Features); or the owner's name with the pick's ("Magic Initiate
   // (Bard)" for Magic Initiate's "Bard").
   type Slot = ReturnType<typeof resolve>["slots"][number];
+  const ownerOf = (s: Slot, p: Pick) => p.owner === s.owner.id || p.ownerName === nameKey(s.owner.name);
   const fits = (s: Slot, p: Pick, anyway = false): string | undefined => {
     // A spell stays with its spellcasting: a Warlock's spells known are not a Sorcerer's.
-    if (p.spell && p.casting && s.rule.spellcasting && p.casting.toLowerCase() !== s.rule.spellcasting.toLowerCase()) return undefined;
+    // The owner's own choice takes it whatever each provider calls the casting (Blessed Warrior's cantrips: Aurora says
+    // the Paladin's, 5e.tools Blessed Warrior's).
+    if (p.spell && p.casting && s.rule.spellcasting && p.casting.toLowerCase() !== s.rule.spellcasting.toLowerCase() && !ownerOf(s, p)) return undefined;
     // `anyway`: the player's pick that 5e.tools' rules rule out (Polearm Master at 4th level without Strength or
     // Dexterity 13, which Aurora's copy did not ask) is kept, marked against the rules as any such pick is.
     const open = anyway ? s.options : s.options.filter((o) => !s.blocked.has(o.id));
@@ -177,7 +180,6 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // must take before any other choice can); only then may a pick go to a choice of another owner. An owner is matched
   // by twin or by name (Aurora's Lessons of the First Ones is a Class Feature, 5e.tools' an Optional Feature). The
   // narrowest choices go first, so a choice of any skill does not take the picks a class's short list needs.
-  const ownerOf = (s: Slot, p: Pick) => p.owner === s.owner.id || p.ownerName === nameKey(s.owner.name);
   type Mode = { owner?: boolean; level?: boolean; anyway?: boolean };
   const pass = (mode: Mode): boolean => {
     const r = resolve(next, to);
@@ -279,7 +281,9 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const r = resolve(next, to);
     for (let i = 0; i < picks.length; i++) {
       const p = picks[i];
-      const entry = p.spell && p.casting ? r.spellcasting.get(p.casting.toLowerCase()) : undefined;
+      // Spells, not cantrips: a cantrip is never prepared.
+      const lvl = Number(to.get(p.id)?.setters.level?.value ?? from.get(p.id)?.setters.level?.value ?? 1);
+      const entry = p.spell && p.casting && lvl > 0 ? r.spellcasting.get(p.casting.toLowerCase()) : undefined;
       if (!entry?.prepare) continue;
       const list = (next.prepared[entry.name] ??= []);
       const sp = to.get(p.id)?.type === "Spell" ? p.id : to.ofType("Spell").find((e) => nameKey(e.name) === nameKey(p.name))?.id;

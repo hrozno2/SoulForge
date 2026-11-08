@@ -92,6 +92,13 @@ function sweep(reg: ARegistry, set: ContentSet, ref: RefClass[]) {
     // Aasimar's 3rd-level revelation) is tried at level 20 as well.
     if ((type === "Race" || type === "Background") && ch.classes.length) try { check(`${type} ${e.name} (${e.source}) at level 20`, { ...ch, classes: [{ ...ch.classes[0], level: 20 }] }); } catch (err) { find("crashed", `${type} ${e.name} at 20: ${String(err).slice(0, 120)}`); }
   }
+  // Every Option (an optional rule the player turns on: Customizing Your Origin), on a species holder that it can act on.
+  const racer = reg.ofType("Race").find((e) => !e.compendiumHidden && isFive(e) && e.rules.some((r) => r.requirements?.includes("ID_5ET_OPTION_"))) ?? reg.ofType("Race").find((e) => !e.compendiumHidden);
+  for (const e of reg.ofType("Option")) {
+    const ch = racer ? holder(reg, racer) : undefined;
+    if (!ch) { find("Option no character can hold it", e.name); continue; }
+    try { check(`Option ${e.name} (${e.source})`, { ...ch, options: [e.id] }); reached.add(e.id); } catch (err) { find("crashed", `Option ${e.name}: ${String(err).slice(0, 120)}`); }
+  }
   // Every option of every choice, taken once, which may open more.
   for (let n = 0; pending.size && n < 40000; n++) {
     const [id, p] = pending.entries().next().value as [string, { ch: Character; key: string; rest: string[]; label: string }];

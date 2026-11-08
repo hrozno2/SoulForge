@@ -202,6 +202,29 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("Customizing Your Origin moves a species' fixed increases, as an option", () => {
+    const bug = reg!.ofType("Race").find((r) => r.name === "Bugbear" && /Volo/.test(r.source))!;
+    const opt = reg!.ofType("Option").find((o) => o.name === "Customized Ability Score Increases")!;
+    expect(opt).toBeDefined();
+    const fighter = reg!.ofType("Class").find((c) => c.name === "Fighter" && !c.source.includes("2024"))!;
+    const scores = (ch: ReturnType<typeof newCharacter>) => buildSheet(resolve(ch, reg!)).abilities.map((a) => a.score);
+    let ch = newCharacter();
+    ch.race = bug.id; ch.classes = [{ classId: fighter.id, level: 1 }];
+    expect(scores(ch).slice(0, 2)).toEqual([10, 9]);
+    ch = { ...ch, options: [opt.id] };
+    let r = resolve(ch, reg!);
+    const slots = r.slots.filter((s) => /customized increase/.test(s.rule.name));
+    expect(slots.map((s) => s.rule.name.replace(/^.*\(/, "("))).toEqual(["(+2)", "(+1)"]);
+    expect(scores(ch).slice(0, 2)).toEqual([8, 8]);
+    const pick = (s: (typeof slots)[number], ab: string) => s.options.find((o) => o.name === ab)!.id;
+    ch = { ...ch, selections: { [slots[0].key]: [pick(slots[0], "+2 Constitution")], [slots[1].key]: [pick(slots[1], "+1 Wisdom")] } };
+    r = resolve(ch, reg!);
+    expect(buildSheet(r).abilities.map((a) => a.score)).toEqual([8, 8, 10, 8, 9, 8]);
+    // Each increase on a different score.
+    const again = r.slots.find((s) => s.key === slots[1].key)!;
+    expect(again.blocked.has(again.options.find((o) => o.name === "+1 Constitution")!.id)).toBe(true);
+  });
+
   it("a class's own always-prepared spells come at their level (2024 Paladin's Divine Smite, Ranger's Hunter's Mark)", () => {
     const granted = (cls: string, level: number) => {
       const c = reg!.ofType("Class").find((x) => x.name === cls && x.source.includes("2024"))!;

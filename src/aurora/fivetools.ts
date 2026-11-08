@@ -515,6 +515,24 @@ export function leveledOptionChoices(f: J, idBase: string, ctx: Ctx, out: AEleme
 }
 
 /**
+ * Tasha's "Customizing Your Origin" for ability scores, as an option the player turns on (Aurora's "Customized
+ * Ability Score Increases", the same name, so a character moved from Aurora keeps it): a species' fixed increases
+ * (+2 Strength, +1 Dexterity) become a choice of the same sizes, each on a different score. Off, nothing changes.
+ * Negative adjustments (the DMG Lizardfolk's -2 Intelligence) stay.
+ */
+const CUSTOM_ORIGIN_ASI = "ID_5ET_OPTION_TCE_CUSTOMIZED_ABILITY_SCORE_INCREASES";
+function customOrigin(rules: ARule[], label: string, ctx: Ctx, out: AElement[]): ARule[] {
+  const fixed = rules.filter((r) => r.kind === "stat" && Object.values(ABIL).includes(r.name as never) && Number((r as { value: string }).value) > 0 && !r.requirements);
+  if (!fixed.length) return rules;
+  if (!out.some((o) => o.id === CUSTOM_ORIGIN_ASI)) out.push(base(CUSTOM_ORIGIN_ASI, "Customized Ability Score Increases", "Option", srcName(ctx, "TCE"), {
+    description: "<p>Customizing Your Origin: any ability score increase your species gives you can go to an ability score of your choice instead, each increase to a different score.</p>",
+  }));
+  const kept = rules.map((r) => (fixed.includes(r) ? ({ ...r, requirements: `!${CUSTOM_ORIGIN_ASI}` } as ARule) : r));
+  for (const r of fixed) { const v = (r as { value: string }).value; kept.push({ kind: "select", type: "Ability Score Improvement", name: `${label}: customized increase (+${v})`, supports: `5et asi one,amt${v}`, number: 1, requirements: CUSTOM_ORIGIN_ASI } as ARule); }
+  return kept;
+}
+
+/**
  * Ability score increases. A list of more than one entry is a choice between them (the 2024 backgrounds: +2 and +1,
  * or +1 to three; the 2024 Ability Score Improvement feat: +2 to one, or +1 to two), as 5e.tools lists alternatives
  * everywhere; given `sets`, each becomes an option and the character takes one.
@@ -1066,7 +1084,7 @@ export function resolveCopies(files: Record<string, J>): Record<string, J> {
 
 function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const id = ftId("RACE", r.name, r.source);
-  const rules: ARule[] = [...speedRules(r.speed), ...abilityRules(r.ability, r.name, { out, idBase: id }), ...trainingRules(r, r.name, out, ctx, id), ...defenseRules(r), ...featRules(r)];
+  const rules: ARule[] = [...speedRules(r.speed), ...customOrigin(abilityRules(r.ability, r.name, { out, idBase: id }), r.name, ctx, out), ...trainingRules(r, r.name, out, ctx, id), ...defenseRules(r), ...featRules(r)];
   // A species that lists no languages leaves them to the character's origin: under the 2024 rules Common and two
   // standard languages; in the books before them (Monsters of the Multiverse, the Ravenloft lineages) Common and one.
   if (!r.languageProficiencies?.length) {
@@ -1157,7 +1175,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     for (const v of versions) {
       const vname = String(v.name).split(";").pop()!.trim() || String(v.name);
       const vid = ftId("RACEVERSION", `${r.name} ${vname}`, v.source ?? r.source);
-      const vrules: ARule[] = [...speedRules(v.speed), ...abilityRules(v.ability, vname, { out, idBase: vid }), ...trainingRules(v, vname, out, ctx, vid), ...defenseRules(v, r.name)].filter((x) => !baseIds.has(JSON.stringify(x)));
+      const vrules: ARule[] = [...speedRules(v.speed), ...customOrigin(abilityRules(v.ability, vname, { out, idBase: vid }), vname, ctx, out), ...trainingRules(v, vname, out, ctx, vid), ...defenseRules(v, r.name)].filter((x) => !baseIds.has(JSON.stringify(x)));
       if (v.darkvision && (darkVaries || v.darkvision !== r.darkvision)) {
         const dv = `${vid}_DARKVISION`;
         out.push(base(dv, `Darkvision (${v.darkvision} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));
@@ -1174,7 +1192,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   out.push(base(id, r.name, "Race", srcName(ctx, r.source), { rules, setters: raceSetters, compendiumHidden: ((r.traitTags as string[]) ?? []).includes("NPC Race"), spellcasting: racialSpells.rules.length ? castingFor(r.name, racialSpells.ability) : undefined, description: entriesHtml(r.entries), supports: [] }));
   for (const s of mine) {
     const sid = ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source);
-    const srules: ARule[] = [...abilityRules(s.ability, s.name ?? r.name, { out, idBase: sid }), ...trainingRules(s, s.name ?? r.name, out, ctx, sid), ...defenseRules(s), ...featRules(s)];
+    const srules: ARule[] = [...customOrigin(abilityRules(s.ability, s.name ?? r.name, { out, idBase: sid }), s.name ?? r.name, ctx, out), ...trainingRules(s, s.name ?? r.name, out, ctx, sid), ...defenseRules(s), ...featRules(s)];
     if (abilityRules(s.ability, s.name ?? r.name).length) srules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
     if (s.speed) srules.push(...speedRules(s.speed));
     srules.push(...traitList(s.entries, sid, ctx, s.source, out, "5et trait", "Racial Trait"));

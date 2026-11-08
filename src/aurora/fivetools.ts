@@ -1701,7 +1701,22 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   // Spellcasting: tables become per-level stat steps so everything flows through the same rules.
   const casting = castingRules(c, c.name, [c.name], lname);
   const spellcasting = casting.spellcasting;
-  rules.push(...casting.rules);
+  // "Choose two spells from any classes … The chosen spells … are included in the number in the Spells Known column"
+  // (the 2014 Bard's Magical Secrets at 10, 14 and 18): that many of the level's spells known come from any class's
+  // list, of a level the class can cast or a cantrip. Without it a 5e.tools Bard could take none.
+  const secrets = new Map<number, number>();
+  for (const f of data.cf) {
+    if (f.className !== c.name || (f.classSource ?? c.source) !== c.source) continue;
+    const t = stripTags(JSON.stringify(f.entries ?? []));
+    const m = /choose (two|three|\d+) (?:additional )?spells from any class/i.exec(t);
+    if (m && /included in the number in the spells known column|count as \w+ spells for you/i.test(t)) secrets.set(Number(f.level), ({ two: 2, three: 3 } as Record<string, number>)[m[1].toLowerCase()] ?? Number(m[1]));
+  }
+  for (const r of casting.rules) {
+    const n = r.kind === "select" && r.name === `Spell known (${c.name})` ? secrets.get(Number(r.level)) : undefined;
+    if (!n || r.kind !== "select") { rules.push(r); continue; }
+    if (Number(r.number) > n) rules.push({ ...r, number: Number(r.number) - n });
+    rules.push({ ...r, name: `Magical Secrets (${c.name} ${r.level})`, supports: "($(spellcasting:slots)||0)", number: Math.min(n, Number(r.number)) });
+  }
   if (casting.shares) gained.push({ kind: "grant", type: "Grants", id: "ID_INTERNAL_GRANT_MULTICLASS" });
   rules.push({ kind: "grant", type: "Grants", id: "ID_INTERNAL_GRANT_MULTICLASS", requirements: mcId });
 

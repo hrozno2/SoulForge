@@ -202,6 +202,23 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("a 2014 Bard's Magical Secrets takes spells from any class, out of the spells known", () => {
+    const bard = reg!.ofType("Class").find((c) => c.name === "Bard" && !c.source.includes("2024"))!;
+    const at = (level: number) => { const ch = newCharacter(); ch.classes = [{ classId: bard.id, level }]; return resolve(ch, reg!).slots.filter((s) => s.rule.type === "Spell" && s.rule.spellcasting === "Bard" && !/^Cantrip/.test(s.rule.name)); };
+    const total = (level: number) => at(level).reduce((n, s) => n + s.rule.number, 0);
+    // Spells Known: 12 at 9th level, 14 at 10th (two of them Magical Secrets), 22 at 18th.
+    expect(total(9)).toBe(12);
+    expect(total(10)).toBe(14);
+    expect(total(18)).toBe(22);
+    const secrets = at(10).filter((s) => /^Magical Secrets/.test(s.rule.name));
+    expect(secrets.map((s) => s.rule.number)).toEqual([2]);
+    const names = secrets[0].options.map((o) => o.name);
+    expect(names).toContain("Fireball");
+    expect(names).toContain("Fire Bolt");
+    expect(names).not.toContain("Wish");
+    expect(at(18).filter((s) => /^Magical Secrets/.test(s.rule.name))).toHaveLength(3);
+  });
+
   it("an optional subclass feature is a choice and replaces its feature (Blessed Strikes for Divine Strike)", () => {
     const cleric = reg!.ofType("Class").find((c) => c.name === "Cleric" && !c.source.includes("2024"))!;
     let ch = newCharacter();

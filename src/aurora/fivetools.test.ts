@@ -202,6 +202,24 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("a 2014 Ranger picks favored enemies (1, 6, 14) and terrains (1, 6, 10)", () => {
+    const ranger = reg!.ofType("Class").find((c) => c.name === "Ranger" && !c.source.includes("2024"))!;
+    const slots = (level: number, re: RegExp) => { const ch = newCharacter(); ch.classes = [{ classId: ranger.id, level }]; return resolve(ch, reg!).slots.filter((s) => re.test(s.rule.name)); };
+    expect(slots(1, /^Favored enemy \(level/i).length).toBe(1);
+    expect(slots(14, /^Favored enemy \(level/i).length).toBe(3);
+    expect(slots(5, /^Favored terrain \(level/i).length).toBe(1);
+    expect(slots(10, /^Favored terrain \(level/i).length).toBe(3);
+    const names = slots(1, /^Favored enemy \(level/i)[0].options.map((o) => o.name);
+    expect(names).toContain("Aberrations");
+    expect(names).toContain("Humanoids (two races)");
+    expect(slots(1, /^Favored terrain \(level/i)[0].options.map((o) => o.name)).toContain("Underdark");
+    // Tasha's Favored Foe replaces Favored Enemy, and its picks with it.
+    const ch = newCharacter(); ch.classes = [{ classId: ranger.id, level: 6 }];
+    const foe = resolve(ch, reg!).slots.find((s) => /Optional class feature: Favored Foe/.test(s.rule.name))!;
+    const r = resolve({ ...ch, selections: { [foe.key]: [foe.options[0].id] } }, reg!);
+    expect(r.slots.filter((s) => /^Favored enemy \(level/i.test(s.rule.name))).toHaveLength(0);
+  });
+
   it("Customizing Your Origin moves a species' fixed increases, as an option", () => {
     const bug = reg!.ofType("Race").find((r) => r.name === "Bugbear" && /Volo/.test(r.source))!;
     const opt = reg!.ofType("Option").find((o) => o.name === "Customized Ability Score Increases")!;

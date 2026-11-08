@@ -480,6 +480,32 @@ export function proseChoiceRules(f: J, idBase: string, level: number | undefined
 }
 
 /**
+ * The 2014 Ranger's lasting picks, written only in prose: "Choose a type of favored enemy: aberrations, beasts, …, or
+ * undead. Alternatively, you can select two races of humanoid" and "Choose one type of favored terrain: arctic, coast,
+ * …, or the Underdark", with more at the levels the text names ("at 6th and 14th level"). Each is a choice of those
+ * names, as Aurora's are, at the feature's level and each later one; a name taken once is not offered again.
+ */
+export function favoredChoices(f: J, idBase: string, level: number, ctx: Ctx, out: AElement[]): ARule[] {
+  const text = stripTags(JSON.stringify(f.entries ?? []));
+  const rules: ARule[] = [];
+  const ORD = (x: string) => Number(/(\d+)/.exec(x)?.[1]);
+  for (const m of text.matchAll(/choose (?:a|one) type of (favored enemy|favored terrain): ([^.]+)\./gi)) {
+    const what = m[1].toLowerCase();
+    const names = m[2].replace(/\bor\b/g, ",").split(",").map((x) => x.trim().replace(/^the\s+/i, "")).filter(Boolean).map((x) => (/^underdark$/i.test(x) ? "Underdark" : cap(x)));
+    if (what === "favored enemy" && /two races of humanoid/i.test(text)) names.push("Humanoids (two races)");
+    if (names.length < 3) continue;
+    const ids = names.map((n) => {
+      const oid = `${idBase}_CHOICE_${slug(n)}`;
+      if (!out.some((o) => o.id === oid)) out.push(base(oid, n, "Training Option", srcName(ctx, f.source), { compendiumHidden: true, description: `<p>${esc(cap(what))}: ${esc(n)}.</p>` }));
+      return oid;
+    });
+    const later = new RegExp(`additional ${what}[^.]*?at (\\d+)(?:st|nd|rd|th) and (\\d+)(?:st|nd|rd|th) level`, "i").exec(text);
+    for (const lv of [level, ...(later ? [ORD(later[1]), ORD(later[2])] : [])]) rules.push({ kind: "select", type: "Training Option", name: `${cap(what)} (level ${lv})`, supports: ids.join("|"), number: 1, ...(lv > level ? { level: lv } : { level }) } as ARule);
+  }
+  return rules;
+}
+
+/**
  * Options chosen at set character levels, written only in prose (Simic Hybrid's Animal Enhancement): "At 1st level,
  * choose one of the following options:" and a list of named items; "At 5th level, … Choose one of the options you
  * didn't take at 1st level, or one of the following options:" and another list. Each sentence becomes a choice at its
@@ -1681,6 +1707,8 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     }
     granted.set(fid, name);
     rules.push({ kind: "grant", type: "Class Feature", id: fid, level });
+    // On the feature itself, so a feature an optional one replaces (Favored Foe for Favored Enemy) takes them along.
+    { const fav = favoredChoices(feat, fid, level, ctx, out); const el = out.find((o) => o.id === fid); if (el && fav.length) el.rules.push(...fav); }
     // "Choose one of these" blocks inside the feature (the 2024 Cleric's Divine Order: Protector or Thaumaturge) are
     // a choice; a feature it simply refers to (Monk's Focus: Flurry of Blows) is given with it.
     rules.push(...refRules(feat.entries, `${name} (${c.name} ${level})`, level, { cf: data.cf, sf: data.sf, ctx, out, progressed: !!(c.optionalfeatureProgression as J[] | undefined)?.length }));

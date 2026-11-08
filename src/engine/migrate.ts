@@ -167,13 +167,20 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     if (byConcept) return byConcept.id;
     const exact = open.find((o) => nameKey(o.name) === n) ?? open.find((o) => nameKey(o.name) === nameKey(`${s.owner.name} (${p.name})`));
     if (exact) return exact.id;
+    // Near names never fill a choice of increases: those are set to the old scores below ("Resilient (Strength)" is
+    // the saving throw, not Resilient's "+1 Strength").
+    if (s.rule.type === "Ability Score Improvement") return undefined;
     // A near name, when only one option has it: "Rock Gnome" is "Rock Gnome Lineage", "Wisdom" is "+1 Wisdom";
     // "Resilient (Strength)" is "Saving throw proficiency (Strength)" by what the brackets name.
     const one = (xs: typeof open) => (xs.length === 1 ? xs[0].id : undefined);
     const inName = n.length > 3 ? one(open.filter((o) => ` ${nameKey(o.name)} `.includes(` ${n} `))) : undefined;
     if (inName) return inName;
+    // What the brackets name, as an option's brackets, its name, or inside its name: "Cloud's Jaunt (Cloud Giant)"
+    // is "Cloud Giant Ancestry"; Scholar's "Skill Expertise (Medicine)" is its option "Medicine".
     const br = /\(([^)]+)\)\s*$/.exec(p.name)?.[1];
-    return br ? one(open.filter((o) => nameKey(/\(([^)]+)\)\s*$/.exec(o.name)?.[1] ?? "") === nameKey(br))) : undefined;
+    if (!br) return undefined;
+    const b = nameKey(br);
+    return one(open.filter((o) => nameKey(/\(([^)]+)\)\s*$/.exec(o.name)?.[1] ?? "") === b)) ?? one(open.filter((o) => nameKey(o.name) === b)) ?? (b.length > 3 ? one(open.filter((o) => ` ${nameKey(o.name)} `.includes(` ${b} `))) : undefined);
   };
   const room = (s: Slot) => s.rule.type !== "List" && (next.selections[s.key]?.length ?? 0) < s.rule.number;
   // The owner's picks go first, to a fixed point (an invocation chosen opens its own feat choice, which its feat
@@ -189,24 +196,46 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       const l = lists.findIndex((x) => x.owner === s.owner.id && x.name === s.rule.name);
       if (l >= 0) { next.selections[s.key] = lists[l].values; lists.splice(l, 1); placed = true; }
     }
-    for (const s of r.slots.filter(room).sort((a, b) => a.options.length - b.options.length)) {
-      const have = next.selections[s.key] ?? [];
-      for (let i = 0; i < picks.length && have.length < s.rule.number; i++) {
-        const p = picks[i];
-        if (mode.owner && !ownerOf(s, p)) continue;
-        if (mode.level && p.at !== s.at) continue;
-        const id = fits(s, p, mode.anyway);
-        if (id && !have.includes(id)) { have.push(id); picks.splice(i--, 1); placed = true; }
+    // A maximum matching of picks to the places choices have (Kuhn's algorithm, as the importer matches trainings):
+    // greedy order let 1st-level spells fill the spellbook's last places, leaving its 9th-level picks nowhere.
+    const rooms = r.slots.filter(room);
+    const places: { s: Slot; id?: string }[] = rooms.flatMap((x) => Array.from({ length: x.rule.number - (next.selections[x.key]?.length ?? 0) }, () => ({ s: x })));
+    // Every allowed edge at once, the preferred first (owner and level, owner, level, then a pick the rules now rule
+    // out kept at its own level, then anywhere): augmenting paths may move an earlier pick to make room for another.
+    const rank = (pl: { s: Slot }, p: Pick): { rank: number; id: string } | undefined => {
+      const own = ownerOf(pl.s, p), lvl = p.at === pl.s.at;
+      const ok = fits(pl.s, p);
+      if (ok) return { rank: own && lvl ? 0 : own ? 1 : lvl ? 2 : 4, id: ok };
+      const anyway = lvl ? fits(pl.s, p, true) : undefined;
+      return anyway ? { rank: 3, id: anyway } : undefined;
+    };
+    void mode;
+    const edges = picks.map((p) => places.map((pl, j) => ({ j, ...(rank(pl, p) ?? { rank: 9, id: "" }) })).filter((e) => e.id && !(next.selections[places[e.j].s.key] ?? []).includes(e.id)).sort((x, y) => x.rank - y.rank));
+    const owner = new Array<number>(places.length).fill(-1);
+    const take = (i: number, seen: Set<number>): boolean => {
+      for (const e of edges[i]) {
+        if (seen.has(e.j)) continue;
+        seen.add(e.j);
+        if (owner[e.j] < 0 || take(owner[e.j], seen)) { owner[e.j] = i; places[e.j].id = e.id; return true; }
       }
-      if (have.length) next.selections[s.key] = have;
-      // Beyond the owner's own: one choice at a time, so what it opens is offered to its own picks first.
-      if (!mode.owner && placed) return true;
+      return false;
+    };
+    for (let i = 0; i < picks.length; i++) if (edges[i].length) take(i, new Set());
+    const used = new Set<number>();
+    for (let j = 0; j < places.length; j++) {
+      const i = owner[j];
+      if (i < 0) continue;
+      const have = (next.selections[places[j].s.key] ??= []);
+      // One choice holds an option once: a second place of the same choice wanting the same id is left.
+      if (have.includes(places[j].id!)) continue;
+      have.push(places[j].id!);
+      used.add(i);
+      placed = true;
     }
+    for (const i of [...used].sort((a, b) => b - a)) picks.splice(i, 1);
     return placed;
   };
-  // Owner and level, owner, level (then a pick the rules now rule out, kept in its own level's choice only), anywhere.
-  const MODES: Mode[] = [{ owner: true, level: true }, { owner: true }, { level: true }, { level: true, anyway: true }, {}];
-  const place = () => { for (let round = 0; round < 120; round++) if (!MODES.some((m) => pass(m))) break; };
+  const place = () => { for (let round = 0; round < 120; round++) if (!pass({})) break; };
 
   // Ability increases: each open choice whose options raise scores (or choose how they are raised) takes the option
   // that brings the scores closest to the old sheet's, looking one choice ahead for a pattern ("+2 and +1").
@@ -257,8 +286,11 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
         let bestId: string | undefined, bestN = 0;
         for (const o of s.options.filter((x) => !s.blocked.has(x.id))) {
           const t: Character = { ...next, selections: { ...next.selections, [s.key]: [...(next.selections[s.key] ?? []), o.id] } };
-          const opened = resolve(t, to).slots.filter((x) => !r.slots.some((y) => y.key === x.key));
-          const n = picks.filter((p) => opened.some((x) => fits(x, p))).length;
+          const after = resolve(t, to);
+          const opened = after.slots.filter((x) => !r.slots.some((y) => y.key === x.key));
+          // Picks its own choices would take, and picks it simply gives (the Rogue's "and thieves' tools" expertise).
+          const gives = (p: Pick) => !!p.concept && after.active.some((a) => conceptOf(a.el) === p.concept) && !r.active.some((a) => conceptOf(a.el) === p.concept);
+          const n = picks.filter((p) => opened.some((x) => fits(x, p)) || gives(p)).length;
           if (n > bestN) { bestN = n; bestId = o.id; }
         }
         if (bestId) { next.selections[s.key] = [...(next.selections[s.key] ?? []), bestId]; done = true; break; }
@@ -270,6 +302,9 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // Picks first (a feat's own +1 counts before the species' pattern is chosen), then the scores, then again.
   place();
   fillScores((x) => x.rule.type === "Ability Score Improvement");
+  place();
+  // A subrace 5e.tools asks where Aurora's copy had none (the Human's, the Dragonborn's): the plain one.
+  for (const s of resolve(next, to).slots) if (room(s) && /sub ?race/i.test(s.rule.type + s.rule.name)) { const plain = s.options.find((o) => /\(standard\)$/i.test(o.name)); if (plain) next.selections[s.key] = [plain.id]; }
   place();
   fillSets();
   fillScores();

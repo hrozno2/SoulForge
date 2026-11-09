@@ -32,6 +32,8 @@ export interface AppSettings {
   buildLayout: "board" | "tabs";
   /** The test build only: hide the test bar so the app looks like the released one. */
   hideTestTools: boolean;
+  /** Soul Forge Test only (D5): load without Aurora's content, as the release app will (D7). */
+  fiveToolsOnly?: boolean;
 }
 
 const KEY = "charforge.settings";

@@ -8,6 +8,8 @@
  * reported, as is every id with no twin.
  */
 import type { Character } from "../aurora/character";
+import { autoFill } from "../aurora/autofill";
+import { repeatedPicks } from "../aurora/rulesCheck";
 import { resolve } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
 import type { ARegistry } from "../aurora/registry";
@@ -27,6 +29,8 @@ export interface Migration {
   open: string[];
   /** Picks kept although 5e.tools' rules rule them out, as "choice: pick (why)". */
   againstRules: string[];
+  /** Choices the move left open or made repeats, filled by the auto-fill: "choice: pick". The player may change them. */
+  filled: string[];
 }
 
 const isFive = (e: AElement | undefined) => !!e && (e.origin === "5etools" || e.id.startsWith("ID_5ET"));
@@ -350,6 +354,24 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     }
   }
 
+  // What is still open, or now a repeat (5e.tools asks a Tortle's size, a Scion of the Outer Planes' resistance; it
+  // grants what Aurora's copy had the player pick), is filled the way the builder fills a new character, legally;
+  // the player sees each such pick in the notes and may change it. Picks the player made are not touched.
+  const beforeFill = resolve(next, to);
+  const filledCh0 = autoFill(next, to);
+  // The player's own picks stay, even those 5e.tools' rules rule out (kept and listed): only open choices, and
+  // repeats (a pick 5e.tools now grants elsewhere, wasted), take the auto-fill's picks.
+  const filledCh = { ...filledCh0, selections: { ...filledCh0.selections } };
+  for (const x of beforeFill.slots) {
+    if (!x.chosen.length || repeatedPicks(beforeFill, x).length) continue;
+    // The player's picks, and the auto-fill's only for the places left (a spellbook short of two spells).
+    const mine = next.selections[x.key] ?? x.chosen;
+    const extra = (filledCh0.selections[x.key] ?? []).filter((id) => !mine.includes(id)).slice(0, Math.max(0, x.rule.number - mine.length));
+    filledCh.selections[x.key] = [...mine, ...extra];
+  }
+  const filledR = resolve(filledCh, to);
+  const filled = filledR.slots.flatMap((x) => x.chosen.filter((id) => !beforeFill.slots.find((y) => y.key === x.key)?.chosen.includes(id)).map((id) => `${x.rule.name}: ${to.get(id)?.name ?? id}`));
+  Object.assign(next, { selections: filledCh.selections, prepared: filledCh.prepared });
   // A pick the rebuilt character has anyway (5e.tools grants what Aurora asked) has its place.
   const final = resolve(next, to);
   const names = new Set(final.active.map((a) => nameKey(a.el.name)));
@@ -358,5 +380,5 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   const unplaced = picks.filter((p) => !final.ids.has(p.id) && !had(p.name)).map((p) => ({ id: p.id, name: p.name, choice: p.choice }));
   const open = final.slots.filter((x) => room(x) && !x.rule.optional && x.options.length).map((x) => `${x.owner.name}: ${x.rule.name} [${x.options.slice(0, 4).map((o) => o.name).join("; ")}${x.options.length > 4 ? "; …" : ""}]`);
   const againstRules = final.slots.flatMap((x) => x.chosen.filter((id) => x.blocked.has(id)).map((id) => `${x.rule.name}: ${to.get(id)?.name ?? id} (${x.whyBlocked?.(id) ?? "against the rules"})`));
-  return { ch: next, moved, noTwin: [...noTwin.values()], unplaced, open, againstRules };
+  return { ch: next, moved, noTwin: [...noTwin.values()], unplaced, open, againstRules, filled };
 }

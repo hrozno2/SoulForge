@@ -94,3 +94,44 @@ export async function loadTestContent(onProgress: (s: string) => void): Promise<
   await saveSource(await storeFiveTools("Test content (5e.tools)", files));
   return `Loaded ${urls.length} Aurora files and ${files.size} 5e.tools files.`;
 }
+
+/**
+ * D6 in Soul Forge Test: every saved character moved to 5e.tools ids as a new copy, the original untouched. Each copy
+ * says in its import notes what moved, what is gone and why, what was chosen for it and what breaks the 5e.tools
+ * rules; the whole comparison is saved as one report. `both` must hold Aurora and 5e.tools (the 5e.tools-only switch
+ * off); the 5e.tools-only registry is built here from the same sources.
+ */
+export async function moveCharactersToFiveTools(both: ARegistry, onProgress: (s: string) => void): Promise<string> {
+  const { listSources } = await import("../aurora/storage");
+  const { buildRegistry } = await import("../aurora/content");
+  const { moveAndCompare, moveNote, moveReport } = await import("../engine/migrateReport");
+  const { rulesRef } = await import("../aurora/rulesRefStore");
+  if (!both.all().some((e) => e.origin !== "5etools" && !e.id.startsWith("ID_5ET") && !/^SRD /.test(e.source))) return "Aurora's content is not loaded: turn the 5e.tools-only switch off, then move the characters.";
+  onProgress("Reading 5e.tools content on its own...");
+  const sources = (await listSources()).filter((s) => s.format !== "aurora");
+  const { reg: five } = await buildRegistry(sources);
+  const all = await listCharacters();
+  const done = new Set(all.map((r) => r.data.movedFrom).filter(Boolean));
+  const todo = all.filter((r) => !r.data.movedFrom && !done.has(r.id));
+  const results = [];
+  let n = 0;
+  for (const rec of todo) {
+    onProgress(`Moving ${++n} of ${todo.length}: ${rec.name}`);
+    await new Promise((ok) => setTimeout(ok, 0));
+    try {
+      const res = moveAndCompare(normalizeCharacter(rec.data), both, five, rulesRef() ?? []);
+      results.push({ ...res, name: rec.name });
+      const id = uid();
+      const ch: Character = { ...res.migration.ch, name: `${rec.name} (5e.tools)`, movedFrom: rec.id, importReport: moveNote(res) };
+      const classes = ch.classes.map((c) => `${five.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ");
+      await saveCharacterRecord({ id, name: ch.name, summary: [five.get(ch.race ?? "")?.name, classes].filter(Boolean).join(" "), updated: Date.now(), data: ch });
+    } catch (e) {
+      results.push({ name: rec.name, migration: { ch: rec.data, moved: 0, noTwin: [], unplaced: [], open: [], againstRules: [], filled: [] }, changed: [], dropped: [], rules: [`Could not be moved: ${(e as Error).message}`] });
+    }
+  }
+  if (!todo.length) return "Every saved character has a 5e.tools copy already.";
+  const report = moveReport(results);
+  const ok = await saveFile(`soulforge-moved-to-5etools-${new Date().toISOString().slice(0, 10)}.md`, new TextEncoder().encode(report), "text/markdown");
+  const changed = results.filter((r) => r.changed.length).length, rules = results.filter((r) => r.rules.length).length;
+  return `Moved ${results.length} characters to 5e.tools as new copies ("... (5e.tools)"); the originals are untouched. ${changed} sheets changed, ${rules} with a rules finding.${ok ? " The report is saved." : ""} Each copy's import notes say what moved.`;
+}

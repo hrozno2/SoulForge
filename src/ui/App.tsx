@@ -38,7 +38,7 @@ import { useUpdater } from "../updater";
 import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
 import { ImportNotes, ImportReport, importReportText } from "./ImportReport";
 import { APP_VERSION, OlderBuildNotice, ruleProblems } from "./RulesCheck";
-import { loadTestContent, makeTestBatch, testExport } from "./TestTools";
+import { loadTestContent, makeTestBatch, moveCharactersToFiveTools, testExport } from "./TestTools";
 import { listCharacters } from "../aurora/storage";
 import { Tutorial, tutorialWanted } from "./Tutorial";
 import { CompendiumSearch } from "./CompendiumSearch";
@@ -302,6 +302,8 @@ export function App() {
           <button onClick={async () => setTestMsg(await testExport(content.reg, setTestMsg))}>Export test characters</button>
           {import.meta.env.DEV && <button onClick={async () => { setTestMsg("Loading the test content..."); const msg = await loadTestContent(setTestMsg); await content.reload(); setTestMsg(msg); }} title="Dev server only: the test cache's Aurora and 5e.tools content">Load test content</button>}
           <button onClick={() => updateSettings({ buildLayout: board ? "tabs" : "board" })} title="Try the new Build layout or go back to the old one">Build layout: {board ? "new (board)" : "old (tabs)"}</button>
+          <button onClick={async () => { const on = !settings.fiveToolsOnly; updateSettings({ fiveToolsOnly: on }); setTestMsg(on ? "Reading the content without Aurora..." : "Reading the content with Aurora..."); await content.reload(); setTestMsg(on ? "5e.tools only: Aurora's content is not loaded, as in the release to come. Its characters may show missing content until moved." : "Aurora's content is loaded again."); }} title="Load without Aurora's content, as the release app will">Content: {settings.fiveToolsOnly ? "5e.tools only" : "with Aurora"}</button>
+          <button onClick={async () => { if (!content.ready) { setTestMsg("Load rules content first."); return; } setTestMsg("Moving characters to 5e.tools..."); setTestMsg(await moveCharactersToFiveTools(content.reg, setTestMsg)); }} title="Every saved character as a new 5e.tools copy, with a report of what changed; the originals are untouched">Move characters to 5e.tools</button>
           <button onClick={() => { updateSettings({ hideTestTools: true }); setTestMsg("Test controls hidden. Bring them back in the menu or in Settings."); }} title="Hide this bar so the app looks like the released one">Hide test controls</button>
         </div>
       )}

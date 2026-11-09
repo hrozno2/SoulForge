@@ -353,7 +353,10 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (tags.includes("epic boon") && level < 19) add("Epic Boon before level 19", a.el.name);
     if (tags.includes("general") && level < 4 && !/race|background/.test(a.root)) add("General feat before level 4", a.el.name);
   }
-  for (const [name, count] of seenFeats) if (count > 1 && !/repeatable|elemental adept|ability score improvement/i.test(name) && !r.reg.ofType("Feat").find((f) => f.name === name)?.setters["allow duplicate"]) add("Same feat twice", name);
+  // Repeatable: the content says so ("allow duplicate"), the text does ("you can take this feat more than once", the
+  // 2024 Magic Initiate with another spell list), or the content gives repeat copies (Aurora's Magic Initiate_2).
+  const repeatable = (name: string) => r.reg.ofType("Feat").some((f) => f.name === name && (!!f.setters["allow duplicate"] || /_\d+$/.test(f.id) || /(?:take|select|choose) this feat more than once|more than once\b/i.test(f.description ?? "")));
+  for (const [name, count] of seenFeats) if (count > 1 && !/repeatable|elemental adept|ability score improvement/i.test(name) && !repeatable(name)) add("Same feat twice", name);
 
   // Spellcasting: slots by the class tables or the multiclass table; cantrips and prepared spells by the class table;
   // spell levels within what the class can cast; DC and attack bonus by the formula.

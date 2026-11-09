@@ -262,7 +262,10 @@ describe.skipIf(!CACHE)("rules", () => {
       if (typeof ch === "string") { report.push(`\n### build ${b.name}\n- could not be made: ${ch}`); chars.push([b.name, undefined as never]); continue; }
       chars.push([b.name, ch]);
     }
-    const missing = chars.filter(([, c]) => !c).map(([n]) => `${n}: could not be made from the loaded content`);
+    // The SRD alone has none of these builds' subclasses and species (Hexblade, Gloom Stalker, Dhampir): there a build
+    // that cannot be made is reported, not a failure. With the full content every one must build.
+    const srdOnly = /^srd/.test(process.env.RULES_CONTENT ?? "");
+    const missing = srdOnly ? [] : chars.filter(([, c]) => !c).map(([n]) => `${n}: could not be made from the loaded content`);
     expect([...missing, ...(await run("build", chars.filter(([, c]) => c)))]).toEqual([]);
     writeReport();
   }, LIMIT);

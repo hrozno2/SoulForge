@@ -1905,12 +1905,19 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
         if (el && !String(el.requirements ?? "").includes(`!${by}`)) el.requirements = el.requirements ? `${el.requirements},!${by}` : `!${by}`;
       }
     }
-    srules.push(...additionalSpellRules(s.additionalSpells, s.name, s.source, out).rules);
-    srules.push(...optionalFeatureRules(s, srules));
     // A subclass that casts (Eldritch Knight, Arcane Trickster): its list is the class whose spells it expands with.
     const expandedFrom = [...JSON.stringify(s.additionalSpells ?? []).matchAll(/class=([A-Za-z ]+)/g)].map((m) => m[1].trim());
     const castText = features.filter((f) => /spellcasting/i.test(String(f.name))).map((f) => JSON.stringify(f.entries ?? "")).join(" ").replace(/\{@\w+ ([^|}]*)[^}]*\}/g, "$1");
     const subCasting = castingRules(s, s.shortName ?? s.name, expandedFrom.length ? [...new Set(expandedFrom)] : [c.name], lname, schoolLimit(castText));
+    // A subclass's spells are its class's (domain, oath and patron spells; Arcana Domain's Arcane Mastery picks count as
+    // Cleric spells), or its own casting's where it has one. Named after the subclass, the sheet put a Cleric 17's
+    // Arcane Mastery spells on a Wizard 3's line. The labels and spell-set ids keep the subclass's name (saved picks).
+    const castName = subCasting.spellcasting?.name ?? c.name;
+    const recast = (rs: ARule[]) => rs.map((r) => ((r.kind === "grant" || r.kind === "select") && (r as { spellcasting?: string }).spellcasting === s.name ? ({ ...r, spellcasting: castName } as ARule) : r));
+    const before = out.length;
+    srules.push(...recast(additionalSpellRules(s.additionalSpells, s.name, s.source, out).rules));
+    for (let k = before; k < out.length; k++) if (out[k].type === "Spell Set") out[k].rules = recast(out[k].rules);
+    srules.push(...optionalFeatureRules(s, srules));
     srules.push(...subCasting.rules);
     out.push(base(sid, s.name, "Archetype", srcName(ctx, s.source), { supports: [subTag], rules: srules, spellcasting: subCasting.spellcasting, description: entriesHtml(s.entries ?? []) }));
   }

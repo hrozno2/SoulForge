@@ -989,7 +989,9 @@ class Importer {
     const prepares = (e: { prepare?: boolean; owner: string } | undefined) => !!e && (!!e.prepare || isModern(this.reg.get(e.owner)));
     const isPrepareChoice = (s: (typeof r.slots)[number]) => {
       const e = s.rule.spellcasting ? r.spellcasting.get(s.rule.spellcasting.toLowerCase()) : undefined;
-      return prepares(e) && !/spellbook/i.test(s.rule.name) && s.rule.type === "Spell" && Number(el.setters.level?.value ?? 0) > 0;
+      // The class's own choices only: a subclass's (the Evoker's Evocation Savant, now under the Wizard's casting) adds
+      // to the spellbook, whatever the file marks prepared.
+      return prepares(e) && s.owner.type === "Class" && !/spellbook/i.test(s.rule.name) && s.rule.type === "Spell" && Number(el.setters.level?.value ?? 0) > 0;
     };
     const filePrepared = this.prepared.has(normalize(el.name)) || !this.preparedKnown;
     const fits2 = r.slots.filter((s) => s.chosen.length < s.rule.number && s.options.some((o) => o.id === el.id) && (filePrepared || !isPrepareChoice(s)));

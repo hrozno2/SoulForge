@@ -37,9 +37,10 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
     const r = resolve(cur, reg);
     let dropped = false;
     for (const s of r.slots) {
+      // Repeats, and any pick the finished character's rules rule out (the same feat from the species and a
+      // background's choice: Skilled twice).
       const repeats = repeatedPicks(r, s);
-      if (!repeats.length) continue;
-      const drop = s.chosen.filter((id) => repeats.some((t) => t.includes(`: ${reg.get(id)?.name} (`)));
+      const drop = s.chosen.filter((id) => s.blocked.has(id) || repeats.some((t) => t.includes(`: ${reg.get(id)?.name} (`)));
       if (!drop.length) continue;
       cur = { ...cur, selections: { ...cur.selections, [s.key]: s.chosen.filter((id) => !drop.includes(id)) } };
       for (const id of drop) bad.add(`${s.key} ${id}`);

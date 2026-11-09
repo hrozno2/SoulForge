@@ -6,6 +6,8 @@
 import { describe, expect, it } from "vitest";
 import { newCharacter } from "../aurora/character";
 import { resolve } from "../aurora/engine";
+import { checkCharacter } from "../aurora/rulesCheck";
+import { buildSheet } from "../aurora/sheet";
 import { loadTestContent } from "./testContent";
 
 const C = process.env.SOULFORGE_RULES;
@@ -26,5 +28,14 @@ describe.skipIf(!C)("copies of one feat", () => {
     expect(copy, "the _2 copy is offered").toBeDefined();
     expect(second.blocked.has(copy!.id)).toBe(false);
     expect(second.blocked.has(ASI) || !second.options.some((o) => o.id === ASI)).toBe(true);
+  }, 600000);
+
+  it("a feat taken again through its repeat copy is not \"Same feat twice\" (2024 Magic Initiate, another list)", () => {
+    const ch = newCharacter();
+    ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_ROGUE", level: 4 }];
+    ch.extras = ["ID_WOTC_PHB24_FEAT_MAGIC_INITIATE", "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_2"];
+    const r = resolve(ch, reg);
+    expect(r.active.filter((a) => a.el.name === "Magic Initiate" && a.el.type === "Feat")).toHaveLength(2);
+    expect(checkCharacter(r, buildSheet(r), []).filter((f) => f.rule === "Same feat twice")).toEqual([]);
   }, 600000);
 });

@@ -202,6 +202,27 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("a 1st-level 2014 Ranger does not put an Eldritch Knight on the shared slot table", () => {
+    const fighter = reg!.ofType("Class").find((c) => c.name === "Fighter" && !c.source.includes("2024"))!;
+    const ranger = reg!.ofType("Class").find((c) => c.name === "Ranger" && !c.source.includes("2024"))!;
+    let ch = newCharacter(); ch.classes = [{ classId: fighter.id, level: 19 }, { classId: ranger.id, level: 1 }];
+    const sub = resolve(ch, reg!).slots.find((s) => s.options.some((o) => o.name === "Eldritch Knight"))!;
+    ch = { ...ch, selections: { [sub.key]: [sub.options.find((o) => o.name === "Eldritch Knight")!.id] } };
+    const ek = buildSheet(resolve(ch, reg!)).casting.find((c) => c.name === "Eldritch Knight")!;
+    expect(ek.slots.map((x) => x.total)).toEqual([4, 3, 3, 1]);
+  });
+
+  it("a subclass's spell choices are its class's spells (Arcana Domain's Arcane Mastery on the Cleric's line)", () => {
+    const cleric = reg!.ofType("Class").find((c) => c.name === "Cleric" && !c.source.includes("2024"))!;
+    let ch = newCharacter(); ch.classes = [{ classId: cleric.id, level: 17 }];
+    const sub = resolve(ch, reg!).slots.find((s) => s.options.some((o) => o.name === "Arcana Domain"));
+    if (!sub) return;
+    ch = { ...ch, selections: { [sub.key]: [sub.options.find((o) => o.name === "Arcana Domain")!.id] } };
+    const mastery = resolve(ch, reg!).slots.filter((s) => s.rule.type === "Spell" && /Arcana Domain/.test(s.rule.name) && /\b[6-9]\b/.test(s.rule.supports));
+    expect(mastery.length).toBeGreaterThan(0);
+    for (const s of mastery) expect(s.rule.spellcasting).toBe("Cleric");
+  });
+
   it("a feature that lets the character cast a spell shows it (Empty Body's Astral Projection)", () => {
     const monk = reg!.ofType("Class").find((c) => c.name === "Monk" && !c.source.includes("2024"))!;
     const spells = (level: number) => { const ch = newCharacter(); ch.classes = [{ classId: monk.id, level }]; return buildSheet(resolve(ch, reg!)).casting.flatMap((c) => [...c.granted, ...c.spells].map((p) => reg!.get(p.id)?.name)); };

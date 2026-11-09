@@ -608,7 +608,10 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
   // Full and half casters count by their class. Any other only with slots of its own: a Monk's or Fighter's subclass with a
   // few spells adds nothing (Arcana Unleashed's Arcane Archer), an Eldritch Knight does.
   const hasSlots = (e: (typeof own)[number]) => Array.from({ length: 9 }, (_, i) => pass.stats.get(`${lc(e.name)}:spellcasting:slots:${i + 1}`)).some((n) => n > 0);
-  const byOwner = new Map(own.filter((e) => FULL_CASTERS.has(nameOf(e)) || HALF_CASTERS.has(nameOf(e)) || hasSlots(e)).map((e) => [e.owner, e]));
+  // A half caster with no share yet does not count: a 2014 Ranger or Paladin has no Spellcasting at 1st level (half of 1,
+  // rounded down, is 0), so an Eldritch Knight 19 with a level of Ranger kept the Fighter's own table (4/3/3/1), not 4/3/3.
+  const halfShare = (e: (typeof own)[number]) => { const cls = reg?.get(e.owner); const modern = isModern({ id: e.owner, source: cls?.source ?? "" }); return nameOf(e) === "artificer" || modern ? Math.ceil(e.level / 2) : Math.floor(e.level / 2); };
+  const byOwner = new Map(own.filter((e) => FULL_CASTERS.has(nameOf(e)) || (HALF_CASTERS.has(nameOf(e)) && (halfShare(e) > 0 || hasSlots(e))) || (!HALF_CASTERS.has(nameOf(e)) && hasSlots(e))).map((e) => [e.owner, e]));
   if (byOwner.size < 2) return 0;
   let total = 0;
   let unknown = false;

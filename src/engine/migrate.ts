@@ -77,6 +77,8 @@ export function fiveToolsTwins(reg: ARegistry): (id: string) => string | undefin
         const gear = GEAR.test(el.type) ? gearNames(el).flatMap((n) => byName.get(`gear|${nameKey(n)}`) ?? []) : [];
         const same = [...(byName.get(`${el.type}|${nameKey(el.name)}`) ?? []), ...gear];
         hit = (same.find((e) => e.edition && e.edition === el.edition) ?? same[0])?.id;
+        // The elemental languages folded into Primordial (2024; the converter points them there too): Aquan is Primordial.
+        if (!hit && el.type === "Language" && /^(aquan|auran|ignan|terran)$/i.test(el.name.trim())) hit = byName.get(`Language|${nameKey("Primordial")}`)?.[0]?.id;
       }
     }
     memo.set(id, hit);

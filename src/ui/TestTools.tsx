@@ -126,7 +126,7 @@ export async function moveCharactersToFiveTools(both: ARegistry, onProgress: (s:
       const classes = ch.classes.map((c) => `${five.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ");
       await saveCharacterRecord({ id, name: ch.name, summary: [five.get(ch.race ?? "")?.name, classes].filter(Boolean).join(" "), updated: Date.now(), data: ch });
     } catch (e) {
-      results.push({ name: rec.name, migration: { ch: rec.data, moved: 0, noTwin: [], unplaced: [], open: [], againstRules: [], filled: [] }, changed: [], dropped: [], rules: [`Could not be moved: ${(e as Error).message}`] });
+      results.push({ name: rec.name, migration: { ch: rec.data, moved: 0, noTwin: [], unplaced: [], open: [], againstRules: [], filled: [] }, changed: [], dropped: [], rules: [`Could not be moved: ${(e as Error).message} (new)`], newRules: 1 });
     }
   }
   if (!todo.length) return "Every saved character has a 5e.tools copy already.";

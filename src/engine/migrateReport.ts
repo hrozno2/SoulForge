@@ -38,8 +38,10 @@ export interface MoveResult {
   changed: string[];
   /** What the sheet had and no longer has, with why when the migration knows. */
   dropped: string[];
-  /** Rules findings on the moved character (the app's rules check). */
+  /** Rules findings on the moved character (the app's rules check), each marked "(new)" or "(already before the move)". */
   rules: string[];
+  /** How many of `rules` the original did not have. */
+  newRules: number;
 }
 
 /** Moves one character and compares it. `from` holds both providers, `to` 5e.tools alone; `ref` is the rules reference. */
@@ -65,11 +67,15 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
       for (const x of lost) dropped.push(`${k}: ${x}${why.has(x) ? ` (${why.get(x)})` : ""}`);
     } else changed.push(`${k}: ${JSON.stringify(a)} -> ${JSON.stringify(b)}`);
   }
-  const rules = [
-    ...checkCharacter(r1, buildSheet(r1), ref).map((f) => `${f.rule}: ${f.detail}`),
-    ...migration.againstRules.map((x) => `Kept against the 5e.tools rules: ${x}`),
-  ];
-  return { name: ch.name || "(unnamed)", migration, changed, dropped, rules };
+  // The original's findings too, so a finding the move brought is told from one the character already had (Aurora let
+  // through what 5e.tools' rules do not, such as a feat taken without its prerequisite).
+  const was = new Set(checkCharacter(r0, buildSheet(r0), ref).map((f) => f.rule));
+  const found = checkCharacter(r1, buildSheet(r1), ref);
+  let newRules = 0;
+  const rules = found.map((f) => { const isNew = !was.has(f.rule); if (isNew) newRules++; return `${f.rule}: ${f.detail} (${isNew ? "new" : "already before the move"})`; });
+  // The picks kept against the 5e.tools rules are the rules check's "does not meet its requirements" findings already;
+  // the character's notes list them (moveNote).
+  return { name: ch.name || "(unnamed)", migration, changed, dropped, rules, newRules };
 }
 
 /** A readable report over many moved characters: totals first, then each character with anything to say. */
@@ -83,11 +89,11 @@ export function moveReport(results: MoveResult[]): string {
   const clean = results.filter((r) => !r.changed.length && !r.rules.length).length;
   const lines = [
     "# Characters moved to 5e.tools", "",
-    `${results.length} characters: ${clean} unchanged and within the rules, ${results.filter((r) => r.changed.length).length} with a changed sheet, ${results.filter((r) => r.dropped.length).length} with something dropped, ${results.filter((r) => r.rules.length).length} with a rules finding.`,
+    `${results.length} characters: ${clean} unchanged and within the rules, ${results.filter((r) => r.changed.length).length} with a changed sheet, ${results.filter((r) => r.dropped.length).length} with something dropped, ${results.filter((r) => r.rules.length).length} with a rules finding (${results.filter((r) => r.newRules > 0).length} with one the move brought; the rest were already there).`,
     "", "The originals are untouched; each moved character is a new copy.", "",
     "## Changed fields", ...count((r) => r.changed.map(fieldOf)), "",
     "## Dropped", ...count((r) => r.dropped), "",
-    "## Rules findings", ...count((r) => r.rules.map((x) => x.replace(/: .*$/, ""))), "",
+    "## Rules findings", ...count((r) => r.rules.map((x) => `${x.replace(/: .*$/, "")} ${/\(new\)$/.test(x) ? "[new]" : "[already before]"}`)), "",
     "## Each character", "",
   ];
   for (const r of results) {
@@ -110,6 +116,7 @@ export function moveNote(r: MoveResult): string {
   if (other.length) parts.push("Numbers that changed:", ...other.map((x) => `- ${x}`));
   if (r.migration.unplaced.length) parts.push("Earlier picks no choice takes now:", ...r.migration.unplaced.map((u) => `- ${u.choice}: ${u.name}`));
   if (r.migration.filled.length) parts.push("Chosen for you, to look over (change them on Build):", ...r.migration.filled.map((x) => `- ${x}`));
+  if (r.migration.againstRules.length) parts.push("Your picks the 5e.tools rules rule out, kept as you made them:", ...r.migration.againstRules.map((x) => `- ${x}`));
   if (r.rules.length) parts.push("Rules to check:", ...r.rules.map((x) => `- ${x}`));
   return parts.join("\n");
 }

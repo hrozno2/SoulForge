@@ -38,7 +38,7 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")("saved characters move
   const dir = join(CACHE!, "engine");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "migrate.md"), moveReport(results));
-  const now = { changed: results.filter((r) => r.changed.length).length, dropped: results.filter((r) => r.dropped.length).length, rules: results.filter((r) => r.rules.length).length };
+  const now = { changed: results.filter((r) => r.changed.length).length, dropped: results.filter((r) => r.dropped.length).length, rules: results.filter((r) => r.rules.length).length, newRules: results.filter((r) => r.newRules > 0).length };
   const base = join(dir, "migrate-count.json");
   const was = existsSync(base) ? (JSON.parse(readFileSync(base, "utf8")) as Partial<typeof now>) : {};
   if (!existsSync(base) || process.env.RULES_SNAPSHOT) writeFileSync(base, JSON.stringify(now));

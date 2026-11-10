@@ -171,6 +171,23 @@ export function repeatedPicks(r: Resolved, s: Resolved["slots"][number]): string
   return out;
 }
 
+/**
+ * The traits that rule out body armor (the Tortle's shell: "You can't wear light, medium, or heavy armor", with a
+ * natural armor class that counts only unarmored), and that armor class. Shared by the rules check and the auto-equip,
+ * which put armor on a Tortle and lowered its AC.
+ */
+export function noBodyArmor(r: Resolved): { name: string; unarmored: number }[] {
+  const out: { name: string; unarmored: number }[] = [];
+  for (const a of r.active) {
+    const text = (a.el.description ?? "").replace(/<[^>]+>/g, " ");
+    if (!/can(?:'|’)?t wear (?:light, medium, or heavy |any )?armor|cannot wear (?:light, medium, or heavy |any )?armor/i.test(text)) continue;
+    const calc = a.el.rules.find((x) => x.kind === "stat" && x.name === "ac:calculation" && /armor:any|armor:none/.test(String(x.equipped ?? "")));
+    if (!calc || calc.kind !== "stat") continue;
+    out.push({ name: a.el.name, unarmored: r.stats.get(calc.value) });
+  }
+  return out;
+}
+
 export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Finding[] {
   const out: Finding[] = [...checkChoiceWindows(r)];
   const add = (rule: string, detail: string) => out.push({ rule, detail });
@@ -450,16 +467,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   // what the table gives, with no part explaining it, is the finding.
   // Armor a species cannot wear (the Tortle's shell: "You can't wear light, medium, or heavy armor"): its natural armor
   // only counts unarmored, so worn armor quietly lowered the sheet (a Tortle in leather: AC 10, not 17).
-  if (body) {
-    for (const a of r.active) {
-      const text = (a.el.description ?? "").replace(/<[^>]+>/g, " ");
-      if (!/can(?:'|’)?t wear (?:light, medium, or heavy |any )?armor|cannot wear (?:light, medium, or heavy |any )?armor/i.test(text)) continue;
-      const calc = a.el.rules.find((x) => x.kind === "stat" && x.name === "ac:calculation" && /armor:any|armor:none/.test(String(x.equipped ?? "")));
-      if (!calc || calc.kind !== "stat") continue;
-      const unarmored = r.stats.get(calc.value);
-      add("Armor the species cannot wear", `${a.el.name}: ${body.el.name} is worn${unarmored ? `; without it, armor class is ${unarmored}${shield ? " plus the shield" : ""}` : ""}`);
-    }
-  }
+  if (body) for (const n of noBodyArmor(r)) add("Armor the species cannot wear", `${n.name}: ${body.el.name} is worn${n.unarmored ? `; without it, armor class is ${n.unarmored}${shield ? " plus the shield" : ""}` : ""}`);
   const misc = [...r.stats.parts("ac:misc"), ...r.stats.parts("ac")];
   const shieldAc = shield ? 2 + (shield.i.magic ?? 0) : 0;
   const miscSum = misc.reduce((t, p) => t + p.value, 0);

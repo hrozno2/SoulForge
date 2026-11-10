@@ -3,6 +3,7 @@
  * Content files describe equipment as text ("Choose A or B: (A) 2 Daggers, Robe and 5 GP; or (B) 55 GP" for the
  * 2024 rules, or lists of "(a) X or (b) Y" for older classes). This reads that text and matches it to items.
  */
+import { noBodyArmor } from "./rulesCheck";
 import type { GenericKind } from "./character";
 import { isModern } from "./edition";
 import { TOOL_KINDS } from "./fivetools";
@@ -473,9 +474,13 @@ export function autoEquip(ch: Character, reg: ARegistry): Character {
   let hands = handsUsed(inv, reg);
   // Only armor the character is trained in is put on: untrained armor gives disadvantage and stops spellcasting.
   // (Older class gear reads "chain mail (if proficient)" for this reason.)
-  const trained = buildSheet(resolve(ch, reg)).proficiencies.armor.join(" ").toLowerCase();
+  const r = resolve(ch, reg);
+  const trained = buildSheet(r).proficiencies.armor.join(" ").toLowerCase();
+  // A species that cannot wear body armor (the Tortle) keeps its natural armor; a shield is still fine.
+  const noBody = noBodyArmor(r).length > 0;
   const canWear = (e: AElement) => {
     if (isShield(e)) return /shield/.test(trained);
+    if (noBody) return false;
     const kind = (e.setters.armor?.value ?? "").toLowerCase();
     return !kind || trained.includes(kind) || trained.includes("all armor");
   };

@@ -13,6 +13,7 @@ import "@fontsource/alegreya-sans/400-italic.css";
 import "@fontsource/alegreya-sans/700.css";
 import "@fontsource/cinzel-decorative/700.css";
 import { App } from "./ui/App";
+import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { openExternal } from "./store";
 import "./ui/styles.css";
 
@@ -44,7 +45,9 @@ startLogbook();
 void import("@tauri-apps/api/app").then(({ getVersion }) => getVersion()).then((v) => startLogFile(v)).catch(() => undefined);
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary scope="The app" whole>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>,
 );
 

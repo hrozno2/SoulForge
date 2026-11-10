@@ -165,7 +165,12 @@ export interface PlayState {
   inspiration: boolean;
   /** Slots spent per spell level, key is the level as a string. */
   slotsUsed: Record<string, number>;
+  /** Pact Magic slots spent, counted apart from the spell slots of the same level (src/aurora/rest.ts). */
+  pactUsed?: number;
+  /** Hit dice spent in all; kept in step with `hitDiceByDie` when that is set. */
   hitDiceUsed: number;
+  /** Hit dice spent by size ("10" for d10), for characters with more than one size (src/aurora/rest.ts). */
+  hitDiceByDie?: Record<string, number>;
   conditions: string[];
   /** Exhaustion level, 0 to 6. Each level takes 2 off d20 tests and 5 feet off speed. */
   exhaustion?: number;
@@ -331,20 +336,149 @@ export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 
 /** Fills in anything a saved or imported character is missing, so older files keep working as fields are added. */
 export function normalizeCharacter(raw: Partial<Character>): Character {
+  return sanitizeCharacter(raw).character;
+}
+
+type Obj = Record<string, unknown>;
+const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
+const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+
+/**
+ * A character from anything read off a disk or a file (docs/AUDIT-2026-11-10.md, S6): every field the app reads has
+ * the type it expects, so a damaged or hand-edited file opens with the damaged parts at their defaults instead of
+ * crashing a screen later. `repaired` names what was put right. Fields this version does not know are kept (a newer
+ * version's data must survive being opened here). A file from a newer format is refused.
+ */
+export function sanitizeCharacter(raw: unknown): { character: Character; repaired: string[] } {
   const base = newCharacter();
-  return {
-    ...base,
-    ...raw,
-    info: { ...base.info, ...(raw.info ?? {}) },
-    play: { ...base.play, ...(raw.play ?? {}), deathSaves: { ...base.play.deathSaves, ...(raw.play?.deathSaves ?? {}) } },
-    coins: { ...base.coins, ...(raw.coins ?? {}) },
-    abilityBase: { ...base.abilityBase, ...(raw.abilityBase ?? {}) },
-    resources: raw.resources ?? [],
-    classes: raw.classes ?? [],
-    inventory: raw.inventory ?? [],
-    selections: raw.selections ?? {},
-    version: 2,
+  const repaired: string[] = [];
+  const fix = (what: string) => { if (!repaired.includes(what)) repaired.push(what); };
+  const o: Obj = isObj(raw) ? raw : {};
+  if (!isObj(raw)) fix("the file is not a character");
+  if (isNum(o.version) && o.version > 2) throw new Error("This character was saved by a newer Soul Forge. Update Soul Forge to open it.");
+
+  const str = (v: unknown, d: string, what: string) => (typeof v === "string" ? v : (v !== undefined && fix(what), d));
+  const optStr = (key: string) => { if (o[key] !== undefined && typeof o[key] !== "string") { fix(key); return undefined; } return o[key] as string | undefined; };
+  const num = (v: unknown, d: number, what: string, min = -Infinity, max = Infinity) => {
+    if (!isNum(v)) { if (v !== undefined) fix(what); return d; }
+    if (v < min || v > max) { fix(what); return Math.min(max, Math.max(min, v)); }
+    return v;
   };
+  const strings = (v: unknown, what: string): string[] => {
+    if (v === undefined) return [];
+    if (!Array.isArray(v)) { fix(what); return []; }
+    if (v.some((x) => typeof x !== "string")) fix(what);
+    return v.filter((x): x is string => typeof x === "string");
+  };
+  const optStrings = (key: string) => (o[key] === undefined ? undefined : strings(o[key], key));
+  const record = <T>(v: unknown, what: string, value: (x: unknown) => T | undefined): Record<string, T> => {
+    if (v === undefined) return {};
+    if (!isObj(v)) { fix(what); return {}; }
+    const out: Record<string, T> = {};
+    for (const [k, x] of Object.entries(v)) { const y = value(x); if (y === undefined) fix(what); else out[k] = y; }
+    return out;
+  };
+  const idList = (x: unknown) => (Array.isArray(x) ? x.filter((y): y is string => typeof y === "string") : undefined);
+  const finite = (x: unknown) => (isNum(x) ? x : undefined);
+  const objects = (v: unknown, what: string): Obj[] => {
+    if (v === undefined) return [];
+    if (!Array.isArray(v)) { fix(what); return []; }
+    if (v.some((x) => !isObj(x))) fix(what);
+    return v.filter(isObj);
+  };
+  const optObj = (key: string) => { if (o[key] !== undefined && !isObj(o[key])) { fix(key); return undefined; } return o[key]; };
+
+  // Classes: a known id and a whole level from 1 to 20; twenty levels in all.
+  let levels = 0;
+  const classes: ClassLevel[] = [];
+  for (const c of objects(o.classes, "classes")) {
+    if (typeof c.classId !== "string" || !c.classId) { fix("classes"); continue; }
+    let level = isNum(c.level) ? Math.round(c.level) : 1;
+    if (!isNum(c.level) || level !== c.level || level < 1 || level > 20) fix("class levels");
+    level = Math.min(20 - levels, Math.max(1, level));
+    if (level < 1) { fix("class levels"); continue; }
+    levels += level;
+    classes.push({ ...c, classId: c.classId, level } as ClassLevel);
+  }
+
+  const abilityIn = isObj(o.abilityBase) ? o.abilityBase : (o.abilityBase !== undefined && fix("ability scores"), {});
+  const abilityBase = { ...base.abilityBase };
+  for (const a of ABILITY_IDS) abilityBase[a] = Math.round(num(abilityIn[a], base.abilityBase[a], "ability scores", 1, 30));
+
+  const playIn: Obj = isObj(o.play) ? o.play : (o.play !== undefined && fix("play state"), {});
+  const deathIn: Obj = isObj(playIn.deathSaves) ? playIn.deathSaves : {};
+  const play: PlayState = {
+    ...base.play,
+    ...playIn,
+    hp: playIn.hp === null || playIn.hp === undefined ? null : isNum(playIn.hp) ? playIn.hp : (fix("hit points"), null),
+    tempHp: num(playIn.tempHp, 0, "temporary hit points", 0),
+    inspiration: !!playIn.inspiration,
+    slotsUsed: record(playIn.slotsUsed, "spell slots used", finite),
+    hitDiceUsed: num(playIn.hitDiceUsed, 0, "hit dice used", 0),
+    conditions: strings(playIn.conditions, "conditions"),
+    deathSaves: { success: num(deathIn.success, 0, "death saves", 0, 3), fail: num(deathIn.fail, 0, "death saves", 0, 3) },
+    featureUses: record(playIn.featureUses, "feature uses", finite),
+  };
+  if (playIn.exhaustion !== undefined) play.exhaustion = num(playIn.exhaustion, 0, "exhaustion", 0, 10);
+  if (playIn.wildShape !== undefined && !isObj(playIn.wildShape)) { fix("wild shape"); delete play.wildShape; }
+  if (playIn.pactUsed !== undefined) play.pactUsed = num(playIn.pactUsed, 0, "pact slots used", 0);
+  if (playIn.hitDiceByDie !== undefined) play.hitDiceByDie = record(playIn.hitDiceByDie, "hit dice used", finite);
+  if (playIn.companionHp !== undefined) play.companionHp = record(playIn.companionHp, "companion hit points", finite);
+  if (playIn.concentration !== undefined && typeof playIn.concentration !== "string") { fix("concentration"); delete play.concentration; }
+
+  const infoIn: Obj = isObj(o.info) ? o.info : (o.info !== undefined && fix("details"), {});
+  const info = { ...base.info, ...infoIn } as CharacterInfo;
+  for (const k of Object.keys(base.info) as (keyof CharacterInfo)[]) info[k] = str(infoIn[k], "", "details");
+
+  const coinsIn: Obj = isObj(o.coins) ? o.coins : (o.coins !== undefined && fix("coins"), {});
+  const coins = { ...base.coins };
+  for (const k of Object.keys(base.coins) as (keyof Coinage)[]) coins[k] = num(coinsIn[k], 0, "coins", 0);
+
+  const inventory = objects(o.inventory, "inventory").map((it) => ({
+    ...it,
+    uid: typeof it.uid === "string" && it.uid ? it.uid : (fix("inventory"), uid()),
+    id: typeof it.id === "string" ? it.id : (fix("inventory"), ""),
+    qty: num(it.qty, 1, "inventory", 0),
+    equipped: !!it.equipped,
+    attuned: !!it.attuned,
+  })) as InvItem[];
+
+  const character: Character = {
+    ...base,
+    ...(o as Partial<Character>),
+    version: 2,
+    name: str(o.name, "", "name"),
+    playerName: str(o.playerName, "", "player name"),
+    notes: str(o.notes, "", "notes"),
+    xp: num(o.xp, 0, "experience", 0),
+    race: optStr("race"),
+    background: optStr("background"),
+    classes,
+    abilityBase,
+    abilityMethod: o.abilityMethod === "standard" || o.abilityMethod === "manual" || o.abilityMethod === "pointbuy" ? o.abilityMethod : (o.abilityMethod !== undefined && fix("ability score method"), base.abilityMethod),
+    selections: record(o.selections, "choices", idList),
+    options: strings(o.options, "options"),
+    extras: strings(o.extras, "added content"),
+    sources: strings(o.sources, "books"),
+    customStats: objects(o.customStats, "custom bonuses").filter((c) => typeof c.stat === "string" && isNum(c.value)).map((c) => ({ ...c, id: typeof c.id === "string" ? c.id : uid() })) as Character["customStats"],
+    hpMode: o.hpMode === "roll" ? "roll" : "average",
+    hpRolls: record(o.hpRolls, "hit point rolls", (x) => (isNum(x) && x >= 1 ? Math.round(x) : undefined)),
+    prepared: record(o.prepared, "prepared spells", idList),
+    inventory,
+    coins,
+    attacks: objects(o.attacks, "attacks") as unknown as CustomAttack[],
+    companions: objects(o.companions, "companions").filter((c) => typeof c.name === "string").map((c) => ({ ...c, uid: typeof c.uid === "string" ? c.uid : uid(), id: typeof c.id === "string" ? c.id : "" })) as CompanionEntry[],
+    resources: objects(o.resources, "counters").filter((x) => typeof x.name === "string" && isNum(x.current) && isNum(x.max)) as unknown as Resource[],
+    info,
+    play,
+  };
+  // Optional fields: kept when well formed, dropped (and named) when not.
+  for (const key of ["declined", "taken", "equipmentAdded", "grantedItemsAdded"] as const) { const v = optStrings(key); if (v === undefined) delete character[key]; else character[key] = v; }
+  for (const key of ["importReport", "movedFrom", "portrait", "checkedWith"] as const) { const v = optStr(key); if (v === undefined) delete character[key]; else character[key] = v; }
+  for (const key of ["abilityBases", "pointBuy", "hpRollLog", "equipmentLedger", "attackEdits"] as const) if (optObj(key) === undefined) delete character[key];
+  for (const key of ["journal", "favorites"] as const) if (o[key] !== undefined) (character as unknown as Obj)[key] = objects(o[key], key);
+  if (o.priceMultiplier !== undefined && !(isNum(o.priceMultiplier) && o.priceMultiplier > 0)) { fix("price multiplier"); delete character.priceMultiplier; }
+  return { character, repaired };
 }
 
 /** The name to show for an inventory item: its own label, the element's name, or the custom name. */

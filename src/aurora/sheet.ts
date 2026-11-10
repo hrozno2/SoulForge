@@ -29,6 +29,8 @@ export interface SpellSlotRow {
   level: number;
   total: number;
   used: number;
+  /** A Pact Magic slot: spent and returned apart from the spell slots of the same level (src/aurora/rest.ts). */
+  pact?: boolean;
 }
 
 export interface CastingLine {
@@ -277,13 +279,18 @@ function buildCasting(r: Resolved): CastingLine[] {
     };
   });
 
+  const ordinaryAt = (n: number) => nonPact.some((e) => (useShared ? (sharedRow[n - 1] ?? 0) : r.stats.get(`${lc(e.name)}:spellcasting:slots:${n}`)) > 0);
   return [...entries.map((e) => {
     const key = lc(e.name);
     const slots: SpellSlotRow[] = [];
     const isPact = r.stats.get(`${key}:spellcasting:slots:count`) > 0;
     for (let n = 1; n <= 9; n++) {
       const total = useShared && !isPact ? (sharedRow[n - 1] ?? 0) : r.stats.get(`${key}:spellcasting:slots:${n}`);
-      if (total > 0) slots.push({ level: n, total, used: ch.play.slotsUsed[String(n)] ?? 0 });
+      if (total <= 0) continue;
+      // Pact Magic's slots are counted apart (rest.ts). A save from before that has them under their spell level:
+      // read from there only when no other caster's slots of that level share the count.
+      if (isPact) slots.push({ level: n, total, used: Math.min(total, ch.play.pactUsed ?? (ordinaryAt(n) ? 0 : ch.play.slotsUsed[String(n)] ?? 0)), pact: true });
+      else slots.push({ level: n, total, used: ch.play.slotsUsed[String(n)] ?? 0 });
     }
     // Spells with no named entry (racial or feat spells) go to the first entry that can cast from their list.
     const picks = r.spellPicks.filter((p) => !orphanIds.has(p.id) && (castingOf(r, p) ?? lc(entries[0].name)) === key);

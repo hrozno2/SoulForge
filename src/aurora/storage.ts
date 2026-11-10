@@ -4,7 +4,34 @@ import type { FileCache, SourceConfig } from "./sources";
 const DB_NAME = "charforge";
 const DB_VERSION = 7;
 
+/**
+ * One connection for the session (the audit's S4: every read and write opened its own and none was closed, and Home
+ * reads the library every few seconds). It is let go when another window needs to upgrade the database, or when the
+ * browser closes it, and opened again at the next use.
+ */
+let connection: Promise<IDBDatabase> | undefined;
 function openDb(): Promise<IDBDatabase> {
+  if (connection) return connection;
+  const mine: Promise<IDBDatabase> = openNew().then((db) => {
+    const drop = () => { if (connection === mine) connection = undefined; };
+    db.onversionchange = () => { db.close(); drop(); };
+    db.onclose = drop;
+    return db;
+  });
+  connection = mine;
+  // A failed open is not kept: the next call tries again.
+  mine.catch(() => { if (connection === mine) connection = undefined; });
+  return mine;
+}
+
+/** Closes the session's connection (tests, and before the database is deleted). */
+export async function closeDb(): Promise<void> {
+  const c = connection;
+  connection = undefined;
+  if (c) (await c.catch(() => undefined))?.close();
+}
+
+function openNew(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
@@ -42,6 +69,7 @@ function openDb(): Promise<IDBDatabase> {
       }
     };
     req.onsuccess = () => resolve(req.result);
+    req.onblocked = () => reject(new Error("Soul Forge is open in another window that holds an older version of its data. Close the other window and try again."));
     req.onerror = () => {
       // A newer Soul Forge (the test build shares this data) may have raised the version. New versions only ever
       // add stores, so open it at whatever version it has rather than failing with no content at all.
@@ -142,14 +170,14 @@ export interface CharacterRecord {
   data: Character;
 }
 
+/**
+ * Every saved character, newest first. Throws when the library cannot be read: an empty list would say "no
+ * characters" to the player, and to a restore that compares with what is here (the audit's S3).
+ */
 export async function listCharacters(): Promise<CharacterRecord[]> {
-  try {
-    const db = await openDb();
-    const all = (await wrap(db.transaction("characters").objectStore("characters").getAll())) as CharacterRecord[];
-    return all.sort((a, b) => b.updated - a.updated);
-  } catch {
-    return [];
-  }
+  const db = await openDb();
+  const all = (await wrap(db.transaction("characters").objectStore("characters").getAll())) as CharacterRecord[];
+  return all.sort((a, b) => b.updated - a.updated);
 }
 
 export async function saveCharacterRecord(rec: CharacterRecord): Promise<void> {

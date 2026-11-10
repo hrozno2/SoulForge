@@ -1,3 +1,4 @@
+import { baseHitPoints } from "./engine";
 import { describe, expect, it } from "vitest";
 import { newCharacter } from "./character";
 import { rollAudit, withHpRoll } from "./hpRolls";
@@ -32,5 +33,15 @@ describe("hit point rolls", () => {
     const a = rollAudit([{ ...newCharacter(), hpRollLog: log }]);
     expect(Math.abs(a.mean - 5.5)).toBeLessThan(0.15);
     for (const n of a.faces[10]) expect(Math.abs(n - 600)).toBeLessThan(110);
+  });
+
+  // The audit's R4: "add the total (minimum of 1) to your hit point maximum".
+  it("a level never gives less than 1 hit point", () => {
+    const reg = { get: () => ({ setters: { hd: { value: "d6", attrs: {} } } }) } as unknown as Parameters<typeof baseHitPoints>[1];
+    const ch = { ...newCharacter(), classes: [{ classId: "W", level: 3 }], hpMode: "roll" as const, hpRolls: { "2": 1, "3": 6 } };
+    // Constitution 3 (modifier -4): level 1 gives 6 - 4 = 2, a roll of 1 gives 1 (not -3), a roll of 6 gives 2.
+    expect(baseHitPoints(ch, reg, -4)).toBe(2 + 1 + 2);
+    // An ordinary character is unchanged.
+    expect(baseHitPoints(ch, reg, 2)).toBe(8 + 3 + 8);
   });
 });

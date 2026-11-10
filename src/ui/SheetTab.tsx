@@ -3,6 +3,7 @@ import { ExportRulesNote } from "./RulesCheck";
 import { useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, headerInfo, type SheetData } from "../aurora/sheet";
+import { hitDicePools, longRest, withHitDiceCount } from "../aurora/rest";
 import { ABILITY_LABEL, ABILITY_SHORT, itemLabel, type Character } from "../aurora/character";
 import { downloadText, saveFile } from "../store";
 import { exportFoundry, exportRoll20 } from "../aurora/exportForeign";
@@ -77,7 +78,7 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
   );
 }
 
-function PlayBar({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: SetCharacter }) {
+function PlayBar({ ch, sheet, set, rules }: { ch: Character; sheet: SheetData; set: SetCharacter; rules: "2014" | "2024" }) {
   const hp = ch.play.hp ?? sheet.hp;
   const setPlay = (patch: Partial<Character["play"]>) => set((c) => ({ ...c, play: { ...c.play, ...patch } }));
   return (
@@ -89,7 +90,7 @@ function PlayBar({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: Set
           <input aria-label="Current hit points" type="number" value={hp} onChange={(e) => setPlay({ hp: Math.max(0, Math.min(sheet.hp + ch.play.tempHp, Number(e.target.value) || 0)) })} style={{ width: 64 }} />
           <button onClick={() => setPlay({ hp: Math.min(sheet.hp, hp + 1) })}>+</button>
         </span>
-        <button className="more" onClick={() => setPlay({ hp: sheet.hp, tempHp: 0, slotsUsed: {}, hitDiceUsed: 0, deathSaves: { success: 0, fail: 0 }, featureUses: {} })}>Long rest</button>
+        <button className="more" onClick={() => set((c) => longRest(c, sheet, rules))}>Long rest</button>
       </div>
       <div className="box"><small>Temp HP</small><input aria-label="Temporary hit points" type="number" min={0} value={ch.play.tempHp} onChange={(e) => setPlay({ tempHp: Math.max(0, Number(e.target.value) || 0) })} style={{ width: 70 }} /></div>
       <div className="box">
@@ -100,9 +101,9 @@ function PlayBar({ ch, sheet, set }: { ch: Character; sheet: SheetData; set: Set
       <div className="box">
         <small>Hit dice used</small>
         <span className="stepper">
-          <button onClick={() => setPlay({ hitDiceUsed: Math.max(0, ch.play.hitDiceUsed - 1) })}>−</button>
+          <button onClick={() => setPlay(withHitDiceCount(ch.play, hitDicePools(sheet), ch.play.hitDiceUsed - 1))}>−</button>
           <span>{ch.play.hitDiceUsed} / {sheet.level}</span>
-          <button onClick={() => setPlay({ hitDiceUsed: Math.min(sheet.level, ch.play.hitDiceUsed + 1) })}>+</button>
+          <button onClick={() => setPlay(withHitDiceCount(ch.play, hitDicePools(sheet), ch.play.hitDiceUsed + 1))}>+</button>
         </span>
       </div>
       <div className="box"><small>Experience</small><input aria-label="Experience points" type="number" min={0} value={ch.xp} onChange={(e) => set((c) => ({ ...c, xp: Math.max(0, Number(e.target.value) || 0) }))} style={{ width: 90 }} /></div>
@@ -149,7 +150,7 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
         <button title="A Foundry VTT dnd5e actor. Import it with Import Data on the actor sheet." onClick={() => downloadText(`${ch.name || "character"}-foundry.json`, JSON.stringify(exportFoundry(r), null, 2))}>Export for Foundry</button>
         <button title="A Roll20 D&D 5e sheet character file." onClick={() => downloadText(`${ch.name || "character"}-roll20.json`, JSON.stringify(exportRoll20(r), null, 2))}>Export for Roll20</button>
       </div>
-      <PlayBar ch={ch} sheet={sheet} set={set} />
+      <PlayBar rules={r.reg.get(ch.classes[0]?.classId ?? "")?.edition ?? "2024"} ch={ch} sheet={sheet} set={set} />
       <div className="sheet">
         <header className="sheet-head">
           {ch.portrait && <img className="portrait" src={ch.portrait} alt="Portrait" />}

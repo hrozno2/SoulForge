@@ -171,6 +171,7 @@ files cannot run scripts. `TestTools.tsx` only exists in the test build.
 | `npm test` | Unit tests (Vitest). Tests that need real content or sheets skip unless their folders are set (`AURORA_FIXTURES_2014`, `SHEET_FIXTURES`). |
 | `npm run test:e2e` | Playwright against the production build under the app's CSP: tabs, content loading, building, importing, exporting, the build board (`e2e/board.spec.ts`). |
 | `npm run rules-check` | The rules suite (`src/aurora/rules.suite.test.ts`) on a fresh random seed: a varied batch, level 20 in every class, level-ups, multiclasses, companions, community builds, a local corpus of real imported character files compared with snapshots (kept outside the repository, since they are people's characters), the content linter, spell lists and feat prerequisites against 5e.tools, and every export read back with pdftotext. `RULES_TIER=full` adds every subclass, species, background and feat. |
+| `npm run gates` | Before a commit: the edition gate, Soul Forge against Aurora, timeline and determinism, FastCharacter, parity, unit tests, the type check and the end-to-end tests (`scripts/gates.sh`; `GATES_NO_E2E=1` leaves the last out). `npm run gates-all` adds the imported characters and the source, sweep and SRD tiers. Both need the test cache. |
 | `npm run rules-big [count] [seed]` | On request only: many random characters (1,000 by default), each checked and exported; the report counts findings by rule. |
 
 The rules suites download and cache what they need in `~/.soulforge-test` (pinned content version in

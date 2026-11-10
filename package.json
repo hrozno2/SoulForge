@@ -10,7 +10,9 @@
     "test-app": "scripts/test-app.sh --open",
     "rules-check": "node scripts/rules-check.mjs",
     "rules-big": "node scripts/rules-big.mjs",
-    "full-check": "node scripts/full-check.mjs"
+    "full-check": "node scripts/full-check.mjs",
+    "gates": "scripts/gates.sh",
+    "gates-all": "scripts/all.sh"
   },
   "dependencies": {
     "@fontsource/alegreya-sans": "^5.3.0",

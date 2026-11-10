@@ -80,6 +80,11 @@ interface Cached { used: [string, string][]; pass: Pass; findings: string[] }
 const CACHE = new WeakMap<ARegistry, Map<string, Cached[]>>();
 const CACHE_LIMIT = 400;
 
+/** Forgets the settled levels kept for a registry (tests compare a kept resolve with a fresh one). */
+export function clearTimelineCache(reg: ARegistry): void {
+  CACHE.delete(reg);
+}
+
 function settleCached(chN: Character, reg: ARegistry, seed: Pass | null, findings: string[], level: number): Pass {
   const byKey = CACHE.get(reg) ?? CACHE.set(reg, new Map()).get(reg)!;
   const key = `${JSON.stringify({ ...chN, selections: undefined, play: undefined, info: undefined, notes: undefined, portrait: undefined })}\u0000${seed?.signature ?? ""}`;
@@ -139,6 +144,8 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     seed = pass;
   }
   const final = timeline[timeline.length - 1].pass;
+  // Statistics that refer to each other (src/aurora/stats.ts): each has one value whoever asks, and the loop is said.
+  for (const loop of final.stats.cycles) findings.push(`Statistics refer to each other: ${loop}`);
 
   // Each choice belongs to the first level at which it opened, and is judged against that level's state.
   const openedAt = new Map<string, LevelState>();

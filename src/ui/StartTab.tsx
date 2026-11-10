@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { exportLibrary, importLibrary, isBackup } from "./library";
 import { deleteCharacterRecord, listCharacters, type CharacterRecord } from "../aurora/storage";
-import { normalizeCharacter, uid, type Character } from "../aurora/character";
+import { sanitizeCharacter, uid, type Character } from "../aurora/character";
 import { downloadText, pickFiles } from "../store";
 import { Hint } from "./Help";
 import { t } from "../i18n";
@@ -50,7 +50,9 @@ export function StartTab({
   const [level, setLevel] = useState(1);
   const fileRef = useRef<HTMLInputElement>(null);
   const foreignRef = useRef<HTMLInputElement>(null);
-  const refresh = () => listCharacters().then((l) => { setList(l); setListed(true); });
+  // A library that cannot be read is said so, never shown as empty (the audit's S3); the last list read stays.
+  const [libraryError, setLibraryError] = useState("");
+  const refresh = () => listCharacters().then((l) => { setList(l); setListed(true); setLibraryError(""); }, (e) => { setListed(true); setLibraryError((e as Error)?.message || String(e)); });
   useEffect(() => {
     refresh();
     const t = setInterval(refresh, 4000);
@@ -65,8 +67,10 @@ export function StartTab({
       if (isBackup(parsed)) { setMsg(await importLibrary(parsed)); refresh(); return; }
       const raw = parsed as Character;
       if (raw.version !== 2) throw new Error("This is not a Soul Forge character or library file. Foundry and Roll20 exports go through the Import button next to it.");
-      onOpen(uid(), normalizeCharacter(raw));
-      setMsg("");
+      // A damaged or hand-edited file opens with the damaged parts at their defaults, and says which (the audit's S6).
+      const { character, repaired } = sanitizeCharacter(raw);
+      onOpen(uid(), character);
+      setMsg(repaired.length ? `Opened. Parts of the file could not be read and were set to their defaults: ${repaired.join(", ")}.` : "");
     } catch (e) {
       setMsg((e as Error).message);
     }
@@ -117,7 +121,8 @@ export function StartTab({
               onExport={() => downloadText(`${c.name || "character"}.json`, JSON.stringify(c.data, null, 2))}
               onDelete={async () => { if (await askConfirm({ title: `Delete ${c.name || "this character"}?`, message: "The character and everything saved with it will be removed from this computer. This cannot be undone; export it first if you might want it back.", confirmLabel: "Delete character" })) { await deleteCharacterRecord(c.id); refresh(); } }} />
           ))}
-          {!list.length && <p className="muted">No saved characters yet. Your work saves automatically.</p>}
+          {libraryError && <p className="library-error" role="alert">Your saved characters could not be read ({libraryError}). This is a problem reading the app's storage, not an empty library; nothing is saved over it. <button onClick={() => void refresh()}>Try again</button></p>}
+          {!list.length && !libraryError && <p className="muted">No saved characters yet. Your work saves automatically.</p>}
         </div>
       </section>
       {reg && list.length > 1 && <PartyView list={list} reg={reg} onOpen={(c) => onOpen(c.id, c.data, true)} />}

@@ -85,19 +85,52 @@ export class StatBook {
     return total;
   }
 
+  /** Statistics found to refer to each other, each loop once ("a > b > a"), for the resolver's findings. */
+  readonly cycles = new Set<string>();
+  /** The statistics being worked out, outermost first. */
+  private stack: string[] = [];
+  /** The outermost position on the stack that a loop came back to during this evaluation. */
+  private cutAt = Infinity;
+  /** Each statistic known to be in a loop, with the loop's members. */
+  private loops = new Map<string, Set<string>>();
+
+  /**
+   * A statistic's value. Where two refer to each other (a needs b, b needs a), the question for the one already being
+   * worked out reads 0, as before. What was computed on that 0 is not kept: a statistic in a loop has one value, the
+   * one worked out starting from itself, and inside its loop it is worked out again instead of read back (the audit's
+   * R5). Kept and read back, each value depended on which of the two a screen had asked for first.
+   */
   get(rawName: string): number {
     const name = rawName.toLowerCase().trim();
-    const hit = this.cache.get(name);
-    if (hit !== undefined) return hit;
-    if (this.busy.has(name)) return 0;
+    const loop = this.loops.get(name);
+    // Asked for from inside its own loop: not the kept value, which belongs to the question asked from outside.
+    const inside = !!loop && this.stack.some((n) => loop.has(n));
+    if (!inside) {
+      const hit = this.cache.get(name);
+      if (hit !== undefined) return hit;
+    }
+    if (this.busy.has(name)) {
+      const at = this.stack.indexOf(name);
+      this.cutAt = Math.min(this.cutAt, at);
+      const members = this.stack.slice(at);
+      this.cycles.add([...members, name].join(" > "));
+      const all = new Set(members.flatMap((n) => [n, ...(this.loops.get(n) ?? [])]));
+      for (const n of all) this.loops.set(n, all);
+      return 0;
+    }
+    const at = this.stack.length;
     this.busy.add(name);
+    this.stack.push(name);
     let v: number;
     try {
       v = this.compute(name);
     } finally {
       this.busy.delete(name);
+      this.stack.pop();
     }
-    this.cache.set(name, v);
+    // A loop that came back to this statistic ends here; one that came back to something further out is still open.
+    if (this.cutAt === at) this.cutAt = Infinity;
+    if (this.cutAt > at && !inside) this.cache.set(name, v);
     return v;
   }
 

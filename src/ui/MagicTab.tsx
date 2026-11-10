@@ -4,6 +4,8 @@ import { Fold } from "./Fold";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, grantSource, preparePool, type CastingLine } from "../aurora/sheet";
+import type { SpellSlotRow } from "../aurora/sheet";
+import { restoreSlots, withSlotUsed } from "../aurora/rest";
 import type { Character } from "../aurora/character";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { Browse } from "./Browse";
@@ -11,11 +13,7 @@ import { Browse } from "./Browse";
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
 
 function SlotTracker({ line, set }: { line: CastingLine; set: SetCharacter }) {
-  const toggle = (level: number, index: number, total: number) =>
-    set((c) => {
-      const used = c.play.slotsUsed[String(level)] ?? 0;
-      return { ...c, play: { ...c.play, slotsUsed: { ...c.play.slotsUsed, [String(level)]: usedAfterClick(total, used, index) } } };
-    });
+  const toggle = (row: SpellSlotRow, index: number) => set((c) => ({ ...c, play: withSlotUsed(c.play, row, usedAfterClick(row.total, row.used, index)) }));
   if (!line.slots.length) return <p className="muted">No spell slots at this level.</p>;
   return (
     <div className="slot-tracker">
@@ -24,12 +22,12 @@ function SlotTracker({ line, set }: { line: CastingLine; set: SetCharacter }) {
           <small>{line.pactLevel ? `Pact (level ${s.level})` : `Level ${s.level}`}</small>
           <div className="pips">
             {Array.from({ length: s.total }, (_, i) => (
-              <button key={i} className={isAvailable(s.total, s.used, i) ? "pip" : "pip spent"} title={isAvailable(s.total, s.used, i) ? "Available" : "Spent"} onClick={() => toggle(s.level, i, s.total)} />
+              <button key={i} className={isAvailable(s.total, s.used, i) ? "pip" : "pip spent"} title={isAvailable(s.total, s.used, i) ? "Available" : "Spent"} onClick={() => toggle(s, i)} />
             ))}
           </div>
         </div>
       ))}
-      <button className="more" onClick={() => set((c) => ({ ...c, play: { ...c.play, slotsUsed: {} } }))}>Long rest: restore slots</button>
+      <button className="more" onClick={() => set((c) => ({ ...c, play: restoreSlots(c.play) }))}>Long rest: restore slots</button>
     </div>
   );
 }

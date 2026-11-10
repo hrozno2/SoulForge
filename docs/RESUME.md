@@ -1,5 +1,9 @@
 # Where we left off
 
+## 2026-11-10 evening: audit and first fixes (unreleased, on main after v0.25.0)
+
+docs/AUDIT-2026-11-10.md is the code audit and the phased plan; work it in order, items are struck there as they are done. Done so far: phase 0 (`npm run gates`), data safety S1 to S7 (save queue, shown save failures, unreadable library, one database connection, backup files on disk, the character reader, error boundaries), rules R1 to R5 (pact slots apart, one long rest, hit dice by size, at least 1 hit point a level, statistic loops), the R6 guard test. Gates passed (500 of 500 parity, e2e 56). Not yet done: Soul Forge Test rebuilt on this commit and the backup file checked in the real app (three new appdata file permissions); S8, S9, phase 3 onwards.
+
 ## 2026-11-06: Stage D, the built-in rules (unreleased, on main)
 
 D0, D2 and the SRD part of D3 are done; nothing is released. Chris decided the bundle may ship as long as it stays matched in content to the SRD's entries, following the SRD where we differ. src/aurora/srdPdf.ts reads the PDFs as structure, srdFollow.ts applies them, `RULES_TIER=srd-bundle` builds public/srd only if every check holds. docs/SRD-DIFF.md has the state and what is not checked. Pilot stays unmerged on local-llm-pilot.

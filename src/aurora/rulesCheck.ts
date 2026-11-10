@@ -249,7 +249,9 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     for (let i = 0; i < x.c.level; i++) {
       n++;
       const roll = ch.hpMode === "roll" ? ch.hpRolls[String(n)] : undefined;
-      hp += (n === 1 ? die : (roll ?? Math.floor(die / 2) + 1)) + con;
+      // Each level adds at least 1 (the books' "minimum of 1"), written here apart from the engine's own count.
+      const gained = (n === 1 ? die : (roll ?? Math.floor(die / 2) + 1)) + con;
+      hp += gained < 1 ? 1 : gained;
     }
   }
   // What features add (Tough, Dwarven Toughness, Draconic Resilience, a custom bonus) comes as named parts of the

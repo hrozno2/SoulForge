@@ -4,6 +4,7 @@ import { gpuStatus, setGpuFast } from "../system";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { exportLibrary, importLibrary } from "./library";
 import { backupStore } from "../aurora/storage";
+import { backupFolder } from "../diskBackup";
 import { pickFiles } from "../store";
 import { SCHOOL_CREDIT } from "./schoolIcons";
 import { CONDITION_CREDIT } from "./conditionIcons";
@@ -108,6 +109,12 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
   useEffect(() => { void gpuStatus().then(setGpu); }, []);
   const [dates, setDates] = useState<string[]>([]);
   useEffect(() => { backupStore.dates().then(setDates); }, []);
+  // The desktop app also keeps the daily backups as files (src/diskBackup.ts): where they are, to find or copy them.
+  const [folder, setFolder] = useState("");
+  useEffect(() => { void backupFolder().then(setFolder); }, []);
+  const showFolder = async () => {
+    try { await (await import("@tauri-apps/plugin-opener")).revealItemInDir(folder); } catch (e) { setMsg(`Could not open the folder: ${(e as Error).message}`); }
+  };
   const backUp = async () => setMsg(await exportLibrary());
   const restoreFrom = async (text: string) => {
     try {
@@ -228,6 +235,12 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           <span><b>Automatic daily backup</b><small className="muted"> Keeps the last 7 days on this computer</small></span>
           <input type="checkbox" checked={s.autoBackup} onChange={(e) => updateSettings({ autoBackup: e.target.checked })} />
         </label>
+        {folder && s.autoBackup && (
+          <div className="set-row">
+            <span><b>Backup files</b><small className="muted"> The last 14 days as files, kept apart from the app's own storage: {folder}</small></span>
+            <span className="set-ctl"><button onClick={() => void showFolder()}>Show folder</button></span>
+          </div>
+        )}
         {dates.length > 0 && (
           <div className="set-row">
             <span><b>Restore from a day</b></span>

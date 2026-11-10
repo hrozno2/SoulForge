@@ -15,6 +15,9 @@
     "fs:allow-applog-read-recursive",
     "fs:allow-applog-write-recursive",
     "fs:allow-applog-meta-recursive",
+    "fs:allow-appdata-read-recursive",
+    "fs:allow-appdata-write-recursive",
+    "fs:allow-appdata-meta-recursive",
     "updater:default",
     "process:allow-restart",
     {

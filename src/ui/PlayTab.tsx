@@ -3,6 +3,7 @@ import { TextArea, TextInput } from "./TextField";
 import { useEffect, useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, headerInfo, type CastingLine, type FeatureLine, type SheetData } from "../aurora/sheet";
+import { hitDiceLeft, hitDicePools, longRest as restLong, shortRest as restShort, spendHitDie as spendDie, withSlotUsed } from "../aurora/rest";
 import { ABILITY_LABEL, ABILITY_SHORT, XP_TABLE, hpConfigured, itemLabel, uid, xpToLevel, type AbilityId, type Character, type Resource } from "../aurora/character";
 import type { AElement } from "../aurora/types";
 import { Html } from "./Html";
@@ -227,40 +228,26 @@ function Shield({ value }: { value: number }) {
 // ---------------------------------------------------------------- rests
 
 function useRests(r: Resolved, ch: Character, sheet: SheetData, set: SetCharacter) {
-  const features = sheet.features;
-  const dieSize = Math.max(0, ...sheet.hitDice.map((h) => h.die));
   const conMod = sheet.abilities.find((a) => a.id === "constitution")!.mod;
-  const total = sheet.level;
-  const left = Math.max(0, total - ch.play.hitDiceUsed);
+  // Hit dice by size (src/aurora/rest.ts): a multiclass character chooses which die to spend.
+  const pools = hitDicePools(sheet);
+  const dice = hitDiceLeft(ch.play, pools);
+  const left = dice.reduce((n, d) => n + d.left, 0);
+  const dieSize = dice.find((d) => d.left > 0)?.die ?? 0;
   const hp = ch.play.hp ?? sheet.hp;
-  void r;
-  const spendHitDie = () => {
-    if (!left || !dieSize) return;
+  // The first class's rules decide the long rest's hit dice: all of them back (2024) or half (2014).
+  const rules = r.reg.get(ch.classes[0]?.classId ?? "")?.edition ?? "2024";
+  const spendHitDie = (die = dieSize) => {
+    if (!die || !dice.some((d) => d.die === die && d.left > 0)) return;
     // The tray makes the roll, and the same result is what heals, so the two always agree.
-    requestRoll("Hit die", `1d${dieSize}${conMod >= 0 ? "+" : ""}${conMod}`, (res) => {
+    requestRoll("Hit die", `1d${die}${conMod >= 0 ? "+" : ""}${conMod}`, (res) => {
       const gain = Math.max(1, res.total);
-      set((c) => ({ ...c, play: { ...c.play, hp: Math.min(sheet.hp, (c.play.hp ?? sheet.hp) + gain), hitDiceUsed: c.play.hitDiceUsed + 1 } }));
+      set((c) => ({ ...c, play: { ...spendDie(c.play, pools, die), hp: Math.min(sheet.hp, (c.play.hp ?? sheet.hp) + gain) } }));
     });
   };
-  const shortRest = () =>
-    set((c) => {
-      const uses = { ...c.play.featureUses };
-      for (const f of features) if (/short rest/i.test(f.usage ?? "")) delete uses[f.id];
-      // Pact Magic slots come back on a short rest.
-      const slots = { ...c.play.slotsUsed };
-      for (const line of sheet.casting) if (line.pactLevel) for (const sl of line.slots) delete slots[String(sl.level)];
-      return { ...c, resources: (c.resources ?? []).map((x) => (x.refresh === "short" ? { ...x, current: x.max } : x)), play: { ...c.play, featureUses: uses, slotsUsed: slots } };
-    });
-  const longRest = () =>
-    set((c) => ({
-      ...c,
-      resources: (c.resources ?? []).map((x) => (x.refresh === "none" ? x : { ...x, current: x.max })),
-      play: {
-        ...c.play, hp: sheet.hp, tempHp: 0, wildShape: undefined, companionHp: undefined, slotsUsed: {}, featureUses: {}, hitDiceUsed: Math.max(0, c.play.hitDiceUsed - Math.max(1, Math.floor(total / 2))),
-        deathSaves: { success: 0, fail: 0 }, exhaustion: Math.max(0, (c.play.exhaustion ?? 0) - 1), concentration: undefined,
-      },
-    }));
-  return { spendHitDie, shortRest, longRest, left, dieSize, hp };
+  const shortRest = () => set((c) => restShort(c, sheet));
+  const longRest = () => set((c) => restLong(c, sheet, rules));
+  return { spendHitDie, shortRest, longRest, left, dieSize, hp, dice };
 }
 
 // ---------------------------------------------------------------- tabs
@@ -487,7 +474,8 @@ function SpellRow({ id, r, casting, set, level, sheet }: { id: string; r: Resolv
       ...c,
       play: {
         ...c.play,
-        slotsUsed: level > 0 ? { ...c.play.slotsUsed, [String(chosen!.level)]: (c.play.slotsUsed[String(chosen!.level)] ?? 0) + 1 } : c.play.slotsUsed,
+        // The slot comes from this spell's own line: a Pact Magic slot or a spell slot, counted apart.
+        ...(level > 0 ? { slotsUsed: withSlotUsed(c.play, chosen!, chosen!.used + 1).slotsUsed, pactUsed: withSlotUsed(c.play, chosen!, chosen!.used + 1).pactUsed } : {}),
         // A new concentration spell ends the old one.
         concentration: concentrates ? el.name : c.play.concentration,
       },
@@ -537,7 +525,7 @@ function Spells({ r, sheet, set }: { r: Resolved; sheet: SheetData; set: SetChar
                   <small>{c.pactLevel ? `Pact ${s.level}` : `Level ${s.level}`}</small>
                   <div className="pips">
                     {Array.from({ length: s.total }, (_, i) => (
-                      <button key={i} className={isAvailable(s.total, s.used, i) ? "pip" : "pip spent"} onClick={() => set((x) => { const used = x.play.slotsUsed[String(s.level)] ?? 0; return { ...x, play: { ...x.play, slotsUsed: { ...x.play.slotsUsed, [String(s.level)]: usedAfterClick(s.total, used, i) } } }; })} />
+                      <button key={i} className={isAvailable(s.total, s.used, i) ? "pip" : "pip spent"} onClick={() => set((x) => ({ ...x, play: withSlotUsed(x.play, s, usedAfterClick(s.total, s.used, i)) }))} />
                     ))}
                   </div>
                 </div>
@@ -786,7 +774,9 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
           <Vitals ch={ch} sheet={sheet} set={set} />
           <div className="hd-row">
             <div className="hd-bar" title={`Hit dice: ${sheet.hitDice.map((h) => `${h.count}d${h.die}`).join(" + ")}`}><div style={{ width: `${sheet.level ? (rests.left / sheet.level) * 100 : 0}%` }} /><span>{rests.left} / {sheet.level} HD · {sheet.hitDice.map((h) => `${h.count}d${h.die}`).join(" + ")}</span></div>
-            <button className="icon-btn" title="Spend a hit die" aria-label="Spend a hit die" disabled={!rests.left || rests.hp >= sheet.hp} onClick={rests.spendHitDie}>+</button>
+            <button className="icon-btn" title="Spend a hit die" aria-label="Spend a hit die" disabled={!rests.left || rests.hp >= sheet.hp} onClick={() => rests.spendHitDie()}>+</button>
+            {/* More than one size of hit die (a multiclass character): the player chooses which to spend. */}
+            {rests.dice.length > 1 && rests.dice.map((d) => <button key={d.die} className="icon-btn hd-die" title={`Spend a d${d.die} (${d.left} of ${d.total} left)`} aria-label={`Spend a d${d.die}`} disabled={!d.left || rests.hp >= sheet.hp} onClick={() => rests.spendHitDie(d.die)}>d{d.die}</button>)}
           </div>
         </div>
         <div className="hero-mid play-id">

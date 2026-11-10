@@ -56,20 +56,54 @@ export async function restoreBackup(file: BackupFile, mode: "merge" | "replace" 
   return out;
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+/** The local date: a backup made at half past midnight belongs to today, not to UTC's yesterday. */
+export const localDate = (d = new Date()): string => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const today = () => localDate();
 export const KEEP_BACKUPS = 7;
+/** Files kept on disk: two weeks, since they are the copy that outlives the app's database. */
+export const KEEP_DISK_BACKUPS = 14;
 
-/** Makes today's backup if there is none yet and there is something to save. Old ones beyond the last week are dropped. */
-export async function runAutoBackup(enabled: boolean): Promise<string | null> {
+/** Where backup files go besides the app's database (the desktop app's data folder; src/diskBackup.ts). */
+export interface BackupDisk {
+  write(name: string, text: string): Promise<void>;
+  names(): Promise<string[]>;
+  remove(name: string): Promise<void>;
+}
+const diskName = (date: string) => `soul-forge-backup-${date}.json`;
+const DISK_NAME = /^soul-forge-backup-\d{4}-\d{2}-\d{2}\.json$/;
+
+/**
+ * Makes today's backup if there is none yet and there is something to save. Old ones beyond the last week are
+ * dropped. With a disk, today's backup is also written there as a file (and the oldest files beyond two weeks
+ * removed); a disk that fails does not fail the backup, its error is handed to `onDiskError`.
+ */
+export async function runAutoBackup(enabled: boolean, disk?: BackupDisk | null, onDiskError?: (e: unknown) => void): Promise<string | null> {
   if (!enabled) return null;
   const date = today();
-  if (await backupStore.get(date)) return null;
-  const b = await makeBackup();
-  if (!b.characters.length) return null;
-  await backupStore.put(date, JSON.stringify(b));
-  const dates = await backupStore.dates();
-  for (const d of dates.slice(KEEP_BACKUPS)) await backupStore.remove(d);
-  return date;
+  let json = await backupStore.get(date);
+  let made: string | null = null;
+  if (!json) {
+    const b = await makeBackup();
+    if (!b.characters.length) return null;
+    json = JSON.stringify(b);
+    await backupStore.put(date, json);
+    const dates = await backupStore.dates();
+    for (const d of dates.slice(KEEP_BACKUPS)) await backupStore.remove(d);
+    made = date;
+  }
+  if (disk) {
+    try {
+      const names = (await disk.names()).filter((n) => DISK_NAME.test(n));
+      if (!names.includes(diskName(date))) {
+        await disk.write(diskName(date), json);
+        names.push(diskName(date));
+      }
+      for (const old of names.sort().reverse().slice(KEEP_DISK_BACKUPS)) await disk.remove(old);
+    } catch (e) {
+      onDiskError?.(e);
+    }
+  }
+  return made;
 }
 
 export function backupFileName(): string {

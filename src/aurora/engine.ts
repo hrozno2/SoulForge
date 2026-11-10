@@ -233,10 +233,12 @@ export function baseHitPoints(ch: Character, reg: ARegistry, conMod: number): nu
     const die = hitDieOf(reg.get(c.classId));
     for (let i = 0; i < c.level; i++) {
       n++;
-      if (n === 1) hp += die + conMod;
+      // A level gives at least 1 hit point, whatever the roll and the Constitution modifier (both Player's Handbooks:
+      // "add the total (minimum of 1)"); a Wizard with Constitution 3 who rolled a 1 lost 3 for that level.
+      if (n === 1) hp += Math.max(1, die + conMod);
       else {
         const roll = ch.hpMode === "roll" ? ch.hpRolls[String(n)] : undefined;
-        hp += (roll ?? Math.floor(die / 2) + 1) + conMod;
+        hp += Math.max(1, (roll ?? Math.floor(die / 2) + 1) + conMod);
       }
     }
   }

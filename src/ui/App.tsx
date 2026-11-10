@@ -1,4 +1,6 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { SaveQueue } from "./saveQueue";
+import { CURRENT_CHARACTER_KEY, ErrorBoundary } from "./ErrorBoundary";
 import { logSystemOnce } from "../system";
 import { TextInput } from "./TextField";
 import { logEvent, timed } from "../logbook";
@@ -34,6 +36,7 @@ import { HelpButton } from "./Help";
 import { AppMenu, GroupNav } from "./TopBar";
 import { SettingsDialog, getSettings, updateSettings, useScaleShortcuts, useSettings } from "./Settings";
 import { runAutoBackup } from "../aurora/backup";
+import { appDataDisk } from "../diskBackup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
 import { ImportNotes, ImportReport, importReportText } from "./ImportReport";
@@ -56,7 +59,7 @@ const ContentTab = lazy(() => import("./ContentTab").then((m) => ({ default: m.C
 
 type Tab = "start" | "build" | "magic" | "equipment" | "manage" | "play" | "sheet" | "content";
 const TABS: [Tab, string][] = [["start", "Home"], ["build", "Build"], ["magic", "Magic"], ["equipment", "Equipment"], ["manage", "Manage"], ["play", "Play"], ["sheet", "Export"], ["content", "Content"]];
-const CUR_KEY = "charforge.current.v2";
+const CUR_KEY = CURRENT_CHARACTER_KEY;
 
 function loadCurrent(): { id: string; ch: Character; fromLibrary?: boolean } {
   try {
@@ -91,14 +94,26 @@ export function App() {
   useScaleShortcuts();
   // One backup a day, a little after start-up so it never slows the first screen.
   useEffect(() => {
-    const t = window.setTimeout(() => void runAutoBackup(getSettings().autoBackup).catch(() => undefined), 8000);
+    const t = window.setTimeout(() => void appDataDisk().catch(() => null).then((disk) => runAutoBackup(getSettings().autoBackup, disk, (e) => logEvent("backup", `the backup file could not be written: ${(e as Error)?.message ?? e}`))).catch((e) => logEvent("backup", `the daily backup failed: ${(e as Error)?.message ?? e}`)), 8000);
     return () => window.clearTimeout(t);
   }, []);
+  // Ask the browser to keep the app's storage (characters, content) when the disk runs low; the answer goes in the log.
+  useEffect(() => { void navigator.storage?.persist?.().then((kept) => logEvent("storage", kept ? "kept when space runs low" : "may be cleared when space runs low"), () => undefined); }, []);
   const initial = useMemo(loadCurrent, []);
   const [id, setId] = useState(initial.id);
   const [character, setCharacter] = useState<Character>(initial.ch);
   // The character as last saved or opened, so only an edit is saved (and dated).
-  const lastSaved = useRef<{ id: string; json: string }>({ id: "", json: "" });
+  const queue = useMemo(() => new SaveQueue(saveCharacterRecord), []);
+  const saveState = useSyncExternalStore(queue.subscribe, queue.getState);
+  // What is waiting is written when the window is hidden or left, not only when its wait is over.
+  useEffect(() => {
+    const flush = () => { if (document.visibilityState === "hidden") void queue.flush(); };
+    const leave = () => void queue.flush();
+    document.addEventListener("visibilitychange", flush);
+    window.addEventListener("pagehide", leave);
+    return () => { document.removeEventListener("visibilitychange", flush); window.removeEventListener("pagehide", leave); };
+  }, [queue]);
+  useEffect(() => { if (saveState === "failed") logEvent("save", `could not save the character: ${queue.error}`); }, [saveState, queue]);
   // While the open character is still coming from the library, nothing is saved over it.
   const loading = useRef(!!initial.fromLibrary);
   useEffect(() => {
@@ -106,7 +121,7 @@ export function App() {
     void listCharacters().then((all) => {
       const rec = all.find((c) => c.id === initial.id);
       loading.current = false;
-      if (rec) { const ch = normalizeCharacter(rec.data); lastSaved.current = { id: initial.id, json: JSON.stringify(ch) }; setCharacter(ch); }
+      if (rec) { const ch = normalizeCharacter(rec.data); queue.markStored(initial.id, ch); setCharacter(ch); }
     }).catch(() => { loading.current = false; });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [detail, setDetail] = useState<AElement | null>(null);
@@ -136,7 +151,6 @@ export function App() {
   useEffect(() => setRollContext({ conditions: character.play.conditions, exhaustion: character.play.exhaustion ?? 0 }), [character.play.conditions, character.play.exhaustion]);
 
   // Autosave the open character, and keep a copy in the library.
-  const saveTimer = useRef<number | undefined>(undefined);
   useEffect(() => {
     if (loading.current) return;
     try {
@@ -149,23 +163,19 @@ export function App() {
         /* storage can be unavailable */
       }
     }
-    window.clearTimeout(saveTimer.current);
-    // Only a real change is saved: opening a character, or the content loading under it, is no edit, and saving
-    // then marked every character opened as "Edited just now" in the library.
-    const snapshot = JSON.stringify(character);
-    if (lastSaved.current.id === id && lastSaved.current.json === snapshot) return;
-    saveTimer.current = window.setTimeout(() => {
-      lastSaved.current = { id, json: snapshot };
-      const classes = character.classes.map((c) => `${content.reg.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ");
-      const race = character.race ? content.reg.get(character.race)?.name : "";
-      const empty = !character.name && !character.race && !character.classes.length && !character.background;
-      if (!empty) saveCharacterRecord({ id, name: character.name, summary: [race, classes].filter(Boolean).join(" ") , updated: Date.now(), data: character }).catch(() => {});
-    }, 800);
-  }, [character, id, content.reg]);
+    // Only a real change is saved (src/ui/saveQueue.ts): opening a character, or the content loading under it, is no
+    // edit. Not before the content is read: the library card's line names the species and classes from it.
+    if (!content.ready) return;
+    const empty = !character.name && !character.race && !character.classes.length && !character.background;
+    if (empty) return;
+    const classes = character.classes.map((c) => `${content.reg.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ");
+    const race = character.race ? content.reg.get(character.race)?.name : "";
+    queue.schedule(id, character, { name: character.name, summary: [race, classes].filter(Boolean).join(" ") });
+  }, [character, id, content.reg, content.ready, queue]);
 
   const set = useCallback((fn: (c: Character) => Character) => setCharacter((c) => fn(c)), []);
   // Opened from the library: what is stored is the same, so nothing is saved (or re-dated) until it is edited.
-  const open = (nid: string, ch: Character, stored = false) => { const n = normalizeCharacter(ch); lastSaved.current = stored ? { id: nid, json: JSON.stringify(n) } : { id: "", json: "" }; setId(nid); setCharacter(n); setTab("build"); };
+  const open = (nid: string, ch: Character, stored = false) => { const n = normalizeCharacter(ch); void queue.flush(); if (stored) queue.markStored(nid, n); setId(nid); setCharacter(n); setTab("build"); };
   const random = (level: number) => {
     const p = getSettings();
     open(uid(), { ...randomCharacter(content.reg, level, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual, scifi: p.showSciFi, modern: p.showModern }), checkedWith: APP_VERSION });
@@ -351,13 +361,20 @@ export function App() {
         <div className="pane">
           {["build", "magic", "equipment", "manage"].includes(tab) && (
             <div className="actionbar" role="toolbar" aria-label="Character actions">
-              <span className="saved" title="Characters save as you work">✓ Saved</span>
+              {saveState === "failed" ? (
+                <span className="saved failed" role="alert" title={`The last change is not in your library yet: ${queue.error}. It is kept and tried again with the next change. To be safe, use Export, Export character.`}>
+                  Not saved <button onClick={() => void queue.flush()}>Try again</button>
+                </span>
+              ) : (
+                <span className="saved" title="Characters save as you work">{saveState === "saved" ? "✓ Saved" : "Saving..."}</span>
+              )}
               <button onClick={() => window.dispatchEvent(new Event("cf-levelup"))} disabled={!character.classes.length}>Level up</button>
               <button onClick={() => setTab("play")}>Play</button>
               <button onClick={() => setTab("sheet")}>Export</button>
               {character.importReport && <button onClick={() => setReportOpen(true)} title="The report of the import that made this character">Import notes</button>}
             </div>
           )}
+          <ErrorBoundary key={`${tab}:${id}`} scope={TABS.find(([k]) => k === tab)?.[1] ?? "This screen"}>
           <Suspense fallback={<p className="muted">Loading...</p>}>
           {tab === "start" && <StartTab currentId={id} onOpen={open} onNew={() => open(uid(), { ...newCharacter(), checkedWith: APP_VERSION })} onRandom={random} contentReady={content.ready} sourceCount={content.sources.length} goContent={() => setTab("content")} onImportForeign={importForeign} reg={content.reg} />}
           {tab === "build" && (
@@ -373,6 +390,7 @@ export function App() {
           {tab === "sheet" && <SheetTab r={r} ch={character} set={set} />}
           {tab === "content" && <ContentTab content={content} onDetail={setDetail} r={r} set={set} />}
           </Suspense>
+          </ErrorBoundary>
         </div>
         {showDetail && <DetailPanel el={detail} />}
       </main>

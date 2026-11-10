@@ -133,11 +133,23 @@ export function StartTab({
 const SIGNED = (n: number) => (n >= 0 ? `+${n}` : String(n));
 
 /** A saved character as a card: class emblem, portrait, name, what it is, and its main numbers. Click to open. */
+/** Which of a character's species, background and classes the loaded content lacks, in words. */
+export function missingContent(ch: Character, reg: ARegistry): string[] {
+  const out: string[] = [];
+  if (ch.race && !reg.get(ch.race)) out.push("its species");
+  if (ch.background && !reg.get(ch.background)) out.push("its background");
+  if (ch.classes.some((c) => !reg.get(c.classId))) out.push(ch.classes.length > 1 ? "a class" : "its class");
+  return out;
+}
+
 function CharCard({ rec, reg, current, onOpen, onDuplicate, onExport, onDelete }: { rec: CharacterRecord; reg?: ARegistry; current: boolean; onOpen: () => void; onDuplicate: () => void; onExport: () => void; onDelete: () => void }) {
   const ch = rec.data;
   // The numbers need the rules content; without it the card shows the saved summary only.
   const info = useMemo(() => {
     if (!reg) return null;
+    // The character's species, background or a class is not in the loaded content (a book removed, or content from
+    // another source): its numbers cannot be worked out, so none are shown ("?" and "HP 0 / -1" before).
+    if (missingContent(ch, reg).length) return null;
     try {
       const r = resolve(ch, reg);
       const sh = buildSheet(r);
@@ -169,6 +181,7 @@ function CharCard({ rec, reg, current, onOpen, onDuplicate, onExport, onDelete }
           <b className="char-card-name">{rec.name || "Unnamed character"}</b>
           <span className="char-card-what">{info ? [info.level ? `Level ${info.level}` : "", info.species, info.classes].filter(Boolean).join(" · ") || "Nothing chosen yet" : rec.summary || "empty"}</span>
           {info?.background && <span className="char-card-bg">{info.background}</span>}
+          {reg && !info && missingContent(ch, reg).length > 0 && <span className="char-card-missing" title={`Not in the loaded content: ${missingContent(ch, reg).join(", ")}. Add the content it was made with on the Content tab.`}>Needs content that is not loaded</span>}
           {info && info.level > 0 && (
             <span className="char-card-stats">
               {/* First row: hit points as a bar, armor class on a shield, walking speed (C1.0b). */}

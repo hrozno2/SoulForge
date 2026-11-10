@@ -379,8 +379,9 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
     }
 
     const below = [...chain, el.id];
+    // One context for all of the element's rules: it depends on the element, not on the rule.
+    const ctx = makeCtx(prev, ownerLevel, ch, reg, empty, el.id);
     el.rules.forEach((rule, idx) => {
-      const ctx = makeCtx(prev, ownerLevel, ch, reg, empty, el.id);
       if (rule.level !== undefined && rule.level > ownerLevel) return;
       if (!meets(rule.requirements, ctx)) return;
 

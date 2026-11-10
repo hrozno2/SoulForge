@@ -26,4 +26,24 @@ describe("Home cards", () => {
     expect(el.querySelectorAll(".char-card")).toHaveLength(1);
     act(() => root.unmount());
   });
+
+  // UX notes of 2026-11-10, bug 12: with its class missing a card read "?" and "HP 0 / -1".
+  it("say so when a character's content is not loaded, and show no numbers", async () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { StartTab } = await import("./StartTab");
+    const { ARegistry } = await import("../aurora/registry");
+    const reg = new ARegistry();
+    reg.build();
+    const el = document.createElement("div");
+    document.body.append(el);
+    const root = createRoot(el);
+    const props = { currentId: "", onOpen: () => undefined, onNew: () => undefined, onRandom: () => undefined, sourceCount: 1, goContent: () => undefined, onImportForeign: async () => "" };
+    await act(async () => { root.render(<StartTab {...props} contentReady reg={reg} />); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    const card = el.querySelector(".char-card")!;
+    expect(card.textContent).toContain("Needs content that is not loaded");
+    expect(card.querySelector(".char-card-stats")).toBeNull();
+    expect(card.textContent).not.toContain("?");
+    act(() => root.unmount());
+  });
 });

@@ -21,7 +21,7 @@ import type { AElement } from "../aurora/types";
 import { useContent } from "./useContent";
 import { BuildTab } from "./BuildTab";
 import { BuildBoard } from "./BuildBoard";
-import { StartTab } from "./StartTab";
+import { StartTab, missingContent } from "./StartTab";
 import { LaunchIntro, launchReady } from "./LaunchIntro";
 import { outdatedFiveTools } from "../aurora/content";
 import { DetailPanel } from "./DetailPanel";
@@ -94,7 +94,16 @@ export function App() {
   useScaleShortcuts();
   // One backup a day, a little after start-up so it never slows the first screen.
   useEffect(() => {
-    const t = window.setTimeout(() => void appDataDisk().catch(() => null).then((disk) => runAutoBackup(getSettings().autoBackup, disk, (e) => logEvent("backup", `the backup file could not be written: ${(e as Error)?.message ?? e}`))).catch((e) => logEvent("backup", `the daily backup failed: ${(e as Error)?.message ?? e}`)), 8000);
+    const t = window.setTimeout(() => void (async () => {
+      // The disk copy (src/diskBackup.ts) is the one that outlives the app's own storage, so each step is in the log.
+      const disk = await appDataDisk().catch((e) => { logEvent("backup", `no backup folder: ${(e as Error)?.message ?? e}`); return null; });
+      try {
+        const made = await runAutoBackup(getSettings().autoBackup, disk, (e) => logEvent("backup", `the backup file could not be written: ${(e as Error)?.message ?? e}`));
+        logEvent("backup", `checked: ${made ? `made ${made}` : "today's is there or nothing to save"}${disk ? ", with files on disk" : ""}`);
+      } catch (e) {
+        logEvent("backup", `the daily backup failed: ${(e as Error)?.message ?? e}`);
+      }
+    })(), 8000);
     return () => window.clearTimeout(t);
   }, []);
   // Ask the browser to keep the app's storage (characters, content) when the disk runs low; the answer goes in the log.
@@ -356,6 +365,13 @@ export function App() {
       {levelUpOpen && <Suspense fallback={null}><LevelUp r={r} ch={character} set={set} onDetail={setDetail} onClose={() => setLevelUpOpen(false)} /></Suspense>}
       {checkDue(character, APP_VERSION) && !loading.current && <OlderBuildNotice key={id} r={r} set={set} />}
       {detailsOpen && <Suspense fallback={null}><DetailsDialog r={r} ch={character} set={set} notes={detailsOpen.notes} onClose={() => setDetailsOpen(null)} /></Suspense>}
+      {/* The open character's species, background or class is not in the loaded content: its sheet cannot be right. */}
+      {content.ready && tab !== "start" && tab !== "content" && missingContent(character, content.reg).length > 0 && (
+        <div className="notice-toast noprint missing-content" role="status">
+          <span>This character needs content that is not loaded ({missingContent(character, content.reg).join(", ")}), so its numbers and choices are incomplete. Nothing is lost: add the content it was made with and it is whole again.</span>
+          <button className="primary" onClick={() => setTab("content")}>Go to Content</button>
+        </div>
+      )}
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} dismiss={updater.dismiss} />
       <main className={[showDetail ? "with-detail" : "", tab === "build" && board ? "wide" : ""].filter(Boolean).join(" ")}>
         <div className="pane">

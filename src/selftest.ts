@@ -38,6 +38,29 @@ export async function maybeRunSelfTest(): Promise<void> {
       r.onerror = () => rej(r.error);
     });
   });
+  // The app's own storage as the app reads it, twice (one connection for the session), and saving a character.
+  await run("library read and write", async () => {
+    const st = await import("./aurora/storage");
+    const before = (await st.listCharacters()).length;
+    const { newCharacter } = await import("./aurora/character");
+    await st.saveCharacterRecord({ id: "selftest", name: "Self test", summary: "", updated: Date.now(), data: { ...newCharacter(), name: "Self test" } });
+    const during = (await st.listCharacters()).length;
+    await st.deleteCharacterRecord("selftest");
+    const after = (await st.listCharacters()).length;
+    if (during !== before + 1 || after !== before) throw new Error(`counts ${before}, ${during}, ${after}`);
+    return `${before} characters`;
+  });
+  // The backup files on disk (src/diskBackup.ts): the folder can be made, written, listed and cleaned.
+  await run("backup folder", async () => {
+    const { appDataDisk, backupFolder } = await import("./diskBackup");
+    const disk = await appDataDisk();
+    if (!disk) throw new Error("no disk outside the desktop app");
+    await disk.write("selftest.tmp", "ok");
+    const seen = (await disk.names()).includes("selftest.tmp");
+    await disk.remove("selftest.tmp");
+    if (!seen) throw new Error("the file written is not listed");
+    return await backupFolder();
+  });
   await run("network over https", async () => {
     const res = await fetch("https://raw.githubusercontent.com/AuroraLegacy/elements/master/AuroraLegacy.index", { cache: "no-cache" });
     if (!res.ok) throw new Error(`status ${res.status}`);

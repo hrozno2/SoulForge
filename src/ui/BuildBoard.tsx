@@ -815,7 +815,7 @@ function StatsPanel({ r, ch, set, onIncreases, onMouseLeave }: { r: Resolved; ch
   const section = (title: string, items: string[]) => items.length > 0 && (
     <details className="board-sec">
       <summary>{title} <small>{items.length}</small></summary>
-      <div className="chips">{items.map((i) => <span key={i} className="chip">{i}</span>)}</div>
+      <div className="chips">{items.map((i, n) => <span key={`${n}-${i}`} className="chip">{i}</span>)}</div>
     </details>
   );
   const custom = (a: AbilityId) => ch.customStats.find((c) => c.stat === a && c.id.startsWith("ability-"))?.value ?? 0;

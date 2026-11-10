@@ -206,7 +206,7 @@ export function ActiveList({ title, items }: { title: string; items: string[] })
   return (
     <>
       <h3>{title}</h3>
-      <div className="chips">{items.map((i) => <span key={i} className="chip">{i}</span>)}</div>
+      <div className="chips">{items.map((i, n) => <span key={`${n}-${i}`} className="chip">{i}</span>)}</div>
     </>
   );
 }
@@ -240,7 +240,7 @@ export function BuildTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character;
               {lines.length > 0 && (
                 <span className="badge has-tip" tabIndex={0}>
                   {lines.length}
-                  <span className="tip"><b>Still to choose</b><ul>{lines.map((l) => <li key={l}>{l}</li>)}</ul></span>
+                  <span className="tip"><b>Still to choose</b><ul>{lines.map((l, n) => <li key={`${n}-${l}`}>{l}</li>)}</ul></span>
                 </span>
               )}
             </button>

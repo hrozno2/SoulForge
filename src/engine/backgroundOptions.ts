@@ -13,9 +13,14 @@ export const BACKGROUND_ASI_MARKER = "ID_INTERNAL_GRANTS_BACKGROUND_ASI";
 const CHOICE = "2024 rules: ability scores and origin feat";
 
 export function background2024Choices(byId: Map<string, AElement>): number {
-  // Only when the content has the parts: the three-ability combinations and the marker (Aurora's internal content).
-  const combos = [...byId.values()].some((e) => e.supports.includes("Custom Background Ability Score Combination"));
-  if (!combos || !byId.has(BACKGROUND_ASI_MARKER)) return 0;
+  // The parts: Aurora's internal three-ability combinations and marker; without Aurora, 5e.tools' increase patterns
+  // ("+2 to one score and +1 to another", "+1 to three") and origin-category feats, with the same marker as an
+  // internal grant (5e.tools species give way to it, fivetools.ts customOrigin). Before, the option existed only with
+  // Aurora loaded, and a character moved to 5e.tools lost its increases and origin feat.
+  const combos = [...byId.values()].some((e) => e.supports.includes("Custom Background Ability Score Combination")) && byId.has(BACKGROUND_ASI_MARKER);
+  // And origin feats to choose from: the SRD 5.1 alone has none, and its 2014 backgrounds got an empty feat choice.
+  const fiveParts = byId.has("ID_5ET_ASI_PATTERN_2_1") && [...byId.values()].some((e) => e.type === "Feat" && e.supports.includes("category O"));
+  if (!combos && !fiveParts) return 0;
   byId.set(BACKGROUND_2024_ID, {
     id: BACKGROUND_2024_ID,
     name: "2024 background rules",
@@ -27,8 +32,8 @@ export function background2024Choices(byId: Map<string, AElement>): number {
     description: "<p>Use this background with the 2024 rules: choose three ability scores and increase one by 2 and another by 1, or all three by 1 (none above 20), and take an origin feat. A 2014 species then gives no ability score increases of its own. The background keeps its skills, tools, languages and equipment.</p>",
     setters: {},
     rules: [
-      { kind: "select", type: "Ability Score Improvement", name: "Ability Score Combination (2024 rules)", supports: "Custom Background Ability Score Combination", number: 1 } as ARule,
-      { kind: "select", type: "Feat", name: "Origin Feat (2024 rules)", supports: "Origin", number: 1 } as ARule,
+      { kind: "select", type: "Ability Score Improvement", name: "Ability Score Combination (2024 rules)", supports: combos ? "Custom Background Ability Score Combination" : "5et asi pattern", number: 1 } as ARule,
+      { kind: "select", type: "Feat", name: "Origin Feat (2024 rules)", supports: combos ? "Origin" : "5et feat,(category O)", number: 1 } as ARule,
       { kind: "grant", type: "Grants", id: BACKGROUND_ASI_MARKER } as ARule,
     ],
   });

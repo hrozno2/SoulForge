@@ -97,6 +97,8 @@ export function App() {
   const initial = useMemo(loadCurrent, []);
   const [id, setId] = useState(initial.id);
   const [character, setCharacter] = useState<Character>(initial.ch);
+  // The character as last saved or opened, so only an edit is saved (and dated).
+  const lastSaved = useRef<{ id: string; json: string }>({ id: "", json: "" });
   // While the open character is still coming from the library, nothing is saved over it.
   const loading = useRef(!!initial.fromLibrary);
   useEffect(() => {
@@ -104,7 +106,7 @@ export function App() {
     void listCharacters().then((all) => {
       const rec = all.find((c) => c.id === initial.id);
       loading.current = false;
-      if (rec) setCharacter(normalizeCharacter(rec.data));
+      if (rec) { const ch = normalizeCharacter(rec.data); lastSaved.current = { id: initial.id, json: JSON.stringify(ch) }; setCharacter(ch); }
     }).catch(() => { loading.current = false; });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [detail, setDetail] = useState<AElement | null>(null);
@@ -148,7 +150,12 @@ export function App() {
       }
     }
     window.clearTimeout(saveTimer.current);
+    // Only a real change is saved: opening a character, or the content loading under it, is no edit, and saving
+    // then marked every character opened as "Edited just now" in the library.
+    const snapshot = JSON.stringify(character);
+    if (lastSaved.current.id === id && lastSaved.current.json === snapshot) return;
     saveTimer.current = window.setTimeout(() => {
+      lastSaved.current = { id, json: snapshot };
       const classes = character.classes.map((c) => `${content.reg.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ");
       const race = character.race ? content.reg.get(character.race)?.name : "";
       const empty = !character.name && !character.race && !character.classes.length && !character.background;
@@ -157,7 +164,8 @@ export function App() {
   }, [character, id, content.reg]);
 
   const set = useCallback((fn: (c: Character) => Character) => setCharacter((c) => fn(c)), []);
-  const open = (nid: string, ch: Character) => { setId(nid); setCharacter(normalizeCharacter(ch)); setTab("build"); };
+  // Opened from the library: what is stored is the same, so nothing is saved (or re-dated) until it is edited.
+  const open = (nid: string, ch: Character, stored = false) => { const n = normalizeCharacter(ch); lastSaved.current = stored ? { id: nid, json: JSON.stringify(n) } : { id: "", json: "" }; setId(nid); setCharacter(n); setTab("build"); };
   const random = (level: number) => {
     const p = getSettings();
     open(uid(), { ...randomCharacter(content.reg, level, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual, scifi: p.showSciFi, modern: p.showModern }), checkedWith: APP_VERSION });

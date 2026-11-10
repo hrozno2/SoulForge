@@ -13,6 +13,7 @@ import { fillOfficialSheet } from "../sheets/official";
 import { buildPdf, DEFAULT_PDF_OPTIONS } from "../pdf/exportPdf";
 import { saveFile } from "../store";
 import { getSettings } from "./Settings";
+import { APP_VERSION } from "./RulesCheck";
 
 
 export async function makeTestBatch(reg: ARegistry): Promise<{ id: string; ch: Character }[]> {
@@ -105,7 +106,10 @@ export async function moveCharactersToFiveTools(both: ARegistry, onProgress: (s:
   const { listSources } = await import("../aurora/storage");
   const { buildRegistry } = await import("../aurora/content");
   const { moveAndCompare, moveNote, moveReport } = await import("../engine/migrateReport");
-  const { rulesRef } = await import("../aurora/rulesRefStore");
+  const { ensureRulesRef, rulesRef } = await import("../aurora/rulesRefStore");
+  // The rules reference (class tables) the rules check compares against; loaded on demand elsewhere. Without it every
+  // moved character got "Class not in the rules reference", which says nothing about the character.
+  await ensureRulesRef().catch(() => undefined);
   if (!both.all().some((e) => e.origin !== "5etools" && !e.id.startsWith("ID_5ET") && !/^SRD /.test(e.source))) return "Aurora's content is not loaded: turn the 5e.tools-only switch off, then move the characters.";
   onProgress("Reading 5e.tools content on its own...");
   const sources = (await listSources()).filter((s) => s.format !== "aurora");
@@ -122,7 +126,8 @@ export async function moveCharactersToFiveTools(both: ARegistry, onProgress: (s:
       const res = moveAndCompare(normalizeCharacter(rec.data), both, five, rulesRef() ?? []);
       results.push({ ...res, name: rec.name });
       const id = uid();
-      const ch: Character = { ...res.migration.ch, name: `${rec.name} (5e.tools)`, movedFrom: rec.id, importReport: moveNote(res) };
+      // Checked with this version: the copy was made now, so "saved by an older Soul Forge" would be untrue.
+      const ch: Character = { ...res.migration.ch, name: `${rec.name} (5e.tools)`, movedFrom: rec.id, importReport: moveNote(res), checkedWith: APP_VERSION };
       const classes = ch.classes.map((c) => `${five.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ");
       await saveCharacterRecord({ id, name: ch.name, summary: [five.get(ch.race ?? "")?.name, classes].filter(Boolean).join(" "), updated: Date.now(), data: ch });
     } catch (e) {

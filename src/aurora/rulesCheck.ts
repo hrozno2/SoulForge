@@ -448,6 +448,18 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   // Worn armor: its base and Dexterity cap from the armor table, not from the content. Everything else that changes
   // AC (an unarmored defense, natural armor, a shield, a fighting style, an item) is a named part of a stat; AC above
   // what the table gives, with no part explaining it, is the finding.
+  // Armor a species cannot wear (the Tortle's shell: "You can't wear light, medium, or heavy armor"): its natural armor
+  // only counts unarmored, so worn armor quietly lowered the sheet (a Tortle in leather: AC 10, not 17).
+  if (body) {
+    for (const a of r.active) {
+      const text = (a.el.description ?? "").replace(/<[^>]+>/g, " ");
+      if (!/can(?:'|’)?t wear (?:light, medium, or heavy |any )?armor|cannot wear (?:light, medium, or heavy |any )?armor/i.test(text)) continue;
+      const calc = a.el.rules.find((x) => x.kind === "stat" && x.name === "ac:calculation" && /armor:any|armor:none/.test(String(x.equipped ?? "")));
+      if (!calc || calc.kind !== "stat") continue;
+      const unarmored = r.stats.get(calc.value);
+      add("Armor the species cannot wear", `${a.el.name}: ${body.el.name} is worn${unarmored ? `; without it, armor class is ${unarmored}${shield ? " plus the shield" : ""}` : ""}`);
+    }
+  }
   const misc = [...r.stats.parts("ac:misc"), ...r.stats.parts("ac")];
   const shieldAc = shield ? 2 + (shield.i.magic ?? 0) : 0;
   const miscSum = misc.reduce((t, p) => t + p.value, 0);

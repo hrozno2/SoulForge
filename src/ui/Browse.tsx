@@ -34,9 +34,13 @@ function useStored<T extends string>(key: string, initial: T): [T, (v: T) => voi
   return [v, set];
 }
 
+// The stock lines of an older species' text, which say little about it: the card shows the first other paragraph
+// (a 5e.tools Half-Elf's blurb was "Half-elves mature at the same rate humans do").
+const STOCK = /^(Age|Alignment|Size|Speed|Languages?|Ability Score Increases?|Creature Type)\b[.:]?/i;
 export const blurb = (html: string, max = 170) => {
-  const m = html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
-  const t = stripHtml(m ? m[1] : html).replace(/\s+/g, " ").trim();
+  // Each paragraph with the heading before it, if any ("<h5>Age</h5><p>...</p>" in 5e.tools' text).
+  const paras = [...html.matchAll(/(?:<h\d[^>]*>([\s\S]*?)<\/h\d>\s*)?<p[^>]*>([\s\S]*?)<\/p>/gi)].map((m) => ({ head: stripHtml(m[1] ?? "").trim(), text: stripHtml(m[2]).replace(/\s+/g, " ").trim() })).filter((x) => x.text);
+  const t = (paras.find((x) => !STOCK.test(x.head) && !STOCK.test(x.text)) ?? paras[0])?.text ?? stripHtml(html).replace(/\s+/g, " ").trim();
   return t.length > max ? `${t.slice(0, max).replace(/\s+\S*$/, "")}...` : t;
 };
 

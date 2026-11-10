@@ -177,6 +177,8 @@ export function syntheticElements(): AElement[] {
   const cats: [string, string][] = [["ARMOR_LIGHT", "Armor Proficiency (Light Armor)"], ["ARMOR_MEDIUM", "Armor Proficiency (Medium Armor)"], ["ARMOR_HEAVY", "Armor Proficiency (Heavy Armor)"], ["ARMOR_SHIELD", "Armor Proficiency (Shields)"], ["WEAPON_SIMPLE", "Weapon Proficiency (Simple Weapons)"], ["WEAPON_MARTIAL", "Weapon Proficiency (Martial Weapons)"]];
   for (const [k, n] of cats) out.push(base(`ID_5ET_PROF_${k}`, n, "Proficiency", "5etools", { compendiumHidden: true }));
   out.push(base("ID_INTERNAL_GRANT_MULTICLASS", "Multiclass marker", "Grants", "5etools", { compendiumHidden: true }));
+  // Heavy armor's Strength does not slow the character (the Dwarf), as a marker the armor's speed rule asks about.
+  out.push(base("ID_INTERNAL_GRANT_ARMOR_IGNORE_STRENGTH_REQUIREMENT", "Heavy armor does not reduce speed", "Grants", "5etools", { compendiumHidden: true }));
   for (const a of Object.values(ABIL)) {
     out.push(base(`ID_5ET_SAVE_${slug(a)}`, `Saving throw proficiency (${cap(a)})`, "Proficiency", "5etools", {
       compendiumHidden: true,
@@ -547,14 +549,18 @@ export function leveledOptionChoices(f: J, idBase: string, ctx: Ctx, out: AEleme
  * Negative adjustments (the DMG Lizardfolk's -2 Intelligence) stay.
  */
 const CUSTOM_ORIGIN_ASI = "ID_5ET_OPTION_TCE_CUSTOMIZED_ABILITY_SCORE_INCREASES";
-function customOrigin(rules: ARule[], label: string, ctx: Ctx, out: AElement[]): ARule[] {
-  const fixed = rules.filter((r) => r.kind === "stat" && Object.values(ABIL).includes(r.name as never) && Number((r as { value: string }).value) > 0 && !r.requirements);
+function customOrigin(rules0: ARule[], label: string, ctx: Ctx, out: AElement[]): ARule[] {
+  // A 2014 species' increases give way to a 2014 background taken under the 2024 rules (backgroundOptions.ts: that
+  // package raises three scores itself and grants this marker), as Aurora's species do.
+  const off = "!ID_INTERNAL_GRANTS_BACKGROUND_ASI";
+  const rules = rules0.map((r) => ((r.kind === "stat" && Object.values(ABIL).includes(r.name as never)) || (r.kind === "select" && r.type === "Ability Score Improvement") ? ({ ...r, requirements: r.requirements ? `${r.requirements},${off}` : off } as ARule) : r));
+  const fixed = rules.filter((r) => r.kind === "stat" && Object.values(ABIL).includes(r.name as never) && Number((r as { value: string }).value) > 0 && r.requirements === off);
   if (!fixed.length) return rules;
   if (!out.some((o) => o.id === CUSTOM_ORIGIN_ASI)) out.push(base(CUSTOM_ORIGIN_ASI, "Customized Ability Score Increases", "Option", srcName(ctx, "TCE"), {
     description: "<p>Customizing Your Origin: any ability score increase your species gives you can go to an ability score of your choice instead, each increase to a different score.</p>",
   }));
-  const kept = rules.map((r) => (fixed.includes(r) ? ({ ...r, requirements: `!${CUSTOM_ORIGIN_ASI}` } as ARule) : r));
-  for (const r of fixed) { const v = (r as { value: string }).value; kept.push({ kind: "select", type: "Ability Score Improvement", name: `${label}: customized increase (+${v})`, supports: `5et asi one,amt${v}`, number: 1, requirements: CUSTOM_ORIGIN_ASI } as ARule); }
+  const kept = rules.map((r) => (fixed.includes(r) ? ({ ...r, requirements: `!${CUSTOM_ORIGIN_ASI},${off}` } as ARule) : r));
+  for (const r of fixed) { const v = (r as { value: string }).value; kept.push({ kind: "select", type: "Ability Score Improvement", name: `${label}: customized increase (+${v})`, supports: `5et asi one,amt${v}`, number: 1, requirements: `${CUSTOM_ORIGIN_ASI},${off}` } as ARule); }
   return kept;
 }
 
@@ -745,6 +751,10 @@ function convertItem(raw: J, ctx: Ctx): AElement | null {
     setters.armorClass = set(t === "S" ? `+${m.ac ?? 2}` : String(m.ac ?? ""));
     setters.slot = set(t === "S" ? "onehand,secondary" : "body");
     if (m.strength) setters.strength = set(String(m.strength));
+    // Heavy armor without its Strength costs 10 feet of speed (PHB), unless a feature says otherwise (the Dwarf's speed
+    // "is not reduced by wearing heavy armor"), as Aurora's armor states it. Without it a 5e.tools Paladin with
+    // Strength 8 in chain mail moved 30 feet, not 20.
+    if (m.strength) rules.push({ kind: "stat", name: "speed", value: "-10", bonus: "armor", requirements: `!([str:${parseInt(String(m.strength), 10) || 0}]||${IGNORE_ARMOR_STRENGTH})` } as ARule);
     if (m.stealth) setters.stealth = set("Disadvantage");
     if (t === "S") rules.push({ kind: "stat", name: "ac:shield", value: String(m.ac ?? 2), bonus: "shield" });
     else if (m.ac) rules.push({ kind: "stat", name: "ac:armored:armor", value: String(m.ac) });
@@ -1123,7 +1133,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     rules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI, requirements: "!ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
   }
   // Older (2014) species carry their own ability score increases. The 2024 background's would count a second time.
-  if (abilityRules(r.ability, r.name).length) rules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
+  if (abilityRules(r.ability, r.name).length) rules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI, requirements: "!ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
   // Creature types ("humanoid", or a choice such as fey or humanoid), shown with the species.
   const types = ((r.creatureTypes as string[]) ?? []).map((t) => cap(String(t)));
   const raceSetters: Record<string, SetterValue> = types.length ? { "creature type": set(types.join(" or ")) } : {};
@@ -1196,12 +1206,17 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     const spellsVary = !setsInVersions && varies("additionalSpells");
     if (spellsVary) dropFromBase(racialSpells.rules);
     const baseIds = new Set(rules.filter((x) => x.kind !== "grant" || x.type !== "Racial Trait").map((x) => JSON.stringify(x)));
+    // A choice the species already makes, named after the version this time ("Wood Elf Lineage skill" beside "Elf
+    // skill": the 2024 Elf's Keen Senses): the same kind, options and count is the same choice. Twice, a 2024 Elf
+    // learned two of Insight, Perception and Survival.
+    for (const x of rules) if (x.kind === "select") baseIds.add(`choice|${x.type}|${x.supports}|${x.number}|${x.level ?? 0}`);
+
     const baseTraits = new Set(((r.entries as J[]) ?? []).map((e) => JSON.stringify(e)));
     rules.push({ kind: "select", type: "Sub Race", name: `${r.name} ${/legacy/i.test(versions[0].name) ? "legacy" : /ancestry/i.test(versions[0].name) ? "ancestry" : "lineage"}`, supports: `5et version of ${id}`, number: 1 });
     for (const v of versions) {
       const vname = String(v.name).split(";").pop()!.trim() || String(v.name);
       const vid = ftId("RACEVERSION", `${r.name} ${vname}`, v.source ?? r.source);
-      const vrules: ARule[] = [...speedRules(v.speed), ...customOrigin(abilityRules(v.ability, vname, { out, idBase: vid }), vname, ctx, out), ...trainingRules(v, vname, out, ctx, vid), ...defenseRules(v, r.name)].filter((x) => !baseIds.has(JSON.stringify(x)));
+      const vrules: ARule[] = [...speedRules(v.speed), ...customOrigin(abilityRules(v.ability, vname, { out, idBase: vid }), vname, ctx, out), ...trainingRules(v, vname, out, ctx, vid), ...defenseRules(v, r.name)].filter((x) => !baseIds.has(JSON.stringify(x)) && !(x.kind === "select" && baseIds.has(`choice|${x.type}|${x.supports}|${x.number}|${x.level ?? 0}`)));
       if (v.darkvision && (darkVaries || v.darkvision !== r.darkvision)) {
         const dv = `${vid}_DARKVISION`;
         out.push(base(dv, `Darkvision (${v.darkvision} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));
@@ -1219,7 +1234,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   for (const s of mine) {
     const sid = ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source);
     const srules: ARule[] = [...customOrigin(abilityRules(s.ability, s.name ?? r.name, { out, idBase: sid }), s.name ?? r.name, ctx, out), ...trainingRules(s, s.name ?? r.name, out, ctx, sid), ...defenseRules(s), ...featRules(s)];
-    if (abilityRules(s.ability, s.name ?? r.name).length) srules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI });
+    if (abilityRules(s.ability, s.name ?? r.name).length) srules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI, requirements: "!ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
     if (s.speed) srules.push(...speedRules(s.speed));
     srules.push(...traitList(s.entries, sid, ctx, s.source, out, "5et trait", "Racial Trait"));
     const subSpells = additionalSpellRules(s.additionalSpells, s.name ?? r.name, s.source, out);
@@ -1368,6 +1383,9 @@ export function castableSpells(f: J): ARule[] {
   }
   return rules;
 }
+
+/** The marker a feature grants when heavy armor's Strength does not slow the character (Aurora's own id, so both agree). */
+export const IGNORE_ARMOR_STRENGTH = "ID_INTERNAL_GRANT_ARMOR_IGNORE_STRENGTH_REQUIREMENT";
 
 const CR_ORDER = ["0", "1/8", "1/4", "1/2", ...Array.from({ length: 30 }, (_, i) => String(i + 1))];
 

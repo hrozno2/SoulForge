@@ -43,7 +43,12 @@ export function RollChips({ name, html, ctx, attackBonus, spell }: {
       {attack !== undefined && <button className="roll-chip atk" onClick={() => requestRoll(`${name} attack`, `1d20${attack >= 0 ? "+" : ""}${attack}`, undefined, { kind: "attack" })}>Attack {sign(attack)}</button>}
       {dmg.map((d, i) => <button key={i} className="roll-chip dmg" onClick={() => requestRoll(`${name} ${d.type || "damage"}`, d.expr)}>{d.expr}{d.type ? ` ${d.type}` : " damage"}</button>)}
       {heal.map((h, i) => <button key={`h${i}`} className="roll-chip heal" onClick={() => requestRoll(`${name} healing`, h)}>Heal {h}</button>)}
-      {info.saves.map((s) => <span key={s.ability} className="roll-chip save" title={`${s.ability} saving throw`}>{s.dc !== undefined ? `DC ${s.dc} ` : ""}{SHORT[s.ability]} save</span>)}
+      {info.saves.map((s) => {
+        // A spell's save is against the caster's spell save DC, whether or not its text says so (Infestation:
+        // "a Constitution saving throw"; Entangle: "against your spell save DC").
+        const dc = s.dc ?? (spell ? ctx.spellDc : undefined);
+        return <span key={s.ability} className="roll-chip save" title={`${s.ability} saving throw`}>{dc !== undefined ? `DC ${dc} ` : ""}{SHORT[s.ability]} save</span>;
+      })}
     </div>
   );
 }

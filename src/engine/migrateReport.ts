@@ -69,8 +69,10 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
   }
   // The original's findings too, so a finding the move brought is told from one the character already had (Aurora let
   // through what 5e.tools' rules do not, such as a feat taken without its prerequisite).
-  const was = new Set(checkCharacter(r0, buildSheet(r0), ref).map((f) => f.rule));
-  const found = checkCharacter(r1, buildSheet(r1), ref);
+  // "Class not in the rules reference" is about the reference (not loaded, or a class it lacks), not the character.
+  const about = (f: { rule: string }) => !/Class not in the rules reference/.test(f.rule);
+  const was = new Set(checkCharacter(r0, buildSheet(r0), ref).filter(about).map((f) => f.rule));
+  const found = checkCharacter(r1, buildSheet(r1), ref).filter(about);
   let newRules = 0;
   const rules = found.map((f) => { const isNew = !was.has(f.rule); if (isNew) newRules++; return `${f.rule}: ${f.detail} (${isNew ? "new" : "already before the move"})`; });
   // The picks kept against the 5e.tools rules are the rules check's "does not meet its requirements" findings already;

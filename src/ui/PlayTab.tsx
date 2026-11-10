@@ -792,7 +792,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
         <div className="hero-mid play-id">
           <h1>{ch.name || "Unnamed character"}</h1>
           <p className="hero-sub">
-            {[`Walk ${speedAfterExhaustion(sheet.speed, ch.play.exhaustion ?? 0)} ft`, ...sheet.otherSpeeds.map((x) => `${x.kind} ${x.value} ft`), head.size, head.species, head.alignment !== "-" ? head.alignment : "", head.classLine + (head.subclass !== "-" ? ` (${head.subclass})` : ""), head.background !== "-" ? head.background : "", ...sheet.casting.map((c) => `${ABILITY_SHORT[c.ability as AbilityId] ?? c.name} DC ${c.dc}`)].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}
+            {[`Walk ${speedAfterExhaustion(sheet.speed, ch.play.exhaustion ?? 0)} ft`, ...sheet.otherSpeeds.map((x) => `${x.kind} ${x.value} ft`), head.size, head.species, head.alignment !== "-" ? head.alignment : "", head.classLine + (head.subclass !== "-" ? ` (${head.subclass})` : ""), head.background !== "-" ? head.background : "", ...[...new Set(sheet.casting.map((c) => `${ABILITY_SHORT[c.ability as AbilityId] ?? c.name} DC ${c.dc}`))]].filter(Boolean).map((x, i) => <span key={i}>{x}</span>)}
           </p>
           <div className="hero-stats">
             <Shield value={sheet.ac.value} />

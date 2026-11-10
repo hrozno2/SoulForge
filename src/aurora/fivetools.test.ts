@@ -202,6 +202,43 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     }
   });
 
+  it("a species version does not repeat the species' own choice (2024 Elf: one Keen Senses skill)", () => {
+    const elf = reg!.ofType("Race").find((r) => r.name === "Elf" && r.source.includes("2024"))!;
+    let ch = newCharacter(); ch.race = elf.id;
+    let r = resolve(ch, reg!);
+    const lineage = r.slots.find((s) => s.options.some((o) => /Wood Elf/.test(o.name)))!;
+    ch = { ...ch, selections: { [lineage.key]: [lineage.options.find((o) => /Wood Elf/.test(o.name))!.id] } };
+    r = resolve(ch, reg!);
+    const keen = r.slots.filter((s) => s.rule.type === "Proficiency" && s.options.map((o) => o.name).sort().join() === "Insight,Perception,Survival");
+    expect(keen).toHaveLength(1);
+  });
+
+  it("heavy armor without its Strength costs 10 feet, not for a Dwarf", () => {
+    const fighter = reg!.ofType("Class").find((c) => c.name === "Fighter" && !c.source.includes("2024"))!;
+    const mail = reg!.all().find((e) => e.type === "Armor" && e.name === "Chain Mail" && /2014/.test(e.source))!;
+    const speedWith = (raceName: string, str: number) => {
+      const race = reg!.ofType("Race").find((r) => r.name === raceName && /2014/.test(r.source));
+      if (!race) return undefined;
+      const ch = newCharacter(); ch.race = race.id; ch.classes = [{ classId: fighter.id, level: 1 }];
+      ch.abilityBase = { ...ch.abilityBase, strength: str };
+      ch.inventory = [{ uid: "a", id: mail.id, qty: 1, equipped: true, attuned: false }];
+      return buildSheet(resolve(ch, reg!)).speed;
+    };
+    expect(speedWith("Human", 8)).toBe(20);
+    expect(speedWith("Human", 13)).toBe(30);
+    const dwarf = reg!.ofType("Sub Race").find((r) => /Hill/.test(r.name) && /2014/.test(r.source));
+    if (dwarf) {
+      const race = reg!.ofType("Race").find((r) => r.name === "Dwarf" && /2014/.test(r.source))!;
+      const ch = newCharacter(); ch.race = race.id; ch.classes = [{ classId: fighter.id, level: 1 }];
+      ch.abilityBase = { ...ch.abilityBase, strength: 8 };
+      ch.inventory = [{ uid: "a", id: mail.id, qty: 1, equipped: true, attuned: false }];
+      let r = resolve(ch, reg!);
+      const sub = r.slots.find((x) => x.options.some((o) => o.id === dwarf.id));
+      if (sub) { ch.selections = { [sub.key]: [dwarf.id] }; r = resolve(ch, reg!); }
+      expect(buildSheet(r).speed).toBe(25);
+    }
+  });
+
   it("a 1st-level 2014 Ranger does not put an Eldritch Knight on the shared slot table", () => {
     const fighter = reg!.ofType("Class").find((c) => c.name === "Fighter" && !c.source.includes("2024"))!;
     const ranger = reg!.ofType("Class").find((c) => c.name === "Ranger" && !c.source.includes("2024"))!;

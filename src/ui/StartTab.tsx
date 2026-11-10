@@ -28,7 +28,8 @@ export function StartTab({
 }: {
   reg?: ARegistry;
   currentId: string;
-  onOpen: (id: string, ch: Character) => void;
+  /** `stored`: the character is the library's own (not a new copy), so opening it is no edit. */
+  onOpen: (id: string, ch: Character, stored?: boolean) => void;
   onNew: () => void;
   onRandom: (level: number) => void;
   contentReady: boolean;
@@ -111,7 +112,7 @@ export function StartTab({
               blank gold placeholders and change under the player's eyes (C1.6). What lands is final. */}
           {!contentReady && list.length > 0 && <p className="muted">Loading your characters...</p>}
           {contentReady && list.map((c) => (
-            <CharCard key={c.id} rec={c} reg={reg} current={c.id === currentId} onOpen={() => onOpen(c.id, c.data)}
+            <CharCard key={c.id} rec={c} reg={reg} current={c.id === currentId} onOpen={() => onOpen(c.id, c.data, true)}
               onDuplicate={() => onOpen(uid(), { ...c.data, name: `${c.data.name || "Character"} (copy)` })}
               onExport={() => downloadText(`${c.name || "character"}.json`, JSON.stringify(c.data, null, 2))}
               onDelete={async () => { if (await askConfirm({ title: `Delete ${c.name || "this character"}?`, message: "The character and everything saved with it will be removed from this computer. This cannot be undone; export it first if you might want it back.", confirmLabel: "Delete character" })) { await deleteCharacterRecord(c.id); refresh(); } }} />
@@ -119,7 +120,7 @@ export function StartTab({
           {!list.length && <p className="muted">No saved characters yet. Your work saves automatically.</p>}
         </div>
       </section>
-      {reg && list.length > 1 && <PartyView list={list} reg={reg} onOpen={(c) => onOpen(c.id, c.data)} />}
+      {reg && list.length > 1 && <PartyView list={list} reg={reg} onOpen={(c) => onOpen(c.id, c.data, true)} />}
     </div>
   );
 }

@@ -186,6 +186,8 @@ export function savesFromText(text: string): ARule[] {
 /** A lasting bonus to speed, and a speed of another kind "equal to your speed". */
 export function speedFromText(text: string): ARule[] {
   const out: ARule[] = [];
+  // "Your speed is not reduced by wearing heavy armor" (the Dwarf): heavy armor's Strength does not slow the character.
+  if (/speed (?:is not|isn't) reduced by wearing heavy armor/i.test(text)) out.push({ kind: "grant", type: "Grants", id: "ID_INTERNAL_GRANT_ARMOR_IGNORE_STRENGTH_REQUIREMENT" } as ARule);
   // A benefit of something the character turns on ("as a Bonus Action... for 10 minutes... your Speed increases") lasts
   // only while it does, however its own sentence reads.
   if (/\bas an? (?:bonus |magic )?action\b|\bfor (?:\d+|one|ten) (?:minute|hour|round)s?\b/i.test(text)) return out;

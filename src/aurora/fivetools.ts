@@ -253,8 +253,19 @@ function toolId(name: string, out: AElement[]): string {
   return id;
 }
 
+/**
+ * The weapon a proficiency names: "longsword", "longsword|phb", or 5e.tools' link form "{@item longsword|phb|
+ * longswords}" as the 2014 classes list theirs. The link's own words were kept ("{@item longsword"), so the training
+ * got an id no weapon asks for, and a 2014 Rogue, Bard, Monk, Druid, Sorcerer or Wizard was "not proficient" with
+ * every weapon its class names.
+ */
+export function weaponName(text: string): string {
+  const link = /\{@\w+\s+([^|}]+)/.exec(text);
+  return (link ? link[1] : text.split("|")[0]).toLowerCase().trim();
+}
+
 function weaponId(k: string, out: AElement[]): string | undefined {
-  const w = k.split("|")[0].toLowerCase().trim();
+  const w = weaponName(k);
   if (!w) return undefined;
   if (w === "simple") return "ID_5ET_PROF_WEAPON_SIMPLE";
   if (w === "martial") return "ID_5ET_PROF_WEAPON_MARTIAL";
@@ -737,7 +748,9 @@ function convertItem(raw: J, ctx: Ctx): AElement | null {
     if (t === "R" || props.includes("A")) supports.push("ranged");
     const cat = m.weaponCategory === "martial" ? "MARTIAL" : "SIMPLE";
     supports.push(cat.toLowerCase());
-    setters.proficiency = set(`ID_5ET_PROF_WEAPON_${cat},${ftId("PROF_WEAPON", m.name.replace(/^[+-]\d+ /, ""), "ALL")}`);
+    // A firearm is also covered by training with firearms as a kind (Gunner's "firearms": true), as Plutonium reads
+    // it: one of the kinds beside simple and martial. Without it a Gunner was "not proficient" with every firearm.
+    setters.proficiency = set(`ID_5ET_PROF_WEAPON_${cat},${ftId("PROF_WEAPON", m.name.replace(/^[+-]\d+ /, ""), "ALL")}${m.firearm ? ",ID_5ET_PROF_WEAPON_FIREARMS" : ""}`);
     setters.slot = set(props.includes("2H") ? "twohand" : "onehand");
     if (m.range) setters.range = set(String(m.range));
     // The 2024 mastery property ("Topple|XPHB"), in the id the sheet reads masteries by.
@@ -1721,7 +1734,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     const text = String(typeof w === "string" ? w : (w as J).proficiency ?? "");
     const filtered = byFilter(text);
     if (filtered) return filtered.map(weaponId);
-    const k = text.split("|")[0].toLowerCase();
+    const k = weaponName(text);
     if (k === "simple") return ["ID_5ET_PROF_WEAPON_SIMPLE"];
     if (k === "martial") return ["ID_5ET_PROF_WEAPON_MARTIAL"];
     return k ? [weaponId(k)] : [];

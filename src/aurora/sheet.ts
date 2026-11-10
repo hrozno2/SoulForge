@@ -426,6 +426,20 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
   // Weapons mastered: the chosen Weapon Mastery options, named "Longbow (Slow)".
   const dropped = effectsOfKind(r, "drop-property");
   const mastered = new Set(r.active.filter((a) => a.el.supports.includes("Weapon Mastery")).map((a) => a.el.name.replace(/\s*\(.*$/, "").toLowerCase()));
+  // Martial Arts (both rule books, checked against the SRD text): with a monk weapon, Dexterity may stand in for
+  // Strength and the Martial Arts die for the weapon's own, while wearing no armor and no shield. Monk weapons are
+  // shortswords and simple melee weapons without the two-handed or heavy property (2014), or simple melee weapons
+  // and martial melee weapons with the Light property (2024). A Monk's quarterstaff read Strength and 1d6 before.
+  const martialDie = s.get("martial arts:dice");
+  const monkClass = martialDie > 0 ? r.character.classes.map((c) => r.reg.get(c.classId)).find((c) => c && /^monk$/i.test(c.name)) : undefined;
+  const armored = r.character.inventory.some((i) => i.equipped && i.id && r.reg.get(i.id)?.type === "Armor");
+  const isMonkWeapon = (el: AElement, tags: string[], ranged: boolean): boolean => {
+    if (!monkClass || armored || ranged) return false;
+    const has = (p: string) => tags.some((t) => t === p || t.endsWith(`_${p.replace(/-/g, "_")}`) || t.endsWith(`_${p.replace(/-/g, "")}`));
+    const simple = tags.includes("simple") || /WEAPON_SIMPLE\b|SIMPLE_WEAPONS?\b/i.test(el.setters.proficiency?.value ?? "");
+    if (monkClass.edition === "2024") return simple || has("light");
+    return /^shortsword$/i.test(el.name.replace(/^[+-]\d+\s*/, "").replace(/\s*,?\s*[+-]\d+$/, "")) || (simple && !has("two-handed") && !has("heavy"));
+  };
   for (const it of r.character.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;
     if ((!it.equipped && !carried) || !el || el.type !== "Weapon") continue;
@@ -435,7 +449,8 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     const ranged = tags.some((t) => t.includes("ranged"));
     const finesse = tags.some((t) => t.includes("finesse"));
     // Finesse (a dart too, which is also ranged): the better of Strength and Dexterity, for the attack and the damage.
-    const usual: AbilityId = finesse ? (mods("dexterity") > mods("strength") ? "dexterity" : "strength") : ranged ? "dexterity" : "strength";
+    const monkWeapon = isMonkWeapon(el, tags, ranged);
+    const usual: AbilityId = finesse || monkWeapon ? (mods("dexterity") > mods("strength") ? "dexterity" : "strength") : ranged ? "dexterity" : "strength";
     // Another ability a feature allows for this weapon (Hex Warrior, Battle Ready), when it is better.
     const twoHandedTag = tags.some((t) => /two.?handed/.test(t));
     const alt = weaponAbilities.filter((o) => (!o.magicOnly || (it.magic ?? 0) > 0 || el.type === "Magic Item" || /^\+\d/.test(el.name)) && (!o.notTwoHanded || !twoHandedTag)).map((o) => o.ability);
@@ -451,7 +466,11 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     const twoHandedWeapon = tags.some((t) => /two.?handed/.test(t)) || it.twoHanded;
     const duel = dueling && kind === "melee" && !twoHandedWeapon && weaponsHeld <= 1 ? dueling : 0;
     const dmgExtra = s.get(`${kind}:damage`) + s.get("damage") + magicDmg + duel + s.get(`${wname}:damage`);
-    const dmg = it.twoHanded && el.setters.versatile ? { value: el.setters.versatile.value, attrs: el.setters.damage?.attrs ?? {} } : el.setters.damage;
+    const ownDmg = it.twoHanded && el.setters.versatile ? { value: el.setters.versatile.value, attrs: el.setters.damage?.attrs ?? {} } : el.setters.damage;
+    // The Martial Arts die in place of a smaller die of the weapon's own.
+    const ownDie = /^1d(\d+)$/.exec(ownDmg?.value.trim() ?? "");
+    const martialUsed = monkWeapon && !!ownDie && martialDie > Number(ownDie[1]);
+    const dmg = martialUsed && ownDmg ? { ...ownDmg, value: `1d${martialDie}` } : ownDmg;
     // A 2024 weapon's mastery property applies only when the character has mastered that weapon (issue #3).
     const isMastery = (t: string) => /^ID_WOTC_PHB24_WEAPON_PROPERTY_/.test(t);
     // Properties a feature removes (Crossbow Expert: crossbows lose Loading).
@@ -471,7 +490,7 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
       damage: edit?.damage?.trim() || (dmg ? `${dmg.value}${mods(ability) + dmgExtra ? signed(mods(ability) + dmgExtra) : ""}` : ""),
       damageType: edit?.damageType ?? dmg?.attrs.type ?? "",
       properties: [...props.filter((x) => !(versatile && x === "versatile")), versatile && !it.twoHanded ? `versatile (${versatile})` : "", it.twoHanded ? "two-handed" : ""].filter(Boolean).join(", "),
-      notes: edit?.notes ?? [proficient ? "" : "not proficient", el.setters.critRange ? `critical hit on ${el.setters.critRange.value}–20` : ""].filter(Boolean).join("; "),
+      notes: edit?.notes ?? [proficient ? "" : "not proficient", monkWeapon && (martialUsed || ability === "dexterity" && !finesse) ? `Martial Arts${martialUsed ? ` d${martialDie}` : ""}${ability === "dexterity" && !finesse ? ", Dexterity" : ""}` : "", el.setters.critRange ? `critical hit on ${el.setters.critRange.value}–20` : ""].filter(Boolean).join("; "),
     };
     if (edit?.hidden) line.hiddenByEdit = true;
     out.push(line);

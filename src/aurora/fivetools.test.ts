@@ -30,6 +30,9 @@ function load(dir: string) {
   return reg;
 }
 
+/** Weapon trainings that are a kind no weapon item belongs to: improvised weapons are not items. Simple, martial and firearms are asked for by their weapons. */
+const WEAPON_GROUPS = /^ID_5ET_PROF_WEAPON_IMPROVISED$/;
+
 describe("text conversion", () => {
   it("turns tags into readable text", () => {
     const html = entriesHtml(["Take {@damage 2d6} fire damage on a failed {@dc 15} save. {@atk mw} {@hit 5} to hit, see {@spell fireball|phb}."]);
@@ -117,6 +120,36 @@ describe("inline samples", () => {
   });
 });
 
+// A 2014 class lists its named weapons as links ("{@item longsword|phb|longswords}"); the link's own words went into
+// the training's id, which no weapon asks for, so the class was "not proficient" with them (found 2026-11-10).
+describe("a class's named weapons", () => {
+  const els = convertFiveTools({
+    files: {
+      "items-base.json": { baseitem: [
+        { name: "Longsword", source: "X", type: "M|X", weaponCategory: "martial", dmg1: "1d8", dmgType: "S" },
+        { name: "Hand Crossbow", source: "X", type: "R|X", weaponCategory: "martial", dmg1: "1d6", dmgType: "P" },
+        { name: "Dart", source: "X", type: "R|X", weaponCategory: "simple", dmg1: "1d4", dmgType: "P" },
+      ] },
+      "class/class-sneak.json": { class: [{ name: "Sneak", source: "X", hd: { number: 1, faces: 8 }, proficiency: ["dex"], startingProficiencies: { weapons: ["simple", "{@item longsword|x|longswords}", "{@item hand crossbow|x|hand crossbows}", "dart|x"] }, classFeatures: [] }] },
+    },
+  });
+  const cls = els.find((e) => e.type === "Class" && e.name === "Sneak")!;
+  const granted = cls.rules.filter((r) => r.kind === "grant" && r.type === "Proficiency").map((r) => (r as { id: string }).id);
+
+  it("are the trainings those weapons ask for", () => {
+    for (const name of ["Longsword", "Hand Crossbow", "Dart"]) {
+      const asks = els.find((e) => e.type === "Weapon" && e.name === name)!.setters.proficiency.value.split(",");
+      expect(asks.some((id) => granted.includes(id)), `${name}: asks ${asks.join(" or ")}, the class gives ${granted.join(", ")}`).toBe(true);
+    }
+    expect(granted).toContain("ID_5ET_PROF_WEAPON_SIMPLE");
+  });
+
+  it("no training's id or name carries a link's markup", () => {
+    const bad = els.filter((e) => /@|\{|_ITEM_/.test(e.type === "Proficiency" ? `${e.id} ${e.name}` : "")).map((e) => `${e.id}: ${e.name}`);
+    expect(bad).toEqual([]);
+  });
+});
+
 describe("a combined total of languages and tools", () => {
   // The 2014 Custom Background: "Languages and Tool Proficiencies: Two of your choice" is one total of two.
   it("asks once, and every set holds the same total", () => {
@@ -141,6 +174,16 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     for (const t of ["Spell", "Race", "Sub Race", "Background", "Class", "Archetype", "Feat", "Weapon", "Armor", "Magic Item", "Language", "Class Feature"]) {
       expect(reg!.ofType(t).length, t).toBeGreaterThan(0);
     }
+  });
+
+  // Every weapon training something gives is one a weapon asks for (or a kind: simple, martial): a training nothing
+  // asks for is a mistake in its id, and the character is then "not proficient" with the weapon it names.
+  it("every weapon training given is one a weapon asks for", () => {
+    const asked = new Set(reg!.ofType("Weapon").flatMap((w) => (w.setters.proficiency?.value ?? "").split(",").map((x) => x.trim())));
+    const given = new Map<string, string>();
+    for (const e of reg!.all()) for (const r of e.rules) if (r.kind === "grant" && /^ID_5ET_PROF_WEAPON_/.test(r.id) && !given.has(r.id)) given.set(r.id, e.name);
+    const orphans = [...given].filter(([id]) => !asked.has(id) && !WEAPON_GROUPS.test(id)).map(([id, from]) => `${id} (from ${from})`);
+    expect(orphans).toEqual([]);
   });
 
   it("no element name has a capital right after an apostrophe", () => {

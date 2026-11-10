@@ -210,3 +210,17 @@ Chris builds characters correctly with Plutonium in Foundry in almost every case
 engine routes anything (classes, subclasses, features, choices, spells, items, imports, exports), read how Plutonium
 does it (~/.soulforge-test/plutonium/mod/plutonium, js/Bundle.js; read only, never copied: its licence is UNLICENSED),
 and use it to double-check the result. Note what it does in docs/PLUTONIUM.md.
+
+## Cross-checking the rules (2026-11-10)
+
+When 5e.tools' data does something strange or seems to go against the rules, do not trust one source: check them
+against each other, in this order, and note what settled it in docs/PLUTONIUM.md.
+
+| Source | Where (under `~/.soulforge-test`) | Good for |
+|---|---|---|
+| Plutonium | `plutonium/mod/plutonium/js/Bundle.js` | How 5e.tools' own data is meant to be read: links, kinds, choices, side data. Read only, never copied. |
+| The SRD API | `srd-api/2014`, `srd-api/2024` | The SRD's content as structured data, both editions. |
+| The SRD text | `srd` | The official wording, from the PDFs. |
+| Aurora's files | `elements-master` | A second, hand-made encoding of the same rule. |
+| 5e.tools | `5etools-data` | The data in question. |
+

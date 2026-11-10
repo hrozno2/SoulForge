@@ -37,6 +37,30 @@ function startList(sp: Json | undefined, kind: "armor" | "weapon", allowed: stri
   return allowed.filter((a) => keys.includes(a) || words.includes(a));
 }
 
+/**
+ * The single weapons a class trains by name, and the weapon properties it trains a kind by, read here apart from the
+ * converter (which had the names wrong while this reference could not tell): "{@item longsword|phb|longswords}" is
+ * "longsword"; "Martial weapons that have the {@filter Finesse or Light|items|type=martial weapon|property=
+ * finesse;light} property" is martial weapons with finesse or light.
+ */
+function startWeaponDetail(sp: Json | undefined): { names: string[]; martialWith: string[] } {
+  const names: string[] = [];
+  const martialWith: string[] = [];
+  for (const w of ((sp?.weapons ?? []) as unknown[])) {
+    if (w && typeof w === "object" && (w as Json).optional) continue;
+    const text = String(typeof w === "string" ? w : (w as Json).proficiency ?? "");
+    const filter = /\{@filter [^|}]*\|items\|([^}]*)\}/.exec(text)?.[1];
+    if (filter) {
+      if (/type=[^|]*martial/.test(filter)) martialWith.push(...(/property=([^|]*)/.exec(filter)?.[1] ?? "").split(";").map((x) => x.trim().toLowerCase()).filter(Boolean));
+      continue;
+    }
+    const item = /\{@item ([^|}]+)/.exec(text)?.[1];
+    if (item) names.push(item.trim().toLowerCase());
+  }
+  for (const block of ((sp?.weaponProficiencies ?? []) as Json[])) for (const [k, v] of Object.entries(block)) if (v === true && k.includes("|")) names.push(k.split("|")[0].trim().toLowerCase());
+  return { names: [...new Set(names)], martialWith: [...new Set(martialWith)] };
+}
+
 /** One 5e.tools class file (data/class/class-*.json) to the reference entries for its classes. */
 export function condenseClassFile(file: Json): Json[] {
   const out: Json[] = [];
@@ -73,6 +97,8 @@ export function condenseClassFile(file: Json): Json[] {
       // What the class itself trains (a first-level character): armor and weapon categories, named tools.
       startArmor: startList(c.startingProficiencies, "armor", ["light", "medium", "heavy", "shield"]),
       startWeapons: startList(c.startingProficiencies, "weapon", ["simple", "martial"]),
+      startWeaponNames: startWeaponDetail(c.startingProficiencies).names,
+      startMartialWith: startWeaponDetail(c.startingProficiencies).martialWith,
       startTools: Object.entries(Object.assign({}, ...((c.startingProficiencies?.toolProficiencies ?? []) as Json[]))).filter(([k, v]) => v === true && !/^any/.test(k)).map(([k]) => k),
       subclasses: ((file.subclass ?? []) as Json[]).filter((s) => s.className === c.name && s.classSource === c.source).map((s) => ({ name: s.name, shortName: s.shortName, source: s.source, caster: s.casterProgression ?? null, features: ((s.subclassFeatures ?? []) as (string | Json)[]).map(feat) })),
     });

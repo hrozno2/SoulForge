@@ -151,3 +151,32 @@ Plutonium counts a class's known spells as one total (`spellsKnownProgression`, 
 slot level, with options to allow lower or higher levels): Soul Forge's spellChoicePools makes the same one list. It
 does not enforce a subclass's school limit (Eldritch Knight, Arcane Trickster): the picker reads only the counts. Soul
 Forge's Aurora copies enforce it; the 5e.tools copies do not yet (RESUME, next engine item).
+
+## Weapon trainings a class names (2026-11-10)
+
+Found while auditing attack lines: on 5e.tools content every 2014 class with named weapons (Bard, Druid, Monk, Rogue,
+Sorcerer, Wizard) was "not proficient" with them. 5e.tools writes them as links, `{@item longsword|phb|longswords}`.
+
+- **Plutonium** (`_getWeaponProficiencyData`, `getItemUIdFromWeaponProficiency`): a link is resolved to the item it
+  points at (`_getItemUidFromTag`); what is not a link is looked up among four kinds, `simple`, `martial`, `firearms`
+  and `improvised`.
+- **Soul Forge before**: the class converter took the text up to the first `|`, link markup and all, so the training's
+  id was `..._ALL_ITEM_LONGSWORD` while the weapon asks for `..._ALL_LONGSWORD`.
+- **Now**: `weaponName` (fivetools.ts) reads the link's target, as Plutonium does. Firearms are a kind: a weapon with
+  `firearm: true` also asks for the firearms training (Gunner). Improvised weapons are a kind no item belongs to.
+- **Why no check caught it**: the rules check read "not proficient" off the sheet it was judging, and the rules
+  reference kept only the kinds (simple, martial). The reference now keeps the named weapons and the properties a
+  class trains martial weapons by, read apart from the converter, and the check has its own finding ("Weapon the
+  class trains counted as untrained"). Guards: fivetools.test.ts (a class's named weapons; every training given is
+  one a weapon asks for), weaponTraining.test.ts on the SRD bundle.
+
+## Monk weapons (2026-11-10)
+
+Plutonium does nothing here (Foundry leaves the die and the ability to the player). The SRD text of both editions
+decides: Dexterity may replace Strength, and the Martial Arts die a smaller die of the weapon's own, with a monk
+weapon and without armor or shield. Monk weapons: shortswords and simple melee weapons that are not two-handed or
+heavy (5.1); simple melee weapons and martial melee weapons with the Light property (5.2). Aurora's files did not
+encode it either (a Monk's quarterstaff read Strength there too). In sheet.ts `buildAttacks`, and written apart in
+rulesCheck.ts. Not applied: "wielding only monk weapons" (the sheet cannot know which of the equipped weapons is in
+hand), and the unarmed strike line does not yet look at armor.
+

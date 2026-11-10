@@ -2,6 +2,63 @@
 
 What changed in each release. Newest first.
 
+## v0.25.0 (2026-11-10)
+
+- Full check fixes: no body armor on a species that cannot wear it; SRD baselines
+- Walkthrough with Chris's library: player-facing fixes, 5e.tools gaps, migration fixes
+- RESUME: D6 in Soul Forge Test
+- D6 report: findings marked new or already before the move; Aquan is Primordial
+- D6 in Soul Forge Test: a 5e.tools-only switch and moving characters, with a report
+- RESUME: full check of 2026-11-09
+- Full-check fixes: shared slots, subclass spells, repeatable feats, SRD builds
+- migrate: a feat held as versions takes the version its old pick names
+- RESUME: this stretch
+- 5e.tools: spells a class feature lets the character cast; auto-fill repeat repair
+- migrate: near names match only an option of the pick's kind
+- migrate: rank-ordered matching; a feat stays with its owner or its level
+- migrate: owner-and-pick names for either owner; report lists every changed sheet
+- migrate: the score fill tries every option of an increase choice
+- Engine: an increase picked in two choices counts twice
+- PLAN: D6 progress
+- 5e.tools: a background's several feats are a choice of one
+- migrate: a bare ability name fills its increase option (Fey Touched's Intelligence)
+- RESUME: this stretch's converter fixes and the migration
+- 5e.tools: 2014 Ranger's favored enemy and terrain picks; migration matching
+- 5e.tools: Customizing Your Origin for species increases; migration fixes
+- 5e.tools: a class's own spells; migration keeps picks at their level
+- Docs: D4 parity items closed, D6 started
+- Magical Secrets for 5e.tools Bards; D6 migration, first step
+- 5e.tools: companion choices, optional subclass features, creature refs with twins
+- RESUME: parity items closed, Beast Master left
+- 5e.tools: Simic Hybrid enhancements, proficiency fallbacks as defaults, sweep at level 20
+- 5e.tools: Rune Shaper chooses half the proficiency bonus in runes
+- 5e.tools: combined language/tool totals, Storm Herald environment chosen once, importer fits and ASI copy fix
+- Every content set is tested, not only Aurora's: the rules suite runs on 5e.tools and the SRD, and a sweep reaches every element and option. Found and fixed for 5e.tools-only characters: 112 Xanathar's and Tasha's spells were on no class list; Enhanced Arcane Focus gave +3 to every Artificer; 2014 Ritual Caster and Spell Sniper had no prerequisite; a feat or small subclass counted on the shared slot table; one feat could be taken from two books; condition immunities had no element
+- Species and feats from 5e.tools stand alone: the 2024 Human and Variant Human get their feat; what a lineage sets (damage type, skill, cantrip, darkvision) is not asked twice; Weapon Master's mastery, Strike of the Giants' choice, a spell with two casting times, a varying size; every remaining difference between the twins is judged and a new one fails; a gate compares every source for spells and gear with the SRD; 500 of 500 sheets agree with and without Aurora
+- Spell rolls: 2024 cantrips rise with the character ("levels 5" was not read) and healing rises with the slot
+- Roll20: the 2024 sheet's store is read, and betterR20's file; level is the total and base_level the first class; the export's fields match a real saved sheet (skills, multiclass flags, full spells, items, attacks, all features, proficiency rows) and betterR20 can bring it in; docs/BETTERR20.md
+- A build gate compares what classes, species, backgrounds and feats give with the SRD's words: hit die, saves, armor, weapons, skills, tools, speed, darkvision, background skills and feat, feat prerequisites; no differences
+- Feat prerequisites read as 5e.tools means them: any one entry, with feats, species, backgrounds, features, training and casting (2024 Grappler needed both Strength and Dexterity); weapons keep their range, a noted property (2024 Lance) and two hands; the 2024 Monk's tool or instrument, the 2024 Cleric's 7 GP; a build gate compares weapon properties and masteries with the SRD's tables
+- The built-in rules follow the official SRD: the PDFs read as structure decide spell facts and text, gear tables, item rarity, and the text of items, features, species, feats and backgrounds (Reincarnate has Roll again, Polymorph its save, Flaming Sphere is Conjuration); the build fails if a spell or listed entry is missing or extra or a class table has a feature we lack; spell facts read 8 hours, 10 minutes, 1 mile for every 5e.tools user
+- D3: "against the SRD" gate compares the built-in rules with the SRD API, settled against the PDFs (docs/SRD-DIFF.md); an area spell's range reads "Self (15-foot cone)", not "15 feet"; fixture e2e tests no longer draw random classes from the built-in rules
+- D0 and D2: free SRD rules built in, descriptions checked sentence by sentence against the official PDFs; attribution word for word in Settings and docs/LICENSES.md; a new install can build a character with nothing imported (not released yet)
+- Inline text shown as the book shows it: upcast dice (Lightning Bolt read 8d6 per level, is 1d6), "25 percent", difficult terrain, nested tags, class feature links; shared item text filled in (121 items showed raw templates); a guard for raw markup; SRD API cache script and the SRD text check (not used yet)
+- Lasting choices worded only in prose: 2024 Hunter's Prey and Defensive Tactics, Aspect of the Wilds, Elemental Affinity, Elemental Adept, Dragon Ancestor, Additional Fighting Style, Kensei weapons; choices 52 to 45
+- Foundry entryData read as the entry's own fields (Blessings of Knowledge, College of Lore, Nature Domain): choices 67 to 52; a Battle Master no longer picks maneuvers twice at 3rd level (also Runes, Elemental Disciplines, Arcane Shots); a borrowed Fast Movement no longer doubles climb speed; sheets 436 of 500
+- Options blocks in 5e.tools subclasses: a counted block keeps its choice (Hunter's Prey, Totem Spirit), an uncounted one gives everything (a Psi Warrior's powers); choices 70 to 67
+- Species that list no languages: Common and one before the 2024 rules, not two; the parity count leaves out defaulted choices (choices 90 to 70)
+- Attunement test: a complete element in its fixture (the failure was the fixture, the fix holds)
+- D4: 5e.tools characters stand on their own: AC, skills, saves, speed, trainings and table numbers read from text and class tables; attunement totals and filter link text fixed; a gate compares sheets with and without Aurora
+- D2: the SRD bundle generator and its guards; not shipped, because 5e.tools' SRD-flagged entries keep the book's wording
+- D1: Soul Forge Test gets its own identity and storage, and a build flavour keeps the test bar out of the release bundle
+- C7.21: one status panel on the Build board for the rules verdict and every open choice; the top bar's badge counts the same list
+- Plan D3b: every source compared (SRD: official text, SRD API, Open5e, 5e.tools, Aurora, Plutonium's handling; non-SRD: 5e.tools, Aurora, Plutonium)
+- The top bar fits narrow windows: tighter gaps and tabs, the logo without its words, and tabs that scroll instead of running under the buttons; e2e at five widths
+- Plan: Stage D, 5e.tools as the only source (SRD bundled and checked against the SRD API; Aurora for the test app only; two apps, two databases)
+- Plan: C7.21 one status panel on the Build board (rules check, choices left, links)
+- A new pick's window has Apply (keep it) and × (take it back) instead of a Put it back bar; compact Home cards show an HP badge, armor class and speed
+- Resume: v0.24.1
+
 ## v0.24.1 (2026-10-29)
 
 - Old picks: the options test applies only where an element has two choices of one kind (a class's run-time increases were dropped; full check's saved-characters gate)

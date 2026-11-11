@@ -110,4 +110,13 @@ export function applyContentFixes(el: AElement): void {
   const add = SPELL_LIST_ADD[el.id];
   if (add) el.supports = [...el.supports, ...add.filter((c) => !el.supports.includes(c))];
   el.rules = el.rules.map((r) => ("requirements" in r && r.requirements ? { ...r, requirements: fixReq(r.requirements) } : r));
+  // A weapon is covered by training with its kind: martial weapons training covers every martial weapon. Aurora's
+  // kinds grant each weapon's own training one by one, from a list that misses weapons from later books (the Hoopak:
+  // a Fighter was untrained with it, found by the rules check 2026-11-11). Each weapon now also accepts its kind's
+  // training. Firearms stay by name: the Dungeon Master's Guide leaves training with them to the table.
+  if (el.type === "Weapon" && el.setters.proficiency?.value && !el.id.startsWith("ID_5ET_") && !el.supports.some((t) => /WEAPON_CATEGORY_FIREARM/i.test(t))) {
+    const kind = el.supports.some((t) => /WEAPON_CATEGORY_MARTIAL/i.test(t)) ? "MARTIAL" : el.supports.some((t) => /WEAPON_CATEGORY_SIMPLE/i.test(t)) ? "SIMPLE" : "";
+    const id = `ID_PROFICIENCY_WEAPON_PROFICIENCY_${kind}_WEAPONS`;
+    if (kind && !el.setters.proficiency.value.split(",").map((x) => x.trim()).includes(id)) el.setters = { ...el.setters, proficiency: { ...el.setters.proficiency, value: `${el.setters.proficiency.value},${id}` } };
+  }
 }

@@ -180,3 +180,20 @@ encode it either (a Monk's quarterstaff read Strength there too). In sheet.ts `b
 rulesCheck.ts. Not applied: "wielding only monk weapons" (the sheet cannot know which of the equipped weapons is in
 hand), and the unarmed strike line does not yet look at armor.
 
+## Expertise (2026-11-11)
+
+5e.tools states an expertise choice as `expertise: [{anyProficientSkill: 2}]`, and for class features only in the side
+file (`class/foundry.json`, `entryData.expertise`; the 2014 Rogue: two skills, or one skill and thieves' tools).
+Plutonium reads the choice from there and offers the skills the actor is proficient in. Soul Forge offered every
+skill; each expertise option now requires its skill's proficiency. The SRD bundle dropped the side files' entries
+altogether (they carry no SRD mark), so its Rogue and Bard had no Expertise choice: a side entry is now kept with the
+marked entry it belongs to (src/aurora/srdBundle.ts `srdFiles`).
+
+## Uses and pools (2026-11-11)
+
+Foundry's dnd5e keeps ki, sorcery points and the like as class scale values, so Plutonium's side data gives the
+features no use count; Soul Forge reads the class table's column of the same name ("Ki Points", "Focus Points",
+"Sorcery Points") for the feature whose text speaks of it. A text that only says a pool returns on a rest ("regain all
+expended spell slots") gives no use count. Open: superiority dice, psionic energy dice, a 2014 Cleric's Channel
+Divinity after 6th level.
+

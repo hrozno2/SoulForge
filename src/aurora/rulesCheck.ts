@@ -299,6 +299,42 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   }
   for (const a of sh.abilities) if (a.score < 1) add("Ability score below 1", `${a.id} ${a.score}`);
 
+  // Skill and saving throw bonuses, judged here from what the character has, not from the sheet's own sums (the
+  // audit's R13: neither was checked at all). A skill is its ability's modifier, plus the proficiency bonus when the
+  // character has the skill (twice with expertise, half rounded down for a Bard's Jack of All Trades without it),
+  // plus whatever named parts add to it. A save is the modifier, the proficiency bonus when trained, and its parts.
+  {
+    const had = new Set<string>();
+    for (const a of r.active) { const k = conceptOf(a.el); if (k) had.add(k); }
+    const P = sh.proficiency;
+    const plainName = (a: { el: AElement }) => lc(a.el.name).replace(/^level \d+:\s*/, "");
+    const jack = r.active.some((a) => plainName(a) === "jack of all trades");
+    // What named parts add, leaving out Jack of All Trades (counted here by its own rule).
+    const parts = (...names: string[]) => names.flatMap((n) => r.stats.parts(n)).filter((p) => !/jack of all trades/i.test(p.from));
+    const total = (...names: string[]) => parts(...names).reduce((t, p) => t + p.value, 0);
+    for (const sk of sh.skills) {
+      const slug = sk.name.replace(/ /g, "-");
+      const trained = had.has(`skill:${slug}`);
+      // Expertise by its own proficiency, or doubled by a feature that names the skill (the Scout's Survivalist gives
+      // it as a number, with no proficiency of its own).
+      const expert = had.has(`expertise:${slug}`) || (trained && r.stats.parts(`${sk.name}:proficiency`).length > 1 && total(`${sk.name}:proficiency`) === 2 * P);
+      // Expertise is chosen among the skills a character is proficient in (both Player's Handbooks).
+      if (expert && !trained) { add("Expertise without proficiency", `${sk.name}: expertise in a skill the character is not proficient in`); continue; }
+      // Training some content gives as a number, with no proficiency of its own behind it, is taken as it stands.
+      const own = expert ? 2 * P : trained ? P : total(`${sk.name}:proficiency`);
+      const half = !expert && !trained && own === 0 && jack ? Math.floor(P / 2) : 0;
+      const want = mod(sk.ability) + own + half + total(`${sk.name}:misc`, sk.name);
+      if (Number.isFinite(want) && sk.bonus !== want) add("Skill bonus", `${sk.name}: ${sk.bonus}, the rules give ${want} (${sk.ability} ${mod(sk.ability)}${expert ? `, expertise ${2 * P}` : trained ? `, proficiency ${P}` : half ? `, Jack of All Trades ${half}` : own ? `, training ${own}` : ""}${parts(`${sk.name}:misc`, sk.name).map((x) => `, ${x.from} ${x.value}`).join("")})`);
+    }
+    const ABBR: Record<AbilityId, string> = { strength: "str", dexterity: "dex", constitution: "con", intelligence: "int", wisdom: "wis", charisma: "cha" };
+    for (const a of sh.abilities) {
+      // Trained by a proficiency the character has, or by a feature that gives the training as a number (Diamond Soul).
+      const trained = had.has(`save:${ABBR[a.id]}`) || r.stats.parts(`${a.id}:save:proficiency`).length > 0;
+      const want = a.mod + (trained ? P : 0) + total(`${a.id}:save:misc`, `${a.id}:save`);
+      if (a.save !== want) add("Saving throw bonus", `${a.id}: ${a.save}, the rules give ${want} (modifier ${a.mod}${trained ? `, proficiency ${P}` : ""}${parts(`${a.id}:save:misc`, `${a.id}:save`).map((x) => `, ${x.from} ${x.value}`).join("")})`);
+    }
+  }
+
   // Multiclass requirements: 13 in the abilities each class names (2014), or in its primary ability (2024).
   if (ch.classes.length > 1) {
     for (const x of refs) {

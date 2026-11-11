@@ -27,12 +27,26 @@ export function srdFiles(files: Files, edition: SrdEdition): { files: Files; ren
   const flag = FLAG[edition];
   const renames = new Map<string, string>();
   const out: Files = {};
+  // 5e.tools keeps mechanics its text does not state as data in side files ("foundry.json": the choices, uses and
+  // effects of an entry, by the entry's name and book). Their entries carry no SRD mark of their own, so all of them
+  // were dropped, and with them a Rogue's and a Bard's Expertise choice (found 2026-11-11). A side entry is kept when
+  // the entry it belongs to is marked.
+  const identity = (kind: string, x: Record<string, unknown>) => `${kind}|${String(x.name).toLowerCase()}|${String(x.source).toLowerCase()}|${String(x.className ?? "").toLowerCase()}|${String(x.subclassShortName ?? "").toLowerCase()}|${String(x.level ?? "")}`;
+  const isSide = (file: string) => /(^|\/)foundry[^/]*\.json$/i.test(file);
+  const markedIds = new Set<string>();
+  for (const [file, data] of Object.entries(files)) {
+    if (isSide(file)) continue;
+    for (const [kind, list] of Object.entries(data)) if (Array.isArray(list)) for (const x of list) if (x && typeof x === "object" && flagOf(x, flag)) markedIds.add(identity(kind, x));
+  }
   for (const [file, data] of Object.entries(files)) {
     const kept: Record<string, unknown> = {};
     for (const [kind, list] of Object.entries(data)) {
       if (!Array.isArray(list)) kept[kind] = list;
       else if (STRUCTURE.has(kind)) kept[kind] = list;
-      else {
+      else if (isSide(file)) {
+        const mine = list.filter((x) => x && typeof x === "object" && markedIds.has(identity(kind, x as Record<string, unknown>)));
+        if (mine.length) kept[kind] = mine;
+      } else {
         const marked = list.filter((x) => x && typeof x === "object" && flagOf(x, flag));
         for (const x of marked) { const f = flagOf(x, flag); if (typeof f === "string" && typeof x.name === "string" && f !== x.name) renames.set(x.name, f); }
         if (marked.length) kept[kind] = marked;

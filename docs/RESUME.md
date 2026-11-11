@@ -1,5 +1,17 @@
 # Where we left off
 
+## 2026-11-11 night: found by looking and by better checks (unreleased, on main after v0.25.0)
+
+Work the plan in docs/AUDIT-2026-11-10.md; this night added R11 to R19 there. Fixed: a 2014 class's named weapons
+untrained on 5e.tools content (also in the SRD bundle v0.25.0 shipped), Monk weapons, pools (ki, sorcery points)
+counted as one use, feature dice by level, expertise without proficiency, the SRD bundle dropping all side data (no
+Expertise choice for Rogue and Bard), the landing animation before Apply, dice read as "ID4+2". The rules check now
+judges weapon training, skill bonuses and saving throws itself. docs/THEMES-REVIEW-2026-11-11.md has the colour
+recommendations for Chris; Settings has "Calmer colours" to try. Open for Chris: the migration gate against a grown
+corpus (R19), S8 (single instance, a new dependency), the theme recommendations, the design notes of 2026-11-10.
+Not yet checked in the real app: the backup file on disk (the screen was locked all night; the log line "backup
+checked ... with files on disk" says it worked).
+
 ## 2026-11-10 evening: audit and first fixes (unreleased, on main after v0.25.0)
 
 docs/AUDIT-2026-11-10.md is the code audit and the phased plan; work it in order, items are struck there as they are done. Done so far: phase 0 (`npm run gates`), data safety S1 to S7 (save queue, shown save failures, unreadable library, one database connection, backup files on disk, the character reader, error boundaries), rules R1 to R5 (pact slots apart, one long rest, hit dice by size, at least 1 hit point a level, statistic loops), the R6 guard test. Gates passed (500 of 500 parity, e2e 56). Not yet done: Soul Forge Test rebuilt on this commit and the backup file checked in the real app (three new appdata file permissions); S8, S9, phase 3 onwards.

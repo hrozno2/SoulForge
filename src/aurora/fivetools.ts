@@ -171,6 +171,10 @@ export function syntheticElements(): AElement[] {
     }));
     out.push(base(`ID_5ET_EXPERTISE_${slug(s)}`, `${cap(s)} (expertise)`, "Proficiency", "5etools", {
       supports: ["5et expertise"], compendiumHidden: true,
+      // Expertise is chosen among the skills a character is proficient in ("anyProficientSkill" in 5e.tools, "two of
+      // your skill proficiencies" in both Player's Handbooks). Without this, expertise could be taken in any skill
+      // and counted as plain proficiency there: 130 of 500 random characters had it (2026-11-11).
+      requirements: `ID_5ET_SKILL_${slug(s)}`,
       rules: [{ kind: "stat", name: `${s}:proficiency`, value: "proficiency", bonus: "double" }],
     }));
   }

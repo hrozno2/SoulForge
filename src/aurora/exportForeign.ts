@@ -14,7 +14,27 @@ const FSKILL: Record<string, string> = { acrobatics: "acr", "animal handling": "
 const R20SKILL = (n: string) => n.replace(/ /g, "_");
 const html = (t: string) => (t ? `<p>${t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n+/g, "</p><p>")}</p>` : "");
 const stripTags = (t: string) => t.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-const rid = (n: number) => Array.from({ length: n }, () => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[Math.floor(Math.random() * 62)]).join("");
+/**
+ * Ids for the exported file. They are drawn from a sequence seeded by the character itself, so the same character
+ * always exports to the same file (plan principle P8; they were random, and two exports of one character never
+ * compared equal). Each export starts the sequence again (`reseed`).
+ */
+let idState = 1;
+function reseed(r: Resolved): void {
+  let h = 2166136261;
+  const text = JSON.stringify({ ...r.character, play: undefined, portrait: undefined });
+  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+  idState = h >>> 0 || 1;
+}
+const nextRandom = () => {
+  // mulberry32
+  idState = (idState + 0x6d2b79f5) >>> 0;
+  let t = idState;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+const rid = (n: number) => Array.from({ length: n }, () => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[Math.floor(nextRandom() * 62)]).join("");
 
 /** dnd5e's spell school keys. */
 const FSCHOOL: Record<string, string> = { abjuration: "abj", conjuration: "con", divination: "div", enchantment: "enc", evocation: "evo", illusion: "ill", necromancy: "nec", transmutation: "trs" };
@@ -70,6 +90,7 @@ export function foundryItemType(el: AElement | undefined, name: string): { type:
 }
 
 export function exportFoundry(r: Resolved): Record<string, unknown> {
+  reseed(r);
   const actor = exportFoundryActor(r);
   logEvent("export", `Foundry actor for ${r.character.name || "a character"}: ${(actor.items as unknown[]).length} items`);
   return actor;
@@ -204,6 +225,7 @@ const R20SOURCE = (type: string) => (/^(Class Feature|Archetype Feature|Class)/.
  * betterR20 (character.attributes.name, blobBio).
  */
 export function exportRoll20(r: Resolved): Record<string, unknown> {
+  reseed(r);
   const sheet = buildSheet(r);
   const { c, race, background, subclass, classes } = details(r);
   const attribs: { name: string; current: string | number; max: string; id: string }[] = [];

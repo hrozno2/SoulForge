@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findDc, parseRollInfo, scaleDamage } from "./rollInfo";
+import { findDc, levelSteps, parseRollInfo, scaleDamage } from "./rollInfo";
 
 const ctx = { spellDc: 15, proficiency: 3, mods: { charisma: 4, constitution: 2 } };
 
@@ -25,5 +25,21 @@ describe("roll info", () => {
     expect(scaleDamage("8d6", base)).toBe("10d6");
     expect(scaleDamage("1d10", { ...base, cantrip: true, cantripScaling: true, upcast: undefined })).toBe("2d10");
     expect(scaleDamage("1d10", { ...base, cantrip: true, cantripScaling: true, characterLevel: 17, upcast: undefined })).toBe("4d10");
+  });
+
+  // Found 2026-11-10: a level-9 Dragonborn's breath weapon showed its first-level 2d6.
+  it("raises a feature's dice by character level as its text says", () => {
+    const breath = "<p>Each creature in the area takes 2d6 damage on a failed save, and half as much damage on a successful one. The damage increases to 3d6 at 6th level, 4d6 at 11th level, and 5d6 at 16th level.</p>";
+    const at = (level: number) => parseRollInfo(breath, { ...ctx, level }).damage.map((d) => d.expr);
+    expect(at(1)).toEqual(["2d6"]);
+    expect(at(5)).toEqual(["2d6"]);
+    expect(at(9)).toEqual(["3d6"]);
+    expect(at(11)).toEqual(["4d6"]);
+    expect(at(20)).toEqual(["5d6"]);
+    // Without a level nothing is assumed.
+    expect(parseRollInfo(breath, ctx).damage.map((d) => d.expr)).toContain("2d6");
+    const modern = "<p>On a failed save, a creature takes 1d10 damage of the type determined by your Draconic Ancestry trait. This damage increases by 1d10 when you reach character levels 5 (2d10), 11 (3d10), and 17 (4d10).</p>";
+    expect(parseRollInfo(modern, { ...ctx, level: 12 }).damage.map((d) => d.expr)).toEqual(["3d10"]);
+    expect(levelSteps(modern)).toEqual([{ level: 5, expr: "2d10" }, { level: 11, expr: "3d10" }, { level: 17, expr: "4d10" }]);
   });
 });

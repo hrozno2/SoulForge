@@ -523,8 +523,9 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const alts = altAbilities.filter((o) => (!o.magicOnly || (it?.magic ?? 0) > 0 || /^\+\d/.test(el.name)) && (!o.notTwoHanded || !twoHandedTag)).map((o) => mod(o.ability));
     const plainName = el.name.replace(/^[+-]\d+\s*/, "").replace(/\s*,?\s*[+-]\d+$/, "").replace(/\s*\(.*\)\s*$/, "").toLowerCase();
     const prop = (p: string) => tags.some((t) => t === p || t.endsWith(`_${p.replace(/-/g, "_")}`) || t.endsWith(`_${p.replace(/-/g, "")}`));
-    const simple = tags.includes("simple");
-    const martial = tags.includes("martial");
+    // The weapon's kind in either provider's tags: "simple" (5e.tools), "..._weapon_category_simple_melee" (Aurora).
+    const simple = tags.some((t) => /(^|_)simple(_|$)/.test(t));
+    const martial = tags.some((t) => /(^|_)martial(_|$)/.test(t));
     // Martial Arts, written here apart from the sheet's own reading: a Monk without armor or shield may use Dexterity
     // with a monk weapon (2014: shortswords and simple melee weapons that are not two-handed or heavy; 2024: simple
     // melee weapons and martial melee weapons with the Light property).
@@ -535,7 +536,10 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     // Trained or not is the sheet's word above, so it is judged on its own here: a weapon the first class trains (its
     // kind, its name, or a martial weapon with a property the class names) must not count as untrained. The sheet had
     // every 2014 class's named weapons as untrained on 5e.tools content, and nothing said so (2026-11-10).
-    const trains = first && ((simple && first.startWeapons?.includes("simple")) || (martial && first.startWeapons?.includes("martial")) || first.startWeaponNames?.some((n) => n === plainName || n === `${plainName}s` || `${n}s` === plainName) || (martial && first.startMartialWith?.some((p) => prop(p))));
+    // Firearms are left out of the kinds: the Dungeon Master's Guide leaves training with them to the table, Aurora
+    // asks for it by name, and Plutonium keeps "firearms" as a kind of its own beside simple and martial.
+    const firearm = tags.some((t) => /firearm/.test(t)) || /FIREARM/i.test(el.setters.proficiency?.value ?? "");
+    const trains = first && ((!firearm && simple && first.startWeapons?.includes("simple")) || (!firearm && martial && first.startWeapons?.includes("martial")) || first.startWeaponNames?.some((n) => n === plainName || n === `${plainName}s` || `${n}s` === plainName) || (martial && first.startMartialWith?.some((p) => prop(p))));
     if (!proficient && trains) add("Weapon the class trains counted as untrained", `${a.name}: ${first!.name} trains it`);
     const magic = (it?.magic ?? 0) + (Number(el.setters.attackBonus?.value) || 0);
     // Fighting styles, features and items add to every attack of a kind: named parts of "ranged:attack",

@@ -1,5 +1,5 @@
 import type { AElement } from "../aurora/types";
-import { Browse, blurb, featOf } from "./Browse";
+import { BackgroundFeat, Browse, blurb } from "./Browse";
 import { CLASS_TAGS, ClassIcon, hasClassIcon } from "./classIcons";
 import { Scroll, SpeciesIcon } from "./icons";
 
@@ -48,7 +48,7 @@ export function ChosenBanner({ el, label, onHover, children }: { el: AElement; l
       <h3>{el.name}</h3>
       {isClass && CLASS_TAGS[el.name] && <div className="pick-tags">{CLASS_TAGS[el.name].map((t) => <span key={t}>{t}</span>)}</div>}
       <p className="pick-blurb">{blurb(el.description)}</p>
-      {featOf(el) && <p className="pick-feat"><b>Feat:</b> {featOf(el)}</p>}
+      <BackgroundFeat el={el} />
       <div className="pick-foot">
         <span className="vchip static">{el.source}</span>
         <div className="pick-actions">{children}</div>

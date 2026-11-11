@@ -8,7 +8,7 @@
  */
 import { applyFoundry } from "./foundry";
 import { applyLore } from "./lore";
-import { applyTextAttacks, applyTextDc, applyTextStats, applyTextUses } from "./textMechanics";
+import { applyTextAttacks, applyTextDc, applyTextStats, applyTextUses, dropPoolDefaults } from "./textMechanics";
 import { isModern } from "./edition";
 import type { AElement, ARule, SetterValue } from "./types";
 
@@ -1494,7 +1494,11 @@ function applyTableMechanics(c: J, out: AElement[]): void {
       for (const el of feats) {
         const uses = `${el.name.toLowerCase()}:uses`;
         const at = el.rules.findIndex((r) => r.kind === "stat" && r.name === uses && r.bonus === "text uses" && r.value === "1");
-        if (at < 0 || norm(el.name) !== norm(label)) continue;
+        // The column is the feature's by name ("Rages" for Rage), or it is a column of points the feature's own text
+        // speaks of ("Ki Points" for Ki, "Focus Points" for Monk's Focus, "Sorcery Points" for Font of Magic): a Monk 9
+        // had 1 ki point.
+        const points = /\bpoints$/i.test(stripTags(label)) && el.description.replace(/<[^>]+>/g, " ").toLowerCase().includes(stripTags(label).toLowerCase()) && feats.find((f) => f.rules.some((r) => r.kind === "stat" && r.name === `${f.name.toLowerCase()}:uses`) && f.description.replace(/<[^>]+>/g, " ").toLowerCase().includes(stripTags(label).toLowerCase())) === el;
+        if (at < 0 || (norm(el.name) !== norm(label) && !points)) continue;
         const counts = (g.rows as J[]).map((r) => cellNumber(r[col]));
         el.rules = [...el.rules.filter((_, i) => i !== at), ...steps(counts).map(({ v, level }) => ({ kind: "stat", name: uses, value: String(v), bonus: "text uses", ...(level > 1 ? { level } : {}) }) as ARule)];
       }
@@ -2283,6 +2287,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   applyTextDc(out);
   applyTextStats(out, { tool: (n) => toolId(n, out), weapon: (k) => weaponId(k, out), armor: (k) => ARMOR_IDS[k], skill: (n) => `ID_5ET_SKILL_${slug(n)}`, language: (n) => `ID_5ET_LANGUAGE_${slug(n)}` });
   for (const c of classes) applyTableMechanics(c, out);
+  dropPoolDefaults(out);
   applyTextAttacks(out);
   resolveSpellRefs(out, spellIds);
   resolveLooseRefs(out);

@@ -56,7 +56,8 @@ export function StartTab({
   useEffect(() => {
     refresh();
     const t = setInterval(refresh, 4000);
-    return () => clearInterval(t);
+    window.addEventListener("cf-saved", refresh);
+    return () => { clearInterval(t); window.removeEventListener("cf-saved", refresh); };
   }, []);
 
   const importJson = async (f: File | undefined) => {

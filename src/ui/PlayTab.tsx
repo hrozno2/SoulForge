@@ -31,6 +31,7 @@ const sign = (n: number) => (n >= 0 ? `+${n}` : String(n));
 const skillLabel = (id: string) => id.replace(/\b\w/g, (c) => c.toUpperCase());
 /** Numbers a description can refer to when it names a DC. */
 const dcContext = (sheet: SheetData, spellDc?: number): DcContext => ({
+  level: sheet.level,
   spellDc: spellDc ?? sheet.casting[0]?.dc,
   proficiency: sheet.proficiency,
   mods: Object.fromEntries(sheet.abilities.map((a) => [ABILITY_LABEL[a.id].toLowerCase(), a.mod])),
@@ -385,10 +386,24 @@ const RESET: Record<string, string> = { "long rest": "long rest", "short rest": 
 function Uses({ f, ch, set }: { f: FeatureLine; ch: Character; set: SetCharacter }) {
   const m = f.usage?.match(/^(\d+)\s*\/\s*(.*)$/);
   const n = m ? parseInt(m[1], 10) : 0;
-  if (!n || n > 12) return f.usage ? <small className="muted">{f.usage}</small> : null;
+  if (!n) return f.usage ? <small className="muted">{f.usage}</small> : null;
   const used = Math.min(n, ch.play.featureUses[f.id] ?? 0);
   const left = n - used;
   const when = (m?.[2] ?? "").trim().toLowerCase();
+  // A large pool (ki at 13th level and up, sorcery points, Lay on Hands' hit points) is counted, not drawn as pips.
+  if (n > 12) {
+    const spend = (by: number) => set((c) => ({ ...c, play: { ...c.play, featureUses: { ...c.play.featureUses, [f.id]: Math.max(0, Math.min(n, (c.play.featureUses[f.id] ?? 0) + by)) } } }));
+    return (
+      <span className="uses uses-count">
+        <span className="stepper">
+          <button aria-label={`Spend one ${f.name}`} title="Spend one" disabled={left === 0} onClick={() => spend(1)}>−</button>
+          <b>{left}</b>
+          <button aria-label={`Restore one ${f.name}`} title="Restore one" disabled={used === 0} onClick={() => spend(-1)}>+</button>
+        </span>
+        <small className={left === 0 ? "uses-text out" : "uses-text"}>{left} of {n} left{when ? ` · back after ${RESET[when] ?? when}` : ""}</small>
+      </span>
+    );
+  }
   const toggle = (i: number) => set((c) => ({ ...c, play: { ...c.play, featureUses: { ...c.play.featureUses, [f.id]: usedAfterClick(n, used, i) } } }));
   return (
     <span className="uses" title="Click a pip to spend or restore a use">

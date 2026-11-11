@@ -436,8 +436,10 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
   const isMonkWeapon = (el: AElement, tags: string[], ranged: boolean): boolean => {
     if (!monkClass || armored || ranged) return false;
     const has = (p: string) => tags.some((t) => t === p || t.endsWith(`_${p.replace(/-/g, "_")}`) || t.endsWith(`_${p.replace(/-/g, "")}`));
-    const simple = tags.includes("simple") || /WEAPON_SIMPLE\b|SIMPLE_WEAPONS?\b/i.test(el.setters.proficiency?.value ?? "");
-    if (monkClass.edition === "2024") return simple || has("light");
+    // The kind as either provider tags it: "simple" (5e.tools) or "..._weapon_category_simple_melee" (Aurora).
+    const kind = (k: string) => tags.some((t) => t === k || new RegExp(`(^|_)${k}(_|$)`).test(t)) || new RegExp(`WEAPON_${k}\\b`, "i").test(el.setters.proficiency?.value ?? "");
+    const simple = kind("simple");
+    if (monkClass.edition === "2024") return simple || (kind("martial") && has("light"));
     return /^shortsword$/i.test(el.name.replace(/^[+-]\d+\s*/, "").replace(/\s*,?\s*[+-]\d+$/, "")) || (simple && !has("two-handed") && !has("heavy"));
   };
   for (const it of r.character.inventory) {

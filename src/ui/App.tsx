@@ -123,6 +123,8 @@ export function App() {
     return () => { document.removeEventListener("visibilitychange", flush); window.removeEventListener("pagehide", leave); };
   }, [queue]);
   useEffect(() => { if (saveState === "failed") logEvent("save", `could not save the character: ${queue.error}`); }, [saveState, queue]);
+  // Home re-reads the library when a save lands, so a new character is there at once (it waited for a timer).
+  useEffect(() => { if (saveState === "saved") window.dispatchEvent(new Event("cf-saved")); }, [saveState]);
   // While the open character is still coming from the library, nothing is saved over it.
   const loading = useRef(!!initial.fromLibrary);
   useEffect(() => {

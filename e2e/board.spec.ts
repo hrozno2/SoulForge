@@ -25,8 +25,14 @@ test.describe("Build board", () => {
     await rows.first().click();
     // The pick lands in its space and opens as a card window like any other (Chris 2026-10-29): Apply keeps it.
     const fresh = page.locator(".float-window.card-window-race");
+    // The card slots into its space, with its landing, when Apply is pressed, not at the pick (Chris 2026-11-10: the
+    // landing played while the card's window was still opening).
+    await expect(fresh).toBeVisible();
+    await page.waitForTimeout(700);
+    expect(await page.locator("[data-tile=race]").getAttribute("data-impact")).toBeNull();
     await fresh.getByRole("button", { name: /^Apply / }).click();
     await expect(fresh).toHaveCount(0);
+    await expect(page.locator("[data-tile=race]")).toHaveAttribute("data-impact", /1|heavy/);
     await expect(page.locator("[data-tile=race] h3")).toHaveText(name);
     // Clicking the card opens it in a floating window (C4) to edit its choices; Done (C6.3) puts it back.
     await page.locator("[data-tile=race] .chosen-banner").click();

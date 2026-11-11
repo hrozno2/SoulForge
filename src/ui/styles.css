@@ -404,7 +404,8 @@ button.xp:hover, button.xp:focus-visible { border-color: var(--gold); }
 .play-tabs { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 2px solid var(--line); margin-bottom: 12px; }
 .play-tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; margin-bottom: -2px; background: none; color: var(--muted); padding: 10px 16px; text-transform: uppercase; letter-spacing: 0.1em; font-size: 12.5px; }
 .play-tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
-.roll-btn { padding: 1px 9px; border-radius: 12px; font: 700 14px var(--display); }
+/* Dice and bonuses in the plain face: in the display face of the serif themes "1d4+2" read as "ID4+2" (2026-11-10). */
+.roll-btn { padding: 1px 9px; border-radius: 12px; font: 700 14px var(--body); font-variant-numeric: lining-nums; letter-spacing: .01em; }
 .roll-btn.big { font-size: 20px; }
 .play-attacks td, .play-attacks th { padding: 6px 6px; }
 .feature-row, .spell-row { border-bottom: 1px solid var(--line); padding: 4px 0; }
@@ -1581,7 +1582,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment { filter: none
 .board-arch-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--muted); gap: 4px; }
 .board-arch-empty small { font: 600 10px var(--body); letter-spacing: .08em; text-transform: uppercase; }
 .board-who-text { min-width: 0; }
-.board-name { width: 100%; font: 700 20px var(--display); padding: 4px 6px; background: transparent; border: 1px dashed transparent; color: var(--text); }
+.board-name { width: 100%; font: 700 20px var(--display); padding: 4px 6px; background: transparent; border: 1px dashed transparent; color: var(--text); text-overflow: ellipsis; }
 .board-name:hover, .board-name:focus { border-color: var(--gold); background: var(--bg2); }
 .board-who-text { flex: 1; min-width: 0; }
 .board-method button { padding-left: 4px; padding-right: 4px; }
@@ -2314,3 +2315,9 @@ button.spell-count.prep.on { background: color-mix(in srgb, var(--gold) 28%, tra
 .char-card-missing { display: block; margin-top: 6px; font-size: 12px; font-weight: 700; color: #ffd27a; }
 
 .notice-toast.missing-content { position: static; transform: none; margin: 8px auto 0; }
+
+/* Calmer colours (Settings): the cards' class and kind colours, their ribbons and the Play header keep their hue at
+   about half the strength, so the gold frames and the text carry the page. */
+:root.calm-colors .pick-card, :root.calm-colors .mini-card, :root.calm-colors .char-card-body { filter: saturate(.5); }
+:root.calm-colors .play-head.hero { filter: saturate(.6) brightness(.92); }
+:root.calm-colors .hp-bar div, :root.calm-colors .hd-bar div { filter: saturate(.7); }

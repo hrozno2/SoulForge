@@ -15,6 +15,8 @@ export interface AppSettings {
   scale: number;
   compact: boolean;
   reduceMotion: boolean;
+  /** Cards, ribbons and the Play header in quieter colours (Chris 2026-11-10: some are a bit too much). Off unless chosen. */
+  calmColors?: boolean;
   paper: "a4" | "letter";
   autoBackup: boolean;
   language: Lang;
@@ -56,6 +58,7 @@ export function applySettings(s: AppSettings = current): void {
   (root.style as CSSStyleDeclaration & { zoom: string }).zoom = String(s.scale / 100);
   root.classList.toggle("compact", s.compact);
   root.classList.toggle("reduce-motion", s.reduceMotion);
+  root.classList.toggle("calm-colors", !!s.calmColors);
   setLanguage(s.language);
 }
 
@@ -168,6 +171,10 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
         <label className="set-row">
           <span><b>Reduce motion</b><small className="muted"> Turns off animations and transitions</small></span>
           <input type="checkbox" checked={s.reduceMotion} onChange={(e) => updateSettings({ reduceMotion: e.target.checked })} />
+        </label>
+        <label className="set-row">
+          <span><b>Calmer colours</b><small className="muted"> Cards, ribbons and the Play header in quieter tones</small></span>
+          <input type="checkbox" checked={!!s.calmColors} onChange={(e) => updateSettings({ calmColors: e.target.checked })} />
         </label>
         <div className="set-row">
           <span><b>Build layout</b><small className="muted"> The board, or the older tabs (with Magic and Equipment as their own tabs)</small></span>

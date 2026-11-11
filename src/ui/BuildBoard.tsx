@@ -317,13 +317,17 @@ function epicFly(from: DOMRect | null, label: string, kind: Kind, target: HTMLEl
   anim.onfinish = () => {
     card.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: "forwards" }).onfinish = () => card.remove();
     delete target.dataset.awaiting;
-    delete target.dataset.impact;
-    void target.offsetWidth;
-    target.dataset.impact = kind === "class" && HEAVY.test(label) ? "heavy" : "1";
-    window.setTimeout(() => delete target.dataset.impact, 900);
-    // The landing: a class lands with its own effect, a species or background with the arcane circle.
-    land(kind === "class" ? label : "", to, target);
+    slotIn(label, kind, target);
   };
+}
+
+/** A card settles into its space: the space takes the impact, and the class's own effect (or the arcane circle) plays. */
+function slotIn(label: string, kind: Kind, target: HTMLElement) {
+  delete target.dataset.impact;
+  void target.offsetWidth;
+  target.dataset.impact = kind === "class" && HEAVY.test(label) ? "heavy" : "1";
+  window.setTimeout(() => delete target.dataset.impact, 900);
+  land(kind === "class" ? label : "", target.getBoundingClientRect(), target);
 }
 
 /**
@@ -881,8 +885,18 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const [fresh, setFresh] = useState<Partial<Record<Kind, Character>>>({});
   useEffect(() => {
     const open = new Set(floating?.windows.filter((w) => w.kind === "card").map((w) => w.ref) ?? []);
-    setFresh((f) => (Object.keys(f).some((k) => !open.has(k)) ? Object.fromEntries(Object.entries(f).filter(([k]) => open.has(k))) : f));
-  }, [floating?.windows]);
+    const applied = (Object.keys(fresh) as Kind[]).filter((k) => !open.has(k));
+    if (!applied.length) return;
+    setFresh((f) => Object.fromEntries(Object.entries(f).filter(([k]) => open.has(k))));
+    // The card slots in now, when its window is applied and has flown back into its space (Chris 2026-11-10: the
+    // landing played at the pick, before the card was slotted in). × (put back) never gets here: it clears `fresh` first.
+    if (reduced()) return;
+    for (const kind of applied) {
+      const tile = document.querySelector<HTMLElement>(`[data-tile="${kind}"]`);
+      const label = kind === "class" ? r.reg.get(ch.classes[ch.classes.length - 1]?.classId ?? "")?.name ?? "" : "";
+      if (tile && tile.offsetParent) slotIn(label, kind, tile);
+    }
+  }, [floating?.windows]); // eslint-disable-line react-hooks/exhaustive-deps
   const putBack = (kind: Kind, windowId: string) => {
     const snap = fresh[kind];
     if (!snap) return;
@@ -983,12 +997,11 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     setFocus(kind);
     if (core.includes(kind) && floating) {
       // A new pick opens as a card window like any other card (Chris 2026-10-29: the first pick still opened the old
-      // fixed card): it lands in its space, its window opens with Apply and × (× restores what was there before), and the
-      // lists move on to the next empty space.
+      // fixed card): its window opens at once with Apply and × (× restores what was there before), the lists move on
+      // to the next empty space, and the card slots into its space, with its landing, when Apply is pressed.
       setFresh((f) => ({ ...f, [kind]: f[kind] ?? ch }));
-      fly(from, el.name, kind);
       setOpen(core.find((k) => k !== kind && !filled[k]) ?? null);
-      window.setTimeout(() => openBack(kind), reduced() ? 0 : 450);
+      openBack(kind);
       return;
     }
     if (core.includes(kind)) {

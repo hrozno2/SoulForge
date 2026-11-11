@@ -20,6 +20,22 @@ export interface DcContext {
   proficiency: number;
   /** Ability modifiers by full name, lower case. */
   mods: Record<string, number>;
+  /** The character's level, for dice the text raises by level ("increases to 3d6 at 6th level"). */
+  level?: number;
+}
+
+/**
+ * Dice a feature's text raises at set character levels: "The damage increases to 3d6 at 6th level, 4d6 at 11th level,
+ * and 5d6 at 16th level" (the 2014 Dragonborn's breath), or "when you reach character levels 5 (2d10), 11 (3d10), and
+ * 17 (4d10)" (2024). A level-9 Dragonborn's breath showed its first-level 2d6.
+ */
+export function levelSteps(text: string): { level: number; expr: string }[] {
+  const out: { level: number; expr: string }[] = [];
+  const a = /increases? to ((?:\d+d\d+ at \d+(?:st|nd|rd|th) level(?:, (?:and )?| and )?)+)/i.exec(text);
+  if (a) for (const m of a[1].matchAll(/(\d+d\d+) at (\d+)(?:st|nd|rd|th) level/gi)) out.push({ level: Number(m[2]), expr: m[1] });
+  const b = /(?:character )?levels? ((?:\d+ \(\d+d\d+\)(?:, (?:and )?| and )?)+)/i.exec(text);
+  if (b) for (const m of b[1].matchAll(/(\d+) \((\d+d\d+)\)/g)) out.push({ level: Number(m[1]), expr: m[2] });
+  return out.sort((x, y) => x.level - y.level);
 }
 
 export function plain(html: string): string {
@@ -59,6 +75,17 @@ export function parseRollInfo(html: string, ctx: DcContext): RollInfo {
       dmgSeen.add(key);
       info.damage.push({ expr, type });
     }
+  }
+  // The dice the text raises by character level replace the first-level dice of the same size.
+  const steps = levelSteps(text);
+  if (steps.length && ctx.level !== undefined) {
+    const now = [...steps].reverse().find((x) => x.level <= ctx.level!);
+    const size = /d\d+/.exec(steps[0].expr)?.[0];
+    const stepExprs = new Set(steps.map((x) => x.expr));
+    // The steps themselves are named in the text as damage ("3d6 at 6th level"): they are not rolls of their own.
+    info.damage = info.damage.filter((d, i) => i === info.damage.findIndex((x) => x.expr.endsWith(size ?? "?") && !stepExprs.has(x.expr)) || !stepExprs.has(d.expr));
+    const first = info.damage.find((d) => size && new RegExp(`^\\d+${size}$`).test(d.expr));
+    if (now && first) first.expr = now.expr;
   }
   for (const m of text.matchAll(/(?:regains?|restores?|heals?|hit points equal to|gains?)\s+(?:a number of hit points equal to\s+|(?:temporary )?hit points equal to\s+)?(\d+d\d+(?:\s*\+\s*\d+)?)/gi)) info.healing.push(m[1].replace(/\s+/g, ""));
   const up = /(?:damage|healing)[^.]*?(?:increases?|extra)[^.]*?by\s+(\d+d\d+)[^.]*?(?:each|every)[^.]*?(?:slot )?level above/i.exec(text) ?? /(\d+d\d+)\s+for each (?:slot )?level above/i.exec(text);

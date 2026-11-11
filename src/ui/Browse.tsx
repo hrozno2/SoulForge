@@ -44,15 +44,27 @@ export const blurb = (html: string, max = 170) => {
   return t.length > max ? `${t.slice(0, max).replace(/\s+\S*$/, "")}...` : t;
 };
 
-/** The feat a background gives, when its rules name one. */
-export const featOf = (e: AElement): string | undefined => {
+/**
+ * The feat a background gives, when its rules name one: by the feat's own name in the content, and only failing that
+ * read off its id (which gave "Xphb Magic Initiate Cleric" for Magic Initiate (Cleric), 2026-11-10).
+ */
+export const featOf = (e: AElement, nameOf?: (id: string) => string | undefined): string | undefined => {
   if (e.type !== "Background") return undefined;
   const g = e.rules.find((r) => r.kind === "grant" && r.type === "Feat") as { name?: string; id: string } | undefined;
   if (!g) return undefined;
   if (g.name) return g.name;
-  const m = g.id.match(/FEAT_(.+)$/i);
+  const known = nameOf?.(g.id);
+  if (known) return known;
+  const m = g.id.match(/FEAT_(?:[A-Z0-9]+_)??(.+)$/i);
   return m ? m[1].toLowerCase().split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : undefined;
 };
+
+/** The "Feat:" line of a background's card. */
+export function BackgroundFeat({ el }: { el: AElement }) {
+  const { reg } = useUi();
+  const name = featOf(el, (id) => reg.get(id)?.name);
+  return name ? <p className="pick-feat"><b>Feat:</b> {name}</p> : null;
+}
 
 const SORTS: [SortMode, string][] = [["az", "A to Z"], ["recommended", "Recommended"], ["newest", "Newest"]];
 
@@ -386,7 +398,7 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
                 <h3>{e.name}</h3>
                 {CLASS_TAGS[e.name] && type === "Class" && <div className="pick-tags">{CLASS_TAGS[e.name].map((t) => <span key={t}>{t}</span>)}</div>}
                 <p className="pick-blurb">{blurb(e.description) || "No description in the content file."}</p>
-                {featOf(e) && <p className="pick-feat"><b>Feat:</b> {featOf(e)}</p>}
+                <BackgroundFeat el={e} />
                 <div className="pick-foot">
                   <VariantChips g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} />
                   <div className="pick-actions">

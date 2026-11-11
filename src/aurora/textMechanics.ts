@@ -21,15 +21,49 @@ export function usesFromText(text: string): string | undefined {
   }
   m = /a number of times equal to (?:(twice|three times) )?your proficiency bonus/i.exec(text);
   if (m) return `{proficiency}${m[1] ? ` * ${count(m[1])}` : ""}`;
-  m = /you can use (?:this feature|this ability|this trait|(?:[A-Z][\w'’-]* ?)+) (once|twice|thrice|(?:two|three|four|five|\d+) times)\b/.exec(text);
+  m = /[Yy]ou can use (?:this feature|this ability|this trait|(?:[A-Z][\w'’-]* ?)+) (once|twice|thrice|(?:two|three|four|five|\d+) times)\b/.exec(text);
   if (m) return String(count(m[1]));
+  // A pool sized by a class level: "equal to your paladin level × 5" (2014), "five times your Paladin level" (2024).
+  m = /equal to (?:your )?(\w+) level (?:×|x|\*|times) (\d+|five|ten)\b/i.exec(text);
+  if (m) return `{level:${m[1].toLowerCase()}} * ${count(m[2])}`;
+  m = /\b(\d+|two|three|four|five|ten) times your (\w+) level\b/i.exec(text);
+  if (m) return `{level:${m[2].toLowerCase()}} * ${count(m[1])}`;
   return undefined;
+}
+
+/**
+ * A pool the text sizes elsewhere (spell slots from the class table, points from a table column), not a feature used
+ * once: "regain all expended spell slots", "regain all expended sorcery points", "a pool of healing power".
+ */
+const POOL = /regain(?:s)? all (?:of (?:your|the) )?(?:your )?expended (?!uses?\b)[\w'’ ]*?(?:slots?|points?|dice|die)\b|\bpool of\b/i;
+
+/**
+ * Takes back the single use `applyTextUses` gives by default where the text describes a pool and nothing sized it
+ * (the class table's column, a count in the text): Spellcasting was "1 use a long rest" on the sheet, because its text
+ * says spell slots return on a long rest. Run after the class tables are read. Returns how many it took back.
+ */
+export function dropPoolDefaults(out: AElement[]): number {
+  let n = 0;
+  for (const el of out) {
+    if (el.origin !== "5etools") continue;
+    const name = `${el.name.toLowerCase()}:uses`;
+    const mine = el.rules.filter((r) => r.kind === "stat" && r.name.toLowerCase() === name);
+    if (mine.length !== 1 || (mine[0] as { bonus?: string; value: string }).bonus !== "text uses" || (mine[0] as { value: string }).value !== "1") continue;
+    const text = plain(el.description ?? "");
+    if (!POOL.test(text) || usesFromText(text)) continue;
+    el.rules = el.rules.filter((r) => r !== mine[0]);
+    if (el.sheet?.usage?.startsWith(`{{${name}}}`)) { const { usage: _gone, ...rest } = el.sheet; void _gone; el.sheet = rest as typeof el.sheet; }
+    n++;
+  }
+  return n;
 }
 
 /** The rest that brings uses back, as the sheet words it; undefined when the text names none. */
 export function recoveryFromText(text: string): string | undefined {
   if (/regain (?:one|two|three|\w+) expended uses? when you finish a short rest,? and (?:you )?regain all expended uses when you finish a long rest/i.test(text)) return "Long Rest (one on a Short Rest)";
   if (/when(?:ever)? you finish a short rest, .* can't do so again until you finish a long rest/i.test(text)) return "Long Rest";
+  // "Once per day when you finish a short rest, you can..." (Arcane Recovery): the short rest is when it is used.
+  if (/\bonce per day\b/i.test(text)) return "Long Rest";
   // "Whenever you finish a Short Rest, ..." describes something else happening on a rest, not the uses coming back.
   if (/(?<!whenever you )(?:finish|complete) a short (?:or long )?rest(?! the \w+ resets)/i.test(text)) return "Short Rest";
   if (/(?<!whenever you )(?:finish|complete) a long rest(?! the \w+ resets)/i.test(text)) return "Long Rest";

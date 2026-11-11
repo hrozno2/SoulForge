@@ -88,6 +88,9 @@ export function withSlotUsed(play: PlayState, row: SlotRow, used: number): PlayS
 /** Every spell slot back, Pact Magic's too. */
 export const restoreSlots = (play: PlayState): PlayState => ({ ...play, slotsUsed: {}, pactUsed: 0 });
 
+/** Where the casts of a spell that needs no slot are counted (with the feature uses, so a long rest returns them). */
+export const freeCastKey = (spellId: string) => `spell:${spellId}`;
+
 export function shortRest(ch: Character, sheet: SheetData): Character {
   const uses = { ...ch.play.featureUses };
   for (const f of sheet.features) {
@@ -100,6 +103,8 @@ export function shortRest(ch: Character, sheet: SheetData): Character {
   const slots = { ...ch.play.slotsUsed };
   const ordinary = new Set(sheet.casting.filter((c) => !c.pactLevel).flatMap((c) => c.slots.map((s) => s.level)));
   if (ch.play.pactUsed === undefined) for (const c of sheet.casting) if (c.pactLevel) for (const s of c.slots) if (!ordinary.has(s.level)) delete slots[String(s.level)];
+  // A spell its giver lets the character cast without a slot, once a short rest (5e.tools "rest").
+  for (const c of sheet.casting) for (const p of [...c.granted, ...c.spells, ...c.cantripsKnown]) if (/short rest/i.test(p.uses ?? "")) delete uses[freeCastKey(p.id)];
   const hasPact = sheet.casting.some((c) => c.pactLevel);
   return {
     ...ch,

@@ -3,7 +3,7 @@ import { TextArea, TextInput } from "./TextField";
 import { useEffect, useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
 import { buildSheet, headerInfo, type CastingLine, type FeatureLine, type SheetData } from "../aurora/sheet";
-import { hitDiceLeft, hitDicePools, longRest as restLong, shortRest as restShort, spendHitDie as spendDie, withSlotUsed } from "../aurora/rest";
+import { freeCastKey, hitDiceLeft, hitDicePools, longRest as restLong, shortRest as restShort, spendHitDie as spendDie, withSlotUsed } from "../aurora/rest";
 import { ABILITY_LABEL, ABILITY_SHORT, XP_TABLE, hpConfigured, itemLabel, uid, xpToLevel, type AbilityId, type Character, type Resource } from "../aurora/character";
 import type { AElement } from "../aurora/types";
 import { Html } from "./Html";
@@ -483,11 +483,22 @@ function SpellRow({ id, r, casting, set, level, sheet }: { id: string; r: Resolv
   const chosen = options.find((o) => o.level === slot) ?? options[0];
   const concentrates = s.isConcentration?.value === "true";
   const dc = dcContext(sheet, casting.dc);
-  const spellCtx = { level, castLevel: chosen?.level ?? level, characterLevel: sheet.level };
+  // A spell its giver lets the character cast without a slot (a Tiefling's Hellish Rebuke, once a long rest, as a
+  // 2nd-level spell): those casts first, then slots as for any spell. It read "No slots" before (2026-11-11).
+  const pick = [...casting.granted, ...casting.spells, ...casting.cantripsKnown].find((p) => p.id === id);
+  const freeMax = Number(/^(\d+)\//.exec(pick?.uses ?? "")?.[1]) || 0;
+  const freeLeft = Math.max(0, freeMax - (r.character.play.featureUses[freeCastKey(id)] ?? 0));
+  const free = level > 0 && freeLeft > 0;
+  const spellCtx = { level, castLevel: free ? pick?.castAt ?? level : chosen?.level ?? level, characterLevel: sheet.level };
   const rolls = spellRolls(el.name, el.description, dc, casting.attack, spellCtx);
   const canCast = level === 0 ? concentrates || rolls.length > 0 : true;
   const cast = () => {
-    if (level > 0 && !chosen) return;
+    if (level > 0 && !chosen && !free) return;
+    if (free) {
+      set((c) => ({ ...c, play: { ...c.play, featureUses: { ...c.play.featureUses, [freeCastKey(id)]: (c.play.featureUses[freeCastKey(id)] ?? 0) + 1 }, concentration: concentrates ? el.name : c.play.concentration } }));
+      for (const x of rolls) requestRoll(x.label, x.expr, undefined, x.opts);
+      return;
+    }
     set((c) => ({
       ...c,
       play: {
@@ -512,8 +523,8 @@ function SpellRow({ id, r, casting, set, level, sheet }: { id: string; r: Resolv
       <RollChips name={el.name} html={el.description} ctx={dc} attackBonus={casting.attack} spell={spellCtx} />
       {canCast ? (
         <span className="cast">
-          {level > 0 && options.length > 1 && <select aria-label="Slot level" value={chosen?.level ?? ""} onChange={(e) => setSlot(Number(e.target.value))}>{options.map((o) => <option key={o.level} value={o.level}>Lv {o.level}</option>)}</select>}
-          <button className="primary" disabled={level > 0 && !chosen} title={rolls.length ? "Spends the slot and rolls the spell's dice" : level > 0 ? "Spends the slot" : "Concentrate on this spell"} onClick={cast}>{level > 0 && !chosen ? "No slots" : "Cast"}</button>
+          {level > 0 && !free && options.length > 1 && <select aria-label="Slot level" value={chosen?.level ?? ""} onChange={(e) => setSlot(Number(e.target.value))}>{options.map((o) => <option key={o.level} value={o.level}>Lv {o.level}</option>)}</select>}
+          <button className="primary" disabled={level > 0 && !chosen && !free} title={free ? `Needs no slot: ${freeLeft} of ${freeMax} left, back after a ${/short/i.test(pick?.uses ?? "") ? "short" : "long"} rest${pick?.castAt && pick.castAt > level ? `; cast at level ${pick.castAt}` : ""}` : rolls.length ? "Spends the slot and rolls the spell's dice" : level > 0 ? "Spends the slot" : "Concentrate on this spell"} onClick={cast}>{free ? `Cast (${freeLeft} free)` : level > 0 && !chosen ? (freeMax ? "Used" : "No slots") : "Cast"}</button>
         </span>
       ) : <span />}
       {open && <div className="spell-desc"><Html html={el.description} /></div>}

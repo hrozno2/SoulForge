@@ -8,6 +8,8 @@ import { loadContentSet } from "../engine/testContent";
 import { newCharacter } from "./character";
 import { resolve } from "./engine";
 import { buildSheet } from "./sheet";
+import { additionalSpellRules } from "./fivetools";
+import { freeCastKey, shortRest } from "./rest";
 
 const reg = loadContentSet("", "srd");
 function features(cls: string, year: "2014" | "2024", level: number) {
@@ -65,3 +67,30 @@ describe("when uses come back", () => {
     expect(features("Cleric", "2024", 6)("Channel Divinity")?.usage).toBe("3/Long Rest (one on a Short Rest)");
   });
 });
+
+// A spell its giver lets the character cast without a slot. Play showed "No slots" for a Tiefling's Hellish Rebuke.
+describe("spells cast without a slot", () => {
+  it("5e.tools' nesting is read: how often, and the level the spell is cast at", () => {
+    const { rules } = additionalSpellRules([{ innate: { "3": { daily: { "1": ["hellish rebuke#2"] } }, "5": { rest: { "2e": ["misty step"] } }, "1": { will: ["detect magic"] } }, known: { "1": ["thaumaturgy#c"] }, ability: "cha" }], "Tiefling", "PHB");
+    const of = (name: string) => rules.find((r) => r.kind === "grant" && r.id.includes(name)) as { uses?: string; castAt?: number; level?: number };
+    expect(of("hellish rebuke")).toMatchObject({ uses: "1/Long Rest", castAt: 2, level: 3 });
+    expect(of("misty step")).toMatchObject({ uses: "2/Short Rest", level: 5 });
+    expect(of("detect magic").uses).toBeUndefined();
+    expect(of("thaumaturgy").uses).toBeUndefined();
+    expect(of("thaumaturgy").castAt).toBeUndefined();
+  });
+
+  it("a 2014 Tiefling's Hellish Rebuke: once a long rest, as a 2nd-level spell", () => {
+    const tiefling = reg.ofType("Race").find((x) => x.name === "Tiefling" && x.source.includes("2014"))!;
+    const fighter = reg.ofType("Class").find((x) => x.name === "Fighter" && x.source.includes("2014"))!;
+    const sheet = buildSheet(resolve({ ...newCharacter(), race: tiefling.id, classes: [{ classId: fighter.id, level: 5 }] }, reg));
+    const picks = sheet.casting.flatMap((c) => [...c.granted, ...c.spells]);
+    const rebuke = picks.find((p) => reg.get(p.id)?.name === "Hellish Rebuke")!;
+    expect(rebuke).toMatchObject({ uses: "1/Long Rest", castAt: 2 });
+    expect(picks.find((p) => reg.get(p.id)?.name === "Darkness")?.uses).toBe("1/Long Rest");
+    // A short rest does not return a once-a-long-rest cast.
+    const ch = { ...newCharacter(), play: { ...newCharacter().play, featureUses: { [freeCastKey(rebuke.id)]: 1 } } };
+    expect(shortRest(ch, sheet).play.featureUses).toEqual({ [freeCastKey(rebuke.id)]: 1 });
+  });
+});
+

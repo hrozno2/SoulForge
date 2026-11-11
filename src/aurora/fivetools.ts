@@ -1966,17 +1966,25 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
 // ---------------------------------------------------------------- additional spells and optional features
 
 /** Collects the spell references under one additionalSpells section (innate/known/prepared), keyed by character level. */
-function spellRefs(section: J | undefined): { level?: number; refs: unknown[] }[] {
-  const out: { level?: number; refs: unknown[] }[] = [];
+function spellRefs(section: J | undefined): { level?: number; refs: unknown[]; uses: (string | undefined)[] }[] {
+  const out: { level?: number; refs: unknown[]; uses: (string | undefined)[] }[] = [];
   for (const [k, v] of Object.entries(section ?? {})) {
     const level = k === "_" ? undefined : parseInt(k, 10);
     const refs: unknown[] = [];
-    const walk = (x: unknown): void => {
-      if (Array.isArray(x)) refs.push(...x);
-      else if (x && typeof x === "object") for (const y of Object.values(x as J)) walk(y);
+    const uses: (string | undefined)[] = [];
+    // How often, as 5e.tools nests it and Plutonium reads it: {"daily": {"1": [...]}} is once a long rest ("1e": once
+    // each), {"rest": {"1": [...]}} once a short rest; "will" and "ritual" have no count.
+    const walk = (x: unknown, period?: string, times?: string): void => {
+      if (Array.isArray(x)) for (const r of x) { refs.push(r); uses.push(period && times ? `${parseInt(times, 10) || 1}/${period}` : undefined); }
+      else if (x && typeof x === "object") for (const [key, y] of Object.entries(x as J)) {
+        if (key === "daily") walk(y, "Long Rest");
+        else if (key === "rest") walk(y, "Short Rest");
+        else if (period && !times) walk(y, period, key);
+        else walk(y, period, times);
+      }
     };
     walk(v);
-    if (refs.length) out.push({ level: Number.isNaN(level) ? undefined : level, refs });
+    if (refs.length) out.push({ level: Number.isNaN(level) ? undefined : level, refs, uses });
   }
   return out;
 }
@@ -2025,11 +2033,13 @@ export function additionalSpellRules(adds: J[] | undefined, owner: string, owner
     if (!ability && ab) ability = typeof ab === "string" ? ab : Array.isArray(ab?.choose) ? ab.choose[0] : undefined;
     if (out && !rules.some((r) => r.kind === "select" && r.type === "Spellcasting Ability")) rules.push(...castingAbilityChoice(ab, owner, ownerSource, out));
     for (const kind of ["innate", "known", "prepared"] as const) {
-      for (const { level, refs } of spellRefs(a[kind])) {
-        for (const r of refs) {
+      for (const { level, refs, uses } of spellRefs(a[kind])) {
+        for (const [i, r] of refs.entries()) {
           if (typeof r === "string") {
             const [name, src] = r.split("#")[0].split("|");
-            rules.push({ kind: "grant", type: "Spell", id: `SPELLREF:${name.trim().toLowerCase()}|${(src ?? "").toLowerCase()}|${ownerSource.toLowerCase()}`, level, spellcasting: owner } as ARule);
+            // "hellish rebuke#2": cast as a 2nd-level spell. "#c" marks a cantrip.
+            const castAt = Number(/#(\d)$/.exec(r)?.[1]) || undefined;
+            rules.push({ kind: "grant", type: "Spell", id: `SPELLREF:${name.trim().toLowerCase()}|${(src ?? "").toLowerCase()}|${ownerSource.toLowerCase()}`, level, spellcasting: owner, ...(uses[i] ? { uses: uses[i] } : {}), ...(castAt ? { castAt } : {}) } as ARule);
           } else if (r && typeof (r as J).choose === "string") {
             const crit = Object.fromEntries(String((r as J).choose).split("|").map((p) => p.split("=")).filter((p) => p.length === 2).map(([k, v]) => [k.trim().toLowerCase(), v])) as Record<string, string>;
             // 5e.tools separates alternatives with ";" (class=Cleric;Wizard); the filter syntax here uses "||".

@@ -35,6 +35,10 @@ export interface GrantRule {
   prepared?: boolean;
   allowReplace?: boolean;
   name?: string;
+  /** A spell the giver lets the character cast a set number of times without a slot: "1/Long Rest" (5e.tools "daily"). */
+  uses?: string;
+  /** The slot level such a spell is cast at when it is higher than the spell's own (a Tiefling's Hellish Rebuke: 2). */
+  castAt?: number;
 }
 
 export interface SelectRule {

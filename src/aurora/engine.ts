@@ -41,6 +41,9 @@ export interface SpellPick {
   hint?: string;
   /** The element whose rule gave the spell (a feat or a species trait), for spells outside any class's spellcasting. */
   from?: string;
+  /** Casts the giver allows without a slot ("1/Long Rest"), and the slot level they are cast at when it is higher. */
+  uses?: string;
+  castAt?: number;
 }
 
 export interface SelectSlot {
@@ -402,7 +405,7 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         // Telekinetic, some domain and oath spell lists), the sheet places it: on the class whose list has it, or on
         // a line of its own with the ability the feature names.
         if (rule.type === "Spell") {
-          spellPicks.push({ id: rule.id, casting: rule.spellcasting ?? "", granted: true, prepared: true, from: el.id });
+          spellPicks.push({ id: rule.id, casting: rule.spellcasting ?? "", granted: true, prepared: true, from: el.id, ...(rule.uses ? { uses: rule.uses } : {}), ...(rule.castAt ? { castAt: rule.castAt } : {}) });
         }
         const tctx = makeCtx(prev, ownerLevel, ch, reg, empty, target.id);
         const mutual = mutualExclusions(target, reg);

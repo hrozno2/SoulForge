@@ -232,7 +232,9 @@ function castingOf(r: Resolved, p: SpellPick): string | undefined {
 
 function buildCasting(r: Resolved): CastingLine[] {
   const ch = r.character;
-  const entries = [...r.spellcasting.values()];
+  // A class's own spellcasting first, then a species', feat's or item's: the first line is "the" caster for the header
+  // and for a feature's save DC, and a Tiefling Sorcerer's first line was the Tiefling's (found on Play, 2026-11-11).
+  const entries = [...r.spellcasting.values()].sort((x, y) => Number(y.fromClass !== false && r.reg.get(y.owner)?.type === "Class") - Number(x.fromClass !== false && r.reg.get(x.owner)?.type === "Class"));
   const nonPact = entries.filter((e) => !(r.stats.get(`${lc(e.name)}:spellcasting:slots:count`) > 0));
   const mcLevel = multiclassCasterLevel(r, r.reg);
   const useShared = nonPact.length > 1 && mcLevel > 0;
@@ -368,7 +370,9 @@ function buildAc(r: Resolved): { value: number; parts: string[] } {
     const alt = s.get("ac:calculation");
     const base = Math.max(10 + dex, alt);
     value = base;
-    parts.push(alt > 10 + dex ? `Alternate calculation ${alt}` : `10 ${signed(dex)} Dex`);
+    // Named after what gives it (Draconic Resilience, Unarmored Defense), not "Alternate calculation".
+    const giver = s.parts("ac:calculation").sort((x, y) => y.value - x.value)[0]?.from;
+    parts.push(alt > 10 + dex ? `${giver || "Alternate calculation"} ${alt}` : `10 ${signed(dex)} Dex`);
   }
   // +1, +2 and +3 armor and shields from the inventory.
   let enchant = 0;
@@ -634,6 +638,9 @@ export function buildSheet(r: Resolved): SheetData {
     const t = sheetText(a, r);
     if (!t.text && !a.el.sheet) continue;
     const values = featureValues(a.el, r);
+    // A 5e.tools entry that only marks a level in the class table ("Sorcerous Origin feature", the later "Metamagic"
+    // rows) has no text, uses or numbers of its own: it is not a feature to list.
+    if (a.el.origin === "5etools" && !t.text && !t.usage && !values && !a.el.attacks?.length && a.el.type !== "Feat") continue;
     features.push({
       id: a.el.id,
       name: a.el.sheet?.alt ?? a.el.name,

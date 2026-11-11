@@ -42,4 +42,16 @@ describe("roll info", () => {
     expect(parseRollInfo(modern, { ...ctx, level: 12 }).damage.map((d) => d.expr)).toEqual(["3d10"]);
     expect(levelSteps(modern)).toEqual([{ level: 5, expr: "2d10" }, { level: 11, expr: "3d10" }, { level: 17, expr: "4d10" }]);
   });
+
+  // A cantrip is scaled once, whichever way its text states the tiers (found 2026-11-11: the Play sheet's cantrip rows
+  // showed first-level dice, and reading the listed steps as well as the tiers would have doubled them).
+  it("a cantrip's dice at level 9 are two dice in both wordings", () => {
+    const old = "<p>On a hit, the target takes 1d8 lightning damage.</p><p>The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).</p>";
+    const modern = "<p>On a hit, the target takes 1d8 Lightning damage.</p><p>Cantrip Upgrade</p><p>The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8).</p>";
+    for (const html of [old, modern]) for (const [level, want] of [[1, "1d8"], [5, "2d8"], [9, "2d8"], [11, "3d8"], [17, "4d8"]] as const) {
+      const info = parseRollInfo(html, { ...ctx, level });
+      const shown = info.damage.map((d) => scaleDamage(d.expr, { cantrip: true, cantripScaling: info.cantripScaling, characterLevel: level, castLevel: 0, spellLevel: 0, upcast: info.upcast }));
+      expect(shown, `${html.includes("Upgrade") ? "2024" : "2014"} wording at level ${level}`).toEqual([want]);
+    }
+  });
 });

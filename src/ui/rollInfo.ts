@@ -86,6 +86,8 @@ export function parseRollInfo(html: string, ctx: DcContext): RollInfo {
     info.damage = info.damage.filter((d, i) => i === info.damage.findIndex((x) => x.expr.endsWith(size ?? "?") && !stepExprs.has(x.expr)) || !stepExprs.has(d.expr));
     const first = info.damage.find((d) => size && new RegExp(`^\\d+${size}$`).test(d.expr));
     if (now && first) first.expr = now.expr;
+    // The steps are applied: a cantrip whose text lists them ("levels 5 (2d10), 11 (3d10)") is not scaled a second time.
+    info.cantripScaling = false;
   }
   for (const m of text.matchAll(/(?:regains?|restores?|heals?|hit points equal to|gains?)\s+(?:a number of hit points equal to\s+|(?:temporary )?hit points equal to\s+)?(\d+d\d+(?:\s*\+\s*\d+)?)/gi)) info.healing.push(m[1].replace(/\s+/g, ""));
   const up = /(?:damage|healing)[^.]*?(?:increases?|extra)[^.]*?by\s+(\d+d\d+)[^.]*?(?:each|every)[^.]*?(?:slot )?level above/i.exec(text) ?? /(\d+d\d+)\s+for each (?:slot )?level above/i.exec(text);

@@ -326,6 +326,8 @@ function Actions({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: She
     if (uid) set((c) => ({ ...c, inventory: c.inventory.map((i) => (i.uid === uid ? { ...i, qty: Math.max(0, i.qty - 1) } : i)) }));
   };
   const cantrips = sheet.casting.flatMap((c) => c.cantripsKnown.map((p) => r.reg.get(p.id)).filter((e): e is AElement => !!e));
+  // Each cantrip with the line it is cast from: its own attack bonus and save DC, not the first caster's.
+  const lineOf = new Map(sheet.casting.flatMap((c) => c.cantripsKnown.map((p) => [p.id, c] as const)));
   const castTime = (e: AElement) => (e.setters.time?.value ?? "").toLowerCase();
   const rangeOf = (a: SheetData["attacks"][number]) => {
     const el = a.elId ? r.reg.get(a.elId) : undefined;
@@ -338,7 +340,8 @@ function Actions({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: She
       <span className="act-name"><FavStar ch={ch} set={set} kind="spell" refId={e.id} /><span className="act-title"><b>{e.name}</b><small>Cantrip · {e.setters.school?.value ?? ""}</small></span></span>
       <span className="act-uses">–</span>
       <span className="act-roll" />
-      <span className="act-formula"><RollChips name={e.name} html={e.description} ctx={dcContext(sheet)} attackBonus={sheet.casting[0]?.attack} /></span>
+      {/* A cantrip's dice grow at 5th, 11th and 17th level: the row showed first-level damage for a level-9 caster. */}
+      <span className="act-formula"><RollChips name={e.name} html={e.description} ctx={dcContext(sheet, lineOf.get(e.id)?.dc)} attackBonus={(lineOf.get(e.id) ?? sheet.casting[0])?.attack} spell={{ level: 0, castLevel: 0, characterLevel: sheet.level }} /></span>
       <span>{e.setters.range?.value ? shortRange(e.setters.range.value) : "–"}</span>
       <span>–</span>
     </div>

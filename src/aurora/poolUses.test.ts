@@ -56,4 +56,12 @@ describe("when uses come back", () => {
   it("a 2014 Druid's Wild Shape: twice a short rest", () => {
     expect(features("Druid", "2014", 2)("Wild Shape")?.usage).toBe("2/Short Rest");
   });
+  // A later feature raises an earlier one's count: "Beginning at 6th level, you can use your Channel Divinity twice
+  // between rests." A 2014 Cleric stayed at one use.
+  it.each([[2, "1/Short Rest"], [6, "2/Short Rest"], [18, "3/Short Rest"]] as const)("a 2014 Cleric's Channel Divinity at level %i", (level, usage) => {
+    expect(features("Cleric", "2014", level)("Channel Divinity")?.usage).toBe(usage);
+  });
+  it("a 2024 Cleric's Channel Divinity returns one on a short rest, all on a long rest", () => {
+    expect(features("Cleric", "2024", 6)("Channel Divinity")?.usage).toBe("3/Long Rest (one on a Short Rest)");
+  });
 });

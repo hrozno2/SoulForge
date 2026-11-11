@@ -97,6 +97,12 @@ describe("Pact Magic slots are counted apart (the audit's R1)", () => {
     expect(after.play.pactUsed).toBeUndefined();
   });
 
+  it("a feature that returns one use on a short rest returns one, not all", () => {
+    const sheet = sheetOf({ features: [{ id: "rage", name: "Rage", usage: "3/Long Rest (one on a Short Rest)" }] as SheetData["features"] });
+    expect(shortRest(withPlay({ featureUses: { rage: 3 } }), sheet).play.featureUses).toEqual({ rage: 2 });
+    expect(shortRest(withPlay({ featureUses: { rage: 1 } }), sheet).play.featureUses).toEqual({});
+  });
+
   it("restoring slots returns both kinds", () => {
     expect(restoreSlots(withPlay({ pactUsed: 1, slotsUsed: { "3": 1 } }).play)).toMatchObject({ pactUsed: 0, slotsUsed: {} });
   });

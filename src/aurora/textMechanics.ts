@@ -23,6 +23,9 @@ export function usesFromText(text: string): string | undefined {
   if (m) return `{proficiency}${m[1] ? ` * ${count(m[1])}` : ""}`;
   m = /[Yy]ou can use (?:this feature|this ability|this trait|(?:[A-Z][\w'’-]* ?)+) (once|twice|thrice|(?:two|three|four|five|\d+) times)\b/.exec(text);
   if (m) return String(count(m[1]));
+  // A number of dice of the feature's own: "You have four superiority dice, which are d8s."
+  m = /\byou have (two|three|four|five|six|\d+) (?:[\w'’-]+ ){1,2}dice\b/i.exec(text);
+  if (m) return String(count(m[1]));
   // A pool sized by a class level: "equal to your paladin level × 5" (2014), "five times your Paladin level" (2024).
   m = /equal to (?:your )?(\w+) level (?:×|x|\*|times) (\d+|five|ten)\b/i.exec(text);
   if (m) return `{level:${m[1].toLowerCase()}} * ${count(m[2])}`;
@@ -60,7 +63,7 @@ export function dropPoolDefaults(out: AElement[]): number {
 
 /** The rest that brings uses back, as the sheet words it; undefined when the text names none. */
 export function recoveryFromText(text: string): string | undefined {
-  if (/regain (?:one|two|three|\w+) expended uses? when you finish a short rest,? and (?:you )?regain all expended uses when you finish a long rest/i.test(text)) return "Long Rest (one on a Short Rest)";
+  if (/regain (?:one|two|three|\w+)(?: of (?:its|your|the))? expended uses? when you finish a short rest,? and (?:you )?regain all (?:of (?:its|your|the) )?expended uses when you finish a long rest/i.test(text)) return "Long Rest (one on a Short Rest)";
   if (/when(?:ever)? you finish a short rest, .* can't do so again until you finish a long rest/i.test(text)) return "Long Rest";
   // "Once per day when you finish a short rest, you can..." (Arcane Recovery): the short rest is when it is used.
   if (/\bonce per day\b/i.test(text)) return "Long Rest";
@@ -86,9 +89,52 @@ export function applyTextUses(out: AElement[]): number {
     const max = usesFromText(text) ?? "1";
     const name = `${el.name.toLowerCase()}:uses`;
     if (el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase() === name)) continue;
-    el.rules = [...el.rules, { kind: "stat", name, value: max, bonus: "text uses" } as ARule];
+    // More at later levels, stated in the same text: "when you reach Fighter levels 7 (five dice total) and 15 (six
+    // dice total)".
+    const steps = [...text.matchAll(/\b(\d+) \((\w+) (?:dice|uses) total\)/gi)].map((x) => ({ kind: "stat", name, value: String(count(x[2])), bonus: "text uses", level: Number(x[1]) }) as ARule);
+    el.rules = [...el.rules, { kind: "stat", name, value: max, bonus: "text uses" } as ARule, ...steps];
     el.sheet = { ...(el.sheet ?? { display: true, descriptions: [] }), usage: `{{${name}}}/${rest}` };
     n++;
+  }
+  return n;
+}
+
+/**
+ * Uses a later feature adds to an earlier one's count, read from the later one's text: "Beginning at 6th level, you
+ * can use your Channel Divinity twice between rests" (a 2014 Cleric stayed at one use), "You gain another superiority
+ * die at 7th level" (a Battle Master stayed at four). Run after `applyTextUses`. Returns how many it read.
+ */
+export function applyTextUseSteps(out: AElement[]): number {
+  let n = 0;
+  const counted = new Map<string, AElement[]>();
+  for (const el of out) for (const r of el.rules) if (r.kind === "stat" && /:uses$/.test(r.name)) (counted.get(r.name.toLowerCase()) ?? counted.set(r.name.toLowerCase(), []).get(r.name.toLowerCase())!).push(el);
+  for (const el of out) {
+    if (el.origin !== "5etools" || !USES_TYPES.has(el.type)) continue;
+    const text = plain(el.description ?? "");
+    const between = /you can use (?:your )?([A-Z][\w'’ ]+?) (twice|three times|four times|\d+ times) between rests/.exec(text);
+    if (between) {
+      const stat = `${between[1].toLowerCase()}:uses`;
+      // The feature it speaks of is one of the same book (a Cleric's and a Paladin's Channel Divinity share the name).
+      if (counted.get(stat)?.some((o) => o.source === el.source) && !el.rules.some((r) => r.kind === "stat" && r.name === stat)) {
+        el.rules = [...el.rules, { kind: "stat", name: stat, value: String(count(between[2])), bonus: "text uses" } as ARule];
+        n++;
+      }
+    }
+    const another = /\byou gain another ([a-z]+(?: [a-z]+)?) die\b/i.exec(text);
+    if (another) {
+      const noun = `${another[1].toLowerCase()} dice`;
+      // The feature that has those dice, nearest by id: the same subclass's, not a feat that also speaks of them
+      // (Martial Adept names superiority dice too).
+      const shared = (a: string, b: string) => { let i = 0; while (i < a.length && a[i] === b[i]) i++; return i; };
+      const owner = [...new Set([...counted.values()].flat())]
+        .filter((o) => o !== el && o.origin === "5etools" && o.source === el.source && o.rules.some((r) => r.kind === "stat" && r.name === `${o.name.toLowerCase()}:uses`) && plain(o.description ?? "").toLowerCase().includes(noun))
+        .sort((x, y) => shared(y.id, el.id) - shared(x.id, el.id))[0];
+      const stat = owner ? `${owner.name.toLowerCase()}:uses` : "";
+      if (owner && !el.rules.some((r) => r.kind === "stat" && r.name === stat)) {
+        el.rules = [...el.rules, { kind: "stat", name: stat, value: "1" } as ARule];
+        n++;
+      }
+    }
   }
   return n;
 }

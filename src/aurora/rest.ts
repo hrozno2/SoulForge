@@ -90,7 +90,11 @@ export const restoreSlots = (play: PlayState): PlayState => ({ ...play, slotsUse
 
 export function shortRest(ch: Character, sheet: SheetData): Character {
   const uses = { ...ch.play.featureUses };
-  for (const f of sheet.features) if (/short rest/i.test(f.usage ?? "")) delete uses[f.id];
+  for (const f of sheet.features) {
+    // "Long Rest (one on a Short Rest)": a 2024 Rage, Second Wind, Wild Shape or Channel Divinity returns one use.
+    if (/one on a short rest/i.test(f.usage ?? "")) { if ((uses[f.id] ?? 0) > 1) uses[f.id] -= 1; else delete uses[f.id]; }
+    else if (/short rest/i.test(f.usage ?? "")) delete uses[f.id];
+  }
   // Pact Magic's slots return. A save from before they were counted apart has them under their spell level: that
   // count is cleared too, unless ordinary slots of the same level share it.
   const slots = { ...ch.play.slotsUsed };

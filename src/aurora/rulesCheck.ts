@@ -584,6 +584,24 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const parts = [...r.stats.parts(`${ranged ? "ranged" : "melee"}:attack`), ...r.stats.parts("attack"), ...r.stats.parts(`${wname}:attack`)];
     const want = m + (proficient ? sh.proficiency : 0) + magic + parts.reduce((t, p) => t + p.value, 0);
     if (a.bonus !== want && !(a.id && ch.attackEdits?.[a.id]?.bonusAdjust)) add("Weapon attack bonus", `${a.name}: +${a.bonus}, the rules give +${want}${parts.length ? ` (with ${parts.map((p) => `${p.from} ${p.value}`).join(", ")})` : ""}`);
+    // The damage, judged here too (the audit's R13: only the attack bonus was): the weapon's die (its versatile die
+    // in two hands; a Monk's Martial Arts die when that is larger, by the class tables of both Player's Handbooks),
+    // the same ability's modifier, the weapon's magic, the named parts, and Dueling's 2 for a lone one-handed melee
+    // weapon.
+    if (!(a.id && ch.attackEdits?.[a.id]?.damage)) {
+      const own = it?.twoHanded && el.setters.versatile ? el.setters.versatile.value : el.setters.damage?.value ?? "";
+      const monkLevel = monk ? refs.find((x) => x.el === monk)?.c.level ?? 0 : 0;
+      const martialArts = !monkLevel ? 0 : isModern(monk!) ? (monkLevel >= 17 ? 12 : monkLevel >= 11 ? 10 : monkLevel >= 5 ? 8 : 6) : monkLevel >= 17 ? 10 : monkLevel >= 11 ? 8 : monkLevel >= 5 ? 6 : 4;
+      const single = /^1d(\d+)$/.exec(own.trim());
+      const die = monkWeapon && single && martialArts > Number(single[1]) ? `1d${martialArts}` : own;
+      const dueling = r.active.some((x) => /^(?:fighting style:\s*)?dueling$/i.test(lc(x.el.name).replace(/^level \d+:\s*/, "")));
+      const held = ch.inventory.filter((i) => i.equipped && i.id && reg.get(i.id)?.type === "Weapon").length;
+      const duel = dueling && !ranged && !twoHandedTag && !it?.twoHanded && held <= 1 ? 2 : 0;
+      const dparts = [...r.stats.parts(`${ranged ? "ranged" : "melee"}:damage`), ...r.stats.parts("damage"), ...r.stats.parts(`${wname}:damage`)];
+      const flat = m + (it?.magic ?? 0) + (Number(el.setters.damageBonus?.value) || 0) + duel + dparts.reduce((t, p) => t + p.value, 0);
+      const wantDamage = die ? `${die}${flat ? (flat > 0 ? `+${flat}` : String(flat)) : ""}` : "";
+      if (die && a.damage.replace(/\s+/g, "") !== wantDamage.replace(/\s+/g, "")) add("Weapon damage", `${a.name}: ${a.damage}, the rules give ${wantDamage}${duel ? " (with Dueling 2)" : ""}${dparts.length ? ` (with ${dparts.map((p) => `${p.from} ${p.value}`).join(", ")})` : ""}`);
+    }
   }
   return out;
 }

@@ -8,7 +8,7 @@
  */
 import { applyFoundry } from "./foundry";
 import { applyLore } from "./lore";
-import { applyTextAttacks, applyTextDc, applyTextStats, applyTextUses, dropPoolDefaults } from "./textMechanics";
+import { applyTextAttacks, applyTextDc, applyTextStats, applyTextUseSteps, applyTextUses, dropPoolDefaults } from "./textMechanics";
 import { isModern } from "./edition";
 import type { AElement, ARule, SetterValue } from "./types";
 
@@ -2292,6 +2292,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   applyTextStats(out, { tool: (n) => toolId(n, out), weapon: (k) => weaponId(k, out), armor: (k) => ARMOR_IDS[k], skill: (n) => `ID_5ET_SKILL_${slug(n)}`, language: (n) => `ID_5ET_LANGUAGE_${slug(n)}` });
   for (const c of classes) applyTableMechanics(c, out);
   dropPoolDefaults(out);
+  applyTextUseSteps(out);
   applyTextAttacks(out);
   resolveSpellRefs(out, spellIds);
   resolveLooseRefs(out);

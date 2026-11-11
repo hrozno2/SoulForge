@@ -89,4 +89,12 @@ describe("Martial Arts with monk weapons (both rule books' wording, from the SRD
     const fighter = build(reg, "Fighter", "2014", ["Quarterstaff"]);
     expect(fighter.line("Quarterstaff")).toMatchObject({ bonus: 2, damage: "1d6-1" });
   });
+
+  // The rules check judges the damage itself (it judged only the attack bonus).
+  it("a wrong damage is named by the rules check", () => {
+    const { res, sheet } = build(reg, "Fighter", "2014", ["Longsword"]);
+    expect(checkCharacter(res, sheet, []).map((f) => f.rule)).not.toContain("Weapon damage");
+    const wrong = { ...sheet, attacks: sheet.attacks.map((a) => (a.name === "Longsword" ? { ...a, damage: "1d10+7" } : a)) };
+    expect(checkCharacter(res, wrong, []).map((f) => f.rule)).toContain("Weapon damage");
+  });
 });

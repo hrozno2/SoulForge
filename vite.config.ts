@@ -100,5 +100,7 @@ export default defineConfig({
   clearScreen: false,
   server: { port: 1420, strictPort: true },
   preview: { port: 4173, strictPort: true, headers: { "Content-Security-Policy": csp } },
-  test: { environment: "node", exclude: ["e2e/**", "node_modules/**", "dist/**", "src-tauri/**"] },
+  // A generous time for each test: the ones that load the bundled rules and build many characters take seconds here
+  // and several times that on a CI runner (the default 5 s failed there, 2026-11-11).
+  test: { environment: "node", testTimeout: 60_000, exclude: ["e2e/**", "node_modules/**", "dist/**", "src-tauri/**"] },
 });

@@ -20,8 +20,9 @@ const ATTACKS = [
   `<div style="position:fixed;inset:0;background:red">cover</div>`,
   `<b><i><u onmouseover=alert(1)>deep</u></i></b>`,
   `<noscript><p title="</noscript><img src=x onerror=alert(1)>"></noscript>`,
-  `<link rel=stylesheet href="https://example.com/x.css"><meta http-equiv=refresh content="0;url=https://example.com">`,
-  `<base href="https://example.com/">`,
+  // No address the test's own document loader could fetch (it follows a stylesheet link; a browser's parser does not).
+  `<link rel=stylesheet href="data:text/css,body{display:none}"><meta http-equiv=refresh content="0;url=about:blank">`,
+  `<base href="about:blank">`,
 ];
 const ALLOWED = new Set(["P", "DIV", "SPAN", "B", "I", "EM", "STRONG", "U", "UL", "OL", "LI", "H1", "H2", "H3", "H4", "H5", "BR", "TABLE", "THEAD", "TBODY", "TR", "TD", "TH", "CENTER", "SUP", "SUB", "A"]);
 const ATTRS = new Set(["class", "colspan", "rowspan"]);

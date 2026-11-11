@@ -1,16 +1,25 @@
 # Where we left off
 
-## 2026-11-11 night: found by looking and by better checks (unreleased, on main after v0.25.0)
+## 2026-11-11: found by looking and by better checks (unreleased, on main after v0.25.0, 15 commits)
 
-Work the plan in docs/AUDIT-2026-11-10.md; this night added R11 to R19 there. Fixed: a 2014 class's named weapons
-untrained on 5e.tools content (also in the SRD bundle v0.25.0 shipped), Monk weapons, pools (ki, sorcery points)
-counted as one use, feature dice by level, expertise without proficiency, the SRD bundle dropping all side data (no
-Expertise choice for Rogue and Bard), the landing animation before Apply, dice read as "ID4+2". The rules check now
-judges weapon training, skill bonuses and saving throws itself. docs/THEMES-REVIEW-2026-11-11.md has the colour
-recommendations for Chris; Settings has "Calmer colours" to try. Open for Chris: the migration gate against a grown
-corpus (R19), S8 (single instance, a new dependency), the theme recommendations, the design notes of 2026-11-10.
-Not yet checked in the real app: the backup file on disk (the screen was locked all night; the log line "backup
-checked ... with files on disk" says it worked).
+Work the plan in docs/AUDIT-2026-11-10.md (R11 to R19 were added this day). CI is green on dee3638 (tests, e2e, the
+packaged app's self-test, which now also reads and writes the library and the backup folder).
+
+Fixed, each with a test: a 2014 class's named weapons untrained on 5e.tools content (also in the SRD bundle v0.25.0
+shipped); Monk weapons; pools (ki, sorcery points) counted as one use, and counts that grow with level; a feature's
+and a cantrip's dice by level; expertise without proficiency; the SRD bundle dropping all side data (no Expertise
+choice for Rogue and Bard); spells cast without a slot ("No slots" for a Tiefling's Hellish Rebuke); a class's own
+casting line first; the landing animation before Apply; dice read as "ID4+2". The rules check now judges weapon
+training, weapon damage, skill bonuses and saving throws itself. Exports repeat. 300 random SRD characters run in
+every `npm test`.
+
+For Chris: docs/THEMES-REVIEW-2026-11-11.md (six recommendations; Settings has "Calmer colours" to try), the second
+pass in docs/UX-NOTES-2026-11-10.md, the migration gate against a grown corpus (audit R19), S8 (single instance: a
+new dependency), signing. A patch release is worth cutting: the shipped SRD rules have the weapon training and
+Expertise faults.
+
+After a push, look at CI (`gh run list`): the runner is three times slower than this machine and failed a test's
+default time limit while every local gate passed.
 
 ## 2026-11-10 evening: audit and first fixes (unreleased, on main after v0.25.0)
 

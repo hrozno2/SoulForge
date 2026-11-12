@@ -293,7 +293,8 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   // A score above 20 needs a named part that raises the maximum (Primal Champion, an Epic Boon) or sets the score (a
   // Belt of Giant Strength); the stat book already stops increases at the maximum, so this catches a bypass.
   for (const a of sh.abilities) {
-    const max = 20 + r.stats.parts(`${a.id}:max`).reduce((t, p) => t + p.value, 0);
+    // The checker's own reading of the raised maximum: the largest single raise named (they do not add up).
+    const max = 20 + Math.max(0, ...r.stats.parts(`${a.id}:max`).map((p) => p.value), ...r.stats.parts(`${a.id}:max:extra`).map((p) => p.value));
     const set = r.stats.parts(`${a.id}:score:set`).reduce((t, p) => Math.max(t, p.value), 0);
     if (a.score > Math.max(max, set, ch.abilityBase[a.id])) add("Ability score above its maximum", `${a.id} ${a.score} (maximum ${max}${set ? `, set to ${set}` : ""})`);
   }

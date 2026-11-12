@@ -87,8 +87,11 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
     // How many later choices need an option: the most needed first, then the caller's preference (random builds).
     const wanted = (o: { id: string }) => Math.max(needed.get(o.id) ?? 0, needed.get(conceptOf(o as never) ?? "") ?? 0);
     const score = new Map(free.map((o) => [o.id, prefer(open.rule.name, o.name)]));
+    // A language choice takes one of the Standard Languages before a rare or a setting's own (the choice offers every
+    // language, since a DM may allow any).
+    const standard = (o: (typeof free)[number]) => (o.type === "Language" && o.supports.includes("standard") ? 1 : 0);
     const candidates = (shown.length ? shown : free)
-      .sort((a, b) => wanted(b) - wanted(a) || score.get(b.id)! - score.get(a.id)!);
+      .sort((a, b) => wanted(b) - wanted(a) || Number(score.get(b.id)! >= 100) - Number(score.get(a.id)! >= 100) || standard(b) - standard(a) || score.get(b.id)! - score.get(a.id)!);
     // If every allowed option leads to a dead end somewhere else, the best allowed one is still better than none;
     // an option the rules rule out is never picked (with none allowed, stillToChoose leaves the choice alone).
     // Last resort, in order: any legal option the character does not have yet, then any legal option at all.

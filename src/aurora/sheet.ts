@@ -424,6 +424,8 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
   const out: AttackLine[] = [];
   const mods = (a: AbilityId) => s.get(`${a}:modifier`);
   const weaponAbilities = weaponAbilityOptions(r);
+  let trained: Set<string> | undefined;
+  const trainedConcepts = () => (trained ??= new Set(r.active.map((x) => conceptOf(x.el)).filter((c): c is string => !!c && c.startsWith("weapon:"))));
   // Dueling: +2 damage with a melee weapon held in one hand and no other weapon. The content leaves this to the app.
   const dueling = effectsOfKind(r, "one-hand-melee-damage").reduce((m, x) => Math.max(m, x.effect.value), 0);
   const weaponsHeld = r.character.inventory.filter((i) => i.equipped && i.id && r.reg.get(i.id)?.type === "Weapon").length;
@@ -461,7 +463,10 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     const twoHandedTag = tags.some((t) => /two.?handed/.test(t));
     const alt = weaponAbilities.filter((o) => (!o.magicOnly || (it.magic ?? 0) > 0 || el.type === "Magic Item" || /^\+\d/.test(el.name)) && (!o.notTwoHanded || !twoHandedTag)).map((o) => o.ability);
     const ability: AbilityId = [usual, ...alt].reduce((best, x) => (mods(x) > mods(best) ? x : best), usual);
-    const proficient = (el.setters.proficiency?.value ?? "").split(",").some((id) => r.ids.has(id.trim()));
+    // Trained by the id the weapon names, or by the same training under the other provider's id: a 5e.tools magic
+    // weapon (Frost Brand Longsword) in the hands of an Aurora Paladin asked for 5e.tools' "martial weapons" element,
+    // which that Paladin's training is not, and counted as untrained (found by the FastCharacter run, 2026-11-12).
+    const proficient = (el.setters.proficiency?.value ?? "").split(",").some((id) => { const k = id.trim(); if (r.ids.has(k)) return true; const need = r.reg.get(k); const c = need ? conceptOf(need) : undefined; return !!c && trainedConcepts().has(c); });
     const magicAtk = (Number(el.setters.attackBonus?.value) || 0) + (it.magic ?? 0);
     const magicDmg = (Number(el.setters.damageBonus?.value) || 0) + (it.magic ?? 0);
     const kind = ranged ? "ranged" : "melee";

@@ -117,6 +117,7 @@ export function moveNote(r: MoveResult): string {
   const other = r.changed.filter((c) => !/^(feats|spells|languages|gear|companions):/.test(c));
   if (other.length) parts.push("Numbers that changed:", ...other.map((x) => `- ${x}`));
   if (r.migration.unplaced.length) parts.push("Earlier picks no choice takes now:", ...r.migration.unplaced.map((u) => `- ${u.choice}: ${u.name}`));
+  if (r.migration.kept.length) parts.push("Your picks 5e.tools has no choice for, kept all the same:", ...r.migration.kept.map((x) => `- ${x}`));
   if (r.migration.filled.length) parts.push("Chosen for you, to look over (change them on Build):", ...r.migration.filled.map((x) => `- ${x}`));
   if (r.migration.againstRules.length) parts.push("Your picks the 5e.tools rules rule out, kept as you made them:", ...r.migration.againstRules.map((x) => `- ${x}`));
   if (r.rules.length) parts.push("Rules to check:", ...r.rules.map((x) => `- ${x}`));

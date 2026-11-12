@@ -27,7 +27,9 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")("saved characters move
   const files = walkDir(join(CACHE!, "runs"), (p) => p.endsWith("-character.json") && !/import_|big-|full-|rerun-/.test(p)).sort();
   const max = Number(process.env.RULES_DIFF_MAX) || 400;
   const step = Math.max(1, Math.floor(files.length / max));
-  const picked = files.filter((_, i) => i % step === 0).slice(0, max);
+  // MIGRATE_ONLY=<part of a file name>: just those characters, to a report of their own, without the gate.
+  const only = process.env.MIGRATE_ONLY;
+  const picked = only ? files.filter((f) => only.split(",").some((o) => f.includes(o))).slice(0, max) : files.filter((_, i) => i % step === 0).slice(0, max);
   const results: MoveResult[] = [];
   for (const f of picked) {
     let ch;
@@ -37,7 +39,10 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")("saved characters move
   }
   const dir = join(CACHE!, "engine");
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "migrate.md"), moveReport(results));
+  // A smaller sample (RULES_DIFF_MAX) reports to a file of its own and is not held against the accepted counts.
+  const tag = only ? "-only" : process.env.RULES_DIFF_MAX ? `-${max}` : "";
+  writeFileSync(join(dir, `migrate${tag}.md`), moveReport(results));
+  if (tag) { console.log(`MIGRATE${tag} ${results.length}: changed ${results.filter((r) => r.changed.length).length}, dropped ${results.filter((r) => r.dropped.length).length}, rules ${results.filter((r) => r.rules.length).length}, new rules ${results.filter((r) => r.newRules > 0).length}`); return; }
   const now = { changed: results.filter((r) => r.changed.length).length, dropped: results.filter((r) => r.dropped.length).length, rules: results.filter((r) => r.rules.length).length, newRules: results.filter((r) => r.newRules > 0).length };
   const base = join(dir, "migrate-count.json");
   const was = existsSync(base) ? (JSON.parse(readFileSync(base, "utf8")) as Partial<typeof now>) : {};

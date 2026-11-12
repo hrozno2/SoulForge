@@ -31,6 +31,11 @@ export interface Migration {
   againstRules: string[];
   /** Choices the move left open or made repeats, filled by the auto-fill: "choice: pick". The player may change them. */
   filled: string[];
+  /**
+   * The player's picks that no 5e.tools choice offers, kept all the same so that nothing is lost: in a choice of the
+   * same kind that had room ("in <choice>"), else as a manual addition (Manage). "name (where)".
+   */
+  kept: string[];
 }
 
 const isFive = (e: AElement | undefined) => !!e && (e.origin === "5etools" || e.id.startsWith("ID_5ET"));
@@ -120,7 +125,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // picks: the two providers build them differently, so they are filled below to give the old scores.
   const old = resolve(ch, from);
   const target = buildSheet(old).abilities.map((a) => a.score);
-  type Pick = { id: string; name: string; owner: string; ownerName: string; choice: string; ability: boolean; spell: boolean; casting?: string; concept?: string; at: number };
+  type Pick = { id: string; name: string; owner: string; ownerName: string; ownerType: string; choice: string; ability: boolean; spell: boolean; casting?: string; concept?: string; at: number };
   const pool: Pick[] = [];
   const lists: { owner: string; name: string; values: string[] }[] = [];
   const isAbility = (name: string, type: string) => type === "Ability Score Improvement" || /^ability score (improvement|increase)/i.test(name) || (ABILITY.test(name) && /\+\d|increase|improvement/i.test(name));
@@ -136,7 +141,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       // By what the pick is, not by its choice's name: Aurora's "Ability Score Improvement (Barbarian 4)" holds feats.
       const ability = el?.type !== "Feat" && (s.rule.type === "Ability Score Improvement" || isAbility(el?.name ?? "", el?.type ?? ""));
       const t = ability ? id : map(id, false);
-      pool.push({ id: t ?? id, name: el?.name ?? id, owner: map(s.owner.id, false)!, ownerName: nameKey(s.owner.name), choice: s.rule.name, ability, spell: el?.type === "Spell", casting: s.rule.spellcasting, concept: el ? conceptOf(el) : undefined, at: s.at ?? 0 });
+      pool.push({ id: t ?? id, name: el?.name ?? id, owner: map(s.owner.id, false)!, ownerName: nameKey(s.owner.name), ownerType: s.owner.type, choice: s.rule.name, ability, spell: el?.type === "Spell", casting: s.rule.spellcasting, concept: el ? conceptOf(el) : undefined, at: s.at ?? 0 });
     }
   }
   const picks = pool.filter((p) => !p.ability);
@@ -180,6 +185,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const open = anyway ? s.options : s.options.filter((o) => !s.blocked.has(o.id));
     const byId = open.find((o) => o.id === p.id);
     if (byId) return byId.id;
+    // A feat 5e.tools has as the very same feat (name and book) is that feat or nothing: its other edition's version
+    // under the same name is another feat (the 2024 Grappler and Charger add +1 to a score, the 2014 ones do not), and
+    // taking it changed the scores. The choice's own rules may rule the old one out; it is then kept as it was
+    // (`anyway`: the engine keeps a pick a choice no longer offers and marks it).
+    const self = to.get(p.id);
+    if (self?.type === "Feat" && s.rule.type === "Feat") return anyway && to.find(s.rule.type, "").some((o) => o.id === self.id) ? self.id : undefined;
     const n = nameKey(p.name);
     // The same concept, whoever names it: Aurora's "Skill Expertise (Acrobatics)" Class Feature is 5e.tools' expertise.
     const c = p.concept;
@@ -334,14 +345,57 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // The shape the old character took at a level (Waldrom: "+1 to two abilities" at 6, 8, 12 and 14).
   const shapeAt = (at: number) => [...new Set(shapeOld.filter((p) => p.at === at).map((p) => shapeOf(p.name)))];
   const sameShape = (name: string) => shapes.includes(shapeOf(name));
+  // The old increases themselves, where the old picks say which score each raised: Crusher's "+1 Strength" is
+  // Crusher's "+1 Strength"; the species' "+2 Constitution, +1 Charisma" is that, not whatever sum comes nearest (the
+  // nearest sum gave a Genasi +2 Strength because Crusher could then give Constitution). Each old increase is used
+  // once, by the same owner's choice (a feat's) or the same level's (an origin's, a class improvement's).
+  const increases = pool.filter((p) => p.ability).map((p) => ({ p, ability: ABILITY.exec(p.name)?.[1].toLowerCase() ?? "", left: Number(/\+\s*(\d)/.exec(p.name)?.[1] ?? /\+\s*(\d)/.exec(p.choice)?.[1] ?? 1) })).filter((x) => x.ability);
+  const totalsOf = (name: string): Map<string, number> => {
+    const out = new Map<string, number>();
+    for (const m of name.matchAll(/\+\s*(\d)\s+(strength|dexterity|constitution|intelligence|wisdom|charisma)\b/gi)) out.set(m[2].toLowerCase(), (out.get(m[2].toLowerCase()) ?? 0) + Number(m[1]));
+    return out;
+  };
+  const matchScores = () => {
+    for (let round = 0; round < 60; round++) {
+      const r = resolve(next, to);
+      let done = false;
+      for (const s of r.slots) {
+        if (!abilityish(s)) continue;
+        const featOwned = s.owner.type === "Feat";
+        const mine = increases.filter((x) => x.left > 0 && (featOwned ? x.p.ownerType === "Feat" && x.p.ownerName === nameKey(s.owner.name) : x.p.ownerType !== "Feat" && (x.p.at <= 1) === ((s.at ?? 0) <= 1) && ((s.at ?? 0) <= 1 || x.p.at === s.at)));
+        if (!mine.length) continue;
+        const have = (a: string) => mine.filter((x) => x.ability === a).reduce((n, x) => n + x.left, 0);
+        let bestO: { id: string; t: Map<string, number>; sum: number } | undefined;
+        for (const o of raising(s)) {
+          if ((next.selections[s.key] ?? []).includes(o.id)) continue;
+          const t = totalsOf(o.name);
+          if (!t.size || ![...t].every(([a, n]) => have(a) >= n)) continue;
+          const sum = [...t.values()].reduce((x, y) => x + y, 0);
+          if (!bestO || sum > bestO.sum) bestO = { id: o.id, t, sum };
+        }
+        if (!bestO) continue;
+        for (const [a, n] of bestO.t) {
+          let need = n;
+          // A whole old increase of exactly this size first, then parts of larger ones.
+          for (const x of [...mine.filter((y) => y.ability === a)].sort((x, y) => Number(y.left === n) - Number(x.left === n))) { const take = Math.min(need, x.left); x.left -= take; need -= take; if (!need) break; }
+        }
+        next.selections[s.key] = [...(next.selections[s.key] ?? []), bestO.id];
+        done = true;
+        break;
+      }
+      if (!done) break;
+    }
+  };
   const fillScores = (only?: (s: Slot) => boolean) => {
   const skipped = new Set<string>();
+  matchScores();
   for (let round = 0; round < 40 && gap(next) > 0; round++) {
     const s = resolve(next, to).slots.find((x) => !skipped.has(x.key) && abilityish(x) && (!only || only(x)));
     if (!s) break;
     const b = best(next, s, 3);
     if (!b || b.gap >= gap(next)) { skipped.add(s.key); continue; }
     next.selections[s.key] = [...(next.selections[s.key] ?? []), b.id];
+    matchScores();
   }
   };
 
@@ -414,6 +468,38 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       }
     }
   }
+  // Nothing the player picked is dropped. A pick no choice offers (a language outside the list 5e.tools reads for
+  // the background, a spell of the other edition, a feat whose choice 5e.tools words more narrowly) goes to a choice of
+  // its own kind that still has room, its owner's and its level's first; the engine keeps a pick a choice does not
+  // offer, and the rules check says so where a rule is broken. What finds no such choice is kept as a manual addition
+  // (Manage, Manual additions), which is what a player would do by hand. Only content 5e.tools has can be kept.
+  const kept: string[] = [];
+  {
+    const KEEPABLE = /^(Spell|Language|Feat|Proficiency)$/;
+    const isCantripSlot = (x: Slot) => /cantrip/i.test(x.rule.name) || /,\s*0\s*$/.test(x.rule.supports ?? "");
+    const takes = (x: Slot, p: Pick, el: AElement): number => {
+      if (x.rule.type === "List" || x.rule.type !== el.type || !room(x) || (next.selections[x.key] ?? []).includes(el.id)) return -1;
+      const own = ownerOf(x, p), lvl = p.at === (x.at ?? 0);
+      if (el.type === "Spell") {
+        if ((Number(el.setters.level?.value ?? 0) === 0) !== isCantripSlot(x)) return -1;
+        if (p.casting && x.rule.spellcasting && p.casting.toLowerCase() !== x.rule.spellcasting.toLowerCase() && !own) return -1;
+      }
+      // A feat only where it was: its owner's choice or its own level's (else it takes another level's feat).
+      if (el.type === "Feat" && !own && !lvl) return -1;
+      return own && lvl ? 0 : own ? 1 : lvl ? 2 : 3;
+    };
+    for (let i = 0; i < picks.length; i++) {
+      const p = picks[i];
+      const el = to.get(p.id);
+      if (!el || !KEEPABLE.test(el.type)) continue;
+      const r = resolve(next, to);
+      if (r.ids.has(el.id)) { picks.splice(i--, 1); continue; }
+      const best = r.slots.map((x) => ({ x, rank: takes(x, p, el) })).filter((y) => y.rank >= 0).sort((a, b) => a.rank - b.rank)[0];
+      if (best) { next.selections[best.x.key] = [...(next.selections[best.x.key] ?? []), el.id]; kept.push(`${el.name} (in ${best.x.rule.name})`); }
+      else { if (!next.extras.includes(el.id)) next.extras = [...next.extras, el.id]; kept.push(`${el.name} (as a manual addition)`); }
+      picks.splice(i--, 1);
+    }
+  }
   const beforeFill = resolve(next, to);
   const filledCh0 = autoFill(next, to);
   // The player's own picks stay, even those 5e.tools' rules rule out (kept and listed): only open choices, and
@@ -439,7 +525,11 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   }
   const filledR = resolve(filledCh, to);
   const filled = filledR.slots.flatMap((x) => x.chosen.filter((id) => !beforeFill.slots.find((y) => y.key === x.key)?.chosen.includes(id)).map((id) => `${x.rule.name}: ${to.get(id)?.name ?? id}`));
-  Object.assign(next, { selections: filledCh.selections, prepared: filledCh.prepared });
+  // The prepared spells stay the player's: the auto-fill prepares up to the limit, which gave a moved character
+  // spells it never had. Only a casting the old character had nothing prepared for, and now must prepare, is filled.
+  const preparedNow = { ...next.prepared };
+  for (const [k, v] of Object.entries(filledCh.prepared ?? {})) if (!Object.keys(ch.prepared ?? {}).length && !(preparedNow[k]?.length)) preparedNow[k] = v;
+  Object.assign(next, { selections: filledCh.selections, prepared: preparedNow });
   // A pick the rebuilt character has anyway (5e.tools grants what Aurora asked) has its place.
   const final = resolve(next, to);
   const names = new Set(final.active.map((a) => nameKey(a.el.name)));
@@ -448,5 +538,5 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   const unplaced = picks.filter((p) => !final.ids.has(p.id) && !had(p.name)).map((p) => ({ id: p.id, name: p.name, choice: p.choice }));
   const open = final.slots.filter((x) => room(x) && !x.rule.optional && x.options.length).map((x) => `${x.owner.name}: ${x.rule.name} [${x.options.slice(0, 4).map((o) => o.name).join("; ")}${x.options.length > 4 ? "; …" : ""}]`);
   const againstRules = final.slots.flatMap((x) => x.chosen.filter((id) => x.blocked.has(id)).map((id) => `${x.rule.name}: ${to.get(id)?.name ?? id} (${x.whyBlocked?.(id) ?? "against the rules"})`));
-  return { ch: next, moved, noTwin: [...noTwin.values()], unplaced, open, againstRules, filled };
+  return { ch: next, moved, noTwin: [...noTwin.values()], unplaced, open, againstRules, filled, kept };
 }

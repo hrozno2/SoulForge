@@ -221,7 +221,9 @@ function langRules(list: J[] | undefined, label: string): { rules: ARule[]; lang
   const languages: string[] = [];
   for (const entry of list ?? []) {
     for (const [k, v] of Object.entries(entry)) {
-      if (k === "anyStandard") rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "standard", number: Number(v) || 1 });
+      // "Any standard language": the Standard Languages table, or with the DM's leave any other (2014 PHB, chapter 4;
+      // Plutonium offers every language here for the same reason). The auto-fill takes a standard one.
+      if (k === "anyStandard") rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(v) || 1 });
       else if (k === "any" || k === "other") rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(v) || 1 });
       // "choose": {"from": ["elvish", "other"], "count": 1} (Simic Hybrid, the Ravnica backgrounds): one of these, and
       // "other" (or "any") opens it to any language, as Plutonium offers it.
@@ -584,7 +586,7 @@ function customOrigin(rules0: ARule[], label: string, ctx: Ctx, out: AElement[])
  * or +1 to three; the 2024 Ability Score Improvement feat: +2 to one, or +1 to two), as 5e.tools lists alternatives
  * everywhere; given `sets`, each becomes an option and the character takes one.
  */
-function abilityRules(list: J[] | undefined, label: string, sets?: { out: AElement[]; idBase: string }): ARule[] {
+function abilityRules(list: J[] | undefined, label: string, sets?: { out: AElement[]; idBase: string; after?: ARule[] }): ARule[] {
   if (sets && Array.isArray(list) && list.length > 1) {
     const words = (entry: J) => {
       const c = entry.choose as J | undefined;
@@ -600,7 +602,17 @@ function abilityRules(list: J[] | undefined, label: string, sets?: { out: AEleme
     return [{ kind: "select", type: "Ability Score Improvement", name: `${label}: ability score increases (choose one)`, supports: ids.join("|"), number: 1 }];
   }
   const rules: ARule[] = [];
+  const tops: ARule[] = [];
   for (const entry of list ?? []) {
+    // "max": 30 (every Epic Boon: "increase one ability score by 1, to a maximum of 30"): the score this entry raises
+    // may pass 20. For a chosen score, only the one chosen.
+    const top = Number(entry.max) > 20 ? String(Number(entry.max) - 20) : undefined;
+    // Added after the entry's own rules: a choice is saved under its rule's place in the list, which must not move.
+    if (top) {
+      for (const k of Object.keys(entry)) if (k in ABIL && typeof entry[k] === "number") tops.push({ kind: "stat", name: `${abilFull(k)}:max:extra`, value: top, bonus: "base" });
+      const c = entry.choose as J | undefined;
+      if (c && !c.weighted) for (const a of ((c.from as string[]) ?? Object.keys(ABIL))) tops.push({ kind: "stat", name: `${abilFull(a)}:max:extra`, value: top, bonus: "base", requirements: `ID_5ET_ASIONE_${c.amount ?? 1}_${a}` });
+    }
     for (const [k, v] of Object.entries(entry)) {
       if (k in ABIL && typeof v === "number") rules.push({ kind: "stat", name: abilFull(k), value: String(v) });
       else if (k === "choose") {
@@ -614,6 +626,14 @@ function abilityRules(list: J[] | undefined, label: string, sets?: { out: AEleme
         }
       }
     }
+  }
+  // The raised maximums live on an element of their own that the owner grants last: a rule on the owner itself cannot
+  // ask about the owner's own pick (requirements never count what comes only through the element judged), and a rule
+  // added in the middle would move the places saved choices are kept under.
+  if (tops.length && sets?.after) {
+    const mid = `${sets.idBase}_SCORE_MAXIMUM`;
+    if (!sets.out.some((o) => o.id === mid)) sets.out.push(base(mid, `${label}: score maximum`, "Information", "5etools", { compendiumHidden: true, rules: tops }));
+    sets.after.push({ kind: "grant", type: "Information", id: mid });
   }
   return rules;
 }
@@ -902,12 +922,14 @@ function resolvePrerequisites(out: AElement[]): void {
 
 function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
   const reqs = prerequisiteOf(f.prerequisite as J[] | undefined, out);
-  const rules = [...abilityRules(f.ability, f.name, { out, idBase: ftId("FEAT", f.name, f.source) }), ...trainingRules(f, f.name, out, ctx, ftId("FEAT", f.name, f.source)), ...defenseRules(f)];
+  const afterAll: ARule[] = [];
+  const rules = [...abilityRules(f.ability, f.name, { out, idBase: ftId("FEAT", f.name, f.source), after: afterAll }), ...trainingRules(f, f.name, out, ctx, ftId("FEAT", f.name, f.source)), ...defenseRules(f)];
   const spells = additionalSpellRules(f.additionalSpells, f.name, f.source, out);
   rules.push(...tableSpellChoices(f, spells.rules));
   // The options a feat teaches (Martial Adept's maneuvers, Metamagic Adept's options, Fighting Initiate's style).
   rules.push(...optionalFeatureRules(f, rules));
   rules.push(...proseChoiceRules(f, ftId("FEAT", f.name, f.source), undefined, ctx, out));
+  rules.push(...afterAll);
   const html = entriesHtml(f.entries);
   return base(ftId("FEAT", f.name, f.source), f.name, "Feat", srcName(ctx, f.source), {
     // A feat the rules let a character take more than once (Elemental Adept, Ability Score Improvement).
@@ -982,7 +1004,7 @@ function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, 
 
 function languageElement(l: J, ctx: Ctx): AElement {
   return base(`ID_5ET_LANGUAGE_${slug(l.name)}`, l.name, "Language", srcName(ctx, l.source ?? "PHB"), {
-    supports: [String(l.type ?? "standard").toLowerCase(), "5et language"], description: entriesHtml(l.entries),
+    supports: [...((l.types as string[] | undefined) ?? [String(l.type ?? "regional").toLowerCase()]), "5et language"], description: entriesHtml(l.entries),
     setters: { script: set(l.script ?? ""), speakers: set(Array.isArray(l.typicalSpeakers) ? l.typicalSpeakers.join(", ") : "") },
   });
 }
@@ -1142,7 +1164,7 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   // standard languages; in the books before them (Monsters of the Multiverse, the Ravenloft lineages) Common and one.
   if (!r.languageProficiencies?.length) {
     rules.push({ kind: "grant", type: "Language", id: "ID_5ET_LANGUAGE_COMMON" });
-    rules.push({ kind: "select", type: "Language", name: `${r.name} language`, supports: "standard", number: isModern({ id: id, source: String(r.source) }) ? 2 : 1 });
+    rules.push({ kind: "select", type: "Language", name: `${r.name} language`, supports: "5et language", number: isModern({ id: id, source: String(r.source) }) ? 2 : 1 });
   }
   // A species on the custom-lineage rule chooses its increases (the background's, under the 2024 rules, instead).
   if (r.lineage && !abilityRules(r.ability, r.name).length) {
@@ -1813,8 +1835,11 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   rules.push(...optionalFeatureRules(c));
   // Feats a class takes at set levels, by category (2024: the Fighting Style feat at 1, the Epic Boon at 19).
   for (const fp of (c.featProgression as J[]) ?? []) {
-    const cats = ((fp.category as string[]) ?? []).map((x) => `category ${x}`);
-    for (const [lv, n] of Object.entries((fp.progression as J) ?? {})) rules.push({ kind: "select", type: "Feat", name: `${fp.name ?? "Feat"} (${c.name} ${lv})`, supports: cats.length ? `5et feat,(${cats.join("||")})` : "5et feat", number: Number(n) || 1, level: Number(lv) });
+    // The Epic Boon is "an Epic Boon feat or another feat of your choice for which you qualify" (2024 PHB, every class's
+    // 19th level): any feat, each by its own requirements. Offering boons alone ruled out a legal Alert or Athlete there.
+    const cats = ((fp.category as string[]) ?? []).filter((x) => x !== "EB").map((x) => `category ${x}`);
+    const any = ((fp.category as string[]) ?? []).includes("EB");
+    for (const [lv, n] of Object.entries((fp.progression as J) ?? {})) rules.push({ kind: "select", type: "Feat", name: `${fp.name ?? "Feat"} (${c.name} ${lv})`, supports: cats.length && !any ? `5et feat,(${cats.join("||")})` : "5et feat", number: Number(n) || 1, level: Number(lv) });
   }
   // Weapon Mastery (2024): the masteries known at each level, chosen from the weapons that have one.
   const mastery = c.itemMasteriesProgression as Record<string, number> | undefined;
@@ -2274,7 +2299,18 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
       }
     }
     for (const o of json.optionalfeature ?? []) out.push(convertOptionalFeature(o, ctx));
-    for (const l of json.language ?? []) out.push(languageElement(l, ctx));
+    // One element per language name. Its kind is the Player's Handbook's (either edition's table): a setting's own
+    // list (Dragonlance's Abanasinian, Ravnica's Kraul) or a monster's language is "regional", not a Standard Language.
+    {
+      const byName = new Map<string, J[]>();
+      for (const l of (json.language as J[] | undefined) ?? []) { const k = slug(String(l.name)); (byName.get(k) ?? byName.set(k, []).get(k)!).push(l); }
+      for (const group of byName.values()) {
+        const core = group.filter((l) => /^X?PHB$/.test(String(l.source ?? "PHB")));
+        const first = core[0] ?? group.find((l) => l.entries) ?? group[0];
+        const kinds = [...new Set(core.map((l) => String(l.type ?? "regional").toLowerCase()))];
+        out.push(languageElement({ ...first, types: kinds.length ? kinds : ["regional"] }, ctx));
+      }
+    }
     for (const r of json.race ?? []) convertRace(r, ctx, subraces, out);
     for (const b of json.background ?? []) convertBackground(b, ctx, out);
     for (const m of json.monster ?? []) out.push(convertMonster(m, ctx));

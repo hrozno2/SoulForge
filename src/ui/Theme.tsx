@@ -18,19 +18,20 @@ const read = (k: string, d: string) => {
   }
 };
 
-/** The theme for anyone who has not picked one: slate and amber. */
-export const DEFAULT_THEME = "slate";
+/** The theme for anyone who has not picked one: Obsidian again (Chris, 2026-11-12; slate and amber for a while before). */
+export const DEFAULT_THEME = "obsidian";
 
 const migrate = (v: string) => (THEMES[v] ? v : v === "light" ? "parchment" : DEFAULT_THEME);
 
 /**
- * The saved theme. Obsidian was the default until slate and amber; the picker saved it without anyone choosing it, so
- * it moves to the new default once (a theme picked afterwards stays).
+ * The saved theme. The default changed from Obsidian to slate and back; a theme saved as the default of its day moves
+ * to today's default once (a theme picked afterwards stays).
  */
 function savedTheme(): string {
   let v = migrate(read("charforge.theme", DEFAULT_THEME));
   try {
-    if (!localStorage.getItem("charforge.themeDefault") && v === "obsidian") v = DEFAULT_THEME;
+    // Slate was the default for a while and took over from Obsidian without anyone choosing it: back once.
+    if (localStorage.getItem("charforge.themeDefault") !== DEFAULT_THEME && v === "slate") v = DEFAULT_THEME;
     localStorage.setItem("charforge.themeDefault", DEFAULT_THEME);
     localStorage.setItem("charforge.theme", v);
   } catch {

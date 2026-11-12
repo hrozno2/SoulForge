@@ -216,6 +216,14 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   // An ability the sheet does not know (content naming a spellcasting ability another way) is NaN, not a crash.
   const mod = (a: AbilityId) => sh.abilities.find((x) => x.id === a)?.mod ?? NaN;
 
+  const sameChoice = (x: (typeof r.slots)[number]) => `${x.owner.id}|${x.rule.type}|${x.rule.name}|${x.rule.spellcasting ?? ""}`;
+  const offered = new Map<string, Set<string>>();
+  const offeredBy = (x: (typeof r.slots)[number]) => {
+    const k = sameChoice(x);
+    let set = offered.get(k);
+    if (!set) { set = new Set(r.slots.filter((y) => sameChoice(y) === k).flatMap((y) => y.options.map((o) => o.id))); offered.set(k, set); }
+    return set;
+  };
   // Completeness: every choice the rules ask for is made, none is impossible, nothing points at missing content.
   for (const s of r.slots) {
     if (s.rule.optional) continue;
@@ -224,7 +232,9 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     for (const id of s.chosen) if (s.blocked.has(id)) add("A choice does not meet its requirements", `${s.rule.name}: ${reg.get(id)?.name}`);
     // The engine activates whatever a saved pick names. One the choice does not offer at all (an edited file, content
     // that changed since, a pick kept through a move to other content) is on the character against its choice's rules.
-    if (s.rule.type !== "List") for (const id of s.chosen) if (reg.get(id) && !s.options.some((o) => o.id === id)) add("A pick its choice does not offer", `${s.rule.name}: ${reg.get(id)?.name}`);
+    // A choice asked again at later levels (a spellbook, spells known) is one list to the player, and the Magic tab
+    // hands picks to its places in order: a pick is offered when any place of the same choice offers it.
+    if (s.rule.type !== "List") for (const id of s.chosen) if (reg.get(id) && !offeredBy(s).has(id)) add("A pick its choice does not offer", `${s.rule.name}: ${reg.get(id)?.name}`);
     for (const d of repeatedPicks(r, s)) add("A choice repeats something the character already has", d);
   }
   for (const w of r.warnings) add("Content refers to something missing", w);

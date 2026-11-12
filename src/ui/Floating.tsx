@@ -93,6 +93,12 @@ export function restoreLayouts(layouts: Record<string, FloatWindow[]> | undefine
   try { for (const [id, ws] of Object.entries(layouts ?? {})) if (!localStorage.getItem(KEY(id)) && Array.isArray(ws)) localStorage.setItem(KEY(id), JSON.stringify(ws)); } catch { /* storage unavailable */ }
 }
 
+/**
+ * The size a window opens at: roomy enough for a pick list with its sort, search and filters (560 by 520 was crammed:
+ * Chris, 2026-11-12), and a share of the app window where that is small. A window the player resized keeps its size.
+ */
+const OPEN_W = () => Math.round(Math.max(480, Math.min(820, window.innerWidth * 0.62)));
+const OPEN_H = () => Math.round(Math.max(420, Math.min(760, window.innerHeight * 0.82)));
 /** The title bar's height: the part of a window that always stays inside the app window, to drag it back by. */
 const BAR = 38;
 /**
@@ -136,7 +142,7 @@ export function FloatingProvider({ characterId, children, render }: { characterI
         return ws;
       }
       const n = ws.filter((w) => !w.bagged).length;
-      const fresh = clampTo({ id: `${spec.kind}-${spec.ref}-${Date.now().toString(36)}`, ...spec, x: 120 + n * 32, y: 90 + n * 28, w: 560, h: 520, z: top(ws), bagged: false });
+      const fresh = clampTo({ id: `${spec.kind}-${spec.ref}-${Date.now().toString(36)}`, ...spec, x: 120 + n * 32, y: 60 + n * 28, w: OPEN_W(), h: OPEN_H(), z: top(ws), bagged: false });
       return [...ws, fresh];
     });
     return ok;

@@ -879,7 +879,9 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
    */
   const floating = useFloating();
   /** A card that is out on the table: its slot stands empty, an outline, until it flies back (C6.4). */
-  const cardOut = (kind: string) => !!floating?.windows.some((w) => w.kind === "card" && w.ref === kind && !w.bagged);
+  // In the Bag of Holding it is out too: its slot stays an outline until it is taken out and applied. (Bagged, the
+  // slot showed the card as if it had been slotted in: Chris, 2026-11-12.)
+  const cardOut = (kind: string) => !!floating?.windows.some((w) => w.kind === "card" && w.ref === kind);
   const cardTitle = (kind: Kind) => (kind === "class" ? ch.classes.map((c) => r.reg.get(c.classId)?.name ?? "?").join(" / ") || "Class" : kind === "race" ? chosenEl.race?.name ?? "Species" : kind === "background" ? chosenEl.background?.name ?? "Background" : kind === "magic" ? "Your spells" : "Your inventory");
   // What a space held before a new pick, while its window is open: its × (take back) restores it.
   const [fresh, setFresh] = useState<Partial<Record<Kind, Character>>>({});

@@ -548,6 +548,8 @@ em.kind-other { background: #555; color: #eee; }
 /* the full description window */
 /* Dialogs open above everything they can be opened from, the open build card (.card-back-veil, 280) included. */
 .modal-back { position: fixed; inset: 0; background: rgba(0, 0, 0, .65); z-index: 320; display: grid; place-items: center; padding: 20px; }
+/* Settings lies over everything: floating cards (400 and up), the Bag of Holding, a card at full size (1500). */
+.modal-back.over-all { z-index: 3000; }
 .modal-page { position: relative; width: min(760px, 100%); max-height: calc(100vh - 40px); overflow: auto; background: var(--paper); color: var(--ink); border: 1px solid var(--gilt); border-top: 4px solid var(--crimson); box-shadow: 0 12px 50px #000; padding: 20px 28px 26px; }
 .modal-page h2 { color: var(--crimson); font-size: 28px; border-bottom: 2px solid var(--gilt); }
 .modal-page:not(.themed) .muted, .modal-page:not(.themed) small { color: #6b5a3a; }

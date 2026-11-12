@@ -144,7 +144,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
     }
   };
   return (
-    <div className="modal-back" role="dialog" aria-label="Settings" onClick={onClose}>
+    <div className="modal-back over-all" role="dialog" aria-label="Settings" onClick={onClose}>
       <div className="modal-page themed settings" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" aria-label="Close" onClick={onClose}>×</button>
         <h2>{t("Settings")}</h2>

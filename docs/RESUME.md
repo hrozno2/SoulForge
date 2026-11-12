@@ -33,6 +33,23 @@ Done, each with a test:
   slips; the ones that were ours are the weapon training and the score maximum above. Importer gaps it showed are
   in the engine plan, W9.
 
+Later the same day (Chris, in the test app): the default theme is Obsidian again; pick cards open larger; Settings
+lies over floating cards and the bag; a card put in the Bag of Holding leaves its slot empty; "A pick its choice
+does not offer" no longer marks a spellbook pick kept in an earlier place of the same choice.
+
+Open from that session, not started:
+- The PDF preview on Export slows the app (Chris). Not measured yet. Suspects: the sheet is filled on the main thread
+  (pdf-lib, about a thousand fields for the DLDM sheet) on every change of what would print; `printed` in
+  SheetExport.tsx builds the fill data and hashes it on every render. First measure, then: fill in a worker or only on
+  demand ("Refresh preview"), and memo the hash on the character alone.
+- "Print the entire spellbook" on the DLDM sheet: Chris says it did not add the spellbook. His exported file lists
+  19 spells for a Wizard 4 (5 cantrips, 7 first level, 7 second level), which looks like all of it; ask him what was
+  missing (spell cards? descriptions? a spell by name?).
+- Musical instruments from the Sword Coast Adventurer's Guide (Birdpipes, Glaur, Thelarr, Zulkoon...) have no tool
+  training on 5e.tools content: 14 open choices on 60 moved characters. Give every instrument item (type INS) its
+  training element (fivetools.ts, where the standard tools are made).
+- The move: section 4 of ENGINE-LEGAL-PLAN.md. State on 60 fresh characters: 33 with a changed sheet (spells 24).
+
 Checks: 900 random characters (300 on each of 5e.tools, SRD, both; seed 20261113) clean; coverage of every
 subclass on 5e.tools clean; gates run before the release.
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadContentSet } from "../engine/testContent";
-import { newCharacter, normalizeCharacter, sanitizeCharacter, type Character } from "./character";
+import { newCharacter, normalizeCharacter, openCharacter, sanitizeCharacter, type Character } from "./character";
 import { resolve } from "./engine";
 import { randomCharacter } from "./randomCharacter";
 import { buildSheet } from "./sheet";
@@ -102,4 +102,56 @@ describe("reading a character from a file or the library (the audit's S6)", () =
       }
     }
   }, 120_000);
+});
+
+describe("the repair report of a damaged character", () => {
+  const names: Record<string, string> = { ID_FIGHTER: "Fighter", ID_WIZARD: "Wizard" };
+  const nameOf = (id: string) => names[id];
+
+  it("says which part was damaged, what exactly, what was done and where to put it right", () => {
+    const raw = {
+      ...newCharacter(),
+      classes: [{ classId: "ID_FIGHTER", level: 500 }, { classId: "ID_WIZARD", level: 3 }, { level: 2 }],
+      selections: { "ID_FIGHTER|1": "Archery", "ID_WIZARD|0": ["A", 7, "B"], "ID_WIZARD|2": ["C"] },
+      abilityBase: { ...newCharacter().abilityBase, strength: "strong" },
+      coins: { gp: "many" },
+      prepared: { Wizard: 5 },
+    };
+    const { character, repaired } = openCharacter(raw, "hero.json", nameOf, new Date(2026, 10, 12));
+    expect(repaired).toEqual(expect.arrayContaining(["classes", "class levels", "choices", "ability scores", "coins", "prepared spells"]));
+    const text = character.repairReport!;
+    expect(text).toMatch(/^Repair report: hero\.json/);
+    expect(text).toContain("Fighter: level was 500; set to 20");
+    expect(text).toContain("Wizard was removed: the classes before it already have 20 levels");
+    expect(text).toContain("a class entry named no class");
+    expect(text).toContain('Fighter, choice 2: was "Archery"; removed');
+    expect(text).toContain("Wizard, choice 1: 1 of 3 entries were unreadable and removed");
+    expect(text).not.toContain("Wizard, choice 3");
+    expect(text).toContain('Strength was "strong", not a number; set to 8');
+    expect(text).toContain("Make them again there");
+    expect(text).toContain("Prepare your spells again on Magic");
+    // The sound picks are kept.
+    expect(character.selections).toEqual({ "ID_WIZARD|0": ["A", "B"], "ID_WIZARD|2": ["C"] });
+  });
+
+  it("stays on the character through a save and a reopen, and a sound character gets none", () => {
+    const { character } = openCharacter({ ...newCharacter(), xp: "lots" }, "a.json");
+    expect(character.repairReport).toContain("Experience");
+    const again = openCharacter(JSON.parse(JSON.stringify(character)), "the library");
+    expect(again.repaired).toEqual([]);
+    expect(again.character.repairReport).toBe(character.repairReport);
+    expect(openCharacter(newCharacter()).character.repairReport).toBeUndefined();
+  });
+
+  it("names every damaged part of 300 damaged characters, each with a detail", () => {
+    const rng = seeded(11);
+    for (let i = 0; i < 300; i++) {
+      // A junk version number can read as a newer format, which is refused, not repaired.
+      let out;
+      try { out = sanitizeCharacter(damage(newCharacter(), rng)); } catch { continue; }
+      const { repaired, damage: found } = out;
+      expect(new Set(found.map((d) => d.part))).toEqual(new Set(repaired));
+      for (const d of found) expect(d.detail.length).toBeGreaterThan(5);
+    }
+  });
 });

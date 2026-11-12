@@ -2321,3 +2321,6 @@ button.spell-count.prep.on { background: color-mix(in srgb, var(--gold) 28%, tra
 :root.calm-colors .pick-card, :root.calm-colors .mini-card, :root.calm-colors .char-card-body { filter: saturate(.5); }
 :root.calm-colors .play-head.hero { filter: saturate(.6) brightness(.92); }
 :root.calm-colors .hp-bar div, :root.calm-colors .hd-bar div { filter: saturate(.7); }
+
+/* The repair report of a damaged character: a button that stands out a little until the report is removed. */
+.warn-btn { border-color: var(--warn, #b7791f); }

@@ -54,3 +54,33 @@ test("an edit made just before opening another character is kept", async ({ page
   await expect(page.locator(".char-card", { hasText: "Second One" })).toHaveCount(1);
   await expect(page.locator(".char-card", { hasText: "First One" })).toHaveCount(1);
 });
+
+// A damaged file opens with a report of what was damaged, and Build shows that report again (Chris, 2026-11-12).
+test("a damaged character file opens with a repair report that Build can show again", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
+  const file = { version: 2, name: "Dented", classes: [{ classId: "NOT_A_CLASS", level: 99 }], selections: { "NOT_A_CLASS|0": "one" }, abilityBase: { strength: "strong" }, coins: { gp: "many" } };
+  await page.locator('input[type=file][accept=".json"]').first().setInputFiles({ name: "dented.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(file)) });
+  const report = page.getByRole("dialog", { name: "Repair report" });
+  await expect(report).toBeVisible();
+  await expect(report).toContainText("dented.json");
+  await expect(report).toContainText("level was 99; set to 20");
+  await expect(report).toContainText('Strength was "strong"');
+  await expect(report).toContainText("Make them again there");
+  await report.getByRole("button", { name: "Close" }).first().click();
+  await expect(report).toHaveCount(0);
+
+  // It stays on the character: Build opens it again, also after a reload.
+  await page.getByRole("button", { name: "Repair report" }).click();
+  await expect(report).toBeVisible();
+  await report.getByRole("button", { name: "Close" }).first().click();
+  await expect(page.locator(".actionbar .saved")).toHaveText("✓ Saved");
+  await page.reload();
+  await tab(page, "Build");
+  await page.getByRole("button", { name: "Repair report" }).click();
+  await expect(report).toContainText("dented.json");
+
+  // Put right: the report is removed and the button goes.
+  await report.getByRole("button", { name: /all put right/i }).click();
+  await expect(page.getByRole("button", { name: "Repair report" })).toHaveCount(0);
+});

@@ -13,7 +13,7 @@ import { tabOfSlot } from "./Slots";
 import { openChoices } from "./openChoices";
 import { buildSheet } from "../aurora/sheet";
 import { TAB_ICONS } from "./icons";
-import { newCharacter, normalizeCharacter, uid, type Character } from "../aurora/character";
+import { newCharacter, openCharacter, uid, type Character } from "../aurora/character";
 import { resolve, stillToChoose } from "../aurora/engine";
 import { randomCharacter } from "../aurora/randomCharacter";
 import { saveCharacterRecord } from "../aurora/storage";
@@ -66,7 +66,7 @@ function loadCurrent(): { id: string; ch: Character; fromLibrary?: boolean } {
     const raw = localStorage.getItem(CUR_KEY);
     if (raw) {
       const p = JSON.parse(raw) as { id: string; ch?: Character };
-      if (p.ch?.version === 2) return { id: p.id, ch: normalizeCharacter(p.ch) };
+      if (p.ch?.version === 2) return { id: p.id, ch: openCharacter(p.ch, "the character that was open").character };
       // Only the id was kept (the character was too big for this storage): it is loaded from the library below.
       if (p.id) return { id: p.id, ch: newCharacter(), fromLibrary: true };
     }
@@ -132,7 +132,7 @@ export function App() {
     void listCharacters().then((all) => {
       const rec = all.find((c) => c.id === initial.id);
       loading.current = false;
-      if (rec) { const ch = normalizeCharacter(rec.data); queue.markStored(initial.id, ch); setCharacter(ch); }
+      if (rec) { const { character: ch, repaired } = openCharacter(rec.data, "the library"); if (!repaired.length) queue.markStored(initial.id, ch); else setReportOpen("repair"); setCharacter(ch); }
     }).catch(() => { loading.current = false; });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [detail, setDetail] = useState<AElement | null>(null);
@@ -186,7 +186,15 @@ export function App() {
 
   const set = useCallback((fn: (c: Character) => Character) => setCharacter((c) => fn(c)), []);
   // Opened from the library: what is stored is the same, so nothing is saved (or re-dated) until it is edited.
-  const open = (nid: string, ch: Character, stored = false) => { const n = normalizeCharacter(ch); void queue.flush(); if (stored) queue.markStored(nid, n); setId(nid); setCharacter(n); setTab("build"); };
+  // A damaged character (from the library or a file) opens with its repair report, which Build can show again; a repaired
+  // one is saved as repaired, so it is not marked as what the library holds.
+  const open = (nid: string, ch: Character, stored = false, file = "") => {
+    const { character: n, repaired } = openCharacter(ch, file || (stored ? "the library" : ""), (x) => content.reg.get(x)?.name);
+    void queue.flush();
+    if (stored && !repaired.length) queue.markStored(nid, n);
+    setId(nid); setCharacter(n); setTab("build");
+    if (repaired.length) setReportOpen("repair");
+  };
   const random = (level: number) => {
     const p = getSettings();
     open(uid(), { ...randomCharacter(content.reg, level, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual, scifi: p.showSciFi, modern: p.showModern }), checkedWith: APP_VERSION });
@@ -195,7 +203,7 @@ export function App() {
   const [report, setReport] = useState<{ name: string; res: ForeignImport; rules: string[] } | null>(null);
   // A short notice after an import report closes or the report is added to the notes: where to find it.
   const [notesHint, setNotesHint] = useState<"" | "report" | "added">("");
-  const [reportOpen, setReportOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState<false | "import" | "repair">(false);
   useEffect(() => {
     if (!notesHint) return;
     const t = window.setTimeout(() => setNotesHint(""), 9000);
@@ -343,7 +351,7 @@ export function App() {
           {notesHint === "report" ? (
             <>
               <span>The import report and its to-do list stay with the character: <b>Import notes</b>, next to Level up on Build. From there you can add it to the character's notes.</span>
-              <button className="primary" onClick={() => { setNotesHint(""); setTab("build"); setReportOpen(true); }}>Show import notes</button>
+              <button className="primary" onClick={() => { setNotesHint(""); setTab("build"); setReportOpen("import"); }}>Show import notes</button>
             </>
           ) : (
             <>
@@ -354,12 +362,23 @@ export function App() {
           <button className="notice-x" aria-label="Close" onClick={() => setNotesHint("")}>×</button>
         </div>
       )}
-      {reportOpen && character.importReport && (
+      {reportOpen === "import" && character.importReport && (
         <ImportNotes
           text={character.importReport}
           added={character.notes.includes(character.importReport)}
           onAdd={() => { set((c) => ({ ...c, notes: [c.notes, c.importReport].filter(Boolean).join("\n\n") })); setReportOpen(false); setNotesHint("added"); }}
           onClose={() => setReportOpen(false)}
+        />
+      )}
+      {reportOpen === "repair" && character.repairReport && (
+        <ImportNotes
+          title="Repair report"
+          lead="This character's file was damaged. This is what could not be read, what was done about it, and where to put it right. You can open this again from Build (Repair report)."
+          text={character.repairReport}
+          added={character.notes.includes(character.repairReport)}
+          onAdd={() => { set((c) => ({ ...c, notes: [c.notes, c.repairReport].filter(Boolean).join("\n\n") })); setReportOpen(false); setNotesHint("added"); }}
+          onClose={() => setReportOpen(false)}
+          onDismiss={() => { set((c) => { const { repairReport: _gone, ...rest } = c; return rest as Character; }); setReportOpen(false); }}
         />
       )}
       {tutorialOpen && introOver && <Tutorial step={tutorialStep} setStep={setTutorialStep} minimized={tutorialMin} setMinimized={setTutorialMin} onClose={() => { setTutorialOpen(false); setTutorialMin(false); }} onGo={(t) => setTab(t as Tab)} content={content} onImportForeign={importForeign} />}
@@ -389,7 +408,8 @@ export function App() {
               <button onClick={() => window.dispatchEvent(new Event("cf-levelup"))} disabled={!character.classes.length}>Level up</button>
               <button onClick={() => setTab("play")}>Play</button>
               <button onClick={() => setTab("sheet")}>Export</button>
-              {character.importReport && <button onClick={() => setReportOpen(true)} title="The report of the import that made this character">Import notes</button>}
+              {character.importReport && <button onClick={() => setReportOpen("import")} title="The report of the import that made this character">Import notes</button>}
+              {character.repairReport && <button className="warn-btn" onClick={() => setReportOpen("repair")} title="What was damaged in this character's file, and where to put it right">Repair report</button>}
             </div>
           )}
           <ErrorBoundary key={`${tab}:${id}`} scope={TABS.find(([k]) => k === tab)?.[1] ?? "This screen"}>

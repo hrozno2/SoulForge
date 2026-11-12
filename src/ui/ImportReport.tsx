@@ -96,21 +96,23 @@ export function ImportReport({ name, res, rules = [], onClose, onBuild }: { name
 }
 
 /** The kept import report of a character, with a button to add it to the character's notes. */
-export function ImportNotes({ text, added, onAdd, onClose }: { text: string; added: boolean; onAdd: () => void; onClose: () => void }) {
+export function ImportNotes({ text, added, onAdd, onClose, title = "Import notes", lead, onDismiss }: { text: string; added: boolean; onAdd: () => void; onClose: () => void; title?: string; lead?: string; onDismiss?: () => void }) {
   useEffect(() => {
     const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [onClose]);
   return (
-    <div className="modal-back" role="dialog" aria-label="Import notes" onClick={onClose}>
+    <div className="modal-back" role="dialog" aria-label={title} onClick={onClose}>
       <div className="modal-page themed" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" aria-label="Close" onClick={onClose}>×</button>
-        <h2>Import notes</h2>
+        <h2>{title}</h2>
+        {lead && <p className="muted">{lead}</p>}
         <pre className="import-notes">{text}</pre>
         <div className="row">
           <button className="primary" disabled={added} onClick={onAdd}>{added ? "Already in the notes" : "Add to notes"}</button>
           <button onClick={onClose}>Close</button>
+          {onDismiss && <button onClick={onDismiss} title="Everything is put right: remove this report from the character">All put right, remove the report</button>}
         </div>
       </div>
     </div>

@@ -29,7 +29,7 @@ export function StartTab({
   reg?: ARegistry;
   currentId: string;
   /** `stored`: the character is the library's own (not a new copy), so opening it is no edit. */
-  onOpen: (id: string, ch: Character, stored?: boolean) => void;
+  onOpen: (id: string, ch: Character, stored?: boolean, file?: string) => void;
   onNew: () => void;
   onRandom: (level: number) => void;
   contentReady: boolean;
@@ -69,9 +69,10 @@ export function StartTab({
       const raw = parsed as Character;
       if (raw.version !== 2) throw new Error("This is not a Soul Forge character or library file. Foundry and Roll20 exports go through the Import button next to it.");
       // A damaged or hand-edited file opens with the damaged parts at their defaults, and says which (the audit's S6).
-      const { character, repaired } = sanitizeCharacter(raw);
-      onOpen(uid(), character);
-      setMsg(repaired.length ? `Opened. Parts of the file could not be read and were set to their defaults: ${repaired.join(", ")}.` : "");
+      // The repair report opens with the character and stays on Build ("Repair report") to read again.
+      const { repaired } = sanitizeCharacter(raw);
+      onOpen(uid(), raw, false, f.name);
+      setMsg(repaired.length ? `Opened. Parts of the file could not be read: ${repaired.join(", ")}. The repair report on Build says what, and where to put it right.` : "");
     } catch (e) {
       setMsg((e as Error).message);
     }

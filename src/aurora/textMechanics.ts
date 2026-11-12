@@ -305,6 +305,10 @@ export function limitsFromText(text: string): ARule[] {
   const out: ARule[] = [];
   const attune = /attune to up to (\w+) magic items/i.exec(text);
   if (attune && COUNT[attune[1].toLowerCase()]) out.push(stat("attunement:max", String(COUNT[attune[1].toLowerCase()]), { bonus: "base" }));
+  // Medium Armor Master (both Player's Handbooks): "you can add 3, rather than 2, to your AC" in medium armor. The
+  // data states it in the text alone; without this the feat changed nothing on 5e.tools content (2026-11-12).
+  const dexCap = /(?:medium armor|wearing medium armor)[^.]*\badd (\d), rather than 2,? to your AC/i.exec(text);
+  if (dexCap) out.push(stat("ac:armored:dexterity:cap", dexCap[1], { bonus: "base" }));
   const caps = new RegExp(`your (${ABILITY}) and (${ABILITY}) scores increase by (\\d+)(?:, to a maximum of (\\d+)|\\. your maximum for those scores is now (\\d+))`, "i").exec(text);
   if (caps) for (const a of [caps[1], caps[2]].map((x) => x.toLowerCase())) out.push(stat(a, caps[3]), stat(`${a}:max:extra`, String(Number(caps[4] ?? caps[5]) - 20)));
   return out;

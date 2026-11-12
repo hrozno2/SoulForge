@@ -222,6 +222,9 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (!s.options.length) add("A required choice has no options", `${s.rule.name} [${s.rule.type}]`);
     else if (stillToChoose(s, r)) add("A required choice is not made", `${s.rule.name}: ${s.chosen.length} of ${s.rule.number}`);
     for (const id of s.chosen) if (s.blocked.has(id)) add("A choice does not meet its requirements", `${s.rule.name}: ${reg.get(id)?.name}`);
+    // The engine activates whatever a saved pick names. One the choice does not offer at all (an edited file, content
+    // that changed since, a pick kept through a move to other content) is on the character against its choice's rules.
+    if (s.rule.type !== "List") for (const id of s.chosen) if (reg.get(id) && !s.options.some((o) => o.id === id)) add("A pick its choice does not offer", `${s.rule.name}: ${reg.get(id)?.name}`);
     for (const d of repeatedPicks(r, s)) add("A choice repeats something the character already has", d);
   }
   for (const w of r.warnings) add("Content refers to something missing", w);
@@ -230,6 +233,12 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   const sp = ch.race ? reg.get(ch.race) : undefined;
   const bg = ch.background ? reg.get(ch.background) : undefined;
   // A 2014 background taken with the 2024 rules (its optional choice, backgroundOptions.ts) raises them itself.
+  // The other mix: a background that raises scores (2024) with an older species. The species' own increases are
+  // ignored (2024 PHB, Backgrounds and Species from Older Books); judged here from the parts of each score, by name.
+  if (sp && bg && isModern(bg) && !isModern(sp)) {
+    const fromSpecies = new Set([sp.name, ...r.active.filter((a) => /^(Sub ?Race|Race Variant)$/i.test(a.el.type)).map((a) => a.el.name)]);
+    for (const a of sh.abilities) for (const p of r.stats.parts(a.id)) if (p.value > 0 && fromSpecies.has(p.from)) add("Older species' increase counted with a 2024 background", `${a.id} +${p.value} from ${p.from}; ${bg.name} gives the increases`);
+  }
   if (sp && bg && isModern(sp) && !isModern(bg) && !/custom/i.test(bg.name) && !r.ids.has(BACKGROUND_ASI_MARKER)) add("Origin editions mixed", `${sp.name} (2024) gives no ability score increase and ${bg.name} (2014) gives none either; take the background's "2024 rules" option or its 2024 version`);
   const inLines = new Set(sh.casting.flatMap((l) => [...l.cantripsKnown, ...l.spells, ...l.granted].map((p) => p.id)));
   for (const p of r.spellPicks) if (!inLines.has(p.id)) add("A spell is not castable (no spellcasting line)", reg.get(p.id)?.name ?? p.id);

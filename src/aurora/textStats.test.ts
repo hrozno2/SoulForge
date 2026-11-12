@@ -63,6 +63,10 @@ describe("lasting numbers read from a feature's text", () => {
     expect(limitsFromText("You can attune to up to four magic items at once.")[0]).toMatchObject({ name: "attunement:max", value: "4", bonus: "base" });
     expect(names(limitsFromText("Your Strength and Constitution scores increase by 4. Your maximum for those scores is now 24."))).toEqual(["strength", "strength:max:extra", "constitution", "constitution:max:extra"]);
     expect(limitsFromText("Your Strength and Constitution scores increase by 4, to a maximum of 25.")[1]).toMatchObject({ value: "5" });
+    // Medium Armor Master, 2014 and 2024 wording.
+    expect(limitsFromText("When you wear medium armor, you can add 3, rather than 2, to your AC if you have a Dexterity of 16 or higher.")[0]).toMatchObject({ name: "ac:armored:dexterity:cap", value: "3" });
+    expect(limitsFromText("While you're wearing Medium armor, you can add 3, rather than 2 to your AC if you have a Dexterity score of 16 or higher.")[0]).toMatchObject({ name: "ac:armored:dexterity:cap", value: "3" });
+    expect(limitsFromText("You can add 2 to your AC.")).toEqual([]);
   });
 
   it("trainings: by kind, and never a choice or another creature's", () => {

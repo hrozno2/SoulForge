@@ -1373,9 +1373,16 @@ function featRules(owner: J): ARule[] {
 
 function convertBackground(b: J, ctx: Ctx, out: AElement[]): void {
   const id = ftId("BG", b.name, b.source);
-  const rules: ARule[] = [...trainingRules(b, b.name, out, ctx, id), ...abilityRules(b.ability, "Ability score increase", { out, idBase: id }).map((x) => ({ ...x, requirements: x.requirements ?? `!${MARK_SPECIES_ASI}` }))];
+  // A background that raises ability scores (the 2024 ones) is where the increases come from: "If you're using a
+  // species from an older book, ignore those increases and use only the ones given by your background" (2024 PHB,
+  // chapter 2, Backgrounds and Species from Older Books). The marker tells an older species to step aside, as it does
+  // for a 2014 background taken under the 2024 rules and as Aurora's 2024 backgrounds do. Before 2026-11-12 it was
+  // the other way round here: the species kept its increases and the background's were skipped.
+  const raises = abilityRules(b.ability, "Ability score increase").length > 0;
+  const rules: ARule[] = [...trainingRules(b, b.name, out, ctx, id), ...abilityRules(b.ability, "Ability score increase", { out, idBase: id })];
   rules.push(...featRules(b));
   rules.push(...traitList(b.entries, id, ctx, b.source, out, "5et trait", "Background Feature"));
+  if (raises) rules.push({ kind: "grant", type: "Grants", id: "ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
   out.push(base(id, b.name, "Background", srcName(ctx, b.source), { rules, description: entriesHtml(b.entries) + equipmentHtml(b.startingEquipment) }));
 }
 

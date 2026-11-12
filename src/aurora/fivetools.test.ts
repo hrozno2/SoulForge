@@ -66,11 +66,14 @@ describe("ability scores are not counted twice", () => {
   it("keeps the background's increase with a 2024 species", () => {
     expect(asiSlots(make("Elf"))).toBeGreaterThan(0);
   });
-  it("drops the background's increase when an older species already raises scores", () => {
+  // 2024 PHB, chapter 2, "Backgrounds and Species from Older Books": "If you're using a species from an older book,
+  // ignore those increases and use only the ones given by your background." (Until 2026-11-12 this test held the
+  // reverse: the species' kept, the background's dropped.)
+  it("keeps the background's increase and ignores an older species' own", () => {
     const r = make("Dwarf");
-    expect(asiSlots(r)).toBe(0);
-    // base 8 plus the species' +2, and nothing from the background
-    expect(r.stats.get("constitution")).toBe(10);
+    expect(asiSlots(r)).toBeGreaterThan(0);
+    // base 8, and nothing from the species
+    expect(r.stats.get("constitution")).toBe(8);
   });
 });
 

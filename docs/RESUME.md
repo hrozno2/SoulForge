@@ -1,5 +1,41 @@
 # Where we left off
 
+## 2026-11-12: repair report, rules faults from the move and FastCharacter, the engine plan
+
+Chris asked for four things: a report of what is damaged in a damaged character, reopenable from Build; the
+migration looked at as mission critical (nothing dropped, nothing changed, rules legal, both editions); random
+characters in every combination and from fastcharacter.com checked against the rules; an end-to-end look at how the
+engine makes each part of a character, and a plan for a fully legal, drop-free engine. That plan is
+docs/ENGINE-LEGAL-PLAN.md (W1 to W9); work it in order together with AUDIT-2026-11-10.md.
+
+Done, each with a test:
+- Repair report: `sanitizeCharacter` says what exactly was wrong in each part and where to put it right;
+  `openCharacter` keeps it on the character (`repairReport`); it opens with the character and from Build
+  ("Repair report") until the player removes it. e2e/saving.spec.ts.
+- Scores past 20: Primal Champion's +4 and every Epic Boon's +1 stopped at 20 on every content set (the stat book
+  read the raised maximum under another name than the content writes). scoreMax.test.ts.
+- A 2024 background with an older species: the background's increases count and the species' are ignored (2024
+  PHB, chapter 2); the 5e.tools converter had the reverse. originMix.test.ts; new finding "Older species' increase
+  counted with a 2024 background".
+- The 2024 level-19 Epic Boon choice offers any feat (the rule's own words).
+- Language choices offer every language (as Plutonium, since a DM may allow any); one element per language, its
+  kind from the Player's Handbook; the auto-fill takes a Standard Language.
+- Medium Armor Master's Dexterity cap of 3 on 5e.tools content (it changed nothing before).
+- A 5e.tools weapon with an Aurora class counts the class's training (by concept).
+- New finding "A pick its choice does not offer" (W1 of the engine plan).
+- The move to 5e.tools (migrate.ts): increases carried one for one; a feat stays the very same feat; a pick is never
+  matched to another concept; picks no choice offers are kept (in a choice of their kind or as a manual addition);
+  prepared spells stay the player's. `MIGRATE_FRESH=<n>` measures on characters made new on Aurora's content
+  (legal before the move), `MIGRATE_DETAIL=<i,j>` dumps their choices, `MIGRATE_ONLY=<name>` runs saved ones.
+  On 60 fresh characters: 18 moved with no change at all before the last fixes; the open causes are listed in
+  ENGINE-LEGAL-PLAN.md, section 4. The move stays test-only until D7.
+- FastCharacter: 52 more fetched (one per class and subclass), 92 in all. Most differences are that site's own
+  slips; the ones that were ours are the weapon training and the score maximum above. Importer gaps it showed are
+  in the engine plan, W9.
+
+Checks: 900 random characters (300 on each of 5e.tools, SRD, both; seed 20261113) clean; coverage of every
+subclass on 5e.tools clean; gates run before the release.
+
 ## 2026-11-11: found by looking and by better checks (unreleased, on main after v0.25.0, 15 commits)
 
 Work the plan in docs/AUDIT-2026-11-10.md (R11 to R19 were added this day). CI is green on dee3638 (tests, e2e, the

@@ -100,6 +100,8 @@ function shapeOf(name: string): string {
 }
 
 const ABILITY = /\b(strength|dexterity|constitution|intelligence|wisdom|charisma)\b/i;
+/** Player's Handbook, Draconic Ancestry table (both editions): each dragon's damage type. */
+const DRAGON_DAMAGE: Record<string, string> = { black: "acid", copper: "acid", blue: "lightning", bronze: "lightning", brass: "fire", gold: "fire", red: "fire", green: "poison", silver: "cold", white: "cold" };
 
 /** `ch` built on `from` (both providers) moved onto `to` (5e.tools without Aurora). */
 export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry): Migration {
@@ -182,7 +184,9 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     if (p.spell && p.casting && s.rule.spellcasting && p.casting.toLowerCase() !== s.rule.spellcasting.toLowerCase() && !ownerOf(s, p)) return undefined;
     // `anyway`: the player's pick that 5e.tools' rules rule out (Polearm Master at 4th level without Strength or
     // Dexterity 13, which Aurora's copy did not ask) is kept, marked against the rules as any such pick is.
-    const open = anyway ? s.options : s.options.filter((o) => !s.blocked.has(o.id));
+    // An option that is another concept is never the pick: the skill Perception is not "Perception (expertise)" (a
+    // Rogue's skill went to its Expertise choice, its real expertise was lost and the skill's place filled anew).
+    const open = (anyway ? s.options : s.options.filter((o) => !s.blocked.has(o.id))).filter((o) => { const oc = p.concept ? conceptOf(o) : undefined; return !oc || oc === p.concept; });
     const byId = open.find((o) => o.id === p.id);
     if (byId) return byId.id;
     // A feat 5e.tools has as the very same feat (name and book) is that feat or nothing: its other edition's version
@@ -227,6 +231,9 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     // What the brackets name, as an option's brackets, its name, or inside its name: "Cloud's Jaunt (Cloud Giant)"
     // is "Cloud Giant Ancestry"; Scholar's "Skill Expertise (Medicine)" is its option "Medicine".
     const br = /\(([^)]+)\)\s*$/.exec(p.name)?.[1];
+    // A dragon's colour is its damage type where 5e.tools asks the type: "Draconic Ancestry (Bronze)" is "Lightning".
+    const dragon = br ? DRAGON_DAMAGE[nameKey(br)] : undefined;
+    if (dragon && /dragon|draconic/i.test(`${p.name} ${p.choice} ${s.owner.name}`)) { const hit = one(open.filter((o) => new RegExp(`\\b${dragon}\\b`).test(nameKey(o.name)))); if (hit) return hit; }
     // The pick's whole name in an option's brackets: Resilient's "Constitution" is "Saving throw proficiency
     // (Constitution)".
     const inBrackets = one(open.filter((o) => nameKey(/\(([^)]+)\)\s*$/.exec(o.name)?.[1] ?? "") === n));
@@ -484,8 +491,10 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
         if ((Number(el.setters.level?.value ?? 0) === 0) !== isCantripSlot(x)) return -1;
         if (p.casting && x.rule.spellcasting && p.casting.toLowerCase() !== x.rule.spellcasting.toLowerCase() && !own) return -1;
       }
-      // A feat only where it was: its owner's choice or its own level's (else it takes another level's feat).
-      if (el.type === "Feat" && !own && !lvl) return -1;
+      // A feat where it was: its owner's choice or its own level's. Failing those, a feat choice that offers it and is
+      // still empty takes it: the alternative was the auto-fill inventing another feat there while this one became a
+      // manual addition.
+      if (el.type === "Feat" && !own && !lvl) return x.options.some((o) => o.id === el.id && !x.blocked.has(o.id)) ? 5 : -1;
       return own && lvl ? 0 : own ? 1 : lvl ? 2 : 3;
     };
     for (let i = 0; i < picks.length; i++) {
@@ -510,7 +519,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // anything else by its owner's name (the two providers' choices are not one to one).
   const kindOf = (x: Slot) => (x.rule.type === "Spell" ? `Spell|${(x.rule.spellcasting ?? "").toLowerCase()}` : `${x.rule.type}|${nameKey(x.owner.name)}`);
   const leftOpen = new Map<string, number>();
-  for (const x of old.slots) if (!x.rule.optional && x.rule.type !== "List" && x.chosen.length < x.rule.number) leftOpen.set(kindOf(x), (leftOpen.get(kindOf(x)) ?? 0) + x.rule.number - x.chosen.length);
+  for (const x of old.slots) if (!x.rule.optional && x.rule.type !== "List" && new Set(x.chosen).size < x.rule.number) leftOpen.set(kindOf(x), (leftOpen.get(kindOf(x)) ?? 0) + x.rule.number - new Set(x.chosen).size);
   for (const x of beforeFill.slots) {
     if (x.rule.type === "List") continue;
     const repeats = x.chosen.length > 0 && repeatedPicks(beforeFill, x).length > 0;

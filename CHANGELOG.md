@@ -2,6 +2,29 @@
 
 What changed in each release. Newest first.
 
+## v0.26.0 (2026-11-12)
+
+- Settings over everything; a card in the Bag of Holding leaves its slot empty; RESUME
+- A spellbook pick in an earlier place is no finding; Obsidian is the default again; cards open larger
+- test-app.sh removes the build's own copy, so Spotlight shows one SoulForge
+- Lessons of the First Ones gives its Origin feat; skills a newer book states in text alone; the move leaves open what it cannot carry
+- A 2024 background's increases count, not an older species'; Medium Armor Master; picks outside their choice; the engine plan
+- Scores past 20 where a rule raises the maximum; level-19 feat open to any feat; languages; migration keeps every pick
+- A damaged character opens with a repair report, and Build shows it again
+- RESUME: 2026-11-11
+- Tests get 60 seconds each, and none reaches the network
+- Random characters on the bundled SRD rules in every test run
+- Exports repeat; end-to-end tests for a failed save and a quick switch
+- Spells cast without a slot: how often and at which level, on Play
+- A class's own casting first; cantrips scale on the Play sheet; empty marker features gone
+- Use counts that grow with level; the check judges weapon damage; one use back on a short rest
+- Expertise needs proficiency; the SRD bundle keeps side data; the check judges skills and saves
+- Play fixes found by looking: pools, feature dice by level, the landing on Apply, dice font; theme review
+- Named weapons trained on 5e.tools content; Martial Arts with monk weapons; the check judges training itself
+- Audit, second batch: missing content said, upload limits, content class names, self-test
+- Audit plan and its first fixes: saving, backups, damaged files, rests and slots
+- RESUME: v0.25.0
+
 ## v0.25.0 (2026-11-10)
 
 - Full check fixes: no body armor on a species that cannot wear it; SRD baselines

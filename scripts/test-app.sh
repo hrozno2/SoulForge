@@ -22,5 +22,8 @@ DEST="$HOME/Applications/Soul Forge Test.app"
 mkdir -p "$HOME/Applications"
 rm -rf "$DEST"
 cp -R "$SRC" "$DEST"
+# The build's own copy goes: left in the project folder, Spotlight listed it as a second "SoulForge" beside the
+# released app (Chris, 2026-11-12).
+rm -rf "$SRC"
 echo "Installed: $DEST ($(git rev-parse --short HEAD), $(git log -1 --format=%s))"
 if [ "${1:-}" = "--open" ]; then open "$DEST"; fi

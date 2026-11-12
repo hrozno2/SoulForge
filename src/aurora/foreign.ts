@@ -1760,7 +1760,7 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
 
   // Equipment: the armor worn is equipped; carried gear and magic items are carried, attuned when marked "(a)".
   const worn = /^Armor Class \d+ \.\.\. Armor worn: (.+)$/.exec(lines.find((l) => /^Armor Class \d+ \.\.\./.test(l)) ?? "")?.[1] ?? "";
-  for (const w of worn.split(",").map((x) => x.trim()).filter((x) => x && !/^none\b/i.test(x))) b.addItem(w.replace(/^wooden /, ""), 1, true, false);
+  for (const w of worn.split(",").map((x) => x.trim()).filter((x) => x && !/^none\b/i.test(x))) b.addItem(w.replace(/^wooden /, "").replace(/\bmagical\s+/i, "").replace(/\bchainmail\b/i, "chain mail"), 1, true, false);
   const gear = /^Carried Gear[^:]*:\s*(.+)$/.exec(lines.find((l) => l.startsWith("Carried Gear")) ?? "")?.[1] ?? "";
   // Commas inside brackets belong to a pack's contents; the load note at the end is not an item.
   let depth = 0, cur = "";

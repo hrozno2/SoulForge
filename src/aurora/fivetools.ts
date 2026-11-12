@@ -499,6 +499,38 @@ export function proseChoiceRules(f: J, idBase: string, level: number | undefined
 }
 
 /**
+ * Skills from a short list, stated in prose alone: "proficiency ... in two of the following skills of your choice:
+ * Arcana, History, Nature, or Religion. You have Expertise in those two skills" (the 2024 Knowledge Domain's Blessings
+ * of Knowledge, which gave nothing on 5e.tools content; found 2026-11-12). Run after the side data is in, and only for
+ * a feature that then still has no choice or grant of a skill: the side data states most of these.
+ */
+function applyTextSkillChoices(out: AElement[]): void {
+  const added: AElement[] = [];
+  for (const el of out) {
+    if (!/Feature$|^Racial Trait$|^Feat$/.test(el.type) || !el.description) continue;
+    const text = stripTags(el.description.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ");
+    const m = /\b(?:in|of) (one|two|three) of the following skills(?: of your choice)?: ([^.]+)\./i.exec(text);
+    if (!m) continue;
+    const touchesSkill = (r: ARule) => (r.kind === "select" && (/skill|expertise/i.test(r.name) || /ID_5ET_SKILL_|ID_5ET_EXPERTISE_|_skillProficiencies_|_expertise_/i.test(r.supports))) || (r.kind === "grant" && /^ID_5ET_(SKILL|EXPERTISE)_/.test(r.id ?? ""));
+    const optionTouches = (r: ARule) => r.kind === "select" && r.supports.split("|").some((id) => out.find((o) => o.id === id)?.rules.some(touchesSkill));
+    if (el.rules.some((r) => touchesSkill(r) || optionTouches(r))) continue;
+    // A species states its skill choice on itself and words it in a trait (Kenku Training, Primal Intuition): the
+    // element that gives this one already asks.
+    if (out.some((o) => o.rules.some((r) => (r.kind === "grant" && r.id === el.id) || (r.kind === "select" && r.supports.split("|").includes(el.id))) && o.rules.some((r) => r.kind === "select" && /skill/i.test(r.name)))) continue;
+    const names = m[2].replace(/\bor\b|\band\b/g, ",").split(",").map((x) => x.trim().toLowerCase()).filter((x) => SKILLS.includes(x));
+    if (names.length < 2) continue;
+    const expert = /you (?:also )?have expertise in th(?:ose|e) (?:two |three |chosen )?skills?/i.test(text) || /proficiency bonus is doubled for any ability check you make that uses either of those skills/i.test(text);
+    const ids = names.map((n) => {
+      const oid = `${el.id}_SKILL_${slug(n)}`;
+      added.push(base(oid, cap(n), "Training Option", "5etools", { compendiumHidden: true, rules: [{ kind: "grant", type: "Proficiency", id: skillIdOf(n) }, ...(expert ? [{ kind: "grant", type: "Proficiency", id: `ID_5ET_EXPERTISE_${slug(n)}` } as ARule] : [])] }));
+      return oid;
+    });
+    el.rules.push({ kind: "select", type: "Training Option", name: `${el.name}: ${expert ? "skill and expertise" : "skill"}`, supports: ids.join("|"), number: { one: 1, two: 2, three: 3 }[m[1].toLowerCase()]! });
+  }
+  out.push(...added);
+}
+
+/**
  * The 2014 Ranger's lasting picks, written only in prose: "Choose a type of favored enemy: aberrations, beasts, …, or
  * undead. Alternatively, you can select two races of humanoid" and "Choose one type of favored terrain: arctic, coast,
  * …, or the Underdark", with more at the levels the text names ("at 6th and 14th level"). Each is a choice of those
@@ -2133,6 +2165,14 @@ function convertOptionalFeature(o: J, ctx: Ctx): AElement {
   const lv = pre.map((p) => p.level?.level).find((n) => typeof n === "number") as number | undefined;
   const rules = additionalSpellRules(o.additionalSpells, o.name, o.source).rules;
   rules.push(...optionalFeatureRules(o, rules));
+  // A feat the option gives outright, by category (the 2024 invocation Lessons of the First Ones: "one Origin feat of
+  // your choice", progression "*"). Unread, the invocation gave nothing on 5e.tools content (found 2026-11-12, when
+  // a moved Warlock's origin feat had no place).
+  for (const fp of (o.featProgression as J[]) ?? []) {
+    const cats = ((fp.category as string[]) ?? []).map((x) => `category ${x}`);
+    const n = Object.values((fp.progression as J) ?? {}).reduce((t: number, x) => t + (Number(x) || 0), 0);
+    if (n > 0) rules.push({ kind: "select", type: "Feat", name: `${fp.name ?? "Feat"} (${o.name})`, supports: cats.length ? `5et feat,(${cats.join("||")})` : "5et feat", number: n });
+  }
   return base(ftId("OPT", o.name, o.source), o.name, "Optional Feature", srcName(ctx, o.source), {
     supports: ["5et optional feature", ...types], rules, description: html,
     sheet: { display: true, descriptions: [{ text: html }] },
@@ -2340,6 +2380,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   }
   settleFallbacks(out, ctx.fallbacks ?? []);
   // What the side data does not give, from the feature's own text (limited uses, save DCs, attacks).
+  applyTextSkillChoices(out);
   applyTextUses(out);
   applyTextDc(out);
   applyTextStats(out, { tool: (n) => toolId(n, out), weapon: (k) => weaponId(k, out), armor: (k) => ARMOR_IDS[k], skill: (n) => `ID_5ET_SKILL_${slug(n)}`, language: (n) => `ID_5ET_LANGUAGE_${slug(n)}` });

@@ -127,7 +127,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // picks: the two providers build them differently, so they are filled below to give the old scores.
   const old = resolve(ch, from);
   const target = buildSheet(old).abilities.map((a) => a.score);
-  type Pick = { id: string; name: string; owner: string; ownerName: string; ownerType: string; choice: string; ability: boolean; spell: boolean; casting?: string; concept?: string; at: number };
+  type Pick = { id: string; name: string; owner: string; ownerName: string; ownerType: string; ruleType: string; choice: string; ability: boolean; spell: boolean; casting?: string; concept?: string; at: number };
   const pool: Pick[] = [];
   const lists: { owner: string; name: string; values: string[] }[] = [];
   const isAbility = (name: string, type: string) => type === "Ability Score Improvement" || /^ability score (improvement|increase)/i.test(name) || (ABILITY.test(name) && /\+\d|increase|improvement/i.test(name));
@@ -143,7 +143,10 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       // By what the pick is, not by its choice's name: Aurora's "Ability Score Improvement (Barbarian 4)" holds feats.
       const ability = el?.type !== "Feat" && (s.rule.type === "Ability Score Improvement" || isAbility(el?.name ?? "", el?.type ?? ""));
       const t = ability ? id : map(id, false);
-      pool.push({ id: t ?? id, name: el?.name ?? id, owner: map(s.owner.id, false)!, ownerName: nameKey(s.owner.name), ownerType: s.owner.type, choice: s.rule.name, ability, spell: el?.type === "Spell", casting: s.rule.spellcasting, concept: el ? conceptOf(el) : undefined, at: s.at ?? 0 });
+      // The same spell twice under one spellcasting (Aurora lets Pact of the Tome and the Warlock's own cantrips both
+      // hold Magic Stone) is one spell: the second copy took another pick's place and was then dropped as a repeat.
+      if (el?.type === "Spell" && pool.some((q) => q.spell && q.id === (t ?? id) && (q.casting ?? "").toLowerCase() === (s.rule.spellcasting ?? "").toLowerCase())) continue;
+      pool.push({ id: t ?? id, name: el?.name ?? id, owner: map(s.owner.id, false)!, ownerName: nameKey(s.owner.name), ownerType: s.owner.type, ruleType: s.rule.type, choice: s.rule.name, ability, spell: el?.type === "Spell", casting: s.rule.spellcasting, concept: el ? conceptOf(el) : undefined, at: s.at ?? 0 });
     }
   }
   const picks = pool.filter((p) => !p.ability);
@@ -520,6 +523,13 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   const kindOf = (x: Slot) => (x.rule.type === "Spell" ? `Spell|${(x.rule.spellcasting ?? "").toLowerCase()}` : `${x.rule.type}|${nameKey(x.owner.name)}`);
   const leftOpen = new Map<string, number>();
   for (const x of old.slots) if (!x.rule.optional && x.rule.type !== "List" && new Set(x.chosen).size < x.rule.number) leftOpen.set(kindOf(x), (leftOpen.get(kindOf(x)) ?? 0) + x.rule.number - new Set(x.chosen).size);
+  // A pick with no 5e.tools version (a tool from Unearthed Arcana, an instrument only Aurora lists) leaves its place
+  // open too: filled, the character gained a skill it never had in place of the tool it lost.
+  for (const p of picks) {
+    if (beforeFill.ids.has(p.id)) continue;
+    const k = p.ruleType === "Spell" ? `Spell|${(p.casting ?? "").toLowerCase()}` : `${p.ruleType}|${p.ownerName}`;
+    leftOpen.set(k, (leftOpen.get(k) ?? 0) + 1);
+  }
   for (const x of beforeFill.slots) {
     if (x.rule.type === "List") continue;
     const repeats = x.chosen.length > 0 && repeatedPicks(beforeFill, x).length > 0;

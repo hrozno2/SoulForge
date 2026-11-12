@@ -817,3 +817,34 @@ describe("the shared spell slot table", () => {
     expect(two({})).toBe(0);
   });
 });
+
+describe("a feat an optional feature gives (featProgression)", () => {
+  it("Lessons of the First Ones opens a choice of one Origin feat", () => {
+    const els = convertFiveTools({ files: { "optionalfeatures.json": { optionalfeature: [{ name: "Lessons of the First Ones", source: "XPHB", featureType: ["EI"], featProgression: [{ name: "Origin Feat", category: ["O"], progression: { "*": 1 } }], entries: ["You gain one Origin feat of your choice."] }] } } });
+    const el = els.find((e) => e.name === "Lessons of the First Ones")!;
+    expect(el.rules.filter((r) => r.kind === "select" && r.type === "Feat")).toEqual([expect.objectContaining({ supports: "5et feat,(category O)", number: 1 })]);
+  });
+});
+
+describe("skills a feature gives from a short list, stated in its text alone", () => {
+  const cls = { name: "Priest", source: "XPHB", hd: { faces: 8 }, proficiency: ["wis"], classFeatures: [], subclassTitle: "Domain" };
+  const sub = { name: "Lore Domain", shortName: "Lore", source: "XPHB", className: "Priest", classSource: "XPHB", subclassFeatures: ["Blessings of Lore|Priest|XPHB|Lore|XPHB|3"] };
+  const feature = (entries: string[]) => ({ name: "Blessings of Lore", source: "XPHB", className: "Priest", classSource: "XPHB", subclassShortName: "Lore", subclassSource: "XPHB", level: 3, entries });
+  const build = (entries: string[], race?: object) => convertFiveTools({ files: { "class-priest.json": { class: [cls], subclass: [sub], subclassFeature: [feature(entries)] }, ...(race ? { "races.json": { race: [race] } } : {}) } });
+
+  it("asks two of the four, with expertise where the text gives it", () => {
+    const els = build(["You gain proficiency in two of the following skills of your choice: {@skill Arcana|XPHB}, {@skill History|XPHB}, {@skill Nature|XPHB}, or {@skill Religion|XPHB}. You have {@variantrule Expertise|XPHB} in those two skills."]);
+    const f = els.find((e) => e.name === "Blessings of Lore")!;
+    const pick = f.rules.find((r) => r.kind === "select" && /skill and expertise/.test(r.name)) as { number: number; supports: string };
+    expect(pick.number).toBe(2);
+    const options = pick.supports.split("|").map((id) => els.find((e) => e.id === id)!);
+    expect(options.map((o) => o.name)).toEqual(["Arcana", "History", "Nature", "Religion"]);
+    expect(options[0].rules.map((r) => (r as { id: string }).id)).toEqual(["ID_5ET_SKILL_ARCANA", "ID_5ET_EXPERTISE_ARCANA"]);
+  });
+
+  it("leaves a species trait alone when the species itself asks the skill", () => {
+    const els = build(["Nothing here."], { name: "Crow", source: "XPHB", skillProficiencies: [{ choose: { from: ["acrobatics", "deception", "stealth"], count: 2 } }], entries: [{ type: "entries", name: "Crow Training", entries: ["You are proficient in two of the following skills of your choice: {@skill Acrobatics}, {@skill Deception}, or {@skill Stealth}."] }] });
+    const trait = els.find((e) => e.name === "Crow Training");
+    expect(trait?.rules.filter((r) => r.kind === "select") ?? []).toEqual([]);
+  });
+});

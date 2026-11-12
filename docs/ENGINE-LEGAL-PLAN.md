@@ -146,6 +146,15 @@ list like parity's and a gate on the unexplained rest. Importer faults it showed
 chainmail" kept as a custom item instead of Chain Mail +1; a worn Cloak or Ring of Protection not attuned, so the
 armor class is one short; an attack line for "Martial Arts" not matched to Unarmed Strike.
 
+**W10. Every choice and gift a text states is on the element (D1, L3).** Books newer than Plutonium's side data
+state their choices in prose alone, and the converter then gives nothing: found 2026-11-12 in Heroes of Faerûn
+(Knowledge Domain's two skills with expertise, Banneret, Bladesinger, Oath of the Noble Genies) and in the 2024
+Player's Handbook itself (Lessons of the First Ones gave no Origin feat: its `featProgression` was not read on an
+optional feature). A lint over every converted element: a description that says "of your choice", "choose",
+"you gain proficiency", "you learn" or "you can cast" needs a rule of that kind on the element or on the one that
+grants it, or a line in a decided list with the reason (a choice made in play). New data that states something
+nothing reads then fails the test instead of shipping empty. Run it per book, newest first.
+
 ## 6. Done means
 
 - Random batches, coverage and the pairwise table: zero findings on all content sets, with W1 and W5 in.

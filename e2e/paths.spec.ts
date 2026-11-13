@@ -43,14 +43,16 @@ test("a caster who prepares picks today's spells on the spellbook", async ({ pag
   await page.locator(".board-acc-head", { hasText: "Class" }).click();
   await page.locator(".board-acc.open .mini-card", { hasText: "Spellsinger" }).locator(".mini-main").click();
   await closeFresh(page);
+  // Nothing prepared yet: the choice checker asks for it (C7.18). Read before the spell card opens: an open card may
+  // lie over the panel (it did on GitHub's runner from 2026-11-12, when cards opened larger, and a silent failed
+  // click left the panel folded).
+  const more = page.locator(".board-status-more");
+  if (await more.isVisible()) await more.click();
+  await expect(page.locator(".board-status li button", { hasText: "Prepare spells" })).toHaveCount(1);
   await page.locator("[data-tile=magic]").click();
   // Two tabs under the book: Learned and Prepared, each with its count.
   const book = page.locator(".card-window .spell-tab.prep");
   const learned = page.locator(".card-window .spell-tab", { hasText: "Learned" });
-  // Nothing prepared yet: the choice checker asks for it (C7.18).
-  // A list may still be open, which folds the panel's choices to one line.
-  await page.locator(".board-status-more").click({ timeout: 2000 }).catch(() => undefined);
-  await expect(page.locator(".board-status li button", { hasText: "Prepare spells" })).toHaveCount(1);
   await book.click();
   const count = page.locator(".card-window h3", { hasText: "Prepared spells" });
   await expect(count).toContainText(/^Prepared spells 0 \//);

@@ -142,19 +142,27 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
     return h;
   }, [r, sheet, allSpells]);
   const previewKey = current ? `${current.id}|${pages.join(",")}|${companion}|${printed}` : "";
-  const firstPreview = useRef(true);
-  useEffect(() => {
-    if (!current) { setPreviewBytes(null); return; }
-    let live = true;
+  // The preview is drawn when asked, not on its own (Chris, 2026-11-13: filling a whole sheet and drawing it held the
+  // app up every time the Export tab opened or anything changed). `drawnKey` is what the shown preview was drawn
+  // from: when the character or the sheet changes after that, the preview says it is out of date and offers to draw
+  // it again, instead of redrawing on its own.
+  const [drawnKey, setDrawnKey] = useState("");
+  const [drawing, setDrawing] = useState(false);
+  const drawPreview = () => {
+    if (!current) return;
+    const key = previewKey;
+    setDrawing(true);
+    setPreviewBytes(null);
+    setPreviewNote("");
     warmPdf();
-    // The first preview starts at once; later ones wait a moment for typing to settle (C7.8).
-    const wait = firstPreview.current ? 0 : 250;
-    firstPreview.current = false;
-    const t = window.setTimeout(() => {
-      build(true).then((res) => { if (live) { setPreviewBytes(res.bytes); setPreviewNote(""); } }).catch((e) => { if (live) { setPreviewBytes(null); setPreviewNote((e as Error).message); } });
-    }, wait);
-    return () => { live = false; window.clearTimeout(t); };
-  }, [previewKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    // A frame first, so "Drawing..." shows before the work starts.
+    window.setTimeout(() => {
+      build(true).then((res) => { setPreviewBytes(res.bytes); setDrawnKey(key); }).catch((e) => { setPreviewBytes(null); setPreviewNote((e as Error).message); }).finally(() => setDrawing(false));
+    }, 30);
+  };
+  // Another sheet chosen: the old picture does not belong to it.
+  useEffect(() => { setPreviewBytes(null); setDrawnKey(""); setPreviewNote(""); }, [current?.id, pages.join(","), companion]); // eslint-disable-line react-hooks/exhaustive-deps
+  const previewStale = !!drawnKey && drawnKey !== previewKey;
 
   const run = async () => {
     if (!current) return;
@@ -232,7 +240,19 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
               ))}
             </div>
           )}
-          {current && <SheetPreview bytes={previewBytes} note={previewNote} />}
+          {current && (previewBytes || drawing || previewNote ? (
+            <>
+              {previewStale && !drawing && (
+                <p className="notice row">The character changed since this preview was drawn. <button onClick={drawPreview}>Redraw the preview</button></p>
+              )}
+              <SheetPreview bytes={previewBytes} note={previewNote} />
+            </>
+          ) : (
+            <div className="sheet-preview-ask">
+              <button onClick={drawPreview}>Show a preview of the filled sheet</button>
+              <p className="muted small-text">Drawing a preview fills the whole sheet and takes a few seconds, during which the app is slower. Saving the sheet does not need it.</p>
+            </div>
+          ))}
           {current && current.kind !== "companion" && (
             <div>
               <small className="muted">Add to the end of the PDF</small>

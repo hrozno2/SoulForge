@@ -456,6 +456,9 @@ test.describe("Soul Forge smoke tests", () => {
     };
     await choose();
     await expect(page.getByText(/classic 2014|fillable sheet/i).first()).toBeVisible();
+    // The preview is drawn on request, not on its own (it held the app up: Chris, 2026-11-13).
+    await expect(page.locator(".sheet-preview img")).toHaveCount(0);
+    await page.getByRole("button", { name: "Show a preview of the filled sheet" }).click();
     await expect(page.locator(".sheet-preview img")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("Page 1 of 2")).toBeVisible();
     await page.getByRole("button", { name: "Next page" }).click();

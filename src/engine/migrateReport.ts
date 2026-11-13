@@ -7,7 +7,7 @@ import type { Character } from "../aurora/character";
 import { resolve } from "../aurora/engine";
 import type { ARegistry } from "../aurora/registry";
 import { checkCharacter, type RefClass } from "../aurora/rulesCheck";
-import { buildSheet } from "../aurora/sheet";
+import { buildSheet, grantSource } from "../aurora/sheet";
 import { nameKey } from "./concepts";
 import { migrateToFiveTools, type Migration } from "./migrate";
 
@@ -42,6 +42,12 @@ export interface MoveResult {
   rules: string[];
   /** How many of `rules` the original did not have. */
   newRules: number;
+  /**
+   * Differences that are 5e.tools being right where Aurora's data was silent, not the move's doing: a spell a feature
+   * of the moved character lets it cast (the 2024 Druid's Wild Companion: Find Familiar; the 2024 Tiefling's
+   * Thaumaturgy). Listed, not counted as a changed sheet.
+   */
+  explained: string[];
 }
 
 /** Moves one character and compares it. `from` holds both providers, `to` 5e.tools alone; `ref` is the rules reference. */
@@ -57,9 +63,23 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
   for (const x of migration.noTwin) why.set(nameKey(x.name), `no 5e.tools version (${x.type})`);
   for (const x of migration.noTwin) if (/item|armor|weapon/i.test(x.type)) dropped.push(`gear: ${nameKey(x.name)} (no 5e.tools version)`);
   for (const x of migration.unplaced) why.set(nameKey(x.name), `no 5e.tools choice takes it (was in ${x.choice})`);
+  const explained: string[] = [];
+  // Spells a feature grants on the moved character (always prepared or cast through the feature), by name.
+  const sh1 = buildSheet(r1);
+  // Only where the feature that grants it was on the original too (by name): a grant from a choice the move made
+  // itself (a Strixhaven college the auto-fill picked) is the move's doing and stays a change.
+  const hadBefore = new Set(r0.active.map((x) => nameKey(x.el.name.replace(/^level \d+:\s*/i, ""))));
+  const grantedNow = new Set(sh1.casting.flatMap((c) => [...c.granted, ...c.spells.filter((p) => p.granted)]).filter((p) => { const src = grantSource(r1, p); return !!src && hadBefore.has(nameKey(src)); }).map((p) => nameKey(to.get(p.id)?.name ?? p.id)));
   for (const k of Object.keys(before) as (keyof SheetFacts)[]) {
     const a = before[k], b = after[k];
     if (JSON.stringify(a) === JSON.stringify(b)) continue;
+    if (k === "spells") {
+      const lost = (a as string[]).filter((x) => !(b as string[]).includes(x));
+      const got = (b as string[]).filter((x) => !(a as string[]).includes(x));
+      const byFeature = got.filter((x) => grantedNow.has(x));
+      for (const x of byFeature) explained.push(`spells: ${x} (a feature of the character grants it on 5e.tools content)`);
+      if (!lost.length && byFeature.length === got.length) continue;
+    }
     if (Array.isArray(a) && Array.isArray(b) && (typeof a[0] === "string" || typeof b[0] === "string")) {
       const lost = (a as string[]).filter((x) => !(b as string[]).includes(x));
       const got = (b as string[]).filter((x) => !(a as string[]).includes(x));
@@ -77,7 +97,7 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
   const rules = found.map((f) => { const isNew = !was.has(f.rule); if (isNew) newRules++; return `${f.rule}: ${f.detail} (${isNew ? "new" : "already before the move"})`; });
   // The picks kept against the 5e.tools rules are the rules check's "does not meet its requirements" findings already;
   // the character's notes list them (moveNote).
-  return { name: ch.name || "(unnamed)", migration, changed, dropped, rules, newRules };
+  return { name: ch.name || "(unnamed)", migration, changed, dropped, rules, newRules, explained };
 }
 
 /** A readable report over many moved characters: totals first, then each character with anything to say. */
@@ -95,6 +115,7 @@ export function moveReport(results: MoveResult[]): string {
     "", "The originals are untouched; each moved character is a new copy.", "",
     "## Changed fields", ...count((r) => r.changed.map(fieldOf)), "",
     "## Dropped", ...count((r) => r.dropped), "",
+    "## Explained (5e.tools right where Aurora's data was silent; not counted as changes)", ...count((r) => r.explained), "",
     "## Rules findings", ...count((r) => r.rules.map((x) => `${x.replace(/: .*$/, "")} ${/\(new\)$/.test(x) ? "[new]" : "[already before]"}`)), "",
     "## Each character", "",
   ];

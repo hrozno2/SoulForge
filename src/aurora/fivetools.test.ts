@@ -848,3 +848,11 @@ describe("skills a feature gives from a short list, stated in its text alone", (
     expect(trait?.rules.filter((r) => r.kind === "select") ?? []).toEqual([]);
   });
 });
+
+describe("instruments beyond the Player's Handbook's list", () => {
+  it("are kinds of musical instrument to be trained with", () => {
+    const els = convertFiveTools({ files: { "items-base.json": { baseitem: [{ name: "Birdpipes", source: "SCAG", type: "INS", rarity: "none" }, { name: "Horn of Blasting", source: "DMG", type: "INS", rarity: "rare" }] } } });
+    expect(els.find((e) => e.id === "ID_5ET_TOOL_BIRDPIPES")?.supports).toEqual(expect.arrayContaining(["5et tool instrument"]));
+    expect(els.some((e) => e.id === "ID_5ET_TOOL_HORN_OF_BLASTING")).toBe(false);
+  });
+});

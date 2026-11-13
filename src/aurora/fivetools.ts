@@ -248,12 +248,18 @@ export const TOOL_KINDS: Record<string, string[]> = {
   instrument: ["bagpipes", "drum", "dulcimer", "flute", "horn", "lute", "lyre", "pan flute", "shawm", "viol"],
   other: ["disguise kit", "forgery kit", "herbalism kit", "navigator's tools", "poisoner's kit", "thieves' tools", "vehicles (land)", "vehicles (water)"],
 };
+/**
+ * Instruments the data has beyond the Player's Handbook's list (the Sword Coast's birdpipes, glaur, longhorn, thelarr,
+ * zulkoon...): an instrument by its item type, so "any musical instrument" offers them and a character trained with one
+ * keeps it (they had no training element, and a choice of one stayed open: found 2026-11-13 moving characters).
+ */
+const EXTRA_INSTRUMENTS = new Set<string>();
 const GENERIC_TOOL: Record<string, string> = { "artisan's tools": "artisan", "gaming set": "gaming", "musical instrument": "instrument" };
 
 /** The tool proficiency element for a name, made once (its name maps to the tool:x concept). */
 function toolId(name: string, out: AElement[]): string {
   const n = plainName(name).toLowerCase();
-  const kind = Object.entries(TOOL_KINDS).find(([, l]) => l.includes(n))?.[0] ?? "other";
+  const kind = Object.entries(TOOL_KINDS).find(([, l]) => l.includes(n))?.[0] ?? (EXTRA_INSTRUMENTS.has(n) ? "instrument" : "other");
   const id = `ID_5ET_TOOL_${slug(n)}`;
   if (!out.some((o) => o.id === id)) out.push(base(id, `Tool Proficiency (${cap(n)})`, "Proficiency", "5etools", { compendiumHidden: true, supports: ["5et tool", `5et tool ${kind}`] }));
   return id;
@@ -2287,6 +2293,13 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   const out: AElement[] = syntheticElements();
   // Every standard tool exists, so "any musical instrument" has its options even when nothing names one.
   for (const names of Object.values(TOOL_KINDS)) for (const n of names) toolId(n, out);
+  // Every plain instrument item too (no rarity: a Horn of Blasting is a magic item, not a kind of instrument).
+  EXTRA_INSTRUMENTS.clear();
+  for (const [, json] of all) for (const i of [...((json?.baseitem as J[]) ?? []), ...((json?.item as J[]) ?? [])]) {
+    if (String(i?.type ?? "").split("|")[0] !== "INS" || (i.rarity && i.rarity !== "none")) continue;
+    const n = plainName(String(i.name)).toLowerCase();
+    if (!TOOL_KINDS.instrument.includes(n)) { EXTRA_INSTRUMENTS.add(n); toolId(n, out); }
+  }
   const spellIds: Record<string, { id: string; source: string }[]> = {};
   // One Source element per book, so lists can show release dates the way the Aurora content does.
   for (const [, json] of all) {

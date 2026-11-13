@@ -47,7 +47,7 @@ function setup() {
 describe("pdf export", () => {
   it("builds a sheet plus cards, with diacritics and overflow text", async () => {
     const { r, sheet } = setup();
-    expect(cardCounts(r, sheet).spells).toBe(11);
+    expect(cardCounts(r, sheet, "prepared").spells).toBe(11);
     const bytes = await buildPdf(r, sheet, DEFAULT_PDF_OPTIONS, fonts);
     const doc = await PDFDocument.load(bytes);
     // 2 sheet pages, then 12 cards in two pages of nine

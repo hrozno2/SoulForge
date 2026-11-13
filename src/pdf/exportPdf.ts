@@ -23,10 +23,12 @@ export interface PdfOptions {
   /** The spell pages list every spell the character can prepare, not only the prepared ones. */
   allSpells?: boolean;
   /**
-   * Which spells get a card: "prepared" (the default: cantrips, always-prepared and prepared spells, as the spell
-   * table) or "all" (every spell the character can prepare, a cleric's whole list).
+   * Which spells get a card: "prepared" (cantrips, always-prepared and prepared spells, as the spell table) or "all"
+   * (every spell the character can prepare: a wizard's whole spellbook, a cleric's whole list). Required, with no
+   * default: the fillable-sheet export left it out and printed only the prepared spells as cards although "Print the
+   * entire spellbook" was ticked (Chris, 2026-11-12). Every caller now says which it means.
    */
-  spellCardScope?: "prepared" | "all";
+  spellCardScope: SpellScope;
   /** Translate the printed text. Names the player typed are kept as they are. */
   translate?: {
     target: string;
@@ -46,8 +48,11 @@ export interface FontData {
   bold: ArrayBuffer | Uint8Array;
 }
 
+export type SpellScope = "prepared" | "all";
+
 export const DEFAULT_PDF_OPTIONS: PdfOptions = {
   paper: "a4",
+  spellCardScope: "prepared",
   sheet: true,
   spellCards: true,
   itemCards: true,
@@ -249,7 +254,7 @@ function drawTips(pdf: PDFDocument, f: Fonts, r: Resolved, sh: SheetData, size: 
 
 // ---------------------------------------------------------------- entry
 
-export function cardSources(r: Resolved, sh: SheetData, scope: "prepared" | "all" = "prepared") {
+export function cardSources(r: Resolved, sh: SheetData, scope: SpellScope) {
   const spellIds = new Set<string>();
   for (const c of sh.casting) for (const p of scope === "all" ? everySpellOf(r, c) : readySpells(c)) spellIds.add(p.id);
   const spells = [...spellIds].map((id) => r.reg.get(id)).filter((e): e is AElement => !!e)
@@ -346,7 +351,7 @@ async function buildPdfOnce(r: Resolved, sh: SheetData, opts: PdfOptions, fonts:
   return pdf.save();
 }
 
-export function cardCounts(r: Resolved, sh: SheetData, scope: "prepared" | "all" = "prepared"): { spells: number; items: number; features: number; forms: number } {
+export function cardCounts(r: Resolved, sh: SheetData, scope: SpellScope): { spells: number; items: number; features: number; forms: number } {
   const s = cardSources(r, sh, scope);
   return { spells: s.spells.length, items: s.items.length, features: s.features.length, forms: s.forms.length };
 }

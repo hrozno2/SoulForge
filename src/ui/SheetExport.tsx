@@ -4,6 +4,7 @@ import type { Resolved } from "../aurora/engine";
 import type { SheetData } from "../aurora/sheet";
 import { listTemplates, templateBytes, type TemplateRecord } from "../aurora/storage";
 import { buildPdf, cardCounts } from "../pdf/exportPdf";
+import { spellScopeOf } from "./SpellScope";
 import { fillAuto } from "../sheets/forms";
 import { fillOfficialSheet } from "../sheets/official";
 import { isDesktop } from "../net";
@@ -22,13 +23,21 @@ import type { Translation } from "./TranslateOptions";
 /** Fill the player's own copy of a fillable character sheet PDF. The PDF is stored on this computer only. */
 
 
+/**
+ * The cards added after a filled sheet: the same spell scope as the sheet's spell pages, so "Print the entire
+ * spellbook" gives a card for every spell the character can prepare (Chris, 2026-11-12: it gave only today's).
+ */
+export function extraCardOptions(cards: { spells: boolean; items: boolean; features: boolean; tips: boolean }, allSpells: boolean) {
+  return { paper: "letter" as const, sheet: false, spellCards: cards.spells, spellCardScope: spellScopeOf(allSpells), itemCards: cards.items, featureCards: cards.features, tips: cards.tips };
+}
+
 export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolved; sheet: SheetData; tr: Translation; allSpells?: boolean }) {
   const [templates, setTemplates] = useState<TemplateRecord[]>([]);
   const [pick, setPick] = useState("");
   const [pages, setPages] = useState<DldmPage[]>([]);
   const [companion, setCompanion] = useState("");
   const [cards, setCards] = useState({ spells: false, items: false, features: false, tips: false });
-  const counts = cardCounts(r, sheet);
+  const counts = cardCounts(r, sheet, spellScopeOf(allSpells));
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmPlain, setConfirmPlain] = useState(false);
@@ -160,7 +169,7 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
       let bytes = built.bytes;
       const notes = built.notes;
       if (cards.spells || cards.items || cards.features || cards.tips) {
-        const extra = await buildPdf(r, sheet, { paper: "letter", sheet: false, spellCards: cards.spells, itemCards: cards.items, featureCards: cards.features, tips: cards.tips, translate: tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`), onFailed) }, fonts);
+        const extra = await buildPdf(r, sheet, { ...extraCardOptions(cards, allSpells), translate: tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`), onFailed) }, fonts);
         const main = await PDFDocument.load(bytes);
         const add = await PDFDocument.load(extra);
         for (const pg of await main.copyPages(add, add.getPageIndices())) main.addPage(pg);

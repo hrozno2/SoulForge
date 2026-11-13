@@ -19,7 +19,7 @@ describe.skipIf(!C)("form cards", () => {
     const beast = slot.options.find((o) => !slot.blocked.has(o.id))!;
     ch = { ...ch, selections: { ...ch.selections, [slot.key]: [beast.id] }, taken: [slot.key] };
     const r = resolve(ch, reg);
-    const src = cardSources(r, buildSheet(r));
+    const src = cardSources(r, buildSheet(r), "prepared");
     expect(src.forms.map((f) => [f.el.id, f.kind])).toContainEqual([beast.id, "wild shape"]);
     const b = formStats(r, beast, "wild shape");
     expect(b.rules).toBe("2024");

@@ -306,7 +306,12 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
             const same = (a: ARule, b: ARule) => (a.kind === "grant" && b.kind === "grant" && a.id === b.id) || (a.kind === "select" && b.kind === "select" && a.type === b.type && a.supports === b.supports);
             for (const rule of entryRules(e.entryData as J, el)) if (!el.rules.some((x) => same(x, rule))) added.push(rule);
           }
+          // Effects an activity lists are applied when that activity is used (a reaction, an action), as Foundry and
+          // Plutonium apply them; only one marked always on (transfer) is carried by the character. Defensive Duelist's
+          // Parry, a reaction, added the Proficiency Bonus to armor class at all times (found 2026-11-13).
+          const onUse = new Set(((e.activities as J[]) ?? []).flatMap((a) => ((a.effects as J[]) ?? []).map((x) => String(x?.foundryId ?? x?._id ?? ""))).filter(Boolean));
           for (const eff of (e.effects as J[]) ?? []) {
+            if (onUse.has(String(eff.foundryId ?? eff._id ?? "")) && eff.transfer !== true) continue;
             // Applied when used, not always on. An enchantment goes on an item, and alternatives are listed side by side
             // (Enhanced Arcane Focus's +1 and +2 added up to +3 for every Artificer).
             if (eff.transfer === false || eff.disabled || eff.type === "enchantment" || eff.enchantmentRiderParent) continue;

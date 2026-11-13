@@ -791,6 +791,19 @@ describe("what is not always on", () => {
     } as never });
     expect(els.find((e) => e.name === "X")!.rules.filter((r) => r.kind === "stat" && /attack/.test(r.name))).toHaveLength(0);
   });
+  // Defensive Duelist's Parry (a reaction) added the Proficiency Bonus to armor class at all times (2026-11-13).
+  it("an effect an activity applies when used is not always on; one marked always on is", () => {
+    const els = convertFiveTools({ files: {
+      "feats.json": { feat: [{ name: "Duelist", source: "XPHB", entries: ["Parry."] }, { name: "Blast", source: "XPHB", entries: ["x"] }] },
+      "foundry-feats.json": { feat: [
+        { name: "Duelist", source: "XPHB", activities: [{ name: "Parry", type: "utility", activation: { type: "reaction" }, effects: [{ foundryId: "parry" }] }], effects: [{ foundryId: "parry", changes: [{ key: "system.attributes.ac.bonus", mode: "ADD", value: "@prof" }] }] },
+        { name: "Blast", source: "XPHB", activities: [{ name: "Use", type: "utility", effects: [{ foundryId: "on" }] }], effects: [{ foundryId: "on", transfer: true, changes: [{ key: "system.attributes.ac.bonus", mode: "ADD", value: "1" }] }] },
+      ] },
+    } as never });
+    const ac = (n: string) => els.find((e) => e.name === n)!.rules.filter((r) => r.kind === "stat" && /^ac/.test(r.name));
+    expect(ac("Duelist")).toHaveLength(0);
+    expect(ac("Blast")).toHaveLength(1);
+  });
   it("a condition immunity has an element to point at", () => {
     const els = convertFiveTools({ files: { "feats.json": { feat: [{ name: "X", source: "PHB", conditionImmune: ["poisoned"], entries: ["x"] }] } } as never });
     expect(els.find((e) => e.id === "ID_INTERNAL_CONDITION_CONDITION_IMMUNITY_POISONED")?.type).toBe("Condition");

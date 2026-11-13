@@ -39,7 +39,7 @@ const EXPLAINED: Record<string, string> = {
   "grants Background Clan Crafter": "5e.tools: Dwarvish or another language, as a set to choose; Aurora gives Dwarvish", "choices Background Clan Crafter": "5e.tools: Dwarvish or another language, as a set to choose; Aurora gives Dwarvish", 
   "choices Archetype Death Domain": FILED_DIFFERENTLY, "choices Archetype Circle of the Land": FILED_DIFFERENTLY, "choices Archetype College of Lore": FILED_DIFFERENTLY, "choices Archetype Path of the Giant": FILED_DIFFERENTLY, "choices Archetype Arcane Archer": FILED_DIFFERENTLY, "choices Archetype Way of the Kensei": FILED_DIFFERENTLY,
   "choices Archetype Eldritch Knight": "2024: they prepare their spells; Aurora counts picks", "choices Archetype Arcane Trickster": "2024: they prepare their spells; Aurora counts picks",
-  "grants Archetype Path of the Wild Heart": "one option of Aspect of the Wilds, picked first by the check", "grants Archetype Path of the Battlerager": FIVE_RIGHT, "grants Archetype Scout": FIVE_RIGHT, "grants Feat Gunner": FIVE_RIGHT,
+"grants Archetype Path of the Battlerager": FIVE_RIGHT, "grants Archetype Scout": FIVE_RIGHT, "grants Feat Gunner": FIVE_RIGHT,
   "choices Archetype Armorer": IN_PLAY, "choices Archetype Circle of Wildfire": "Aurora has a choice for a summoned spirit with one option", "choices Feat Planar Wanderer": IN_PLAY,
   "numbers Archetype Oath of Glory": "only the check's holder, which has no species and so no speed to raise; real sheets agree",
   "choices Feat Resilient": FILED_DIFFERENTLY, "choices Feat Blessed Warrior": FILED_DIFFERENTLY, "choices Feat Druidic Warrior": FILED_DIFFERENTLY,

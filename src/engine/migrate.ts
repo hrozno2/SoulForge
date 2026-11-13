@@ -7,7 +7,7 @@
  * with the old picks it offers, the owner's twin's picks first, until nothing more lands. What finds no place is
  * reported, as is every id with no twin.
  */
-import type { Character } from "../aurora/character";
+import type { Character, MoveDecision } from "../aurora/character";
 import { autoFill } from "../aurora/autofill";
 import { repeatedPicks } from "../aurora/rulesCheck";
 import { resolve } from "../aurora/engine";
@@ -36,6 +36,8 @@ export interface Migration {
    * same kind that had room ("in <choice>"), else as a manual addition (Manage). "name (where)".
    */
   kept: string[];
+  /** Subclasses kept as built where the newer rules have their own version: the player's call (moveDecisions). */
+  decisions: MoveDecision[];
 }
 
 const isFive = (e: AElement | undefined) => !!e && (e.origin === "5etools" || e.id.startsWith("ID_5ET"));
@@ -174,6 +176,34 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     declined: [],
     taken: [],
   };
+
+  // A subclass the newer rules replace with their own version (a 2014 Knowledge Domain on a 2024 Cleric: the edition
+  // rule offers only the 2024 one) is kept as built, so the character does not change under the player; the newer
+  // version is offered as a decision on Build (Chris, 2026-11-13). Set before the other picks are placed, so the kept
+  // subclass's own choices take its old picks.
+  const decisions: MoveDecision[] = [];
+  {
+    const r = resolve(next, to);
+    for (const s of old.slots) {
+      if (s.rule.type !== "Archetype") continue;
+      for (const id of s.chosen) {
+        const t = map(id, false);
+        const el = t ? to.get(t) : undefined;
+        if (!t || !el) continue;
+        // The class's subclass choice, by the class it belongs to (the two contents name its owner differently:
+        // Aurora's "Level 3: Cleric Subclass", 5e.tools' Cleric).
+        const root = s.root.startsWith("class:") ? `class:${map(s.root.slice(6), false)}` : s.root;
+        const slot = r.slots.find((x) => x.rule.type === "Archetype" && x.root === root && x.options.some((o) => nameKey(o.name) === nameKey(el.name)));
+        if (!slot || slot.options.some((o) => o.id === t)) continue;
+        const newer = slot.options.find((o) => nameKey(o.name) === nameKey(el.name))!;
+        // The same subclass from the same book is 5e.tools' copy for the other version of the class (Circle of Stars
+        // for the 2014 and the 2024 Druid): no decision, the class's own copy.
+        if (newer.source === el.source) { next.selections[slot.key] = [newer.id]; continue; }
+        next.selections[slot.key] = [t];
+        decisions.push({ key: slot.key, older: t, newer: newer.id, what: `${el.name}: ${el.source} as built, or ${newer.source}` });
+      }
+    }
+  }
 
   // Which option of a choice an old pick is: the same id; the same name (another book's copy of a spell, Aurora's
   // infusion Class Features for 5e.tools' Optional Features); or the owner's name with the pick's ("Magic Initiate
@@ -562,5 +592,6 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   const unplaced = picks.filter((p) => !final.ids.has(p.id) && !had(p.name)).map((p) => ({ id: p.id, name: p.name, choice: p.choice }));
   const open = final.slots.filter((x) => room(x) && !x.rule.optional && x.options.length).map((x) => `${x.owner.name}: ${x.rule.name} [${x.options.slice(0, 4).map((o) => o.name).join("; ")}${x.options.length > 4 ? "; …" : ""}]`);
   const againstRules = final.slots.flatMap((x) => x.chosen.filter((id) => x.blocked.has(id)).map((id) => `${x.rule.name}: ${to.get(id)?.name ?? id} (${x.whyBlocked?.(id) ?? "against the rules"})`));
-  return { ch: next, moved, noTwin: [...noTwin.values()], unplaced, open, againstRules, filled, kept };
+  if (decisions.length) next.moveDecisions = decisions;
+  return { ch: next, moved, noTwin: [...noTwin.values()], unplaced, open, againstRules, filled, kept, decisions };
 }

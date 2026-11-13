@@ -393,6 +393,18 @@ export function App() {
           <button className="primary" onClick={() => setTab("content")}>Go to Content</button>
         </div>
       )}
+      {content.ready && tab === "build" && (character.moveDecisions ?? []).map((d) => {
+        const older = content.reg.get(d.older), newer = content.reg.get(d.newer);
+        if (!older || !newer) return null;
+        const decide = (id: string) => set((c) => ({ ...c, selections: { ...c.selections, [d.key]: [id] }, moveDecisions: (c.moveDecisions ?? []).filter((x) => x.key !== d.key) }));
+        return (
+          <div key={d.key} className="notice-toast noprint move-decision" role="status">
+            <span>When this character moved to the current rules content, its {older.name} ({older.source}) was kept as you built it. The newer rules use their own version ({newer.source}), with different features and spells. Your call.</span>
+            <button onClick={() => decide(d.older)}>Keep it as built</button>
+            <button className="primary" onClick={() => decide(d.newer)} title="Follows the current rules; recommended for newer players">Use the {newer.source} version (recommended for newer players)</button>
+          </div>
+        );
+      })}
       <UpdateBanner found={updater.found} status={updater.status} busy={updater.busy} install={updater.install} dismiss={updater.dismiss} />
       <main className={[showDetail ? "with-detail" : "", tab === "build" && board ? "wide" : ""].filter(Boolean).join(" ")}>
         <div className="pane">

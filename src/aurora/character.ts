@@ -185,6 +185,9 @@ export interface PlayState {
   featureUses: Record<string, number>;
 }
 
+/** A subclass the move kept as built, with the newer rules' version of it offered instead. Ids are 5e.tools'. */
+export interface MoveDecision { key: string; older: string; newer: string; what: string }
+
 export interface Character {
   version: 2;
   name: string;
@@ -249,6 +252,12 @@ export interface Character {
   importReport?: string;
   /** What a damaged file had wrong when it was opened (repairReport below), kept to read again from Build. */
   repairReport?: string;
+  /**
+   * Decisions a move to 5e.tools content left for the player (Chris, 2026-11-13): a subclass built under the older
+   * rules that the newer rules replace with their own version (a 2014 Knowledge Domain on a 2024 Cleric). The move
+   * keeps it as built; Build shows each with both options, the newer one recommended for newer players.
+   */
+  moveDecisions?: MoveDecision[];
   /** Soul Forge Test only (D6): the id of the saved character this one was moved to 5e.tools from. */
   movedFrom?: string;
   /** Session log, newest first when shown. */

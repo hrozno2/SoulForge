@@ -78,7 +78,7 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")("saved characters move
   const tag = fresh ? `-fresh-${fresh}` : only ? "-only" : process.env.RULES_DIFF_MAX ? `-${max}` : "";
   writeFileSync(join(dir, `migrate${tag}.md`), moveReport(results));
   if (tag) { console.log(`MIGRATE${tag} ${results.length}: changed ${results.filter((r) => r.changed.length).length}, dropped ${results.filter((r) => r.dropped.length).length}, rules ${results.filter((r) => r.rules.length).length}, new rules ${results.filter((r) => r.newRules > 0).length}`); return; }
-  const now = { changed: results.filter((r) => r.changed.length).length, dropped: results.filter((r) => r.dropped.length).length, rules: results.filter((r) => r.rules.length).length, newRules: results.filter((r) => r.newRules > 0).length };
+  const now = { changed: results.filter((r) => r.changed.length).length, dropped: results.filter((r) => r.dropped.length).length, rules: results.filter((r) => r.rules.some((x) => !/kept as built/.test(x))).length, newRules: results.filter((r) => r.newRules > 0).length };
   const base = join(dir, "migrate-count.json");
   const was = existsSync(base) ? (JSON.parse(readFileSync(base, "utf8")) as Partial<typeof now>) : {};
   if (!existsSync(base) || process.env.RULES_SNAPSHOT) writeFileSync(base, JSON.stringify(now));

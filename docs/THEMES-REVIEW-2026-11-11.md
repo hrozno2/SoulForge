@@ -50,3 +50,12 @@ because it does not come from the theme:
 - Build's heading "Ready, set, Start your story..." stays on a finished level 9 character.
 - The Dice button (bottom right, fixed) covers the last row of the scores panel at 900 px height.
 - Daylight's top bar is dark navy with a red line while everything under it is light grey.
+
+## Open: light themes (Chris, 2026-11-13)
+
+In the light themes things do not look good yet: some icons become unreadable (light on light), and the cards stay
+dark. Marked for a later pass, not started. Where to look: icons drawn with fixed colours instead of the theme's ink
+tokens (`src/ui/icons.tsx`, `classIcons.tsx`, `schoolIcons.tsx`, `conditionIcons.tsx`), and the card and floating
+window backgrounds in `src/ui/styles.css` (`.card-back-body`, `.card-window`, `.float-window`, `.mini-card`), which
+set their own dark colours rather than reading the theme's paper tokens. Check every light theme with the headless
+screenshot method of 2026-11-11, card by card.

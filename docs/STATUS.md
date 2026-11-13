@@ -99,4 +99,4 @@ loss into a number that can only go down.
 
 ## Open things you reported, not engine
 
-- The PDF preview on Export slows the app (not measured yet).
+- Light themes: some icons become unreadable and the cards stay dark (noted 2026-11-13; THEMES-REVIEW, last section).

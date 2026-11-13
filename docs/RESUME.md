@@ -42,9 +42,14 @@ Open from that session, not started:
   (pdf-lib, about a thousand fields for the DLDM sheet) on every change of what would print; `printed` in
   SheetExport.tsx builds the fill data and hashes it on every render. First measure, then: fill in a worker or only on
   demand ("Refresh preview"), and memo the hash on the character alone.
-- "Print the entire spellbook" on the DLDM sheet: Chris says it did not add the spellbook. His exported file lists
-  19 spells for a Wizard 4 (5 cantrips, 7 first level, 7 second level), which looks like all of it; ask him what was
-  missing (spell cards? descriptions? a spell by name?).
+- Done 2026-11-13 (b5cb30b): "Print the entire spellbook" now gives every spellbook spell as a card on the DLDM
+  and other fillable sheets too (they printed the whole book on the sheet but cards only for prepared spells). The
+  card scope is a required option now. Not in a release yet: v0.26.0 was cut before it.
+- e2e/paths.spec.ts "a caster who prepares picks today's spells on the spellbook" failed once in CI (568f73a,
+  toHaveCount) and passed on the next run and locally. Watch it; if it fails again, check whether the larger pick
+  cards (they open at up to 820 by 760 since fe3279c) cover what the test clicks.
+- v0.26.0: the Apple Silicon build never got a GitHub runner (cancelled with no steps), so the release stayed a
+  draft; the job was re-run 2026-11-13. Check it published (gh release view v0.26.0) and the Homebrew step ran.
 - Musical instruments from the Sword Coast Adventurer's Guide (Birdpipes, Glaur, Thelarr, Zulkoon...) have no tool
   training on 5e.tools content: 14 open choices on 60 moved characters. Give every instrument item (type INS) its
   training element (fivetools.ts, where the standard tools are made).

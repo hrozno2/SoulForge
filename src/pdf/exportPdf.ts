@@ -4,7 +4,7 @@ import { logEvent } from "../logbook";
 import fontkit from "@pdf-lib/fontkit";
 import type { AElement } from "../aurora/types";
 import type { Resolved } from "../aurora/engine";
-import { everySpellOf, readySpells, stripHtml, type SheetData } from "../aurora/sheet";
+import { everySpellOf, readySpells, stripHtml, type SheetData, featureTypesOf } from "../aurora/sheet";
 import { playTips } from "./tips";
 import { drawSoulForgeSheet } from "./sheetSF";
 import { buildFillData } from "../sheets/data";
@@ -260,7 +260,8 @@ export function cardSources(r: Resolved, sh: SheetData, scope: SpellScope) {
   const spells = [...spellIds].map((id) => r.reg.get(id)).filter((e): e is AElement => !!e)
     .sort((a, b) => Number(a.setters.level?.value ?? 0) - Number(b.setters.level?.value ?? 0) || a.name.localeCompare(b.name));
   const items = r.character.inventory.map((i) => ({ el: i.id ? r.reg.get(i.id) : undefined, qty: i.qty })).filter((x): x is { el: AElement; qty: number } => !!x.el);
-  const features = sh.features.filter((x) => ["Feat", "Feat Feature", "Archetype Feature", "Class Feature", "Racial Trait"].includes(x.type));
+  // Every feature kind but the background's (its feature is the background card's text), from the sheet's one list.
+  const features = sh.features.filter((x) => featureTypesOf("Species traits", "Class features", "Subclass features", "Feats").includes(x.type));
   // Forms: the beasts picked in Wild Shape's choices; companions: the rest the character has (granted or added).
   const formIds = new Set(r.slots.filter((s) => s.rule.type === "Companion" && /\bws beast\b/.test(s.rule.supports ?? "")).flatMap((s) => s.chosen));
   const companionIds = new Set([...r.active.filter((a) => a.el.type === "Companion" && !formIds.has(a.el.id)).map((a) => a.el.id), ...r.character.companions.map((c) => c.id)]);

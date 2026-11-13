@@ -2,7 +2,7 @@ import { companionBonuses } from "../aurora/companion";
 import { ExportRulesNote } from "./RulesCheck";
 import { useMemo, useState } from "react";
 import type { Resolved } from "../aurora/engine";
-import { buildSheet, headerInfo, type SheetData } from "../aurora/sheet";
+import { buildSheet, headerInfo, type SheetData, FEATURE_GROUPS } from "../aurora/sheet";
 import { hitDicePools, longRest, withHitDiceCount } from "../aurora/rest";
 import { ABILITY_LABEL, ABILITY_SHORT, itemLabel, type Character } from "../aurora/character";
 import { downloadText, saveFile } from "../store";
@@ -131,13 +131,7 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
   const head = headerInfo(r);
   const hp = ch.play.hp ?? sheet.hp;
   const hd = sheet.hitDice.map((h) => `${h.count}d${h.die}`).join(" + ") || "-";
-  const groups: [string, string[]][] = [
-    ["Species traits", ["Racial Trait"]],
-    ["Class features", ["Class Feature"]],
-    ["Subclass features", ["Archetype Feature"]],
-    ["Feats", ["Feat", "Feat Feature"]],
-    ["Background", ["Background Feature"]],
-  ];
+  const groups: [string, string[]][] = FEATURE_GROUPS.map((g) => [g.name, g.types]);
   const attuned = ch.inventory.filter((i) => i.attuned).length;
 
   return (

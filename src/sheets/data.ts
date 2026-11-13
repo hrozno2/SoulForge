@@ -1,7 +1,7 @@
 import { isModern } from "../aurora/edition";
 import { companionHtml } from "../aurora/companion";
 import type { Resolved } from "../aurora/engine";
-import { grantSource, headerInfo, preparePool, readySpells, type SheetData } from "../aurora/sheet";
+import { grantSource, headerInfo, preparePool, readySpells, type SheetData, featureTypesOf } from "../aurora/sheet";
 import { ABILITY_IDS, ABILITY_LABEL, SKILL_ABILITY, itemLabel, type AbilityId, type InvItem } from "../aurora/character";
 
 export interface SpellRow {
@@ -309,8 +309,8 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     deathSuccess: ch.play.deathSaves.success, deathFail: ch.play.deathSaves.fail,
     profBonus: signed(sh.proficiency), initiative: signed(sh.initiative), passive: String(sh.passivePerception), abilities, skills, armorTraining, weaponTraining,
     tools: other.join(", "), toolsOnly: toolList.join(", "), weaponsOther: specificWeapons.join(", "), languages: sh.proficiencies.languages.join(", "),
-    traits: feat(["Racial Trait"]).map((f) => line(f, 160)), feats: feat(["Feat", "Feat Feature", "Background Feature"]).map((f) => line(f, 160)),
-    classFeatures: feat(["Class Feature", "Archetype Feature"]).map((f) => line(f, 260)),
+    traits: feat(featureTypesOf("Species traits")).map((f) => line(f, 160)), feats: feat(featureTypesOf("Feats", "Background")).map((f) => line(f, 160)),
+    classFeatures: feat(featureTypesOf("Class features", "Subclass features")).map((f) => line(f, 260)),
     // With nothing equipped, the sheet lists what the character carries rather than an empty table.
     // Every weapon the character carries, equipped or not (a Longbow on the back is still an attack, issue #3).
     weapons: sh.attacksCarried.map((a) => ({ name: a.name, bonus: signed(a.bonus), damage: `${a.damage} ${a.damageType}`.trim(), notes: [a.properties, a.notes].filter(Boolean).join("; ") })),
@@ -319,7 +319,8 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
       ...sh.casting.slice(1).filter((c) => main && (c.dc !== main.dc || c.attack !== main.attack)).map((c) => `${c.name}: save DC ${c.dc}, attack ${signed(c.attack)}${c.ability ? ` (${c.ability.charAt(0).toUpperCase()}${c.ability.slice(1)})` : ""}`),
       // How many to prepare, where the whole spellbook is printed with blank boxes (C7.9).
       ...(opts.allSpells ? sh.casting.filter((c) => c.prepare && c.prepareMax > 0).map((c) => `${c.name}: prepare ${c.prepareMax} spells each day (mark them in the spell list)`) : []),
-    ], spells, spellbook, armorWorn: armor?.el?.name ?? "", weaponsText, otherGear: gear, magicItems: magic,
+    ], spells, spellbook, // The shield worn by name beside the armor: as a ticked box alone, a magic shield's name never reached the paper.
+    armorWorn: [armor ? nm(armor) : "", ...inv.filter((x) => x.i.equipped && x.el?.type === "Armor" && /shield/i.test(x.el.name)).map(nm)].filter(Boolean).join(", "), weaponsText, otherGear: gear, magicItems: magic,
     coins: { cp: String(ch.coins.cp), sp: String(ch.coins.sp), ep: String(ch.coins.ep), gp: String(ch.coins.gp), pp: String(ch.coins.pp) },
     carryCapacity: String(sh.weight.capacity), pushDrag: String(sh.weight.capacity * 2),
     backstory: [ch.info.backstory, ch.info.allies && `Allies: ${ch.info.allies}`].filter(Boolean).join("\n\n"),

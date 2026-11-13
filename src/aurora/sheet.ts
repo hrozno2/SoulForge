@@ -114,7 +114,21 @@ export interface SheetData {
   lists: { name: string; texts: string[] }[];
 }
 
-const SHEET_TYPES = ["Racial Trait", "Class Feature", "Archetype Feature", "Feat", "Feat Feature", "Background Feature", "Class Feature Option"];
+/**
+ * The kinds of feature on a sheet, in the groups every view prints them in: the Sheet tab, the print data for every
+ * sheet and the feature cards all read this one list (docs/ENGINE-LEGAL-PLAN.md, W4). Each kept its own list before,
+ * and 5e.tools' Optional Features (Eldritch Invocations, Metamagic, Maneuvers, Fighting Styles) and Class Feature
+ * Options were on none of them: a third of random characters printed without them (found 2026-11-13).
+ */
+export const FEATURE_GROUPS: { name: string; types: string[] }[] = [
+  { name: "Species traits", types: ["Racial Trait"] },
+  { name: "Class features", types: ["Class Feature", "Class Feature Option", "Optional Feature"] },
+  { name: "Subclass features", types: ["Archetype Feature"] },
+  { name: "Feats", types: ["Feat", "Feat Feature"] },
+  { name: "Background", types: ["Background Feature"] },
+];
+export const featureTypesOf = (...groups: string[]): string[] => FEATURE_GROUPS.filter((g) => groups.includes(g.name)).flatMap((g) => g.types);
+const SHEET_TYPES = FEATURE_GROUPS.flatMap((g) => g.types);
 
 /** Replace {{stat}} placeholders in sheet text with computed values. */
 export function fillTemplate(text: string, r: Resolved): string {

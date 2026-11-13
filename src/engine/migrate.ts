@@ -231,6 +231,11 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const one = (xs: typeof open) => { const ys = xs.filter(same); return ys.length === 1 ? ys[0].id : undefined; };
     const inName = n.length > 3 ? one(open.filter((o) => ` ${nameKey(o.name)} `.includes(` ${n} `))) : undefined;
     if (inName) return inName;
+    // The distinctive words, when only one option has them all: Aurora's "Underdark Circle" (Circle Spells) is
+    // 5e.tools' "Circle of the Land: Underdark"; words both owners' names and the choice's name share say nothing.
+    const common = new Set([...nameKey(`${s.owner.name} ${p.ownerName} ${s.rule.name} ${p.choice}`).split(" "), "the", "of", "a", "an", "and", "spells", "spell", "circle"]);
+    const own = n.split(" ").filter((w) => w.length > 2 && !common.has(w));
+    if (own.length) { const hit = one(open.filter((o) => { const ws = new Set(nameKey(o.name).split(" ")); return own.every((w) => ws.has(w)); })); if (hit) return hit; }
     // What the brackets name, as an option's brackets, its name, or inside its name: "Cloud's Jaunt (Cloud Giant)"
     // is "Cloud Giant Ancestry"; Scholar's "Skill Expertise (Medicine)" is its option "Medicine".
     const br = /\(([^)]+)\)\s*$/.exec(p.name)?.[1];

@@ -1,6 +1,6 @@
 # Soul Forge: where the engine stands
 
-Updated 2026-11-13, end of the day's session (v0.26.0 released; main is seven fixes ahead). Every number here was measured on this date unless
+Updated 2026-11-13, night session (v0.26.0 released; main is ten fixes ahead). Every number here was measured on this date unless
 marked otherwise, and each comes from a command anyone can run again (last column). Update this page at the end of
 each working session, so the trend shows.
 
@@ -31,7 +31,7 @@ loss into a number that can only go down.
 | 5e.tools stands without Aurora | Same sheet with and without Aurora (parity effect) | 500/500 | 500/500 | `RULES_TIER=parity-effect` |
 | Nothing dropped engine to paper | Characters whose every feature, spell, training and item reaches the sheet and the print data | 5e.tools 300/300, SRD 300/300, both 297/300 | 100% everywhere | `RULES_TIER=conserve`; 80 SRD characters in every CI run |
 | Nothing dropped data to engine | Features whose text promises a choice or gift no rule gives | 52 candidates of 4,023 (to triage) | 0 unexplained | `RULES_TIER=prose` |
-| Old characters move intact | Fresh, legal characters moved from Aurora to 5e.tools ids | 26 of 60 unchanged (17 this morning); 24 change (spells 14, feats 5, skills 4); 11 lose something; 19 get a rules finding (27) | 0 unexplained changes | `RULES_TIER=migrate MIGRATE_FRESH=60` |
+| Old characters move intact | Fresh, legal characters moved from Aurora to 5e.tools ids | 26 of 60 unchanged (17 this morning); 24 change (spells 14, feats 5, skills 4); 10 lose something; 19 get a rules finding (27); 1 subclass decision waits for the player | 0 unexplained changes | `RULES_TIER=migrate MIGRATE_FRESH=60` |
 | Outside check | fastcharacter.com characters imported and compared | 92 characters; the differences found to be ours are fixed; the rest are the site's own slips, not yet in an explained list | gate on the unexplained | `RULES_TIER=fastchar` |
 | Tests | Unit tests / end-to-end tests | 391 / 59, all passing; CI green (an end-to-end test that failed three times on GitHub is fixed: a card covered what it clicked) | | `npm run gates` |
 
@@ -87,9 +87,11 @@ loss into a number that can only go down.
 
 ## Next, in order
 
-1. D6, the move: the biggest open number. One case to decide with you: Aurora let a 2024 Cleric take the 2014
-   Knowledge Domain; the move gives it the 2024 version (Heroes of Faerûn), as the edition rule says, so its domain
-   spells change. Keep the 2014 subclass on a moved character, or follow the rule? Spells first (14 of the 24 changes): a 2014 Knowledge Domain becomes the
+1. D6, the move: the biggest open number. Decided (Chris, 2026-11-13) and built: a subclass the newer rules replace
+   with another book's version is kept as built, and Build offers the newer one, recommended for newer players.
+   Next case of the same kind: Aurora let a Knowledge Domain Cleric take History and Religion as class skills and
+   again for Blessings of Knowledge; 5e.tools' rules call that a repeat, so the move picks other skills and the
+   expertise moves with them. Keep repeats as built, or pick again? Spells first (14 of the 24 changes): a 2014 Knowledge Domain becomes the
    2024 domain spell list; the Strixhaven Initiate's college is picked again instead of matched. Then feats: Aurora's
    2024 backgrounds give Magic Initiate as a feature, so the old sheet does not list it as a feat (4 characters).
 2. W5: the checker judges ability scores by source and feature uses by level from the reference.
@@ -99,4 +101,6 @@ loss into a number that can only go down.
 
 ## Open things you reported, not engine
 
+- Done 2026-11-13: the Export tab's sheet preview is drawn on request ("Show a preview of the filled sheet"), and
+  offers a redraw when the character changes, instead of redrawing on its own and holding the app up.
 - Light themes: some icons become unreadable and the cards stay dark (noted 2026-11-13; THEMES-REVIEW, last section).

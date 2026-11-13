@@ -1,6 +1,6 @@
 # Soul Forge: where the engine stands
 
-Updated 2026-11-13 (v0.26.0 released; main is three fixes ahead). Every number here was measured on this date unless
+Updated 2026-11-13, end of the day's session (v0.26.0 released; main is seven fixes ahead). Every number here was measured on this date unless
 marked otherwise, and each comes from a command anyone can run again (last column). Update this page at the end of
 each working session, so the trend shows.
 
@@ -11,8 +11,8 @@ uses (5e.tools and the free SRD rules), the random-character checks, the every-s
 "nothing dropped" check all come back clean.
 
 **What keeps it from being finished is not the engine's core but three edges:**
-1. **Moving old characters to 5e.tools content** (needed before Aurora can leave the release app): about 3 in 5
-   moved test characters still come out different from the original. This is the largest open item.
+1. **Moving old characters to 5e.tools content** (needed before Aurora can leave the release app): 24 of 60 moved
+   test characters still come out different from the original (33 this morning). This is the largest open item.
 2. **The rules check still trusts the sheet for some numbers** (ability score sources, feature uses, languages and
    tools by count). Until it judges those itself, a wrong number there can pass unseen, as two did this week.
 3. **New books state some choices only in their text.** About 50 of 4,023 features are candidates; each needs a
@@ -26,12 +26,12 @@ loss into a number that can only go down.
 
 | Promise | Measure | Today | Goal | How to rerun |
 |---|---|---|---|---|
-| Characters are legal | Random characters with no rules finding, 5e.tools / SRD / both | 300/300 · 300/300 · 300/300 (seed 20261113), and 200/200 · 200/200 again after the spellbook check fix | stays at 100% | `RULES_TIER` big batch, see CODE-GUIDE |
+| Characters are legal | Random characters with no rules finding, 5e.tools / SRD / both | 300/300 · 300/300 · 300/300 (seed 20261113); after today's last fix 200/200 · 200/200 (seed 20261116) | stays at 100% | `RULES_TIER` big batch, see CODE-GUIDE |
 | Every subclass works | Coverage run: every subclass, species, background and feat built and checked (5e.tools) | clean (2026-11-12) | clean on every set | `RULES_TIER=full` coverage |
 | 5e.tools stands without Aurora | Same sheet with and without Aurora (parity effect) | 500/500 | 500/500 | `RULES_TIER=parity-effect` |
 | Nothing dropped engine to paper | Characters whose every feature, spell, training and item reaches the sheet and the print data | 5e.tools 300/300, SRD 300/300, both 297/300 | 100% everywhere | `RULES_TIER=conserve`; 80 SRD characters in every CI run |
 | Nothing dropped data to engine | Features whose text promises a choice or gift no rule gives | 52 candidates of 4,023 (to triage) | 0 unexplained | `RULES_TIER=prose` |
-| Old characters move intact | Fresh, legal characters moved from Aurora to 5e.tools ids: unchanged | about 2 in 5 unchanged; 33 of 60 sheets change (mostly spells), 12 lose something | 0 unexplained changes | `RULES_TIER=migrate MIGRATE_FRESH=60` |
+| Old characters move intact | Fresh, legal characters moved from Aurora to 5e.tools ids | 26 of 60 unchanged (17 this morning); 24 change (spells 14, feats 5, skills 4); 11 lose something; 19 get a rules finding (27) | 0 unexplained changes | `RULES_TIER=migrate MIGRATE_FRESH=60` |
 | Outside check | fastcharacter.com characters imported and compared | 92 characters; the differences found to be ours are fixed; the rest are the site's own slips, not yet in an explained list | gate on the unexplained | `RULES_TIER=fastchar` |
 | Tests | Unit tests / end-to-end tests | 388 / 59, all passing; CI green | | `npm run gates` |
 
@@ -59,7 +59,7 @@ loss into a number that can only go down.
 | D0 to D3: licenses, two apps, free rules bundled, SRD API check | Done |
 | D4: 5e.tools stands on its own | Done (500/500) |
 | D5: testing without Aurora | Running in every check. Exit needs five clean full checks without Aurora and two weeks of your testing |
-| D6: old characters move to 5e.tools | In progress: about 2 in 5 move unchanged; nothing is thrown away (unplaceable picks are kept and listed) |
+| D6: old characters move to 5e.tools | In progress: 26 of 60 move unchanged; nothing is thrown away (unplaceable picks are kept and listed); differences where 5e.tools is right (a spell a feature grants) are listed as explained |
 | D7: release app drops Aurora | Waits for D5 and D6, and your go-ahead |
 
 ### Audit (AUDIT-2026-11-10.md)
@@ -80,10 +80,16 @@ loss into a number that can only go down.
   the feature cards on 5e.tools content.
 - With "Print the entire spellbook", fillable sheets got cards for prepared spells only.
 - A Wizard's spellbook picks were marked against the rules by a new check (fixed the same day).
+- Defensive Duelist put the Proficiency Bonus on armor class permanently on 5e.tools content (it is a reaction):
+  every effect a feature applies only when used was treated as always on. 254 such effects in the data.
+- Instruments beyond the Player's Handbook's ten (birdpipes, glaur, longhorn...) had no training on 5e.tools
+  content.
 
 ## Next, in order
 
-1. D6, the move: the biggest open number. Spells first (24 of the 33 changes).
+1. D6, the move: the biggest open number. Spells first (14 of the 24 changes): a 2014 Knowledge Domain becomes the
+   2024 domain spell list; the Strixhaven Initiate's college is picked again instead of matched. Then feats: Aurora's
+   2024 backgrounds give Magic Initiate as a feature, so the old sheet does not list it as a feat (4 characters).
 2. W5: the checker judges ability scores by source and feature uses by level from the reference.
 3. W3: prove every statistic has an effect.
 4. W10 triage: decide each of the 52.
@@ -92,4 +98,3 @@ loss into a number that can only go down.
 ## Open things you reported, not engine
 
 - The PDF preview on Export slows the app (not measured yet).
-- Sword Coast instruments (Birdpipes, Glaur and others) have no training on 5e.tools content.

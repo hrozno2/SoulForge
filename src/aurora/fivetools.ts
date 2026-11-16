@@ -680,6 +680,8 @@ function abilityRules(list: J[] | undefined, label: string, sets?: { out: AEleme
 
 interface Ctx {
   books: Record<string, string>;
+  /** Subclasses' expanded spell lists, tagged on the spells once all are converted. */
+  expanded?: { tag: string; spells: string[] }[];
   /** Every language the data lists, lower case, for "other" languages a species names only in its text. */
   languageNames?: string[];
   spellClasses: Record<string, Record<string, string[]>>;
@@ -2028,7 +2030,13 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     for (let k = before; k < out.length; k++) if (out[k].type === "Spell Set") out[k].rules = recast(out[k].rules);
     srules.push(...optionalFeatureRules(s, srules));
     srules.push(...subCasting.rules);
-    out.push(base(sid, s.name, "Archetype", srcName(ctx, s.source), { supports: [subTag], rules: srules, spellcasting: subCasting.spellcasting, description: entriesHtml(s.entries ?? []) }));
+    // An expanded spell list (2014 Warlock patrons: "expanded": {"s1": ["faerie fire", "sleep"], ...}): those spells
+    // join the class's list while the subclass is had, as Aurora's "extend" does. Unread, a 2014 Warlock could not learn
+    // its patron's spells on 5e.tools content (found moving characters, 2026-11-16).
+    const expanded = ((s.additionalSpells as J[] | undefined) ?? []).flatMap((a) => Object.values((a.expanded as J) ?? {}).flat()).map((x) => String(x));
+    const expandTag = `5et expanded ${slug(s.source ?? "")} ${slug(s.shortName ?? s.name)}`.toLowerCase();
+    if (expanded.length && !subCasting.spellcasting) (ctx.expanded ??= []).push({ tag: expandTag, spells: expanded });
+    out.push(base(sid, s.name, "Archetype", srcName(ctx, s.source), { supports: [subTag], rules: srules, spellcasting: subCasting.spellcasting ?? (expanded.length ? { name: c.name, ability: cap(abilFull(String(c.spellcastingAbility ?? "cha"))), prepare: false, list: [], extend: true, extendLists: [expandTag] } : undefined), description: entriesHtml(s.entries ?? []) }));
   }
 }
 
@@ -2402,6 +2410,16 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   applyTextUseSteps(out);
   applyTextAttacks(out);
   resolveSpellRefs(out, spellIds);
+  // Expanded lists: each named spell carries the subclass's list tag ("sleep", "hex|xphb": by name, the book when
+  // given; every edition's copy otherwise, and the choice's edition rule offers the right one).
+  for (const x of ctx.expanded ?? []) for (const ref of x.spells) {
+    const [nm, book] = ref.toLowerCase().split("|");
+    for (const sp of spellIds[nm.trim()] ?? []) {
+      if (book && sp.source.toLowerCase() !== book) continue;
+      const el = out.find((e) => e.id === sp.id);
+      if (el && !el.supports.includes(x.tag)) el.supports = [...el.supports, x.tag];
+    }
+  }
   resolveLooseRefs(out);
   const fluff = new Map<string, J[]>();
   for (const [, json] of all) if (json && typeof json === "object" && !Array.isArray(json)) for (const [k, v] of Object.entries(json as J)) if (/Fluff$/.test(k) && Array.isArray(v)) (fluff.get(k) ?? fluff.set(k, []).get(k)!).push(...v);

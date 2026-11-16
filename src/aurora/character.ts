@@ -186,7 +186,15 @@ export interface PlayState {
 }
 
 /** A subclass the move kept as built, with the newer rules' version of it offered instead. Ids are 5e.tools'. */
-export interface MoveDecision { key: string; older: string; newer: string; what: string }
+export interface MoveDecision {
+  key: string;
+  /** The pick kept as built, and what the newer rules would put in its place. */
+  older: string;
+  newer: string;
+  what: string;
+  /** "subclass" (a newer book's version exists) or "repeat" (the same pick twice, which Aurora allowed). */
+  kind?: "subclass" | "repeat";
+}
 
 export interface Character {
   version: 2;

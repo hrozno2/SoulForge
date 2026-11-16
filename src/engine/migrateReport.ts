@@ -48,6 +48,11 @@ export interface MoveResult {
    * Thaumaturgy). Listed, not counted as a changed sheet.
    */
   explained: string[];
+  /**
+   * Losses the move cannot avoid: content 5e.tools does not have (a spell or an item only Aurora's files hold). Listed
+   * and told to the player, counted apart from the move's own changes.
+   */
+  unavailable: string[];
 }
 
 /** Moves one character and compares it. `from` holds both providers, `to` 5e.tools alone; `ref` is the rules reference. */
@@ -64,6 +69,11 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
   for (const x of migration.noTwin) if (/item|armor|weapon/i.test(x.type)) dropped.push(`gear: ${nameKey(x.name)} (no 5e.tools version)`);
   for (const x of migration.unplaced) why.set(nameKey(x.name), `no 5e.tools choice takes it (was in ${x.choice})`);
   const explained: string[] = [];
+  // The species or background has no 5e.tools version (Secret Identity, Cormanthor Refugee).
+  const rootGone = migration.noTwin.some((x) => /^(Race|Background|Sub Race)$/.test(x.type));
+  const unavailable: string[] = [];
+  // Gear counted by entries: an item with no 5e.tools version is one fewer, and that is all.
+  const gearGone = migration.noTwin.filter((x) => /item|armor|weapon/i.test(x.type)).length;
   // Spells a feature grants on the moved character (always prepared or cast through the feature), by name.
   const sh1 = buildSheet(r1);
   // Only where the feature that grants it was on the original too (by name): a grant from a choice the move made
@@ -73,16 +83,41 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
   for (const k of Object.keys(before) as (keyof SheetFacts)[]) {
     const a = before[k], b = after[k];
     if (JSON.stringify(a) === JSON.stringify(b)) continue;
+    if ((k === "skills" || k === "ac") && rootGone) { unavailable.push(`${k}: changed with content 5e.tools does not have`); continue; }
+    // Aura of Protection covers the paladin too: every save up by the same number (Aurora's data left the paladin out).
+    if (k === "saves" && Array.isArray(a) && Array.isArray(b) && r1.active.some((x) => /^aura of protection$/i.test(x.el.name.replace(/^level \d+:\s*/i, "")))) {
+      const d = (b as number[]).map((v, i) => v - (a as number[])[i]);
+      if (d.every((v) => v === d[0] && v > 0)) { explained.push(`saves: +${d[0]} from Aura of Protection, which includes the paladin`); continue; }
+    }
+    if (k === "gear" && typeof a === "number" && typeof b === "number" && a - b === gearGone) { unavailable.push(`gear: ${gearGone} item(s) with no 5e.tools version`); continue; }
     if (k === "spells") {
       const lost = (a as string[]).filter((x) => !(b as string[]).includes(x));
       const got = (b as string[]).filter((x) => !(a as string[]).includes(x));
       const byFeature = got.filter((x) => grantedNow.has(x));
       for (const x of byFeature) explained.push(`spells: ${x} (a feature of the character grants it on 5e.tools content)`);
-      if (!lost.length && byFeature.length === got.length) continue;
+      const lostGone = lost.filter((x) => /no 5e\.tools version/.test(why.get(x) ?? ""));
+      for (const x of lostGone) { unavailable.push(`spells: ${x}`); dropped.push(`spells: ${x} (${why.get(x)})`); }
+      if (lostGone.length === lost.length && byFeature.length === got.length) continue;
     }
     if (Array.isArray(a) && Array.isArray(b) && (typeof a[0] === "string" || typeof b[0] === "string")) {
       const lost = (a as string[]).filter((x) => !(b as string[]).includes(x));
       const got = (b as string[]).filter((x) => !(a as string[]).includes(x));
+      const gone = (x: string) => /no 5e\.tools version/.test(why.get(x) ?? "");
+      if (!got.length && lost.length && lost.every(gone)) {
+        for (const x of lost) { unavailable.push(`${k}: ${x}`); dropped.push(`${k}: ${x} (${why.get(x)})`); }
+        continue;
+      }
+      // The 2024 rules fold the elemental languages into Primordial (the converter points them there).
+      if (k === "languages" && got.every((x) => x === "primordial") && lost.every((x) => /^(auran|aquan|ignan|terran)$/.test(x))) { explained.push(`languages: ${lost.join(", ")} is Primordial`); continue; }
+      // What a species or background gave, where it has no 5e.tools version: the move cannot know it.
+      if (k === "languages" && rootGone) { unavailable.push(`languages: ${lost.join(", ")} (from content 5e.tools does not have)`); continue; }
+      // A feat the original had without listing it as one (Aurora's 2024 backgrounds give Magic Initiate as a feature
+      // whose choices say "(Magic Initiate)").
+      const hadAsChoices = (x: string) => r0.slots.some((sl) => nameKey(sl.rule.name).includes(x));
+      if (k === "feats" && !lost.length && got.every(hadAsChoices)) { for (const x of got) explained.push(`feats: ${x} (the original had its choices, not listed as a feat)`); continue; }
+      // The same option filed as another kind (College of Swords' Dueling: a feat in Aurora, a fighting style in 5e.tools).
+      const stillHas = (x: string) => r1.active.some((y) => nameKey(y.el.name) === x);
+      if (k === "feats" && !got.length && lost.every(stillHas)) { for (const x of lost) explained.push(`feats: ${x} (still had, as a ${r1.active.find((y) => nameKey(y.el.name) === x)!.el.type.toLowerCase()})`); continue; }
       changed.push(`${k}: lost [${lost.join(", ")}] gained [${got.join(", ")}]`);
       for (const x of lost) dropped.push(`${k}: ${x}${why.has(x) ? ` (${why.get(x)})` : ""}`);
     } else changed.push(`${k}: ${JSON.stringify(a)} -> ${JSON.stringify(b)}`);
@@ -98,12 +133,13 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
   // not counted as a finding the move brought.
   const pending = new Set(migration.decisions.map((d) => nameKey(to.get(d.older)?.name ?? "")));
   const rules = found.map((f) => {
-    if (/does not offer|does not meet its requirements/.test(f.rule) && pending.has(nameKey(f.detail.replace(/^[^:]*:\s*/, "")))) return `${f.rule}: ${f.detail} (kept as built: the player's decision on Build)`;
+    const pendingHere = [...pending].some((p) => p && ` ${nameKey(f.detail)} `.includes(` ${p} `));
+    if (/does not offer|does not meet its requirements|repeats something/.test(f.rule) && pendingHere) return `${f.rule}: ${f.detail} (kept as built: the player's decision on Build)`;
     const isNew = !was.has(f.rule); if (isNew) newRules++; return `${f.rule}: ${f.detail} (${isNew ? "new" : "already before the move"})`;
   });
   // The picks kept against the 5e.tools rules are the rules check's "does not meet its requirements" findings already;
   // the character's notes list them (moveNote).
-  return { name: ch.name || "(unnamed)", migration, changed, dropped, rules, newRules, explained };
+  return { name: ch.name || "(unnamed)", migration, changed, dropped, rules, newRules, explained, unavailable };
 }
 
 /** A readable report over many moved characters: totals first, then each character with anything to say. */
@@ -117,9 +153,10 @@ export function moveReport(results: MoveResult[]): string {
   const decided = (x: string) => /kept as built/.test(x);
   const clean = results.filter((r) => !r.changed.length && !r.rules.some((x) => !decided(x))).length;
   const waiting = results.filter((r) => r.migration.decisions.length).length;
+  const onlyUnavailable = results.filter((r) => !r.changed.length && r.unavailable.length).length;
   const lines = [
     "# Characters moved to 5e.tools", "",
-    `${results.length} characters: ${clean} unchanged and within the rules (${waiting} with a subclass decision waiting on Build), ${results.filter((r) => r.changed.length).length} with a changed sheet, ${results.filter((r) => r.dropped.length).length} with something dropped, ${results.filter((r) => r.rules.some((x) => !decided(x))).length} with a rules finding (${results.filter((r) => r.newRules > 0).length} with one the move brought; the rest were already there).`,
+    `${results.length} characters: ${clean} unchanged and within the rules (${waiting} with a subclass decision waiting on Build; ${onlyUnavailable} of them losing only content 5e.tools does not have), ${results.filter((r) => r.changed.length).length} with a changed sheet, ${results.filter((r) => r.dropped.length).length} with something dropped, ${results.filter((r) => r.rules.some((x) => !decided(x))).length} with a rules finding (${results.filter((r) => r.newRules > 0).length} with one the move brought; the rest were already there).`,
     "", "The originals are untouched; each moved character is a new copy.", "",
     "## Changed fields", ...count((r) => r.changed.map(fieldOf)), "",
     "## Dropped", ...count((r) => r.dropped), "",

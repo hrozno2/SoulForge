@@ -348,7 +348,9 @@ function buildCasting(r: Resolved): CastingLine[] {
       prepare: e.prepare,
       // "Ability modifier + level (minimum of one spell)": a low score never leaves a caster who prepares with none
       // (C7.18; the content's formula has no floor).
-      prepareMax: e.prepare ? Math.max(1, r.stats.get(`${key}:spellcasting:prepare`)) : r.stats.get(`${key}:spellcasting:prepare`),
+      // Nothing to prepare before the first spell slot: the 2014 Paladin gains Spellcasting at 2nd level, and its "at
+      // least one" floor gave a level-1 Paladin a prepared spell (found moving characters, 2026-11-16).
+      prepareMax: e.prepare ? (ownLevel > 0 || slots.length ? Math.max(1, r.stats.get(`${key}:spellcasting:prepare`)) : 0) : r.stats.get(`${key}:spellcasting:prepare`),
       slots,
       pactLevel: isPact ? r.stats.get(`${key}:spellcasting:slot`) || maxLevel : undefined,
       cantripsKnown: cantrips,

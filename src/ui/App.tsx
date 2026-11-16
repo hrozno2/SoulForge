@@ -396,9 +396,17 @@ export function App() {
       {content.ready && tab === "build" && (character.moveDecisions ?? []).map((d) => {
         const older = content.reg.get(d.older), newer = content.reg.get(d.newer);
         if (!older || !newer) return null;
-        const decide = (id: string) => set((c) => ({ ...c, selections: { ...c.selections, [d.key]: [id] }, moveDecisions: (c.moveDecisions ?? []).filter((x) => x.key !== d.key) }));
+        // The kept pick is swapped for the chosen one in its choice; the other picks there stay.
+        const decide = (id: string) => set((c) => ({ ...c, selections: { ...c.selections, [d.key]: (c.selections[d.key] ?? []).map((x) => (x === d.older ? id : x)) }, moveDecisions: (c.moveDecisions ?? []).filter((x) => !(x.key === d.key && x.older === d.older)) }));
+        if (d.kind === "repeat") return (
+          <div key={`${d.key}|${d.older}`} className="notice-toast noprint move-decision" role="status">
+            <span>This character has {older.name} twice, which its old content allowed. The rules let you take something else in that place; {newer.name} is a suggestion. Your call.</span>
+            <button onClick={() => decide(d.older)}>Keep it as built</button>
+            <button className="primary" onClick={() => decide(d.newer)} title="Follows the current rules; recommended for newer players">Take {newer.name} instead (recommended)</button>
+          </div>
+        );
         return (
-          <div key={d.key} className="notice-toast noprint move-decision" role="status">
+          <div key={`${d.key}|${d.older}`} className="notice-toast noprint move-decision" role="status">
             <span>When this character moved to the current rules content, its {older.name} ({older.source}) was kept as you built it. The newer rules use their own version ({newer.source}), with different features and spells. Your call.</span>
             <button onClick={() => decide(d.older)}>Keep it as built</button>
             <button className="primary" onClick={() => decide(d.newer)} title="Follows the current rules; recommended for newer players">Use the {newer.source} version (recommended for newer players)</button>

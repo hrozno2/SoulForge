@@ -156,9 +156,6 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       // By what the pick is, not by its choice's name: Aurora's "Ability Score Improvement (Barbarian 4)" holds feats.
       const ability = el?.type !== "Feat" && (s.rule.type === "Ability Score Improvement" || isAbility(el?.name ?? "", el?.type ?? ""));
       const t = ability ? id : map(id, false);
-      // The same spell twice under one spellcasting (Aurora lets Pact of the Tome and the Warlock's own cantrips both
-      // hold Magic Stone) is one spell: the second copy took another pick's place and was then dropped as a repeat.
-      if (el?.type === "Spell" && pool.some((q) => q.spell && q.id === (t ?? id) && (q.casting ?? "").toLowerCase() === (s.rule.spellcasting ?? "").toLowerCase())) continue;
       pool.push({ id: t ?? id, name: el?.name ?? id, owner: map(s.owner.id, false)!, ownerName: nameKey(s.owner.name), ownerType: s.owner.type, ruleType: s.rule.type, choice: s.rule.name, ability, spell: el?.type === "Spell", casting: s.rule.spellcasting, concept: el ? conceptOf(el) : undefined, at: s.at ?? 0 });
     }
   }
@@ -344,8 +341,10 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       // (a background feat it now gives outright) must not take another level's feat (it pushed Spell Sniper out).
       if (ok && !own && !lvl && from.get(p.id)?.type === "Feat" || ok && !own && !lvl && to.get(p.id)?.type === "Feat") return undefined;
       if (ok) return { rank: own && lvl ? 0 : own ? 1 : lvl ? 2 : 4, id: ok };
+      // Kept against the rules, at its own level: in its own owner's choice before another owner's (the Pact of the
+      // Tome's Magic Stone, a repeat of the Warlock's own, took the Warlock's cantrip place and pushed the rest on).
       const anyway = lvl ? fits(pl.s, p, true) : undefined;
-      return anyway ? { rank: 3, id: anyway } : undefined;
+      return anyway ? { rank: own ? 1 : 3, id: anyway } : undefined;
     };
     void mode;
     const edges = picks.map((p) => places.map((pl, j) => ({ j, ...(rank(pl, p) ?? { rank: 9, id: "" }) })).filter((e) => e.id && !(next.selections[places[e.j].s.key] ?? []).includes(e.id)).sort((x, y) => x.rank - y.rank));
@@ -592,11 +591,27 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const k = p.ruleType === "Spell" ? `Spell|${(p.casting ?? "").toLowerCase()}` : `${p.ruleType}|${p.ownerName}`;
     leftOpen.set(k, (leftOpen.get(k) ?? 0) + 1);
   }
+  // How often the original picked each thing, by name: twice means the player's own repeat (Aurora allowed the same
+  // cantrip from two lists, a skill twice), which is kept as built and offered as a decision; a repeat the move made
+  // (5e.tools grants what Aurora had the player pick) is picked again as before.
+  const oldPicks = new Map<string, number>();
+  for (const s of old.slots) for (const id of s.chosen) { const k = nameKey(from.get(id)?.name ?? id); oldPicks.set(k, (oldPicks.get(k) ?? 0) + 1); }
+  const nameOf = (id: string) => to.get(id)?.name ?? from.get(id)?.name ?? id;
   for (const x of beforeFill.slots) {
     if (x.rule.type === "List") continue;
     const repeats = x.chosen.length > 0 && repeatedPicks(beforeFill, x).length > 0;
     // The player's picks, and the auto-fill's only for the places left (a spellbook short of two spells).
-    const mine = repeats ? (filledCh0.selections[x.key] ?? []).filter((id) => x.chosen.includes(id)) : next.selections[x.key] ?? x.chosen;
+    let mine = repeats ? (filledCh0.selections[x.key] ?? []).filter((id) => x.chosen.includes(id)) : next.selections[x.key] ?? x.chosen;
+    if (repeats) {
+      const here = filledCh0.selections[x.key] ?? [];
+      const removed = x.chosen.filter((id) => !here.includes(id));
+      const added = here.filter((id) => !x.chosen.includes(id));
+      const own = removed.filter((id) => (oldPicks.get(nameKey(nameOf(id))) ?? 0) >= 2);
+      if (own.length) {
+        mine = [...x.chosen];
+        own.forEach((id, i) => { if (added[i]) decisions.push({ kind: "repeat", key: x.key, older: id, newer: added[i], what: `${x.rule.name}: ${nameOf(id)} twice, or ${nameOf(added[i])}` }); });
+      }
+    }
     const room = Math.max(0, x.rule.number - mine.length);
     const keep = Math.min(room, leftOpen.get(kindOf(x)) ?? 0);
     if (keep) leftOpen.set(kindOf(x), (leftOpen.get(kindOf(x)) ?? 0) - keep);

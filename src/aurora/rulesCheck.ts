@@ -489,6 +489,9 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const arcanum = x.ref.pact ? [11, 13, 15, 17].filter((l) => x.c.level >= l).map((_, i) => i + 6) : [];
     const levelOf = (id: string) => Number(reg.get(id)?.setters.level?.value ?? 0);
     if (line.prepare) {
+      // No spell slot of its own yet (the reference's table for this level): nothing to prepare.
+      const ownSlots = (x.ref.slots?.[x.c.level - 1] ?? []).some((n: number) => n > 0) || !!x.ref.pact;
+      if (x.ref.slots && !ownSlots && (line.prepareMax > 0 || (r.character.prepared[line.name] ?? []).length)) add("Prepared spells", `${x.el.name} ${x.c.level}: prepares spells before the class has a spell slot`);
       if (line.prepareMax && line.prepareMax !== want && x.ref.prepared) add("Prepared spells", `${x.el.name} ${x.c.level}: may prepare ${line.prepareMax}, the class table gives ${want}`);
       // The list to prepare from must hold at least as many spells as may be prepared.
       const pool = preparePool(r, line).length;

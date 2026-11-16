@@ -1,6 +1,6 @@
 # Soul Forge: where the engine stands
 
-Updated 2026-11-13, night session (v0.26.0 released; main is ten fixes ahead). Every number here was measured on this date unless
+Updated 2026-11-16 (v0.26.0 released; main is about twenty fixes ahead, none released). Every number here was measured on this date unless marked otherwise, and each comes from a command anyone can run again (last column). Update this page at the end of each working session, so the trend shows.
 marked otherwise, and each comes from a command anyone can run again (last column). Update this page at the end of
 each working session, so the trend shows.
 
@@ -26,12 +26,12 @@ loss into a number that can only go down.
 
 | Promise | Measure | Today | Goal | How to rerun |
 |---|---|---|---|---|
-| Characters are legal | Random characters with no rules finding, 5e.tools / SRD / both | 300/300 · 300/300 · 300/300 (seed 20261113); after today's last fix 200/200 · 200/200 (seed 20261116) | stays at 100% | `RULES_TIER` big batch, see CODE-GUIDE |
+| Characters are legal | Random characters with no rules finding, 5e.tools / SRD / both | 200/200 · 200/200 · 200/200 (seeds 20261117, 20261118) | stays at 100% | `RULES_TIER` big batch, see CODE-GUIDE |
 | Every subclass works | Coverage run: every subclass, species, background and feat built and checked (5e.tools) | clean (2026-11-12) | clean on every set | `RULES_TIER=full` coverage |
 | 5e.tools stands without Aurora | Same sheet with and without Aurora (parity effect) | 500/500 | 500/500 | `RULES_TIER=parity-effect` |
 | Nothing dropped engine to paper | Characters whose every feature, spell, training and item reaches the sheet and the print data | 5e.tools 300/300, SRD 300/300, both 297/300 | 100% everywhere | `RULES_TIER=conserve`; 80 SRD characters in every CI run |
 | Nothing dropped data to engine | Features whose text promises a choice or gift no rule gives | 52 candidates of 4,023 (to triage) | 0 unexplained | `RULES_TIER=prose` |
-| Old characters move intact | Fresh, legal characters moved from Aurora to 5e.tools ids | 26 of 60 unchanged (17 this morning); 24 change (spells 14, feats 5, skills 4); 10 lose something; 19 get a rules finding (27); 1 subclass decision waits for the player | 0 unexplained changes | `RULES_TIER=migrate MIGRATE_FRESH=60` |
+| Old characters move intact | Fresh, legal characters moved from Aurora to 5e.tools ids | 42 of 60 unchanged and within the rules (17 on 13 Nov), of which 9 lose only content 5e.tools does not have; 4 change; 5 wait for the player's decision (a subclass or a repeated pick, kept as built); no rules finding brought by the move (16 are the original's own picks against rules 5e.tools states) | 0 unexplained changes | `RULES_TIER=migrate MIGRATE_FRESH=60` |
 | Outside check | fastcharacter.com characters imported and compared | 92 characters; the differences found to be ours are fixed; the rest are the site's own slips, not yet in an explained list | gate on the unexplained | `RULES_TIER=fastchar` |
 | Tests | Unit tests / end-to-end tests | 391 / 59, all passing; CI green (an end-to-end test that failed three times on GitHub is fixed: a card covered what it clicked) | | `npm run gates` |
 
@@ -59,7 +59,7 @@ loss into a number that can only go down.
 | D0 to D3: licenses, two apps, free rules bundled, SRD API check | Done |
 | D4: 5e.tools stands on its own | Done (500/500) |
 | D5: testing without Aurora | Running in every check. Exit needs five clean full checks without Aurora and two weeks of your testing |
-| D6: old characters move to 5e.tools | In progress: 26 of 60 move unchanged; nothing is thrown away (unplaceable picks are kept and listed); differences where 5e.tools is right (a spell a feature grants) are listed as explained |
+| D6: old characters move to 5e.tools | Nearly done on the fresh sample: 42 of 60 unchanged, 4 change, nothing thrown away, the player decides where the newer rules differ. Next: Chris's own library and the 400 saved characters |
 | D7: release app drops Aurora | Waits for D5 and D6, and your go-ahead |
 
 ### Audit (AUDIT-2026-11-10.md)
@@ -70,6 +70,14 @@ loss into a number that can only go down.
 | Rules and play R1 to R25 | 20 fixed or found sound | R6 guarded, not rewritten; R7, R8 to verify; R19 replaced by the fresh migration measure |
 | Engine shape E1 to E6 | none | all six; none blocks legality |
 | Tooling H1 to H6 | H4, H5 partly | linter (needs an install), stricter types, silent catches |
+
+## Fixed on 16 November
+
+- A 2014 Warlock could not learn its patron's expanded spells (the Archfey's Sleep, the Fiend's Burning Hands) on
+  5e.tools content or the bundled free rules.
+- A 2014 Paladin prepared a spell at level 1 (it casts from level 2), on every content set.
+- The move: Strixhaven colleges and their cantrip sets, versioned 2014 feats (Magic Initiate, Ritual Caster), the
+  class chosen inside a feat taking a feat choice, and the player's own repeats kept as built with a decision.
 
 ## Fixed this week because of the measurements
 
@@ -87,13 +95,9 @@ loss into a number that can only go down.
 
 ## Next, in order
 
-1. D6, the move: the biggest open number. Decided (Chris, 2026-11-13) and built: a subclass the newer rules replace
-   with another book's version is kept as built, and Build offers the newer one, recommended for newer players.
-   Next case of the same kind: Aurora let a Knowledge Domain Cleric take History and Religion as class skills and
-   again for Blessings of Knowledge; 5e.tools' rules call that a repeat, so the move picks other skills and the
-   expertise moves with them. Keep repeats as built, or pick again? Spells first (14 of the 24 changes): a 2014 Knowledge Domain becomes the
-   2024 domain spell list; the Strixhaven Initiate's college is picked again instead of matched. Then feats: Aurora's
-   2024 backgrounds give Magic Initiate as a feature, so the old sheet does not list it as a feat (4 characters).
+1. D6, the move: 4 of 60 still change. Two Warlocks whose Pact of the Tome and own cantrips both hold Magic Stone
+   (the Tome's copy has no place once the character knows it); a Knowledge Domain Cleric's Blessings of Knowledge
+   skills that repeat its class skills; a Druid with Frostbite from two lists. Then run the move on Chris's library.
 2. W5: the checker judges ability scores by source and feature uses by level from the reference.
 3. W3: prove every statistic has an effect.
 4. W10 triage: decide each of the 52.

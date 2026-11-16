@@ -2,6 +2,30 @@
 
 What changed in each release. Newest first.
 
+## v0.26.1 (2026-11-16)
+
+- STATUS: 2026-11-16
+- Move report: findings that are the original's own are said as such
+- A subclass's expanded spell list joins its class's list (2014 Warlock patrons)
+- No prepared spells before the first slot; the move keeps the player's repeats and reports what it cannot carry
+- The move: versioned feats and the class chosen inside them
+- The move: a pick matches an option by its distinctive words; numbered spell sets by the spells they grant
+- STATUS: night of 2026-11-13
+- The move: a subclass the newer rules replace is kept as built, and the player decides on Build
+- Note: light themes, unreadable icons and dark cards (for a later pass)
+- Export: the sheet preview is drawn on request
+- STATUS: tests and a question for Chris on the move
+- e2e: read the choice checker before the spell card opens
+- STATUS: end of 2026-11-13
+- Effects a feature applies when used are not always on (Defensive Duelist's AC)
+- Every plain instrument in the data can be trained with; the move report explains spells a feature grants
+- The move: a pick matches an option by its distinctive words (Underdark Circle is Circle of the Land: Underdark)
+- docs/STATUS.md: where the engine stands, measured, with the plans item by item
+- Measurement: feature text that promises a choice or a gift no rule gives (ENGINE-LEGAL-PLAN W10)
+- Nothing dropped from engine to print: one list of feature kinds; invocations, metamagic and maneuvers printed
+- RESUME: 2026-11-13
+- Entire spellbook: the cards added to a fillable sheet follow it too
+
 ## v0.26.0 (2026-11-12)
 
 - Settings over everything; a card in the Bag of Holding leaves its slot empty; RESUME

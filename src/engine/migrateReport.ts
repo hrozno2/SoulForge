@@ -135,7 +135,15 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
   const rules = found.map((f) => {
     const pendingHere = [...pending].some((p) => p && ` ${nameKey(f.detail)} `.includes(` ${p} `));
     if (/does not offer|does not meet its requirements|repeats something/.test(f.rule) && pendingHere) return `${f.rule}: ${f.detail} (kept as built: the player's decision on Build)`;
-    const isNew = !was.has(f.rule); if (isNew) newRules++; return `${f.rule}: ${f.detail} (${isNew ? "new" : "already before the move"})`;
+    const isNew = !was.has(f.rule);
+    // Findings that are not the move's doing, said as such (and not counted as brought by it): content 5e.tools does
+    // not have; a choice left open because the original's pick there has no 5e.tools version; the player's own pick
+    // against a rule 5e.tools states and Aurora's data did not (the move keeps picks as built; the auto-fill never
+    // picks against the rules).
+    if (isNew && /Content refers to something missing/.test(f.rule)) return `${f.rule}: ${f.detail} (content 5e.tools does not have)`;
+    if (isNew && /A required choice is not made/.test(f.rule) && (migration.noTwin.length || migration.unplaced.length)) return `${f.rule}: ${f.detail} (left open: the original's pick has no 5e.tools version)`;
+    if (isNew && /does not meet its requirements|Feat requirements not met|does not offer/.test(f.rule)) return `${f.rule}: ${f.detail} (the player's pick, against a rule 5e.tools states and Aurora's data did not)`;
+    if (isNew) newRules++; return `${f.rule}: ${f.detail} (${isNew ? "new" : "already before the move"})`;
   });
   // The picks kept against the 5e.tools rules are the rules check's "does not meet its requirements" findings already;
   // the character's notes list them (moveNote).
@@ -151,12 +159,13 @@ export function moveReport(results: MoveResult[]): string {
   };
   const fieldOf = (s: string) => s.replace(/:.*$/, "");
   const decided = (x: string) => /kept as built/.test(x);
+  const notMove = (x: string) => /\((content 5e\.tools does not have|left open: the original's pick|the player's pick, against a rule)/.test(x);
   const clean = results.filter((r) => !r.changed.length && !r.rules.some((x) => !decided(x))).length;
   const waiting = results.filter((r) => r.migration.decisions.length).length;
   const onlyUnavailable = results.filter((r) => !r.changed.length && r.unavailable.length).length;
   const lines = [
     "# Characters moved to 5e.tools", "",
-    `${results.length} characters: ${clean} unchanged and within the rules (${waiting} with a subclass decision waiting on Build; ${onlyUnavailable} of them losing only content 5e.tools does not have), ${results.filter((r) => r.changed.length).length} with a changed sheet, ${results.filter((r) => r.dropped.length).length} with something dropped, ${results.filter((r) => r.rules.some((x) => !decided(x))).length} with a rules finding (${results.filter((r) => r.newRules > 0).length} with one the move brought; the rest were already there).`,
+    `${results.length} characters: ${clean} unchanged and within the rules (${waiting} with a subclass decision waiting on Build; ${onlyUnavailable} of them losing only content 5e.tools does not have), ${results.filter((r) => r.changed.length).length} with a changed sheet, ${results.filter((r) => r.dropped.length).length} with something dropped, ${results.filter((r) => r.rules.some((x) => !decided(x))).length} with a rules finding (${results.filter((r) => r.newRules > 0).length} with one the move brought; ${results.filter((r) => r.rules.some(notMove)).length} with the original's own: a pick against a rule 5e.tools states, or content it does not have).`,
     "", "The originals are untouched; each moved character is a new copy.", "",
     "## Changed fields", ...count((r) => r.changed.map(fieldOf)), "",
     "## Dropped", ...count((r) => r.dropped), "",

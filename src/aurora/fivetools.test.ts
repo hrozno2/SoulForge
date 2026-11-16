@@ -869,3 +869,28 @@ describe("instruments beyond the Player's Handbook's list", () => {
     expect(els.some((e) => e.id === "ID_5ET_TOOL_HORN_OF_BLASTING")).toBe(false);
   });
 });
+
+describe("a skill choice whose text doubles the proficiency (2014 Blessings of Knowledge)", () => {
+  const cls = { name: "Priest", source: "PHB", hd: { faces: 8 }, proficiency: ["wis"], classFeatures: [], subclassTitle: "Domain" };
+  const sub = { name: "Lore Domain", shortName: "Lore", source: "PHB", className: "Priest", classSource: "PHB", subclassFeatures: ["Blessings of Lore|Priest|PHB|Lore|PHB|1"] };
+  const feature = { name: "Blessings of Lore", source: "PHB", className: "Priest", classSource: "PHB", subclassShortName: "Lore", subclassSource: "PHB", level: 1, skillProficiencies: [{ choose: { from: ["arcana", "history", "nature", "religion"], count: 2 } }], entries: ["You become proficient in your choice of two of the following skills: Arcana, History, Nature, or Religion. Your proficiency bonus is doubled for any ability check you make that uses either of those skills."] };
+  const els = convertFiveTools({ files: { "class-priest.json": { class: [cls], subclass: [sub], subclassFeature: [feature] } } });
+  const f = els.find((e) => e.name === "Blessings of Lore")!;
+  const pick = f.rules.find((r) => r.kind === "select" && /^ID_.*_SKILL_/.test((r as { supports: string }).supports)) as { supports: string; type: string };
+  it("offers options that give the skill and its expertise", () => {
+    const options = pick.supports.split("|").map((id) => els.find((e) => e.id === id)!);
+    expect(options.map((o) => o.name)).toEqual(["Arcana", "History", "Nature", "Religion"]);
+    expect(options[1].rules.map((r) => (r as { id: string }).id)).toEqual(["ID_5ET_SKILL_HISTORY", "ID_5ET_EXPERTISE_HISTORY"]);
+  });
+  it("reads a pick saved as the bare skill as the option that gives it", () => {
+    const reg = new ARegistry();
+    reg.addElements(els);
+    reg.build();
+    const ch = newCharacter();
+    ch.extras = [f.id];
+    const skillSlot = resolve(ch, reg).slots.find((s) => s.owner.id === f.id && /Proficiency|Training Option/.test(s.rule.type))!;
+    ch.selections[skillSlot.key] = ["ID_5ET_SKILL_HISTORY", "ID_5ET_SKILL_RELIGION"];
+    const ids = resolve(ch, reg).ids;
+    expect(ids.has("ID_5ET_EXPERTISE_HISTORY") && ids.has("ID_5ET_EXPERTISE_RELIGION")).toBe(true);
+  });
+});

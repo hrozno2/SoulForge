@@ -435,6 +435,13 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         // their size and languages).
         const moved = ch.selections[key] === undefined && !oldFits ? movedLegacy(ch, reg, el, rule, idx) : undefined;
         let chosen = (ch.selections[key] ?? (oldFits ? old! : moved ?? [])).slice(0, rule.number);
+        // A pick saved before the choice's options were wrapped (a bare skill, where the option now gives the skill and
+        // its expertise: the 2014 Blessings of Knowledge, 2026-11-16) is the option that gives it. Only for a choice
+        // that lists its options by id.
+        if (chosen.length && /^[A-Z0-9_]+(\|[A-Z0-9_]+)+$/.test(rule.supports)) {
+          const offered = rule.supports.split("|");
+          chosen = chosen.map((id) => (offered.includes(id) ? id : offered.find((o) => reg.get(o)?.rules.some((x) => x.kind === "grant" && x.id === id)) ?? id));
+        }
         let defaulted = false;
         // A default the character already has from elsewhere is not given again: the choice opens instead (Battle Smith's
         // smith's tools for an Artificer who has them: choose another artisan's tool).

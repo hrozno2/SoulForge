@@ -4,6 +4,28 @@ Updated 2026-11-16, evening (v0.26.1 released with everything up to the morning 
 marked otherwise, and each comes from a command anyone can run again (last column). Update this page at the end of
 each working session, so the trend shows.
 
+## What is open, in plain words
+
+Everything still to do, in one list. Items move off it when done; nothing open lives anywhere else.
+
+**Waiting on you (decisions or your time)**
+1. Two weeks of testing Soul Forge Test with "5e.tools only" switched on (stage D5's exit). Nothing else replaces it.
+2. Whether to install two new tools: a code linter (audit H1) and protection against two app windows writing at once
+   (audit S8). Both are new dependencies, so your yes is needed.
+3. When to drop Aurora from the release app (D7). Only after 1, and after the move check on your library (below).
+
+**The engine, which I am working through (in order)**
+1. The move to 5e.tools: one Druid still changes (Frostbite from two lists shifts its other cantrips).
+2. The move on your own library and the 400 saved test characters: stage D6's exit check.
+3. The rules check works out ability scores and feature uses by itself (engine plan W5).
+4. Prove every content statistic does something (W3); look through the 52 feature texts that promise more than their
+   rules give (W10); compare everything two providers can disagree on by concept (W6); write every rules decision's
+   source next to it (W7); every combination pairwise (W8).
+
+**Interface, smaller, not started**
+1. Light themes: some icons unreadable, cards stay dark.
+2. Wild Shape and companion cards in Play (mostly done), the last card-window polish, Linux drawing lag.
+
 ## The verdict
 
 **The engine builds legal characters and the paper shows everything they have.** On the content the release app
@@ -31,7 +53,7 @@ loss into a number that can only go down.
 | 5e.tools stands without Aurora | Same sheet with and without Aurora (parity effect) | 500/500 | 500/500 | `RULES_TIER=parity-effect` |
 | Nothing dropped engine to paper | Characters whose every feature, spell, training and item reaches the sheet and the print data | 5e.tools 300/300, SRD 300/300, both 297/300 | 100% everywhere | `RULES_TIER=conserve`; 80 SRD characters in every CI run |
 | Nothing dropped data to engine | Features whose text promises a choice or gift no rule gives | 52 candidates of 4,023 (to triage) | 0 unexplained | `RULES_TIER=prose` |
-| Old characters move intact | Fresh, legal characters moved from Aurora to 5e.tools ids | 42 of 60 unchanged and within the rules (17 on 13 Nov), of which 9 lose only content 5e.tools does not have; 2 change; 5 wait for the player's decision (a subclass or a repeated pick, kept as built); no rules finding brought by the move (16 are the original's own picks against rules 5e.tools states) | 0 unexplained changes | `RULES_TIER=migrate MIGRATE_FRESH=60` |
+| Old characters move intact | Fresh, legal characters moved from Aurora to 5e.tools ids | 43 of 60 unchanged and within the rules (17 on 13 Nov), of which 9 lose only content 5e.tools does not have; 1 changes; 5 wait for the player's decision (a subclass or a repeated pick, kept as built); no rules finding brought by the move (16 are the original's own picks against rules 5e.tools states) | 0 unexplained changes | `RULES_TIER=migrate MIGRATE_FRESH=60` |
 | Outside check | fastcharacter.com characters imported and compared | 92 characters; the differences found to be ours are fixed; the rest are the site's own slips, not yet in an explained list | gate on the unexplained | `RULES_TIER=fastchar` |
 | Tests | Unit tests / end-to-end tests | 391 / 59, all passing; CI green (an end-to-end test that failed three times on GitHub is fixed: a card covered what it clicked) | | `npm run gates` |
 
@@ -81,7 +103,7 @@ also a new dependency for your call.
 | D0 to D3: licenses, two apps, free rules bundled, SRD API check | Done |
 | D4: 5e.tools stands on its own | Done (500/500) |
 | D5: testing without Aurora | Running in every check. Exit needs five clean full checks without Aurora and two weeks of your testing |
-| D6: old characters move to 5e.tools | Nearly done on the fresh sample: 42 of 60 unchanged, 2 change, nothing thrown away, the player decides where the newer rules differ. Next: Chris's own library and the 400 saved characters |
+| D6: old characters move to 5e.tools | Nearly done on the fresh sample: 43 of 60 unchanged, 1 changes, nothing thrown away, the player decides where the newer rules differ. Next: Chris's own library and the 400 saved characters |
 | D7: release app drops Aurora | Waits for D5 and D6, and your go-ahead |
 
 ### Audit (AUDIT-2026-11-10.md)
@@ -94,6 +116,9 @@ also a new dependency for your call.
 | Tooling H1 to H6 | H4, H5 partly | linter (needs an install), stricter types, silent catches |
 
 ## Fixed on 16 November
+- On 5e.tools content the 2014 Knowledge Domain's Blessings of Knowledge gave its two skills without the doubled
+  proficiency its text gives. Its options now give skill and expertise; picks characters saved as the bare skill
+  are read as the option that gives it, under the same key, so no saved pick breaks.
 
 - A 2014 Warlock could not learn its patron's expanded spells (the Archfey's Sleep, the Fiend's Burning Hands) on
   5e.tools content or the bundled free rules.
@@ -117,13 +142,8 @@ also a new dependency for your call.
 
 ## Next, in order
 
-1. A rules bug found 2026-11-16, not yet fixed: on 5e.tools content the 2014 Knowledge Domain's Blessings of
-   Knowledge gives its two skills without the doubled proficiency (expertise) its text promises. The choice offers
-   the skill elements themselves, so expertise cannot ride on them; the fix is option elements that give skill and
-   expertise (as for the 2024 version), plus an upgrade of the skill ids characters already saved in that choice
-   (audit item E1, picks upgraded once when a character opens), so no saved pick breaks.
-2. D6, the move: 2 of 60 still change: that Cleric (the bug above), and a Druid with Frostbite from two lists whose
-   other cantrips shift. Then run the move on Chris's library and the 400 saved characters.
+1. D6, the move: 1 of 60 still changes (a Druid with Frostbite from two lists). Then the move on Chris's library and
+   the 400 saved characters.
 2. W5: the checker judges ability scores by source and feature uses by level from the reference.
 3. W3: prove every statistic has an effect.
 4. W10 triage: decide each of the 52.

@@ -505,6 +505,36 @@ export function proseChoiceRules(f: J, idBase: string, level: number | undefined
 }
 
 /**
+ * A skill choice whose text doubles the proficiency bonus for the skills chosen ("Your proficiency bonus is doubled for
+ * any ability check you make that uses either of those skills": the 2014 Knowledge Domain's Blessings of Knowledge),
+ * where the side data offers the bare skills: each option becomes one that gives the skill and its expertise, as the
+ * 2024 version's are. Picks saved as the bare skill are read as the option that gives it (engine.ts). Before, the 2014
+ * Knowledge Cleric had the skills without the expertise on 5e.tools content (found 2026-11-16).
+ */
+function applyTextExpertiseOnChoices(out: AElement[]): void {
+  const added: AElement[] = [];
+  const have = new Set(out.map((e) => e.id));
+  for (const el of out) {
+    const text = el.description ? stripTags(el.description.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ") : "";
+    if (!/proficiency bonus is doubled for any ability check you make that uses (?:either|any|each|both) of (?:those|the chosen) skills/i.test(text)) continue;
+    el.rules = el.rules.map((r) => {
+      if (r.kind !== "select" || r.type !== "Proficiency") return r;
+      const ids = r.supports.split("|");
+      if (!ids.length || !ids.every((id) => /^ID_5ET_SKILL_[A-Z_]+$/.test(id))) return r;
+      const wrapped = ids.map((id) => {
+        const oid = `${el.id}_SKILL_${id.slice("ID_5ET_SKILL_".length)}`;
+        const skill = out.find((e) => e.id === id);
+        if (!have.has(oid)) { have.add(oid); added.push(base(oid, skill?.name ?? id, "Proficiency", "5etools", { compendiumHidden: true, rules: [{ kind: "grant", type: "Proficiency", id } as ARule, { kind: "grant", type: "Proficiency", id: id.replace("ID_5ET_SKILL_", "ID_5ET_EXPERTISE_") } as ARule] })); }
+        return oid;
+      });
+      // Same kind, name and level, so the choice keeps the key characters saved its picks under (choiceKey).
+      return { ...r, supports: wrapped.join("|") } as ARule;
+    });
+  }
+  out.push(...added);
+}
+
+/**
  * Skills from a short list, stated in prose alone: "proficiency ... in two of the following skills of your choice:
  * Arcana, History, Nature, or Religion. You have Expertise in those two skills" (the 2024 Knowledge Domain's Blessings
  * of Knowledge, which gave nothing on 5e.tools content; found 2026-11-12). Run after the side data is in, and only for
@@ -2402,6 +2432,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   settleFallbacks(out, ctx.fallbacks ?? []);
   // What the side data does not give, from the feature's own text (limited uses, save DCs, attacks).
   applyTextSkillChoices(out);
+  applyTextExpertiseOnChoices(out);
   applyTextUses(out);
   applyTextDc(out);
   applyTextStats(out, { tool: (n) => toolId(n, out), weapon: (k) => weaponId(k, out), armor: (k) => ARMOR_IDS[k], skill: (n) => `ID_5ET_SKILL_${slug(n)}`, language: (n) => `ID_5ET_LANGUAGE_${slug(n)}` });

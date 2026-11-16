@@ -57,8 +57,12 @@ export function fiveToolsTwins(reg: ARegistry): (id: string) => string | undefin
   const byTwin = new Map<string, string>();
   const byConcept = new Map<string, string>();
   const byName = new Map<string, AElement[]>();
+  // Feats 5e.tools holds as versions, by the plain name ("magic initiate" -> "Magic Initiate (Cleric)", ...).
+  const versioned = new Map<string, AElement[]>();
   for (const e of reg.all()) {
     if (!isFive(e)) continue;
+    const v = e.type === "Feat" ? /^(.+?) \(([^)]+)\)$/.exec(e.name) : null;
+    if (v) { const k = nameKey(v[1]); (versioned.get(k) ?? versioned.set(k, []).get(k)!).push(e); }
     if (!byTwin.has(twinKey(e))) byTwin.set(twinKey(e), e.id);
     const c = conceptOf(e);
     if (c && !byConcept.has(c)) byConcept.set(c, e.id);
@@ -87,6 +91,13 @@ export function fiveToolsTwins(reg: ARegistry): (id: string) => string | undefin
         // The elemental languages folded into Primordial (2024; the converter points them there too): Aquan is Primordial.
         if (!hit && el.type === "Language" && /^(aquan|auran|ignan|terran)$/i.test(el.name.trim())) hit = byName.get(`Language|${nameKey("Primordial")}`)?.[0]?.id;
       }
+    }
+    // A feat its own edition holds only as versions (2014 Magic Initiate, Ritual Caster) is not the other edition's
+    // feat of that name: no twin, and the pick's versions are matched by name where it is placed. Paired with the 2024
+    // feat, a 2014 character's Magic Initiate landed in another level's choice and its own was filled anew.
+    if (hit && el && el.type === "Feat" && el.edition) {
+      const h = reg.get(hit);
+      if (h && h.edition && h.edition !== el.edition && (versioned.get(nameKey(el.name)) ?? []).some((v) => v.edition === el.edition)) hit = undefined;
     }
     memo.set(id, hit);
     return hit;
@@ -236,9 +247,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     // Or the owner's name with the pick's, either owner: "Magic Initiate (Druid)" for Magic Initiate's "Druid" (the
     // feat's own choice under Aurora, its versions under 5e.tools), "Light Bringer: Light" for Light Bringer's "Light".
     const withOwner = new Set([nameKey(`${s.owner.name} ${p.name}`), `${p.ownerName} ${n}`]);
-    const exact = open.find((o) => nameKey(o.name) === n) ?? open.find((o) => withOwner.has(nameKey(o.name)));
-    if (exact) return exact.id;
     const kind = (to.get(p.id) ?? from.get(p.id))?.type;
+    // A feat only for a feat, a spell only for a spell: the class chosen inside Aurora's Ritual Caster ("Warlock") is
+    // not the feat "Ritual Caster (Warlock)" (it took the level-4 feat choice and pushed the increases a level on).
+    const sameKind = (o: (typeof open)[number]) => !((o.type === "Feat" || o.type === "Spell") && kind && kind !== o.type);
+    const exact = open.find((o) => nameKey(o.name) === n && sameKind(o)) ?? open.find((o) => withOwner.has(nameKey(o.name)) && sameKind(o));
+    if (exact) return exact.id;
     // A feat 5e.tools holds as versions ("Spell Sniper (Wizard)" and five more): the version its own old pick names
     // (the class Aurora's copy asked), else the first.
     const versions = open.filter((o) => o.type === kind && nameKey(o.name).startsWith(`${n} `) && /\)$/.test(o.name));
@@ -360,6 +374,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       if (have.includes(places[j].id!)) continue;
       if (to.get(places[j].id!)?.type === "Feat") { if (featTaken.has(places[j].id!)) continue; featTaken.add(places[j].id!); }
       have.push(places[j].id!);
+      if (process.env.MIGRATE_TRACE) (globalThis as { __trace?: string[] }).__trace?.push(`TRACE place ${picks[i].name} (at ${picks[i].at}, owner ${picks[i].ownerName}) -> ${places[j].s.rule.name} [${places[j].s.at}] = ${to.get(places[j].id!)?.name} rank ${edges[i].find((e) => e.j === j)?.rank}`);
       used.add(i);
       placed = true;
     }

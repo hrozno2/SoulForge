@@ -37,6 +37,7 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")("saved characters move
   // MIGRATE_FRESH=<count>: characters made now, by the random builder on Aurora's content alone (what a library from
   // before 5e.tools holds), every one within the rules before the move. The saved runs hold many made by older builds
   // that were never legal; on fresh ones every change is the move's.
+  if (process.env.MIGRATE_TRACE) (globalThis as { __trace?: string[] }).__trace = [];
   const fresh = Number(process.env.MIGRATE_FRESH) || 0;
   const detail: string[] = [];
   if (fresh) {
@@ -74,6 +75,7 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")("saved characters move
   const dir = join(CACHE!, "engine");
   mkdirSync(dir, { recursive: true });
   if (detail.length) writeFileSync(join(dir, "migrate-detail.txt"), detail.join("\n"));
+  if (process.env.MIGRATE_TRACE) writeFileSync(join(dir, "migrate-trace.txt"), ((globalThis as { __trace?: string[] }).__trace ?? []).join("\n"));
   // A smaller sample (RULES_DIFF_MAX) reports to a file of its own and is not held against the accepted counts.
   const tag = fresh ? `-fresh-${fresh}` : only ? "-only" : process.env.RULES_DIFF_MAX ? `-${max}` : "";
   writeFileSync(join(dir, `migrate${tag}.md`), moveReport(results));

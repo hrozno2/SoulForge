@@ -265,7 +265,19 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     // 5e.tools' "Circle of the Land: Underdark"; words both owners' names and the choice's name share say nothing.
     const common = new Set([...nameKey(`${s.owner.name} ${p.ownerName} ${s.rule.name} ${p.choice}`).split(" "), "the", "of", "a", "an", "and", "spells", "spell", "circle"]);
     const own = n.split(" ").filter((w) => w.length > 2 && !common.has(w));
-    if (own.length) { const hit = one(open.filter((o) => { const ws = new Set(nameKey(o.name).split(" ")); return own.every((w) => ws.has(w)); })); if (hit) return hit; }
+    if (own.length) {
+      const hits = open.filter((o) => { const ws = new Set(nameKey(o.name).split(" ")); return own.every((w) => ws.has(w)); }).filter(same);
+      // Numbered versions of one option ("Strixhaven Initiate: Witherbloom 1", "... 2"): each grants its own set (a pair
+      // of the college's cantrips). The one whose grants are most of the old character's picks; before, two hits meant
+      // none and the auto-fill picked another college.
+      const base = (o: (typeof open)[number]) => nameKey(o.name).replace(/ \d+$/, "");
+      if (hits.length === 1) return hits[0].id;
+      if (hits.length > 1 && hits.every((o) => base(o) === base(hits[0]))) {
+        const picked = new Set(pool.map((q) => nameKey(q.name)));
+        const score = (o: (typeof open)[number]) => o.rules.filter((x) => x.kind === "grant" && x.id && picked.has(nameKey(to.get(x.id)?.name ?? ""))).length;
+        return [...hits].sort((x, y) => score(y) - score(x))[0].id;
+      }
+    }
     // What the brackets name, as an option's brackets, its name, or inside its name: "Cloud's Jaunt (Cloud Giant)"
     // is "Cloud Giant Ancestry"; Scholar's "Skill Expertise (Medicine)" is its option "Medicine".
     const br = /\(([^)]+)\)\s*$/.exec(p.name)?.[1];

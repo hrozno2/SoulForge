@@ -347,7 +347,11 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       return anyway ? { rank: own ? 1 : 3, id: anyway } : undefined;
     };
     void mode;
-    const edges = picks.map((p) => places.map((pl, j) => ({ j, ...(rank(pl, p) ?? { rank: 9, id: "" }) })).filter((e) => e.id && !(next.selections[places[e.j].s.key] ?? []).includes(e.id)).sort((x, y) => x.rank - y.rank));
+    // A pick whose owner is itself a pick still waiting (the Tome's cantrips before Pact of the Tome is placed) waits for
+    // it: placed at once, the Tome's Magic Stone took the Warlock's own cantrip place before the Tome's choice existed.
+    const activeNames = new Set(r.active.map((a) => nameKey(a.el.name)));
+    const waiting = (p: Pick) => waitForOwner && !activeNames.has(p.ownerName) && picks.some((q) => q !== p && nameKey(q.name) === p.ownerName);
+    const edges = picks.map((p) => waiting(p) ? [] : places.map((pl, j) => ({ j, ...(rank(pl, p) ?? { rank: 9, id: "" }) })).filter((e) => e.id && !(next.selections[places[e.j].s.key] ?? []).includes(e.id)).sort((x, y) => x.rank - y.rank));
     const owner = new Array<number>(places.length).fill(-1);
     const take = (i: number, seen: Set<number>): boolean => {
       for (const e of edges[i]) {
@@ -380,7 +384,15 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     for (const i of [...used].sort((a, b) => b - a)) picks.splice(i, 1);
     return placed;
   };
-  const place = () => { for (let round = 0; round < 120; round++) if (!pass({})) break; };
+  let waitForOwner = true;
+  // To a fixed point with picks waiting for their owners, then once more letting them go anywhere (an owner that never
+  // lands must not keep its picks out for good).
+  const place = () => {
+    for (let round = 0; round < 120; round++) if (!pass({})) break;
+    waitForOwner = false;
+    for (let round = 0; round < 120; round++) if (!pass({})) break;
+    waitForOwner = true;
+  };
 
   // Ability increases: each open choice whose options raise scores (or choose how they are raised) takes the option
   // that brings the scores closest to the old sheet's, looking one choice ahead for a pattern ("+2 and +1").
@@ -595,7 +607,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // cantrip from two lists, a skill twice), which is kept as built and offered as a decision; a repeat the move made
   // (5e.tools grants what Aurora had the player pick) is picked again as before.
   const oldPicks = new Map<string, number>();
-  for (const s of old.slots) for (const id of s.chosen) { const k = nameKey(from.get(id)?.name ?? id); oldPicks.set(k, (oldPicks.get(k) ?? 0) + 1); }
+  // By name, and by what a name's brackets name: Aurora's "Blessings of Knowledge (Religion)" is Religion again.
+  for (const s of old.slots) for (const id of s.chosen) {
+    const n = from.get(id)?.name ?? id;
+    const keys = new Set([nameKey(n), ...[...n.matchAll(/\(([^)]+)\)/g)].map((m) => nameKey(m[1]))]);
+    for (const k of keys) oldPicks.set(k, (oldPicks.get(k) ?? 0) + 1);
+  }
   const nameOf = (id: string) => to.get(id)?.name ?? from.get(id)?.name ?? id;
   for (const x of beforeFill.slots) {
     if (x.rule.type === "List") continue;

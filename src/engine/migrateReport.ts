@@ -148,6 +148,25 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
       }
       if (lostGone.length === lost.length && byFeature.length + byFill.length === got.length) continue;
     }
+    // A skill, save or language gained only through a choice the move filled (5e.tools asks it, Aurora's copy did not,
+    // or the original left it open): listed for the player under "Chosen for you", so explained, not a change.
+    const filledText = ` ${nameKey(migration.filled.join(" | "))} `;
+    if ((k === "skills" || k === "saves") && Array.isArray(a) && Array.isArray(b) && typeof a[0] === "number") {
+      const names = k === "skills" ? sh1.skills.map((x) => nameKey(x.name)) : sh1.abilities.map((x) => nameKey(x.id));
+      const idx = (a as number[]).flatMap((v, i) => (v !== (b as number[])[i] ? [i] : []));
+      if (idx.length && idx.every((i) => (b as number[])[i] > (a as number[])[i] && filledText.includes(` ${names[i]}`))) {
+        explained.push(`${k}: ${idx.map((i) => names[i]).join(", ")} (a choice the move filled; listed for the player)`);
+        continue;
+      }
+    }
+    if (k === "languages" && Array.isArray(a) && Array.isArray(b)) {
+      const lost = (a as string[]).filter((x) => !(b as string[]).includes(x));
+      const got = (b as string[]).filter((x) => !(a as string[]).includes(x));
+      if (!lost.length && got.length && got.every((x) => filledText.includes(` ${x}`))) {
+        explained.push(`languages: ${got.join(", ")} (a choice the move filled; listed for the player)`);
+        continue;
+      }
+    }
     if (Array.isArray(a) && Array.isArray(b) && (typeof a[0] === "string" || typeof b[0] === "string")) {
       const lost = (a as string[]).filter((x) => !(b as string[]).includes(x));
       const got = (b as string[]).filter((x) => !(a as string[]).includes(x));

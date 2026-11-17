@@ -1097,6 +1097,49 @@ export function leveledOptionChoices(f: J, idBase: string, ctx: Ctx, out: AEleme
  */
 const CUSTOM_ORIGIN_ASI = "ID_5ET_OPTION_TCE_CUSTOMIZED_ABILITY_SCORE_INCREASES";
 const CUSTOM_ORIGIN_LANG = "ID_5ET_OPTION_TCE_CUSTOMIZED_LANGUAGE";
+const CUSTOM_ORIGIN_PROF = "ID_5ET_OPTION_TCE_CUSTOMIZED_PROFICIENCY";
+
+/**
+ * Tasha's "Customizing Your Origin" for proficiencies, as an option (Aurora's "Customized Proficiencies", the same
+ * name): each skill an older species gives can be swapped for another skill, each tool for another tool. Weapon and
+ * armor training stays (the swap rules for those are the DM's). Gates the species' own grants and adds the choices.
+ */
+function customProficiencies(rules: ARule[], label: string, ctx: Ctx, out: AElement[]): void {
+  const at = (re: RegExp) => rules.flatMap((x, i) => (x.kind === "grant" && x.type === "Proficiency" && re.test(x.id) ? [i] : []));
+  const skills = at(/^ID_5ET_SKILL_/);
+  const tools = at(/^ID_5ET_TOOL_/);
+  if (!skills.length && !tools.length) return;
+  if (!out.some((o) => o.id === CUSTOM_ORIGIN_PROF))
+    out.push(
+      base(CUSTOM_ORIGIN_PROF, "Customized Proficiencies", "Option", srcName(ctx, "TCE"), {
+        description:
+          "<p>Customizing Your Origin: each skill proficiency your species gives you can be replaced by another skill, each tool proficiency by another tool.</p>",
+      }),
+    );
+  for (const i of [...skills, ...tools])
+    rules[i] = {
+      ...rules[i],
+      requirements: rules[i].requirements ? `${rules[i].requirements},!${CUSTOM_ORIGIN_PROF}` : `!${CUSTOM_ORIGIN_PROF}`,
+    } as ARule;
+  if (skills.length)
+    rules.push({
+      kind: "select",
+      type: "Proficiency",
+      name: `${label}: customized skills`,
+      supports: "5et skill",
+      number: skills.length,
+      requirements: CUSTOM_ORIGIN_PROF,
+    } as ARule);
+  if (tools.length)
+    rules.push({
+      kind: "select",
+      type: "Proficiency",
+      name: `${label}: customized tools`,
+      supports: "5et tool",
+      number: tools.length,
+      requirements: CUSTOM_ORIGIN_PROF,
+    } as ARule);
+}
 function customOrigin(rules0: ARule[], label: string, ctx: Ctx, out: AElement[]): ARule[] {
   // A 2014 species' increases give way to a 2014 background taken under the 2024 rules (backgroundOptions.ts: that
   // package raises three scores itself and grants this marker), as Aurora's species do.
@@ -2186,7 +2229,6 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
       (x.kind === "grant" && x.id === MARK_SPECIES_ASI),
     overwriting("ability"),
   );
-  gate((x) => (x.kind === "grant" || x.kind === "select") && x.type === "Language", overwriting("languageProficiencies"));
   // Tasha's "Customizing Your Origin" for languages, as an option the player turns on (Aurora's "Customized Language",
   // the same name, so a character moved from Aurora keeps it): each language the species gives can be swapped for
   // another of the player's choice. Older species only: a 2024 species gives no languages of its own. Without it, a
@@ -2216,6 +2258,8 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
       } as ARule);
     }
   }
+  gate((x) => (x.kind === "grant" || x.kind === "select") && x.type === "Language", overwriting("languageProficiencies"));
+  if (!isModern({ id, source: String(r.source) })) customProficiencies(rules, r.name, ctx, out);
   gate(
     (x) =>
       (x.kind === "grant" || x.kind === "select") && x.type === "Proficiency" && /SKILL|skill/.test(x.kind === "grant" ? x.id : x.supports),
@@ -2331,6 +2375,25 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     srules.push(...traitList(s.entries, sid, ctx, s.source, out, "5et trait", "Racial Trait"));
     const subSpells = additionalSpellRules(s.additionalSpells, s.name ?? r.name, s.source, out);
     srules.push(...subSpells.rules);
+    // A subrace's own languages (the Sea Elf's Aquan... and the like) swap under Tasha's Customized Language too.
+    if (!isModern({ id: sid, source: String(s.source ?? r.source) })) {
+      customProficiencies(srules, s.name ?? r.name, ctx, out);
+      const at = srules.flatMap((x, i) => (x.kind === "grant" && x.type === "Language" ? [i] : []));
+      for (const i of at)
+        srules[i] = {
+          ...srules[i],
+          requirements: srules[i].requirements ? `${srules[i].requirements},!${CUSTOM_ORIGIN_LANG}` : `!${CUSTOM_ORIGIN_LANG}`,
+        } as ARule;
+      if (at.length)
+        srules.push({
+          kind: "select",
+          type: "Language",
+          name: `${s.name ?? r.name}: customized languages`,
+          supports: "5et language",
+          number: at.length,
+          requirements: CUSTOM_ORIGIN_LANG,
+        } as ARule);
+    }
     out.push(
       base(sid, s.name ? `${s.name} ${r.name}` : `${r.name} (standard)`, "Sub Race", srcName(ctx, s.source), {
         spellcasting: subSpells.rules.length ? castingFor(s.name ?? r.name, subSpells.ability) : undefined,
@@ -4121,6 +4184,33 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
         if (/Fluff$/.test(k) && Array.isArray(v)) (fluff.get(k) ?? fluff.set(k, []).get(k)!).push(...v);
   if (fluff.size) lastLoreReport = applyLore(fluff, out, ftId, entriesHtml);
   resolvePrerequisites(out);
+  // Customized Proficiencies reaches a species' traits too (the Elf's Keen Senses grants Perception on its own element,
+  // beside the species): their skills and tools are swapped with the species'. One the species did not count is added.
+  for (const sp of out) {
+    if (sp.type !== "Race" && sp.type !== "Sub Race") continue;
+    const pick = (re: RegExp) => sp.rules.find((r) => r.kind === "select" && r.requirements === CUSTOM_ORIGIN_PROF && re.test(r.name));
+    const skillPick = pick(/customized skills$/);
+    const toolPick = pick(/customized tools$/);
+    if (!skillPick && !toolPick) continue;
+    const counted = new Set(
+      sp.rules
+        .filter((r) => r.kind === "grant" && String(r.requirements ?? "").includes(`!${CUSTOM_ORIGIN_PROF}`))
+        .map((r) => (r as { id: string }).id),
+    );
+    for (const t of out) {
+      if (t.type !== "Racial Trait" || !t.id.startsWith(`${sp.id}_T_`)) continue;
+      t.rules = t.rules.map((r) => {
+        if (r.kind !== "grant" || r.type !== "Proficiency") return r;
+        const target = /^ID_5ET_SKILL_/.test(r.id) ? skillPick : /^ID_5ET_TOOL_/.test(r.id) ? toolPick : undefined;
+        if (!target) return r;
+        if (!counted.has(r.id)) {
+          counted.add(r.id);
+          (target as { number: number }).number += 1;
+        }
+        return { ...r, requirements: r.requirements ? `${r.requirements},!${CUSTOM_ORIGIN_PROF}` : `!${CUSTOM_ORIGIN_PROF}` } as ARule;
+      });
+    }
+  }
   // A spell set (one of a feat's or feature's named sets: Initiate of High Sorcery's moons) is from its owner's book, so
   // its choices take the owner's edition and offer that edition's copy of each spell; filed under "5etools" they were
   // edition-neutral and offered both copies of Hex (found 2026-11-17).

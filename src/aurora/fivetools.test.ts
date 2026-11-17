@@ -509,6 +509,20 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     expect(custom.open).toBe(2);
   });
 
+  it("an older species' skills can be swapped with the Customized Proficiencies option", () => {
+    const sp = reg!.ofType("Race").find((b) => b.name === "Elf" && b.source.includes("2014"));
+    if (!sp) return;
+    const skills = (options: string[]) => {
+      const r = resolve({ ...newCharacter(), race: sp.id, options }, reg!);
+      return {
+        perception: r.active.some((a) => a.el.id === "ID_5ET_SKILL_PERCEPTION"),
+        open: r.slots.filter((x) => /customized skills/.test(x.rule.name)).reduce((n, x) => n + x.rule.number, 0),
+      };
+    };
+    expect(skills([])).toEqual({ perception: true, open: 0 });
+    expect(skills(["ID_5ET_OPTION_TCE_CUSTOMIZED_PROFICIENCY"])).toEqual({ perception: false, open: 1 });
+  });
+
   // The Feylost's data adds "any standard" to its list of four; its text gives one language (found 2026-11-17). The
   // Haunted One's text asks two, one from its list, and keeps both.
   it("a background's languages follow its text where the data adds an extra one", () => {

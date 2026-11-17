@@ -502,6 +502,13 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (has("Tactical Wit")) parts.push(["Tactical Wit", modOf("intelligence")]);
     if (has("Hare-Trigger")) parts.push(["Hare-Trigger", pb]);
     if (has("Aura of the Sentinel")) parts.push(["Aura of the Sentinel", pb]);
+    if (has("Temporal Awareness")) parts.push(["Temporal Awareness", modOf("intelligence")]);
+    // Any other feature's part as the sheet gives it (playtest and newer books' features this list does not know): the
+    // check judges the ones it knows by their rules, and stays quiet about the rest rather than guess.
+    const known =
+      /^(alert|jack of all trades|remarkable athlete|dread ambusher|rakish audacity|tactical wit|hare-trigger|aura of the sentinel|temporal awareness)$/i;
+    for (const p of r.stats.parts("initiative"))
+      if (!known.test(p.from.replace(/^level \d+:\s*/i, "").trim()) && !/^dexterity$/i.test(p.from)) parts.push([p.from, p.value]);
     const want = parts.reduce((t, [, v]) => t + v, 0);
     if (sh.initiative !== want)
       add("Initiative", `${sh.initiative}, the rules give ${want} (${parts.map(([n, v]) => `${n} ${v >= 0 ? "+" : ""}${v}`).join(", ")})`);

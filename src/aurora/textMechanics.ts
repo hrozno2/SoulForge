@@ -491,7 +491,11 @@ export function speedFromText(text: string): ARule[] {
 
 /** A lasting bonus to initiative. */
 export function initiativeFromText(text: string): ARule[] {
-  let m = new RegExp(`bonus to (?:your )?initiative(?: rolls)? equal to your (${ABILITY}) modifier`, "i").exec(text);
+  // "a bonus to your initiative rolls equal to your Wisdom modifier" (Dread Ambusher), or "you can add your
+  // Intelligence modifier to your initiative rolls" (Chronurgy's Temporal Awareness, unread until 2026-11-17).
+  let m =
+    new RegExp(`bonus to (?:your )?initiative(?: rolls)? equal to your (${ABILITY}) modifier`, "i").exec(text) ??
+    new RegExp(`add your (${ABILITY}) modifier to your initiative(?: rolls)?`, "i").exec(text);
   if (m) return [stat("initiative", `${m[1].toLowerCase()}:modifier`)];
   m = /\+(\d+) bonus to initiative/i.exec(text);
   if (m) return [stat("initiative", m[1])];

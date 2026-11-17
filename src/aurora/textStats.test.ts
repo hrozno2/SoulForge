@@ -171,6 +171,11 @@ describe("lasting numbers read from a feature's text", () => {
       value: "wisdom:modifier",
     });
     expect(initiativeFromText("You gain a +5 bonus to initiative.")[0]).toMatchObject({ value: "5" });
+    // Chronurgy's Temporal Awareness.
+    expect(initiativeFromText("You can add your Intelligence modifier to your initiative rolls.")[0]).toMatchObject({
+      name: "initiative",
+      value: "intelligence:modifier",
+    });
     // The Harengon's Hare-Trigger (found 2026-11-17: every Harengon on 5e.tools content lacked it).
     expect(initiativeFromText("You can add your proficiency bonus to your initiative rolls.")[0]).toMatchObject({
       name: "initiative",

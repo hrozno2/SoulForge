@@ -57,7 +57,8 @@ function sweep(reg: ARegistry, set: ContentSet, ref: RefClass[]) {
     // Aurora grants markers with no element of their own, and its content linter has them listed.
     if (isFive(e))
       for (const r of e.rules)
-        if (r.kind === "grant" && r.id && !reg.get(r.id) && !/^CREATUREREF:/.test(r.id))
+        // Internal markers (the background-increase marker) have no element by design; the engine counts them present.
+        if (r.kind === "grant" && r.id && !reg.get(r.id) && !/^CREATUREREF:|^ID_INTERNAL_/.test(r.id))
           find("a grant of something missing", `${e.type}: ${e.name}: ${r.id}`);
   }
 
@@ -111,6 +112,8 @@ function sweep(reg: ARegistry, set: ContentSet, ref: RefClass[]) {
     const before = named.find((x) => x.type === "Feat");
     return {
       ...newCharacter(),
+      // Strong scores set by hand, so a feat's or class's score requirement holds: no generation method.
+      abilityMethod: "manual" as const,
       abilityBase: { ...newCharacter().abilityBase, ...strong },
       classes: [{ classId: cls.id, level: 20 }],
       extras: [...(before ? [before.id] : []), e.id],

@@ -34,6 +34,11 @@ Everything still to do, in one list. Items move off it when done; nothing open l
 2. The move, three fresh characters to probe: a Wizard's initiative (5 to 2), a Ranger's Charisma skills (each 3 lower),
    a Fighter's Persuasion; an Artificer's and a Monk's +1s land on another score; Auran lost by a Kenku and a Tabaxi.
 3. The move's laws hold on 450 Aurora-made and 450 5e.tools-made characters, apart from those above.
+4. The full check (`node scripts/full-check.mjs 31415 --count 2000`): 2,000 random characters, every source, saved
+   characters, FastCharacter, parity, the SRD: passed. Fixed from it: the SRD bundle naming a book it has no content
+   from, the loader gate's adventure fields, Chronurgy's Temporal Awareness missing from initiative on 5e.tools, the
+   content linter misreading the Epic Boons' lower-case ids, coverage counting internal markers as missing. Still to
+   look at: the community builds (`builds` group) on 5e.tools content alone leave some choices open.
 
 **The engine**
 1. W5's last parts: increases by source and count, languages, tools and skills by count per source, species and

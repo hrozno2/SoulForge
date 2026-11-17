@@ -25,3 +25,20 @@ it("corrects mistyped IDs in requirements when the registry is built", () => {
   const rule = reg.get("ID_T_FEAT")!.rules[0] as { requirements?: string };
   expect(rule.requirements).toBe("ID_WOTC_PHB_ARCHETYPE_FEATURE_BATTLE_MASTER_COMBAT_SUPERIORITY");
 });
+
+it("gives the 2024 Moon Druid Fount of Moonlight at level 7, not Aurora's 9", async () => {
+  const { applyContentFixes } = await import("./contentFixes");
+  const el = {
+    id: "ID_WOTC_PHB24_ARCHETYPE_FEATURE_DRUID_MOON_CIRCLE_OF_MOON_SPELLS",
+    name: "Level 3: Circle of the Moon Spells",
+    type: "Archetype Feature",
+    source: "Player’s Handbook (2024)",
+    supports: [],
+    description: "",
+    compendiumHidden: false,
+    setters: {},
+    rules: [{ kind: "grant", type: "Spell", id: "ID_WOTC_PHB24_SPELL_FOUNT_OF_MOONLIGHT", level: 9 }],
+  } as never;
+  applyContentFixes(el);
+  expect((el as { rules: { level: number }[] }).rules[0].level).toBe(7);
+});

@@ -53,6 +53,15 @@ export const STATS_ADD: Record<string, { name: string; value: string; bonus?: st
   ID_WOTC_TCOE_ARCHETYPE_FEATURE_OATH_OF_THE_WATCHERS_AURA_OF_THE_SENTINEL: [{ name: "initiative", value: "proficiency" }],
 };
 
+/**
+ * A grant at the wrong level. The 2024 Circle of the Moon Spells: Fount of Moonlight at Druid level 7 (PHB 2024, the
+ * Circle of the Moon Spells table); Aurora's copy gives it at 9. Found 2026-11-17 by the rules check's subclass-spell
+ * check, then every Aurora subclass's spells were swept against the rules reference (only this one has an effect).
+ */
+export const GRANT_LEVEL_FIX: Record<string, [string, number][]> = {
+  ID_WOTC_PHB24_ARCHETYPE_FEATURE_DRUID_MOON_CIRCLE_OF_MOON_SPELLS: [["ID_WOTC_PHB24_SPELL_FOUNT_OF_MOONLIGHT", 7]],
+};
+
 export const SPELL_LIST_ADD: Record<string, string[]> = {
   // Tasha's artificer spell list includes Frostbite (Xanathar's); the other Xanathar's cantrips already have it.
   ID_XGTE_SPELL_FROSTBITE: ["Artificer"],
@@ -138,6 +147,8 @@ export function applyContentFixes(el: AElement): void {
     el.rules = el.rules.map((r) => (r.kind === "grant" && r.id === from ? { ...r, id: to } : r));
   for (const st of STATS_ADD[el.id] ?? [])
     if (!el.rules.some((r) => r.kind === "stat" && r.name === st.name)) el.rules = [...el.rules, { kind: "stat", ...st }];
+  for (const [id, level] of GRANT_LEVEL_FIX[el.id] ?? [])
+    el.rules = el.rules.map((r) => (r.kind === "grant" && r.id === id ? { ...r, level } : r));
   for (const g of GRANTS_ADD[el.id] ?? [])
     if (!el.rules.some((r) => r.kind === "grant" && r.id === g.id)) el.rules = [...el.rules, { kind: "grant", ...g }];
   const add = SPELL_LIST_ADD[el.id];

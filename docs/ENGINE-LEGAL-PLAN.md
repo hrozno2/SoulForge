@@ -111,7 +111,7 @@ element).
 - the print text, each fillable PDF and each foreign export contain every name the sheet holds, or the export's
   own overflow list does. Where a PDF field is too small, the rest goes to a continuation page.
 
-**W5. The checker judges the rest by itself (L2, L3).** In rulesCheck.ts, from the reference and the rules text,
+**W5. The checker judges the rest by itself (L2, L3).** Feature uses done 2026-11-17: the reference keeps the class tables' columns (`counters`), and "Feature uses by level" compares Rages, Ki/Focus Points, Sorcery Points, Channel Divinity, Wild Shape, Second Wind and Favored Enemy with the sheet; its first run found the 2024 Second Wind and Wild Shape stuck at 2 and Aurora's pools with no count. In rulesCheck.ts, from the reference and the rules text,
 never from the sheet's own parts:
 - ability scores: base by method (point buy cost, standard array), increases by source and count (origin: three
   points; each improvement: two; each feat: what its text says), maximum by named raise;

@@ -38,6 +38,8 @@ export interface RefClass {
   pact: { slots: number[]; level: number[] } | null;
   features: RefFeature[];
   subclassLevel: number | null;
+  /** The class table's other columns by label, one entry per level (uses, bonuses, dice). Older references lack it. */
+  counters?: Record<string, (number | string | null)[]>;
   /** What the class trains at first level (5e.tools startingProficiencies). */
   startArmor?: string[];
   startWeapons?: string[];
@@ -543,6 +545,45 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
         ].join(", ");
       }
       if (!ok) add("Multiclass requirement not met", `${x.el.name} needs ${need}`);
+    }
+  }
+
+  // Uses of a counted feature at its class level, from the class table itself (engine plan W5): the sheet's own number
+  // is never the source. Rages, Ki or Focus Points, Sorcery Points, Channel Divinity, Wild Shape, Second Wind and the
+  // 2024 Ranger's Favored Enemy. A feature two classes give (Channel Divinity from Cleric and Paladin) is left alone:
+  // how multiclass uses combine is the class text's, not the table's.
+  const USES: [RegExp, RegExp][] = [
+    [/^rages$/, /^rage$/],
+    [/^(?:ki|focus) points$/, /^(?:ki|monk's focus|focus points?)$/],
+    [/^sorcery points$/, /^(?:font of magic|sorcery points)$/],
+    [/^channel divinity$/, /^channel divinity$/],
+    [/^wild shape$/, /^wild shape$/],
+    [/^second wind$/, /^second wind$/],
+    [/^favored enemy$/, /^favored enemy$/],
+  ];
+  const usesOf = (name: RegExp) =>
+    sh.features.filter((f) => name.test(norm(f.name).trim())).map((f) => Number(/^(\d+)\s*\//.exec(f.usage ?? "")?.[1] ?? NaN));
+  const fromClasses = new Map<RegExp, number>();
+  for (const x of refs)
+    for (const [col, feat] of USES)
+      if (x.ref?.counters && Object.keys(x.ref.counters).some((k) => col.test(lc(k))))
+        fromClasses.set(feat, (fromClasses.get(feat) ?? 0) + 1);
+  for (const x of refs) {
+    if (!x.ref?.counters) continue;
+    for (const [label, values] of Object.entries(x.ref.counters)) {
+      const pair = USES.find(([col]) => col.test(lc(label)));
+      const want = values[x.c.level - 1];
+      if (!pair || typeof want !== "number" || want <= 0 || (fromClasses.get(pair[1]) ?? 0) > 1) continue;
+      const have = usesOf(pair[1]);
+      if (!have.length) continue;
+      // More than the table is right when a feat adds to the pool (Metamagic Adept: two sorcery points); fewer never is.
+      const word = lc(label).replace(/s$/, "");
+      const topped = r.active.some((a) => a.el.type === "Feat" && lc(a.el.description ?? "").includes(word));
+      if (!have.some((n) => n === want || (topped && n > want)))
+        add(
+          "Feature uses by level",
+          `${x.el.name} ${x.c.level}: ${label} ${have.map((n) => (Number.isNaN(n) ? "no count" : n)).join(" / ")} (class table: ${want})`,
+        );
     }
   }
 

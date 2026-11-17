@@ -29,6 +29,18 @@ describe("pools follow the class table", () => {
     expect(features(cls, year, level)(name)?.usage).toBe(usage);
   });
 
+  // Found by the rules check's own reading of the class table (W5), 2026-11-17: both stayed at 2 at every level.
+  it.each([
+    ["Fighter", "Second Wind", 1, "2/"],
+    ["Fighter", "Second Wind", 4, "3/"],
+    ["Fighter", "Second Wind", 10, "4/"],
+    ["Druid", "Wild Shape", 2, "2/"],
+    ["Druid", "Wild Shape", 6, "3/"],
+    ["Druid", "Wild Shape", 17, "4/"],
+  ] as const)("2024 %s's %s at level %i follows its column", (cls, name, level, usage) => {
+    expect(features(cls, "2024", level)(name)?.usage).toMatch(new RegExp(`^${usage}`));
+  });
+
   it("a Barbarian's rages still follow their column", () => {
     expect(features("Barbarian", "2014", 1)("Rage")?.usage).toBe("2/Long Rest");
     expect(features("Barbarian", "2014", 6)("Rage")?.usage).toBe("4/Long Rest");

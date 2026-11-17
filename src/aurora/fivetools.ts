@@ -2690,7 +2690,10 @@ function applyTableMechanics(c: J, out: AElement[]): void {
       }
       for (const el of feats) {
         const uses = `${el.name.toLowerCase()}:uses`;
-        const at = el.rules.findIndex((r) => r.kind === "stat" && r.name === uses && r.bonus === "text uses" && r.value === "1");
+        // A column of the feature's own name sets its uses whatever number the text starts it at (the 2024 Second Wind
+        // and Wild Shape say "twice" and stayed at 2 at every level, found by the rules check's reading of the table).
+        const named = norm(el.name) === norm(label);
+        const at = el.rules.findIndex((r) => r.kind === "stat" && r.name === uses && r.bonus === "text uses" && (r.value === "1" || named));
         // The column is the feature's by name ("Rages" for Rage), or it is a column of points the feature's own text
         // speaks of ("Ki Points" for Ki, "Focus Points" for Monk's Focus, "Sorcery Points" for Font of Magic): a Monk 9
         // had 1 ki point.
@@ -2708,7 +2711,7 @@ function applyTableMechanics(c: J, out: AElement[]): void {
                 .toLowerCase()
                 .includes(stripTags(label).toLowerCase()),
           ) === el;
-        if (at < 0 || (norm(el.name) !== norm(label) && !points)) continue;
+        if (at < 0 || (!named && !points)) continue;
         const counts = (g.rows as J[]).map((r) => cellNumber(r[col]));
         el.rules = [
           ...el.rules.filter((_, i) => i !== at),

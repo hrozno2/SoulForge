@@ -38,7 +38,7 @@ export function ensureRulesRef(force = false): Promise<void> {
       listeners.forEach((f) => f());
     }
     // A reference condensed by an older version lacks what this one reads (the classes' named weapons): fetched again.
-    const older = !!saved?.data?.length && saved.data[0].startWeaponNames === undefined;
+    const older = !!saved?.data?.length && (saved.data[0].startWeaponNames === undefined || saved.data[0].counters === undefined);
     if (!force && saved && !older && Date.now() - saved.fetched < MAX_AGE) return;
     try {
       const data = (await downloadRulesRef(async (url) => {

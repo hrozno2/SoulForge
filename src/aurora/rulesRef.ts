@@ -121,6 +121,26 @@ export function condenseClassFile(file: Json): Json[] {
       };
     }
     const features = ((c.classFeatures ?? []) as (string | Json)[]).map(feat);
+    // The class table's other columns, by label and level: uses (Rages, Focus Points, Channel Divinity, Wild Shape,
+    // Second Wind), bonuses (Rage Damage) and dice (Martial Arts), for the rules check to judge on its own (W5).
+    const counters: Record<string, (number | string | null)[]> = {};
+    for (const g of groups) {
+      if (g.rowsSpellProgression || g === flat) continue;
+      ((g.colLabels as string[]) ?? []).forEach((label, i) => {
+        counters[strip(label)] = ((g.rows as unknown[][]) ?? []).map((row) => {
+          const v = row[i] as unknown;
+          if (typeof v === "number") return v;
+          if (v && typeof v === "object") {
+            const o = v as Json;
+            if (typeof o.value === "number") return o.value;
+            const die = (o.toRoll as Json[] | undefined)?.[0];
+            if (die) return `${die.number}d${die.faces}`;
+          }
+          const t = strip(v ?? "");
+          return /^\d+$/.test(t) ? Number(t) : t || null;
+        });
+      });
+    }
     const req: Json | undefined = c.multiclassing?.requirements;
     const progression = (c.featProgression as Json[] | undefined)?.find((p) => /epic boon/i.test(p.name))?.progression;
     out.push({
@@ -138,6 +158,7 @@ export function condenseClassFile(file: Json): Json[] {
       pact,
       features,
       subclassLevel: features.find((f) => f.subclass)?.level ?? null,
+      counters,
       asiLevels: features.filter((f) => /^Ability Score Improvement$/i.test(f.name)).map((f) => f.level),
       epicBoon: progression ? Number(Object.keys(progression)[0]) : null,
       multiclass: req

@@ -830,6 +830,21 @@ export function buildSheet(r: Resolved): SheetData {
     });
   }
 
+  // Aurora states some pools as a statistic, not as the feature's uses (Ki: "ki:points"; Monk's Focus: "monks
+  // focus:points"; Font of Magic: "sorcery-points"): shown as the feature's uses, so Play counts them. Found 2026-11-17
+  // by the rules check's own reading of the class tables (W5): on Aurora's content these had no count at all.
+  const POOL_STATS: [RegExp, string[], string][] = [
+    [/^ki$/i, ["ki:points"], "Short Rest"],
+    [/^monk's focus$/i, ["monks focus:points"], "Short Rest"],
+    [/^(?:font of magic|sorcery points)$/i, ["sorcery-points", "sorcery points:amount"], "Long Rest"],
+  ];
+  for (const f of features) {
+    if (f.usage) continue;
+    const pool = POOL_STATS.find(([re]) => re.test(f.name.replace(/^level \d+:\s*/i, "")));
+    const n = pool ? Math.max(...pool[1].map((x) => r.stats.get(x))) : 0;
+    if (pool && n > 0) f.usage = `${n}/${pool[2]}`;
+  }
+
   // A feature that spends another's uses: the content says so ("consumes", from 5e.tools), or its name does ("Channel
   // Divinity: Turn Undead" spends Channel Divinity, Aurora's way). Linked to the pool when the sheet has one with uses.
   for (const f of features) {

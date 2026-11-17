@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { SaveQueue } from "./saveQueue";
+import { TabGuard, browserChannel } from "./tabGuard";
 import { CURRENT_CHARACTER_KEY, ErrorBoundary } from "./ErrorBoundary";
 import { logSystemOnce } from "../system";
 import { TextInput } from "./TextField";
@@ -114,6 +115,11 @@ export function App() {
   // The character as last saved or opened, so only an edit is saved (and dated).
   const queue = useMemo(() => new SaveQueue(saveCharacterRecord), []);
   const saveState = useSyncExternalStore(queue.subscribe, queue.getState);
+  // Another window opened the same character later: this one stops saving it (S8, src/ui/tabGuard.ts).
+  const guard = useMemo(() => new TabGuard(browserChannel()), []);
+  const heldElsewhere = useSyncExternalStore(guard.subscribe, guard.getHeld);
+  useEffect(() => () => guard.close(), [guard]);
+  useEffect(() => guard.claim(id), [guard, id]);
   // What is waiting is written when the window is hidden or left, not only when its wait is over.
   useEffect(() => {
     const flush = () => { if (document.visibilityState === "hidden") void queue.flush(); };
@@ -163,7 +169,7 @@ export function App() {
 
   // Autosave the open character, and keep a copy in the library.
   useEffect(() => {
-    if (loading.current) return;
+    if (loading.current || heldElsewhere) return;
     try {
       localStorage.setItem(CUR_KEY, JSON.stringify({ id, ch: character }));
     } catch {
@@ -182,7 +188,7 @@ export function App() {
     const classes = character.classes.map((c) => `${content.reg.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ");
     const race = character.race ? content.reg.get(character.race)?.name : "";
     queue.schedule(id, character, { name: character.name, summary: [race, classes].filter(Boolean).join(" ") });
-  }, [character, id, content.reg, content.ready, queue]);
+  }, [character, id, content.reg, content.ready, queue, heldElsewhere]);
 
   const set = useCallback((fn: (c: Character) => Character) => setCharacter((c) => fn(c)), []);
   // Opened from the library: what is stored is the same, so nothing is saved (or re-dated) until it is edited.
@@ -386,6 +392,16 @@ export function App() {
       {levelUpOpen && <Suspense fallback={null}><LevelUp r={r} ch={character} set={set} onDetail={setDetail} onClose={() => setLevelUpOpen(false)} /></Suspense>}
       {checkDue(character, APP_VERSION) && !loading.current && <OlderBuildNotice key={id} r={r} set={set} />}
       {detailsOpen && <Suspense fallback={null}><DetailsDialog r={r} ch={character} set={set} notes={detailsOpen.notes} onClose={() => setDetailsOpen(null)} /></Suspense>}
+      {heldElsewhere && (
+        <div className="notice-toast noprint held-elsewhere" role="status">
+          <span>This character is open in another window, so changes made here are not saved. Use it here to carry on in this window with the character as the other window last saved it.</span>
+          <button className="primary" onClick={() => void listCharacters().then((all) => {
+            const rec = all.find((c) => c.id === id);
+            if (rec) open(id, rec.data, true);
+            guard.claim(id);
+          })}>Use it here</button>
+        </div>
+      )}
       {/* The open character's species, background or class is not in the loaded content: its sheet cannot be right. */}
       {content.ready && tab !== "start" && tab !== "content" && missingContent(character, content.reg).length > 0 && (
         <div className="notice-toast noprint missing-content" role="status">

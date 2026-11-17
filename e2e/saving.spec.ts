@@ -84,3 +84,41 @@ test("a damaged character file opens with a repair report that Build can show ag
   await report.getByRole("button", { name: /all put right/i }).click();
   await expect(page.getByRole("button", { name: "Repair report" })).toHaveCount(0);
 });
+
+// S8: the same character open in two tabs. The tab that opened it last saves it; the other says so and saves nothing
+// until "Use it here", which reopens the character as the other tab saved it.
+test("a character open in two tabs is saved by one of them only", async ({ page, context }) => {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
+  await randomCharacter(page, 2);
+  await tab(page, "Build");
+  await page.getByLabel("Character name").fill("Shared One");
+  await page.getByLabel("Character name").blur();
+  await expect(page.locator(".actionbar .saved")).toHaveText("✓ Saved");
+
+  // A second tab starts on the same open character and claims it.
+  const second = await context.newPage();
+  await second.goto("/");
+  await expect(page.locator(".held-elsewhere")).toBeVisible({ timeout: 30_000 });
+  await expect(second.locator(".held-elsewhere")).toHaveCount(0);
+
+  // The first tab's edit is not saved while the second holds it.
+  await page.getByLabel("Character name").fill("Edited In The Old Tab");
+  await page.getByLabel("Character name").blur();
+  await page.waitForTimeout(1500);
+  const names = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((res, rej) => { const q = indexedDB.open("charforge"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+    const all = await new Promise<{ name: string }[]>((res, rej) => { const q = db.transaction("characters").objectStore("characters").getAll(); q.onsuccess = () => res(q.result as { name: string }[]); q.onerror = () => rej(q.error); });
+    return all.map((c) => c.name);
+  });
+  expect(names).toContain("Shared One");
+  expect(names).not.toContain("Edited In The Old Tab");
+
+  // Use it here: the first tab takes it back with the saved name, and the second now says it is held elsewhere.
+  await page.locator(".held-elsewhere").getByRole("button", { name: "Use it here" }).click();
+  await expect(page.locator(".held-elsewhere")).toHaveCount(0);
+  await expect(second.locator(".held-elsewhere")).toBeVisible();
+  await tab(page, "Build");
+  await expect(page.getByLabel("Character name")).toHaveValue("Shared One");
+  await second.close();
+});

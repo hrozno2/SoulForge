@@ -181,6 +181,16 @@ fn main() {
         }
     }
     tauri::Builder::default()
+        // One running copy (docs/AUDIT-2026-11-10.md, S8): a second launch brings the open window forward instead of
+        // starting a copy that autosaves over the first one's characters. It must be the first plugin.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            use tauri::Manager;
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.unminimize();
+                let _ = w.show();
+                let _ = w.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())

@@ -230,12 +230,40 @@ closed and enough Aurora-free test rounds have passed. The test app gets its own
 | D2 (done 2026-11-06, unreleased) | SRD bundle built from 5e.tools' `srd`/`srd52` entries, loaded with no import, confirmed against the SRD API | A character builds from the bundle alone, rules check clean |
 | D3 (done 2026-11-06) | SRD API as a third check: cached offline, a full-check gate "against the SRD" (class tables, spells, species, items, conditions) | Gate in the full check, findings fixed at the cause |
 | D3b (done 2026-11-06 but for Open5e) | Every source compared: for SRD content the official SRD PDFs, SRD API, Open5e, 5e.tools, Aurora and Plutonium's handling (the SRD text decides); for the rest 5e.tools, Aurora and Plutonium's handling (two of three decide, a split goes to Chris) | Full-check gates with counts that only go down |
-| D4 (in progress) | Close the parity gap: the sheet first (same sheet with and without Aurora: 224 to 500 of 500), then the borrowed mechanics by kind; choices 90, grants 10, numbers 1 to 0 | All parity counts 0; the gate fails if one rises |
+| D4 (done 2026-11-17: 500/500) | Close the parity gap: the sheet first (same sheet with and without Aurora: 224 to 500 of 500), then the borrowed mechanics by kind; choices 90, grants 10, numbers 1 to 0 | All parity counts 0; the gate fails if one rises |
 | D5 | Aurora-free testing: `full-check --no-aurora`; a 5e.tools-only switch in the test app | Five clean `--no-aurora` full checks and two weeks of Chris's testing |
-| D6 | Saved characters move from Aurora ids to their 5e.tools twins on load | 400 saved characters and Chris's library: no unexplained sheet change |
+| D6 (in progress, see E1) | Saved characters move from Aurora ids to their 5e.tools twins on load | 400 saved characters and Chris's library: no unexplained sheet change |
 | D7 | The release app drops Aurora (importer, files, settings); the test app keeps it | Chris's go-ahead after D5 and D6 |
 
 ---
+
+## Stage E: before Aurora leaves, then a great engine and app (Chris 2026-11-17, night)
+
+Order as agreed: finish the move, then the engine work, then the app items. Each item: failing test first, fix at the
+cause, gates, STATUS.md updated. Item states here; detail in docs/STATUS.md and docs/ENGINE-LEGAL-PLAN.md.
+
+| # | What | State |
+| --- | --- | --- |
+| E1.1 | The move: Zendikar elves (and any sub race filed under another species in 5e.tools) switch species | Open |
+| E1.2 | The move: the fresh-sample cases (a Wizard's initiative, a Ranger's Charisma skills, +1s on another score, Auran lost) and the 4 findings the move brings | Open |
+| E1.3 | A move screen for players in the release app: what changes, what is kept as text, decisions, the original untouched | Open |
+| E1.4 | Community builds on 5e.tools alone: the choices they leave open, filled by Soul Forge additions where the text gives them | Open |
+| E2.1 | Rules check judges the rest itself (W5): increases by source, languages/tools/skills by count, species and background features, starting equipment | Open |
+| E2.2 | Every combination pairwise (W8) | Open |
+| E2.3 | Concepts compared everywhere (W6) | Open |
+| E2.4 | Engine shape E1–E6 and the timeline resolver's speed (incremental) | Open |
+| E2.5 | Rules decisions table complete (W7) | Started 2026-11-17 |
+| E2.6 | Picks with no place shown (W2) | Partly (extra picks reported, 2026-11-17) |
+| E2.7 | Outside references with an explained list (W9, FastCharacter) | Open |
+| E3.1 | Fix-it buttons on rules-check findings | Open |
+| E3.2 | Linux performance | Waits for Chris's measurement |
+| E3.3 | Importers and exporters: Roll20 rebuilt on BetterR20's scripts (github.com/DeathStalker471/betterR20, analysed first); Foundry on Plutonium's importer, analysed first; every import with a list of what came across | Open |
+| E3.4 | The library's safety net: visible restore from backup, a warning before moves and mass edits | Open |
+| E3.5 | Homebrew as a first-class path, on the Soul Forge additions machinery (Guiding Hand as the first) | Open |
+| D5/D7 | Chris's two weeks on 5e.tools only; then the release app drops Aurora | Waits for Chris |
+
+Done 2026-11-17 and off this list: C5.3 (Echo and Steel Defender), W10 (Soul Forge additions), W3 (statistic effects),
+v0.26.3.
 
 ## Budget
 

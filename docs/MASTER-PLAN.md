@@ -258,7 +258,7 @@ cause, gates, STATUS.md updated. Item states here; detail in docs/STATUS.md and 
 | E3.1 | Fix-it buttons on rules-check findings | Open |
 | E3.2 | Linux performance | Waits for Chris's measurement |
 | E3.6 | Scrollbars push buttons sideways (Chris: the level "+" moved and the click removed his class) | Done 2026-11-17: every scrolling area and the page keep the scrollbar's room (`scrollbar-gutter: stable`); removing a class asks a second click |
-| E3.3 | Importers and exporters: Roll20 rebuilt on BetterR20's scripts (github.com/DeathStalker471/betterR20, analysed first); Foundry on Plutonium's importer, analysed first; every import with a list of what came across | Open |
+| E3.3 | Importers and exporters (test files: Chris's Eleanor exports, 2026-11-17, in ~/.claude/uploads/70fadbec-…: Roll20, Foundry, Soul Forge JSON, two PDFs): Roll20 rebuilt on BetterR20's scripts (github.com/DeathStalker471/betterR20, analysed first); Foundry on Plutonium's importer, analysed first; every import with a list of what came across | Open |
 | E3.4 | The library's safety net: visible restore from backup, a warning before moves and mass edits | Open |
 | E3.5 | Homebrew as a first-class path, on the Soul Forge additions machinery (Guiding Hand as the first) | Open |
 | D5/D7 | Chris's two weeks on 5e.tools only; then the release app drops Aurora | Waits for Chris |

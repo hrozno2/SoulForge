@@ -19,8 +19,23 @@ const num = (a: string, b: string) => (parseInt(a, 10) || 0) - (parseInt(b, 10) 
 const common: FacetDef[] = [
   { id: "ruleset", label: "Rule set", get: (e, b) => [ruleSetOf(b.info(e.source), e.source)] },
   { id: "source", label: "Source", get: (e) => [e.source || "Unknown"] },
-  { id: "kind", label: "Kind", get: (e, b) => { const i = b.info(e.source); return [i.playtest ? "Playtest" : i.official ? "Official" : "Other"]; } },
-  { id: "year", label: "Released", get: (e, b) => { const y = yearOf(b.info(e.source).release); return [y ? String(y) : "Undated"]; }, order: (a, b) => (b === "Undated" ? -1 : a === "Undated" ? 1 : num(b, a)) },
+  {
+    id: "kind",
+    label: "Kind",
+    get: (e, b) => {
+      const i = b.info(e.source);
+      return [i.playtest ? "Playtest" : i.official ? "Official" : "Other"];
+    },
+  },
+  {
+    id: "year",
+    label: "Released",
+    get: (e, b) => {
+      const y = yearOf(b.info(e.source).release);
+      return [y ? String(y) : "Undated"];
+    },
+    order: (a, b) => (b === "Undated" ? -1 : a === "Undated" ? 1 : num(b, a)),
+  },
 ];
 
 const ABILITY_ORDER = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
@@ -50,8 +65,21 @@ function rangeKind(r: string): string {
 const SPELL: FacetDef[] = [
   { id: "level", label: "Level", get: (e) => [levelLabel(e)], order: (a, b) => (a === "C" ? -1 : b === "C" ? 1 : num(a, b)) },
   { id: "school", label: "School", get: (e) => (setter(e, "school") ? [setter(e, "school")] : []) },
-  { id: "class", label: "Class", get: (e) => e.supports.filter((t) => /^(Artificer|Bard|Cleric|Druid|Paladin|Ranger|Sorcerer|Warlock|Wizard)$/i.test(t)) },
-  { id: "components", label: "Components", get: (e) => [setter(e, "hasVerbalComponent") === "true" && "V", setter(e, "hasSomaticComponent") === "true" && "S", setter(e, "hasMaterialComponent") === "true" && "M"].filter((x): x is string => !!x) },
+  {
+    id: "class",
+    label: "Class",
+    get: (e) => e.supports.filter((t) => /^(Artificer|Bard|Cleric|Druid|Paladin|Ranger|Sorcerer|Warlock|Wizard)$/i.test(t)),
+  },
+  {
+    id: "components",
+    label: "Components",
+    get: (e) =>
+      [
+        setter(e, "hasVerbalComponent") === "true" && "V",
+        setter(e, "hasSomaticComponent") === "true" && "S",
+        setter(e, "hasMaterialComponent") === "true" && "M",
+      ].filter((x): x is string => !!x),
+  },
   { id: "concentration", label: "Concentration", get: (e) => [setter(e, "isConcentration") === "true" ? "Yes" : "No"] },
   { id: "ritual", label: "Ritual", get: (e) => [setter(e, "isRitual") === "true" ? "Yes" : "No"] },
   { id: "time", label: "Casting time", get: (e) => (timeKind(setter(e, "time")) ? [timeKind(setter(e, "time"))] : []) },
@@ -79,35 +107,106 @@ export function proficiencyKind(e: AElement): string {
   const sup = e.supports.join(" ").toLowerCase();
   if (/SAVINGTHROW|SAVING_THROW/.test(id) || /^saving throw/.test(name)) return "Saving throws";
   if (/_SKILL_|EXPERTISE/.test(id) || /^skill /.test(name) || /\b(5et )?skill\b/.test(sup)) return "Skills";
-  if (/_TOOL_|_GAMING|_INSTRUMENT|_VEHICLE/.test(id) || /^tool |supplies|tools|kit\b|set\b/.test(name) || /tool|gaming set|musical instrument|artisan/.test(sup)) return "Tools";
+  if (
+    /_TOOL_|_GAMING|_INSTRUMENT|_VEHICLE/.test(id) ||
+    /^tool |supplies|tools|kit\b|set\b/.test(name) ||
+    /tool|gaming set|musical instrument|artisan/.test(sup)
+  )
+    return "Tools";
   if (/WEAPON/.test(id) || /^weapon /.test(name)) return "Weapons";
   if (/ARMOR|SHIELD/.test(id) || /^armor /.test(name)) return "Armor";
   return "Other";
 }
 
 const FACETS: Record<string, FacetDef[]> = {
-  Proficiency: [{ id: "profKind", label: "Kind", inline: true, get: (e) => [proficiencyKind(e)], order: (a, b) => KIND_ORDER.indexOf(a) - KIND_ORDER.indexOf(b) }],
+  Proficiency: [
+    {
+      id: "profKind",
+      label: "Kind",
+      inline: true,
+      get: (e) => [proficiencyKind(e)],
+      order: (a, b) => KIND_ORDER.indexOf(a) - KIND_ORDER.indexOf(b),
+    },
+  ],
   Spell: SPELL,
   Race: [
     { id: "size", label: "Size", get: (e) => (sizeOf(e) ? [sizeOf(e)] : []) },
-    { id: "speed", label: "Speed", get: (e) => { const r = e.rules.find((x) => x.kind === "stat" && x.name === "innate speed"); return r && r.kind === "stat" ? [`${r.value} ft`] : []; } },
+    {
+      id: "speed",
+      label: "Speed",
+      get: (e) => {
+        const r = e.rules.find((x) => x.kind === "stat" && x.name === "innate speed");
+        return r && r.kind === "stat" ? [`${r.value} ft`] : [];
+      },
+    },
     { id: "ability", label: "Ability increase", get: (e) => e.abilityTags ?? [], order: abilityOrder },
-    { id: "flight", label: "Movement", get: (e) => e.rules.filter((r) => r.kind === "stat" && /^innate speed:(fly|swim|climb|burrow)/.test(r.name)).map((r) => (r.kind === "stat" ? r.name.split(":")[1] : "")) },
+    {
+      id: "flight",
+      label: "Movement",
+      get: (e) =>
+        e.rules
+          .filter((r) => r.kind === "stat" && /^innate speed:(fly|swim|climb|burrow)/.test(r.name))
+          .map((r) => (r.kind === "stat" ? r.name.split(":")[1] : "")),
+    },
   ],
   Class: [
     { id: "hd", label: "Hit die", get: (e) => (setter(e, "hd") ? [setter(e, "hd").toLowerCase()] : []) },
-    { id: "caster", label: "Spellcasting", get: (e) => [e.spellcasting ? "Caster" : e.description.match(/spellcasting/i) ? "Caster" : "Non-caster"] },
-    { id: "primary", label: "Primary ability", get: (e) => { const m = e.description.match(/<b>\s*Primary Ability\s*<\/b>\s*<\/td>\s*<td[^>]*>([^<]+)/i); return m ? m[1].split(/ and |, | or /).map((s) => s.trim()).filter(Boolean) : []; } },
+    {
+      id: "caster",
+      label: "Spellcasting",
+      get: (e) => [e.spellcasting ? "Caster" : e.description.match(/spellcasting/i) ? "Caster" : "Non-caster"],
+    },
+    {
+      id: "primary",
+      label: "Primary ability",
+      get: (e) => {
+        const m = e.description.match(/<b>\s*Primary Ability\s*<\/b>\s*<\/td>\s*<td[^>]*>([^<]+)/i);
+        return m
+          ? m[1]
+              .split(/ and |, | or /)
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : [];
+      },
+    },
   ],
   Background: [
     { id: "ability", label: "Ability increase", get: (e) => e.abilityTags ?? [], order: abilityOrder },
-    { id: "skills", label: "Skills", get: (e) => { const m = e.description.match(/Skill Proficienc(?:y|ies):<\/strong>\s*([^<]+)/i); return m ? m[1].split(/,| and /).map((s) => s.trim()).filter(Boolean) : []; } },
+    {
+      id: "skills",
+      label: "Skills",
+      get: (e) => {
+        const m = e.description.match(/Skill Proficienc(?:y|ies):<\/strong>\s*([^<]+)/i);
+        return m
+          ? m[1]
+              .split(/,| and /)
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : [];
+      },
+    },
   ],
   Feat: [
-    { id: "category", label: "Category", get: (e) => { const c = e.supports.find((s) => /^category /i.test(s)); const map: Record<string, string> = { O: "Origin", G: "General", FS: "Fighting Style", EB: "Epic Boon" }; return c ? [map[c.slice(9).toUpperCase()] ?? c.slice(9)] : e.supports.filter((s) => /origin|general|fighting style|epic boon/i.test(s)); } },
+    {
+      id: "category",
+      label: "Category",
+      get: (e) => {
+        const c = e.supports.find((s) => /^category /i.test(s));
+        const map: Record<string, string> = { O: "Origin", G: "General", FS: "Fighting Style", EB: "Epic Boon" };
+        return c
+          ? [map[c.slice(9).toUpperCase()] ?? c.slice(9)]
+          : e.supports.filter((s) => /origin|general|fighting style|epic boon/i.test(s));
+      },
+    },
     { id: "prereq", label: "Prerequisite", get: (e) => [e.requirements ? "Has prerequisite" : "None"] },
   ],
-  Language: [{ id: "kind2", label: "Kind", get: (e) => e.supports.filter((s) => /standard|exotic|secret/i.test(s)).map((s) => s.charAt(0).toUpperCase() + s.slice(1)) }],
+  Language: [
+    {
+      id: "kind2",
+      label: "Kind",
+      get: (e) => e.supports.filter((s) => /standard|exotic|secret/i.test(s)).map((s) => s.charAt(0).toUpperCase() + s.slice(1)),
+    },
+  ],
   Item: [{ id: "category", label: "Category", get: (e) => (setter(e, "category") ? [setter(e, "category")] : []) }],
   Weapon: [{ id: "damage", label: "Damage type", get: (e) => (e.setters.damage?.attrs.type ? [e.setters.damage.attrs.type] : []) }],
   Armor: [{ id: "armor", label: "Armor type", get: (e) => (setter(e, "armor") ? [setter(e, "armor")] : []) }],
@@ -126,7 +225,12 @@ export type Selected = Record<string, Set<string>>;
 export function applyFacets(items: AElement[], defs: FacetDef[], sel: Selected, books: BookIndex): AElement[] {
   const active = defs.filter((d) => sel[d.id]?.size);
   if (!active.length) return items;
-  return items.filter((e) => active.every((d) => { const vals = d.get(e, books); return vals.some((v) => sel[d.id].has(v)); }));
+  return items.filter((e) =>
+    active.every((d) => {
+      const vals = d.get(e, books);
+      return vals.some((v) => sel[d.id].has(v));
+    }),
+  );
 }
 
 /** Values of a facet across a list, with counts, for the filter bar. */

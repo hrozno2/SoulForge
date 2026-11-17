@@ -68,7 +68,15 @@ export function appendSpellPages(doc: PDFDocument, font: PDFFont, rows: SpellRow
       for (const c of cols) {
         if (c.key === "prep") {
           if (sp.level !== "0") {
-            page.drawRectangle({ x: x + 8, y: y + 2, width: 8, height: 8, borderColor: INK, borderWidth: 0.7, color: sp.prepared ? INK : undefined });
+            page.drawRectangle({
+              x: x + 8,
+              y: y + 2,
+              width: 8,
+              height: 8,
+              borderColor: INK,
+              borderWidth: 0.7,
+              color: sp.prepared ? INK : undefined,
+            });
           }
         } else {
           page.drawText(fit(font, cell[c.key] ?? "", 8.5, c.w - 4), { x: x + 2, y: y + 3, size: 8.5, font, color: INK });
@@ -77,7 +85,10 @@ export function appendSpellPages(doc: PDFDocument, font: PDFFont, rows: SpellRow
       }
       page.drawLine({ start: { x: M, y: y - 1 }, end: { x: W - M, y: y - 1 }, thickness: 0.3, color: RULE });
     }
-    page.drawText(`Prep: mark the spells you prepare (a filled box is always prepared). C R M: concentration, ritual, material component.`, { x: M, y: M - 10, size: 7, font, color: MUTED });
+    page.drawText(
+      `Prep: mark the spells you prepare (a filled box is always prepared). C R M: concentration, ritual, material component.`,
+      { x: M, y: M - 10, size: 7, font, color: MUTED },
+    );
   }
   return pages;
 }

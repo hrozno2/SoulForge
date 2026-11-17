@@ -146,7 +146,10 @@ function conceptIndex(p: Pass, reg: ARegistry): Map<string, string[]> {
   let m = CONCEPTS.get(p);
   if (!m) {
     m = new Map();
-    for (const id of p.ids) { const k = conceptKey(reg, id); if (k) (m.get(k) ?? m.set(k, []).get(k)!).push(id); }
+    for (const id of p.ids) {
+      const k = conceptKey(reg, id);
+      if (k) (m.get(k) ?? m.set(k, []).get(k)!).push(id);
+    }
     CONCEPTS.set(p, m);
   }
   return m;
@@ -288,15 +291,27 @@ function legacyOffered(reg: ARegistry, rule: SelectRule, ids: string[]): boolean
 function movedLegacy(ch: Character, reg: ARegistry, el: AElement, rule: SelectRule, idx: number): string[] | undefined {
   if (rule.type === "List" || !rule.supports) return undefined;
   const prefix = `${el.id}|`;
-  const keys = Object.keys(ch.selections).filter((k) => k.startsWith(prefix) && /^\d+$/.test(k.slice(prefix.length)) && Number(k.slice(prefix.length)) !== idx);
+  const keys = Object.keys(ch.selections).filter(
+    (k) => k.startsWith(prefix) && /^\d+$/.test(k.slice(prefix.length)) && Number(k.slice(prefix.length)) !== idx,
+  );
   if (!keys.length) return undefined;
   const offered = new Set(reg.find(rule.type, rule.supports).map((e) => e.id));
   const fitsAt = (n: number, ids: string[]) => {
     const r = el.rules[n];
     // An optional choice at that position does not hold on to it against this required one (see the optional side),
     // nor one switched off by an option the character does not use (Tasha's "Customized Language").
-    const off = (x: { requirements?: string }) => { const q = (x.requirements ?? "").trim(); return /^ID_[A-Z0-9_]+$/.test(q) && !ch.options.includes(q); };
-    return !!r && r.kind === "select" && !off(r as { requirements?: string }) && ids.every((id) => reg.get(id)?.type === r.type) && legacyOffered(reg, r as SelectRule, ids) && !(skippable(r as SelectRule, el) && !skippable(rule, el) && legacyOffered(reg, rule, ids));
+    const off = (x: { requirements?: string }) => {
+      const q = (x.requirements ?? "").trim();
+      return /^ID_[A-Z0-9_]+$/.test(q) && !ch.options.includes(q);
+    };
+    return (
+      !!r &&
+      r.kind === "select" &&
+      !off(r as { requirements?: string }) &&
+      ids.every((id) => reg.get(id)?.type === r.type) &&
+      legacyOffered(reg, r as SelectRule, ids) &&
+      !(skippable(r as SelectRule, el) && !skippable(rule, el) && legacyOffered(reg, rule, ids))
+    );
   };
   const found = keys.filter((k) => {
     const ids = ch.selections[k] ?? [];
@@ -352,7 +367,15 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
   const gained = new Map<string, { root: string; at: number }>();
   const via = new Map<string, string[][]>();
   const record = (id: string, chain: string[]) => (via.get(id) ?? via.set(id, []).get(id)!).push(chain);
-  const visit = (el: AElement, ownerLevel: number, from: string, root: string, classOwner?: AElement, at = 1, chain: string[] = []): void => {
+  const visit = (
+    el: AElement,
+    ownerLevel: number,
+    from: string,
+    root: string,
+    classOwner?: AElement,
+    at = 1,
+    chain: string[] = [],
+  ): void => {
     record(el.id, chain);
     if (seen.has(el.id)) return;
     seen.add(el.id);
@@ -398,14 +421,23 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
           // Internal marker grants have no element of their own but still count as present.
           ids.add(rule.id);
           record(rule.id, below);
-          if (!QUIET_TYPES.has(rule.type) && !rule.id.startsWith("ID_INTERNAL_")) warnings.push(`Missing ${rule.type} "${rule.id}" (from ${el.name})`);
+          if (!QUIET_TYPES.has(rule.type) && !rule.id.startsWith("ID_INTERNAL_"))
+            warnings.push(`Missing ${rule.type} "${rule.id}" (from ${el.name})`);
           return;
         }
         // A granted spell is always known and prepared. When the grant does not name its spellcasting (Light Bearer,
         // Telekinetic, some domain and oath spell lists), the sheet places it: on the class whose list has it, or on
         // a line of its own with the ability the feature names.
         if (rule.type === "Spell") {
-          spellPicks.push({ id: rule.id, casting: rule.spellcasting ?? "", granted: true, prepared: true, from: el.id, ...(rule.uses ? { uses: rule.uses } : {}), ...(rule.castAt ? { castAt: rule.castAt } : {}) });
+          spellPicks.push({
+            id: rule.id,
+            casting: rule.spellcasting ?? "",
+            granted: true,
+            prepared: true,
+            from: el.id,
+            ...(rule.uses ? { uses: rule.uses } : {}),
+            ...(rule.castAt ? { castAt: rule.castAt } : {}),
+          });
         }
         const tctx = makeCtx(prev, ownerLevel, ch, reg, empty, target.id);
         const mutual = mutualExclusions(target, reg);
@@ -423,24 +455,39 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         const old = ch.selections[key] === undefined ? ch.selections[legacy] : undefined;
         // An optional choice (Customized Language) leaves an old pick to a required one of its kind that also offers it
         // and has none (the species' own Language): the pick was made for that one.
-        const requiredTakes = (ids: string[]) => skippable(rule, el) && el.rules.some((r, j) => j !== idx && r.kind === "select" && r.type === rule.type && !skippable(r as SelectRule, el) && ch.selections[choiceKey(el, r as SelectRule, j)] === undefined && legacyOffered(reg, r as SelectRule, ids));
+        const requiredTakes = (ids: string[]) =>
+          skippable(rule, el) &&
+          el.rules.some(
+            (r, j) =>
+              j !== idx &&
+              r.kind === "select" &&
+              r.type === rule.type &&
+              !skippable(r as SelectRule, el) &&
+              ch.selections[choiceKey(el, r as SelectRule, j)] === undefined &&
+              legacyOffered(reg, r as SelectRule, ids),
+          );
         // Whether the pick is among the options is asked only where the element has another choice of the same kind
         // to mix it up with; elsewhere the kind settles it (options built at run time, such as a class's increases, are
         // not all in the registry's list).
         const twin = el.rules.some((r, j) => j !== idx && r.kind === "select" && r.type === rule.type);
-        const oldFits = !!old && (rule.type === "List" || (old.every((id) => reg.get(id)?.type === rule.type) && (!twin || (legacyOffered(reg, rule, old) && !requiredTakes(old)))));
+        const oldFits =
+          !!old &&
+          (rule.type === "List" ||
+            (old.every((id) => reg.get(id)?.type === rule.type) && (!twin || (legacyOffered(reg, rule, old) && !requiredTakes(old)))));
         // The content moved its rules since (a species' Size was its 2nd rule, its languages the 6th): an old pick at
         // another position of this element, that position no longer holding a choice it fits, is this choice's when
         // it is the only one whose every pick is among this choice's options (2026-10-29: saved 2024 species lost
         // their size and languages).
         const moved = ch.selections[key] === undefined && !oldFits ? movedLegacy(ch, reg, el, rule, idx) : undefined;
-        let chosen = (ch.selections[key] ?? (oldFits ? old! : moved ?? [])).slice(0, rule.number);
+        let chosen = (ch.selections[key] ?? (oldFits ? old! : (moved ?? []))).slice(0, rule.number);
         // A pick saved before the choice's options were wrapped (a bare skill, where the option now gives the skill and
         // its expertise: the 2014 Blessings of Knowledge, 2026-11-16) is the option that gives it. Only for a choice
         // that lists its options by id.
         if (chosen.length && /^[A-Z0-9_]+(\|[A-Z0-9_]+)+$/.test(rule.supports)) {
           const offered = rule.supports.split("|");
-          chosen = chosen.map((id) => (offered.includes(id) ? id : offered.find((o) => reg.get(o)?.rules.some((x) => x.kind === "grant" && x.id === id)) ?? id));
+          chosen = chosen.map((id) =>
+            offered.includes(id) ? id : (offered.find((o) => reg.get(o)?.rules.some((x) => x.kind === "grant" && x.id === id)) ?? id),
+          );
         }
         let defaulted = false;
         // A default the character already has from elsewhere is not given again: the choice opens instead (Battle Smith's
@@ -456,9 +503,24 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         const optedIn = chosen.length > 0 || !!ch.taken?.includes(key);
         // A table of 2014 personality traits, ideals, bonds and flaws is turned off only by the player (one switch on
         // the background turns all four off: the 2024 rules have none).
-        const declined = isList ? !!ch.declined?.includes(key) : skippable(rule, el) && (!!ch.declined?.includes(key) || (!optedIn && !rule.default));
-        if (declined) { chosen = []; defaulted = false; }
-        rawSlots.push({ key, owner: el, rule: isList || declined ? { ...rule, optional: true } : rule, ownerLevel, root, chosen, defaulted, declined, at: Math.max(at, rule.level ?? 0) });
+        const declined = isList
+          ? !!ch.declined?.includes(key)
+          : skippable(rule, el) && (!!ch.declined?.includes(key) || (!optedIn && !rule.default));
+        if (declined) {
+          chosen = [];
+          defaulted = false;
+        }
+        rawSlots.push({
+          key,
+          owner: el,
+          rule: isList || declined ? { ...rule, optional: true } : rule,
+          ownerLevel,
+          root,
+          chosen,
+          defaulted,
+          declined,
+          at: Math.max(at, rule.level ?? 0),
+        });
         for (const id of isList ? [] : chosen) {
           const target = reg.get(id);
           if (!target) {
@@ -471,9 +533,16 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
           // An increase picked in two choices counts twice: 5e.tools' "+1 Strength, +1 Constitution" at 4th and 8th
           // level, or "+1 Strength" in two feats' choices, are one element each, and an element is had once, so the
           // second pick was lost. Only a pure increase (stat rules alone) repeats this way.
-          if (seen.has(id) && target.type === "Ability Score Improvement" && target.rules.length && target.rules.every((r) => r.kind === "stat")) {
+          if (
+            seen.has(id) &&
+            target.type === "Ability Score Improvement" &&
+            target.rules.length &&
+            target.rules.every((r) => r.kind === "stat")
+          ) {
             const tctx = makeCtx(prev, ownerLevel, ch, reg, empty, target.id);
-            for (const r of target.rules) if (r.kind === "stat" && (r.level === undefined || r.level <= ownerLevel) && meets(r.requirements, tctx)) stats.add(r.name, { value: r.value, bonus: r.bonus, from: target.name, alt: r.alt, inline: r.inline });
+            for (const r of target.rules)
+              if (r.kind === "stat" && (r.level === undefined || r.level <= ownerLevel) && meets(r.requirements, tctx))
+                stats.add(r.name, { value: r.value, bonus: r.bonus, from: target.name, alt: r.alt, inline: r.inline });
           }
           visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0), below);
         }
@@ -533,7 +602,10 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
     const el = reg.get(it.id);
     if (!el) continue;
     // Items that need attunement only count once attuned.
-    const needsAttune = el.setters.attunement?.value === "true" || /requires attunement/i.test(el.setters.rarity?.value ?? "") || /requires attunement/i.test(el.description.slice(0, 400));
+    const needsAttune =
+      el.setters.attunement?.value === "true" ||
+      /requires attunement/i.test(el.setters.rarity?.value ?? "") ||
+      /requires attunement/i.test(el.description.slice(0, 400));
     if (needsAttune && !it.attuned) continue;
     visit(el, lvlTotal, "", "item");
   }
@@ -548,12 +620,25 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
   }
 
   const signature =
-    [...ids].sort().join(",") + "#" + [...stats.names()].sort().map((n) => `${n}=${stats.get(n)}`).join(";") + "#" + rawSlots.length;
+    [...ids].sort().join(",") +
+    "#" +
+    [...stats.names()]
+      .sort()
+      .map((n) => `${n}=${stats.get(n)}`)
+      .join(";") +
+    "#" +
+    rawSlots.length;
   // A spellcasting ability the player chose ("<entry>:spellcasting:ability:wisdom", from a feature that lets them
   // choose Intelligence, Wisdom or Charisma) replaces the entry's default.
   for (const [key, entry] of spellcasting) {
-    const chosen = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"].find((a) => stats.has(`${key}:spellcasting:ability:${a}`));
-    if (chosen && entry.ability !== chosen) { entry.ability = chosen; spellAbility[key] = chosen; stats.clearCache(); }
+    const chosen = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"].find((a) =>
+      stats.has(`${key}:spellcasting:ability:${a}`),
+    );
+    if (chosen && entry.ability !== chosen) {
+      entry.ability = chosen;
+      spellAbility[key] = chosen;
+      stats.clearCache();
+    }
   }
   // "inherit" (5e.tools, a feat's spells such as Magic Connoisseur's): as Plutonium reads it, the ability the feature
   // itself raised (its own ability score increase, the larger if two); without one, a class's spellcasting ability,
@@ -564,11 +649,17 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
     const raised = new Map<string, number>();
     for (const a of active) {
       if (a.el.id === entry.owner || !(via.get(a.el.id) ?? []).some((chain) => chain.includes(entry.owner))) continue;
-      for (const rule of a.el.rules) if (rule.kind === "stat" && ABIL.includes(rule.name.toLowerCase()) && Number(rule.value) > 0) raised.set(rule.name.toLowerCase(), (raised.get(rule.name.toLowerCase()) ?? 0) + Number(rule.value));
+      for (const rule of a.el.rules)
+        if (rule.kind === "stat" && ABIL.includes(rule.name.toLowerCase()) && Number(rule.value) > 0)
+          raised.set(rule.name.toLowerCase(), (raised.get(rule.name.toLowerCase()) ?? 0) + Number(rule.value));
     }
-    for (const rule of reg.get(entry.owner)?.rules ?? []) if (rule.kind === "stat" && ABIL.includes(rule.name.toLowerCase()) && Number(rule.value) > 0) raised.set(rule.name.toLowerCase(), (raised.get(rule.name.toLowerCase()) ?? 0) + Number(rule.value));
+    for (const rule of reg.get(entry.owner)?.rules ?? [])
+      if (rule.kind === "stat" && ABIL.includes(rule.name.toLowerCase()) && Number(rule.value) > 0)
+        raised.set(rule.name.toLowerCase(), (raised.get(rule.name.toLowerCase()) ?? 0) + Number(rule.value));
     const own = [...raised].sort((x, y) => y[1] - x[1])[0]?.[0];
-    const fromClass = [...spellcasting.values()].find((e) => e !== entry && e.ability && e.ability !== "inherit" && reg.get(e.owner)?.type === "Class")?.ability;
+    const fromClass = [...spellcasting.values()].find(
+      (e) => e !== entry && e.ability && e.ability !== "inherit" && reg.get(e.owner)?.type === "Class",
+    )?.ability;
     const best = ["intelligence", "wisdom", "charisma"].reduce((b, a) => (stats.get(a) > stats.get(b) ? a : b), "intelligence");
     entry.ability = own ?? fromClass ?? best;
     spellAbility[key] = entry.ability;
@@ -597,7 +688,9 @@ export function resolveSupports(filter: string, casting: string | undefined, pas
   }
   const slotExpr = maxSlot > 0 ? `(${Array.from({ length: maxSlot }, (_, i) => i + 1).join("||")})` : "(none)";
   // "$(stat:name)": a statistic's value in a filter, whole (Wild Shape's CR limit, raised by Circle of the Moon).
-  return filter.replace(/\$\(spellcasting:list\)/g, listExpr).replace(/\$\(spellcasting:slots\)/g, slotExpr)
+  return filter
+    .replace(/\$\(spellcasting:list\)/g, listExpr)
+    .replace(/\$\(spellcasting:slots\)/g, slotExpr)
     .replace(/\$\(stat:([^)]+)\)/g, (_m, name: string) => String(Math.floor(pass.stats.get(name.trim()))));
 }
 
@@ -616,21 +709,37 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
   const stated = pass.stats.get("multiclass:spellcasting:level");
   // Only classes' spellcasting shares the table (PHB, Multiclassing): a species' or feat's spells (the playtest
   // Eladrin's) do not make a single-class caster a multiclass one.
-  const own = [...pass.spellcasting.values()].filter((e) => e.fromClass !== false && !(pass.stats.get(`${lc(e.name)}:spellcasting:slots:count`) > 0));
-  const nameOf = (e: (typeof own)[number]) => lc(reg?.get(e.owner)?.name ?? (e.owner.match(/CLASS_([A-Z]+)$/i)?.[1] ?? e.name));
+  const own = [...pass.spellcasting.values()].filter(
+    (e) => e.fromClass !== false && !(pass.stats.get(`${lc(e.name)}:spellcasting:slots:count`) > 0),
+  );
+  const nameOf = (e: (typeof own)[number]) => lc(reg?.get(e.owner)?.name ?? e.owner.match(/CLASS_([A-Z]+)$/i)?.[1] ?? e.name);
   // Full and half casters count by their class. Any other only with slots of its own: a Monk's or Fighter's subclass with a
   // few spells adds nothing (Arcana Unleashed's Arcane Archer), an Eldritch Knight does.
-  const hasSlots = (e: (typeof own)[number]) => Array.from({ length: 9 }, (_, i) => pass.stats.get(`${lc(e.name)}:spellcasting:slots:${i + 1}`)).some((n) => n > 0);
+  const hasSlots = (e: (typeof own)[number]) =>
+    Array.from({ length: 9 }, (_, i) => pass.stats.get(`${lc(e.name)}:spellcasting:slots:${i + 1}`)).some((n) => n > 0);
   // A half caster with no share yet does not count: a 2014 Ranger or Paladin has no Spellcasting at 1st level (half of 1,
   // rounded down, is 0), so an Eldritch Knight 19 with a level of Ranger kept the Fighter's own table (4/3/3/1), not 4/3/3.
-  const halfShare = (e: (typeof own)[number]) => { const cls = reg?.get(e.owner); const modern = isModern({ id: e.owner, source: cls?.source ?? "" }); return nameOf(e) === "artificer" || modern ? Math.ceil(e.level / 2) : Math.floor(e.level / 2); };
-  const byOwner = new Map(own.filter((e) => FULL_CASTERS.has(nameOf(e)) || (HALF_CASTERS.has(nameOf(e)) && (halfShare(e) > 0 || hasSlots(e))) || (!HALF_CASTERS.has(nameOf(e)) && hasSlots(e))).map((e) => [e.owner, e]));
+  const halfShare = (e: (typeof own)[number]) => {
+    const cls = reg?.get(e.owner);
+    const modern = isModern({ id: e.owner, source: cls?.source ?? "" });
+    return nameOf(e) === "artificer" || modern ? Math.ceil(e.level / 2) : Math.floor(e.level / 2);
+  };
+  const byOwner = new Map(
+    own
+      .filter(
+        (e) =>
+          FULL_CASTERS.has(nameOf(e)) ||
+          (HALF_CASTERS.has(nameOf(e)) && (halfShare(e) > 0 || hasSlots(e))) ||
+          (!HALF_CASTERS.has(nameOf(e)) && hasSlots(e)),
+      )
+      .map((e) => [e.owner, e]),
+  );
   if (byOwner.size < 2) return 0;
   let total = 0;
   let unknown = false;
   for (const e of byOwner.values()) {
     const cls = reg?.get(e.owner);
-    const name = lc(cls?.name ?? (e.owner.match(/CLASS_([A-Z]+)$/i)?.[1] ?? e.name));
+    const name = lc(cls?.name ?? e.owner.match(/CLASS_([A-Z]+)$/i)?.[1] ?? e.name);
     const modern = isModern({ id: e.owner, source: cls?.source ?? "" });
     if (FULL_CASTERS.has(name)) total += e.level;
     else if (HALF_CASTERS.has(name)) total += name === "artificer" || modern ? Math.ceil(e.level / 2) : Math.floor(e.level / 2);
@@ -656,10 +765,27 @@ export function sharedSlotLevel(pass: Pass): number {
 
 /** Slots per spell level by combined caster level (index 1 to 20). */
 export const FULL_CASTER_SLOTS: number[][] = [
-  [], [2], [3], [4, 2], [4, 3], [4, 3, 2], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 2], [4, 3, 3, 3, 1],
-  [4, 3, 3, 3, 2], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1],
-  [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1, 1],
-  [4, 3, 3, 3, 3, 1, 1, 1, 1], [4, 3, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 3, 2, 2, 1, 1],
+  [],
+  [2],
+  [3],
+  [4, 2],
+  [4, 3],
+  [4, 3, 2],
+  [4, 3, 3],
+  [4, 3, 3, 1],
+  [4, 3, 3, 2],
+  [4, 3, 3, 3, 1],
+  [4, 3, 3, 3, 2],
+  [4, 3, 3, 3, 2, 1],
+  [4, 3, 3, 3, 2, 1],
+  [4, 3, 3, 3, 2, 1, 1],
+  [4, 3, 3, 3, 2, 1, 1],
+  [4, 3, 3, 3, 2, 1, 1, 1],
+  [4, 3, 3, 3, 2, 1, 1, 1],
+  [4, 3, 3, 3, 2, 1, 1, 1, 1],
+  [4, 3, 3, 3, 3, 1, 1, 1, 1],
+  [4, 3, 3, 3, 3, 2, 1, 1, 1],
+  [4, 3, 3, 3, 3, 2, 2, 1, 1],
 ];
 
 /**

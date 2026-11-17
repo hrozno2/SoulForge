@@ -14,7 +14,14 @@ describe("saving the open character", () => {
     vi.useFakeTimers();
     written = [];
     fail = false;
-    q = new SaveQueue(async (rec) => { if (fail) throw new Error("disk full"); written.push(rec); }, 800, () => 1);
+    q = new SaveQueue(
+      async (rec) => {
+        if (fail) throw new Error("disk full");
+        written.push(rec);
+      },
+      800,
+      () => 1,
+    );
   });
   afterEach(() => vi.useRealTimers());
 

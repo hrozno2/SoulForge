@@ -18,9 +18,11 @@ const STRUCTURE = new Set(["itemProperty", "itemType", "itemTypeAdditionalEntrie
 /** The label a bundled element shows as its source. The year is what the app reads an element's edition from. */
 export const SRD_SOURCE: Record<SrdEdition, string> = { "5.1": "SRD 5.1 (2014)", "5.2": "SRD 5.2.1 (2024)" };
 /** Names the SRD does not license. Nothing bundled may mention them (the guard in srdBundle.test.ts). */
-export const NOT_IN_SRD = /player'?s handbook|dungeon master'?s guide|monster manual|forgotten realms|faer[uû]n|strahd|tiamat|bahamut|beholder|mind flayer|illithid|displacer beast|githyanki|xanathar|tasha|mordenkainen|bigby|tenser|otiluke|evard|leomund|drawmij|nystul|\bmelf\b|\brary\b/i;
+export const NOT_IN_SRD =
+  /player'?s handbook|dungeon master'?s guide|monster manual|forgotten realms|faer[uû]n|strahd|tiamat|bahamut|beholder|mind flayer|illithid|displacer beast|githyanki|xanathar|tasha|mordenkainen|bigby|tenser|otiluke|evard|leomund|drawmij|nystul|\bmelf\b|\brary\b/i;
 
-const flagOf = (x: Record<string, unknown>, flag: string): unknown => x[flag] ?? (x.inherits as Record<string, unknown> | undefined)?.[flag];
+const flagOf = (x: Record<string, unknown>, flag: string): unknown =>
+  x[flag] ?? (x.inherits as Record<string, unknown> | undefined)?.[flag];
 
 /** Only the marked entries of one edition, and the SRD's own name of each that it renames. */
 export function srdFiles(files: Files, edition: SrdEdition): { files: Files; renames: Map<string, string> } {
@@ -31,12 +33,14 @@ export function srdFiles(files: Files, edition: SrdEdition): { files: Files; ren
   // effects of an entry, by the entry's name and book). Their entries carry no SRD mark of their own, so all of them
   // were dropped, and with them a Rogue's and a Bard's Expertise choice (found 2026-11-11). A side entry is kept when
   // the entry it belongs to is marked.
-  const identity = (kind: string, x: Record<string, unknown>) => `${kind}|${String(x.name).toLowerCase()}|${String(x.source).toLowerCase()}|${String(x.className ?? "").toLowerCase()}|${String(x.subclassShortName ?? "").toLowerCase()}|${String(x.level ?? "")}`;
+  const identity = (kind: string, x: Record<string, unknown>) =>
+    `${kind}|${String(x.name).toLowerCase()}|${String(x.source).toLowerCase()}|${String(x.className ?? "").toLowerCase()}|${String(x.subclassShortName ?? "").toLowerCase()}|${String(x.level ?? "")}`;
   const isSide = (file: string) => /(^|\/)foundry[^/]*\.json$/i.test(file);
   const markedIds = new Set<string>();
   for (const [file, data] of Object.entries(files)) {
     if (isSide(file)) continue;
-    for (const [kind, list] of Object.entries(data)) if (Array.isArray(list)) for (const x of list) if (x && typeof x === "object" && flagOf(x, flag)) markedIds.add(identity(kind, x));
+    for (const [kind, list] of Object.entries(data))
+      if (Array.isArray(list)) for (const x of list) if (x && typeof x === "object" && flagOf(x, flag)) markedIds.add(identity(kind, x));
   }
   for (const [file, data] of Object.entries(files)) {
     const kept: Record<string, unknown> = {};
@@ -48,7 +52,10 @@ export function srdFiles(files: Files, edition: SrdEdition): { files: Files; ren
         if (mine.length) kept[kind] = mine;
       } else {
         const marked = list.filter((x) => x && typeof x === "object" && flagOf(x, flag));
-        for (const x of marked) { const f = flagOf(x, flag); if (typeof f === "string" && typeof x.name === "string" && f !== x.name) renames.set(x.name, f); }
+        for (const x of marked) {
+          const f = flagOf(x, flag);
+          if (typeof f === "string" && typeof x.name === "string" && f !== x.name) renames.set(x.name, f);
+        }
         if (marked.length) kept[kind] = marked;
       }
     }
@@ -57,18 +64,36 @@ export function srdFiles(files: Files, edition: SrdEdition): { files: Files; ren
   return { files: out, renames };
 }
 
-const swapNames = (text: string, renames: [string, string][]) => renames.reduce((t, [from, to]) => t.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), to), text);
+const swapNames = (text: string, renames: [string, string][]) =>
+  renames.reduce((t, [from, to]) => t.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), to), text);
 
 /** The bundle's elements for one edition: converted, labelled as the SRD, with the SRD's names and only its words. */
-export function srdElements(files: Files, edition: SrdEdition, corpus?: string, dropped?: string[], sections?: SrdSection[], follow?: { report?: FollowReport }, tableRows?: string[]): AElement[] {
+export function srdElements(
+  files: Files,
+  edition: SrdEdition,
+  corpus?: string,
+  dropped?: string[],
+  sections?: SrdSection[],
+  follow?: { report?: FollowReport },
+  tableRows?: string[],
+): AElement[] {
   const { files: marked, renames } = srdFiles(files, edition);
   // Longest first, so a name inside a longer one is not swapped half way.
   const swaps = [...renames].sort((a, b) => b[0].length - a[0].length);
-  const named = convertFiveTools({ files: marked as never }).map((el) => ({ ...el, name: swapNames(el.name, swaps), ...(el.description ? { description: swapNames(el.description, swaps).replace(/, from X?PHB\./, ".") } : {}) }));
+  const named = convertFiveTools({ files: marked as never }).map((el) => ({
+    ...el,
+    name: swapNames(el.name, swaps),
+    ...(el.description ? { description: swapNames(el.description, swaps).replace(/, from X?PHB\./, ".") } : {}),
+  }));
   // The SRD decides: what the PDF has replaces what 5e.tools' copy says, before the word check reads the rest.
   let following = named;
   let fromPdf = new Set<AElement>();
-  if (sections) { const f = followSrd(named, sections, edition, corpus, tableRows); following = f.elements; fromPdf = f.report.fromPdf; if (follow) follow.report = f.report; }
+  if (sections) {
+    const f = followSrd(named, sections, edition, corpus, tableRows);
+    following = f.elements;
+    fromPdf = f.report.fromPdf;
+    if (follow) follow.report = f.report;
+  }
   const text = (el: AElement, html: string) => {
     // The generic Ability Score Improvement feat is the app's own wording of a rule, as are the types in OWN_TEXT_TYPES.
     if (!corpus || OWN_TEXT_TYPES.has(el.type) || el.name === "Ability Score Improvement") return html;
@@ -80,7 +105,9 @@ export function srdElements(files: Files, edition: SrdEdition, corpus?: string, 
     ...el,
     // What came from the PDF is the SRD's by definition.
     description: el.description && !fromPdf.has(el) ? text(el, el.description) : el.description,
-    ...(el.sheet ? { sheet: { ...el.sheet, descriptions: el.sheet.descriptions?.map((d) => ({ ...d, text: d.text ? text(el, d.text) : d.text })) } } : {}),
+    ...(el.sheet
+      ? { sheet: { ...el.sheet, descriptions: el.sheet.descriptions?.map((d) => ({ ...d, text: d.text ? text(el, d.text) : d.text })) } }
+      : {}),
     source: SRD_SOURCE[edition],
   }));
 }

@@ -13,7 +13,8 @@ import { Browse } from "./Browse";
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
 
 function SlotTracker({ line, set }: { line: CastingLine; set: SetCharacter }) {
-  const toggle = (row: SpellSlotRow, index: number) => set((c) => ({ ...c, play: withSlotUsed(c.play, row, usedAfterClick(row.total, row.used, index)) }));
+  const toggle = (row: SpellSlotRow, index: number) =>
+    set((c) => ({ ...c, play: withSlotUsed(c.play, row, usedAfterClick(row.total, row.used, index)) }));
   if (!line.slots.length) return <p className="muted">No spell slots at this level.</p>;
   return (
     <div className="slot-tracker">
@@ -22,12 +23,19 @@ function SlotTracker({ line, set }: { line: CastingLine; set: SetCharacter }) {
           <small>{line.pactLevel ? `Pact (level ${s.level})` : `Level ${s.level}`}</small>
           <div className="pips">
             {Array.from({ length: s.total }, (_, i) => (
-              <button key={i} className={isAvailable(s.total, s.used, i) ? "pip" : "pip spent"} title={isAvailable(s.total, s.used, i) ? "Available" : "Spent"} onClick={() => toggle(s, i)} />
+              <button
+                key={i}
+                className={isAvailable(s.total, s.used, i) ? "pip" : "pip spent"}
+                title={isAvailable(s.total, s.used, i) ? "Available" : "Spent"}
+                onClick={() => toggle(s, i)}
+              />
             ))}
           </div>
         </div>
       ))}
-      <button className="more" onClick={() => set((c) => ({ ...c, play: restoreSlots(c.play) }))}>Long rest: restore slots</button>
+      <button className="more" onClick={() => set((c) => ({ ...c, play: restoreSlots(c.play) }))}>
+        Long rest: restore slots
+      </button>
     </div>
   );
 }
@@ -37,17 +45,46 @@ function AlwaysPrepared({ line, r, onDetail }: { line: CastingLine; r: Resolved;
   if (!line.granted.length) return null;
   return (
     <>
-      <h3>Always prepared <small className="muted">(do not count against the limit)</small></h3>
-      <div className="chips">{line.granted.map((p) => {
-        const el = r.reg.get(p.id);
-        const src = grantSource(r, p);
-        return <span key={p.id} className="chip always-prepared" title={`Always prepared${src ? `: from ${src}` : ""}`} onMouseEnter={() => el && onDetail(el)}><span className="always-mark" aria-label="always prepared">◆</span> {el?.name ?? p.id}{src && <small className="muted"> ({src})</small>}</span>;
-      })}</div>
+      <h3>
+        Always prepared <small className="muted">(do not count against the limit)</small>
+      </h3>
+      <div className="chips">
+        {line.granted.map((p) => {
+          const el = r.reg.get(p.id);
+          const src = grantSource(r, p);
+          return (
+            <span
+              key={p.id}
+              className="chip always-prepared"
+              title={`Always prepared${src ? `: from ${src}` : ""}`}
+              onMouseEnter={() => el && onDetail(el)}
+            >
+              <span className="always-mark" aria-label="always prepared">
+                ◆
+              </span>{" "}
+              {el?.name ?? p.id}
+              {src && <small className="muted"> ({src})</small>}
+            </span>
+          );
+        })}
+      </div>
     </>
   );
 }
 
-function Prepared({ line, r, ch, set, onDetail }: { line: CastingLine; r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
+function Prepared({
+  line,
+  r,
+  ch,
+  set,
+  onDetail,
+}: {
+  line: CastingLine;
+  r: Resolved;
+  ch: Character;
+  set: SetCharacter;
+  onDetail: (e: AElement) => void;
+}) {
   const pool = useMemo<AElement[]>(() => preparePool(r, line), [r, line]);
   const chosen = ch.prepared[line.name] ?? [];
   const valid = chosen.filter((id) => pool.some((p) => p.id === id));
@@ -68,19 +105,30 @@ function Prepared({ line, r, ch, set, onDetail }: { line: CastingLine; r: Resolv
     if (!done) setOpen(true);
     wasDone.current = done;
   }, [done]);
-  const names = valid.map((id) => pool.find((p) => p.id === id)?.name).filter(Boolean).join(" · ");
+  const names = valid
+    .map((id) => pool.find((p) => p.id === id)?.name)
+    .filter(Boolean)
+    .join(" · ");
   return (
     <>
       <AlwaysPrepared line={line} r={r} onDetail={onDetail} />
       <h3 className="prep-head">
         <button className={`prep-toggle ${done ? "done" : "todo"}`} aria-expanded={open} onClick={() => setOpen(!open)}>
-          Prepared spells <span className={valid.length > line.prepareMax ? "warn" : "muted"}>{valid.length} / {line.prepareMax}</span>
+          Prepared spells{" "}
+          <span className={valid.length > line.prepareMax ? "warn" : "muted"}>
+            {valid.length} / {line.prepareMax}
+          </span>
           {!open && names && <small className="prep-names">{names}</small>}
           <span className="chev">{open ? "▾" : "▸"}</span>
         </button>
       </h3>
       <Fold open={open}>
-        {pool.length < line.prepareMax && <p className="muted small-text">You may prepare {line.prepareMax}, but only {pool.length} {pool.length === 1 ? "spell is" : "spells are"} there to prepare from{/spellbook/i.test(line.name) || line.name === "Wizard" ? ": add spells to your spellbook" : ""}.</p>}
+        {pool.length < line.prepareMax && (
+          <p className="muted small-text">
+            You may prepare {line.prepareMax}, but only {pool.length} {pool.length === 1 ? "spell is" : "spells are"} there to prepare from
+            {/spellbook/i.test(line.name) || line.name === "Wizard" ? ": add spells to your spellbook" : ""}.
+          </p>
+        )}
         <Browse items={pool} type="Spell" chosen={valid} onPick={(e) => toggle(e.id)} onHover={onDetail} defaultView="cards" perPage={60} />
       </Fold>
     </>
@@ -88,18 +136,51 @@ function Prepared({ line, r, ch, set, onDetail }: { line: CastingLine; r: Resolv
 }
 
 /** Only the prepare-spells picker, for each casting line that prepares (the spellbook's "Prepare spells" on the board, C1.5). */
-export function PrepareSpells({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void }) {
+export function PrepareSpells({
+  r,
+  ch,
+  set,
+  onDetail,
+}: {
+  r: Resolved;
+  ch: Character;
+  set: SetCharacter;
+  onDetail: (e: AElement) => void;
+}) {
   const sheet = useMemo(() => buildSheet(r), [r]);
   const lines = sheet.casting.filter((l) => l.prepare);
   if (!lines.length) return <p className="muted">Nothing to prepare: this character's spells are always ready.</p>;
-  return <>{lines.map((line) => <section key={line.name} className="card casting"><h2>{line.name}</h2><Prepared line={line} r={r} ch={ch} set={set} onDetail={onDetail} /></section>)}</>;
+  return (
+    <>
+      {lines.map((line) => (
+        <section key={line.name} className="card casting">
+          <h2>{line.name}</h2>
+          <Prepared line={line} r={r} ch={ch} set={set} onDetail={onDetail} />
+        </section>
+      ))}
+    </>
+  );
 }
 
 /** `prepareElsewhere`: the build board prepares spells on the spellbook's back, so the prepared list here is left out. */
-export function MagicTab({ r, ch, set, onDetail, prepareElsewhere = false }: { r: Resolved; ch: Character; set: SetCharacter; onDetail: (e: AElement) => void; prepareElsewhere?: boolean }) {
+export function MagicTab({
+  r,
+  ch,
+  set,
+  onDetail,
+  prepareElsewhere = false,
+}: {
+  r: Resolved;
+  ch: Character;
+  set: SetCharacter;
+  onDetail: (e: AElement) => void;
+  prepareElsewhere?: boolean;
+}) {
   const sheet = useMemo(() => buildSheet(r), [r]);
   const spellSlots = r.slots.filter((s) => tabOfSlot(s) === "magic");
-  const other = spellSlots.filter((s) => !s.rule.spellcasting || !sheet.casting.some((c) => c.name.toLowerCase() === s.rule.spellcasting!.toLowerCase()));
+  const other = spellSlots.filter(
+    (s) => !s.rule.spellcasting || !sheet.casting.some((c) => c.name.toLowerCase() === s.rule.spellcasting!.toLowerCase()),
+  );
   if (!sheet.casting.length && !spellSlots.length) {
     return <p className="muted">This character does not cast spells yet. Spellcasting appears when a class or feature grants it.</p>;
   }
@@ -109,17 +190,32 @@ export function MagicTab({ r, ch, set, onDetail, prepareElsewhere = false }: { r
         const mine = spellSlots.filter((s) => s.rule.spellcasting?.toLowerCase() === line.name.toLowerCase());
         return (
           <section key={line.name} className="card casting">
-            <h2>{line.name} <small className="muted">{line.ability ? `${line.ability} based` : ""}</small></h2>
+            <h2>
+              {line.name} <small className="muted">{line.ability ? `${line.ability} based` : ""}</small>
+            </h2>
             <div className="combat small">
-              <div className="box"><small>Save DC</small><b>{line.dc}</b></div>
-              <div className="box"><small>Spell attack</small><b>{signed(line.attack)}</b></div>
-              {line.prepare && <div className="box"><small>Prepared</small><b>{line.prepareMax}</b></div>}
+              <div className="box">
+                <small>Save DC</small>
+                <b>{line.dc}</b>
+              </div>
+              <div className="box">
+                <small>Spell attack</small>
+                <b>{signed(line.attack)}</b>
+              </div>
+              {line.prepare && (
+                <div className="box">
+                  <small>Prepared</small>
+                  <b>{line.prepareMax}</b>
+                </div>
+              )}
             </div>
             <SlotTracker line={line} set={set} />
             <h3>Spells and cantrips to learn</h3>
             <SlotList slots={mine} r={r} set={set} onDetail={onDetail} empty="No spells to choose at this level." />
             {line.prepare && !prepareElsewhere && <Prepared line={line} r={r} ch={ch} set={set} onDetail={onDetail} />}
-            {line.prepare && prepareElsewhere && <p className="muted">Prepare today's spells with "Prepare spells" under the spellbook above.</p>}
+            {line.prepare && prepareElsewhere && (
+              <p className="muted">Prepare today's spells with "Prepare spells" under the spellbook above.</p>
+            )}
             {!(line.prepare && !prepareElsewhere) && <AlwaysPrepared line={line} r={r} onDetail={onDetail} />}
           </section>
         );

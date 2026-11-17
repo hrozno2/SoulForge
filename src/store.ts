@@ -52,7 +52,9 @@ export async function pickFiles(extensions: string[], multiple = false): Promise
     const chosen = await open({ multiple, directory: false, filters: [{ name: extensions.join(", "), extensions }] });
     if (!chosen) return [];
     const paths = Array.isArray(chosen) ? chosen : [chosen];
-    return await Promise.all(paths.map(async (path) => new File([(await readFile(path)) as BlobPart], path.split(/[\\/]/).pop() ?? "file")));
+    return await Promise.all(
+      paths.map(async (path) => new File([(await readFile(path)) as BlobPart], path.split(/[\\/]/).pop() ?? "file")),
+    );
   } catch {
     return null;
   }

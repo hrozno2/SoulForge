@@ -10,13 +10,22 @@ import { loadTestContent } from "../engine/testContent";
 describe.skipIf(!process.env.SOULFORGE_RULES)("old position keys", () => {
   const reg = process.env.SOULFORGE_RULES ? loadTestContent(process.env.SOULFORGE_RULES) : undefined!;
   const species = (race: string, selections: Record<string, string[]>) => {
-    const ch = newCharacter(); ch.race = race; ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_FIGHTER", level: 1 }]; ch.selections = selections;
+    const ch = newCharacter();
+    ch.race = race;
+    ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_FIGHTER", level: 1 }];
+    ch.selections = selections;
     return resolve(ch, reg).slots.filter((s) => s.root === "race");
   };
   it("finds a moved size and languages (Aasimar)", () => {
-    const slots = species("ID_WOTC_PHB24_RACE_AASIMAR", { "ID_WOTC_PHB24_RACE_AASIMAR|1": ["ID_INTERNAL_RACIAL_TRAIT_SMALL"], "ID_WOTC_PHB24_RACE_AASIMAR|5": ["ID_WOTC_ERLW_LANGUAGE_RIEDRAN", "ID_WOTC_DSDQ_LANGUAGE_KENDERSPEAK"] });
+    const slots = species("ID_WOTC_PHB24_RACE_AASIMAR", {
+      "ID_WOTC_PHB24_RACE_AASIMAR|1": ["ID_INTERNAL_RACIAL_TRAIT_SMALL"],
+      "ID_WOTC_PHB24_RACE_AASIMAR|5": ["ID_WOTC_ERLW_LANGUAGE_RIEDRAN", "ID_WOTC_DSDQ_LANGUAGE_KENDERSPEAK"],
+    });
     expect(slots.find((s) => /^Size/.test(s.rule.name))?.chosen).toEqual(["ID_INTERNAL_RACIAL_TRAIT_SMALL"]);
-    expect(slots.find((s) => s.rule.name === "Language (Aasimar)")?.chosen).toEqual(["ID_WOTC_ERLW_LANGUAGE_RIEDRAN", "ID_WOTC_DSDQ_LANGUAGE_KENDERSPEAK"]);
+    expect(slots.find((s) => s.rule.name === "Language (Aasimar)")?.chosen).toEqual([
+      "ID_WOTC_ERLW_LANGUAGE_RIEDRAN",
+      "ID_WOTC_DSDQ_LANGUAGE_KENDERSPEAK",
+    ]);
   }, 600000);
   it("gives languages both lists offer to the species' own choice, not the switched-off customized one (Elf)", () => {
     const slots = species("ID_WOTC_PHB24_RACE_ELF", { "ID_WOTC_PHB24_RACE_ELF|5": ["ID_LANGUAGE_ELVISH", "ID_LANGUAGE_DWARVISH"] });

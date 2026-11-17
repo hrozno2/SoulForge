@@ -24,7 +24,35 @@ const ATTACKS = [
   `<link rel=stylesheet href="data:text/css,body{display:none}"><meta http-equiv=refresh content="0;url=about:blank">`,
   `<base href="about:blank">`,
 ];
-const ALLOWED = new Set(["P", "DIV", "SPAN", "B", "I", "EM", "STRONG", "U", "UL", "OL", "LI", "H1", "H2", "H3", "H4", "H5", "BR", "TABLE", "THEAD", "TBODY", "TR", "TD", "TH", "CENTER", "SUP", "SUB", "A"]);
+const ALLOWED = new Set([
+  "P",
+  "DIV",
+  "SPAN",
+  "B",
+  "I",
+  "EM",
+  "STRONG",
+  "U",
+  "UL",
+  "OL",
+  "LI",
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "BR",
+  "TABLE",
+  "THEAD",
+  "TBODY",
+  "TR",
+  "TD",
+  "TH",
+  "CENTER",
+  "SUP",
+  "SUB",
+  "A",
+]);
 const ATTRS = new Set(["class", "colspan", "rowspan"]);
 
 describe("the description filter", () => {
@@ -48,7 +76,9 @@ describe("the description filter", () => {
 
   // The audit's X2: content could wear the app's own class names and draw over the interface.
   it("does not let content use the app's own class names", () => {
-    const out = sanitize(`<p class="modal-back crash notice-toast">cover</p><span class="app indent topbar">x</span><p class="indent flavor col-10">ok</p>`);
+    const out = sanitize(
+      `<p class="modal-back crash notice-toast">cover</p><span class="app indent topbar">x</span><p class="indent flavor col-10">ok</p>`,
+    );
     expect(out).not.toMatch(/modal-back|crash|notice-toast|topbar|"app/);
     expect(out).toContain("cover");
     expect(out).toContain(`<span class="indent">x</span>`);

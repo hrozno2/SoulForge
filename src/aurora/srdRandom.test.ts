@@ -29,11 +29,13 @@ function batch(set: ContentSet, count: number, start: number): string[] {
       for (const s of r.slots.filter((x) => stillToChoose(x, r))) findings.push(`${who}: left open: ${s.rule.name}`);
       // Without the class reference (it is downloaded, not bundled) the check still judges everything written out in
       // it: hit points, armor class, attacks, damage, skills, saves, hands, choices and their requirements.
-      for (const f of checkCharacter(r, sheet, [])) if (f.rule !== "Class not in the rules reference") findings.push(`${who}: ${f.rule}: ${f.detail}`);
+      for (const f of checkCharacter(r, sheet, []))
+        if (f.rule !== "Class not in the rules reference") findings.push(`${who}: ${f.rule}: ${f.detail}`);
       // Both exports are made and the Foundry one reads back as a character.
       exportRoll20(r);
       const back = importForeignCharacter(exportFoundry(r), reg);
-      if (back.character.classes.reduce((n, c) => n + c.level, 0) !== level) findings.push(`${who}: the Foundry export read back at another level`);
+      if (back.character.classes.reduce((n, c) => n + c.level, 0) !== level)
+        findings.push(`${who}: the Foundry export read back at another level`);
     } catch (e) {
       findings.push(`${who}: threw ${(e as Error).message}`);
     }
@@ -42,9 +44,13 @@ function batch(set: ContentSet, count: number, start: number): string[] {
 }
 
 describe("random characters on the bundled SRD rules", () => {
-  it.each(["srd-5.1", "srd-5.2", "srd"] as const)("%s: 80 characters, a fixed seed, nothing found", (set) => {
-    expect(batch(set, 80, 20261111).slice(0, 12)).toEqual([]);
-  }, 300_000);
+  it.each(["srd-5.1", "srd-5.2", "srd"] as const)(
+    "%s: 80 characters, a fixed seed, nothing found",
+    (set) => {
+      expect(batch(set, 80, 20261111).slice(0, 12)).toEqual([]);
+    },
+    300_000,
+  );
 
   it("a fresh seed", () => {
     const seed = (Date.now() % 2147483646) + 1;

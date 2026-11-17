@@ -16,16 +16,20 @@ describe("older builds", () => {
     expect(checkDue(markChecked(ch, "1.0.0"), "1.1.0")).toBe(true);
   });
 
-  it.skipIf(!C)("lists a pick its choice no longer offers", () => {
-    const reg = loadTestContent(C!);
-    let ch = newCharacter();
-    ch.classes = [{ classId: "ID_WOTC_PHB_CLASS_WIZARD", level: 3 }];
-    const slot = resolve(ch, reg).slots.find((s) => s.rule.type === "Archetype")!;
-    // A Fighter subclass saved in the Wizard's subclass choice: no longer (or never) offered there.
-    const fighterSub = reg.ofType("Archetype").find((a) => a.supports.some((x) => /fighter/i.test(x)))!;
-    ch = { ...ch, selections: { [slot.key]: [fighterSub.id] } };
-    const r = resolve(ch, reg);
-    expect(picksNoLongerOffered(r).map((f) => f.detail)).toEqual([`${slot.rule.name}: ${fighterSub.name}`]);
-    expect(misalignments(r, [{ rule: "A required choice is not made", detail: "x" }])).toHaveLength(1);
-  }, 600000);
+  it.skipIf(!C)(
+    "lists a pick its choice no longer offers",
+    () => {
+      const reg = loadTestContent(C!);
+      let ch = newCharacter();
+      ch.classes = [{ classId: "ID_WOTC_PHB_CLASS_WIZARD", level: 3 }];
+      const slot = resolve(ch, reg).slots.find((s) => s.rule.type === "Archetype")!;
+      // A Fighter subclass saved in the Wizard's subclass choice: no longer (or never) offered there.
+      const fighterSub = reg.ofType("Archetype").find((a) => a.supports.some((x) => /fighter/i.test(x)))!;
+      ch = { ...ch, selections: { [slot.key]: [fighterSub.id] } };
+      const r = resolve(ch, reg);
+      expect(picksNoLongerOffered(r).map((f) => f.detail)).toEqual([`${slot.rule.name}: ${fighterSub.name}`]);
+      expect(misalignments(r, [{ rule: "A required choice is not made", detail: "x" }])).toHaveLength(1);
+    },
+    600000,
+  );
 });

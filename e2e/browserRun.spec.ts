@@ -9,7 +9,21 @@ import { addTestContent, randomCharacter, tab, watchProblems } from "./helpers";
  * belongs, and the rules check's verdict. Skipped in the normal test run.
  */
 const N = Number(process.env.BROWSER_RUN) || 0;
-test.use({ viewport: { width: 1600, height: 900 }, storageState: { cookies: [], origins: [{ origin: "http://localhost:4173", localStorage: [{ name: "charforge.tutorial", value: "never" }, { name: "charforge.settings", value: JSON.stringify({ buildLayout: "board", reduceMotion: true }) }] }] } });
+test.use({
+  viewport: { width: 1600, height: 900 },
+  storageState: {
+    cookies: [],
+    origins: [
+      {
+        origin: "http://localhost:4173",
+        localStorage: [
+          { name: "charforge.tutorial", value: "never" },
+          { name: "charforge.settings", value: JSON.stringify({ buildLayout: "board", reduceMotion: true }) },
+        ],
+      },
+    ],
+  },
+});
 
 test.skip(!N, "on request only: BROWSER_RUN=<count>");
 test("browser run: random characters, every card checked", async ({ page }) => {
@@ -34,7 +48,10 @@ test("browser run: random characters, every card checked", async ({ page }) => {
       if (/\bundefined\b|\bNaN\b|(^|\s)\?(\s|$)/.test(text)) report.push(`${i} ${kind}: odd text`);
       await back.getByRole("button", { name: /^Close / }).click();
     }
-    const verdict = await page.locator(".rules-check-head").innerText().catch(() => "");
+    const verdict = await page
+      .locator(".rules-check-head")
+      .innerText()
+      .catch(() => "");
     report.push(`${i}: ${verdict.replace(/\s+/g, " ").trim()}`);
   }
   console.log(`BROWSERRUN\n${report.join("\n")}`);

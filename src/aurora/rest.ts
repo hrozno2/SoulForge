@@ -14,7 +14,10 @@ import type { SheetData } from "./sheet";
 
 export type RestRules = "2014" | "2024";
 
-export interface HitDicePool { die: number; total: number }
+export interface HitDicePool {
+  die: number;
+  total: number;
+}
 
 /** The character's hit dice by size, largest first (a Fighter 3 / Wizard 2: 3d10 and 2d6). */
 export function hitDicePools(sheet: Pick<SheetData, "hitDice">): HitDicePool[] {
@@ -34,7 +37,11 @@ export function hitDiceSpent(play: Pick<PlayState, "hitDiceUsed" | "hitDiceByDie
     return out;
   }
   let left = Math.max(0, Math.floor(play.hitDiceUsed ?? 0));
-  for (const p of pools) { const n = Math.min(p.total, left); out[String(p.die)] = n; left -= n; }
+  for (const p of pools) {
+    const n = Math.min(p.total, left);
+    out[String(p.die)] = n;
+    left -= n;
+  }
   return out;
 }
 
@@ -42,7 +49,11 @@ export function hitDiceSpent(play: Pick<PlayState, "hitDiceUsed" | "hitDiceByDie
 export function withHitDiceSpent(play: PlayState, pools: HitDicePool[], spent: Record<string, number>): PlayState {
   const byDie: Record<string, number> = {};
   let sum = 0;
-  for (const p of pools) { const n = Math.max(0, Math.min(p.total, Math.floor(spent[String(p.die)] ?? 0))); byDie[String(p.die)] = n; sum += n; }
+  for (const p of pools) {
+    const n = Math.max(0, Math.min(p.total, Math.floor(spent[String(p.die)] ?? 0)));
+    byDie[String(p.die)] = n;
+    sum += n;
+  }
   return { ...play, hitDiceByDie: byDie, hitDiceUsed: sum };
 }
 
@@ -50,12 +61,19 @@ export function withHitDiceSpent(play: PlayState, pools: HitDicePool[], spent: R
 export function withHitDiceCount(play: PlayState, pools: HitDicePool[], count: number): PlayState {
   const spent: Record<string, number> = {};
   let left = Math.max(0, Math.floor(count));
-  for (const p of pools) { const n = Math.min(p.total, left); spent[String(p.die)] = n; left -= n; }
+  for (const p of pools) {
+    const n = Math.min(p.total, left);
+    spent[String(p.die)] = n;
+    left -= n;
+  }
   return withHitDiceSpent(play, pools, spent);
 }
 
 /** Hit dice left to spend, by size, largest first. */
-export function hitDiceLeft(play: Pick<PlayState, "hitDiceUsed" | "hitDiceByDie">, pools: HitDicePool[]): { die: number; left: number; total: number }[] {
+export function hitDiceLeft(
+  play: Pick<PlayState, "hitDiceUsed" | "hitDiceByDie">,
+  pools: HitDicePool[],
+): { die: number; left: number; total: number }[] {
   const spent = hitDiceSpent(play, pools);
   return pools.map((p) => ({ die: p.die, total: p.total, left: p.total - (spent[String(p.die)] ?? 0) }));
 }
@@ -72,12 +90,19 @@ export function spendHitDie(play: PlayState, pools: HitDicePool[], die: number):
 function returnHitDice(play: PlayState, pools: HitDicePool[], count: number): PlayState {
   const spent = hitDiceSpent(play, pools);
   let left = count;
-  for (const p of pools) { const n = Math.min(spent[String(p.die)] ?? 0, left); spent[String(p.die)] = (spent[String(p.die)] ?? 0) - n; left -= n; }
+  for (const p of pools) {
+    const n = Math.min(spent[String(p.die)] ?? 0, left);
+    spent[String(p.die)] = (spent[String(p.die)] ?? 0) - n;
+    left -= n;
+  }
   return withHitDiceSpent(play, pools, spent);
 }
 
 /** A row of spell slots as the sheet gives it: Pact Magic's slots are counted apart from the others. */
-export interface SlotRow { level: number; pact?: boolean }
+export interface SlotRow {
+  level: number;
+  pact?: boolean;
+}
 
 /** The play state with `used` slots spent in that row. */
 export function withSlotUsed(play: PlayState, row: SlotRow, used: number): PlayState {
@@ -95,16 +120,20 @@ export function shortRest(ch: Character, sheet: SheetData): Character {
   const uses = { ...ch.play.featureUses };
   for (const f of sheet.features) {
     // "Long Rest (one on a Short Rest)": a 2024 Rage, Second Wind, Wild Shape or Channel Divinity returns one use.
-    if (/one on a short rest/i.test(f.usage ?? "")) { if ((uses[f.id] ?? 0) > 1) uses[f.id] -= 1; else delete uses[f.id]; }
-    else if (/short rest/i.test(f.usage ?? "")) delete uses[f.id];
+    if (/one on a short rest/i.test(f.usage ?? "")) {
+      if ((uses[f.id] ?? 0) > 1) uses[f.id] -= 1;
+      else delete uses[f.id];
+    } else if (/short rest/i.test(f.usage ?? "")) delete uses[f.id];
   }
   // Pact Magic's slots return. A save from before they were counted apart has them under their spell level: that
   // count is cleared too, unless ordinary slots of the same level share it.
   const slots = { ...ch.play.slotsUsed };
   const ordinary = new Set(sheet.casting.filter((c) => !c.pactLevel).flatMap((c) => c.slots.map((s) => s.level)));
-  if (ch.play.pactUsed === undefined) for (const c of sheet.casting) if (c.pactLevel) for (const s of c.slots) if (!ordinary.has(s.level)) delete slots[String(s.level)];
+  if (ch.play.pactUsed === undefined)
+    for (const c of sheet.casting) if (c.pactLevel) for (const s of c.slots) if (!ordinary.has(s.level)) delete slots[String(s.level)];
   // A spell its giver lets the character cast without a slot, once a short rest (5e.tools "rest").
-  for (const c of sheet.casting) for (const p of [...c.granted, ...c.spells, ...c.cantripsKnown]) if (/short rest/i.test(p.uses ?? "")) delete uses[freeCastKey(p.id)];
+  for (const c of sheet.casting)
+    for (const p of [...c.granted, ...c.spells, ...c.cantripsKnown]) if (/short rest/i.test(p.uses ?? "")) delete uses[freeCastKey(p.id)];
   const hasPact = sheet.casting.some((c) => c.pactLevel);
   return {
     ...ch,
@@ -120,8 +149,16 @@ export function longRest(ch: Character, sheet: SheetData, rules: RestRules): Cha
   const play = returnHitDice(
     {
       ...ch.play,
-      hp: sheet.hp, tempHp: 0, wildShape: undefined, companionHp: undefined, slotsUsed: {}, pactUsed: 0, featureUses: {},
-      deathSaves: { success: 0, fail: 0 }, exhaustion: Math.max(0, (ch.play.exhaustion ?? 0) - 1), concentration: undefined,
+      hp: sheet.hp,
+      tempHp: 0,
+      wildShape: undefined,
+      companionHp: undefined,
+      slotsUsed: {},
+      pactUsed: 0,
+      featureUses: {},
+      deathSaves: { success: 0, fail: 0 },
+      exhaustion: Math.max(0, (ch.play.exhaustion ?? 0) - 1),
+      concentration: undefined,
     },
     pools,
     back,

@@ -14,7 +14,8 @@ export interface LintFinding {
   detail: string;
 }
 
-const DEFENSE = /^ID_INTERNAL_CONDITION_DAMAGE_(RESISTANCE|IMMUNITY|VULNERABILITY)_(ACID|BLUDGEONING|COLD|FIRE|FORCE|LIGHTNING|NECROTIC|PIERCING|POISON|PSYCHIC|RADIANT|SLASHING|THUNDER)(_[A-Z_]+)?$/;
+const DEFENSE =
+  /^ID_INTERNAL_CONDITION_DAMAGE_(RESISTANCE|IMMUNITY|VULNERABILITY)_(ACID|BLUDGEONING|COLD|FIRE|FORCE|LIGHTNING|NECROTIC|PIERCING|POISON|PSYCHIC|RADIANT|SLASHING|THUNDER)(_[A-Z_]+)?$/;
 
 /** IDs the content grants as markers on purpose, with no element behind them. */
 const MARKER = /^ID_(INTERNAL|SIZE)_|_MULTICLASS|_GRANTS_|_OPTION_/;
@@ -39,21 +40,31 @@ export function lintContent(reg: ARegistry): LintFinding[] {
         if (!r.id) add("empty grant", e, `grants a ${r.type} without saying which${r.name ? ` ("${r.name}")` : ""}`);
         else if (!reg.get(r.id) && !MARKER.test(r.id)) add("missing grant", e, `grants ${r.type} ${r.id}, which is not in the content`);
         // Damage defense markers have a fixed shape; a misspelt one never shows on a sheet.
-        else if (/^ID_INTERNAL_CONDITION_DAMAGE_/.test(r.id) && !DEFENSE.test(r.id) && !ID_TYPOS[r.id]) add("malformed marker", e, `grants ${r.id}, not a damage resistance, immunity or vulnerability`);
+        else if (/^ID_INTERNAL_CONDITION_DAMAGE_/.test(r.id) && !DEFENSE.test(r.id) && !ID_TYPOS[r.id])
+          add("malformed marker", e, `grants ${r.id}, not a damage resistance, immunity or vulnerability`);
       } else if (r.kind === "select") {
         // A choice whose options depend on the character ("$(spellcasting:list)") is judged with a character.
         if (r.type === "List" || /\$\(/.test(r.supports)) continue;
         const options = reg.find(r.type, r.supports);
-        if (!options.length) add("empty choice", e, `"${r.name}" chooses a ${r.type} from "${r.supports}", and nothing in the content matches`);
-        else if (options.length < r.number) add("too few options", e, `"${r.name}" chooses ${r.number} from "${r.supports}", and only ${options.length} match`);
+        if (!options.length)
+          add("empty choice", e, `"${r.name}" chooses a ${r.type} from "${r.supports}", and nothing in the content matches`);
+        else if (options.length < r.number)
+          add("too few options", e, `"${r.name}" chooses ${r.number} from "${r.supports}", and only ${options.length} match`);
       }
       const req = (r as { requirements?: string }).requirements;
-      if (req) for (const id of requirementIds(req)) if (!reg.get(id) && !MARKER.test(id) && !granted.has(id)) add("missing requirement", e, `a rule needs ${id}, which nothing in the content gives`);
+      if (req)
+        for (const id of requirementIds(req))
+          if (!reg.get(id) && !MARKER.test(id) && !granted.has(id))
+            add("missing requirement", e, `a rule needs ${id}, which nothing in the content gives`);
     }
     // Starting gold in copper or silver: the books give gold; a slip puts pennies on the sheet (issue #3).
     const coin = e.description.match(/\((?:A|B|C)\)[^<]*?\b(\d+) (CP|SP)\b/);
-    if (coin && (e.type === "Class" || e.type === "Background")) add("starting gold in copper", e, `the starting equipment gives ${coin[1]} ${coin[2]}, where the books give gold`);
-    if (e.requirements) for (const id of requirementIds(e.requirements)) if (!reg.get(id) && !MARKER.test(id) && !granted.has(id)) add("missing requirement", e, `needs ${id}, which nothing in the content gives`);
+    if (coin && (e.type === "Class" || e.type === "Background"))
+      add("starting gold in copper", e, `the starting equipment gives ${coin[1]} ${coin[2]}, where the books give gold`);
+    if (e.requirements)
+      for (const id of requirementIds(e.requirements))
+        if (!reg.get(id) && !MARKER.test(id) && !granted.has(id))
+          add("missing requirement", e, `needs ${id}, which nothing in the content gives`);
   }
   return out;
 }

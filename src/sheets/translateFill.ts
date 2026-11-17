@@ -15,7 +15,25 @@ export interface FillTranslation {
 }
 
 /** Fields the player wrote or that are numbers and names; they are printed as they are. */
-const KEEP = new Set(["body", "passive", "name", "portrait", "backstory", "personality", "appearance", "alignment", "notes", "coins", "carryCapacity", "pushDrag", "hdMax", "profBonus", "initiative", "speed", "languages"]);
+const KEEP = new Set([
+  "body",
+  "passive",
+  "name",
+  "portrait",
+  "backstory",
+  "personality",
+  "appearance",
+  "alignment",
+  "notes",
+  "coins",
+  "carryCapacity",
+  "pushDrag",
+  "hdMax",
+  "profBonus",
+  "initiative",
+  "speed",
+  "languages",
+]);
 
 /** Fields that hold names, one per line or one per entry. */
 const NAME_KEYS = new Set(["weaponsText", "otherGear", "armorWorn"]);
@@ -39,19 +57,39 @@ function walk(v: unknown, f: (s: string) => string, keep: boolean): unknown {
  * names and notes, equipment and training. Names and anything the player typed stay as they are.
  */
 export async function translateFill(d: FillData, t: FillTranslation): Promise<FillData> {
-  const keepText = new Set<string>([d.name, d.background, d.className, d.species, d.subclass].map((x) => String(x ?? "").trim()).filter(Boolean));
+  const keepText = new Set<string>(
+    [d.name, d.background, d.className, d.species, d.subclass].map((x) => String(x ?? "").trim()).filter(Boolean),
+  );
   const seen = new Set<string>();
   const names = t.keepNames !== false;
   const nm = (x: string) => (t.glossary ? lookup(t.glossary, x) : undefined) ?? x;
   const nmLines = (v: unknown) => (typeof v === "string" ? v.split("\n").map(nm).join("\n") : v);
   const each = (f: (s: string) => string): FillData => {
-    const out = Object.fromEntries(Object.entries(d).map(([k, v]) => {
-      // Feature entries: the group is a key the sheets sort by, so it stays; the text is translated, the name kept or looked up.
-      if (k === "featureList" && Array.isArray(v)) return [k, (v as FillData["featureList"]).map((ft) => ({ ...ft, name: names ? nm(ft.name) : f(ft.name), usage: ft.usage ? f(ft.usage) : "", text: ft.text ? f(ft.text) : "" }))];
-      if (names && NAME_KEYS.has(k)) return [k, nmLines(v)];
-      if (names && FEATURE_KEYS.has(k) && Array.isArray(v)) return [k, (v as string[]).map((line) => { const [head, body] = splitFeature(line); return (head ? `${nm(head.slice(0, -2))}: ` : "") + f(body); })];
-      return [k, walk(v, f, KEEP.has(k))];
-    })) as unknown as FillData;
+    const out = Object.fromEntries(
+      Object.entries(d).map(([k, v]) => {
+        // Feature entries: the group is a key the sheets sort by, so it stays; the text is translated, the name kept or looked up.
+        if (k === "featureList" && Array.isArray(v))
+          return [
+            k,
+            (v as FillData["featureList"]).map((ft) => ({
+              ...ft,
+              name: names ? nm(ft.name) : f(ft.name),
+              usage: ft.usage ? f(ft.usage) : "",
+              text: ft.text ? f(ft.text) : "",
+            })),
+          ];
+        if (names && NAME_KEYS.has(k)) return [k, nmLines(v)];
+        if (names && FEATURE_KEYS.has(k) && Array.isArray(v))
+          return [
+            k,
+            (v as string[]).map((line) => {
+              const [head, body] = splitFeature(line);
+              return (head ? `${nm(head.slice(0, -2))}: ` : "") + f(body);
+            }),
+          ];
+        return [k, walk(v, f, KEEP.has(k))];
+      }),
+    ) as unknown as FillData;
     if (names) {
       out.spells = d.spells.map((sp) => ({ ...(walk(sp, f, false) as typeof sp), name: nm(sp.name) }));
       out.weapons = d.weapons.map((w) => ({ ...(walk(w, f, false) as typeof w), name: nm(w.name) }));

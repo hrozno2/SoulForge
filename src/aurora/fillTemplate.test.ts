@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { fillTemplate } from "./sheet";
 import type { Resolved } from "./engine";
 
-const withStats = (v: Record<string, number>) => ({ stats: { text: () => undefined, get: (n: string) => v[n] ?? 0 } }) as unknown as Resolved;
+const withStats = (v: Record<string, number>) =>
+  ({ stats: { text: () => undefined, get: (n: string) => v[n] ?? 0 } }) as unknown as Resolved;
 
 describe("fillTemplate", () => {
   it("gives one sign where the text already has a plus (Divine Spark: 1d8+{{wisdom:modifier}})", () => {

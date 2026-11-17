@@ -8,7 +8,10 @@ import { randomCharacter } from "./randomCharacter";
 describe("exports are repeatable", () => {
   const reg = loadContentSet("", "srd");
   let seed = 31;
-  const rng = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const rng = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
   const filters = { legacy: true, playtest: false, unusual: true, scifi: false, modern: false };
 
   it("twice the same file, and another character another file", () => {

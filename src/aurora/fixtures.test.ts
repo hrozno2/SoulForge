@@ -8,7 +8,17 @@ import { newCharacter } from "./character";
 import { resolve } from "./engine";
 import { autoFill } from "./autofill";
 import { buildSheet } from "./sheet";
-import { ItemIndex, addToInventory, adventuringPacks, autoEquip, expandPack, ledgerOf, removeAdded, startingPlans, variantItems } from "./startingEquipment";
+import {
+  ItemIndex,
+  addToInventory,
+  adventuringPacks,
+  autoEquip,
+  expandPack,
+  ledgerOf,
+  removeAdded,
+  startingPlans,
+  variantItems,
+} from "./startingEquipment";
 import { importForeignCharacter } from "./foreign";
 import { HANDS, handsUsed, setTwoHanded, toggleEquip } from "../aurora/hands";
 import { mergeSlots, ownership } from "../ui/Slots";
@@ -27,7 +37,8 @@ const build = (race: string, bg: string, cls: string, level: number) => {
 describe("test ruleset", () => {
   it("loads every element type the engine uses", () => {
     expect(reg.size).toBeGreaterThan(60);
-    for (const t of ["Race", "Background", "Class", "Archetype", "Spell", "Weapon", "Armor", "Feat", "Proficiency"]) expect(reg.ofType(t).length, t).toBeGreaterThan(0);
+    for (const t of ["Race", "Background", "Class", "Archetype", "Spell", "Weapon", "Armor", "Feat", "Proficiency"])
+      expect(reg.ofType(t).length, t).toBeGreaterThan(0);
   });
 
   it("builds every combination without open choices, bad numbers or leftover templates", () => {
@@ -35,19 +46,25 @@ describe("test ruleset", () => {
     const bgs = reg.ofType("Background");
     const classes = reg.ofType("Class");
     let n = 0;
-    for (const race of races) for (const bg of bgs) for (const cls of classes) for (const level of [1, 4, 5, 8]) {
-      const ch = build(race.id, bg.id, cls.id, level);
-      const r = resolve(ch, reg);
-      const tag = `${race.name}/${bg.name}/${cls.name}/${level}`;
-      const open = r.slots.filter((s) => !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length);
-      expect(open.map((s) => s.rule.name), tag).toEqual([]);
-      const sh = buildSheet(r);
-      expect(sh.hp, tag).toBeGreaterThan(0);
-      for (const a of sh.abilities) expect(Number.isFinite(a.score) && a.score >= 1 && a.score <= 30, `${tag} ${a.id}`).toBe(true);
-      expect(sh.features.map((f) => f.text).join(" "), tag).not.toMatch(/\{\{|\$\(/);
-      expect(r.warnings, tag).toEqual([]);
-      n++;
-    }
+    for (const race of races)
+      for (const bg of bgs)
+        for (const cls of classes)
+          for (const level of [1, 4, 5, 8]) {
+            const ch = build(race.id, bg.id, cls.id, level);
+            const r = resolve(ch, reg);
+            const tag = `${race.name}/${bg.name}/${cls.name}/${level}`;
+            const open = r.slots.filter((s) => !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length);
+            expect(
+              open.map((s) => s.rule.name),
+              tag,
+            ).toEqual([]);
+            const sh = buildSheet(r);
+            expect(sh.hp, tag).toBeGreaterThan(0);
+            for (const a of sh.abilities) expect(Number.isFinite(a.score) && a.score >= 1 && a.score <= 30, `${tag} ${a.id}`).toBe(true);
+            expect(sh.features.map((f) => f.text).join(" "), tag).not.toMatch(/\{\{|\$\(/);
+            expect(r.warnings, tag).toEqual([]);
+            n++;
+          }
     expect(n).toBe(races.length * bgs.length * classes.length * 4);
   });
 
@@ -91,7 +108,8 @@ describe("test ruleset", () => {
     const ch = build("ID_SF_RACE_EMBERKIN", "ID_SF_BACKGROUND_SCHOLAR", "ID_SF_CLASS_WARDEN", 4);
     const r = resolve(ch, reg);
     const have = [...r.ids].filter((i) => reg.get(i)?.type === "Feat");
-    for (const s of r.slots.filter((x) => x.rule.type === "Feat")) for (const id of have) if (!s.chosen.includes(id) && s.options.some((o) => o.id === id)) expect(s.blocked.has(id)).toBe(true);
+    for (const s of r.slots.filter((x) => x.rule.type === "Feat"))
+      for (const id of have) if (!s.chosen.includes(id) && s.options.some((o) => o.id === id)) expect(s.blocked.has(id)).toBe(true);
   });
 
   it("reads starting equipment, adds it and equips armor and weapons", () => {
@@ -103,9 +121,24 @@ describe("test ruleset", () => {
     const pack = expandPack(reg.get("ID_SF_ITEM_TRAIL_PACK")!, reg);
     expect(pack.map((i) => `${i.qty} ${i.name}`)).toEqual(["5 Torch", "1 Rope (50 feet)", "10 Rations (1 day)"]);
     void idx;
-    const withGear = autoEquip(addToInventory(ch, [{ el: reg.get("ID_SF_ARMOR_CHAIN_HAUBERK")!, name: "Chain Hauberk", qty: 1 }, { el: reg.get("ID_SF_WEAPON_WARDENS_BLADE")!, name: "Warden's Blade", qty: 1 }], 5), reg);
+    const withGear = autoEquip(
+      addToInventory(
+        ch,
+        [
+          { el: reg.get("ID_SF_ARMOR_CHAIN_HAUBERK")!, name: "Chain Hauberk", qty: 1 },
+          { el: reg.get("ID_SF_WEAPON_WARDENS_BLADE")!, name: "Warden's Blade", qty: 1 },
+        ],
+        5,
+      ),
+      reg,
+    );
     expect(withGear.coins.gp).toBe(5);
-    expect(withGear.inventory.filter((i) => i.equipped).map((i) => i.id).sort()).toEqual(["ID_SF_ARMOR_CHAIN_HAUBERK", "ID_SF_WEAPON_WARDENS_BLADE"]);
+    expect(
+      withGear.inventory
+        .filter((i) => i.equipped)
+        .map((i) => i.id)
+        .sort(),
+    ).toEqual(["ID_SF_ARMOR_CHAIN_HAUBERK", "ID_SF_WEAPON_WARDENS_BLADE"]);
     withGear.abilityBase.strength = 14;
     const sh = buildSheet(resolve(withGear, reg));
     expect(sh.ac.value).toBe(16);
@@ -139,11 +172,14 @@ describe("export to other tools", () => {
     const c2 = build(reg.ofType("Race")[0].id, reg.ofType("Background")[0].id, k[0].id, 3);
     c2.classes.push({ classId: k[1].id, level: 2 });
     c2.name = "Two Classes";
-    const out = exportRoll20(resolve(c2, reg)) as { character: { attribs: { name: string; current: unknown }[]; attributes: { name: string }; blobBio: string } };
+    const out = exportRoll20(resolve(c2, reg)) as {
+      character: { attribs: { name: string; current: unknown }[]; attributes: { name: string }; blobBio: string };
+    };
     const v = (n: string) => out.character.attribs.find((a) => a.name === n)?.current;
     expect([v("base_level"), v("level"), v("multiclass1_flag"), v("multiclass1_lvl"), v("version")]).toEqual([3, 5, "1", 2, "4.21"]);
     expect(out.character.attributes.name).toBe("Two Classes");
-    for (const a of out.character.attribs) if (/_prof$/.test(a.name) && !/_save_/.test(a.name) && a.current) expect(a.current).toMatch(/^\(@\{pb\}\*@\{[a-z_]+_type\}\)$/);
+    for (const a of out.character.attribs)
+      if (/_prof$/.test(a.name) && !/_save_/.test(a.name) && a.current) expect(a.current).toMatch(/^\(@\{pb\}\*@\{[a-z_]+_type\}\)$/);
     const back = importForeignCharacter(JSON.parse(JSON.stringify(out)), reg);
     expect(back.character.classes.map((x) => x.level)).toEqual([3, 2]);
   });
@@ -151,7 +187,10 @@ describe("export to other tools", () => {
   ch.name = "Round Trip";
   const r = resolve(ch, reg);
   const sheet = buildSheet(r);
-  for (const [label, exp] of [["Foundry", exportFoundry], ["Roll20", exportRoll20]] as const) {
+  for (const [label, exp] of [
+    ["Foundry", exportFoundry],
+    ["Roll20", exportRoll20],
+  ] as const) {
     it(`${label}: Soul Forge can read its own export`, () => {
       const back = importForeignCharacter(JSON.parse(JSON.stringify(exp(r))), reg);
       expect(back.character.name).toBe("Round Trip");
@@ -159,7 +198,8 @@ describe("export to other tools", () => {
       expect(back.character.background).toBe(ch.background);
       expect(back.character.classes).toEqual(ch.classes);
       expect(sheet.hp).toBeGreaterThan(0);
-      for (const a of sheet.abilities) expect(buildSheet(resolve(back.character, reg)).abilities.find((x) => x.id === a.id)!.score, `${label} ${a.id}`).toBe(a.score);
+      for (const a of sheet.abilities)
+        expect(buildSheet(resolve(back.character, reg)).abilities.find((x) => x.id === a.id)!.score, `${label} ${a.id}`).toBe(a.score);
     });
   }
 });
@@ -167,15 +207,17 @@ describe("export to other tools", () => {
 describe("what already gives an option", () => {
   it("names the source of an option the character has from somewhere else", () => {
     let found = 0;
-    for (const race of reg.ofType("Race")) for (const cls of reg.ofType("Class")) {
-      const r = resolve(build(race.id, reg.ofType("Background")[0].id, cls.id, 3), reg);
-      for (const slot of r.slots) for (const el of slot.options) {
-        if (slot.chosen.includes(el.id) || !r.ids.has(el.id)) continue;
-        const why = ownership(r, el, slot.key);
-        expect(why, `${slot.rule.name}: ${el.name}`).toMatch(/^(Granted by .+|You chose this for .+|Already granted by your build)\.$/);
-        found++;
+    for (const race of reg.ofType("Race"))
+      for (const cls of reg.ofType("Class")) {
+        const r = resolve(build(race.id, reg.ofType("Background")[0].id, cls.id, 3), reg);
+        for (const slot of r.slots)
+          for (const el of slot.options) {
+            if (slot.chosen.includes(el.id) || !r.ids.has(el.id)) continue;
+            const why = ownership(r, el, slot.key);
+            expect(why, `${slot.rule.name}: ${el.name}`).toMatch(/^(Granted by .+|You chose this for .+|Already granted by your build)\.$/);
+            found++;
+          }
       }
-    }
     expect(found).toBeGreaterThan(0);
   });
   it("says nothing for something the character does not have", () => {
@@ -193,7 +235,12 @@ describe("identical choices from several levels are one choice", () => {
       const out = mergeSlots(r.slots);
       expect(out.reduce((n, s) => n + s.rule.number, 0)).toBe(r.slots.reduce((n, s) => n + s.rule.number, 0));
       expect(out.reduce((n, s) => n + s.chosen.length, 0)).toBe(r.slots.reduce((n, s) => n + s.chosen.length, 0));
-      for (const m of out) if (m.members) { merged++; expect(m.members.length).toBeGreaterThan(1); expect(m.chosen).toEqual(m.members.flatMap((x) => x.chosen)); }
+      for (const m of out)
+        if (m.members) {
+          merged++;
+          expect(m.members.length).toBeGreaterThan(1);
+          expect(m.chosen).toEqual(m.members.flatMap((x) => x.chosen));
+        }
     }
     expect(merged).toBeGreaterThan(0);
   });
@@ -228,7 +275,9 @@ describe("replacing a starting equipment option", () => {
 
 describe("two hands", () => {
   const find = (name: RegExp) => reg.all().find((e) => name.test(e.name) && (e.type === "Weapon" || e.type === "Armor"))!;
-  const sword = find(/sword|blade/i), bow = find(/bow/i), shield = find(/shield/i);
+  const sword = find(/sword|blade/i),
+    bow = find(/bow/i),
+    shield = find(/shield/i);
   const item = (e: { id: string }, uidv: string) => ({ uid: uidv, id: e.id, qty: 1, equipped: false, attuned: false });
   it("puts earlier items away when the hands are full", () => {
     let inv = [item(sword, "a"), item(shield, "b"), item(bow, "c")];
@@ -266,8 +315,18 @@ describe("two hands", () => {
     const dart = "ID_SF_SPELL_EMBER_DART";
     const picked = { ...ch, selections: { [first.key]: [dart, "ID_SF_SPELL_SOFT_LIGHT"], [later.key]: [dart] } };
     const r = resolve(picked, reg);
-    expect(repeatedPicks(r, r.slots.find((s) => s.key === later.key)!).join()).toMatch(/Ember Dart \(already learned in Cantrip/);
-    expect(repeatedPicks(r, r.slots.find((s) => s.key === first.key)!)).toEqual([]);
+    expect(
+      repeatedPicks(
+        r,
+        r.slots.find((s) => s.key === later.key)!,
+      ).join(),
+    ).toMatch(/Ember Dart \(already learned in Cantrip/);
+    expect(
+      repeatedPicks(
+        r,
+        r.slots.find((s) => s.key === first.key)!,
+      ),
+    ).toEqual([]);
   });
 
   it("fills a level 20 Spellsinger without learning any spell twice (the test content has enough spells)", () => {

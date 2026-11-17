@@ -107,7 +107,18 @@ export interface FillData {
   companion?: CompanionFill;
   /** Every feature with its full text, grouped, for sheets with room to print it. */
   /** Details a sheet may have its own boxes for. */
-  body: { age: string; height: string; weight: string; eyes: string; hair: string; skin: string; gender: string; deity: string; allies: string; player: string };
+  body: {
+    age: string;
+    height: string;
+    weight: string;
+    eyes: string;
+    hair: string;
+    skin: string;
+    gender: string;
+    deity: string;
+    allies: string;
+    player: string;
+  };
   featureList: { group: string; name: string; usage: string; text: string }[];
 }
 
@@ -125,13 +136,24 @@ export function parseActions(html: string): { name: string; bonus: string; damag
 
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
 
-const TIME: [RegExp, string][] = [[/^(1 )?action$/i, "1A"], [/^(1 )?bonus action$/i, "1BA"], [/^(1 )?reaction$/i, "1R"], [/^1 minute$/i, "1m"], [/^(\d+) minutes?$/i, "$1m"], [/^1 hour$/i, "1h"], [/^(\d+) hours?$/i, "$1h"]];
+const TIME: [RegExp, string][] = [
+  [/^(1 )?action$/i, "1A"],
+  [/^(1 )?bonus action$/i, "1BA"],
+  [/^(1 )?reaction$/i, "1R"],
+  [/^1 minute$/i, "1m"],
+  [/^(\d+) minutes?$/i, "$1m"],
+  [/^1 hour$/i, "1h"],
+  [/^(\d+) hours?$/i, "$1h"],
+];
 /** Casting times as the sheets print them: "1BA" for "Bonus Action, which you take immediately after...", "1A/R" for "Action or Ritual". */
 export const shortTime = (raw: string) => {
   const s = raw.trim();
   const ritual = /\bor ritual\b/i.test(s);
   // Keep the first part: the trigger text after the comma belongs in the description, not the box.
-  const head = s.replace(/\s+or ritual\b.*/i, "").split(/,|;| which /i)[0].trim();
+  const head = s
+    .replace(/\s+or ritual\b.*/i, "")
+    .split(/,|;| which /i)[0]
+    .trim();
   const t = TIME.reduce((v, [re, to]) => (re.test(v) ? v.replace(re, to) : v), head);
   return ritual ? `${t}/R` : t;
 };
@@ -143,11 +165,21 @@ export const shortRange = (s: string) => {
     const shape = (self[2] ?? "").toLowerCase();
     return `${self[1]}ft ${SHAPE[shape] ?? shape}`.trim();
   }
-  return s.replace(/\s*feet\b/i, " ft").replace(/\s*mile(s)?\b/i, " mi").replace(/^Self \((.*)\)$/i, "S ($1)").trim();
+  return s
+    .replace(/\s*feet\b/i, " ft")
+    .replace(/\s*mile(s)?\b/i, " mi")
+    .replace(/^Self \((.*)\)$/i, "S ($1)")
+    .trim();
 };
 export function shortDuration(s: string): { text: string; conc: boolean } {
   const conc = /concentration/i.test(s);
-  const t = s.replace(/concentration,?\s*(up to)?\s*/i, "").replace(/instantaneous/i, "Inst").replace(/\s*minutes?\b/i, " min").replace(/\s*hours?\b/i, " hr").replace(/\s*rounds?\b/i, " rd").trim();
+  const t = s
+    .replace(/concentration,?\s*(up to)?\s*/i, "")
+    .replace(/instantaneous/i, "Inst")
+    .replace(/\s*minutes?\b/i, " min")
+    .replace(/\s*hours?\b/i, " hr")
+    .replace(/\s*rounds?\b/i, " rd")
+    .trim();
   return { text: t, conc };
 }
 
@@ -162,15 +194,36 @@ const sentence = (text: string, max: number) => {
 const has = (r: Resolved, id: string) => r.ids.has(id);
 
 /** A companion's stat block in the shape the sheets use. */
-export function companionFill(el: import("../aurora/types").AElement, name: string, reg?: import("../aurora/registry").ARegistry): CompanionFill {
+export function companionFill(
+  el: import("../aurora/types").AElement,
+  name: string,
+  reg?: import("../aurora/registry").ARegistry,
+): CompanionFill {
   const s = el.setters;
   const v = (k: string) => s[k]?.value ?? "";
-  const strip = (h: string) => h.replace(/<\/p>/g, "\n").replace(/<[^>]+>/g, "").trim();
+  const strip = (h: string) =>
+    h
+      .replace(/<\/p>/g, "\n")
+      .replace(/<[^>]+>/g, "")
+      .trim();
   const dice = v("hp").match(/\((\d+d\d+)/)?.[1] ?? "";
   return {
-    name, type: el.name, creature: v("type"), size: v("size"), alignment: v("alignment"), cr: v("challenge"), ac: v("ac"), speed: v("speed"),
-    hp: v("hp"), hitDice: dice, skills: v("skills"), senses: v("senses"), languages: v("languages"),
-    abilities: Object.fromEntries(ABILITY_IDS.map((a) => [a, v(a)])), traits: strip(companionHtml(v("traits"), reg) + companionHtml(v("actions"), reg)), actions: parseActions(companionHtml(v("actions"), reg)),
+    name,
+    type: el.name,
+    creature: v("type"),
+    size: v("size"),
+    alignment: v("alignment"),
+    cr: v("challenge"),
+    ac: v("ac"),
+    speed: v("speed"),
+    hp: v("hp"),
+    hitDice: dice,
+    skills: v("skills"),
+    senses: v("senses"),
+    languages: v("languages"),
+    abilities: Object.fromEntries(ABILITY_IDS.map((a) => [a, v(a)])),
+    traits: strip(companionHtml(v("traits"), reg) + companionHtml(v("actions"), reg)),
+    actions: parseActions(companionHtml(v("actions"), reg)),
   };
 }
 
@@ -183,25 +236,34 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
   const ch = r.character;
   const head = headerInfo(r);
   const abilities = {} as FillData["abilities"];
-  for (const a of sh.abilities) abilities[a.id] = { score: String(a.score), mod: signed(a.mod), save: signed(a.save), saveProf: a.saveProficient };
+  for (const a of sh.abilities)
+    abilities[a.id] = { score: String(a.score), mod: signed(a.mod), save: signed(a.save), saveProf: a.saveProficient };
   const skills: FillData["skills"] = {};
   for (const s of sh.skills) skills[s.name] = { bonus: signed(s.bonus), prof: s.level !== "none", expert: s.level === "expertise" };
 
   const profText = [...sh.proficiencies.armor, ...sh.proficiencies.weapons].join(" ").toLowerCase();
   const armorTraining = {
-    light: /light armor|all armor/.test(profText), medium: /medium armor|all armor/.test(profText),
-    heavy: /heavy armor|all armor/.test(profText), shield: /shield/.test(profText),
+    light: /light armor|all armor/.test(profText),
+    medium: /medium armor|all armor/.test(profText),
+    heavy: /heavy armor|all armor/.test(profText),
+    shield: /shield/.test(profText),
   };
   const weaponTraining = { simple: /simple/.test(profText), martial: /martial/.test(profText), improvised: false };
-  const specificWeapons = sh.proficiencies.weapons.filter((w) => !/simple|martial/i.test(w)).map((w) => w.replace(/^Weapon Proficiency \((.*)\)$/, "$1"));
+  const specificWeapons = sh.proficiencies.weapons
+    .filter((w) => !/simple|martial/i.test(w))
+    .map((w) => w.replace(/^Weapon Proficiency \((.*)\)$/, "$1"));
   const toolList = [...sh.proficiencies.tools.map((t) => t.replace(/^Tool Proficiency \((.*)\)$/, "$1")), ...sh.proficiencies.other];
   const other = [...specificWeapons, ...toolList];
 
   // A background feature that only offers a feat in its place (the 2024 "Origin Feat" option) is not a feat itself:
   // the feat chosen through it is listed instead.
-  const onlyOffersFeat = (id?: string) => { const el = id ? r.reg.get(id) : undefined; return !!el && el.type === "Background Feature" && el.rules.some((x) => x.kind === "select" && x.type === "Feat"); };
+  const onlyOffersFeat = (id?: string) => {
+    const el = id ? r.reg.get(id) : undefined;
+    return !!el && el.type === "Background Feature" && el.rules.some((x) => x.kind === "select" && x.type === "Feat");
+  };
   const feat = (types: string[]) => sh.features.filter((f) => types.includes(f.type) && !onlyOffersFeat(f.id));
-  const line = (f: { name: string; usage?: string; text: string }, max: number) => `${f.name}${f.usage ? ` (${f.usage})` : ""}${f.text ? `: ${sentence(f.text, max)}` : ""}`;
+  const line = (f: { name: string; usage?: string; text: string }, max: number) =>
+    `${f.name}${f.usage ? ` (${f.usage})` : ""}${f.text ? `: ${sentence(f.text, max)}` : ""}`;
 
   // Spells: cantrips first, then by level. Prepare casters list what is prepared plus what is always prepared
   // (or everything they know when nothing is prepared yet); `spellbook` has every known spell, prepared or not,
@@ -216,11 +278,29 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     const dur = shortDuration(set("duration"));
     const cantrip = (set("level") || "0") === "0";
     return {
-      level: set("level") || "0", name: el.name, school: set("school").slice(0, 4), time: shortTime(set("time")), range: shortRange(set("range")),
-      duration: dur.text, concentration: dur.conc || set("isConcentration") === "true", ritual: set("isRitual") === "true",
-      v: set("hasVerbalComponent") === "true", s: set("hasSomaticComponent") === "true", m: set("hasMaterialComponent") === "true",
+      level: set("level") || "0",
+      name: el.name,
+      school: set("school").slice(0, 4),
+      time: shortTime(set("time")),
+      range: shortRange(set("range")),
+      duration: dur.text,
+      concentration: dur.conc || set("isConcentration") === "true",
+      ritual: set("isRitual") === "true",
+      v: set("hasVerbalComponent") === "true",
+      s: set("hasSomaticComponent") === "true",
+      m: set("hasMaterialComponent") === "true",
       // Always prepared says where from, in brackets (C6.5): "always prepared (Life Domain)".
-      notes: cantrip ? "" : p.granted || fixedLine === "always" ? (p.granted && grantSource(r, p) ? `always prepared (${grantSource(r, p)})` : "always prepared") : fixedLine === "known" ? "" : prepared ? "prepared" : "",
+      notes: cantrip
+        ? ""
+        : p.granted || fixedLine === "always"
+          ? p.granted && grantSource(r, p)
+            ? `always prepared (${grantSource(r, p)})`
+            : "always prepared"
+          : fixedLine === "known"
+            ? ""
+            : prepared
+              ? "prepared"
+              : "",
       prepared: !cantrip && prepared,
     };
   };
@@ -230,7 +310,8 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
   const seenBook = new Set<string>();
   const main = sh.casting[0];
   // A line with its own DC (a feat's spells cast with another ability) says so on each of its spells.
-  const ownDc = (c: (typeof sh.casting)[number]) => (main && c !== main && (c.dc !== main.dc || c.attack !== main.attack) ? `DC ${c.dc}` : "");
+  const ownDc = (c: (typeof sh.casting)[number]) =>
+    main && c !== main && (c.dc !== main.dc || c.attack !== main.attack) ? `DC ${c.dc}` : "";
   for (const c of sh.casting) {
     // 2024 classes all prepare spells, whether or not the content says so.
     const lineClass = ch.classes.map((k) => r.reg.get(k.classId)).find((e) => e?.name === c.name);
@@ -271,33 +352,66 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
   const first = sh.casting[0];
   const slots = Array(9).fill(0) as number[];
   const used = Array(9).fill(0) as number[];
-  for (const c of sh.casting) for (const s of c.slots) { slots[s.level - 1] = Math.max(slots[s.level - 1], s.total); used[s.level - 1] = s.used; }
+  for (const c of sh.casting)
+    for (const s of c.slots) {
+      slots[s.level - 1] = Math.max(slots[s.level - 1], s.total);
+      used[s.level - 1] = s.used;
+    }
   const casting = first
     ? {
         ability: first.ability ? `${first.ability.charAt(0).toUpperCase()}${first.ability.slice(1)}` : "",
         mod: signed(sh.abilities.find((a) => a.id === first.ability)?.mod ?? 0),
-        dc: String(first.dc), attack: signed(first.attack),
-        focus: r.character.inventory.map((i) => (i.id ? r.reg.get(i.id) : undefined)).find((e) => e && /focus|holy symbol|amulet|emblem|reliquary|component pouch|spellbook/i.test(e.name))?.name ?? "",
-        slots, used,
+        dc: String(first.dc),
+        attack: signed(first.attack),
+        focus:
+          r.character.inventory
+            .map((i) => (i.id ? r.reg.get(i.id) : undefined))
+            .find((e) => e && /focus|holy symbol|amulet|emblem|reliquary|component pouch|spellbook/i.test(e.name))?.name ?? "",
+        slots,
+        used,
       }
     : undefined;
 
   const inv = ch.inventory.map((i) => ({ i, el: i.id ? r.reg.get(i.id) : undefined }));
-  const nm = (x: { i: InvItem; el?: { name: string } }) => `${x.i.qty > 1 ? `${x.i.qty} ` : ""}${listName(itemLabel(x.i, x.el?.name) || "?")}`;
+  const nm = (x: { i: InvItem; el?: { name: string } }) =>
+    `${x.i.qty > 1 ? `${x.i.qty} ` : ""}${listName(itemLabel(x.i, x.el?.name) || "?")}`;
   const armor = inv.find((x) => x.i.equipped && x.el?.type === "Armor" && !/shield/i.test(x.el.name));
-  const weaponsText = inv.filter((x) => x.el?.type === "Weapon").map(nm).join("\n");
-  const gear = inv.filter((x) => !(x.el?.type === "Weapon") && !(x.el?.type === "Armor" && x.i.equipped)).filter((x) => !(x.el && /magic/i.test(x.el.type) && x.i.equipped)).map(nm).join("\n");
-  const magic = inv.filter((x) => x.el?.type === "Magic Item" || /requires attunement/i.test(x.el?.setters.rarity?.value ?? "")).map((x) => ({ name: nm(x), attuned: x.i.attuned }));
+  const weaponsText = inv
+    .filter((x) => x.el?.type === "Weapon")
+    .map(nm)
+    .join("\n");
+  const gear = inv
+    .filter((x) => !(x.el?.type === "Weapon") && !(x.el?.type === "Armor" && x.i.equipped))
+    .filter((x) => !(x.el && /magic/i.test(x.el.type) && x.i.equipped))
+    .map(nm)
+    .join("\n");
+  const magic = inv
+    .filter((x) => x.el?.type === "Magic Item" || /requires attunement/i.test(x.el?.setters.rarity?.value ?? ""))
+    .map((x) => ({ name: nm(x), attuned: x.i.attuned }));
 
   const firstComp = r.active.find((a) => a.el.type === "Companion")?.el ?? (ch.companions[0] ? r.reg.get(ch.companions[0].id) : undefined);
-  const comp = firstComp ? companionFill(firstComp, ch.companions.find((c) => c.id === firstComp.id)?.name ?? firstComp.name, r.reg) : undefined;
+  const comp = firstComp
+    ? companionFill(firstComp, ch.companions.find((c) => c.id === firstComp.id)?.name ?? firstComp.name, r.reg)
+    : undefined;
 
   return {
-    name: ch.name, background: head.background, className: ch.classes.map((c) => r.reg.get(c.classId)?.name ?? "").join(" / "),
-    species: head.species, subclass: head.subclass === "-" ? "" : head.subclass, level: sh.level, xp: ch.xp,
-    ac: sh.ac.value, shield: inv.some((x) => x.i.equipped && x.el?.type === "Armor" && /shield/i.test(x.el.name)),
-    hpMax: sh.hp, hpCurrent: ch.play.hp ?? sh.hp, hpTemp: ch.play.tempHp, hdSpent: ch.play.hitDiceUsed,
-    hdMax: sh.hitDice.map((h) => `${h.count}d${h.die}`).join("+"), speed: String(sh.speed), size: head.size, darkvision: (() => {
+    name: ch.name,
+    background: head.background,
+    className: ch.classes.map((c) => r.reg.get(c.classId)?.name ?? "").join(" / "),
+    species: head.species,
+    subclass: head.subclass === "-" ? "" : head.subclass,
+    level: sh.level,
+    xp: ch.xp,
+    ac: sh.ac.value,
+    shield: inv.some((x) => x.i.equipped && x.el?.type === "Armor" && /shield/i.test(x.el.name)),
+    hpMax: sh.hp,
+    hpCurrent: ch.play.hp ?? sh.hp,
+    hpTemp: ch.play.tempHp,
+    hdSpent: ch.play.hitDiceUsed,
+    hdMax: sh.hitDice.map((h) => `${h.count}d${h.die}`).join("+"),
+    speed: String(sh.speed),
+    size: head.size,
+    darkvision: (() => {
       const v = r.active.find((a) => a.el.type === "Vision" && /darkvision/i.test(a.el.name));
       if (!v) return "";
       const ft = r.stats.get("darkvision:range");
@@ -305,30 +419,115 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
       const m = `${v.el.name} ${v.el.description}`.match(/(\d+)\s*(?:ft|feet)/i);
       return m ? `${m[1]} ft` : "60 ft";
     })(),
-    inspiration: ch.play.inspiration, conditions: ch.play.conditions.join(", "), exhaustion: ch.play.conditions.find((c) => /exhaustion/i.test(c)) ? "1" : "",
-    deathSuccess: ch.play.deathSaves.success, deathFail: ch.play.deathSaves.fail,
-    profBonus: signed(sh.proficiency), initiative: signed(sh.initiative), passive: String(sh.passivePerception), abilities, skills, armorTraining, weaponTraining,
-    tools: other.join(", "), toolsOnly: toolList.join(", "), weaponsOther: specificWeapons.join(", "), languages: sh.proficiencies.languages.join(", "),
-    traits: feat(featureTypesOf("Species traits")).map((f) => line(f, 160)), feats: feat(featureTypesOf("Feats", "Background")).map((f) => line(f, 160)),
+    inspiration: ch.play.inspiration,
+    conditions: ch.play.conditions.join(", "),
+    exhaustion: ch.play.conditions.find((c) => /exhaustion/i.test(c)) ? "1" : "",
+    deathSuccess: ch.play.deathSaves.success,
+    deathFail: ch.play.deathSaves.fail,
+    profBonus: signed(sh.proficiency),
+    initiative: signed(sh.initiative),
+    passive: String(sh.passivePerception),
+    abilities,
+    skills,
+    armorTraining,
+    weaponTraining,
+    tools: other.join(", "),
+    toolsOnly: toolList.join(", "),
+    weaponsOther: specificWeapons.join(", "),
+    languages: sh.proficiencies.languages.join(", "),
+    traits: feat(featureTypesOf("Species traits")).map((f) => line(f, 160)),
+    feats: feat(featureTypesOf("Feats", "Background")).map((f) => line(f, 160)),
     classFeatures: feat(featureTypesOf("Class features", "Subclass features")).map((f) => line(f, 260)),
     // With nothing equipped, the sheet lists what the character carries rather than an empty table.
     // Every weapon the character carries, equipped or not (a Longbow on the back is still an attack, issue #3).
-    weapons: sh.attacksCarried.map((a) => ({ name: a.name, bonus: signed(a.bonus), damage: `${a.damage} ${a.damageType}`.trim(), notes: [a.properties, a.notes].filter(Boolean).join("; ") })),
-    defenses: [sh.defenses.resistances.length && `Resistances: ${sh.defenses.resistances.join(", ")}.`, sh.defenses.immunities.length && `Immunities: ${sh.defenses.immunities.join(", ")}.`, sh.defenses.vulnerabilities.length && `Vulnerabilities: ${sh.defenses.vulnerabilities.join(", ")}.`].filter(Boolean).join(" "),
-    casting, otherCasting: [
-      ...sh.casting.slice(1).filter((c) => main && (c.dc !== main.dc || c.attack !== main.attack)).map((c) => `${c.name}: save DC ${c.dc}, attack ${signed(c.attack)}${c.ability ? ` (${c.ability.charAt(0).toUpperCase()}${c.ability.slice(1)})` : ""}`),
+    weapons: sh.attacksCarried.map((a) => ({
+      name: a.name,
+      bonus: signed(a.bonus),
+      damage: `${a.damage} ${a.damageType}`.trim(),
+      notes: [a.properties, a.notes].filter(Boolean).join("; "),
+    })),
+    defenses: [
+      sh.defenses.resistances.length && `Resistances: ${sh.defenses.resistances.join(", ")}.`,
+      sh.defenses.immunities.length && `Immunities: ${sh.defenses.immunities.join(", ")}.`,
+      sh.defenses.vulnerabilities.length && `Vulnerabilities: ${sh.defenses.vulnerabilities.join(", ")}.`,
+    ]
+      .filter(Boolean)
+      .join(" "),
+    casting,
+    otherCasting: [
+      ...sh.casting
+        .slice(1)
+        .filter((c) => main && (c.dc !== main.dc || c.attack !== main.attack))
+        .map(
+          (c) =>
+            `${c.name}: save DC ${c.dc}, attack ${signed(c.attack)}${c.ability ? ` (${c.ability.charAt(0).toUpperCase()}${c.ability.slice(1)})` : ""}`,
+        ),
       // How many to prepare, where the whole spellbook is printed with blank boxes (C7.9).
-      ...(opts.allSpells ? sh.casting.filter((c) => c.prepare && c.prepareMax > 0).map((c) => `${c.name}: prepare ${c.prepareMax} spells each day (mark them in the spell list)`) : []),
-    ], spells, spellbook, // The shield worn by name beside the armor: as a ticked box alone, a magic shield's name never reached the paper.
-    armorWorn: [armor ? nm(armor) : "", ...inv.filter((x) => x.i.equipped && x.el?.type === "Armor" && /shield/i.test(x.el.name)).map(nm)].filter(Boolean).join(", "), weaponsText, otherGear: gear, magicItems: magic,
+      ...(opts.allSpells
+        ? sh.casting
+            .filter((c) => c.prepare && c.prepareMax > 0)
+            .map((c) => `${c.name}: prepare ${c.prepareMax} spells each day (mark them in the spell list)`)
+        : []),
+    ],
+    spells,
+    spellbook, // The shield worn by name beside the armor: as a ticked box alone, a magic shield's name never reached the paper.
+    armorWorn: [armor ? nm(armor) : "", ...inv.filter((x) => x.i.equipped && x.el?.type === "Armor" && /shield/i.test(x.el.name)).map(nm)]
+      .filter(Boolean)
+      .join(", "),
+    weaponsText,
+    otherGear: gear,
+    magicItems: magic,
     coins: { cp: String(ch.coins.cp), sp: String(ch.coins.sp), ep: String(ch.coins.ep), gp: String(ch.coins.gp), pp: String(ch.coins.pp) },
-    carryCapacity: String(sh.weight.capacity), pushDrag: String(sh.weight.capacity * 2),
+    carryCapacity: String(sh.weight.capacity),
+    pushDrag: String(sh.weight.capacity * 2),
     backstory: [ch.info.backstory, ch.info.allies && `Allies: ${ch.info.allies}`].filter(Boolean).join("\n\n"),
-    personality: [...sh.lists.map((l) => `${l.name}: ${l.texts.join(" ")}`), ch.info.traits && `Traits: ${ch.info.traits}`, ch.info.ideals && `Ideals: ${ch.info.ideals}`, ch.info.bonds && `Bonds: ${ch.info.bonds}`, ch.info.flaws && `Flaws: ${ch.info.flaws}`].filter(Boolean).join("\n"),
-    appearance: [ch.info.gender, ch.info.age && `Age ${ch.info.age}`, ch.info.height, ch.info.weight, ch.info.eyes && `${ch.info.eyes} eyes`, ch.info.hair && `${ch.info.hair} hair`, ch.info.skin && `${ch.info.skin} skin`].filter(Boolean).join(", "),
-    alignment: ch.info.alignment, notes: ch.notes, portrait: ch.portrait, companion: comp,
-    body: { age: ch.info.age ?? "", height: ch.info.height ?? "", weight: ch.info.weight ?? "", eyes: ch.info.eyes ?? "", hair: ch.info.hair ?? "", skin: ch.info.skin ?? "", gender: ch.info.gender ?? "", deity: ch.info.deity ?? "", allies: ch.info.allies ?? "", player: ch.playerName ?? "" },
-    featureList: mergeSameName(([["Class features", ["Class Feature", "Archetype Feature"]], ["Species traits", ["Racial Trait"]], ["Feats", ["Feat", "Feat Feature", "Background Feature"]]] as [string, string[]][]).flatMap(([group, types]) => feat(types).map((f) => ({ group, name: f.name, usage: f.usage ?? "", text: f.text.replace(/\s+/g, " ").trim() })))),
+    personality: [
+      ...sh.lists.map((l) => `${l.name}: ${l.texts.join(" ")}`),
+      ch.info.traits && `Traits: ${ch.info.traits}`,
+      ch.info.ideals && `Ideals: ${ch.info.ideals}`,
+      ch.info.bonds && `Bonds: ${ch.info.bonds}`,
+      ch.info.flaws && `Flaws: ${ch.info.flaws}`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    appearance: [
+      ch.info.gender,
+      ch.info.age && `Age ${ch.info.age}`,
+      ch.info.height,
+      ch.info.weight,
+      ch.info.eyes && `${ch.info.eyes} eyes`,
+      ch.info.hair && `${ch.info.hair} hair`,
+      ch.info.skin && `${ch.info.skin} skin`,
+    ]
+      .filter(Boolean)
+      .join(", "),
+    alignment: ch.info.alignment,
+    notes: ch.notes,
+    portrait: ch.portrait,
+    companion: comp,
+    body: {
+      age: ch.info.age ?? "",
+      height: ch.info.height ?? "",
+      weight: ch.info.weight ?? "",
+      eyes: ch.info.eyes ?? "",
+      hair: ch.info.hair ?? "",
+      skin: ch.info.skin ?? "",
+      gender: ch.info.gender ?? "",
+      deity: ch.info.deity ?? "",
+      allies: ch.info.allies ?? "",
+      player: ch.playerName ?? "",
+    },
+    featureList: mergeSameName(
+      (
+        [
+          ["Class features", ["Class Feature", "Archetype Feature"]],
+          ["Species traits", ["Racial Trait"]],
+          ["Feats", ["Feat", "Feat Feature", "Background Feature"]],
+        ] as [string, string[]][]
+      ).flatMap(([group, types]) =>
+        feat(types).map((f) => ({ group, name: f.name, usage: f.usage ?? "", text: f.text.replace(/\s+/g, " ").trim() })),
+      ),
+    ),
   };
 }
 
@@ -342,7 +541,11 @@ function mergeSameName(list: { group: string; name: string; usage: string; text:
   for (const f of list) {
     const k = `${f.group}|${f.name.toLowerCase()}`;
     const i = at.get(k);
-    if (i === undefined) { at.set(k, out.length); out.push({ ...f }); continue; }
+    if (i === undefined) {
+      at.set(k, out.length);
+      out.push({ ...f });
+      continue;
+    }
     const into = out[i];
     if (f.text && !into.text.includes(f.text)) into.text = into.text ? `${into.text} ${f.text}` : f.text;
     if (f.usage && !into.usage) into.usage = f.usage;
@@ -359,7 +562,15 @@ export function splitPersonality(text: string): { traits: string; ideals: string
   for (const line of text.split("\n")) {
     const m = line.match(/^\s*([^:]{2,30}):\s*(.*)$/);
     const label = m?.[1].toLowerCase() ?? "";
-    const key = /^(personality|traits?)\b/.test(label) ? "traits" : /^ideals?$/.test(label) ? "ideals" : /^bonds?$/.test(label) ? "bonds" : /^flaws?$/.test(label) ? "flaws" : undefined;
+    const key = /^(personality|traits?)\b/.test(label)
+      ? "traits"
+      : /^ideals?$/.test(label)
+        ? "ideals"
+        : /^bonds?$/.test(label)
+          ? "bonds"
+          : /^flaws?$/.test(label)
+            ? "flaws"
+            : undefined;
     if (key && m) {
       out[key].push(m[2].trim());
       found = true;

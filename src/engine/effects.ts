@@ -42,23 +42,92 @@ export const EFFECT_TABLE: Entry[] = [
   { names: ["ki-empowered strikes"], types: FEAT_OR_FEATURE, effects: [{ kind: "unarmed-note", text: "counts as magical" }] },
   { names: ["empowered strikes"], types: FEAT_OR_FEATURE, effects: [{ kind: "unarmed-note", text: "can deal force damage" }] },
   // Soul Knife (TCE p.62, PHB 2024 p.134): a psychic blade, finesse and thrown (60 ft.), 1d6 psychic.
-  { names: ["psychic blades"], types: FEAT_OR_FEATURE, effects: [{ kind: "attack", name: "Psychic Blades", die: "1d6", damageType: "psychic", ability: "finesse", properties: "finesse, thrown (60 ft.)", notes: "second blade as a bonus action: 1d4" }] },
+  {
+    names: ["psychic blades"],
+    types: FEAT_OR_FEATURE,
+    effects: [
+      {
+        kind: "attack",
+        name: "Psychic Blades",
+        die: "1d6",
+        damageType: "psychic",
+        ability: "finesse",
+        properties: "finesse, thrown (60 ft.)",
+        notes: "second blade as a bonus action: 1d4",
+      },
+    ],
+  },
   // Natural weapons count as unarmed strikes with their own damage.
-  { names: ["cat's claws"], types: SPECIES, books: /monsters of the multiverse|mordenkainen presents/i, effects: [{ kind: "attack", name: "Claws", die: "1d6", damageType: "slashing", ability: "unarmed" }] },
-  { names: ["cat's claws"], types: SPECIES, books: /volo/i, effects: [{ kind: "attack", name: "Claws", die: "1d4", damageType: "slashing", ability: "unarmed" }] },
-  { names: ["horns"], types: SPECIES, effects: [{ kind: "attack", name: "Horns", die: "1d6", damageType: "piercing", ability: "unarmed" }] },
-  { names: ["hooves"], types: SPECIES, books: /monsters of the multiverse|mordenkainen presents/i, effects: [{ kind: "attack", name: "Hooves", die: "1d6", damageType: "bludgeoning", ability: "unarmed" }] },
-  { names: ["hooves"], types: SPECIES, books: /ravnica|theros/i, effects: [{ kind: "attack", name: "Hooves", die: "1d4", damageType: "bludgeoning", ability: "unarmed" }] },
-  { names: ["bite"], types: SPECIES, books: /monsters of the multiverse|mordenkainen presents|volo/i, effects: [{ kind: "attack", name: "Bite", die: "1d6", damageType: "piercing", ability: "unarmed" }] },
-  { names: ["talons"], types: SPECIES, books: /monsters of the multiverse|mordenkainen presents/i, effects: [{ kind: "attack", name: "Talons", die: "1d6", damageType: "slashing", ability: "unarmed" }] },
-  { names: ["talons"], types: SPECIES, books: /elemental evil|princes/i, effects: [{ kind: "attack", name: "Talons", die: "1d4", damageType: "slashing", ability: "unarmed" }] },
-  { names: ["claws"], types: SPECIES, books: /tortle|monsters of the multiverse|mordenkainen presents/i, effects: [{ kind: "attack", name: "Claws", die: "1d6", damageType: "slashing", ability: "unarmed" }] },
-  { names: ["claws"], types: SPECIES, books: /theros/i, effects: [{ kind: "attack", name: "Claws", die: "1d4", damageType: "slashing", ability: "unarmed" }] },
+  {
+    names: ["cat's claws"],
+    types: SPECIES,
+    books: /monsters of the multiverse|mordenkainen presents/i,
+    effects: [{ kind: "attack", name: "Claws", die: "1d6", damageType: "slashing", ability: "unarmed" }],
+  },
+  {
+    names: ["cat's claws"],
+    types: SPECIES,
+    books: /volo/i,
+    effects: [{ kind: "attack", name: "Claws", die: "1d4", damageType: "slashing", ability: "unarmed" }],
+  },
+  {
+    names: ["horns"],
+    types: SPECIES,
+    effects: [{ kind: "attack", name: "Horns", die: "1d6", damageType: "piercing", ability: "unarmed" }],
+  },
+  {
+    names: ["hooves"],
+    types: SPECIES,
+    books: /monsters of the multiverse|mordenkainen presents/i,
+    effects: [{ kind: "attack", name: "Hooves", die: "1d6", damageType: "bludgeoning", ability: "unarmed" }],
+  },
+  {
+    names: ["hooves"],
+    types: SPECIES,
+    books: /ravnica|theros/i,
+    effects: [{ kind: "attack", name: "Hooves", die: "1d4", damageType: "bludgeoning", ability: "unarmed" }],
+  },
+  {
+    names: ["bite"],
+    types: SPECIES,
+    books: /monsters of the multiverse|mordenkainen presents|volo/i,
+    effects: [{ kind: "attack", name: "Bite", die: "1d6", damageType: "piercing", ability: "unarmed" }],
+  },
+  {
+    names: ["talons"],
+    types: SPECIES,
+    books: /monsters of the multiverse|mordenkainen presents/i,
+    effects: [{ kind: "attack", name: "Talons", die: "1d6", damageType: "slashing", ability: "unarmed" }],
+  },
+  {
+    names: ["talons"],
+    types: SPECIES,
+    books: /elemental evil|princes/i,
+    effects: [{ kind: "attack", name: "Talons", die: "1d4", damageType: "slashing", ability: "unarmed" }],
+  },
+  {
+    names: ["claws"],
+    types: SPECIES,
+    books: /tortle|monsters of the multiverse|mordenkainen presents/i,
+    effects: [{ kind: "attack", name: "Claws", die: "1d6", damageType: "slashing", ability: "unarmed" }],
+  },
+  {
+    names: ["claws"],
+    types: SPECIES,
+    books: /theros/i,
+    effects: [{ kind: "attack", name: "Claws", die: "1d4", damageType: "slashing", ability: "unarmed" }],
+  },
 ];
 
 /** A feature's canonical name: lower case, straight quotes, no "Level N:" and no brackets. */
 export const canonicalName = (name: string) =>
-  name.toLowerCase().replace(/^level \d+:\s*/, "").replace(/[’‘`]/g, "'").replace(/\s*\(.*?\)\s*/g, " ").replace(/\s+/g, " ").trim();
+  name
+    .toLowerCase()
+    .replace(/^level \d+:\s*/, "")
+    .replace(/[’‘`]/g, "'")
+    .replace(/\s*\(.*?\)\s*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 function entriesFor(el: AElement): Entry[] {
   const n = canonicalName(el.name);
@@ -74,18 +143,22 @@ export function effectsOf(r: Pick<Resolved, "active">): { effect: Effect; from: 
   const out: { effect: Effect; from: AElement }[] = [];
   const seen = new Set<string>();
   for (const a of r.active) {
-    for (const e of entriesFor(a.el)) for (const effect of e.effects) {
-      // The same effect from a feature and its twin in the other provider counts once.
-      const k = JSON.stringify(effect, (_, v) => (v instanceof RegExp ? v.source : v));
-      if (seen.has(k)) continue;
-      seen.add(k);
-      out.push({ effect, from: a.el });
-    }
+    for (const e of entriesFor(a.el))
+      for (const effect of e.effects) {
+        // The same effect from a feature and its twin in the other provider counts once.
+        const k = JSON.stringify(effect, (_, v) => (v instanceof RegExp ? v.source : v));
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.push({ effect, from: a.el });
+      }
   }
   CACHE.set(r, out);
   return out;
 }
 
-export function effectsOfKind<K extends Effect["kind"]>(r: Pick<Resolved, "active">, kind: K): { effect: Extract<Effect, { kind: K }>; from: AElement }[] {
+export function effectsOfKind<K extends Effect["kind"]>(
+  r: Pick<Resolved, "active">,
+  kind: K,
+): { effect: Extract<Effect, { kind: K }>; from: AElement }[] {
   return effectsOf(r).filter((x) => x.effect.kind === kind) as { effect: Extract<Effect, { kind: K }>; from: AElement }[];
 }

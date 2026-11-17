@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { AElement, ARule } from "../aurora/types";
 import { borrowMechanics } from "./mechanics";
 
-const el = (id: string, name: string, type: string, origin: string, rules: ARule[]): AElement => ({ id, name, type, origin, source: "Player's Handbook", supports: [], rules }) as unknown as AElement;
+const el = (id: string, name: string, type: string, origin: string, rules: ARule[]): AElement =>
+  ({ id, name, type, origin, source: "Player's Handbook", supports: [], rules }) as unknown as AElement;
 const speed = (name: string, value = "10") => ({ kind: "stat", name, value }) as ARule;
 
 /** A class and its feature from each provider, as a twin pair. */

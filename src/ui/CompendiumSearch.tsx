@@ -12,7 +12,10 @@ export function CompendiumSearch() {
   const [wide, setWide] = useState(false);
   const expand = () => setWide(true);
   useEffect(() => {
-    if (wide) { input.current?.focus(); input.current?.select(); }
+    if (wide) {
+      input.current?.focus();
+      input.current?.select();
+    }
   }, [wide]);
   const input = useRef<HTMLInputElement>(null);
   const box = useRef<HTMLDivElement>(null);
@@ -53,13 +56,26 @@ export function CompendiumSearch() {
     return (
       <div className="csearch collapsed" ref={box} role="search">
         <button className="icon-btn csearch-icon" aria-label="Search rules" title="Search rules (Ctrl+K)" onClick={expand}>
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" /><path d="M15.5 15.5 21 21" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" /></svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
+            <path d="M15.5 15.5 21 21" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          </svg>
         </button>
       </div>
     );
   }
   return (
-    <div className="csearch" ref={box} role="search" onBlur={(e) => { if (!box.current?.contains(e.relatedTarget as Node)) { setOpen(false); setWide(false); } }}>
+    <div
+      className="csearch"
+      ref={box}
+      role="search"
+      onBlur={(e) => {
+        if (!box.current?.contains(e.relatedTarget as Node)) {
+          setOpen(false);
+          setWide(false);
+        }
+      }}
+    >
       <input
         ref={input}
         type="search"
@@ -67,13 +83,24 @@ export function CompendiumSearch() {
         placeholder="Search rules (Ctrl+K)"
         title="Search the compendium (Ctrl+K)"
         value={q}
-        onChange={(e) => { setQ(e.target.value); setOpen(true); setAt(0); }}
+        onChange={(e) => {
+          setQ(e.target.value);
+          setOpen(true);
+          setAt(0);
+        }}
         onFocus={() => setOpen(true)}
         onKeyDown={(e) => {
-          if (e.key === "ArrowDown") { e.preventDefault(); setAt((a) => Math.min(hits.length - 1, a + 1)); }
-          else if (e.key === "ArrowUp") { e.preventDefault(); setAt((a) => Math.max(0, a - 1)); }
-          else if (e.key === "Enter") pick(at, e.shiftKey);
-          else if (e.key === "Escape") { setOpen(false); setWide(false); }
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setAt((a) => Math.min(hits.length - 1, a + 1));
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setAt((a) => Math.max(0, a - 1));
+          } else if (e.key === "Enter") pick(at, e.shiftKey);
+          else if (e.key === "Escape") {
+            setOpen(false);
+            setWide(false);
+          }
         }}
       />
       {open && q.trim().length >= 2 && (
@@ -88,7 +115,16 @@ export function CompendiumSearch() {
                 <small>{h.type}</small>
                 <small className="muted">{h.source}</small>
               </button>
-              {floating && <button className="csearch-float" title="Open in a window of its own (Shift+Enter)" aria-label={`Open ${h.name} in a window`} onClick={() => pick(i, true)}>⧉</button>}
+              {floating && (
+                <button
+                  className="csearch-float"
+                  title="Open in a window of its own (Shift+Enter)"
+                  aria-label={`Open ${h.name} in a window`}
+                  onClick={() => pick(i, true)}
+                >
+                  ⧉
+                </button>
+              )}
             </li>
           ))}
         </ul>

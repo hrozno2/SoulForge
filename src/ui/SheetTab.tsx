@@ -18,7 +18,8 @@ import { TranslateOptions, useTranslation } from "./TranslateOptions";
 import { TemplateExport } from "./SheetExport";
 
 const sign = (n: number) => (n >= 0 ? `+${n}` : String(n));
-const rollBtn = (label: string, bonus: number, opts?: RollOptions) => requestRoll(label, `1d20${bonus >= 0 ? "+" : ""}${bonus}`, undefined, opts);
+const rollBtn = (label: string, bonus: number, opts?: RollOptions) =>
+  requestRoll(label, `1d20${bonus >= 0 ? "+" : ""}${bonus}`, undefined, opts);
 const skillLabel = (id: string) => id.replace(/\b\w/g, (c) => c.toUpperCase());
 
 function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
@@ -38,11 +39,23 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
     try {
       const { loadFonts } = await import("../pdf/fonts");
       let failed = 0;
-      const translate = tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`), (f) => (failed = f));
-      const bytes = await buildPdf(r, sheet, { ...opts, spellCardScope: spellScopeOf(prepares && allSpells), translate, allSpells: prepares && allSpells }, await loadFonts());
+      const translate = tr.option(
+        (d, t) => setMsg(`Translating ${d} of ${t}...`),
+        (f) => (failed = f),
+      );
+      const bytes = await buildPdf(
+        r,
+        sheet,
+        { ...opts, spellCardScope: spellScopeOf(prepares && allSpells), translate, allSpells: prepares && allSpells },
+        await loadFonts(),
+      );
       const base = (r.character.name || "character").replace(/[^\p{L}\p{N}]+/gu, "-");
       const ok = await saveFile(`${base}.pdf`, bytes, "application/pdf");
-      setMsg([ok ? "PDF saved." : "Cancelled.", failed ? `${failed} pieces of text could not be translated and stayed in English.` : ""].join(" ").trim());
+      setMsg(
+        [ok ? "PDF saved." : "Cancelled.", failed ? `${failed} pieces of text could not be translated and stayed in English.` : ""]
+          .join(" ")
+          .trim(),
+      );
     } catch (e) {
       setMsg(`Could not create the PDF: ${(e as Error).message}`);
     } finally {
@@ -51,26 +64,62 @@ function ExportPanel({ r, sheet }: { r: Resolved; sheet: SheetData }) {
   };
   return (
     <div className="noprint">
-      <button className="primary" onClick={() => setOpen(!open)}>Export PDF...</button>
+      <button className="primary" onClick={() => setOpen(!open)}>
+        Export PDF...
+      </button>
       {open && (
         <div className="subcard">
           <TranslateOptions tr={tr} />
           {prepares && <SpellScope />}
           <TemplateExport r={r} sheet={sheet} tr={tr} allSpells={prepares && allSpells} />
           <h3>Soul Forge style PDF</h3>
-          <p className="muted">A sheet in Soul Forge's own layout, with optional cards and play tips. Use this if you have no official sheet loaded.</p>
-          <label className="check"><input type="checkbox" checked={opts.sheet} onChange={() => toggle("sheet")} /> Character sheet</label>
-          <label className="check"><input type="checkbox" checked={opts.spellCards} onChange={() => toggle("spellCards")} /> Spell cards <small>{counts.spells}</small></label>
-          <label className="check"><input type="checkbox" checked={opts.itemCards} onChange={() => toggle("itemCards")} /> Item cards <small>{counts.items}</small></label>
-          <label className="check"><input type="checkbox" checked={opts.featureCards} onChange={() => toggle("featureCards")} /> Feat and feature cards <small>{counts.features}</small></label>
-          {counts.forms > 0 && <label className="check" title="Each Wild Shape form you picked and each companion, with its numbers worked out for you"><input type="checkbox" checked={opts.formCards !== false} onChange={() => setOpts((o) => ({ ...o, formCards: o.formCards === false }))} /> Wild Shape form and companion cards <small>{counts.forms}</small></label>}
-          <label className="check"><input type="checkbox" checked={!!opts.tips} onChange={() => setOpts((o) => ({ ...o, tips: !o.tips }))} /> Tips and tricks for play <small>1-2 pages</small></label>
+          <p className="muted">
+            A sheet in Soul Forge's own layout, with optional cards and play tips. Use this if you have no official sheet loaded.
+          </p>
+          <label className="check">
+            <input type="checkbox" checked={opts.sheet} onChange={() => toggle("sheet")} /> Character sheet
+          </label>
+          <label className="check">
+            <input type="checkbox" checked={opts.spellCards} onChange={() => toggle("spellCards")} /> Spell cards{" "}
+            <small>{counts.spells}</small>
+          </label>
+          <label className="check">
+            <input type="checkbox" checked={opts.itemCards} onChange={() => toggle("itemCards")} /> Item cards <small>{counts.items}</small>
+          </label>
+          <label className="check">
+            <input type="checkbox" checked={opts.featureCards} onChange={() => toggle("featureCards")} /> Feat and feature cards{" "}
+            <small>{counts.features}</small>
+          </label>
+          {counts.forms > 0 && (
+            <label className="check" title="Each Wild Shape form you picked and each companion, with its numbers worked out for you">
+              <input
+                type="checkbox"
+                checked={opts.formCards !== false}
+                onChange={() => setOpts((o) => ({ ...o, formCards: o.formCards === false }))}
+              />{" "}
+              Wild Shape form and companion cards <small>{counts.forms}</small>
+            </label>
+          )}
+          <label className="check">
+            <input type="checkbox" checked={!!opts.tips} onChange={() => setOpts((o) => ({ ...o, tips: !o.tips }))} /> Tips and tricks for
+            play <small>1-2 pages</small>
+          </label>
           <div className="row">
             <span className="muted">Paper</span>
-            {(["a4", "letter"] as const).map((p) => <button key={p} className={opts.paper === p ? "pill active" : "pill"} onClick={() => setOpts((o) => ({ ...o, paper: p }))}>{p === "a4" ? "A4" : "Letter"}</button>)}
+            {(["a4", "letter"] as const).map((p) => (
+              <button key={p} className={opts.paper === p ? "pill active" : "pill"} onClick={() => setOpts((o) => ({ ...o, paper: p }))}>
+                {p === "a4" ? "A4" : "Letter"}
+              </button>
+            ))}
           </div>
           <p className="muted">Cards are 2.5 x 3.5 in (poker size), nine to a page, ready to cut.</p>
-          <button className="primary" disabled={busy || !tr.ready || !(opts.sheet || opts.spellCards || opts.itemCards || opts.featureCards || opts.tips)} onClick={run}>{busy ? "Creating..." : "Create PDF"}</button>
+          <button
+            className="primary"
+            disabled={busy || !tr.ready || !(opts.sheet || opts.spellCards || opts.itemCards || opts.featureCards || opts.tips)}
+            onClick={run}
+          >
+            {busy ? "Creating..." : "Create PDF"}
+          </button>
           {msg && <p className="notice">{msg}</p>}
         </div>
       )}
@@ -87,26 +136,78 @@ function PlayBar({ ch, sheet, set, rules }: { ch: Character; sheet: SheetData; s
         <small>Current HP</small>
         <span className="stepper">
           <button onClick={() => setPlay({ hp: Math.max(0, hp - 1) })}>−</button>
-          <input aria-label="Current hit points" type="number" value={hp} onChange={(e) => setPlay({ hp: Math.max(0, Math.min(sheet.hp + ch.play.tempHp, Number(e.target.value) || 0)) })} style={{ width: 64 }} />
+          <input
+            aria-label="Current hit points"
+            type="number"
+            value={hp}
+            onChange={(e) => setPlay({ hp: Math.max(0, Math.min(sheet.hp + ch.play.tempHp, Number(e.target.value) || 0)) })}
+            style={{ width: 64 }}
+          />
           <button onClick={() => setPlay({ hp: Math.min(sheet.hp, hp + 1) })}>+</button>
         </span>
-        <button className="more" onClick={() => set((c) => longRest(c, sheet, rules))}>Long rest</button>
+        <button className="more" onClick={() => set((c) => longRest(c, sheet, rules))}>
+          Long rest
+        </button>
       </div>
-      <div className="box"><small>Temp HP</small><input aria-label="Temporary hit points" type="number" min={0} value={ch.play.tempHp} onChange={(e) => setPlay({ tempHp: Math.max(0, Number(e.target.value) || 0) })} style={{ width: 70 }} /></div>
+      <div className="box">
+        <small>Temp HP</small>
+        <input
+          aria-label="Temporary hit points"
+          type="number"
+          min={0}
+          value={ch.play.tempHp}
+          onChange={(e) => setPlay({ tempHp: Math.max(0, Number(e.target.value) || 0) })}
+          style={{ width: 70 }}
+        />
+      </div>
       <div className="box">
         <small>Death saves</small>
-        <span>✓ {[0, 1, 2].map((i) => <input key={i} aria-label={`Death save success ${i + 1}`} type="checkbox" checked={i < ch.play.deathSaves.success} onChange={() => setPlay({ deathSaves: { ...ch.play.deathSaves, success: ch.play.deathSaves.success === i + 1 ? i : i + 1 } })} />)}</span>
-        <span>✗ {[0, 1, 2].map((i) => <input key={i} aria-label={`Death save failure ${i + 1}`} type="checkbox" checked={i < ch.play.deathSaves.fail} onChange={() => setPlay({ deathSaves: { ...ch.play.deathSaves, fail: ch.play.deathSaves.fail === i + 1 ? i : i + 1 } })} />)}</span>
+        <span>
+          ✓{" "}
+          {[0, 1, 2].map((i) => (
+            <input
+              key={i}
+              aria-label={`Death save success ${i + 1}`}
+              type="checkbox"
+              checked={i < ch.play.deathSaves.success}
+              onChange={() => setPlay({ deathSaves: { ...ch.play.deathSaves, success: ch.play.deathSaves.success === i + 1 ? i : i + 1 } })}
+            />
+          ))}
+        </span>
+        <span>
+          ✗{" "}
+          {[0, 1, 2].map((i) => (
+            <input
+              key={i}
+              aria-label={`Death save failure ${i + 1}`}
+              type="checkbox"
+              checked={i < ch.play.deathSaves.fail}
+              onChange={() => setPlay({ deathSaves: { ...ch.play.deathSaves, fail: ch.play.deathSaves.fail === i + 1 ? i : i + 1 } })}
+            />
+          ))}
+        </span>
       </div>
       <div className="box">
         <small>Hit dice used</small>
         <span className="stepper">
           <button onClick={() => setPlay(withHitDiceCount(ch.play, hitDicePools(sheet), ch.play.hitDiceUsed - 1))}>−</button>
-          <span>{ch.play.hitDiceUsed} / {sheet.level}</span>
+          <span>
+            {ch.play.hitDiceUsed} / {sheet.level}
+          </span>
           <button onClick={() => setPlay(withHitDiceCount(ch.play, hitDicePools(sheet), ch.play.hitDiceUsed + 1))}>+</button>
         </span>
       </div>
-      <div className="box"><small>Experience</small><input aria-label="Experience points" type="number" min={0} value={ch.xp} onChange={(e) => set((c) => ({ ...c, xp: Math.max(0, Number(e.target.value) || 0) }))} style={{ width: 90 }} /></div>
+      <div className="box">
+        <small>Experience</small>
+        <input
+          aria-label="Experience points"
+          type="number"
+          min={0}
+          value={ch.xp}
+          onChange={(e) => set((c) => ({ ...c, xp: Math.max(0, Number(e.target.value) || 0) }))}
+          style={{ width: 90 }}
+        />
+      </div>
     </div>
   );
 }
@@ -120,7 +221,14 @@ function Uses({ id, usage, ch, set }: { id: string; usage?: string; ch: Characte
   return (
     <span className="uses noprint">
       {Array.from({ length: n }, (_, i) => (
-        <button key={i} className={isAvailable(n, used, i) ? "pip small" : "pip spent small"} title={isAvailable(n, used, i) ? "Available" : "Used"} onClick={() => set((c) => ({ ...c, play: { ...c.play, featureUses: { ...c.play.featureUses, [id]: usedAfterClick(n, used, i) } } }))} />
+        <button
+          key={i}
+          className={isAvailable(n, used, i) ? "pip small" : "pip spent small"}
+          title={isAvailable(n, used, i) ? "Available" : "Used"}
+          onClick={() =>
+            set((c) => ({ ...c, play: { ...c.play, featureUses: { ...c.play.featureUses, [id]: usedAfterClick(n, used, i) } } }))
+          }
+        />
       ))}{" "}
     </span>
   );
@@ -141,8 +249,18 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
         <ExportPanel r={r} sheet={sheet} />
         <button onClick={() => window.print()}>Quick print</button>
         <button onClick={() => downloadText(`${ch.name || "character"}.json`, JSON.stringify(ch, null, 2))}>Export character</button>
-        <button title="A Foundry VTT dnd5e actor. Import it with Import Data on the actor sheet." onClick={() => downloadText(`${ch.name || "character"}-foundry.json`, JSON.stringify(exportFoundry(r), null, 2))}>Export for Foundry</button>
-        <button title="A Roll20 D&D 5e sheet character file." onClick={() => downloadText(`${ch.name || "character"}-roll20.json`, JSON.stringify(exportRoll20(r), null, 2))}>Export for Roll20</button>
+        <button
+          title="A Foundry VTT dnd5e actor. Import it with Import Data on the actor sheet."
+          onClick={() => downloadText(`${ch.name || "character"}-foundry.json`, JSON.stringify(exportFoundry(r), null, 2))}
+        >
+          Export for Foundry
+        </button>
+        <button
+          title="A Roll20 D&D 5e sheet character file."
+          onClick={() => downloadText(`${ch.name || "character"}-roll20.json`, JSON.stringify(exportRoll20(r), null, 2))}
+        >
+          Export for Roll20
+        </button>
       </div>
       <PlayBar rules={r.reg.get(ch.classes[0]?.classId ?? "")?.edition ?? "2024"} ch={ch} sheet={sheet} set={set} />
       <div className="sheet">
@@ -150,39 +268,126 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
           {ch.portrait && <img className="portrait" src={ch.portrait} alt="Portrait" />}
           <h1>{ch.name || "Unnamed character"}</h1>
           <div className="meta">
-            <div><small>Species</small>{head.species}</div>
-            <div><small>Class</small>{head.classLine}</div>
-            <div><small>Subclass</small>{head.subclass}</div>
-            <div><small>Background</small>{head.background}</div>
-            <div><small>Size</small>{head.size || "-"}</div>
-            {head.creatureType && <div><small>Type</small>{head.creatureType}</div>}
-            <div><small>Alignment</small>{head.alignment}</div>
+            <div>
+              <small>Species</small>
+              {head.species}
+            </div>
+            <div>
+              <small>Class</small>
+              {head.classLine}
+            </div>
+            <div>
+              <small>Subclass</small>
+              {head.subclass}
+            </div>
+            <div>
+              <small>Background</small>
+              {head.background}
+            </div>
+            <div>
+              <small>Size</small>
+              {head.size || "-"}
+            </div>
+            {head.creatureType && (
+              <div>
+                <small>Type</small>
+                {head.creatureType}
+              </div>
+            )}
+            <div>
+              <small>Alignment</small>
+              {head.alignment}
+            </div>
           </div>
         </header>
 
         <div className="combat">
-          <div className="box"><small>Armor Class</small><b>{sheet.ac.value}</b><small>{sheet.ac.parts.join(" ")}</small></div>
-          <div className="box"><small>Initiative</small><b className="roll" title="Roll" onClick={() => rollBtn("Initiative", sheet.initiative, { kind: "check", ability: "dexterity" })}>{sign(sheet.initiative)}</b></div>
-          <div className="box"><small>Hit Points</small><b>{hp}{ch.play.tempHp ? ` +${ch.play.tempHp}` : ""} / {sheet.hp}</b></div>
-          <div className="box"><small>Hit Dice</small><b>{hd}</b></div>
-          <div className="box"><small>Proficiency</small><b>{sign(sheet.proficiency)}</b></div>
-          <div className="box"><small>Speed</small><b>{sheet.speed} ft</b>{sheet.otherSpeeds.length > 0 && <small>{sheet.otherSpeeds.map((s) => `${s.kind} ${s.value}`).join(", ")}</small>}</div>
-          <div className="box"><small>Passive Perception</small><b>{sheet.passivePerception}</b></div>
-          <button className="box inspiration" onClick={() => set((c) => ({ ...c, play: { ...c.play, inspiration: !c.play.inspiration } }))}><small>Inspiration</small><b>{ch.play.inspiration ? "☑" : "☐"}</b></button>
+          <div className="box">
+            <small>Armor Class</small>
+            <b>{sheet.ac.value}</b>
+            <small>{sheet.ac.parts.join(" ")}</small>
+          </div>
+          <div className="box">
+            <small>Initiative</small>
+            <b
+              className="roll"
+              title="Roll"
+              onClick={() => rollBtn("Initiative", sheet.initiative, { kind: "check", ability: "dexterity" })}
+            >
+              {sign(sheet.initiative)}
+            </b>
+          </div>
+          <div className="box">
+            <small>Hit Points</small>
+            <b>
+              {hp}
+              {ch.play.tempHp ? ` +${ch.play.tempHp}` : ""} / {sheet.hp}
+            </b>
+          </div>
+          <div className="box">
+            <small>Hit Dice</small>
+            <b>{hd}</b>
+          </div>
+          <div className="box">
+            <small>Proficiency</small>
+            <b>{sign(sheet.proficiency)}</b>
+          </div>
+          <div className="box">
+            <small>Speed</small>
+            <b>{sheet.speed} ft</b>
+            {sheet.otherSpeeds.length > 0 && <small>{sheet.otherSpeeds.map((s) => `${s.kind} ${s.value}`).join(", ")}</small>}
+          </div>
+          <div className="box">
+            <small>Passive Perception</small>
+            <b>{sheet.passivePerception}</b>
+          </div>
+          <button className="box inspiration" onClick={() => set((c) => ({ ...c, play: { ...c.play, inspiration: !c.play.inspiration } }))}>
+            <small>Inspiration</small>
+            <b>{ch.play.inspiration ? "☑" : "☐"}</b>
+          </button>
         </div>
         {ch.play.conditions.length > 0 && <p className="warn">Conditions: {ch.play.conditions.join(", ")}</p>}
 
         <div className="ability-grid">
           {sheet.abilities.map((a) => (
             <div className="ability" key={a.id}>
-              <div className="ability-head"><span>{ABILITY_LABEL[a.id]}</span><b className="roll" title="Roll check" onClick={() => rollBtn(`${ABILITY_LABEL[a.id]} check`, a.mod, { kind: "check", ability: a.id })}>{sign(a.mod)}</b><em>{a.score}</em></div>
-              <div className="line"><i className={a.saveProficient ? "dot on" : "dot"} /><span>Saving Throw</span><b className="roll" title="Roll save" onClick={() => rollBtn(`${ABILITY_LABEL[a.id]} save`, a.save, { kind: "save", ability: a.id })}>{sign(a.save)}</b></div>
-              {sheet.skills.filter((s) => s.ability === a.id).map((s) => (
-                <div className="line" key={s.name}>
-                  <i className={s.level === "none" ? "dot" : s.level === "expertise" ? "dot on x2" : "dot on"} />
-                  <span>{skillLabel(s.name)}</span><b className="roll" title="Roll" onClick={() => rollBtn(skillLabel(s.name), s.bonus, { kind: "check", ability: s.ability })}>{sign(s.bonus)}</b>
-                </div>
-              ))}
+              <div className="ability-head">
+                <span>{ABILITY_LABEL[a.id]}</span>
+                <b
+                  className="roll"
+                  title="Roll check"
+                  onClick={() => rollBtn(`${ABILITY_LABEL[a.id]} check`, a.mod, { kind: "check", ability: a.id })}
+                >
+                  {sign(a.mod)}
+                </b>
+                <em>{a.score}</em>
+              </div>
+              <div className="line">
+                <i className={a.saveProficient ? "dot on" : "dot"} />
+                <span>Saving Throw</span>
+                <b
+                  className="roll"
+                  title="Roll save"
+                  onClick={() => rollBtn(`${ABILITY_LABEL[a.id]} save`, a.save, { kind: "save", ability: a.id })}
+                >
+                  {sign(a.save)}
+                </b>
+              </div>
+              {sheet.skills
+                .filter((s) => s.ability === a.id)
+                .map((s) => (
+                  <div className="line" key={s.name}>
+                    <i className={s.level === "none" ? "dot" : s.level === "expertise" ? "dot on x2" : "dot on"} />
+                    <span>{skillLabel(s.name)}</span>
+                    <b
+                      className="roll"
+                      title="Roll"
+                      onClick={() => rollBtn(skillLabel(s.name), s.bonus, { kind: "check", ability: s.ability })}
+                    >
+                      {sign(s.bonus)}
+                    </b>
+                  </div>
+                ))}
             </div>
           ))}
         </div>
@@ -190,17 +395,59 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
         <div className="cols">
           <section className="block">
             <h3>Training and proficiencies</h3>
-            {([["Armor", sheet.proficiencies.armor], ["Weapons", sheet.proficiencies.weapons], ["Tools", sheet.proficiencies.tools], ["Languages", sheet.proficiencies.languages], ["Other", sheet.proficiencies.other], ["Senses", sheet.vision]] as [string, string[]][])
+            {(
+              [
+                ["Armor", sheet.proficiencies.armor],
+                ["Weapons", sheet.proficiencies.weapons],
+                ["Tools", sheet.proficiencies.tools],
+                ["Languages", sheet.proficiencies.languages],
+                ["Other", sheet.proficiencies.other],
+                ["Senses", sheet.vision],
+              ] as [string, string[]][]
+            )
               .filter(([, v]) => v.length)
-              .map(([k, v]) => <p key={k}><b>{k}.</b> {v.map((x) => x.replace(/^(Armor|Weapon|Tool) Proficiency \((.*)\)$/, "$2")).join(", ")}</p>)}
+              .map(([k, v]) => (
+                <p key={k}>
+                  <b>{k}.</b> {v.map((x) => x.replace(/^(Armor|Weapon|Tool) Proficiency \((.*)\)$/, "$2")).join(", ")}
+                </p>
+              ))}
           </section>
           <section className="block">
             <h3>Attacks</h3>
             {sheet.attacks.length === 0 && <p className="muted">Equip a weapon on the Equipment tab to see attacks.</p>}
             {sheet.attacks.length > 0 && (
               <table className="attacks">
-                <thead><tr><th>Name</th><th>Atk</th><th>Damage</th><th>Notes</th></tr></thead>
-                <tbody>{sheet.attacks.map((a, i) => <tr key={i}><td>{a.name}</td><td><span className="roll" title="Roll to hit" onClick={() => rollBtn(`${a.name} attack`, a.bonus, { kind: "attack" })}>{sign(a.bonus)}</span></td><td><span className="roll" title="Roll damage" onClick={() => a.damage && requestRoll(`${a.name} damage`, a.damage.replace(/\s+/g, ""))}>{a.damage}</span> {a.damageType}</td><td>{[a.properties, a.notes].filter(Boolean).join("; ")}</td></tr>)}</tbody>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Atk</th>
+                    <th>Damage</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sheet.attacks.map((a, i) => (
+                    <tr key={i}>
+                      <td>{a.name}</td>
+                      <td>
+                        <span className="roll" title="Roll to hit" onClick={() => rollBtn(`${a.name} attack`, a.bonus, { kind: "attack" })}>
+                          {sign(a.bonus)}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className="roll"
+                          title="Roll damage"
+                          onClick={() => a.damage && requestRoll(`${a.name} damage`, a.damage.replace(/\s+/g, ""))}
+                        >
+                          {a.damage}
+                        </span>{" "}
+                        {a.damageType}
+                      </td>
+                      <td>{[a.properties, a.notes].filter(Boolean).join("; ")}</td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             )}
           </section>
@@ -209,18 +456,47 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
         {sheet.casting.map((c) => (
           <section className="block" key={c.name}>
             <h3>Spellcasting: {c.name}</h3>
-            <p>Save DC <b>{c.dc}</b> · Spell attack <b>{sign(c.attack)}</b> · {c.ability ? `${ABILITY_SHORT[c.ability as keyof typeof ABILITY_SHORT] ?? c.ability}` : ""}</p>
+            <p>
+              Save DC <b>{c.dc}</b> · Spell attack <b>{sign(c.attack)}</b> ·{" "}
+              {c.ability ? `${ABILITY_SHORT[c.ability as keyof typeof ABILITY_SHORT] ?? c.ability}` : ""}
+            </p>
             {c.slots.length > 0 && <p>{c.slots.map((s) => `L${s.level}: ${s.total - s.used}/${s.total}`).join("   ")}</p>}
-            {c.cantripsKnown.length > 0 && <p><b>Cantrips.</b> {c.cantripsKnown.map((p) => r.reg.get(p.id)?.name).filter(Boolean).join(", ")}</p>}
+            {c.cantripsKnown.length > 0 && (
+              <p>
+                <b>Cantrips.</b>{" "}
+                {c.cantripsKnown
+                  .map((p) => r.reg.get(p.id)?.name)
+                  .filter(Boolean)
+                  .join(", ")}
+              </p>
+            )}
             {(() => {
               const nm = (list: { id: string }[]) => [...new Set(list.map((p) => r.reg.get(p.id)?.name).filter(Boolean))];
-              const prepared = nm([...c.granted.filter((g) => !c.cantripsKnown.some((x) => x.id === g.id)), ...c.spells.filter((s) => s.prepared)]);
+              const prepared = nm([
+                ...c.granted.filter((g) => !c.cantripsKnown.some((x) => x.id === g.id)),
+                ...c.spells.filter((s) => s.prepared),
+              ]);
               const known = nm(c.spells);
               return (
                 <>
-                  {known.length > 0 && <p><b>{c.prepare ? "Spellbook / known." : "Spells known."}</b> {known.join(", ")}</p>}
-                  {c.prepare && <p><b>Prepared ({prepared.length}/{c.prepareMax}).</b> {prepared.join(", ") || <span className="muted">none chosen yet, pick them on the Magic tab</span>}</p>}
-                  {!c.prepare && c.granted.length > 0 && <p><b>Granted.</b> {nm(c.granted).join(", ")}</p>}
+                  {known.length > 0 && (
+                    <p>
+                      <b>{c.prepare ? "Spellbook / known." : "Spells known."}</b> {known.join(", ")}
+                    </p>
+                  )}
+                  {c.prepare && (
+                    <p>
+                      <b>
+                        Prepared ({prepared.length}/{c.prepareMax}).
+                      </b>{" "}
+                      {prepared.join(", ") || <span className="muted">none chosen yet, pick them on the Magic tab</span>}
+                    </p>
+                  )}
+                  {!c.prepare && c.granted.length > 0 && (
+                    <p>
+                      <b>Granted.</b> {nm(c.granted).join(", ")}
+                    </p>
+                  )}
                 </>
               );
             })()}
@@ -234,7 +510,11 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
             <section className="block" key={title}>
               <h3>{title}</h3>
               {list.map((f) => (
-                <p key={f.id}><b>{f.name}.</b> {f.usage ? <em>({f.usage}) </em> : null}<Uses id={f.id} usage={f.usage} ch={ch} set={set} />{f.text}</p>
+                <p key={f.id}>
+                  <b>{f.name}.</b> {f.usage ? <em>({f.usage}) </em> : null}
+                  <Uses id={f.id} usage={f.usage} ch={ch} set={set} />
+                  {f.text}
+                </p>
               ))}
             </section>
           );
@@ -245,17 +525,49 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
             <h3>Equipment</h3>
             {ch.inventory.map((i) => {
               const el = i.id ? r.reg.get(i.id) : undefined;
-              return <p key={i.uid}>{i.qty > 1 ? `${i.qty} × ` : ""}{itemLabel(i, el?.name)}{i.equipped ? " (equipped)" : ""}{i.attuned ? " (attuned)" : ""}</p>;
+              return (
+                <p key={i.uid}>
+                  {i.qty > 1 ? `${i.qty} × ` : ""}
+                  {itemLabel(i, el?.name)}
+                  {i.equipped ? " (equipped)" : ""}
+                  {i.attuned ? " (attuned)" : ""}
+                </p>
+              );
             })}
-            <p className="muted">{sheet.weight.carried} / {sheet.weight.capacity} lb · attuned {attuned}/{sheet.attunement.max}</p>
-            <p><b>Coins.</b> {(["pp", "gp", "ep", "sp", "cp"] as const).map((k) => `${ch.coins[k]} ${k.toUpperCase()}`).join(", ")}</p>
+            <p className="muted">
+              {sheet.weight.carried} / {sheet.weight.capacity} lb · attuned {attuned}/{sheet.attunement.max}
+            </p>
+            <p>
+              <b>Coins.</b> {(["pp", "gp", "ep", "sp", "cp"] as const).map((k) => `${ch.coins[k]} ${k.toUpperCase()}`).join(", ")}
+            </p>
           </section>
           <section className="block">
             <h3>Details</h3>
-            {([["Alignment", ch.info.alignment], ["Deity", ch.info.deity], ["Traits", ch.info.traits], ["Ideals", ch.info.ideals], ["Bonds", ch.info.bonds], ["Flaws", ch.info.flaws], ["Appearance", [ch.info.age, ch.info.height, ch.info.weight, ch.info.eyes, ch.info.hair, ch.info.skin].filter(Boolean).join(", ")]] as [string, string][])
+            {(
+              [
+                ["Alignment", ch.info.alignment],
+                ["Deity", ch.info.deity],
+                ["Traits", ch.info.traits],
+                ["Ideals", ch.info.ideals],
+                ["Bonds", ch.info.bonds],
+                ["Flaws", ch.info.flaws],
+                [
+                  "Appearance",
+                  [ch.info.age, ch.info.height, ch.info.weight, ch.info.eyes, ch.info.hair, ch.info.skin].filter(Boolean).join(", "),
+                ],
+              ] as [string, string][]
+            )
               .filter(([, v]) => v)
-              .map(([k, v]) => <p key={k}><b>{k}.</b> {v}</p>)}
-            {sheet.lists.map((l) => <p key={l.name}><b>{l.name}.</b> {l.texts.join(" ")}</p>)}
+              .map(([k, v]) => (
+                <p key={k}>
+                  <b>{k}.</b> {v}
+                </p>
+              ))}
+            {sheet.lists.map((l) => (
+              <p key={l.name}>
+                <b>{l.name}.</b> {l.texts.join(" ")}
+              </p>
+            ))}
           </section>
         </div>
 
@@ -263,15 +575,49 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
           <section className="block">
             <h3>Companions</h3>
             {companionBonuses(r.stats).length > 0 && <p className="muted">From your features: {companionBonuses(r.stats).join(", ")}</p>}
-            {r.active.filter((a) => a.el.type === "Companion").map((a) => <CompanionCard key={a.el.id} el={a.el} />)}
-            {ch.companions.map((c) => { const el = r.reg.get(c.id); return el ? <div key={c.uid}><b>{c.name}</b><CompanionCard el={el} /></div> : null; })}
+            {r.active
+              .filter((a) => a.el.type === "Companion")
+              .map((a) => (
+                <CompanionCard key={a.el.id} el={a.el} />
+              ))}
+            {ch.companions.map((c) => {
+              const el = r.reg.get(c.id);
+              return el ? (
+                <div key={c.uid}>
+                  <b>{c.name}</b>
+                  <CompanionCard el={el} />
+                </div>
+              ) : null;
+            })}
           </section>
         )}
-        {ch.info.backstory && <section className="block"><h3>Backstory</h3><p>{ch.info.backstory}</p></section>}
-        {ch.notes && <section className="block"><h3>Notes</h3><p>{ch.notes}</p></section>}
-        {r.warnings.length > 0 && <section className="block noprint"><h3>Content warnings</h3>{r.warnings.slice(0, 10).map((w, i) => <p key={i} className="muted">{w}</p>)}</section>}
+        {ch.info.backstory && (
+          <section className="block">
+            <h3>Backstory</h3>
+            <p>{ch.info.backstory}</p>
+          </section>
+        )}
+        {ch.notes && (
+          <section className="block">
+            <h3>Notes</h3>
+            <p>{ch.notes}</p>
+          </section>
+        )}
+        {r.warnings.length > 0 && (
+          <section className="block noprint">
+            <h3>Content warnings</h3>
+            {r.warnings.slice(0, 10).map((w, i) => (
+              <p key={i} className="muted">
+                {w}
+              </p>
+            ))}
+          </section>
+        )}
       </div>
-      <details className="noprint"><summary>Conditions reference</summary><p className="muted">{CONDITIONS.join(", ")}. Toggle them on Play, Conditions.</p></details>
+      <details className="noprint">
+        <summary>Conditions reference</summary>
+        <p className="muted">{CONDITIONS.join(", ")}. Toggle them on Play, Conditions.</p>
+      </details>
     </div>
   );
 }

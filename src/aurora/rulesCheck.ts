@@ -17,7 +17,12 @@ import { meets } from "./requirements";
 import { reqCtx, stillToChoose } from "./engine";
 import { isModern } from "./edition";
 
-export interface RefFeature { name: string; level: number; optional?: boolean; subclass?: boolean }
+export interface RefFeature {
+  name: string;
+  level: number;
+  optional?: boolean;
+  subclass?: boolean;
+}
 export interface RefClass {
   name: string;
   source: string;
@@ -48,26 +53,91 @@ export interface RefClass {
   subclasses: { name: string; shortName: string; source: string; caster: string | null; features: RefFeature[] }[];
 }
 
-export interface Finding { rule: string; detail: string }
+export interface Finding {
+  rule: string;
+  detail: string;
+}
 
 const lc = (s: string) => s.toLowerCase();
-const norm = (s: string) => lc(s).replace(/^\s*level\s+\d+\s*:\s*/, "").replace(/\s*\(.*?\)\s*/g, " ").replace(/[’']/g, "'").replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
-const FULL = [[], [2], [3], [4, 2], [4, 3], [4, 3, 2], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 2], [4, 3, 3, 3, 1], [4, 3, 3, 3, 2], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1, 1], [4, 3, 3, 3, 3, 1, 1, 1, 1], [4, 3, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 3, 2, 2, 1, 1]];
+const norm = (s: string) =>
+  lc(s)
+    .replace(/^\s*level\s+\d+\s*:\s*/, "")
+    .replace(/\s*\(.*?\)\s*/g, " ")
+    .replace(/[’']/g, "'")
+    .replace(/[^a-z0-9' ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+const FULL = [
+  [],
+  [2],
+  [3],
+  [4, 2],
+  [4, 3],
+  [4, 3, 2],
+  [4, 3, 3],
+  [4, 3, 3, 1],
+  [4, 3, 3, 2],
+  [4, 3, 3, 3, 1],
+  [4, 3, 3, 3, 2],
+  [4, 3, 3, 3, 2, 1],
+  [4, 3, 3, 3, 2, 1],
+  [4, 3, 3, 3, 2, 1, 1],
+  [4, 3, 3, 3, 2, 1, 1],
+  [4, 3, 3, 3, 2, 1, 1, 1],
+  [4, 3, 3, 3, 2, 1, 1, 1],
+  [4, 3, 3, 3, 2, 1, 1, 1, 1],
+  [4, 3, 3, 3, 3, 1, 1, 1, 1],
+  [4, 3, 3, 3, 3, 2, 1, 1, 1],
+  [4, 3, 3, 3, 3, 2, 2, 1, 1],
+];
 /** Eldritch Knight and Arcane Trickster slots by class level (their own table, not the full caster one). */
-const THIRD: number[][] = [[], [], [], [2], [3], [3], [3], [4, 2], [4, 2], [4, 2], [4, 3], [4, 3], [4, 3], [4, 3, 2], [4, 3, 2], [4, 3, 2], [4, 3, 3], [4, 3, 3], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 1]];
+const THIRD: number[][] = [
+  [],
+  [],
+  [],
+  [2],
+  [3],
+  [3],
+  [3],
+  [4, 2],
+  [4, 2],
+  [4, 2],
+  [4, 3],
+  [4, 3],
+  [4, 3],
+  [4, 3, 2],
+  [4, 3, 2],
+  [4, 3, 2],
+  [4, 3, 3],
+  [4, 3, 3],
+  [4, 3, 3],
+  [4, 3, 3, 1],
+  [4, 3, 3, 1],
+];
 function edits(a: string, b: string): number {
   const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
   for (let j = 1; j <= b.length; j++) d[0][j] = j;
-  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++)
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
   return d[a.length][b.length];
 }
 const prof = (level: number) => 2 + Math.floor((Math.max(1, level) - 1) / 4);
 
 /** Base armor from the equipment tables (2014 and 2024 agree). Dex cap: undefined = full, 0 = none. */
 const ARMOR: [RegExp, number, number | undefined, number?][] = [
-  [/^padded/i, 11, undefined], [/^leather/i, 11, undefined], [/^studded/i, 12, undefined],
-  [/^hide/i, 12, 2], [/^chain shirt/i, 13, 2], [/^scale/i, 14, 2], [/^breastplate/i, 14, 2], [/^half.?plate/i, 15, 2],
-  [/^ring/i, 14, 0], [/^chain mail/i, 16, 0, 13], [/^splint/i, 17, 0, 15], [/^plate/i, 18, 0, 15],
+  [/^padded/i, 11, undefined],
+  [/^leather/i, 11, undefined],
+  [/^studded/i, 12, undefined],
+  [/^hide/i, 12, 2],
+  [/^chain shirt/i, 13, 2],
+  [/^scale/i, 14, 2],
+  [/^breastplate/i, 14, 2],
+  [/^half.?plate/i, 15, 2],
+  [/^ring/i, 14, 0],
+  [/^chain mail/i, 16, 0, 13],
+  [/^splint/i, 17, 0, 15],
+  [/^plate/i, 18, 0, 15],
 ];
 
 /** Which reference class a class element is: same name, same edition. */
@@ -100,7 +170,13 @@ function featCategory(e: AElement): string {
 export function checkChoiceWindows(r: Resolved): Finding[] {
   const out: Finding[] = [];
   const add = (rule: string, detail: string) => out.push({ rule, detail });
-  const vname = (n: string) => n.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s*\((?:20\d\d|legacy|2014|2024)\)\s*$/, "").replace(/\s+/g, " ").trim();
+  const vname = (n: string) =>
+    n
+      .toLowerCase()
+      .replace(/[’‘`]/g, "'")
+      .replace(/\s*\((?:20\d\d|legacy|2014|2024)\)\s*$/, "")
+      .replace(/\s+/g, " ")
+      .trim();
   for (const s of r.slots) {
     if (s.rule.type === "List") continue;
     const open = s.options.filter((o) => !s.blocked.has(o.id));
@@ -113,7 +189,8 @@ export function checkChoiceWindows(r: Resolved): Finding[] {
         if (oe === "none" || oe === ed) continue;
         if (offeredAcrossEditions(o)) continue;
         if (ed === "2014") add("Choice offers a 2024 option to a 2014 choice", `${s.rule.name}: ${o.name} (${o.source})`);
-        else if (own.has(`${o.type}|${vname(o.name)}`)) add("Choice offers both versions of an option", `${s.rule.name}: ${o.name} (${o.source})`);
+        else if (own.has(`${o.type}|${vname(o.name)}`))
+          add("Choice offers both versions of an option", `${s.rule.name}: ${o.name} (${o.source})`);
       }
     }
     // The same element of the same book twice.
@@ -122,13 +199,18 @@ export function checkChoiceWindows(r: Resolved): Finding[] {
       const k = `${o.type}|${vname(o.name)}|${bookKey(o.source)}`;
       // A copy picked here beside the next free one is a repeat the choice has room for, not a duplicate.
       const prev = seen.get(k);
-      if (prev && prev !== o.id && !(s.chosen.includes(prev) || s.chosen.includes(o.id))) add("Choice offers one option twice", `${s.rule.name}: ${o.name} (${o.source})`);
+      if (prev && prev !== o.id && !(s.chosen.includes(prev) || s.chosen.includes(o.id)))
+        add("Choice offers one option twice", `${s.rule.name}: ${o.name} (${o.source})`);
       if (!prev || !s.chosen.includes(prev)) seen.set(k, o.id);
     }
     // Feat categories: an origin feat choice offers origin feats, a fighting style choice fighting styles.
     if (s.rule.type === "Feat") {
       const want = /origin feat/i.test(s.rule.name) ? "origin" : /fighting style/i.test(s.rule.name) ? "fighting style" : "";
-      if (want) for (const o of open) { const c = featCategory(o); if (c && c !== want) add("Choice offers a feat of another category", `${s.rule.name}: ${o.name} is ${c}`); }
+      if (want)
+        for (const o of open) {
+          const c = featCategory(o);
+          if (c && c !== want) add("Choice offers a feat of another category", `${s.rule.name}: ${o.name} is ${c}`);
+        }
     }
     // Spells: none above what the character can cast with the choice's spellcasting.
     // Only choices bounded by the spell slots: one of a stated level (Mystic Arcanum: level 6) is above them by design.
@@ -137,12 +219,17 @@ export function checkChoiceWindows(r: Resolved): Finding[] {
       let max = 0;
       for (let n = 1; n <= 9; n++) if (r.stats.get(`${key}:spellcasting:slots:${n}`) > 0) max = n;
       max = Math.max(max, r.stats.get(`${key}:spellcasting:slot`));
-      if (max > 0) for (const o of open) { const lv = Number(o.setters.level?.value ?? 0); if (lv > max) add("Choice offers a spell above what can be cast", `${s.rule.name}: ${o.name} (level ${lv}, max ${max})`); }
+      if (max > 0)
+        for (const o of open) {
+          const lv = Number(o.setters.level?.value ?? 0);
+          if (lv > max) add("Choice offers a spell above what can be cast", `${s.rule.name}: ${o.name} (level ${lv}, max ${max})`);
+        }
     }
     // A required choice always offers something. Options the character's own build rules out (a Wizard's Scholar
     // expertise without any of its skills) leave it asking for nothing, as stillToChoose says for the whole app: by the
     // rules the feature then does nothing. Only a choice with no options at all is a hole in the content.
-    if (!s.rule.optional && s.chosen.length < s.rule.number && s.options.length === 0) add("A required choice has nothing to take", `${s.rule.name} [${s.rule.type}]`);
+    if (!s.rule.optional && s.chosen.length < s.rule.number && s.options.length === 0)
+      add("A required choice has nothing to take", `${s.rule.name} [${s.rule.type}]`);
   }
   return out;
 }
@@ -159,7 +246,8 @@ export function repeatedPicks(r: Resolved, s: Resolved["slots"][number]): string
   if ((s.rule.type === "Proficiency" || s.rule.type === "Language") && hasOther) {
     for (const id of s.chosen) {
       const got = r.active.find((a) => a.el.id === id);
-      if (got && got.from && got.from !== s.owner.id) out.push(`${s.rule.name}: ${r.reg.get(id)?.name} (already from ${r.reg.get(got.from)?.name ?? "another choice"}); choose another`);
+      if (got && got.from && got.from !== s.owner.id)
+        out.push(`${s.rule.name}: ${r.reg.get(id)?.name} (already from ${r.reg.get(got.from)?.name ?? "another choice"}); choose another`);
     }
   }
   // A spell already learned in an earlier choice (a Songbook at level 1 and again at level 3): the same owner grants
@@ -168,7 +256,10 @@ export function repeatedPicks(r: Resolved, s: Resolved["slots"][number]): string
     const at = r.slots.indexOf(s);
     for (const id of s.chosen) {
       const earlier = r.slots.slice(0, at).find((o) => o.rule.type === "Spell" && o.key !== s.key && o.chosen.includes(id));
-      if (earlier) out.push(`${s.rule.name}: ${r.reg.get(id)?.name} (already learned in ${earlier.rule.name}${earlier.rule.level ? ` at level ${earlier.rule.level}` : ""}); choose another`);
+      if (earlier)
+        out.push(
+          `${s.rule.name}: ${r.reg.get(id)?.name} (already learned in ${earlier.rule.name}${earlier.rule.level ? ` at level ${earlier.rule.level}` : ""}); choose another`,
+        );
     }
   }
   return out;
@@ -183,8 +274,11 @@ export function noBodyArmor(r: Resolved): { name: string; unarmored: number }[] 
   const out: { name: string; unarmored: number }[] = [];
   for (const a of r.active) {
     const text = (a.el.description ?? "").replace(/<[^>]+>/g, " ");
-    if (!/can(?:'|’)?t wear (?:light, medium, or heavy |any )?armor|cannot wear (?:light, medium, or heavy |any )?armor/i.test(text)) continue;
-    const calc = a.el.rules.find((x) => x.kind === "stat" && x.name === "ac:calculation" && /armor:any|armor:none/.test(String(x.equipped ?? "")));
+    if (!/can(?:'|’)?t wear (?:light, medium, or heavy |any )?armor|cannot wear (?:light, medium, or heavy |any )?armor/i.test(text))
+      continue;
+    const calc = a.el.rules.find(
+      (x) => x.kind === "stat" && x.name === "ac:calculation" && /armor:any|armor:none/.test(String(x.equipped ?? "")),
+    );
     if (!calc || calc.kind !== "stat") continue;
     out.push({ name: a.el.name, unarmored: r.stats.get(calc.value) });
   }
@@ -221,7 +315,10 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   const offeredBy = (x: (typeof r.slots)[number]) => {
     const k = sameChoice(x);
     let set = offered.get(k);
-    if (!set) { set = new Set(r.slots.filter((y) => sameChoice(y) === k).flatMap((y) => y.options.map((o) => o.id))); offered.set(k, set); }
+    if (!set) {
+      set = new Set(r.slots.filter((y) => sameChoice(y) === k).flatMap((y) => y.options.map((o) => o.id)));
+      offered.set(k, set);
+    }
     return set;
   };
   // Completeness: every choice the rules ask for is made, none is impossible, nothing points at missing content.
@@ -229,12 +326,15 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (s.rule.optional) continue;
     if (!s.options.length) add("A required choice has no options", `${s.rule.name} [${s.rule.type}]`);
     else if (stillToChoose(s, r)) add("A required choice is not made", `${s.rule.name}: ${s.chosen.length} of ${s.rule.number}`);
-    for (const id of s.chosen) if (s.blocked.has(id)) add("A choice does not meet its requirements", `${s.rule.name}: ${reg.get(id)?.name}`);
+    for (const id of s.chosen)
+      if (s.blocked.has(id)) add("A choice does not meet its requirements", `${s.rule.name}: ${reg.get(id)?.name}`);
     // The engine activates whatever a saved pick names. One the choice does not offer at all (an edited file, content
     // that changed since, a pick kept through a move to other content) is on the character against its choice's rules.
     // A choice asked again at later levels (a spellbook, spells known) is one list to the player, and the Magic tab
     // hands picks to its places in order: a pick is offered when any place of the same choice offers it.
-    if (s.rule.type !== "List") for (const id of s.chosen) if (reg.get(id) && !offeredBy(s).has(id)) add("A pick its choice does not offer", `${s.rule.name}: ${reg.get(id)?.name}`);
+    if (s.rule.type !== "List")
+      for (const id of s.chosen)
+        if (reg.get(id) && !offeredBy(s).has(id)) add("A pick its choice does not offer", `${s.rule.name}: ${reg.get(id)?.name}`);
     for (const d of repeatedPicks(r, s)) add("A choice repeats something the character already has", d);
   }
   for (const w of r.warnings) add("Content refers to something missing", w);
@@ -247,16 +347,30 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   // ignored (2024 PHB, Backgrounds and Species from Older Books); judged here from the parts of each score, by name.
   if (sp && bg && isModern(bg) && !isModern(sp)) {
     const fromSpecies = new Set([sp.name, ...r.active.filter((a) => /^(Sub ?Race|Race Variant)$/i.test(a.el.type)).map((a) => a.el.name)]);
-    for (const a of sh.abilities) for (const p of r.stats.parts(a.id)) if (p.value > 0 && fromSpecies.has(p.from)) add("Older species' increase counted with a 2024 background", `${a.id} +${p.value} from ${p.from}; ${bg.name} gives the increases`);
+    for (const a of sh.abilities)
+      for (const p of r.stats.parts(a.id))
+        if (p.value > 0 && fromSpecies.has(p.from))
+          add(
+            "Older species' increase counted with a 2024 background",
+            `${a.id} +${p.value} from ${p.from}; ${bg.name} gives the increases`,
+          );
   }
-  if (sp && bg && isModern(sp) && !isModern(bg) && !/custom/i.test(bg.name) && !r.ids.has(BACKGROUND_ASI_MARKER)) add("Origin editions mixed", `${sp.name} (2024) gives no ability score increase and ${bg.name} (2014) gives none either; take the background's "2024 rules" option or its 2024 version`);
+  if (sp && bg && isModern(sp) && !isModern(bg) && !/custom/i.test(bg.name) && !r.ids.has(BACKGROUND_ASI_MARKER))
+    add(
+      "Origin editions mixed",
+      `${sp.name} (2024) gives no ability score increase and ${bg.name} (2014) gives none either; take the background's "2024 rules" option or its 2024 version`,
+    );
   const inLines = new Set(sh.casting.flatMap((l) => [...l.cantripsKnown, ...l.spells, ...l.granted].map((p) => p.id)));
   for (const p of r.spellPicks) if (!inLines.has(p.id)) add("A spell is not castable (no spellcasting line)", reg.get(p.id)?.name ?? p.id);
 
   // Proficiency bonus by total level.
   if (sh.proficiency !== prof(level)) add("Proficiency bonus by level", `${sh.proficiency}, should be ${prof(level)} at level ${level}`);
 
-  const refs = ch.classes.map((c) => ({ c, el: reg.get(c.classId)!, ref: reg.get(c.classId) ? refFor(ref, reg.get(c.classId)!) : undefined }));
+  const refs = ch.classes.map((c) => ({
+    c,
+    el: reg.get(c.classId)!,
+    ref: reg.get(c.classId) ? refFor(ref, reg.get(c.classId)!) : undefined,
+  }));
   // A playtest class has no reference (the reference holds the published books): nothing to report.
   for (const x of refs) if (!x.ref && !(x.el && isPlaytest(x.el))) add("Class not in the rules reference", x.el?.name ?? x.c.classId);
 
@@ -267,7 +381,8 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   for (const x of refs) {
     const die = x.ref?.hd ?? 0;
     const hd = sh.hitDice.find((h) => h.classId === x.c.classId);
-    if (x.ref && hd && (hd.die !== die || hd.count !== x.c.level)) add("Hit dice", `${x.el.name}: ${hd.count}d${hd.die}, should be ${x.c.level}d${die}`);
+    if (x.ref && hd && (hd.die !== die || hd.count !== x.c.level))
+      add("Hit dice", `${x.el.name}: ${hd.count}d${hd.die}, should be ${x.c.level}d${die}`);
     for (let i = 0; i < x.c.level; i++) {
       n++;
       const roll = ch.hpMode === "roll" ? ch.hpRolls[String(n)] : undefined;
@@ -280,7 +395,11 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   // stat; the hit dice and Constitution are the class table's. The sheet's number is exactly their sum.
   const hpParts = r.stats.parts("hp");
   const fromParts = hpParts.reduce((t, p) => t + p.value, 0);
-  if (refs.every((x) => x.ref) && sh.hp !== hp + fromParts) add("Hit points", `${sh.hp}, the rules give ${hp + fromParts} (${hp} from hit dice and Constitution${hpParts.length ? ` + ${hpParts.map((p) => `${p.value} from ${p.from}`).join(" + ")}` : ""})`);
+  if (refs.every((x) => x.ref) && sh.hp !== hp + fromParts)
+    add(
+      "Hit points",
+      `${sh.hp}, the rules give ${hp + fromParts} (${hp} from hit dice and Constitution${hpParts.length ? ` + ${hpParts.map((p) => `${p.value} from ${p.from}`).join(" + ")}` : ""})`,
+    );
 
   // Saving throws: the first class gives two; multiclassing gives none. Features that add more are listed.
   const first = refs[0]?.ref;
@@ -288,21 +407,30 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     // The first class gives its two saving throws (the class table). Any other proficiency comes from an element
     // the character has (a feat, a feature, the species), which provenance shows; one granted by a later class
     // itself is the multiclass mistake: a second class gives no saving throws.
-    for (const a of sh.abilities) if (!a.saveProficient && first.saves.includes(a.id)) add("Missing saving throw proficiency", `${a.id} from ${first.name}`);
+    for (const a of sh.abilities)
+      if (!a.saveProficient && first.saves.includes(a.id)) add("Missing saving throw proficiency", `${a.id} from ${first.name}`);
     const later = new Map<string, string>();
-    for (const x of refs.slice(1)) { later.set(x.c.classId, x.el.name); if (x.el.multiclass?.id) later.set(x.el.multiclass.id, x.el.name); }
+    for (const x of refs.slice(1)) {
+      later.set(x.c.classId, x.el.name);
+      if (x.el.multiclass?.id) later.set(x.el.multiclass.id, x.el.name);
+    }
     for (const act of r.active) {
       const k = conceptOf(act.el);
       if (!k?.startsWith("save:") || !later.has(act.from)) continue;
-      add("Saving throw proficiency without a rule giving it", `${act.el.name} from ${later.get(act.from)} (first class ${first.name} gives ${first.saves.join(" and ")}; a second class gives none)`);
+      add(
+        "Saving throw proficiency without a rule giving it",
+        `${act.el.name} from ${later.get(act.from)} (first class ${first.name} gives ${first.saves.join(" and ")}; a second class gives none)`,
+      );
     }
     // The first class's training (a multiclass gains less, so only the first class is checked): armor, weapon
     // categories and named tools, as the class table gives them.
     const tight = (x: string) => x.toLowerCase().replace(/[^a-z]/g, "");
     const own = (list: string[], want: string) => list.some((x) => tight(x).includes(tight(want)));
     const ARMOR_NAME: Record<string, string> = { light: "light armor", medium: "medium armor", heavy: "heavy armor", shield: "shield" };
-    for (const a of first.startArmor ?? []) if (!own(sh.proficiencies.armor, ARMOR_NAME[a])) add("Missing class training", `${ARMOR_NAME[a]} from ${first.name}`);
-    for (const w of first.startWeapons ?? []) if (!own(sh.proficiencies.weapons, `${w} weapons`)) add("Missing class training", `${w} weapons from ${first.name}`);
+    for (const a of first.startArmor ?? [])
+      if (!own(sh.proficiencies.armor, ARMOR_NAME[a])) add("Missing class training", `${ARMOR_NAME[a]} from ${first.name}`);
+    for (const w of first.startWeapons ?? [])
+      if (!own(sh.proficiencies.weapons, `${w} weapons`)) add("Missing class training", `${w} weapons from ${first.name}`);
     for (const t of first.startTools ?? []) if (!own(sh.proficiencies.tools, t)) add("Missing class training", `${t} from ${first.name}`);
   }
 
@@ -311,9 +439,11 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   // Belt of Giant Strength); the stat book already stops increases at the maximum, so this catches a bypass.
   for (const a of sh.abilities) {
     // The checker's own reading of the raised maximum: the largest single raise named (they do not add up).
-    const max = 20 + Math.max(0, ...r.stats.parts(`${a.id}:max`).map((p) => p.value), ...r.stats.parts(`${a.id}:max:extra`).map((p) => p.value));
+    const max =
+      20 + Math.max(0, ...r.stats.parts(`${a.id}:max`).map((p) => p.value), ...r.stats.parts(`${a.id}:max:extra`).map((p) => p.value));
     const set = r.stats.parts(`${a.id}:score:set`).reduce((t, p) => Math.max(t, p.value), 0);
-    if (a.score > Math.max(max, set, ch.abilityBase[a.id])) add("Ability score above its maximum", `${a.id} ${a.score} (maximum ${max}${set ? `, set to ${set}` : ""})`);
+    if (a.score > Math.max(max, set, ch.abilityBase[a.id]))
+      add("Ability score above its maximum", `${a.id} ${a.score} (maximum ${max}${set ? `, set to ${set}` : ""})`);
   }
   for (const a of sh.abilities) if (a.score < 1) add("Ability score below 1", `${a.id} ${a.score}`);
 
@@ -323,7 +453,10 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   // plus whatever named parts add to it. A save is the modifier, the proficiency bonus when trained, and its parts.
   {
     const had = new Set<string>();
-    for (const a of r.active) { const k = conceptOf(a.el); if (k) had.add(k); }
+    for (const a of r.active) {
+      const k = conceptOf(a.el);
+      if (k) had.add(k);
+    }
     const P = sh.proficiency;
     const plainName = (a: { el: AElement }) => lc(a.el.name).replace(/^level \d+:\s*/, "");
     const jack = r.active.some((a) => plainName(a) === "jack of all trades");
@@ -335,21 +468,51 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
       const trained = had.has(`skill:${slug}`);
       // Expertise by its own proficiency, or doubled by a feature that names the skill (the Scout's Survivalist gives
       // it as a number, with no proficiency of its own).
-      const expert = had.has(`expertise:${slug}`) || (trained && r.stats.parts(`${sk.name}:proficiency`).length > 1 && total(`${sk.name}:proficiency`) === 2 * P);
+      const expert =
+        had.has(`expertise:${slug}`) ||
+        (trained && r.stats.parts(`${sk.name}:proficiency`).length > 1 && total(`${sk.name}:proficiency`) === 2 * P);
       // Expertise is chosen among the skills a character is proficient in (both Player's Handbooks).
-      if (expert && !trained) { add("Expertise without proficiency", `${sk.name}: expertise in a skill the character is not proficient in`); continue; }
+      if (expert && !trained) {
+        add("Expertise without proficiency", `${sk.name}: expertise in a skill the character is not proficient in`);
+        continue;
+      }
       // Training some content gives as a number, with no proficiency of its own behind it, is taken as it stands.
       const own = expert ? 2 * P : trained ? P : total(`${sk.name}:proficiency`);
       const half = !expert && !trained && own === 0 && jack ? Math.floor(P / 2) : 0;
       const want = mod(sk.ability) + own + half + total(`${sk.name}:misc`, sk.name);
-      if (Number.isFinite(want) && sk.bonus !== want) add("Skill bonus", `${sk.name}: ${sk.bonus}, the rules give ${want} (${sk.ability} ${mod(sk.ability)}${expert ? `, expertise ${2 * P}` : trained ? `, proficiency ${P}` : half ? `, Jack of All Trades ${half}` : own ? `, training ${own}` : ""}${parts(`${sk.name}:misc`, sk.name).map((x) => `, ${x.from} ${x.value}`).join("")})`);
+      if (Number.isFinite(want) && sk.bonus !== want)
+        add(
+          "Skill bonus",
+          `${sk.name}: ${sk.bonus}, the rules give ${want} (${sk.ability} ${mod(sk.ability)}${expert ? `, expertise ${2 * P}` : trained ? `, proficiency ${P}` : half ? `, Jack of All Trades ${half}` : own ? `, training ${own}` : ""}${parts(
+            `${sk.name}:misc`,
+            sk.name,
+          )
+            .map((x) => `, ${x.from} ${x.value}`)
+            .join("")})`,
+        );
     }
-    const ABBR: Record<AbilityId, string> = { strength: "str", dexterity: "dex", constitution: "con", intelligence: "int", wisdom: "wis", charisma: "cha" };
+    const ABBR: Record<AbilityId, string> = {
+      strength: "str",
+      dexterity: "dex",
+      constitution: "con",
+      intelligence: "int",
+      wisdom: "wis",
+      charisma: "cha",
+    };
     for (const a of sh.abilities) {
       // Trained by a proficiency the character has, or by a feature that gives the training as a number (Diamond Soul).
       const trained = had.has(`save:${ABBR[a.id]}`) || r.stats.parts(`${a.id}:save:proficiency`).length > 0;
       const want = a.mod + (trained ? P : 0) + total(`${a.id}:save:misc`, `${a.id}:save`);
-      if (a.save !== want) add("Saving throw bonus", `${a.id}: ${a.save}, the rules give ${want} (modifier ${a.mod}${trained ? `, proficiency ${P}` : ""}${parts(`${a.id}:save:misc`, `${a.id}:save`).map((x) => `, ${x.from} ${x.value}`).join("")})`);
+      if (a.save !== want)
+        add(
+          "Saving throw bonus",
+          `${a.id}: ${a.save}, the rules give ${want} (modifier ${a.mod}${trained ? `, proficiency ${P}` : ""}${parts(
+            `${a.id}:save:misc`,
+            `${a.id}:save`,
+          )
+            .map((x) => `, ${x.from} ${x.value}`)
+            .join("")})`,
+        );
     }
   }
 
@@ -367,8 +530,17 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
         const all = Object.entries(rf.multiclass ?? {}) as [AbilityId, number][];
         const alt = rf.multiclassOr ?? [];
         // An "or" group in the 5e.tools data means any one of its abilities (Fighter: Strength 13 or Dexterity 13).
-        ok = all.every(([a, v]) => score(a).score >= v) && (!alt.length || alt.every((o) => (Object.entries(o) as [AbilityId, number][]).some(([a, v]) => score(a).score >= v)));
-        need = [...all.map(([a, v]) => `${a} ${v}`), ...alt.map((o) => Object.entries(o).map(([a, v]) => `${a} ${v}`).join(" or "))].join(", ");
+        ok =
+          all.every(([a, v]) => score(a).score >= v) &&
+          (!alt.length || alt.every((o) => (Object.entries(o) as [AbilityId, number][]).some(([a, v]) => score(a).score >= v)));
+        need = [
+          ...all.map(([a, v]) => `${a} ${v}`),
+          ...alt.map((o) =>
+            Object.entries(o)
+              .map(([a, v]) => `${a} ${v}`)
+              .join(" or "),
+          ),
+        ].join(", ");
       }
       if (!ok) add("Multiclass requirement not met", `${x.el.name} needs ${need}`);
     }
@@ -378,14 +550,20 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   for (const x of refs) {
     if (!x.ref?.subclassLevel) continue;
     const subs = r.active.filter((a) => a.el.type === "Archetype" && a.root === `class:${x.c.classId}`);
-    if (x.c.level >= x.ref.subclassLevel && subs.length !== 1) add("Subclass", `${x.el.name} ${x.c.level} should have one subclass (from level ${x.ref.subclassLevel}), has ${subs.length}`);
-    if (x.c.level < x.ref.subclassLevel && subs.length) add("Subclass taken too early", `${x.el.name} ${x.c.level}: ${subs.map((s) => s.el.name).join(", ")} (rules: level ${x.ref.subclassLevel})`);
+    if (x.c.level >= x.ref.subclassLevel && subs.length !== 1)
+      add("Subclass", `${x.el.name} ${x.c.level} should have one subclass (from level ${x.ref.subclassLevel}), has ${subs.length}`);
+    if (x.c.level < x.ref.subclassLevel && subs.length)
+      add(
+        "Subclass taken too early",
+        `${x.el.name} ${x.c.level}: ${subs.map((s) => s.el.name).join(", ")} (rules: level ${x.ref.subclassLevel})`,
+      );
   }
 
   // Class and subclass features by level, against the reference. Optional features (Tasha's) and the ones that
   // are only a heading for something else are not required.
   // "Extra Elemental Discipline" is one more discipline choice, which the completeness check above already covers.
-  const skip = /^(ability score improvement|epic boon|subclass feature|extra elemental discipline|additional .*|.* options|optional rule.*|.* improvements|.* subclass|.* feature|.* improvement|proficiencies|.* versatility|primal knowledge|martial versatility|cantrip formulas|cantrip versatility|optional class features|.*\bdivine domain|.*\bsacred oath|.*\barcane tradition|.*\bdruid circle|.*\bmonastic tradition|.*\bmartial archetype|.*\branger archetype|.*\broguish archetype|.*\bsorcerous origin|.*\botherworldly patron|.*\bbard college|.*\bprimal path|.*\bartificer specialist)$/i;
+  const skip =
+    /^(ability score improvement|epic boon|subclass feature|extra elemental discipline|additional .*|.* options|optional rule.*|.* improvements|.* subclass|.* feature|.* improvement|proficiencies|.* versatility|primal knowledge|martial versatility|cantrip formulas|cantrip versatility|optional class features|.*\bdivine domain|.*\bsacred oath|.*\barcane tradition|.*\bdruid circle|.*\bmonastic tradition|.*\bmartial archetype|.*\branger archetype|.*\broguish archetype|.*\bsorcerous origin|.*\botherworldly patron|.*\bbard college|.*\bprimal path|.*\bartificer specialist)$/i;
   for (const x of refs) {
     if (!x.ref) continue;
     for (const f of x.ref.features) {
@@ -397,26 +575,50 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     // Whole words only: "Twilight Domain" must not match the "Light" domain.
     const word = (hay: string, needle: string) => new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(hay);
     const exact = x.ref.subclasses.filter((s) => [s.name, s.shortName].some((n) => norm(n) === norm(sub.name)));
-    const subMatches = exact.length ? exact : x.ref.subclasses.filter((s) => [s.name, s.shortName].some((n) => word(norm(sub.name), norm(n)) || word(norm(n), norm(sub.name))));
+    const subMatches = exact.length
+      ? exact
+      : x.ref.subclasses.filter((s) => [s.name, s.shortName].some((n) => word(norm(sub.name), norm(n)) || word(norm(n), norm(sub.name))));
     const subEd = isModern(sub) ? ["XPHB", "EFA"] : [];
     // A playtest subclass is not the published one of the same name (the playtest Rune Knight's features differ).
     // Reprints share a name (2024's Knowledge Domain from Heroes of Faerûn, 2014's copied for the 2024 Cleric): the one this
     // subclass is, of those of its rules, is the one with the least missing.
     if (isPlaytest(sub)) continue;
     const sameRules = subMatches.filter((s) => (subEd.length ? subEd.includes(s.source) : !["XPHB", "EFA"].includes(s.source)));
-    const named = x.ref.subclasses.filter((s) => [s.name, s.shortName].some((n) => norm(sub.name).includes(norm(n)) || norm(n).includes(norm(sub.name))));
+    const named = x.ref.subclasses.filter((s) =>
+      [s.name, s.shortName].some((n) => norm(sub.name).includes(norm(n)) || norm(n).includes(norm(sub.name))),
+    );
     const candidates = sameRules.length && !isModern(sub) ? sameRules : subMatches.length ? subMatches : named;
     if (!candidates.length) continue;
-    const missing = candidates.map((refSub) => refSub.features.filter((f) => !(f.level > x.c.level || f.optional || skip.test(f.name) || norm(f.name) === norm(refSub.name) || norm(f.name) === norm(refSub.shortName)) && !near(norm(f.name))));
-    for (const f of missing.reduce((a, b) => (b.length < a.length ? b : a))) add("Subclass feature missing", `${sub.name} ${f.level}: ${f.name}`);
+    const missing = candidates.map((refSub) =>
+      refSub.features.filter(
+        (f) =>
+          !(
+            f.level > x.c.level ||
+            f.optional ||
+            skip.test(f.name) ||
+            norm(f.name) === norm(refSub.name) ||
+            norm(f.name) === norm(refSub.shortName)
+          ) && !near(norm(f.name)),
+      ),
+    );
+    for (const f of missing.reduce((a, b) => (b.length < a.length ? b : a)))
+      add("Subclass feature missing", `${sub.name} ${f.level}: ${f.name}`);
   }
 
   // Feats from level choices: one at each Ability Score Improvement level the class has reached, and the Epic Boon.
   for (const x of refs) {
     if (!x.ref) continue;
     const want = x.ref.asiLevels.filter((l) => l <= x.c.level).length + (x.ref.epicBoon && x.c.level >= x.ref.epicBoon ? 1 : 0);
-    const got = r.slots.filter((s) => s.root === `class:${x.c.classId}` && s.ownerLevel <= x.c.level && /ability score improvement|improvement option|epic boon|^feat \(/i.test(s.rule.name) && s.owner.type !== "Feat" && !/custom|\+[12]/i.test(s.rule.name)).length;
-    if (want && got && got !== want) add("Feats or ability improvements by level", `${x.el.name} ${x.c.level}: ${got} choices, the rules give ${want}`);
+    const got = r.slots.filter(
+      (s) =>
+        s.root === `class:${x.c.classId}` &&
+        s.ownerLevel <= x.c.level &&
+        /ability score improvement|improvement option|epic boon|^feat \(/i.test(s.rule.name) &&
+        s.owner.type !== "Feat" &&
+        !/custom|\+[12]/i.test(s.rule.name),
+    ).length;
+    if (want && got && got !== want)
+      add("Feats or ability improvements by level", `${x.el.name} ${x.c.level}: ${got} choices, the rules give ${want}`);
   }
 
   // Feats: requirements met; 2024 General feats from level 4, Epic Boons from level 19; no feat twice unless repeatable.
@@ -431,14 +633,35 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   }
   // Repeatable: the content says so ("allow duplicate"), the text does ("you can take this feat more than once", the
   // 2024 Magic Initiate with another spell list), or the content gives repeat copies (Aurora's Magic Initiate_2).
-  const repeatable = (name: string) => r.reg.ofType("Feat").some((f) => f.name === name && (!!f.setters["allow duplicate"] || /_\d+$/.test(f.id) || /(?:take|select|choose) this feat more than once|more than once\b/i.test(f.description ?? "")));
-  for (const [name, count] of seenFeats) if (count > 1 && !/repeatable|elemental adept|ability score improvement/i.test(name) && !repeatable(name)) add("Same feat twice", name);
+  const repeatable = (name: string) =>
+    r.reg
+      .ofType("Feat")
+      .some(
+        (f) =>
+          f.name === name &&
+          (!!f.setters["allow duplicate"] ||
+            /_\d+$/.test(f.id) ||
+            /(?:take|select|choose) this feat more than once|more than once\b/i.test(f.description ?? "")),
+      );
+  for (const [name, count] of seenFeats)
+    if (count > 1 && !/repeatable|elemental adept|ability score improvement/i.test(name) && !repeatable(name)) add("Same feat twice", name);
 
   // Spellcasting: slots by the class tables or the multiclass table; cantrips and prepared spells by the class table;
   // spell levels within what the class can cast; DC and attack bonus by the formula.
-  const casters = refs.filter((x) => x.ref && (x.ref.caster || x.ref.subclasses.some((s) => s.caster && r.active.some((a) => a.el.type === "Archetype" && norm(a.el.name).includes(norm(s.shortName))))));
+  const casters = refs.filter(
+    (x) =>
+      x.ref &&
+      (x.ref.caster ||
+        x.ref.subclasses.some(
+          (s) => s.caster && r.active.some((a) => a.el.type === "Archetype" && norm(a.el.name).includes(norm(s.shortName))),
+        )),
+  );
   const casterLevel = (x: (typeof refs)[number]) => {
-    const c = x.ref!.caster ?? x.ref!.subclasses.find((s) => s.caster && r.active.some((a) => a.el.type === "Archetype" && norm(a.el.name).includes(norm(s.shortName))))?.caster;
+    const c =
+      x.ref!.caster ??
+      x.ref!.subclasses.find(
+        (s) => s.caster && r.active.some((a) => a.el.type === "Archetype" && norm(a.el.name).includes(norm(s.shortName))),
+      )?.caster;
     const modern = x.ref!.edition === "one";
     if (c === "full") return x.c.level;
     if (c === "1/2") return modern ? Math.ceil(x.c.level / 2) : Math.floor(x.c.level / 2);
@@ -448,32 +671,49 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   };
   // The multiclass table counts only classes that have Spellcasting at their level (a Ranger 1 has none yet in 2014):
   // with one such class, its own table gives the slots (PHB, Multiclassing).
-  const castsNow = (x: (typeof refs)[number]) => (x.ref!.slots ? (x.ref!.slots[x.c.level - 1] ?? []).some((v) => v > 0) : casterLevel(x) > 0);
+  const castsNow = (x: (typeof refs)[number]) =>
+    x.ref!.slots ? (x.ref!.slots[x.c.level - 1] ?? []).some((v) => v > 0) : casterLevel(x) > 0;
   const nonPact = casters.filter((x) => x.ref!.caster !== "pact" && castsNow(x));
   const slotRow = (row: number[]) => row.filter((v) => v > 0).join("/");
   const ours = (line: (typeof sh.casting)[number]) => slotRow(line.slots.map((s) => s.total));
   if (nonPact.length === 1) {
     const x = nonPact[0];
     // Its own line first: "Artificer Initiate" (a feat) also has the class in its name.
-    const line = sh.casting.find((l) => norm(l.name) === norm(x.el.name)) ?? sh.casting.find((l) => norm(l.name).includes(norm(x.el.name)) || norm(x.el.name).includes(norm(l.name))) ?? sh.casting.find((l) => l.slots.length && !l.pactLevel);
+    const line =
+      sh.casting.find((l) => norm(l.name) === norm(x.el.name)) ??
+      sh.casting.find((l) => norm(l.name).includes(norm(x.el.name)) || norm(x.el.name).includes(norm(l.name))) ??
+      sh.casting.find((l) => l.slots.length && !l.pactLevel);
     const want = x.ref!.slots ? slotRow(x.ref!.slots[x.c.level - 1] ?? []) : slotRow(THIRD[x.c.level] ?? []);
-    if (line && want !== ours(line)) add("Spell slots", `${x.el.name} ${x.c.level}: ${ours(line) || "none"}, the class table gives ${want || "none"}`);
+    if (line && want !== ours(line))
+      add("Spell slots", `${x.el.name} ${x.c.level}: ${ours(line) || "none"}, the class table gives ${want || "none"}`);
     if (!line && want) add("Spell slots", `${x.el.name} ${x.c.level} has no spellcasting line; the table gives ${want}`);
   } else if (nonPact.length > 1) {
     const mc = nonPact.reduce((t, x) => t + casterLevel(x), 0);
     const want = slotRow(FULL[Math.min(20, mc)] ?? []);
-    for (const line of sh.casting.filter((l) => l.slots.length && !l.pactLevel)) if (ours(line) !== want) add("Multiclass spell slots", `${line.name}: ${ours(line)}, the multiclass table gives ${want} (caster level ${mc})`);
+    for (const line of sh.casting.filter((l) => l.slots.length && !l.pactLevel))
+      if (ours(line) !== want)
+        add("Multiclass spell slots", `${line.name}: ${ours(line)}, the multiclass table gives ${want} (caster level ${mc})`);
   }
   for (const x of casters.filter((y) => y.ref!.caster === "pact" && y.ref!.pact)) {
     const line = sh.casting.find((l) => l.pactLevel);
     const want = { n: x.ref!.pact!.slots[x.c.level - 1], lv: x.ref!.pact!.level[x.c.level - 1] };
     const got = line?.slots.find((s) => s.total > 0);
-    if (!line || !got || got.total !== want.n || (line.pactLevel ?? got.level) !== want.lv) add("Pact Magic slots", `${x.el.name} ${x.c.level}: ${got ? `${got.total} at level ${line?.pactLevel ?? got.level}` : "none"}, the table gives ${want.n} at level ${want.lv}`);
+    if (!line || !got || got.total !== want.n || (line.pactLevel ?? got.level) !== want.lv)
+      add(
+        "Pact Magic slots",
+        `${x.el.name} ${x.c.level}: ${got ? `${got.total} at level ${line?.pactLevel ?? got.level}` : "none"}, the table gives ${want.n} at level ${want.lv}`,
+      );
   }
   for (const x of refs) {
     if (!x.ref?.cantrips) continue;
     const want = x.ref.cantrips[x.c.level - 1];
-    const own = r.slots.filter((s) => s.root === `class:${x.c.classId}` && s.rule.type === "Spell" && /cantrip/i.test(s.rule.name) && (s.owner.id === x.c.classId || /spellcasting|pact magic/i.test(s.owner.name)));
+    const own = r.slots.filter(
+      (s) =>
+        s.root === `class:${x.c.classId}` &&
+        s.rule.type === "Spell" &&
+        /cantrip/i.test(s.rule.name) &&
+        (s.owner.id === x.c.classId || /spellcasting|pact magic/i.test(s.owner.name)),
+    );
     const got = own.reduce((t, s) => t + s.chosen.length, 0);
     if (own.length && got !== want) add("Cantrips known", `${x.el.name} ${x.c.level}: ${got}, the class table gives ${want}`);
   }
@@ -489,24 +729,44 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (line.prepare) {
       // No spell slot of its own yet (the reference's table for this level): nothing to prepare.
       const ownSlots = (x.ref.slots?.[x.c.level - 1] ?? []).some((n: number) => n > 0) || !!x.ref.pact;
-      if (x.ref.slots && !ownSlots && (line.prepareMax > 0 || (r.character.prepared[line.name] ?? []).length)) add("Prepared spells", `${x.el.name} ${x.c.level}: prepares spells before the class has a spell slot`);
-      if (line.prepareMax && line.prepareMax !== want && x.ref.prepared) add("Prepared spells", `${x.el.name} ${x.c.level}: may prepare ${line.prepareMax}, the class table gives ${want}`);
+      if (x.ref.slots && !ownSlots && (line.prepareMax > 0 || (r.character.prepared[line.name] ?? []).length))
+        add("Prepared spells", `${x.el.name} ${x.c.level}: prepares spells before the class has a spell slot`);
+      if (line.prepareMax && line.prepareMax !== want && x.ref.prepared)
+        add("Prepared spells", `${x.el.name} ${x.c.level}: may prepare ${line.prepareMax}, the class table gives ${want}`);
       // The list to prepare from must hold at least as many spells as may be prepared.
       const pool = preparePool(r, line).length;
-      if (line.prepareMax && pool < line.prepareMax) add("Too few spells to prepare from", `${x.el.name} ${x.c.level}: ${pool} on the list, ${line.prepareMax} may be prepared`);
+      if (line.prepareMax && pool < line.prepareMax)
+        add("Too few spells to prepare from", `${x.el.name} ${x.c.level}: ${pool} on the list, ${line.prepareMax} may be prepared`);
     } else {
       // Only the class's own spellcasting choices count; a subclass's extra spells (Magical Secrets) are on top.
-      const own = r.slots.filter((s) => s.root === `class:${x.c.classId}` && s.rule.type === "Spell" && !/cantrip/i.test(s.rule.name) && /spellcasting|pact magic|^magical secrets$/i.test(s.owner.name.replace(/^level \d+: /i, "")) && !/arcanum/i.test(s.rule.name));
+      const own = r.slots.filter(
+        (s) =>
+          s.root === `class:${x.c.classId}` &&
+          s.rule.type === "Spell" &&
+          !/cantrip/i.test(s.rule.name) &&
+          /spellcasting|pact magic|^magical secrets$/i.test(s.owner.name.replace(/^level \d+: /i, "")) &&
+          !/arcanum/i.test(s.rule.name),
+      );
       // A cantrip taken with Magical Secrets still counts against the spells known.
-      const got = own.reduce((t, s) => t + s.chosen.filter((id) => (levelOf(id) > 0 || /magical secrets/i.test(s.owner.name)) && !arcanum.includes(levelOf(id))).length, 0);
+      const got = own.reduce(
+        (t, s) =>
+          t + s.chosen.filter((id) => (levelOf(id) > 0 || /magical secrets/i.test(s.owner.name)) && !arcanum.includes(levelOf(id))).length,
+        0,
+      );
       // Short only by picks still open: that is an open choice (reported as one), not a wrong count.
       const open = own.reduce((t, s) => t + Math.max(0, s.rule.number - s.chosen.length), 0);
-      if (own.length && got !== want && !(got < want && got + open >= want)) add("Spells known or prepared", `${x.el.name} ${x.c.level}: ${got}, the class table gives ${want}`);
+      if (own.length && got !== want && !(got < want && got + open >= want))
+        add("Spells known or prepared", `${x.el.name} ${x.c.level}: ${got}, the class table gives ${want}`);
     }
-    const maxLv = x.ref.slots ? (x.ref.slots[x.c.level - 1] ?? []).filter((v) => v > 0).length : x.ref.pact ? x.ref.pact.level[x.c.level - 1] : 9;
+    const maxLv = x.ref.slots
+      ? (x.ref.slots[x.c.level - 1] ?? []).filter((v) => v > 0).length
+      : x.ref.pact
+        ? x.ref.pact.level[x.c.level - 1]
+        : 9;
     for (const p of line.spells) {
       const lv = levelOf(p.id);
-      if (lv > maxLv && !arcanum.includes(lv)) add("Spell above the level the class can cast", `${x.el.name} ${x.c.level}: ${reg.get(p.id)?.name} (level ${lv}, max ${maxLv})`);
+      if (lv > maxLv && !arcanum.includes(lv))
+        add("Spell above the level the class can cast", `${x.el.name} ${x.c.level}: ${reg.get(p.id)?.name} (level ${lv}, max ${maxLv})`);
     }
   }
   for (const line of sh.casting) {
@@ -515,12 +775,19 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     if (Number.isFinite(m) && (line.dc !== 8 + sh.proficiency + m || line.attack !== sh.proficiency + m)) {
       // Magic items and features (Robe of the Archmagi, a +1 focus) can add to these.
       const items = ch.inventory.some((i) => i.attuned || /\+\d/.test(reg.get(i.id)?.name ?? ""));
-      if (!items) add("Spell save DC or attack", `${line.name}: DC ${line.dc}, attack ${line.attack}; the formula gives DC ${8 + sh.proficiency + m}, attack ${sh.proficiency + m}`);
+      if (!items)
+        add(
+          "Spell save DC or attack",
+          `${line.name}: DC ${line.dc}, attack ${line.attack}; the formula gives DC ${8 + sh.proficiency + m}, attack ${sh.proficiency + m}`,
+        );
     }
   }
 
   // Armor class with the armor tables, Dexterity caps, shields and unarmored defenses.
-  const worn = ch.inventory.filter((i) => i.equipped && i.id).map((i) => ({ i, el: reg.get(i.id)! })).filter((x) => x.el?.type === "Armor");
+  const worn = ch.inventory
+    .filter((i) => i.equipped && i.id)
+    .map((i) => ({ i, el: reg.get(i.id)! }))
+    .filter((x) => x.el?.type === "Armor");
   const body = worn.find((x) => !/shield/i.test(x.el.name) && !/shield/i.test(x.el.setters.armor?.value ?? ""));
   const shield = worn.find((x) => /shield/i.test(x.el.name) || /shield/i.test(x.el.setters.armor?.value ?? ""));
   const dex = mod("dexterity");
@@ -529,7 +796,12 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   // what the table gives, with no part explaining it, is the finding.
   // Armor a species cannot wear (the Tortle's shell: "You can't wear light, medium, or heavy armor"): its natural armor
   // only counts unarmored, so worn armor quietly lowered the sheet (a Tortle in leather: AC 10, not 17).
-  if (body) for (const n of noBodyArmor(r)) add("Armor the species cannot wear", `${n.name}: ${body.el.name} is worn${n.unarmored ? `; without it, armor class is ${n.unarmored}${shield ? " plus the shield" : ""}` : ""}`);
+  if (body)
+    for (const n of noBodyArmor(r))
+      add(
+        "Armor the species cannot wear",
+        `${n.name}: ${body.el.name} is worn${n.unarmored ? `; without it, armor class is ${n.unarmored}${shield ? " plus the shield" : ""}` : ""}`,
+      );
   const misc = [...r.stats.parts("ac:misc"), ...r.stats.parts("ac")];
   const shieldAc = shield ? 2 + (shield.i.magic ?? 0) : 0;
   const miscSum = misc.reduce((t, p) => t + p.value, 0);
@@ -537,35 +809,63 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const row = ARMOR.find(([re]) => re.test(body.el.name.replace(/^\+\d\s*/, "")));
     if (row) {
       const [, base, cap] = row;
-      const dexPart = cap === undefined ? dex : cap === 0 ? 0 : Math.min(cap === 2 ? Math.max(2, r.stats.get("ac:armored:dexterity:cap")) : cap, dex);
-      const want = base + dexPart + (body.i.magic ?? 0) + (Number(body.el.setters.armorClassBonus?.value) || 0) + r.stats.get("ac:armored:enhancement") + r.stats.get("ac:armored:misc") + shieldAc + miscSum;
-      if (sh.ac.value !== want) add("Armor class", `${sh.ac.value}, the armor table gives ${want} (${body.el.name} ${base}, Dex ${dexPart}${shieldAc ? `, shield ${shieldAc}` : ""}${misc.map((p) => `, ${p.from} ${p.value}`).join("")})`);
+      const dexPart =
+        cap === undefined ? dex : cap === 0 ? 0 : Math.min(cap === 2 ? Math.max(2, r.stats.get("ac:armored:dexterity:cap")) : cap, dex);
+      const want =
+        base +
+        dexPart +
+        (body.i.magic ?? 0) +
+        (Number(body.el.setters.armorClassBonus?.value) || 0) +
+        r.stats.get("ac:armored:enhancement") +
+        r.stats.get("ac:armored:misc") +
+        shieldAc +
+        miscSum;
+      if (sh.ac.value !== want)
+        add(
+          "Armor class",
+          `${sh.ac.value}, the armor table gives ${want} (${body.el.name} ${base}, Dex ${dexPart}${shieldAc ? `, shield ${shieldAc}` : ""}${misc.map((p) => `, ${p.from} ${p.value}`).join("")})`,
+        );
     }
   } else {
     const calc = r.stats.parts("ac:calculation");
     const floor = 10 + dex + shieldAc + miscSum;
     const best = Math.max(10 + dex, r.stats.get("ac:calculation")) + shieldAc + miscSum;
     if (sh.ac.value < floor) add("Armor class", `${sh.ac.value}, below 10 + Dex${shieldAc ? " + shield" : ""} (${floor})`);
-    else if (sh.ac.value > floor && !calc.length) add("Armor class", `${sh.ac.value} with no armor and nothing giving another calculation (10 + Dex gives ${floor})`);
-    else if (sh.ac.value !== best) add("Armor class", `${sh.ac.value}, the parts give ${best} (${calc.map((p) => `${p.from} ${p.value}`).join(", ") || `10 + Dex ${10 + dex}`})`);
+    else if (sh.ac.value > floor && !calc.length)
+      add("Armor class", `${sh.ac.value} with no armor and nothing giving another calculation (10 + Dex gives ${floor})`);
+    else if (sh.ac.value !== best)
+      add(
+        "Armor class",
+        `${sh.ac.value}, the parts give ${best} (${calc.map((p) => `${p.from} ${p.value}`).join(", ") || `10 + Dex ${10 + dex}`})`,
+      );
   }
   if (body) {
     const kind = lc(body.el.setters.armor?.value ?? "");
     const trained = sh.proficiencies.armor.join(" ").toLowerCase();
-    if (kind && !/shield/.test(kind) && !trained.includes(kind) && !trained.includes("all armor")) add("Wearing armor without training", `${body.el.name} (${kind})`);
+    if (kind && !/shield/.test(kind) && !trained.includes(kind) && !trained.includes("all armor"))
+      add("Wearing armor without training", `${body.el.name} (${kind})`);
   }
 
   // Attunement: an item only some may attune to (a wizard, any spellcaster).
   for (const it of ch.inventory.filter((i) => i.attuned && i.id)) {
     const el = reg.get(it.id);
     const req = el?.setters["attune requirements"]?.value;
-    if (req && !meets(req, ctx)) add("Attuned to an item that needs someone else", `${el!.name} (${req.replace(/\[level:(\w+):1\]/g, "$1").replace(/\[type:spell\]/g, "a spellcaster").replace(/\|\|/g, " or ").replace(/[()]/g, "")})`);
+    if (req && !meets(req, ctx))
+      add(
+        "Attuned to an item that needs someone else",
+        `${el!.name} (${req
+          .replace(/\[level:(\w+):1\]/g, "$1")
+          .replace(/\[type:spell\]/g, "a spellcaster")
+          .replace(/\|\|/g, " or ")
+          .replace(/[()]/g, "")})`,
+      );
   }
 
   // Hands: a two-handed weapon and a shield, or more than two weapons, cannot be held at once.
   const weapons = ch.inventory.filter((i) => i.equipped && i.id && reg.get(i.id)?.type === "Weapon");
   const twoHanded = weapons.filter((i) => reg.get(i.id)!.supports.some((t) => /two.?handed/i.test(t)) || i.twoHanded);
-  if ((twoHanded.length && shield) || twoHanded.length > 1 || weapons.length > 2 || (twoHanded.length && weapons.length > 1)) add("More held than two hands can hold", weapons.map((i) => reg.get(i.id)?.name).join(", ") + (shield ? ", shield" : ""));
+  if ((twoHanded.length && shield) || twoHanded.length > 1 || weapons.length > 2 || (twoHanded.length && weapons.length > 1))
+    add("More held than two hands can hold", weapons.map((i) => reg.get(i.id)?.name).join(", ") + (shield ? ", shield" : ""));
 
   // Attacks from weapons: ability modifier, proficiency if trained, magic bonus.
   const altAbilities = weaponAbilityOptions(r);
@@ -577,9 +877,16 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const finesse = tags.some((t) => t.includes("finesse"));
     // A feature may allow another ability for this weapon (Hex Warrior, Pact of the Blade, Battle Ready): the better.
     const twoHandedTag = tags.some((t) => /two.?handed/.test(t));
-    const alts = altAbilities.filter((o) => (!o.magicOnly || (it?.magic ?? 0) > 0 || /^\+\d/.test(el.name)) && (!o.notTwoHanded || !twoHandedTag)).map((o) => mod(o.ability));
-    const plainName = el.name.replace(/^[+-]\d+\s*/, "").replace(/\s*,?\s*[+-]\d+$/, "").replace(/\s*\(.*\)\s*$/, "").toLowerCase();
-    const prop = (p: string) => tags.some((t) => t === p || t.endsWith(`_${p.replace(/-/g, "_")}`) || t.endsWith(`_${p.replace(/-/g, "")}`));
+    const alts = altAbilities
+      .filter((o) => (!o.magicOnly || (it?.magic ?? 0) > 0 || /^\+\d/.test(el.name)) && (!o.notTwoHanded || !twoHandedTag))
+      .map((o) => mod(o.ability));
+    const plainName = el.name
+      .replace(/^[+-]\d+\s*/, "")
+      .replace(/\s*,?\s*[+-]\d+$/, "")
+      .replace(/\s*\(.*\)\s*$/, "")
+      .toLowerCase();
+    const prop = (p: string) =>
+      tags.some((t) => t === p || t.endsWith(`_${p.replace(/-/g, "_")}`) || t.endsWith(`_${p.replace(/-/g, "")}`));
     // The weapon's kind in either provider's tags: "simple" (5e.tools), "..._weapon_category_simple_melee" (Aurora).
     const simple = tags.some((t) => /(^|_)simple(_|$)/.test(t));
     const martial = tags.some((t) => /(^|_)martial(_|$)/.test(t));
@@ -587,7 +894,13 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     // with a monk weapon (2014: shortswords and simple melee weapons that are not two-handed or heavy; 2024: simple
     // melee weapons and martial melee weapons with the Light property).
     const monk = refs.find((x) => x.el && /^monk$/i.test(x.el.name.replace(/\s*\(.*\)$/, "")))?.el;
-    const monkWeapon = !!monk && !worn.length && !ranged && (isModern(monk) ? simple || (martial && prop("light")) : plainName === "shortsword" || (simple && !prop("two-handed") && !prop("heavy")));
+    const monkWeapon =
+      !!monk &&
+      !worn.length &&
+      !ranged &&
+      (isModern(monk)
+        ? simple || (martial && prop("light"))
+        : plainName === "shortsword" || (simple && !prop("two-handed") && !prop("heavy")));
     const m = Math.max(finesse || monkWeapon ? Math.max(dex, mod("strength")) : ranged ? dex : mod("strength"), ...alts);
     const proficient = !/not proficient/.test(a.notes);
     // Trained or not is the sheet's word above, so it is judged on its own here: a weapon the first class trains (its
@@ -596,32 +909,73 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     // Firearms are left out of the kinds: the Dungeon Master's Guide leaves training with them to the table, Aurora
     // asks for it by name, and Plutonium keeps "firearms" as a kind of its own beside simple and martial.
     const firearm = tags.some((t) => /firearm/.test(t)) || /FIREARM/i.test(el.setters.proficiency?.value ?? "");
-    const trains = first && ((!firearm && simple && first.startWeapons?.includes("simple")) || (!firearm && martial && first.startWeapons?.includes("martial")) || first.startWeaponNames?.some((n) => n === plainName || n === `${plainName}s` || `${n}s` === plainName) || (martial && first.startMartialWith?.some((p) => prop(p))));
+    const trains =
+      first &&
+      ((!firearm && simple && first.startWeapons?.includes("simple")) ||
+        (!firearm && martial && first.startWeapons?.includes("martial")) ||
+        first.startWeaponNames?.some((n) => n === plainName || n === `${plainName}s` || `${n}s` === plainName) ||
+        (martial && first.startMartialWith?.some((p) => prop(p))));
     if (!proficient && trains) add("Weapon the class trains counted as untrained", `${a.name}: ${first!.name} trains it`);
     const magic = (it?.magic ?? 0) + (Number(el.setters.attackBonus?.value) || 0);
     // Fighting styles, features and items add to every attack of a kind: named parts of "ranged:attack",
     // "melee:attack" and "attack".
-    const wname = el.name.replace(/^[+-]\d+\s*/, "").replace(/\s*,?\s*[+-]\d+$/, "").replace(/\s*\(.*\)\s*$/, "").toLowerCase();
-    const parts = [...r.stats.parts(`${ranged ? "ranged" : "melee"}:attack`), ...r.stats.parts("attack"), ...r.stats.parts(`${wname}:attack`)];
+    const wname = el.name
+      .replace(/^[+-]\d+\s*/, "")
+      .replace(/\s*,?\s*[+-]\d+$/, "")
+      .replace(/\s*\(.*\)\s*$/, "")
+      .toLowerCase();
+    const parts = [
+      ...r.stats.parts(`${ranged ? "ranged" : "melee"}:attack`),
+      ...r.stats.parts("attack"),
+      ...r.stats.parts(`${wname}:attack`),
+    ];
     const want = m + (proficient ? sh.proficiency : 0) + magic + parts.reduce((t, p) => t + p.value, 0);
-    if (a.bonus !== want && !(a.id && ch.attackEdits?.[a.id]?.bonusAdjust)) add("Weapon attack bonus", `${a.name}: +${a.bonus}, the rules give +${want}${parts.length ? ` (with ${parts.map((p) => `${p.from} ${p.value}`).join(", ")})` : ""}`);
+    if (a.bonus !== want && !(a.id && ch.attackEdits?.[a.id]?.bonusAdjust))
+      add(
+        "Weapon attack bonus",
+        `${a.name}: +${a.bonus}, the rules give +${want}${parts.length ? ` (with ${parts.map((p) => `${p.from} ${p.value}`).join(", ")})` : ""}`,
+      );
     // The damage, judged here too (the audit's R13: only the attack bonus was): the weapon's die (its versatile die
     // in two hands; a Monk's Martial Arts die when that is larger, by the class tables of both Player's Handbooks),
     // the same ability's modifier, the weapon's magic, the named parts, and Dueling's 2 for a lone one-handed melee
     // weapon.
     if (!(a.id && ch.attackEdits?.[a.id]?.damage)) {
-      const own = it?.twoHanded && el.setters.versatile ? el.setters.versatile.value : el.setters.damage?.value ?? "";
-      const monkLevel = monk ? refs.find((x) => x.el === monk)?.c.level ?? 0 : 0;
-      const martialArts = !monkLevel ? 0 : isModern(monk!) ? (monkLevel >= 17 ? 12 : monkLevel >= 11 ? 10 : monkLevel >= 5 ? 8 : 6) : monkLevel >= 17 ? 10 : monkLevel >= 11 ? 8 : monkLevel >= 5 ? 6 : 4;
+      const own = it?.twoHanded && el.setters.versatile ? el.setters.versatile.value : (el.setters.damage?.value ?? "");
+      const monkLevel = monk ? (refs.find((x) => x.el === monk)?.c.level ?? 0) : 0;
+      const martialArts = !monkLevel
+        ? 0
+        : isModern(monk!)
+          ? monkLevel >= 17
+            ? 12
+            : monkLevel >= 11
+              ? 10
+              : monkLevel >= 5
+                ? 8
+                : 6
+          : monkLevel >= 17
+            ? 10
+            : monkLevel >= 11
+              ? 8
+              : monkLevel >= 5
+                ? 6
+                : 4;
       const single = /^1d(\d+)$/.exec(own.trim());
       const die = monkWeapon && single && martialArts > Number(single[1]) ? `1d${martialArts}` : own;
       const dueling = r.active.some((x) => /^(?:fighting style:\s*)?dueling$/i.test(lc(x.el.name).replace(/^level \d+:\s*/, "")));
       const held = ch.inventory.filter((i) => i.equipped && i.id && reg.get(i.id)?.type === "Weapon").length;
       const duel = dueling && !ranged && !twoHandedTag && !it?.twoHanded && held <= 1 ? 2 : 0;
-      const dparts = [...r.stats.parts(`${ranged ? "ranged" : "melee"}:damage`), ...r.stats.parts("damage"), ...r.stats.parts(`${wname}:damage`)];
+      const dparts = [
+        ...r.stats.parts(`${ranged ? "ranged" : "melee"}:damage`),
+        ...r.stats.parts("damage"),
+        ...r.stats.parts(`${wname}:damage`),
+      ];
       const flat = m + (it?.magic ?? 0) + (Number(el.setters.damageBonus?.value) || 0) + duel + dparts.reduce((t, p) => t + p.value, 0);
       const wantDamage = die ? `${die}${flat ? (flat > 0 ? `+${flat}` : String(flat)) : ""}` : "";
-      if (die && a.damage.replace(/\s+/g, "") !== wantDamage.replace(/\s+/g, "")) add("Weapon damage", `${a.name}: ${a.damage}, the rules give ${wantDamage}${duel ? " (with Dueling 2)" : ""}${dparts.length ? ` (with ${dparts.map((p) => `${p.from} ${p.value}`).join(", ")})` : ""}`);
+      if (die && a.damage.replace(/\s+/g, "") !== wantDamage.replace(/\s+/g, ""))
+        add(
+          "Weapon damage",
+          `${a.name}: ${a.damage}, the rules give ${wantDamage}${duel ? " (with Dueling 2)" : ""}${dparts.length ? ` (with ${dparts.map((p) => `${p.from} ${p.value}`).join(", ")})` : ""}`,
+        );
     }
   }
   return out;

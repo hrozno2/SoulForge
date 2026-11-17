@@ -2,7 +2,20 @@ import { expect, test } from "@playwright/test";
 import { randomCharacter, tab } from "./helpers";
 
 // docs/AUDIT-2026-11-10.md, S1 and S2: a save that fails is shown and tried again, never swallowed under "Saved".
-test.use({ storageState: { cookies: [], origins: [{ origin: "http://localhost:4173", localStorage: [{ name: "charforge.tutorial", value: "never" }, { name: "charforge.settings", value: JSON.stringify({ buildLayout: "board", reduceMotion: true }) }] }] } });
+test.use({
+  storageState: {
+    cookies: [],
+    origins: [
+      {
+        origin: "http://localhost:4173",
+        localStorage: [
+          { name: "charforge.tutorial", value: "never" },
+          { name: "charforge.settings", value: JSON.stringify({ buildLayout: "board", reduceMotion: true }) },
+        ],
+      },
+    ],
+  },
+});
 
 test("a failed save says so, and Try again saves it", async ({ page }) => {
   await page.goto("/");
@@ -28,7 +41,10 @@ test("a failed save says so, and Try again saves it", async ({ page }) => {
   await expect(mark).toHaveAttribute("role", "alert");
 
   // The store works again: Try again writes the edit that was waiting.
-  await page.evaluate(() => { const w = window as unknown as { __put: IDBObjectStore["put"] }; IDBObjectStore.prototype.put = w.__put; });
+  await page.evaluate(() => {
+    const w = window as unknown as { __put: IDBObjectStore["put"] };
+    IDBObjectStore.prototype.put = w.__put;
+  });
   await mark.getByRole("button", { name: "Try again" }).click();
   await expect(page.locator(".actionbar .saved")).toHaveText("✓ Saved");
   await tab(page, "Home");
@@ -60,8 +76,18 @@ test("an edit made just before opening another character is kept", async ({ page
 test("a damaged character file opens with a repair report that Build can show again", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
-  const file = { version: 2, name: "Dented", classes: [{ classId: "NOT_A_CLASS", level: 99 }], selections: { "NOT_A_CLASS|0": "one" }, abilityBase: { strength: "strong" }, coins: { gp: "many" } };
-  await page.locator('input[type=file][accept=".json"]').first().setInputFiles({ name: "dented.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(file)) });
+  const file = {
+    version: 2,
+    name: "Dented",
+    classes: [{ classId: "NOT_A_CLASS", level: 99 }],
+    selections: { "NOT_A_CLASS|0": "one" },
+    abilityBase: { strength: "strong" },
+    coins: { gp: "many" },
+  };
+  await page
+    .locator('input[type=file][accept=".json"]')
+    .first()
+    .setInputFiles({ name: "dented.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(file)) });
   const report = page.getByRole("dialog", { name: "Repair report" });
   await expect(report).toBeVisible();
   await expect(report).toContainText("dented.json");
@@ -108,8 +134,16 @@ test("a character open in two tabs is saved by one of them only", async ({ page,
   await page.getByLabel("Character name").blur();
   await page.waitForTimeout(1500);
   const names = await page.evaluate(async () => {
-    const db = await new Promise<IDBDatabase>((res, rej) => { const q = indexedDB.open("charforge"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
-    const all = await new Promise<{ name: string }[]>((res, rej) => { const q = db.transaction("characters").objectStore("characters").getAll(); q.onsuccess = () => res(q.result as { name: string }[]); q.onerror = () => rej(q.error); });
+    const db = await new Promise<IDBDatabase>((res, rej) => {
+      const q = indexedDB.open("charforge");
+      q.onsuccess = () => res(q.result);
+      q.onerror = () => rej(q.error);
+    });
+    const all = await new Promise<{ name: string }[]>((res, rej) => {
+      const q = db.transaction("characters").objectStore("characters").getAll();
+      q.onsuccess = () => res(q.result as { name: string }[]);
+      q.onerror = () => rej(q.error);
+    });
     return all.map((c) => c.name);
   });
   expect(names).toContain("Shared One");

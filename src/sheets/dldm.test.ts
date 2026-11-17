@@ -31,8 +31,15 @@ describe.skipIf(!SHEETS || !CONTENT)("DLDM 5E24 sheets", () => {
     ch.classes = [{ classId: by("Class", "Wizard").id, level: 5 }];
     ch.abilityBase = { strength: 8, dexterity: 14, constitution: 14, intelligence: 16, wisdom: 12, charisma: 10 };
     ch = autoFill(ch, reg!);
-    const item = (n: string) => reg!.ofType("Weapon").concat(reg!.ofType("Item")).find((e) => e.name === n)!;
-    ch.inventory = [{ uid: "1", id: item("Dagger").id, qty: 1, equipped: true, attuned: false }, { uid: "2", id: item("Backpack").id, qty: 1, equipped: false, attuned: false }];
+    const item = (n: string) =>
+      reg!
+        .ofType("Weapon")
+        .concat(reg!.ofType("Item"))
+        .find((e) => e.name === n)!;
+    ch.inventory = [
+      { uid: "1", id: item("Dagger").id, qty: 1, equipped: true, attuned: false },
+      { uid: "2", id: item("Backpack").id, qty: 1, equipped: false, attuned: false },
+    ];
     ch.coins.gp = 25;
     ch.info.alignment = "Neutral Good";
     ch.info.backstory = "Raised in a library tower. Likes cats.";
@@ -57,7 +64,10 @@ describe.skipIf(!SHEETS || !CONTENT)("DLDM 5E24 sheets", () => {
   it("fills every page with the character's figures", async () => {
     const { r, sheet } = make();
     const data = buildFillData(r, sheet);
-    const out = await fillDldm(readFileSync(`${SHEETS}/DLDM - 5E24 CHARACTER SHEET - 5pg - Updated Form Fields.pdf`), data, { pages: ["p1a", "p1b", "p2a", "p2b", "spells"], font });
+    const out = await fillDldm(readFileSync(`${SHEETS}/DLDM - 5E24 CHARACTER SHEET - 5pg - Updated Form Fields.pdf`), data, {
+      pages: ["p1a", "p1b", "p2a", "p2b", "spells"],
+      font,
+    });
     if (process.env.SHEET_OUT) writeFileSync(process.env.SHEET_OUT, out.bytes);
     expect(out.missing).toEqual([]);
     const doc = await PDFDocument.load(out.bytes);
@@ -78,14 +88,25 @@ describe.skipIf(!SHEETS || !CONTENT)("DLDM 5E24 sheets", () => {
     for (let i = 1; i <= 10; i++) expect(form.getCheckBox(`CB-ATTUNE${i}`).isChecked()).toBe(false);
     expect(text("COIN9")).toBe("25");
     // Filling only the first page still clears the boxes the blank sheet came with ticked.
-    const one = await PDFDocument.load((await fillDldm(readFileSync(`${SHEETS}/DLDM - 5E24 CHARACTER SHEET - 5pg - Updated Form Fields.pdf`), data, { pages: ["p1a"], font })).bytes);
+    const one = await PDFDocument.load(
+      (
+        await fillDldm(readFileSync(`${SHEETS}/DLDM - 5E24 CHARACTER SHEET - 5pg - Updated Form Fields.pdf`), data, {
+          pages: ["p1a"],
+          font,
+        })
+      ).bytes,
+    );
     for (let i = 6; i <= 10; i++) expect(one.getForm().getCheckBox(`CB-ATTUNE${i}`).isChecked()).toBe(false);
     void ABILITY_IDS;
   });
 
   it("keeps only the pages asked for", async () => {
     const { r, sheet } = make();
-    const out = await fillDldm(readFileSync(`${SHEETS}/DLDM - 5E24 CHARACTER SHEET - 5pg - Updated Form Fields.pdf`), buildFillData(r, sheet), { pages: ["p1a", "spells"], font });
+    const out = await fillDldm(
+      readFileSync(`${SHEETS}/DLDM - 5E24 CHARACTER SHEET - 5pg - Updated Form Fields.pdf`),
+      buildFillData(r, sheet),
+      { pages: ["p1a", "spells"], font },
+    );
     expect(out.pages.sort()).toEqual(["p1a", "spells"]);
     expect((await PDFDocument.load(out.bytes)).getPageCount()).toBe(2);
   });
@@ -94,11 +115,15 @@ describe.skipIf(!SHEETS || !CONTENT)("DLDM 5E24 sheets", () => {
     const { r, sheet } = make();
     const data = buildFillData(r, sheet);
     expect(data.spells.length).toBeGreaterThan(2);
-    const out = await fillDldm(readFileSync(`${SHEETS}/DLDM - 5E24 CHARACTER SHEET - 5pg - Updated Form Fields.pdf`), data, { pages: ["p2a", "spells"], font });
+    const out = await fillDldm(readFileSync(`${SHEETS}/DLDM - 5E24 CHARACTER SHEET - 5pg - Updated Form Fields.pdf`), data, {
+      pages: ["p2a", "spells"],
+      font,
+    });
     const doc = await PDFDocument.load(out.bytes);
     const form = doc.getForm();
     const cells = readWidgets(doc).filter((w) => w.type === "Tx" && w.y > 570 && w.y < 600);
-    const read = (page: number, x: number) => form.getTextField(cells.find((w) => w.page === page && Math.abs(w.x - x) <= 6)!.name).getText();
+    const read = (page: number, x: number) =>
+      form.getTextField(cells.find((w) => w.page === page && Math.abs(w.x - x) <= 6)!.name).getText();
     // page 2A: name at x 43, casting time at 155, range at 189
     expect(read(0, 43)).toBe(data.spells[0].name);
     expect(read(0, 155)).toBe(data.spells[0].time);

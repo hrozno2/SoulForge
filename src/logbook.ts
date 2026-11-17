@@ -8,9 +8,27 @@ const lines: string[] = [];
 const MAX = 400;
 
 function note(kind: string, parts: unknown[]) {
-  const text = parts.map((p) => (p instanceof Error ? `${p.name}: ${p.message}` : typeof p === "string" ? p : (() => { try { return JSON.stringify(p); } catch { return String(p); } })())).join(" ");
+  const text = parts
+    .map((p) =>
+      p instanceof Error
+        ? `${p.name}: ${p.message}`
+        : typeof p === "string"
+          ? p
+          : (() => {
+              try {
+                return JSON.stringify(p);
+              } catch {
+                return String(p);
+              }
+            })(),
+    )
+    .join(" ");
   lines.push(`${new Date().toISOString().slice(11, 19)} ${kind} ${text.slice(0, 600)}`);
-  if (lines.length > MAX) { const cut = lines.length - MAX; lines.splice(0, cut); written = Math.max(0, written - cut); }
+  if (lines.length > MAX) {
+    const cut = lines.length - MAX;
+    lines.splice(0, cut);
+    written = Math.max(0, written - cut);
+  }
   flushSoon();
 }
 
@@ -18,8 +36,14 @@ export function startLogbook(): void {
   if (typeof window === "undefined") return;
   const err = console.error.bind(console);
   const warn = console.warn.bind(console);
-  console.error = (...a: unknown[]) => { note("error", a); err(...a); };
-  console.warn = (...a: unknown[]) => { note("warn", a); warn(...a); };
+  console.error = (...a: unknown[]) => {
+    note("error", a);
+    err(...a);
+  };
+  console.warn = (...a: unknown[]) => {
+    note("warn", a);
+    warn(...a);
+  };
   window.addEventListener("error", (e) => note("uncaught", [e.message, `${e.filename ?? ""}:${e.lineno ?? ""}`]));
   window.addEventListener("unhandledrejection", (e) => note("unhandled", [e.reason]));
 }

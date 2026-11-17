@@ -20,7 +20,16 @@ describe("a screen that throws", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const root = createRoot(host);
-    await act(async () => root.render(<div><p id="around">still here</p><ErrorBoundary scope="Play"><Broken on /></ErrorBoundary></div>));
+    await act(async () =>
+      root.render(
+        <div>
+          <p id="around">still here</p>
+          <ErrorBoundary scope="Play">
+            <Broken on />
+          </ErrorBoundary>
+        </div>,
+      ),
+    );
     expect(host.querySelector("#around")?.textContent).toBe("still here");
     expect(host.querySelector("[role=alert]")?.textContent).toContain("Play could not be shown");
     expect(host.textContent).toContain("the sheet could not be built");
@@ -32,7 +41,13 @@ describe("a screen that throws", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const host = document.createElement("div");
     const root = createRoot(host);
-    await act(async () => root.render(<ErrorBoundary scope="The app" whole><Broken on /></ErrorBoundary>));
+    await act(async () =>
+      root.render(
+        <ErrorBoundary scope="The app" whole>
+          <Broken on />
+        </ErrorBoundary>,
+      ),
+    );
     expect(host.textContent).toContain("Start without the open character");
     await act(async () => root.unmount());
   });

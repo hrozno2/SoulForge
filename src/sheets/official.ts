@@ -32,7 +32,8 @@ interface Raw {
   u?: string;
 }
 
-const toWidgets = (raw: Raw[]): AutoField[] => raw.map((r) => ({ name: r.n, t: r.t === "Btn" ? "Btn" : "Tx", p: r.p, x: r.x, y: r.y, w: r.w, h: r.h, tip: r.u }));
+const toWidgets = (raw: Raw[]): AutoField[] =>
+  raw.map((r) => ({ name: r.n, t: r.t === "Btn" ? "Btn" : "Tx", p: r.p, x: r.x, y: r.y, w: r.w, h: r.h, tip: r.u }));
 
 export const LAYOUTS: Record<LayoutId, { label: string; edition: "2024" | "2014"; widgets: AutoField[] }> = {
   "2024": { label: "Official 2024 sheet", edition: "2024", widgets: toWidgets(layout2024 as Raw[]) },
@@ -57,11 +58,17 @@ const near = (a: number, b: number) => Math.abs(a - b) < 6;
 export function identifySheet(doc: PDFDocument, nameHint: string): Identified | undefined {
   const size = doc.getPage(0).getSize();
   const pages = doc.getPageCount();
-  const names = new Set(doc.getForm().getFields().map((f) => f.getName().trim()));
+  const names = new Set(
+    doc
+      .getForm()
+      .getFields()
+      .map((f) => f.getName().trim()),
+  );
   const form = names.size > 0;
   if (form) {
     if (names.has("STR SAVE") && names.has("NAME - WEAPON 1")) return { layout: "2024", form };
-    if (names.has("CharacterName") && names.has("Wpn Name")) return { layout: pages >= 3 ? "3p" : names.has("SavingThrows") ? "alt" : "classic", form };
+    if (names.has("CharacterName") && names.has("Wpn Name"))
+      return { layout: pages >= 3 ? "3p" : names.has("SavingThrows") ? "alt" : "classic", form };
     if (names.has("Backstory") && !names.has("CharacterName")) return { layout: "details", form };
     if (names.has("SpellcastingAbility 2") && pages === 1) return { layout: "spells", form };
     return undefined;
@@ -101,14 +108,25 @@ function run(layout: LayoutId, ws: AutoField[], data: FillData, sink: Sink, over
 /** Spells the sheet has no room for continue on pages at the end, in a table of their own. */
 function continueSpells(doc: PDFDocument, font: PDFFont, rows: SpellRow[], data: FillData, notes: string[]): void {
   const pages = appendSpellPages(doc, font, rows, "Spells, continued", data.name || "Character");
-  if (pages) notes.push(`${rows.length} spell${rows.length === 1 ? "" : "s"} did not fit the sheet's spell table and continue on ${pages === 1 ? "a page" : `${pages} pages`} at the end.`);
+  if (pages)
+    notes.push(
+      `${rows.length} spell${rows.length === 1 ? "" : "s"} did not fit the sheet's spell table and continue on ${pages === 1 ? "a page" : `${pages} pages`} at the end.`,
+    );
 }
 
 /** Fills one of the official sheets, fillable or plain. */
-export async function fillOfficialSheet(template: Uint8Array | ArrayBuffer, nameHint: string, data: FillData, font: { regular: ArrayBuffer | Uint8Array }): Promise<FormFillResult & { layout?: LayoutId; form?: boolean }> {
+export async function fillOfficialSheet(
+  template: Uint8Array | ArrayBuffer,
+  nameHint: string,
+  data: FillData,
+  font: { regular: ArrayBuffer | Uint8Array },
+): Promise<FormFillResult & { layout?: LayoutId; form?: boolean }> {
   const doc = await PDFDocument.load(template, { ignoreEncryption: true });
   const id = identifySheet(doc, nameHint);
-  if (!id) { logEvent("export", `sheet not recognised: ${nameHint}`); throw new Error("This is not one of the official sheets Soul Forge knows."); }
+  if (!id) {
+    logEvent("export", `sheet not recognised: ${nameHint}`);
+    throw new Error("This is not one of the official sheets Soul Forge knows.");
+  }
   logEvent("export", `filling ${nameHint} as layout ${id.layout}${id.form ? "" : " (printed: fields added)"}`);
   const fontkit = (await import("@pdf-lib/fontkit")).default;
   doc.registerFontkit(fontkit);
@@ -120,7 +138,10 @@ export async function fillOfficialSheet(template: Uint8Array | ArrayBuffer, name
   if (!id.form) {
     try {
       addFormFields(doc, known);
-      return await fillAsForm(doc, f, id.layout, data, [...notes, "The printed sheet got fillable fields, so you can change any value afterwards."]);
+      return await fillAsForm(doc, f, id.layout, data, [
+        ...notes,
+        "The printed sheet got fillable fields, so you can change any value afterwards.",
+      ]);
     } catch {
       // Fall back to writing onto the page below.
     }
@@ -139,9 +160,23 @@ export async function fillOfficialSheet(template: Uint8Array | ArrayBuffer, name
 }
 
 /** Fills a sheet through its form fields (its own, or the ones a printed copy was given). */
-async function fillAsForm(doc: PDFDocument, f: PDFFont, layout: LayoutId, data: FillData, notes: string[]): Promise<FormFillResult & { layout?: LayoutId; form?: boolean }> {
+async function fillAsForm(
+  doc: PDFDocument,
+  f: PDFFont,
+  layout: LayoutId,
+  data: FillData,
+  notes: string[],
+): Promise<FormFillResult & { layout?: LayoutId; form?: boolean }> {
   const sink = formSink(doc, f);
-  const ws: AutoField[] = sink.widgets.map((w) => ({ name: w.name, t: w.type === "Btn" ? "Btn" : "Tx", p: w.page, x: w.x, y: w.y, w: w.w, h: w.h }));
+  const ws: AutoField[] = sink.widgets.map((w) => ({
+    name: w.name,
+    t: w.type === "Btn" ? "Btn" : "Tx",
+    p: w.page,
+    x: w.x,
+    y: w.y,
+    w: w.w,
+    h: w.h,
+  }));
   const overflow: SpellRow[] = [];
   notes.push(...run(layout, ws, data, sink, overflow));
   sink.done();
@@ -163,11 +198,19 @@ export function addFormFields(doc: PDFDocument, widgets: W[]): void {
     const at = { x: w.x, y: w.y, width: w.w, height: w.h, ...look };
     if (w.t === "Btn") {
       let cb: PDFCheckBox;
-      try { cb = form.getCheckBox(w.name); } catch { cb = form.createCheckBox(w.name); }
+      try {
+        cb = form.getCheckBox(w.name);
+      } catch {
+        cb = form.createCheckBox(w.name);
+      }
       cb.addToPage(page, at);
     } else {
       let tf: PDFTextField;
-      try { tf = form.getTextField(w.name); } catch { tf = form.createTextField(w.name); }
+      try {
+        tf = form.getTextField(w.name);
+      } catch {
+        tf = form.createTextField(w.name);
+      }
       tf.addToPage(page, at);
     }
   }

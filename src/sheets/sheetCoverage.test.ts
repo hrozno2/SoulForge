@@ -24,15 +24,27 @@ describe.skipIf(!C || !existsSync(join(C ?? "", "sheets")))("sheet coverage", ()
     const ACCEPTED = /^(spa\d\.dmg|eq\d\.note|gems)$/;
     const gaps: string[] = [];
     for (const dir of DIRS.filter((d) => existsSync(d))) {
-      for (const f of readdirSync(dir).filter((x) => x.toLowerCase().endsWith(".pdf")).sort()) {
+      for (const f of readdirSync(dir)
+        .filter((x) => x.toLowerCase().endsWith(".pdf"))
+        .sort()) {
         const bytes = readFileSync(join(dir, f));
         const id = identifySheet(await PDFDocument.load(bytes, { ignoreEncryption: true }), f);
         if (!id) continue;
         const res = await fillOfficialSheet(bytes, f, maximal(), font);
         const doc = await PDFDocument.load(res.bytes, { ignoreEncryption: true });
         let fields: PDFTextField[] = [];
-        try { fields = doc.getForm().getFields().filter((x): x is PDFTextField => x instanceof PDFTextField); } catch { /* no form: printed version drawn over */ }
-        if (!fields.length) { out.push(`| ${f} | ${id.layout} | drawn (no form) | - | - |`); continue; }
+        try {
+          fields = doc
+            .getForm()
+            .getFields()
+            .filter((x): x is PDFTextField => x instanceof PDFTextField);
+        } catch {
+          /* no form: printed version drawn over */
+        }
+        if (!fields.length) {
+          out.push(`| ${f} | ${id.layout} | drawn (no form) | - | - |`);
+          continue;
+        }
         // A name the PDF uses for two places (a slip in WotC's own file) is one field; the fill draws its values onto
         // the page instead, so it counts as filled.
         const empty = fields.filter((x) => !(x.getText() ?? "").trim() && x.acroField.getWidgets().length < 2).map((x) => x.getName());

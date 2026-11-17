@@ -26,20 +26,43 @@ export function Shop({ r, ch, set }: { r: Resolved; ch: Character; set: SetChara
     const res = buy(ch, el);
     setMsg(res.ok ? `Bought ${el.name} for ${formatCp(buyCost(ch, el))}.` : res.reason);
     // Paid from the character as it is when the change lands, so two quick clicks pay twice.
-    if (res.ok) { flyInto("backpack"); set((c) => { const now = buy(c, el); return now.ok ? now.character : c; }); }
+    if (res.ok) {
+      flyInto("backpack");
+      set((c) => {
+        const now = buy(c, el);
+        return now.ok ? now.character : c;
+      });
+    }
   };
   return (
     <section className="card shop">
       <h2>Shop</h2>
       <div className="row summary">
-        <span title={`${formatCp(purse)} in all`}>Purse <b>{formatCoins(ch.coins)}</b></span>
+        <span title={`${formatCp(purse)} in all`}>
+          Purse <b>{formatCoins(ch.coins)}</b>
+        </span>
         {multiplierOf(ch) !== 1 && <span>Prices × {multiplierOf(ch)}</span>}
         {ch.rarityPrices && <span>Magic items by rarity</span>}
-        {msg && <span className="notice" role="status">{msg}</span>}
+        {msg && (
+          <span className="notice" role="status">
+            {msg}
+          </span>
+        )}
       </div>
-      <Browse items={items} type="Item" chosen={[]} onPick={onBuy} disabledReason={why} defaultView="list" allowCards={false} viewKey="shop.Item" defaultLocked="hide" perPage={60}
+      <Browse
+        items={items}
+        type="Item"
+        chosen={[]}
+        onPick={onBuy}
+        disabledReason={why}
+        defaultView="list"
+        allowCards={false}
+        viewKey="shop.Item"
+        defaultLocked="hide"
+        perPage={60}
         rowLabel={(el) => (priceCp(el, !!ch.rarityPrices) !== undefined ? formatCp(buyCost(ch, el)) : undefined)}
-        pickLabel={(el) => (priceCp(el, !!ch.rarityPrices) !== undefined ? `Buy · ${formatCp(buyCost(ch, el))}` : "Buy")} />
+        pickLabel={(el) => (priceCp(el, !!ch.rarityPrices) !== undefined ? `Buy · ${formatCp(buyCost(ch, el))}` : "Buy")}
+      />
     </section>
   );
 }
@@ -50,10 +73,23 @@ export function ShopSettings({ ch, set }: { ch: Character; set: SetCharacter }) 
     <div className="row shop-settings">
       <label className="field" title="The table's price multiplier for this character: 1 is the book price, 1.5 half again, 0.5 half">
         <span>Price multiplier</span>
-        <input type="number" min={0.1} step={0.1} value={ch.priceMultiplier ?? 1} onChange={(e) => { const v = Number(e.target.value); set((c) => ({ ...c, priceMultiplier: v > 0 ? v : 1 })); }} />
+        <input
+          type="number"
+          min={0.1}
+          step={0.1}
+          value={ch.priceMultiplier ?? 1}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            set((c) => ({ ...c, priceMultiplier: v > 0 ? v : 1 }));
+          }}
+        />
       </label>
-      <label className="check" title="Magic items without a price cost their rarity's value (2024 Dungeon Master's Guide), half for potions and scrolls">
-        <input type="checkbox" checked={!!ch.rarityPrices} onChange={(e) => set((c) => ({ ...c, rarityPrices: e.target.checked }))} /> Price magic items by rarity
+      <label
+        className="check"
+        title="Magic items without a price cost their rarity's value (2024 Dungeon Master's Guide), half for potions and scrolls"
+      >
+        <input type="checkbox" checked={!!ch.rarityPrices} onChange={(e) => set((c) => ({ ...c, rarityPrices: e.target.checked }))} /> Price
+        magic items by rarity
       </label>
     </div>
   );
@@ -64,7 +100,15 @@ export function SellButton({ ch, set, uid, el }: { ch: Character; set: SetCharac
   if (!el || priceCp(el, !!ch.rarityPrices) === undefined) return null;
   const value = sellValue(ch, el);
   return (
-    <button title={`Sell one for ${formatCp(value)} (what it costs to buy)`} onClick={() => set((c) => { const res = sell(c, uid, el); return res.ok ? res.character : c; })}>
+    <button
+      title={`Sell one for ${formatCp(value)} (what it costs to buy)`}
+      onClick={() =>
+        set((c) => {
+          const res = sell(c, uid, el);
+          return res.ok ? res.character : c;
+        })
+      }
+    >
       Sell · {formatCp(value)}
     </button>
   );

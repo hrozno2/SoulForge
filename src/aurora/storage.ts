@@ -13,14 +13,21 @@ let connection: Promise<IDBDatabase> | undefined;
 function openDb(): Promise<IDBDatabase> {
   if (connection) return connection;
   const mine: Promise<IDBDatabase> = openNew().then((db) => {
-    const drop = () => { if (connection === mine) connection = undefined; };
-    db.onversionchange = () => { db.close(); drop(); };
+    const drop = () => {
+      if (connection === mine) connection = undefined;
+    };
+    db.onversionchange = () => {
+      db.close();
+      drop();
+    };
     db.onclose = drop;
     return db;
   });
   connection = mine;
   // A failed open is not kept: the next call tries again.
-  mine.catch(() => { if (connection === mine) connection = undefined; });
+  mine.catch(() => {
+    if (connection === mine) connection = undefined;
+  });
   return mine;
 }
 
@@ -69,7 +76,10 @@ function openNew(): Promise<IDBDatabase> {
       }
     };
     req.onsuccess = () => resolve(req.result);
-    req.onblocked = () => reject(new Error("Soul Forge is open in another window that holds an older version of its data. Close the other window and try again."));
+    req.onblocked = () =>
+      reject(
+        new Error("Soul Forge is open in another window that holds an older version of its data. Close the other window and try again."),
+      );
     req.onerror = () => {
       // A newer Soul Forge (the test build shares this data) may have raised the version. New versions only ever
       // add stores, so open it at whatever version it has rather than failing with no content at all.
@@ -227,7 +237,10 @@ export async function templateBytes(id: string): Promise<ArrayBuffer> {
   if (hit) return hit;
   const db = await openDb();
   const bytes = (await wrap(db.transaction("templateBytes").objectStore("templateBytes").get(id))) as ArrayBuffer;
-  if (bytes) { if (tplCache.size >= 3) tplCache.delete(tplCache.keys().next().value!); tplCache.set(id, bytes); }
+  if (bytes) {
+    if (tplCache.size >= 3) tplCache.delete(tplCache.keys().next().value!);
+    tplCache.set(id, bytes);
+  }
   return bytes;
 }
 

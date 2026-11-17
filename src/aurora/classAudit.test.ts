@@ -30,14 +30,20 @@ describe.skipIf(!C)("class features against the rules", () => {
     return { uid: `w-${name}`, id: el.id, qty: 1, equipped: true, attuned: false, ...(magic ? { magic } : {}) };
   };
 
-  for (const [cls, ed] of [["ID_WOTC_PHB_CLASS_MONK", "2014"], ["ID_WOTC_PHB24_CLASS_MONK", "2024"]] as const) {
+  for (const [cls, ed] of [
+    ["ID_WOTC_PHB_CLASS_MONK", "2014"],
+    ["ID_WOTC_PHB24_CLASS_MONK", "2024"],
+  ] as const) {
     it(`Monk Unarmored Defense (${ed}): AC 10 + Dexterity + Wisdom`, () => {
       const sh = buildSheet(resolve(build(cls, 1), reg));
       expect(sh.ac.value).toBe(10 + mod(16) + mod(14));
     }, 600000);
   }
 
-  for (const [cls, ed] of [["ID_WOTC_PHB_CLASS_BARD", "2014"], ["ID_WOTC_PHB24_CLASS_BARD", "2024"]] as const) {
+  for (const [cls, ed] of [
+    ["ID_WOTC_PHB_CLASS_BARD", "2014"],
+    ["ID_WOTC_PHB24_CLASS_BARD", "2024"],
+  ] as const) {
     it(`Jack of All Trades (${ed}): half proficiency on skills without proficiency`, () => {
       const sh = buildSheet(resolve(build(cls, 2), reg));
       const none = sh.skills.find((s) => s.level === "none" && s.ability === "strength")!;
@@ -46,25 +52,46 @@ describe.skipIf(!C)("class features against the rules", () => {
   }
 
   it("Hexblade's Hex Warrior: a weapon attack can use Charisma", () => {
-    const ch = withSub(build("ID_WOTC_PHB_CLASS_WARLOCK", 1, (c) => { c.inventory = [weapon("Longsword", "2014")]; }), "ID_WOTC_XGTE_ARCHETYPE_HEXBLADE");
+    const ch = withSub(
+      build("ID_WOTC_PHB_CLASS_WARLOCK", 1, (c) => {
+        c.inventory = [weapon("Longsword", "2014")];
+      }),
+      "ID_WOTC_XGTE_ARCHETYPE_HEXBLADE",
+    );
     const sh = buildSheet(resolve(ch, reg));
     const sword = sh.attacks.find((a) => /longsword/i.test(a.name))!;
     expect(sword.bonus).toBe(mod(18) + sh.proficiency);
   }, 600000);
 
   it("Battle Smith's Battle Ready: a magic weapon attack uses Intelligence", () => {
-    const ch = withSub(build("ID_WOTC_TCOE_CLASS_ARTIFICER", 3, (c) => { c.inventory = [weapon("Longsword", "2014", 1)]; }), "ID_WOTC_TCOE_ARCHETYPE_ARTIFICER_BATTLE_SMITH");
+    const ch = withSub(
+      build("ID_WOTC_TCOE_CLASS_ARTIFICER", 3, (c) => {
+        c.inventory = [weapon("Longsword", "2014", 1)];
+      }),
+      "ID_WOTC_TCOE_ARCHETYPE_ARTIFICER_BATTLE_SMITH",
+    );
     const sh = buildSheet(resolve(ch, reg));
     const sword = sh.attacks.find((a) => /longsword/i.test(a.name))!;
     expect(sword.bonus).toBe(mod(16) + sh.proficiency + 1);
   }, 600000);
 
   it("2024 Pact of the Blade: the pact weapon can use Charisma", () => {
-    const ch = build("ID_WOTC_PHB24_CLASS_WARLOCK", 3, (c) => { c.inventory = [weapon("Longsword", "2024")]; });
+    const ch = build("ID_WOTC_PHB24_CLASS_WARLOCK", 3, (c) => {
+      c.inventory = [weapon("Longsword", "2024")];
+    });
     const r0 = resolve(ch, reg);
     const pact = r0.slots.find((s) => s.options.some((o) => o.name === "Pact of the Blade"));
     if (!pact) return;
-    const r = resolve({ ...ch, selections: { ...ch.selections, [pact.key]: [...pact.chosen, pact.options.find((o) => o.name === "Pact of the Blade")!.id].slice(-pact.rule.number) } }, reg);
+    const r = resolve(
+      {
+        ...ch,
+        selections: {
+          ...ch.selections,
+          [pact.key]: [...pact.chosen, pact.options.find((o) => o.name === "Pact of the Blade")!.id].slice(-pact.rule.number),
+        },
+      },
+      reg,
+    );
     const sh = buildSheet(r);
     // Charisma for the attack; the bonded weapon's proficiency needs the weapon marked (Stage C), so none here.
     expect(sh.attacks.find((a) => /longsword/i.test(a.name))!.bonus).toBe(mod(18));
@@ -79,8 +106,23 @@ describe.skipIf(!C)("class features against the rules", () => {
 
   it("Firearms: the Gunner feat makes a musket attack proficient", () => {
     const musket = { uid: "w-musket", id: "ID_WOTC_DMG_WEAPON_MUSKET", qty: 1, equipped: true, attuned: false };
-    const without = buildSheet(resolve(build("ID_WOTC_PHB_CLASS_WIZARD", 1, (c) => { c.inventory = [musket]; }), reg));
-    const withFeat = buildSheet(resolve(build("ID_WOTC_PHB_CLASS_WIZARD", 1, (c) => { c.inventory = [musket]; c.extras = ["ID_WOTC_TCOE_FEAT_GUNNER"]; }), reg));
+    const without = buildSheet(
+      resolve(
+        build("ID_WOTC_PHB_CLASS_WIZARD", 1, (c) => {
+          c.inventory = [musket];
+        }),
+        reg,
+      ),
+    );
+    const withFeat = buildSheet(
+      resolve(
+        build("ID_WOTC_PHB_CLASS_WIZARD", 1, (c) => {
+          c.inventory = [musket];
+          c.extras = ["ID_WOTC_TCOE_FEAT_GUNNER"];
+        }),
+        reg,
+      ),
+    );
     const bonus = (sh: typeof without) => sh.attacks.find((a) => /musket/i.test(a.name))!.bonus;
     expect(bonus(withFeat) - bonus(without)).toBe(withFeat.proficiency);
   }, 600000);

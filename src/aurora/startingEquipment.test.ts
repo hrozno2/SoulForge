@@ -3,11 +3,30 @@ import { nodeXml, loadRegistry } from "./fixture";
 import { parseElementsXml } from "./parse";
 import { ARegistry } from "./registry";
 import { newCharacter } from "./character";
-import { ItemIndex, addToInventory, autoEquip, equipmentText, parseItems, planFor, resolveRef, splitTop, startingPlans, variantItems, adventuringPacks, commonGear } from "./startingEquipment";
+import {
+  ItemIndex,
+  addToInventory,
+  autoEquip,
+  equipmentText,
+  parseItems,
+  planFor,
+  resolveRef,
+  splitTop,
+  startingPlans,
+  variantItems,
+  adventuringPacks,
+  commonGear,
+} from "./startingEquipment";
 
 describe("text parsing", () => {
   it("splits lists at top level only", () => {
-    expect(splitTop("Calligrapher's Supplies, Book (history), Parchment (8 sheets), Robe, 8 GP")).toEqual(["Calligrapher's Supplies", "Book (history)", "Parchment (8 sheets)", "Robe", "8 GP"]);
+    expect(splitTop("Calligrapher's Supplies, Book (history), Parchment (8 sheets), Robe, 8 GP")).toEqual([
+      "Calligrapher's Supplies",
+      "Book (history)",
+      "Parchment (8 sheets)",
+      "Robe",
+      "8 GP",
+    ]);
     expect(splitTop("a light crossbow and 20 bolts")).toEqual(["a light crossbow", "20 bolts"]);
     expect(splitTop("a trophy (a dagger, broken blade, or piece of a banner), a set of bone dice")).toHaveLength(2);
   });
@@ -19,9 +38,16 @@ describe("text parsing", () => {
     expect(parseItems("an explorer’s pack").refs[0]).toEqual({ text: "explorer’s pack", qty: 1 });
   });
   it("finds the equipment text in each edition", () => {
-    expect(equipmentText(`<tr><td><b>Starting Equipment</b></td><td class="left"><i>Choose A or B:</i> (A) Robe; or (B) 55 GP</td></tr>`)!.kind).toBe("letters");
-    expect(equipmentText(`<li><strong>Equipment:</strong> An insignia of rank, a set of common clothes, and a belt pouch containing 10 gp</li>`)!.kind).toBe("plain");
-    const g = equipmentText(`<h5 class="caption">EQUIPMENT</h5><p>x</p><ul><li><i>(a)</i> a mace or <i>(b)</i> a warhammer</li><li>A shield</li></ul><h5>NEXT</h5>`)!;
+    expect(
+      equipmentText(`<tr><td><b>Starting Equipment</b></td><td class="left"><i>Choose A or B:</i> (A) Robe; or (B) 55 GP</td></tr>`)!.kind,
+    ).toBe("letters");
+    expect(
+      equipmentText(`<li><strong>Equipment:</strong> An insignia of rank, a set of common clothes, and a belt pouch containing 10 gp</li>`)!
+        .kind,
+    ).toBe("plain");
+    const g = equipmentText(
+      `<h5 class="caption">EQUIPMENT</h5><p>x</p><ul><li><i>(a)</i> a mace or <i>(b)</i> a warhammer</li><li>A shield</li></ul><h5>NEXT</h5>`,
+    )!;
     expect(g.kind).toBe("groups");
     expect(g.items).toHaveLength(2);
   });
@@ -135,7 +161,15 @@ describe("gear that names only a kind", () => {
     const { newCharacter } = await import("./character");
     const reg = new ARegistry();
     reg.build();
-    const items = resolveChosenTools([{ name: "Musical Instrument (one of your choice)", qty: 1 }, { name: "Gaming Set (same as above)", qty: 1 }, { name: "Artisan's Tools", qty: 1 }], [], reg);
+    const items = resolveChosenTools(
+      [
+        { name: "Musical Instrument (one of your choice)", qty: 1 },
+        { name: "Gaming Set (same as above)", qty: 1 },
+        { name: "Artisan's Tools", qty: 1 },
+      ],
+      [],
+      reg,
+    );
     expect(items.map((i) => i.pending)).toEqual(["instrument", "gaming", "artisan"]);
     const ch = addToInventory(newCharacter(), items);
     expect(ch.inventory.map((i) => i.pending)).toEqual(["instrument", "gaming", "artisan"]);

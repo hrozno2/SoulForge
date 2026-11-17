@@ -26,14 +26,23 @@ const RAW = /\{@\w|\{#\w|\{\{item\.|\[object |\bundefined\b|\bNaN\b/;
 /** What each set has been read and accepted at. A kind may only fall. */
 const KNOWN: Record<string, number> = {
   // Languages the 2024 rules offer no way to learn at creation, in the SRD's own lists.
-  "srd never reached: Language": 6, "srd-5.1 never reached: Language": 6, "srd-5.2 never reached: Language": 7,
+  "srd never reached: Language": 6,
+  "srd-5.1 never reached: Language": 6,
+  "srd-5.2 never reached: Language": 7,
   // A subrace the holder does not pick; NPC species, sidekick classes and older subclass copies are hidden on purpose; house marks need a dragonmark feat's path.
-  "5etools rules: Feat requirements not met": 3, "5etools never reached: Optional Feature": 4, "5etools never reached: Racial Trait": 58, "5etools never reached: Archetype Feature": 16, "5etools never reached: Class Feature": 32,
+  "5etools rules: Feat requirements not met": 3,
+  "5etools never reached: Optional Feature": 4,
+  "5etools never reached: Racial Trait": 58,
+  "5etools never reached: Archetype Feature": 16,
+  "5etools never reached: Class Feature": 32,
 };
 
 function sweep(reg: ARegistry, set: ContentSet, ref: RefClass[]) {
   const findings = new Map<string, string[]>();
-  const find = (kind: string, what: string) => { if (!findings.has(kind)) findings.set(kind, []); findings.get(kind)!.push(what); };
+  const find = (kind: string, what: string) => {
+    if (!findings.has(kind)) findings.set(kind, []);
+    findings.get(kind)!.push(what);
+  };
   const reached = new Set<string>();
   const all = reg.all();
   const isFive = (e: AElement) => set !== "aurora" && (e.origin === "5etools" || /^SRD /.test(e.source) || e.id.startsWith("ID_5ET"));
@@ -43,9 +52,13 @@ function sweep(reg: ARegistry, set: ContentSet, ref: RefClass[]) {
   // Text and links, on everything.
   for (const e of all) {
     if (!e.name?.trim()) find("no name", e.id);
-    if (isFive(e) && RAW.test(`${e.name} ${e.description ?? ""}`)) find("raw markup or a broken value in the text", `${e.type}: ${e.name}: ${RAW.exec(`${e.name} ${e.description ?? ""}`)?.[0]}`);
+    if (isFive(e) && RAW.test(`${e.name} ${e.description ?? ""}`))
+      find("raw markup or a broken value in the text", `${e.type}: ${e.name}: ${RAW.exec(`${e.name} ${e.description ?? ""}`)?.[0]}`);
     // Aurora grants markers with no element of their own, and its content linter has them listed.
-    if (isFive(e)) for (const r of e.rules) if (r.kind === "grant" && r.id && !reg.get(r.id) && !/^CREATUREREF:/.test(r.id)) find("a grant of something missing", `${e.type}: ${e.name}: ${r.id}`);
+    if (isFive(e))
+      for (const r of e.rules)
+        if (r.kind === "grant" && r.id && !reg.get(r.id) && !/^CREATUREREF:/.test(r.id))
+          find("a grant of something missing", `${e.type}: ${e.name}: ${r.id}`);
   }
 
   // Everything a character can hold, with its choices filled. Every option a choice offers is noted, to be tried below.
@@ -56,11 +69,21 @@ function sweep(reg: ARegistry, set: ContentSet, ref: RefClass[]) {
     const sh = buildSheet(r);
     for (const a of r.active) reached.add(a.el.id);
     for (const sl of r.slots) for (const id of sl.chosen) reached.add(id);
-    for (const sl of r.slots) for (const o of sl.options) if (!reached.has(o.id) && !pending.has(o.id) && !["Spell", ...CARRIED].includes(o.type)) pending.set(o.id, { ch: filled, key: sl.key, rest: sl.chosen.slice(1), label });
+    for (const sl of r.slots)
+      for (const o of sl.options)
+        if (!reached.has(o.id) && !pending.has(o.id) && !["Spell", ...CARRIED].includes(o.type))
+          pending.set(o.id, { ch: filled, key: sl.key, rest: sl.chosen.slice(1), label });
     // Taking every option on purpose repeats what the character has; a player gets told, and that is not a fault here.
     const forced = /, taking /.test(label);
-    for (const f of checkCharacter(r, sh, ref)) if (!/Class not in the rules reference/.test(f.rule) && !(forced && /repeats something|Same feat twice|does not meet its requirements|feature missing|requirements not met/.test(f.rule))) find(`rules: ${f.rule}`, `${label}: ${f.detail}`);
-    for (const a of sh.attacks) if (/NaN|undefined/.test(`${a.bonus} ${a.damage}`)) find("an attack with a broken number", `${label}: ${a.name} ${a.bonus} ${a.damage}`);
+    for (const f of checkCharacter(r, sh, ref))
+      if (
+        !/Class not in the rules reference/.test(f.rule) &&
+        !(forced && /repeats something|Same feat twice|does not meet its requirements|feature missing|requirements not met/.test(f.rule))
+      )
+        find(`rules: ${f.rule}`, `${label}: ${f.detail}`);
+    for (const a of sh.attacks)
+      if (/NaN|undefined/.test(`${a.bonus} ${a.damage}`))
+        find("an attack with a broken number", `${label}: ${a.name} ${a.bonus} ${a.damage}`);
     if (!Number.isFinite(sh.hp) || !Number.isFinite(sh.ac.value)) find("a sheet with a broken number", label);
   };
   /** A feat's holder must meet its requirement: high scores, and a class and level that do. */
@@ -71,40 +94,93 @@ function sweep(reg: ARegistry, set: ContentSet, ref: RefClass[]) {
     const same = casters.filter((c) => /2024/.test(c.source) === modern);
     const cands = same.length ? same : casters.length ? casters : reg.ofType("Class").slice(0, 1);
     const need = e.requirements ?? "";
-    const cls = cands.find((c) => (/FIGHTING_STYLE/.test(need) ? c.name === "Fighter" : /SPELLCASTING|type:spell/.test(need) ? c.name === "Wizard" : /ARMOR|WEAPON/.test(need) ? c.name === "Fighter" : true)) ?? cands[0];
+    const cls =
+      cands.find((c) =>
+        /FIGHTING_STYLE/.test(need)
+          ? c.name === "Fighter"
+          : /SPELLCASTING|type:spell/.test(need)
+            ? c.name === "Wizard"
+            : /ARMOR|WEAPON/.test(need)
+              ? c.name === "Fighter"
+              : true,
+      ) ?? cands[0];
     // What the requirement names: the species, background or feat that comes before it.
     const named = [...need.matchAll(/ID_[A-Z0-9_]+/g)].map((m) => reg.get(m[0])).filter((x): x is AElement => !!x);
     const race = named.find((x) => x.type === "Race");
     const background = named.find((x) => x.type === "Background");
     const before = named.find((x) => x.type === "Feat");
-    return { ...newCharacter(), abilityBase: { ...newCharacter().abilityBase, ...strong }, classes: [{ classId: cls.id, level: 20 }], extras: [...(before ? [before.id] : []), e.id], ...(race ? { race: race.id } : {}), ...(background ? { background: background.id } : {}) };
+    return {
+      ...newCharacter(),
+      abilityBase: { ...newCharacter().abilityBase, ...strong },
+      classes: [{ classId: cls.id, level: 20 }],
+      extras: [...(before ? [before.id] : []), e.id],
+      ...(race ? { race: race.id } : {}),
+      ...(background ? { background: background.id } : {}),
+    };
   };
   const replaced = new Set<string>();
-  const offeredNames = new Set(reg.ofType("Archetype").filter((e) => holder(reg, e)).map((e) => e.name));
-  for (const type of HELD) for (const e of reg.ofType(type)) {
-    if (e.compendiumHidden) continue;
-    const ch = type === "Feat" ? feat(e) : holder(reg, e);
-    // A reprint takes an older subclass's place on the list (the 2014 Knowledge Domain copied for the 2024 Cleric).
-    if (!ch && type === "Archetype" && offeredNames.has(e.name)) { replaced.add(e.id); continue; }
-    if (!ch) { find(`${type} no character can hold it`, e.name); continue; }
-    try { check(`${type} ${e.name} (${e.source})`, ch); reached.add(e.id); } catch (err) { find("crashed", `${type} ${e.name}: ${String(err).slice(0, 120)}`); }
-    // A species or background is held at level 1; what it opens later (Simic Hybrid's 5th-level enhancement, the
-    // Aasimar's 3rd-level revelation) is tried at level 20 as well.
-    if ((type === "Race" || type === "Background") && ch.classes.length) try { check(`${type} ${e.name} (${e.source}) at level 20`, { ...ch, classes: [{ ...ch.classes[0], level: 20 }] }); } catch (err) { find("crashed", `${type} ${e.name} at 20: ${String(err).slice(0, 120)}`); }
-  }
+  const offeredNames = new Set(
+    reg
+      .ofType("Archetype")
+      .filter((e) => holder(reg, e))
+      .map((e) => e.name),
+  );
+  for (const type of HELD)
+    for (const e of reg.ofType(type)) {
+      if (e.compendiumHidden) continue;
+      const ch = type === "Feat" ? feat(e) : holder(reg, e);
+      // A reprint takes an older subclass's place on the list (the 2014 Knowledge Domain copied for the 2024 Cleric).
+      if (!ch && type === "Archetype" && offeredNames.has(e.name)) {
+        replaced.add(e.id);
+        continue;
+      }
+      if (!ch) {
+        find(`${type} no character can hold it`, e.name);
+        continue;
+      }
+      try {
+        check(`${type} ${e.name} (${e.source})`, ch);
+        reached.add(e.id);
+      } catch (err) {
+        find("crashed", `${type} ${e.name}: ${String(err).slice(0, 120)}`);
+      }
+      // A species or background is held at level 1; what it opens later (Simic Hybrid's 5th-level enhancement, the
+      // Aasimar's 3rd-level revelation) is tried at level 20 as well.
+      if ((type === "Race" || type === "Background") && ch.classes.length)
+        try {
+          check(`${type} ${e.name} (${e.source}) at level 20`, { ...ch, classes: [{ ...ch.classes[0], level: 20 }] });
+        } catch (err) {
+          find("crashed", `${type} ${e.name} at 20: ${String(err).slice(0, 120)}`);
+        }
+    }
   // Every Option (an optional rule the player turns on: Customizing Your Origin), on a species holder that it can act on.
-  const racer = reg.ofType("Race").find((e) => !e.compendiumHidden && isFive(e) && e.rules.some((r) => r.requirements?.includes("ID_5ET_OPTION_"))) ?? reg.ofType("Race").find((e) => !e.compendiumHidden);
+  const racer =
+    reg.ofType("Race").find((e) => !e.compendiumHidden && isFive(e) && e.rules.some((r) => r.requirements?.includes("ID_5ET_OPTION_"))) ??
+    reg.ofType("Race").find((e) => !e.compendiumHidden);
   for (const e of reg.ofType("Option")) {
     const ch = racer ? holder(reg, racer) : undefined;
-    if (!ch) { find("Option no character can hold it", e.name); continue; }
-    try { check(`Option ${e.name} (${e.source})`, { ...ch, options: [e.id] }); reached.add(e.id); } catch (err) { find("crashed", `Option ${e.name}: ${String(err).slice(0, 120)}`); }
+    if (!ch) {
+      find("Option no character can hold it", e.name);
+      continue;
+    }
+    try {
+      check(`Option ${e.name} (${e.source})`, { ...ch, options: [e.id] });
+      reached.add(e.id);
+    } catch (err) {
+      find("crashed", `Option ${e.name}: ${String(err).slice(0, 120)}`);
+    }
   }
   // Every option of every choice, taken once, which may open more.
   for (let n = 0; pending.size && n < 40000; n++) {
     const [id, p] = pending.entries().next().value as [string, { ch: Character; key: string; rest: string[]; label: string }];
     pending.delete(id);
     if (reached.has(id)) continue;
-    try { check(`${p.label}, taking ${reg.get(id)?.name}`, { ...p.ch, selections: { ...p.ch.selections, [p.key]: [id, ...p.rest] } }); reached.add(id); } catch (err) { find("crashed", `option ${reg.get(id)?.name}: ${String(err).slice(0, 120)}`); }
+    try {
+      check(`${p.label}, taking ${reg.get(id)?.name}`, { ...p.ch, selections: { ...p.ch.selections, [p.key]: [id, ...p.rest] } });
+      reached.add(id);
+    } catch (err) {
+      find("crashed", `option ${reg.get(id)?.name}: ${String(err).slice(0, 120)}`);
+    }
   }
 
   // Every spell: its facts, and that its rolls can be read.
@@ -116,7 +192,17 @@ function sweep(reg: ARegistry, set: ContentSet, ref: RefClass[]) {
     if (!s.setters.range?.value) find("a spell with no range", s.name);
     if (!s.setters.duration?.value) find("a spell with no duration", s.name);
     if (!s.description?.replace(/<[^>]+>/g, "").trim()) find("a spell with no text", s.name);
-    try { for (const x of spellRolls(s.name, s.description ?? "", { proficiency: 3, mods: {} }, 5, { level: lv, castLevel: Math.min(9, lv + 1), characterLevel: 11 })) if (/NaN|undefined/.test(x.expr)) find("a spell roll with a broken number", `${s.name}: ${x.expr}`); reached.add(s.id); } catch (err) { find("crashed", `Spell ${s.name}: ${String(err).slice(0, 120)}`); }
+    try {
+      for (const x of spellRolls(s.name, s.description ?? "", { proficiency: 3, mods: {} }, 5, {
+        level: lv,
+        castLevel: Math.min(9, lv + 1),
+        characterLevel: 11,
+      }))
+        if (/NaN|undefined/.test(x.expr)) find("a spell roll with a broken number", `${s.name}: ${x.expr}`);
+      reached.add(s.id);
+    } catch (err) {
+      find("crashed", `Spell ${s.name}: ${String(err).slice(0, 120)}`);
+    }
   }
 
   // Every creature the content holds is listed; its numbers are read when a form or companion is taken.
@@ -130,44 +216,82 @@ function sweep(reg: ARegistry, set: ContentSet, ref: RefClass[]) {
     const items = CARRIED.flatMap((t) => reg.ofType(t));
     for (let i = 0; i < items.length; i += 40) {
       const part = items.slice(i, i + 40);
-      const ch: Character = { ...newCharacter(), classes: [{ classId: cls.id, level: 5 }], inventory: part.map((e) => ({ uid: uid(), id: e.id, qty: 1, equipped: true, attuned: false })) as Character["inventory"] };
+      const ch: Character = {
+        ...newCharacter(),
+        classes: [{ classId: cls.id, level: 5 }],
+        inventory: part.map((e) => ({ uid: uid(), id: e.id, qty: 1, equipped: true, attuned: false })) as Character["inventory"],
+      };
       try {
         const sh = buildSheet(resolve(ch, reg));
-        for (const a of sh.attacks) if (/NaN|undefined/.test(`${a.bonus} ${a.damage}`)) find("an attack with a broken number", `${a.name} ${a.bonus} ${a.damage}`);
-        if (!Number.isFinite(sh.ac.value)) find("a sheet with a broken number", part.map((p) => p.name).slice(0, 3).join(", "));
+        for (const a of sh.attacks)
+          if (/NaN|undefined/.test(`${a.bonus} ${a.damage}`)) find("an attack with a broken number", `${a.name} ${a.bonus} ${a.damage}`);
+        if (!Number.isFinite(sh.ac.value))
+          find(
+            "a sheet with a broken number",
+            part
+              .map((p) => p.name)
+              .slice(0, 3)
+              .join(", "),
+          );
         for (const e of part) reached.add(e.id);
-      } catch (err) { find("crashed", `Items ${part[0].name}...: ${String(err).slice(0, 120)}`); }
+      } catch (err) {
+        find("crashed", `Items ${part[0].name}...: ${String(err).slice(0, 120)}`);
+      }
     }
-    for (const e of items) { if (e.type === "Weapon" && !e.setters.rarity && !e.setters.damage && !e.supports.includes("special")) find("a weapon with no damage", e.name); }
+    for (const e of items) {
+      if (e.type === "Weapon" && !e.setters.rarity && !e.setters.damage && !e.supports.includes("special"))
+        find("a weapon with no damage", e.name);
+    }
   }
 
   const types = new Map<string, { total: number; reached: number }>();
-  for (const e of all) { const t = types.get(e.type) ?? { total: 0, reached: 0 }; t.total++; if (reached.has(e.id)) t.reached++; types.set(e.type, t); }
+  for (const e of all) {
+    const t = types.get(e.type) ?? { total: 0, reached: 0 };
+    t.total++;
+    if (reached.has(e.id)) t.reached++;
+    types.set(e.type, t);
+  }
   // What no character reached, by type: hidden helpers mostly. A name here is content no test exercises.
-  for (const e of all) if (!reached.has(e.id) && !replaced.has(e.id) && !e.compendiumHidden) find(`never reached: ${e.type}`, `${e.name} (${e.source})`);
+  for (const e of all)
+    if (!reached.has(e.id) && !replaced.has(e.id) && !e.compendiumHidden) find(`never reached: ${e.type}`, `${e.name} (${e.source})`);
   if (replaced.size) find("info: subclasses a reprint replaced", String(replaced.size));
   return { findings, types, total: all.length };
 }
 
-it.skipIf(!C || process.env.RULES_TIER !== "sweep")("every element of every content set", () => {
-  const ref: RefClass[] = JSON.parse(readFileSync(join(C!, "rules-ref.json"), "utf8"));
-  const sets = process.env.RULES_CONTENT ? [process.env.RULES_CONTENT as ContentSet] : CONTENT_SETS;
-  const lines = ["# Every element of every content set", ""];
-  const over: string[] = [];
-  for (const set of sets) {
-    const reg = loadContentSet(C!, set);
-    const { findings, types, total } = sweep(reg, set, ref);
-    lines.push(`## ${set}: ${total} elements`, "", "| Type | Elements | Reached |", "|---|---|---|", ...[...types].sort((a, b) => b[1].total - a[1].total).map(([t, v]) => `| ${t} | ${v.total} | ${v.reached} |`), "");
-    for (const [kind, rows] of [...findings].sort()) {
-      lines.push(`### ${kind} (${rows.length})`, ...rows.slice(0, 40).map((r) => `- ${r}`), "");
-      // Aurora's sets are listed, not gated, but for crashes and broken numbers: its requirements name ids the sweep's
-      // characters do not build, the counts drift with the random picks, and it leaves the release.
-      const gated = !/^(aurora|both)$/.test(set) || /^(crashed|a sheet|an attack|a spell roll)/.test(kind);
-      if (gated && !/^info:/.test(kind) && rows.length > (KNOWN[`${set} ${kind}`] ?? 0)) over.push(`${set} ${kind}: ${rows.length}, known ${KNOWN[`${set} ${kind}`] ?? 0}`);
+it.skipIf(!C || process.env.RULES_TIER !== "sweep")(
+  "every element of every content set",
+  () => {
+    const ref: RefClass[] = JSON.parse(readFileSync(join(C!, "rules-ref.json"), "utf8"));
+    const sets = process.env.RULES_CONTENT ? [process.env.RULES_CONTENT as ContentSet] : CONTENT_SETS;
+    const lines = ["# Every element of every content set", ""];
+    const over: string[] = [];
+    for (const set of sets) {
+      const reg = loadContentSet(C!, set);
+      const { findings, types, total } = sweep(reg, set, ref);
+      lines.push(
+        `## ${set}: ${total} elements`,
+        "",
+        "| Type | Elements | Reached |",
+        "|---|---|---|",
+        ...[...types].sort((a, b) => b[1].total - a[1].total).map(([t, v]) => `| ${t} | ${v.total} | ${v.reached} |`),
+        "",
+      );
+      for (const [kind, rows] of [...findings].sort()) {
+        lines.push(`### ${kind} (${rows.length})`, ...rows.slice(0, 40).map((r) => `- ${r}`), "");
+        // Aurora's sets are listed, not gated, but for crashes and broken numbers: its requirements name ids the sweep's
+        // characters do not build, the counts drift with the random picks, and it leaves the release.
+        const gated = !/^(aurora|both)$/.test(set) || /^(crashed|a sheet|an attack|a spell roll)/.test(kind);
+        if (gated && !/^info:/.test(kind) && rows.length > (KNOWN[`${set} ${kind}`] ?? 0))
+          over.push(`${set} ${kind}: ${rows.length}, known ${KNOWN[`${set} ${kind}`] ?? 0}`);
+      }
+      console.log(`SWEEP ${set}: ${total} elements; ${[...findings].map(([k, r]) => `${k} ${r.length}`).join("; ") || "no findings"}`);
     }
-    console.log(`SWEEP ${set}: ${total} elements; ${[...findings].map(([k, r]) => `${k} ${r.length}`).join("; ") || "no findings"}`);
-  }
-  mkdirSync(join(C!, "engine"), { recursive: true });
-  writeFileSync(join(C!, "engine", process.env.RULES_CONTENT ? `coverage-${process.env.RULES_CONTENT}.md` : "coverage.md"), lines.join("\n"));
-  expect(over).toEqual([]);
-}, 7200000);
+    mkdirSync(join(C!, "engine"), { recursive: true });
+    writeFileSync(
+      join(C!, "engine", process.env.RULES_CONTENT ? `coverage-${process.env.RULES_CONTENT}.md` : "coverage.md"),
+      lines.join("\n"),
+    );
+    expect(over).toEqual([]);
+  },
+  7200000,
+);

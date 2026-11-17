@@ -16,7 +16,18 @@ import type { AElement, ARule } from "../aurora/types";
 import { isModern } from "../aurora/edition";
 
 /** The 2024 Druid's table, used when no Foundry data gives the scales. */
-const FALLBACK = { forms: [{ at: 2, value: 4 }, { at: 4, value: 6 }, { at: 8, value: 8 }], cr: [{ at: 2, value: 0.25 }, { at: 4, value: 0.5 }, { at: 8, value: 1 }] };
+const FALLBACK = {
+  forms: [
+    { at: 2, value: 4 },
+    { at: 4, value: 6 },
+    { at: 8, value: 8 },
+  ],
+  cr: [
+    { at: 2, value: 0.25 },
+    { at: 4, value: 0.5 },
+    { at: 8, value: 1 },
+  ],
+};
 const CAPS = [0, 0.125, 0.25, 0.5, ...Array.from({ length: 30 }, (_, i) => i + 1)];
 
 function challenge(el: AElement): number | undefined {
@@ -32,9 +43,16 @@ export function wildShapeChoices(byId: Map<string, AElement>): number {
     const cr = challenge(el);
     if (cr === undefined) continue;
     const speed = String(el.setters.speed?.value ?? "").toLowerCase();
-    const fly = /\bfly\b/.test(speed), swim = /\bswim\b/.test(speed);
+    const fly = /\bfly\b/.test(speed),
+      swim = /\bswim\b/.test(speed);
     // "ws allow 1": every beast has it, so "(!ws fly||ws allow $(stat:wild shape:fly))" lets flyers in at 1 only.
-    const tags = ["ws beast", "ws allow 1", ...CAPS.filter((c) => c >= cr).map((c) => `ws cap8 ${c * 8}`), ...(fly ? ["ws fly"] : []), ...(swim ? ["ws swim"] : [])];
+    const tags = [
+      "ws beast",
+      "ws allow 1",
+      ...CAPS.filter((c) => c >= cr).map((c) => `ws cap8 ${c * 8}`),
+      ...(fly ? ["ws fly"] : []),
+      ...(swim ? ["ws swim"] : []),
+    ];
     el.supports = [...el.supports.filter((s) => !s.startsWith("ws ")), ...tags];
     beasts++;
   }
@@ -43,8 +61,9 @@ export function wildShapeChoices(byId: Map<string, AElement>): number {
   const scaled = druids.find((d) => d.scales?.["known-forms"] && d.scales?.["wild-shape"]);
   const forms = scaled?.scales?.["known-forms"] ?? FALLBACK.forms;
   const crs = scaled?.scales?.["wild-shape"] ?? FALLBACK.cr;
-  const stat = (name: string, value: string, level: number, bonus: string): ARule => ({ kind: "stat", name, value, level, bonus } as ARule);
-  const supports = "ws beast,ws cap8 $(stat:wild shape:cap8),(!ws fly||ws allow $(stat:wild shape:fly)),(!ws swim||ws allow $(stat:wild shape:swim))";
+  const stat = (name: string, value: string, level: number, bonus: string): ARule => ({ kind: "stat", name, value, level, bonus }) as ARule;
+  const supports =
+    "ws beast,ws cap8 $(stat:wild shape:cap8),(!ws fly||ws allow $(stat:wild shape:fly)),(!ws swim||ws allow $(stat:wild shape:swim))";
   let added = 0;
   for (const cls of druids) {
     if (cls.rules.some((r) => r.kind === "select" && r.type === "Companion" && /^Wild Shape forms/.test(r.name))) continue;
@@ -52,7 +71,7 @@ export function wildShapeChoices(byId: Map<string, AElement>): number {
     const limits: ARule[] = [
       ...crs.map((c) => stat("wild shape:cap8", String(c.value * 8), c.at, "wild shape cap")),
       stat("wild shape:fly", "1", 8, "wild shape fly"),
-      stat("wild shape:swim", "1", modern ? forms[0]?.at ?? 2 : 4, "wild shape swim"),
+      stat("wild shape:swim", "1", modern ? (forms[0]?.at ?? 2) : 4, "wild shape swim"),
     ];
     const selects: ARule[] = [];
     let had = 0;
@@ -60,7 +79,16 @@ export function wildShapeChoices(byId: Map<string, AElement>): number {
       const number = step.value - had;
       had = step.value;
       if (number <= 0) continue;
-      selects.push({ kind: "select", type: "Companion", name: `Wild Shape forms (level ${step.at})`, supports, number, level: step.at, optional: true, allowReplace: true } as ARule);
+      selects.push({
+        kind: "select",
+        type: "Companion",
+        name: `Wild Shape forms (level ${step.at})`,
+        supports,
+        number,
+        level: step.at,
+        optional: true,
+        allowReplace: true,
+      } as ARule);
     }
     cls.rules = [...cls.rules, ...limits, ...selects];
     added += selects.length;
@@ -69,7 +97,10 @@ export function wildShapeChoices(byId: Map<string, AElement>): number {
   for (const sub of byId.values()) {
     if (sub.type !== "Archetype" || !/^circle of the moon$/i.test(sub.name)) continue;
     if (sub.rules.some((r) => r.kind === "stat" && r.name === "wild shape:cap8")) continue;
-    sub.rules = [...sub.rules, { kind: "stat", name: "wild shape:cap8", value: "max(8, floor({level:druid} / 3) * 8)", bonus: "wild shape cap" } as ARule];
+    sub.rules = [
+      ...sub.rules,
+      { kind: "stat", name: "wild shape:cap8", value: "max(8, floor({level:druid} / 3) * 8)", bonus: "wild shape cap" } as ARule,
+    ];
   }
   return added;
 }

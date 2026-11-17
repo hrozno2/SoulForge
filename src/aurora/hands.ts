@@ -5,7 +5,8 @@ import type { ARegistry } from "./registry";
 
 export const HANDS = 2;
 
-export const isShieldEl = (el?: AElement): boolean => !!el && el.type === "Armor" && (el.setters.armor?.value.toLowerCase() === "shield" || /shield/i.test(el.name));
+export const isShieldEl = (el?: AElement): boolean =>
+  !!el && el.type === "Armor" && (el.setters.armor?.value.toLowerCase() === "shield" || /shield/i.test(el.name));
 
 /** How many hands an item takes while equipped: 0 for anything not held. */
 export function handsFor(it: InvItem, el?: AElement): number {

@@ -11,7 +11,9 @@ export async function exportLibrary(): Promise<string> {
   // The characters, and each one's card layout (C4), which is kept outside the character itself.
   const backup = { ...(await makeBackup()), layouts: allLayouts() };
   const ok = await saveFile(backupFileName(), new TextEncoder().encode(JSON.stringify(backup, null, 2)), "application/json");
-  return ok ? `Saved ${backup.characters.length} ${backup.characters.length === 1 ? "character" : "characters"} in one file.` : "Cancelled.";
+  return ok
+    ? `Saved ${backup.characters.length} ${backup.characters.length === 1 ? "character" : "characters"} in one file.`
+    : "Cancelled.";
 }
 
 /** Restores a library file's characters next to the ones here (a newer copy wins); says what happened. */

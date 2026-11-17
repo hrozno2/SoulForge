@@ -36,7 +36,13 @@ describe("pools follow the class table", () => {
 });
 
 describe("what is not a use count gets none", () => {
-  it.each([["Wizard", "2014"], ["Cleric", "2014"], ["Ranger", "2014"], ["Wizard", "2024"], ["Paladin", "2024"]] as const)("%s (%s): Spellcasting", (cls, year) => {
+  it.each([
+    ["Wizard", "2014"],
+    ["Cleric", "2014"],
+    ["Ranger", "2014"],
+    ["Wizard", "2024"],
+    ["Paladin", "2024"],
+  ] as const)("%s (%s): Spellcasting", (cls, year) => {
     const f = features(cls, year, 5)("Spellcasting");
     expect(f?.usage ?? "").toBe("");
   });
@@ -45,7 +51,9 @@ describe("what is not a use count gets none", () => {
     const bad: string[] = [];
     for (const c of reg.ofType("Class")) {
       const sheet = buildSheet(resolve({ ...newCharacter(), classes: [{ classId: c.id, level: 20 }] }, reg));
-      for (const f of sheet.features) if (/^1\//.test(f.usage ?? "") && /^(Spellcasting|Pact Magic)$/.test(f.name)) bad.push(`${c.name} (${c.source}): ${f.name} ${f.usage}`);
+      for (const f of sheet.features)
+        if (/^1\//.test(f.usage ?? "") && /^(Spellcasting|Pact Magic)$/.test(f.name))
+          bad.push(`${c.name} (${c.source}): ${f.name} ${f.usage}`);
     }
     expect(bad).toEqual([]);
   });
@@ -60,7 +68,11 @@ describe("when uses come back", () => {
   });
   // A later feature raises an earlier one's count: "Beginning at 6th level, you can use your Channel Divinity twice
   // between rests." A 2014 Cleric stayed at one use.
-  it.each([[2, "1/Short Rest"], [6, "2/Short Rest"], [18, "3/Short Rest"]] as const)("a 2014 Cleric's Channel Divinity at level %i", (level, usage) => {
+  it.each([
+    [2, "1/Short Rest"],
+    [6, "2/Short Rest"],
+    [18, "3/Short Rest"],
+  ] as const)("a 2014 Cleric's Channel Divinity at level %i", (level, usage) => {
     expect(features("Cleric", "2014", level)("Channel Divinity")?.usage).toBe(usage);
   });
   it("a 2024 Cleric's Channel Divinity returns one on a short rest, all on a long rest", () => {
@@ -71,8 +83,23 @@ describe("when uses come back", () => {
 // A spell its giver lets the character cast without a slot. Play showed "No slots" for a Tiefling's Hellish Rebuke.
 describe("spells cast without a slot", () => {
   it("5e.tools' nesting is read: how often, and the level the spell is cast at", () => {
-    const { rules } = additionalSpellRules([{ innate: { "3": { daily: { "1": ["hellish rebuke#2"] } }, "5": { rest: { "2e": ["misty step"] } }, "1": { will: ["detect magic"] } }, known: { "1": ["thaumaturgy#c"] }, ability: "cha" }], "Tiefling", "PHB");
-    const of = (name: string) => rules.find((r) => r.kind === "grant" && r.id.includes(name)) as { uses?: string; castAt?: number; level?: number };
+    const { rules } = additionalSpellRules(
+      [
+        {
+          innate: {
+            "3": { daily: { "1": ["hellish rebuke#2"] } },
+            "5": { rest: { "2e": ["misty step"] } },
+            "1": { will: ["detect magic"] },
+          },
+          known: { "1": ["thaumaturgy#c"] },
+          ability: "cha",
+        },
+      ],
+      "Tiefling",
+      "PHB",
+    );
+    const of = (name: string) =>
+      rules.find((r) => r.kind === "grant" && r.id.includes(name)) as { uses?: string; castAt?: number; level?: number };
     expect(of("hellish rebuke")).toMatchObject({ uses: "1/Long Rest", castAt: 2, level: 3 });
     expect(of("misty step")).toMatchObject({ uses: "2/Short Rest", level: 5 });
     expect(of("detect magic").uses).toBeUndefined();
@@ -93,4 +120,3 @@ describe("spells cast without a slot", () => {
     expect(shortRest(ch, sheet).play.featureUses).toEqual({ [freeCastKey(rebuke.id)]: 1 });
   });
 });
-

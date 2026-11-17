@@ -2,7 +2,15 @@ import { canonicalName, effectsOfKind } from "../engine/effects";
 import { conceptOf, conceptOfMarker } from "../engine/concepts";
 import type { AElement } from "./types";
 import { evalFormula } from "./stats";
-import { FULL_CASTER_SLOTS, itemWeight, multiclassCasterLevel, sharedSlotLevel, type ActiveElement, type Resolved, type SpellPick } from "./engine";
+import {
+  FULL_CASTER_SLOTS,
+  itemWeight,
+  multiclassCasterLevel,
+  sharedSlotLevel,
+  type ActiveElement,
+  type Resolved,
+  type SpellPick,
+} from "./engine";
 import { ABILITY_IDS, SKILL_ABILITY, itemLabel, type AbilityId } from "./character";
 import { isModern as modern } from "./edition";
 
@@ -127,7 +135,8 @@ export const FEATURE_GROUPS: { name: string; types: string[] }[] = [
   { name: "Feats", types: ["Feat", "Feat Feature"] },
   { name: "Background", types: ["Background Feature"] },
 ];
-export const featureTypesOf = (...groups: string[]): string[] => FEATURE_GROUPS.filter((g) => groups.includes(g.name)).flatMap((g) => g.types);
+export const featureTypesOf = (...groups: string[]): string[] =>
+  FEATURE_GROUPS.filter((g) => groups.includes(g.name)).flatMap((g) => g.types);
 const SHEET_TYPES = FEATURE_GROUPS.flatMap((g) => g.types);
 
 /** Replace {{stat}} placeholders in sheet text with computed values. */
@@ -141,7 +150,11 @@ export function fillTemplate(text: string, r: Resolved): string {
     return MARK + (name.endsWith(":modifier") || name.endsWith("modifier") ? signed(v) : String(v));
   });
   // "1d8+{{wisdom:modifier}}" gives one sign, not "1d8++4" or "1d8+-1".
-  return filled.replace(/\+\u0000([+-])/g, "$1").replace(/-\u0000\+/g, "-").replace(/-\u0000-/g, "+").replace(/\u0000/g, "");
+  return filled
+    .replace(/\+\u0000([+-])/g, "$1")
+    .replace(/-\u0000\+/g, "-")
+    .replace(/-\u0000-/g, "+")
+    .replace(/\u0000/g, "");
 }
 
 export const stripHtml = (s: string): string =>
@@ -162,7 +175,12 @@ function sheetText(a: ActiveElement, r: Resolved): { text: string; usage?: strin
   const sh = a.el.sheet;
   // No sheet text of its own: the description, but still the sheet's uses and action (Aurora's 2014 Channel Divinity
   // has only "{{channel divinity:count}}/Short Rest").
-  if (!sh || !sh.descriptions.length) return { text: withSenses(a, r, stripHtml(a.el.description)), usage: sh?.usage ? fillTemplate(sh.usage, r) : undefined, action: sh?.action };
+  if (!sh || !sh.descriptions.length)
+    return {
+      text: withSenses(a, r, stripHtml(a.el.description)),
+      usage: sh?.usage ? fillTemplate(sh.usage, r) : undefined,
+      action: sh?.action,
+    };
   // The description whose level is the highest not above the owner's level, plus level-less ones.
   const plain = sh.descriptions.filter((d) => d.level === undefined);
   const leveled = sh.descriptions.filter((d) => d.level !== undefined && d.level <= a.ownerLevel).sort((x, y) => x.level! - y.level!);
@@ -208,18 +226,33 @@ function proficiencyGroups(r: Resolved) {
     if (el.type === "Proficiency" && byId.get(a.from)?.type === "Proficiency") continue;
     if (el.type !== "Language" && el.type !== "Proficiency") continue;
     const k = conceptOf(el);
-    if (k?.startsWith("tool-expertise:")) { toolExpertise.add(k.slice(15)); continue; }
+    if (k?.startsWith("tool-expertise:")) {
+      toolExpertise.add(k.slice(15));
+      continue;
+    }
     if (k && /^(skill|expertise|save|size|sense):/.test(k)) continue;
     if (!k && (/_SKILL_|_SAVINGTHROW_|_SAVE_/.test(el.id) || /^ID_INTERNAL_PROFICIENCY/.test(el.id))) continue;
     // By concept; content outside the vocabulary by its id, as before.
-    const kind: keyof typeof out = k?.startsWith("language:") || el.type === "Language" ? "languages" : k?.startsWith("armor:") || (!k && /_ARMOR_/.test(el.id)) ? "armor" : k?.startsWith("weapon:") || (!k && /_WEAPON_/.test(el.id)) ? "weapons" : k?.startsWith("tool:") || (!k && /_TOOL|_INSTRUMENT|_GAMING|_ARTISAN|_KIT|_SUPPLIES/.test(el.id)) ? "tools" : "other";
+    const kind: keyof typeof out =
+      k?.startsWith("language:") || el.type === "Language"
+        ? "languages"
+        : k?.startsWith("armor:") || (!k && /_ARMOR_/.test(el.id))
+          ? "armor"
+          : k?.startsWith("weapon:") || (!k && /_WEAPON_/.test(el.id))
+            ? "weapons"
+            : k?.startsWith("tool:") || (!k && /_TOOL|_INSTRUMENT|_GAMING|_ARTISAN|_KIT|_SUPPLIES/.test(el.id))
+              ? "tools"
+              : "other";
     const key = k ?? `${kind}:${el.name.toLowerCase()}`;
     const had = named.get(key);
     const aurora = el.origin !== "5etools";
     if (!had || (aurora && !had.aurora)) named.set(key, { name: el.name, aurora, kind });
   }
   // Aurora gives tool expertise as a stat ("thieves' tools:proficiency" doubled).
-  for (const n of r.stats.names()) { const m = /^(.+(?:tools?|supplies|utensils|kit)):proficiency$/.exec(n); if (m) toolExpertise.add(m[1].replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-")); }
+  for (const n of r.stats.names()) {
+    const m = /^(.+(?:tools?|supplies|utensils|kit)):proficiency$/.exec(n);
+    if (m) toolExpertise.add(m[1].replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-"));
+  }
   for (const [key, v] of named) {
     const expert = v.kind === "tools" && toolExpertise.has(key.replace(/^tool:/, ""));
     out[v.kind].push(expert ? `${v.name} (expertise)` : v.name);
@@ -229,7 +262,10 @@ function proficiencyGroups(r: Resolved) {
 }
 
 const hintTokens = (hint: string | undefined) =>
-  (hint ?? "").split(/[,|()]+/).map((t) => t.trim().toLowerCase()).filter((t) => t && !/^\d+$/.test(t));
+  (hint ?? "")
+    .split(/[,|()]+/)
+    .map((t) => t.trim().toLowerCase())
+    .filter((t) => t && !/^\d+$/.test(t));
 
 /** Which spellcasting entry a pick belongs to: the one it names, or the one whose list matches its filter. */
 function castingOf(r: Resolved, p: SpellPick): string | undefined {
@@ -248,7 +284,11 @@ function buildCasting(r: Resolved): CastingLine[] {
   const ch = r.character;
   // A class's own spellcasting first, then a species', feat's or item's: the first line is "the" caster for the header
   // and for a feature's save DC, and a Tiefling Sorcerer's first line was the Tiefling's (found on Play, 2026-11-11).
-  const entries = [...r.spellcasting.values()].sort((x, y) => Number(y.fromClass !== false && r.reg.get(y.owner)?.type === "Class") - Number(x.fromClass !== false && r.reg.get(x.owner)?.type === "Class"));
+  const entries = [...r.spellcasting.values()].sort(
+    (x, y) =>
+      Number(y.fromClass !== false && r.reg.get(y.owner)?.type === "Class") -
+      Number(x.fromClass !== false && r.reg.get(x.owner)?.type === "Class"),
+  );
   const nonPact = entries.filter((e) => !(r.stats.get(`${lc(e.name)}:spellcasting:slots:count`) > 0));
   const mcLevel = multiclassCasterLevel(r, r.reg);
   const useShared = nonPact.length > 1 && mcLevel > 0;
@@ -260,17 +300,23 @@ function buildCasting(r: Resolved): CastingLine[] {
   const abilityOf = (fromId: string): string | undefined => {
     const child = r.active.find((a) => a.from === fromId && ABIL.includes(lc(a.el.name)));
     if (child) return lc(child.el.name);
-    const texts = [r.reg.get(fromId), ...r.active.filter((a) => a.from === fromId).map((a) => a.el)].map((x) => `${x?.description ?? ""} ${x?.sheet?.descriptions.map((d) => d.text).join(" ") ?? ""}`);
+    const texts = [r.reg.get(fromId), ...r.active.filter((a) => a.from === fromId).map((a) => a.el)].map(
+      (x) => `${x?.description ?? ""} ${x?.sheet?.descriptions.map((d) => d.text).join(" ") ?? ""}`,
+    );
     for (const t of texts) {
       // Both ways the books write it: "your spellcasting ability for it is Charisma" and "Charisma is your
       // spellcasting ability for it" (the 2024 Player's Handbook).
-      const m = /spellcasting ability for (?:th(?:is|ese)[^.]*?|it)\s+is\s+(intelligence|wisdom|charisma)/i.exec(t) ?? /(intelligence|wisdom|charisma) is your spellcasting ability/i.exec(t);
+      const m =
+        /spellcasting ability for (?:th(?:is|ese)[^.]*?|it)\s+is\s+(intelligence|wisdom|charisma)/i.exec(t) ??
+        /(intelligence|wisdom|charisma) is your spellcasting ability/i.exec(t);
       if (m) return lc(m[1]);
     }
     return undefined;
   };
   // Granted spells that no class line takes (Light Bearer's Light on a Paladin) always get a line of their own.
-  const orphans = r.spellPicks.filter((p) => !castingOf(r, p) && (!entries.length || (p.from && abilityOf(p.from)) || (p.granted && !p.casting)));
+  const orphans = r.spellPicks.filter(
+    (p) => !castingOf(r, p) && (!entries.length || (p.from && abilityOf(p.from)) || (p.granted && !p.casting)),
+  );
   const orphanIds = new Set(orphans.map((p) => p.id));
   const bySource = new Map<string, SpellPick[]>();
   for (const p of orphans) {
@@ -285,9 +331,20 @@ function buildCasting(r: Resolved): CastingLine[] {
     const lvl = (id: string) => parseInt(r.reg.get(id)?.setters.level?.value ?? "0", 10) || 0;
     const uniq = picks.filter((p, i) => picks.findIndex((q) => q.id === p.id) === i).map((p) => ({ ...p, prepared: true }));
     const childAlt = r.active.find((a) => a.from === fromId && a.el.sheet?.alt)?.el.sheet?.alt;
-    const name = childAlt || src?.sheet?.alt || (src && /feat feature|racial trait/i.test(src.type) && r.reg.get(r.active.find((a) => a.el.id === fromId)?.from ?? "")?.name) || src?.name || "Other spells";
+    const name =
+      childAlt ||
+      src?.sheet?.alt ||
+      (src && /feat feature|racial trait/i.test(src.type) && r.reg.get(r.active.find((a) => a.el.id === fromId)?.from ?? "")?.name) ||
+      src?.name ||
+      "Other spells";
     return {
-      name, ability, dc: 8 + prof + mod, attack: prof + mod, prepare: false, prepareMax: 0, slots: [],
+      name,
+      ability,
+      dc: 8 + prof + mod,
+      attack: prof + mod,
+      prepare: false,
+      prepareMax: 0,
+      slots: [],
       cantripsKnown: uniq.filter((p) => lvl(p.id) === 0),
       spells: uniq.filter((p) => lvl(p.id) > 0 && !p.granted),
       granted: uniq.filter((p) => p.granted),
@@ -295,70 +352,84 @@ function buildCasting(r: Resolved): CastingLine[] {
     };
   });
 
-  const ordinaryAt = (n: number) => nonPact.some((e) => (useShared ? (sharedRow[n - 1] ?? 0) : r.stats.get(`${lc(e.name)}:spellcasting:slots:${n}`)) > 0);
-  return [...entries.map((e) => {
-    const key = lc(e.name);
-    const slots: SpellSlotRow[] = [];
-    const isPact = r.stats.get(`${key}:spellcasting:slots:count`) > 0;
-    for (let n = 1; n <= 9; n++) {
-      const total = useShared && !isPact ? (sharedRow[n - 1] ?? 0) : r.stats.get(`${key}:spellcasting:slots:${n}`);
-      if (total <= 0) continue;
-      // Pact Magic's slots are counted apart (rest.ts). A save from before that has them under their spell level:
-      // read from there only when no other caster's slots of that level share the count.
-      if (isPact) slots.push({ level: n, total, used: Math.min(total, ch.play.pactUsed ?? (ordinaryAt(n) ? 0 : ch.play.slotsUsed[String(n)] ?? 0)), pact: true });
-      else slots.push({ level: n, total, used: ch.play.slotsUsed[String(n)] ?? 0 });
-    }
-    // Spells with no named entry (racial or feat spells) go to the first entry that can cast from their list.
-    const picks = r.spellPicks.filter((p) => !orphanIds.has(p.id) && (castingOf(r, p) ?? lc(entries[0].name)) === key);
-    const prepared = new Set(ch.prepared[e.name] ?? []);
-    const spells: SpellPick[] = [];
-    const cantrips: SpellPick[] = [];
-    const granted: SpellPick[] = [];
-    const seen = new Set<string>();
-    for (const p of picks) {
-      if (seen.has(p.id)) continue;
-      seen.add(p.id);
-      const el = r.reg.get(p.id);
-      const lvl = parseInt(el?.setters.level?.value ?? "0", 10) || 0;
-      const entry = { ...p, prepared: p.granted || prepared.has(p.id) };
-      if (p.granted) granted.push(entry);
-      if (lvl === 0) cantrips.push(entry);
-      else if (!p.granted) spells.push(entry);
-    }
-    // A class that prepares from its whole list (a Cleric, every 2024 class) has no picks for its spells: the ones
-    // prepared in Magic are the line's spells.
-    for (const id of prepared) {
-      if (seen.has(id) || granted.some((g) => g.id === id)) continue;
-      const lvl = parseInt(r.reg.get(id)?.setters.level?.value ?? "0", 10) || 0;
-      if (!r.reg.get(id) || lvl === 0) continue;
-      seen.add(id);
-      spells.push({ id, casting: e.name, granted: false, prepared: true });
-    }
-    const maxLevel = slots.length ? slots[slots.length - 1].level : 0;
-    // What the class itself may learn and prepare: its own table, as if single-classed (PHB, Multiclassing), not the
-    // shared multiclass slots it casts with.
-    let ownLevel = 0;
-    for (let n = 1; n <= 9; n++) if (r.stats.get(`${key}:spellcasting:slots:${n}`) > 0) ownLevel = n;
-    if (isPact) ownLevel = Math.max(ownLevel, r.stats.get(`${key}:spellcasting:slot`));
-    return {
-      name: e.name,
-      ability: e.ability,
-      dc: r.stats.get(`${key}:spellcasting:dc`),
-      attack: r.stats.get(`${key}:spellcasting:attack`),
-      prepare: e.prepare,
-      // "Ability modifier + level (minimum of one spell)": a low score never leaves a caster who prepares with none
-      // (C7.18; the content's formula has no floor).
-      // Nothing to prepare before the first spell slot: the 2014 Paladin gains Spellcasting at 2nd level, and its "at
-      // least one" floor gave a level-1 Paladin a prepared spell (found moving characters, 2026-11-16).
-      prepareMax: e.prepare ? (ownLevel > 0 || slots.length ? Math.max(1, r.stats.get(`${key}:spellcasting:prepare`)) : 0) : r.stats.get(`${key}:spellcasting:prepare`),
-      slots,
-      pactLevel: isPact ? r.stats.get(`${key}:spellcasting:slot`) || maxLevel : undefined,
-      cantripsKnown: cantrips,
-      spells,
-      granted,
-      maxSpellLevel: ownLevel || maxLevel,
-    };
-  }), ...extraLines];
+  const ordinaryAt = (n: number) =>
+    nonPact.some((e) => (useShared ? (sharedRow[n - 1] ?? 0) : r.stats.get(`${lc(e.name)}:spellcasting:slots:${n}`)) > 0);
+  return [
+    ...entries.map((e) => {
+      const key = lc(e.name);
+      const slots: SpellSlotRow[] = [];
+      const isPact = r.stats.get(`${key}:spellcasting:slots:count`) > 0;
+      for (let n = 1; n <= 9; n++) {
+        const total = useShared && !isPact ? (sharedRow[n - 1] ?? 0) : r.stats.get(`${key}:spellcasting:slots:${n}`);
+        if (total <= 0) continue;
+        // Pact Magic's slots are counted apart (rest.ts). A save from before that has them under their spell level:
+        // read from there only when no other caster's slots of that level share the count.
+        if (isPact)
+          slots.push({
+            level: n,
+            total,
+            used: Math.min(total, ch.play.pactUsed ?? (ordinaryAt(n) ? 0 : (ch.play.slotsUsed[String(n)] ?? 0))),
+            pact: true,
+          });
+        else slots.push({ level: n, total, used: ch.play.slotsUsed[String(n)] ?? 0 });
+      }
+      // Spells with no named entry (racial or feat spells) go to the first entry that can cast from their list.
+      const picks = r.spellPicks.filter((p) => !orphanIds.has(p.id) && (castingOf(r, p) ?? lc(entries[0].name)) === key);
+      const prepared = new Set(ch.prepared[e.name] ?? []);
+      const spells: SpellPick[] = [];
+      const cantrips: SpellPick[] = [];
+      const granted: SpellPick[] = [];
+      const seen = new Set<string>();
+      for (const p of picks) {
+        if (seen.has(p.id)) continue;
+        seen.add(p.id);
+        const el = r.reg.get(p.id);
+        const lvl = parseInt(el?.setters.level?.value ?? "0", 10) || 0;
+        const entry = { ...p, prepared: p.granted || prepared.has(p.id) };
+        if (p.granted) granted.push(entry);
+        if (lvl === 0) cantrips.push(entry);
+        else if (!p.granted) spells.push(entry);
+      }
+      // A class that prepares from its whole list (a Cleric, every 2024 class) has no picks for its spells: the ones
+      // prepared in Magic are the line's spells.
+      for (const id of prepared) {
+        if (seen.has(id) || granted.some((g) => g.id === id)) continue;
+        const lvl = parseInt(r.reg.get(id)?.setters.level?.value ?? "0", 10) || 0;
+        if (!r.reg.get(id) || lvl === 0) continue;
+        seen.add(id);
+        spells.push({ id, casting: e.name, granted: false, prepared: true });
+      }
+      const maxLevel = slots.length ? slots[slots.length - 1].level : 0;
+      // What the class itself may learn and prepare: its own table, as if single-classed (PHB, Multiclassing), not the
+      // shared multiclass slots it casts with.
+      let ownLevel = 0;
+      for (let n = 1; n <= 9; n++) if (r.stats.get(`${key}:spellcasting:slots:${n}`) > 0) ownLevel = n;
+      if (isPact) ownLevel = Math.max(ownLevel, r.stats.get(`${key}:spellcasting:slot`));
+      return {
+        name: e.name,
+        ability: e.ability,
+        dc: r.stats.get(`${key}:spellcasting:dc`),
+        attack: r.stats.get(`${key}:spellcasting:attack`),
+        prepare: e.prepare,
+        // "Ability modifier + level (minimum of one spell)": a low score never leaves a caster who prepares with none
+        // (C7.18; the content's formula has no floor).
+        // Nothing to prepare before the first spell slot: the 2014 Paladin gains Spellcasting at 2nd level, and its "at
+        // least one" floor gave a level-1 Paladin a prepared spell (found moving characters, 2026-11-16).
+        prepareMax: e.prepare
+          ? ownLevel > 0 || slots.length
+            ? Math.max(1, r.stats.get(`${key}:spellcasting:prepare`))
+            : 0
+          : r.stats.get(`${key}:spellcasting:prepare`),
+        slots,
+        pactLevel: isPact ? r.stats.get(`${key}:spellcasting:slot`) || maxLevel : undefined,
+        cantripsKnown: cantrips,
+        spells,
+        granted,
+        maxSpellLevel: ownLevel || maxLevel,
+      };
+    }),
+    ...extraLines,
+  ];
 }
 
 function buildAc(r: Resolved): { value: number; parts: string[] } {
@@ -378,7 +449,8 @@ function buildAc(r: Resolved): { value: number; parts: string[] } {
     const mediumCap = Math.max(2, s.get("ac:armored:dexterity:cap"));
     // An armor that sets its own Dexterity cap (5e.tools dexterityMax) uses it.
     const own = armor.setters["dexterity max"]?.value;
-    const cap = own !== undefined ? Math.min(Number(own) || 0, dex) : kind === "heavy" ? 0 : kind === "medium" ? Math.min(mediumCap, dex) : dex;
+    const cap =
+      own !== undefined ? Math.min(Number(own) || 0, dex) : kind === "heavy" ? 0 : kind === "medium" ? Math.min(mediumCap, dex) : dex;
     value = armorBase + cap + s.get("ac:armored:enhancement") + s.get("ac:armored:misc");
     parts.push(`${armor.name} ${armorBase}`);
     if (cap) parts.push(`Dex ${signed(cap)}`);
@@ -416,8 +488,13 @@ export function weaponAbilityOptions(r: Resolved): { ability: AbilityId; magicOn
   for (const a of r.active) {
     const text = a.el.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
     for (const para of [text]) {
-      const m = /use your (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) modifier,? instead of (?:your )?Strength or Dexterity(?: modifiers?)?,? for (?:the )?attack and damage rolls/i.exec(para)
-        ?? /use your (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) modifier for (?:the |its |the weapon's )?attack and damage rolls,? instead of (?:using )?(?:your )?Strength or Dexterity/i.exec(para);
+      const m =
+        /use your (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) modifier,? instead of (?:your )?Strength or Dexterity(?: modifiers?)?,? for (?:the )?attack and damage rolls/i.exec(
+          para,
+        ) ??
+        /use your (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) modifier for (?:the |its |the weapon's )?attack and damage rolls,? instead of (?:using )?(?:your )?Strength or Dexterity/i.exec(
+          para,
+        );
       if (!m) continue;
       // The conditions are the granting sentence's ("When you attack with a magic weapon, you can use..."), or the
       // sentence before for a weapon chosen there (Hex Warrior's "lacks the two-handed property").
@@ -426,8 +503,18 @@ export function weaponAbilityOptions(r: Resolved): { ability: AbilityId; magicOn
       const sentence = para.slice(start + 1, para.indexOf(".", m.index) + 1 || undefined);
       const around = para.slice(prev + 1, para.indexOf(".", m.index) + 1 || undefined);
       // Only while something is active (Bladesong, a Rage): not the sheet's standing attack.
-      if (/while (?:your |the )?[\w' ]{0,30}\bis active|while it(?:'s| is) active|while you(?:'re| are) (?:raging|in)/i.test(para.slice(Math.max(0, m.index - 120), m.index))) continue;
-      out.push({ ability: m[1].toLowerCase() as AbilityId, magicOnly: /attack with a magic weapon/i.test(sentence), notTwoHanded: /lacks the two-handed property/i.test(around), from: a.el.name });
+      if (
+        /while (?:your |the )?[\w' ]{0,30}\bis active|while it(?:'s| is) active|while you(?:'re| are) (?:raging|in)/i.test(
+          para.slice(Math.max(0, m.index - 120), m.index),
+        )
+      )
+        continue;
+      out.push({
+        ability: m[1].toLowerCase() as AbilityId,
+        magicOnly: /attack with a magic weapon/i.test(sentence),
+        notTwoHanded: /lacks the two-handed property/i.test(around),
+        from: a.el.name,
+      });
     }
   }
   return out;
@@ -441,28 +528,37 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
   const mods = (a: AbilityId) => s.get(`${a}:modifier`);
   const weaponAbilities = weaponAbilityOptions(r);
   let trained: Set<string> | undefined;
-  const trainedConcepts = () => (trained ??= new Set(r.active.map((x) => conceptOf(x.el)).filter((c): c is string => !!c && c.startsWith("weapon:"))));
+  const trainedConcepts = () =>
+    (trained ??= new Set(r.active.map((x) => conceptOf(x.el)).filter((c): c is string => !!c && c.startsWith("weapon:"))));
   // Dueling: +2 damage with a melee weapon held in one hand and no other weapon. The content leaves this to the app.
   const dueling = effectsOfKind(r, "one-hand-melee-damage").reduce((m, x) => Math.max(m, x.effect.value), 0);
   const weaponsHeld = r.character.inventory.filter((i) => i.equipped && i.id && r.reg.get(i.id)?.type === "Weapon").length;
   // Weapons mastered: the chosen Weapon Mastery options, named "Longbow (Slow)".
   const dropped = effectsOfKind(r, "drop-property");
-  const mastered = new Set(r.active.filter((a) => a.el.supports.includes("Weapon Mastery")).map((a) => a.el.name.replace(/\s*\(.*$/, "").toLowerCase()));
+  const mastered = new Set(
+    r.active.filter((a) => a.el.supports.includes("Weapon Mastery")).map((a) => a.el.name.replace(/\s*\(.*$/, "").toLowerCase()),
+  );
   // Martial Arts (both rule books, checked against the SRD text): with a monk weapon, Dexterity may stand in for
   // Strength and the Martial Arts die for the weapon's own, while wearing no armor and no shield. Monk weapons are
   // shortswords and simple melee weapons without the two-handed or heavy property (2014), or simple melee weapons
   // and martial melee weapons with the Light property (2024). A Monk's quarterstaff read Strength and 1d6 before.
   const martialDie = s.get("martial arts:dice");
-  const monkClass = martialDie > 0 ? r.character.classes.map((c) => r.reg.get(c.classId)).find((c) => c && /^monk$/i.test(c.name)) : undefined;
+  const monkClass =
+    martialDie > 0 ? r.character.classes.map((c) => r.reg.get(c.classId)).find((c) => c && /^monk$/i.test(c.name)) : undefined;
   const armored = r.character.inventory.some((i) => i.equipped && i.id && r.reg.get(i.id)?.type === "Armor");
   const isMonkWeapon = (el: AElement, tags: string[], ranged: boolean): boolean => {
     if (!monkClass || armored || ranged) return false;
     const has = (p: string) => tags.some((t) => t === p || t.endsWith(`_${p.replace(/-/g, "_")}`) || t.endsWith(`_${p.replace(/-/g, "")}`));
     // The kind as either provider tags it: "simple" (5e.tools) or "..._weapon_category_simple_melee" (Aurora).
-    const kind = (k: string) => tags.some((t) => t === k || new RegExp(`(^|_)${k}(_|$)`).test(t)) || new RegExp(`WEAPON_${k}\\b`, "i").test(el.setters.proficiency?.value ?? "");
+    const kind = (k: string) =>
+      tags.some((t) => t === k || new RegExp(`(^|_)${k}(_|$)`).test(t)) ||
+      new RegExp(`WEAPON_${k}\\b`, "i").test(el.setters.proficiency?.value ?? "");
     const simple = kind("simple");
     if (monkClass.edition === "2024") return simple || (kind("martial") && has("light"));
-    return /^shortsword$/i.test(el.name.replace(/^[+-]\d+\s*/, "").replace(/\s*,?\s*[+-]\d+$/, "")) || (simple && !has("two-handed") && !has("heavy"));
+    return (
+      /^shortsword$/i.test(el.name.replace(/^[+-]\d+\s*/, "").replace(/\s*,?\s*[+-]\d+$/, "")) ||
+      (simple && !has("two-handed") && !has("heavy"))
+    );
   };
   for (const it of r.character.inventory) {
     const el = it.id ? r.reg.get(it.id) : undefined;
@@ -474,26 +570,45 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     const finesse = tags.some((t) => t.includes("finesse"));
     // Finesse (a dart too, which is also ranged): the better of Strength and Dexterity, for the attack and the damage.
     const monkWeapon = isMonkWeapon(el, tags, ranged);
-    const usual: AbilityId = finesse || monkWeapon ? (mods("dexterity") > mods("strength") ? "dexterity" : "strength") : ranged ? "dexterity" : "strength";
+    const usual: AbilityId =
+      finesse || monkWeapon ? (mods("dexterity") > mods("strength") ? "dexterity" : "strength") : ranged ? "dexterity" : "strength";
     // Another ability a feature allows for this weapon (Hex Warrior, Battle Ready), when it is better.
     const twoHandedTag = tags.some((t) => /two.?handed/.test(t));
-    const alt = weaponAbilities.filter((o) => (!o.magicOnly || (it.magic ?? 0) > 0 || el.type === "Magic Item" || /^\+\d/.test(el.name)) && (!o.notTwoHanded || !twoHandedTag)).map((o) => o.ability);
+    const alt = weaponAbilities
+      .filter(
+        (o) =>
+          (!o.magicOnly || (it.magic ?? 0) > 0 || el.type === "Magic Item" || /^\+\d/.test(el.name)) && (!o.notTwoHanded || !twoHandedTag),
+      )
+      .map((o) => o.ability);
     const ability: AbilityId = [usual, ...alt].reduce((best, x) => (mods(x) > mods(best) ? x : best), usual);
     // Trained by the id the weapon names, or by the same training under the other provider's id: a 5e.tools magic
     // weapon (Frost Brand Longsword) in the hands of an Aurora Paladin asked for 5e.tools' "martial weapons" element,
     // which that Paladin's training is not, and counted as untrained (found by the FastCharacter run, 2026-11-12).
-    const proficient = (el.setters.proficiency?.value ?? "").split(",").some((id) => { const k = id.trim(); if (r.ids.has(k)) return true; const need = r.reg.get(k); const c = need ? conceptOf(need) : undefined; return !!c && trainedConcepts().has(c); });
+    const proficient = (el.setters.proficiency?.value ?? "").split(",").some((id) => {
+      const k = id.trim();
+      if (r.ids.has(k)) return true;
+      const need = r.reg.get(k);
+      const c = need ? conceptOf(need) : undefined;
+      return !!c && trainedConcepts().has(c);
+    });
     const magicAtk = (Number(el.setters.attackBonus?.value) || 0) + (it.magic ?? 0);
     const magicDmg = (Number(el.setters.damageBonus?.value) || 0) + (it.magic ?? 0);
     const kind = ranged ? "ranged" : "melee";
     // Fighting styles and similar features add to every attack of a kind.
     // Bonuses for this kind of weapon by name (Bracers of Archery: longbow:damage; Fell Handed: handaxe:attack).
-    const wname = el.name.replace(/^[+-]\d+\s*/, "").replace(/\s*,?\s*[+-]\d+$/, "").replace(/\s*\(.*\)\s*$/, "").toLowerCase();
+    const wname = el.name
+      .replace(/^[+-]\d+\s*/, "")
+      .replace(/\s*,?\s*[+-]\d+$/, "")
+      .replace(/\s*\(.*\)\s*$/, "")
+      .toLowerCase();
     const atkExtra = s.get(`${kind}:attack`) + s.get("attack") + magicAtk + s.get(`${wname}:attack`);
     const twoHandedWeapon = tags.some((t) => /two.?handed/.test(t)) || it.twoHanded;
     const duel = dueling && kind === "melee" && !twoHandedWeapon && weaponsHeld <= 1 ? dueling : 0;
     const dmgExtra = s.get(`${kind}:damage`) + s.get("damage") + magicDmg + duel + s.get(`${wname}:damage`);
-    const ownDmg = it.twoHanded && el.setters.versatile ? { value: el.setters.versatile.value, attrs: el.setters.damage?.attrs ?? {} } : el.setters.damage;
+    const ownDmg =
+      it.twoHanded && el.setters.versatile
+        ? { value: el.setters.versatile.value, attrs: el.setters.damage?.attrs ?? {} }
+        : el.setters.damage;
     // The Martial Arts die in place of a smaller die of the weapon's own.
     const ownDie = /^1d(\d+)$/.exec(ownDmg?.value.trim() ?? "");
     const martialUsed = monkWeapon && !!ownDie && martialDie > Number(ownDie[1]);
@@ -503,8 +618,20 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
     // Properties a feature removes (Crossbow Expert: crossbows lose Loading).
     const lost = dropped.filter((d) => d.effect.weapons.test(el.name)).map((d) => d.effect.property.toUpperCase());
     const props = el.supports
-      .filter((t) => /WEAPON_PROPERTY/.test(t) && (!isMastery(t) || mastered.has(el.name.toLowerCase())) && !lost.some((p) => t.toUpperCase().endsWith(p)))
-      .map((t) => (isMastery(t) ? "mastery: " : "") + t.replace(/^ID_(INTERNAL|WOTC_PHB24|WOTC_PHB)_WEAPON_PROPERTY_/, "").replace(/_/g, " ").toLowerCase());
+      .filter(
+        (t) =>
+          /WEAPON_PROPERTY/.test(t) &&
+          (!isMastery(t) || mastered.has(el.name.toLowerCase())) &&
+          !lost.some((p) => t.toUpperCase().endsWith(p)),
+      )
+      .map(
+        (t) =>
+          (isMastery(t) ? "mastery: " : "") +
+          t
+            .replace(/^ID_(INTERNAL|WOTC_PHB24|WOTC_PHB)_WEAPON_PROPERTY_/, "")
+            .replace(/_/g, " ")
+            .toLowerCase(),
+      );
     const versatile = el.setters.versatile?.value;
     const edit = r.character.attackEdits?.[it.uid];
     const line: AttackLine = {
@@ -516,8 +643,24 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
       bonus: mods(ability) + (proficient ? prof : 0) + atkExtra + (edit?.bonusAdjust ?? 0),
       damage: edit?.damage?.trim() || (dmg ? `${dmg.value}${mods(ability) + dmgExtra ? signed(mods(ability) + dmgExtra) : ""}` : ""),
       damageType: edit?.damageType ?? dmg?.attrs.type ?? "",
-      properties: [...props.filter((x) => !(versatile && x === "versatile")), versatile && !it.twoHanded ? `versatile (${versatile})` : "", it.twoHanded ? "two-handed" : ""].filter(Boolean).join(", "),
-      notes: edit?.notes ?? [proficient ? "" : "not proficient", monkWeapon && (martialUsed || ability === "dexterity" && !finesse) ? `Martial Arts${martialUsed ? ` d${martialDie}` : ""}${ability === "dexterity" && !finesse ? ", Dexterity" : ""}` : "", el.setters.critRange ? `critical hit on ${el.setters.critRange.value}–20` : ""].filter(Boolean).join("; "),
+      properties: [
+        ...props.filter((x) => !(versatile && x === "versatile")),
+        versatile && !it.twoHanded ? `versatile (${versatile})` : "",
+        it.twoHanded ? "two-handed" : "",
+      ]
+        .filter(Boolean)
+        .join(", "),
+      notes:
+        edit?.notes ??
+        [
+          proficient ? "" : "not proficient",
+          monkWeapon && (martialUsed || (ability === "dexterity" && !finesse))
+            ? `Martial Arts${martialUsed ? ` d${martialDie}` : ""}${ability === "dexterity" && !finesse ? ", Dexterity" : ""}`
+            : "",
+          el.setters.critRange ? `critical hit on ${el.setters.critRange.value}–20` : "",
+        ]
+          .filter(Boolean)
+          .join("; "),
     };
     if (edit?.hidden) line.hiddenByEdit = true;
     out.push(line);
@@ -637,13 +780,23 @@ export function buildSheet(r: Resolved): SheetData {
   // A class or subclass option the player chose (the 2024 Cleric's Divine Order: Thaumaturge) shows even when the
   // content hides it from the sheet, named after the choice it was made in.
   const chosenIn = new Map<string, string>();
-  for (const sl of r.slots) if (/^(Class|Archetype) Feature$/.test(sl.rule.type)) for (const id of sl.chosen) chosenIn.set(id, (sl.owner.sheet?.alt ?? sl.owner.name).replace(/^Level \d+:\s*/, ""));
+  for (const sl of r.slots)
+    if (/^(Class|Archetype) Feature$/.test(sl.rule.type))
+      for (const id of sl.chosen) chosenIn.set(id, (sl.owner.sheet?.alt ?? sl.owner.name).replace(/^Level \d+:\s*/, ""));
   for (const a of r.active) {
     if (!SHEET_TYPES.includes(a.el.type)) continue;
     if (a.el.sheet && !a.el.sheet.display && a.el.type !== "Feat" && chosenIn.has(a.el.id)) {
       const text = stripHtml(fillTemplate(a.el.description, r)).trim();
       const owner = chosenIn.get(a.el.id)!;
-      if (text) features.push({ id: a.el.id, name: owner && owner !== a.el.name ? `${owner}: ${a.el.name}` : a.el.name, type: a.el.type, source: a.el.source, text, level: a.ownerLevel });
+      if (text)
+        features.push({
+          id: a.el.id,
+          name: owner && owner !== a.el.name ? `${owner}: ${a.el.name}` : a.el.name,
+          type: a.el.type,
+          source: a.el.source,
+          text,
+          level: a.ownerLevel,
+        });
       continue;
     }
     // "Not on the sheet" hides a feature's text. A feat still belongs in the sheet's list of feats by name (Skilled,
@@ -652,8 +805,11 @@ export function buildSheet(r: Resolved): SheetData {
     if (hidden && a.el.type !== "Feat") continue;
     if (hidden) {
       // Its effect in a sentence, from the description (Archery: +2 to attack rolls with Ranged weapons).
-      const summary = stripHtml(a.el.description).replace(/^(Origin|General|Fighting Style|Epic Boon) Feat( \([^)]*\))?\s*/i, "").trim();
-      if (!features.some((f) => f.name === a.el.name && f.type === "Feat")) features.push({ id: a.el.id, name: a.el.name, type: a.el.type, source: a.el.source, text: summary, level: a.ownerLevel });
+      const summary = stripHtml(a.el.description)
+        .replace(/^(Origin|General|Fighting Style|Epic Boon) Feat( \([^)]*\))?\s*/i, "")
+        .trim();
+      if (!features.some((f) => f.name === a.el.name && f.type === "Feat"))
+        features.push({ id: a.el.id, name: a.el.name, type: a.el.type, source: a.el.source, text: summary, level: a.ownerLevel });
       continue;
     }
     const t = sheetText(a, r);
@@ -680,14 +836,21 @@ export function buildSheet(r: Resolved): SheetData {
     const el = r.reg.get(f.id);
     // Aurora also names the pool as the feature's usage ("Turn Undead", usage "Channel Divinity").
     const usageNames = f.usage && !/\d/.test(f.usage) ? f.usage : undefined;
-    const named = el?.setters.consumes?.value ?? usageNames ?? /^([^:]{3,40}):\s*\S/.exec(f.name)?.[1] ?? /^([^:]{3,40}):\s*\S/.exec(el?.name ?? "")?.[1];
+    const named =
+      el?.setters.consumes?.value ??
+      usageNames ??
+      /^([^:]{3,40}):\s*\S/.exec(f.name)?.[1] ??
+      /^([^:]{3,40}):\s*\S/.exec(el?.name ?? "")?.[1];
     if (!named) continue;
     const pool = features.find((p) => p !== f && p.usage && p.name.toLowerCase() === named.trim().toLowerCase());
     if (pool) f.consumes = { id: pool.id, name: pool.name, amount: Number(el?.setters.consumes?.attrs?.amount) || 1 };
   }
 
   const carried =
-    r.character.inventory.reduce((n, i) => n + itemWeight(i.id ? r.reg.get(i.id) : undefined) * i.qty + (i.custom?.weight ?? 0) * i.qty, 0) +
+    r.character.inventory.reduce(
+      (n, i) => n + itemWeight(i.id ? r.reg.get(i.id) : undefined) * i.qty + (i.custom?.weight ?? 0) * i.qty,
+      0,
+    ) +
     Object.values(r.character.coins).reduce((n, c) => n + c, 0) / 50;
 
   const sizeEl = r.active.find((a) => /^(ID_INTERNAL_RACIAL_TRAIT|ID_5ET_SIZE)_(SMALL|MEDIUM|LARGE|TINY)$/.test(a.el.id));
@@ -715,10 +878,19 @@ export function buildSheet(r: Resolved): SheetData {
     weight: { carried: Math.round(carried * 10) / 10, capacity: s.get("strength") * 15 },
     attunement: { current: s.get("attunement:current"), max: s.get("attunement:max") },
     size: sizeEl?.el.name,
-    vision: r.active.filter((a) => a.el.type === "Vision").map((a) => (/darkvision/i.test(a.el.name) && r.stats.get("darkvision:range") > 0 ? `Darkvision ${r.stats.get("darkvision:range")} ft` : a.el.name)),
+    vision: r.active
+      .filter((a) => a.el.type === "Vision")
+      .map((a) =>
+        /darkvision/i.test(a.el.name) && r.stats.get("darkvision:range") > 0
+          ? `Darkvision ${r.stats.get("darkvision:range")} ft`
+          : a.el.name,
+      ),
     lists: r.slots
       .filter((x) => x.listItems && x.chosen.length)
-      .map((x) => ({ name: x.rule.name, texts: x.chosen.map((id) => x.listItems!.find((i) => i.id === id)?.text).filter((t): t is string => !!t) })),
+      .map((x) => ({
+        name: x.rule.name,
+        texts: x.chosen.map((id) => x.listItems!.find((i) => i.id === id)?.text).filter((t): t is string => !!t),
+      })),
   };
 }
 
@@ -748,13 +920,22 @@ export function headerInfo(r: Resolved): HeaderInfo {
   return {
     species: sub && race && !sub.el.name.toLowerCase().includes(race.toLowerCase()) ? `${sub.el.name} ${race}` : species,
     classLine: ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ") || "-",
-    subclass: r.active.filter((a) => a.el.type === "Archetype").map((a) => a.el.name).join(", ") || "-",
+    subclass:
+      r.active
+        .filter((a) => a.el.type === "Archetype")
+        .map((a) => a.el.name)
+        .join(", ") || "-",
     background: ch.background ? (r.reg.get(ch.background)?.name ?? "-") : "-",
     // The size by concept, whichever provider names it (Aurora's ID_SIZE_SMALL, 5e.tools' Small).
     size: (() => {
       for (const id of r.ids) {
         const el = r.reg.get(id);
-        const k = (el ? conceptOf(el) : undefined) ?? conceptOfMarker(id) ?? (/^ID_INTERNAL_RACIAL_TRAIT_(TINY|SMALL|MEDIUM|LARGE|HUGE|GARGANTUAN)(_|$)/.exec(id) ? `size:${/(TINY|SMALL|MEDIUM|LARGE|HUGE|GARGANTUAN)/.exec(id)![1].toLowerCase()}` : undefined);
+        const k =
+          (el ? conceptOf(el) : undefined) ??
+          conceptOfMarker(id) ??
+          (/^ID_INTERNAL_RACIAL_TRAIT_(TINY|SMALL|MEDIUM|LARGE|HUGE|GARGANTUAN)(_|$)/.exec(id)
+            ? `size:${/(TINY|SMALL|MEDIUM|LARGE|HUGE|GARGANTUAN)/.exec(id)![1].toLowerCase()}`
+            : undefined);
         if (k?.startsWith("size:")) return k.slice(5).charAt(0).toUpperCase() + k.slice(6);
       }
       return "";
@@ -775,7 +956,10 @@ export function headerInfo(r: Resolved): HeaderInfo {
  */
 export function readySpells(line: CastingLine): SpellPick[] {
   const anyPrepared = line.spells.some((s) => s.prepared);
-  return [...line.cantripsKnown, ...(line.prepare && anyPrepared ? [...line.granted, ...line.spells.filter((s) => s.prepared)] : [...line.spells, ...line.granted])];
+  return [
+    ...line.cantripsKnown,
+    ...(line.prepare && anyPrepared ? [...line.granted, ...line.spells.filter((s) => s.prepared)] : [...line.spells, ...line.granted]),
+  ];
 }
 
 /**
@@ -786,7 +970,12 @@ export function everySpellOf(r: Resolved, line: CastingLine): SpellPick[] {
   const ready = readySpells(line);
   if (!line.prepare) return ready;
   const have = new Set(ready.map((p) => p.id));
-  return [...ready, ...preparePool(r, line).filter((e) => !have.has(e.id)).map((e) => ({ id: e.id, casting: line.name, granted: false, prepared: false }))];
+  return [
+    ...ready,
+    ...preparePool(r, line)
+      .filter((e) => !have.has(e.id))
+      .map((e) => ({ id: e.id, casting: line.name, granted: false, prepared: false })),
+  ];
 }
 
 export function preparePool(r: Resolved, line: CastingLine): AElement[] {
@@ -795,7 +984,9 @@ export function preparePool(r: Resolved, line: CastingLine): AElement[] {
   const known = line.spells.map((p) => r.reg.get(p.id)).filter((e): e is AElement => !!e);
   // A wizard prepares from the spellbook. Other prepared casters prepare from the whole class list; a spell a feature
   // lets them pick for the class (a domain or circle choice) is one more on it, not the whole list.
-  const book = r.slots.some((s) => s.rule.type === "Spell" && /spellbook/i.test(s.rule.name) && s.rule.name.toLowerCase().includes(line.name.toLowerCase()));
+  const book = r.slots.some(
+    (s) => s.rule.type === "Spell" && /spellbook/i.test(s.rule.name) && s.rule.name.toLowerCase().includes(line.name.toLowerCase()),
+  );
   if (book && known.length) return known;
   const levels = Array.from({ length: Math.max(1, line.maxSpellLevel) }, (_, i) => i + 1).join("||");
   const all = r.reg.find("Spell", `(${entry.lists.join("||")}),(${levels})`);
@@ -813,7 +1004,14 @@ export function preparePool(r: Resolved, line: CastingLine): AElement[] {
 
 /** The content grants damage defenses as markers (ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_FIRE and the like). */
 export function defensesOf(r: Resolved): SheetData["defenses"] {
-  const of = (kind: string) => [...new Set([...r.ids].map((id) => new RegExp(`^ID_INTERNAL_CONDITION_DAMAGE_${kind}_([A-Z]+)$`).exec(id)?.[1]?.toLowerCase()).filter((x): x is string => !!x))].sort();
+  const of = (kind: string) =>
+    [
+      ...new Set(
+        [...r.ids]
+          .map((id) => new RegExp(`^ID_INTERNAL_CONDITION_DAMAGE_${kind}_([A-Z]+)$`).exec(id)?.[1]?.toLowerCase())
+          .filter((x): x is string => !!x),
+      ),
+    ].sort();
   return { resistances: of("RESISTANCE"), immunities: of("IMMUNITY"), vulnerabilities: of("VULNERABILITY") };
 }
 
@@ -829,40 +1027,82 @@ function featureAttacks(r: Resolved): AttackLine[] {
   const fromData: AttackLine[] = [];
   const seenNames = new Set<string>();
   const withData = new Set<string>();
-  for (const a of r.active) for (const at of a.el.attacks ?? []) {
-    withData.add(a.el.id);
-    if (seenNames.has(at.name.toLowerCase())) continue;
-    seenNames.add(at.name.toLowerCase());
-    const abil = at.ability === "spellcasting" ? (r.spellcasting.values().next().value?.ability ?? "") : ({ str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" } as Record<string, string>)[at.ability] ?? "";
-    const mod = abil ? s.get(`${abil}:modifier`) : at.ranged ? s.get("dexterity:modifier") : Math.max(s.get("strength:modifier"), s.get("dexterity:modifier"));
-    const kind = at.ranged ? "ranged" : "melee";
-    const bonus = mod + s.get("proficiency") + s.get(`${kind}:attack`) + s.get("attack");
-    const extra = mod + s.get(`${kind}:damage`) + s.get("damage");
-    // A die that grows with level (a Monk's Martial Arts die): worked out from its scale formulas now.
-    const die = at.dieFormula ? `${evalFormula(at.dieFormula.count, (n) => s.get(n))}d${evalFormula(at.dieFormula.faces, (n) => s.get(n))}` : at.die;
-    fromData.push({ id: `data-${a.el.id}-${at.name}`, auto: true, name: at.name, bonus, damage: `${die}${extra ? signed(extra) : ""}`, damageType: at.damageType, properties: at.ranged ? "ranged" : "", notes: a.el.name });
-  }
+  for (const a of r.active)
+    for (const at of a.el.attacks ?? []) {
+      withData.add(a.el.id);
+      if (seenNames.has(at.name.toLowerCase())) continue;
+      seenNames.add(at.name.toLowerCase());
+      const abil =
+        at.ability === "spellcasting"
+          ? (r.spellcasting.values().next().value?.ability ?? "")
+          : ((
+              { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" } as Record<
+                string,
+                string
+              >
+            )[at.ability] ?? "");
+      const mod = abil
+        ? s.get(`${abil}:modifier`)
+        : at.ranged
+          ? s.get("dexterity:modifier")
+          : Math.max(s.get("strength:modifier"), s.get("dexterity:modifier"));
+      const kind = at.ranged ? "ranged" : "melee";
+      const bonus = mod + s.get("proficiency") + s.get(`${kind}:attack`) + s.get("attack");
+      const extra = mod + s.get(`${kind}:damage`) + s.get("damage");
+      // A die that grows with level (a Monk's Martial Arts die): worked out from its scale formulas now.
+      const die = at.dieFormula
+        ? `${evalFormula(at.dieFormula.count, (n) => s.get(n))}d${evalFormula(at.dieFormula.faces, (n) => s.get(n))}`
+        : at.die;
+      fromData.push({
+        id: `data-${a.el.id}-${at.name}`,
+        auto: true,
+        name: at.name,
+        bonus,
+        damage: `${die}${extra ? signed(extra) : ""}`,
+        damageType: at.damageType,
+        properties: at.ranged ? "ranged" : "",
+        notes: a.el.name,
+      });
+    }
   const prof = s.get("proficiency");
   const str = s.get("strength:modifier");
   const dex = s.get("dexterity:modifier");
   const martial = s.get("martial arts:dice") > 0;
   // The hand-written table only where the data has nothing: no attack of that name, none from that feature.
-  return [...fromData, ...effectsOfKind(r, "attack").filter(({ effect: e, from }) => !seenNames.has(e.name.toLowerCase()) && !withData.has(from.id)).map(({ effect: e, from }) => {
-    const mod = e.ability === "finesse" || martial ? Math.max(str, dex) : str;
-    const unarmed = e.ability === "unarmed";
-    const bonus = mod + prof + s.get("melee:attack") + s.get("attack") + (unarmed ? s.get("unarmed:attack") + s.get("unarmed strike:attack") + s.get("natural:attack") : s.get(`${canonicalName(from.name)}:attack`));
-    const extra = mod + s.get("melee:damage") + s.get("damage") + (unarmed ? s.get("unarmed:damage") + s.get("unarmed strike:damage") + s.get("natural:damage") : s.get(`${canonicalName(from.name)}:damage`));
-    return {
-      id: `feature-${from.id}-${e.name}`,
-      auto: true,
-      name: e.name,
-      bonus,
-      damage: `${e.die}${extra ? signed(extra) : ""}`,
-      damageType: e.damageType,
-      properties: e.properties ?? (unarmed ? "unarmed strike" : ""),
-      notes: [from.name, e.notes].filter(Boolean).join("; "),
-    };
-  })];
+  return [
+    ...fromData,
+    ...effectsOfKind(r, "attack")
+      .filter(({ effect: e, from }) => !seenNames.has(e.name.toLowerCase()) && !withData.has(from.id))
+      .map(({ effect: e, from }) => {
+        const mod = e.ability === "finesse" || martial ? Math.max(str, dex) : str;
+        const unarmed = e.ability === "unarmed";
+        const bonus =
+          mod +
+          prof +
+          s.get("melee:attack") +
+          s.get("attack") +
+          (unarmed
+            ? s.get("unarmed:attack") + s.get("unarmed strike:attack") + s.get("natural:attack")
+            : s.get(`${canonicalName(from.name)}:attack`));
+        const extra =
+          mod +
+          s.get("melee:damage") +
+          s.get("damage") +
+          (unarmed
+            ? s.get("unarmed:damage") + s.get("unarmed strike:damage") + s.get("natural:damage")
+            : s.get(`${canonicalName(from.name)}:damage`));
+        return {
+          id: `feature-${from.id}-${e.name}`,
+          auto: true,
+          name: e.name,
+          bonus,
+          damage: `${e.die}${extra ? signed(extra) : ""}`,
+          damageType: e.damageType,
+          properties: e.properties ?? (unarmed ? "unarmed strike" : ""),
+          notes: [from.name, e.notes].filter(Boolean).join("; "),
+        };
+      }),
+  ];
 }
 
 function unarmedStrike(r: Resolved): AttackLine {
@@ -875,7 +1115,8 @@ function unarmedStrike(r: Resolved): AttackLine {
   const str = s.get("strength:modifier");
   const dex = s.get("dexterity:modifier");
   const mod = martial > 0 ? Math.max(str, dex) : str;
-  const bonus = mod + s.get("proficiency") + s.get("unarmed:attack") + s.get("unarmed strike:attack") + s.get("melee:attack") + s.get("attack");
+  const bonus =
+    mod + s.get("proficiency") + s.get("unarmed:attack") + s.get("unarmed strike:attack") + s.get("melee:attack") + s.get("attack");
   const extra = mod + s.get("unarmed:damage") + s.get("unarmed strike:damage") + s.get("melee:damage") + s.get("damage");
   const notes: string[] = [];
   if (martial > 0) notes.push(`Martial Arts d${martial}${dex > str ? ", Dexterity" : ""}; bonus action strike`);

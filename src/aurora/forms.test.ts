@@ -12,7 +12,11 @@ describe.skipIf(!C)("beast forms", () => {
   const reg = C ? loadTestContent(C) : undefined!;
   const bear = reg ? reg.ofType("Companion").find((e) => e.name === "Black Bear")! : undefined!;
   const druid = (cls: string, level: number, moon?: string) => {
-    let ch: Character = { ...newCharacter(), abilityMethod: "manual", abilityBase: { strength: 8, dexterity: 12, constitution: 14, intelligence: 10, wisdom: 16, charisma: 10 } };
+    let ch: Character = {
+      ...newCharacter(),
+      abilityMethod: "manual",
+      abilityBase: { strength: 8, dexterity: 12, constitution: 14, intelligence: 10, wisdom: 16, charisma: 10 },
+    };
     ch.classes = [{ classId: cls, level }];
     if (moon) {
       const r = resolve(ch, reg);
@@ -23,7 +27,11 @@ describe.skipIf(!C)("beast forms", () => {
   };
 
   it("2024 Moon druid: own hit points, three times the level in temporary hit points, AC 13 + Wisdom", () => {
-    const r = druid("ID_WOTC_PHB24_CLASS_DRUID", 6, reg.ofType("Archetype").find((a) => /moon/i.test(a.name) && a.source.includes("2024"))!.id);
+    const r = druid(
+      "ID_WOTC_PHB24_CLASS_DRUID",
+      6,
+      reg.ofType("Archetype").find((a) => /moon/i.test(a.name) && a.source.includes("2024"))!.id,
+    );
     const f = formStats(r, bear, "wild shape");
     const wis = buildSheet(r).abilities.find((a) => a.id === "wisdom")!.mod;
     expect(f.rules).toBe("2024");

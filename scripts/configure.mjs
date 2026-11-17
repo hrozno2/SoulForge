@@ -8,17 +8,14 @@ if (!repo || !/^[\w.-]+\/[\w.-]+$/.test(repo) || !pubkey) {
   process.exit(1);
 }
 
-const files = [
-  "src-tauri/tauri.conf.json",
-  "src/config.ts",
-  "packaging/arch/PKGBUILD",
-  "packaging/homebrew/soulforge.rb",
-  "README.md",
-];
+const files = ["src-tauri/tauri.conf.json", "src/config.ts", "packaging/arch/PKGBUILD", "packaging/homebrew/soulforge.rb", "README.md"];
 
 for (const f of files) {
   const before = readFileSync(f, "utf8");
-  const after = before.replaceAll("__REPO_OWNER__", repo.split("/")[0]).replaceAll("__REPO__", repo).replaceAll("__UPDATER_PUBKEY__", pubkey.trim());
+  const after = before
+    .replaceAll("__REPO_OWNER__", repo.split("/")[0])
+    .replaceAll("__REPO__", repo)
+    .replaceAll("__UPDATER_PUBKEY__", pubkey.trim());
   if (after !== before) {
     writeFileSync(f, after);
     console.log(`configured ${f}`);

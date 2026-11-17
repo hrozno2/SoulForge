@@ -7,8 +7,12 @@ function bus() {
   const make = (): Channel => {
     const ch: Channel = {
       onmessage: null,
-      postMessage: (msg) => { for (const m of members) if (m !== ch) m.onmessage?.({ data: structuredClone(msg) }); },
-      close: () => { members.splice(members.indexOf(ch), 1); },
+      postMessage: (msg) => {
+        for (const m of members) if (m !== ch) m.onmessage?.({ data: structuredClone(msg) });
+      },
+      close: () => {
+        members.splice(members.indexOf(ch), 1);
+      },
     };
     members.push(ch);
     return ch;

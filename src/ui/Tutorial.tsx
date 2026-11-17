@@ -54,7 +54,9 @@ export function Tutorial(p: TutorialProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
   const refreshSheets = () => listTemplates().then((l) => setSheets(l.length));
-  useEffect(() => { void refreshSheets(); }, []);
+  useEffect(() => {
+    void refreshSheets();
+  }, []);
 
   const finish = () => {
     neverShowTutorial();
@@ -73,7 +75,8 @@ export function Tutorial(p: TutorialProps) {
   const getSheet = async (o: (typeof OFFICIAL_DOWNLOADS)[number]) => {
     setSheetBusy(true);
     try {
-      if (!isDesktop()) throw new Error("Downloading works in the desktop app. In a browser, open the link from the Sheet tab and add the file.");
+      if (!isDesktop())
+        throw new Error("Downloading works in the desktop app. In a browser, open the link from the Sheet tab and add the file.");
       setSheetMsg(`Downloading ${o.label}...`);
       setSheetMsg((await downloadOfficialSheet(o)).join(". "));
     } catch (e) {
@@ -112,9 +115,15 @@ export function Tutorial(p: TutorialProps) {
   if (p.minimized) {
     return (
       <div className="tutorial-pill" role="region" aria-label="Tutorial paused">
-        <span>Tutorial, step {i + 1} of {TUTORIAL_STEPS}</span>
-        <button className="primary" onClick={() => p.setMinimized(false)}>Resume</button>
-        <button className="ghost" aria-label="Close the tutorial" onClick={p.onClose}>×</button>
+        <span>
+          Tutorial, step {i + 1} of {TUTORIAL_STEPS}
+        </span>
+        <button className="primary" onClick={() => p.setMinimized(false)}>
+          Resume
+        </button>
+        <button className="ghost" aria-label="Close the tutorial" onClick={p.onClose}>
+          ×
+        </button>
       </div>
     );
   }
@@ -127,7 +136,10 @@ export function Tutorial(p: TutorialProps) {
       title: "Welcome to Soul Forge",
       body: (
         <>
-          <p>Soul Forge builds D&D 5e characters from rules content that you add yourself, so it starts with none. This setup gets you ready in a few clicks: it adds rules content and a character sheet, right here. You can skip any step.</p>
+          <p>
+            Soul Forge builds D&D 5e characters from rules content that you add yourself, so it starts with none. This setup gets you ready
+            in a few clicks: it adds rules content and a character sheet, right here. You can skip any step.
+          </p>
           <p className="muted">You can reopen this from Menu, Show the tutorial.</p>
         </>
       ),
@@ -136,17 +148,36 @@ export function Tutorial(p: TutorialProps) {
       title: "1. Add rules content from Aurora",
       body: (
         <>
-          <p>Aurora content gives you species, classes, backgrounds, spells and items, and keeps itself up to date. Press the button to add the whole AuroraLegacy collection: every book. Keep all of it; step 2 decides which books the lists show, so nothing has to be left out here.</p>
-          <p><code className="copy-link">{AURORA_LINK}</code></p>
+          <p>
+            Aurora content gives you species, classes, backgrounds, spells and items, and keeps itself up to date. Press the button to add
+            the whole AuroraLegacy collection: every book. Keep all of it; step 2 decides which books the lists show, so nothing has to be
+            left out here.
+          </p>
+          <p>
+            <code className="copy-link">{AURORA_LINK}</code>
+          </p>
           <div className="row">
-            <button className="primary" disabled={content.busy || aurora} onClick={addAurora}>{aurora ? "Added" : content.busy ? "Downloading..." : "Download rules content"}</button>
-            {aurora && <span className="done-mark">✓ {content.sources.length} source{content.sources.length === 1 ? "" : "s"} ready</span>}
+            <button className="primary" disabled={content.busy || aurora} onClick={addAurora}>
+              {aurora ? "Added" : content.busy ? "Downloading..." : "Download rules content"}
+            </button>
+            {aurora && (
+              <span className="done-mark">
+                ✓ {content.sources.length} source{content.sources.length === 1 ? "" : "s"} ready
+              </span>
+            )}
           </div>
           {content.busy && (
-            <div className="progress"><div style={{ width: `${pct}%` }} /><span>{content.status || "Working..."} {content.progress ? `${content.progress.done}/${content.progress.total}` : ""}</span></div>
+            <div className="progress">
+              <div style={{ width: `${pct}%` }} />
+              <span>
+                {content.status || "Working..."} {content.progress ? `${content.progress.done}/${content.progress.total}` : ""}
+              </span>
+            </div>
           )}
           {!content.busy && content.status && !aurora && <p className="notice">{content.status}</p>}
-          <p className="muted">It is a large download and takes a minute or two. Other Aurora links can be added later on the Content tab.</p>
+          <p className="muted">
+            It is a large download and takes a minute or two. Other Aurora links can be added later on the Content tab.
+          </p>
         </>
       ),
     },
@@ -157,16 +188,39 @@ export function Tutorial(p: TutorialProps) {
           <p>Choose which books the lists show. Everything you load stays loaded; this only decides what you see when you pick.</p>
           <div className="tutorial-rules">
             <span className="seg" role="group" aria-label="Rules">
-              <button className={!settings.showLegacy ? "on" : ""} onClick={() => updateSettings({ showLegacy: false })}>2024 rules only</button>
-              <button className={settings.showLegacy ? "on" : ""} onClick={() => updateSettings({ showLegacy: true })}>2024 and 2014 rules</button>
+              <button className={!settings.showLegacy ? "on" : ""} onClick={() => updateSettings({ showLegacy: false })}>
+                2024 rules only
+              </button>
+              <button className={settings.showLegacy ? "on" : ""} onClick={() => updateSettings({ showLegacy: true })}>
+                2024 and 2014 rules
+              </button>
             </span>
-            <label className="check"><input type="checkbox" checked={settings.showPlaytest} onChange={(e) => updateSettings({ showPlaytest: e.target.checked })} /> Unearthed Arcana and playtest material (drafts that may change)</label>
-            <label className="check"><input type="checkbox" checked={settings.showUnusual} onChange={(e) => updateSettings({ showUnusual: e.target.checked })} /> Settings and other sources (Eberron, Ravnica, Theros and other worlds, third party and homebrew books)</label>
-            <label className="check"><input type="checkbox" checked={settings.showSciFi} onChange={(e) => updateSettings({ showSciFi: e.target.checked })} /> Sci-fi technology (laser guns, powered armor)</label>
-            <label className="check"><input type="checkbox" checked={settings.showModern} onChange={(e) => updateSettings({ showModern: e.target.checked })} /> Modern technology (pistols, rifles, shotguns, modern vehicles)</label>
+            <label className="check">
+              <input type="checkbox" checked={settings.showPlaytest} onChange={(e) => updateSettings({ showPlaytest: e.target.checked })} />{" "}
+              Unearthed Arcana and playtest material (drafts that may change)
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={settings.showUnusual} onChange={(e) => updateSettings({ showUnusual: e.target.checked })} />{" "}
+              Settings and other sources (Eberron, Ravnica, Theros and other worlds, third party and homebrew books)
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={settings.showSciFi} onChange={(e) => updateSettings({ showSciFi: e.target.checked })} />{" "}
+              Sci-fi technology (laser guns, powered armor)
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={settings.showModern} onChange={(e) => updateSettings({ showModern: e.target.checked })} />{" "}
+              Modern technology (pistols, rifles, shotguns, modern vehicles)
+            </label>
           </div>
-          <p>Many options exist in more than one book, such as the 2014 and the 2024 Wizard. A chosen card shows its book as a <b>source chip</b> (for example <b>XPHB 2024</b> or <b>PHB 2014</b>); click another chip on the card to switch to that book's version. Each list's <b>Filters</b> can also narrow it by source.</p>
-          <p className="muted">You can change all of this later in Menu, Settings, under Content shown in lists. What you already picked stays visible even when its book is hidden.</p>
+          <p>
+            Many options exist in more than one book, such as the 2014 and the 2024 Wizard. A chosen card shows its book as a{" "}
+            <b>source chip</b> (for example <b>XPHB 2024</b> or <b>PHB 2014</b>); click another chip on the card to switch to that book's
+            version. Each list's <b>Filters</b> can also narrow it by source.
+          </p>
+          <p className="muted">
+            You can change all of this later in Menu, Settings, under Content shown in lists. What you already picked stays visible even
+            when its book is hidden.
+          </p>
         </>
       ),
     },
@@ -174,14 +228,30 @@ export function Tutorial(p: TutorialProps) {
       title: "3. Import from 5e.tools or Plutonium",
       body: (
         <>
-          <p>Soul Forge also reads the data format used by 5e.tools and the Plutonium module for Foundry. Load <b>all of it</b> alongside Aurora: the two fill each other's gaps, and books one has the other may not. On the Content tab:</p>
+          <p>
+            Soul Forge also reads the data format used by 5e.tools and the Plutonium module for Foundry. Load <b>all of it</b> alongside
+            Aurora: the two fill each other's gaps, and books one has the other may not. On the Content tab:
+          </p>
           <ul>
-            <li>pick the whole <b>data folder</b> (or a ZIP of it) from a copy you are allowed to use; this is the way to load everything, or</li>
-            <li>paste <b>5e.tools links</b> to single spells, items, feats, species or classes and import only those.</li>
+            <li>
+              pick the whole <b>data folder</b> (or a ZIP of it) from a copy you are allowed to use; this is the way to load everything, or
+            </li>
+            <li>
+              paste <b>5e.tools links</b> to single spells, items, feats, species or classes and import only those.
+            </li>
           </ul>
-          {fiveTools ? <p><span className="done-mark">✓ 5e.tools data loaded</span></p> : <p className="notice">No 5e.tools data loaded yet: with Aurora alone, books only 5e.tools has are missing.</p>}
+          {fiveTools ? (
+            <p>
+              <span className="done-mark">✓ 5e.tools data loaded</span>
+            </p>
+          ) : (
+            <p className="notice">No 5e.tools data loaded yet: with Aurora alone, books only 5e.tools has are missing.</p>
+          )}
           <p className="muted">5e.tools blocks apps from fetching its pages, so use a folder or an address that serves the data.</p>
-          <p><button onClick={() => goAndMinimize("content")}>Open the importer</button> <span className="muted">The tutorial waits for you at the bottom of the window.</span></p>
+          <p>
+            <button onClick={() => goAndMinimize("content")}>Open the importer</button>{" "}
+            <span className="muted">The tutorial waits for you at the bottom of the window.</span>
+          </p>
         </>
       ),
     },
@@ -189,12 +259,28 @@ export function Tutorial(p: TutorialProps) {
       title: "4. Bring in characters from Foundry or Roll20",
       body: (
         <>
-          <p>Choose a character file you exported from Foundry VTT (an actor JSON, including Plutonium actors) or Roll20. Soul Forge matches names against your loaded content and tells you what it could not place.</p>
+          <p>
+            Choose a character file you exported from Foundry VTT (an actor JSON, including Plutonium actors) or Roll20. Soul Forge matches
+            names against your loaded content and tells you what it could not place.
+          </p>
           <div className="row">
-            <button disabled={!content.ready || content.sources.length === 0} onClick={chooseCharacter}>Choose a character file...</button>
-            <input ref={fileRef} type="file" accept=".json" hidden onChange={(e) => { void importCharacter(e.target.files?.[0]); e.target.value = ""; }} />
+            <button disabled={!content.ready || content.sources.length === 0} onClick={chooseCharacter}>
+              Choose a character file...
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".json"
+              hidden
+              onChange={(e) => {
+                void importCharacter(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
           </div>
-          {content.sources.length === 0 && <p className="muted">Add rules content in step 1 first, so there is something to match against.</p>}
+          {content.sources.length === 0 && (
+            <p className="muted">Add rules content in step 1 first, so there is something to match against.</p>
+          )}
           {charMsg && <p className="notice">{charMsg}</p>}
           <p className="muted">Characters made here export back for Foundry or Roll20 from the Sheet tab.</p>
         </>
@@ -204,23 +290,61 @@ export function Tutorial(p: TutorialProps) {
       title: "5. Get a character sheet",
       body: (
         <>
-          <p>These sheets are filled completely: the <b>fillable 2024 sheet by DLtheDM</b> (stays editable), the <b>official Wizards of the Coast sheets</b> for 2024 and 2014, and companion sheets. Soul Forge downloads them from their makers and keeps a copy on this computer.</p>
+          <p>
+            These sheets are filled completely: the <b>fillable 2024 sheet by DLtheDM</b> (stays editable), the{" "}
+            <b>official Wizards of the Coast sheets</b> for 2024 and 2014, and companion sheets. Soul Forge downloads them from their makers
+            and keeps a copy on this computer.
+          </p>
           <ul className="sheet-downloads">
             {OFFICIAL_DOWNLOADS.map((o) => (
               <li key={o.id}>
-                <div><b>{o.label}</b><small className="muted">{o.by}. {o.note}</small></div>
-                <button disabled={sheetBusy} onClick={() => void getSheet(o)}>Get</button>
+                <div>
+                  <b>{o.label}</b>
+                  <small className="muted">
+                    {o.by}. {o.note}
+                  </small>
+                </div>
+                <button disabled={sheetBusy} onClick={() => void getSheet(o)}>
+                  Get
+                </button>
               </li>
             ))}
             <li>
-              <div><b>Your own PDF</b><small className="muted">Any fillable sheet works.</small></div>
-              <button disabled={sheetBusy} onClick={() => void chooseSheet()}>Add PDF...</button>
+              <div>
+                <b>Your own PDF</b>
+                <small className="muted">Any fillable sheet works.</small>
+              </div>
+              <button disabled={sheetBusy} onClick={() => void chooseSheet()}>
+                Add PDF...
+              </button>
             </li>
           </ul>
-          <input ref={pdfRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { void addOwnSheet(e.target.files); e.target.value = ""; }} />
+          <input
+            ref={pdfRef}
+            type="file"
+            accept=".pdf"
+            multiple
+            hidden
+            onChange={(e) => {
+              void addOwnSheet(e.target.files);
+              e.target.value = "";
+            }}
+          />
           {sheetMsg && <p className="notice">{sheetMsg}</p>}
-          <p>{sheets > 0 ? <span className="done-mark">✓ {sheets} sheet{sheets === 1 ? "" : "s"} ready to fill</span> : <span className="muted">No sheet yet. The Soul Forge style PDF always works without one.</span>}</p>
-          <p className="muted">Fillable sheets stay editable. A print version is written onto the page and cannot be edited afterwards. Fill a sheet from Sheet, Export. <b>Manage sheets</b> there shows all your sheets with a preview, lets you rename or remove them, and has these downloads again.</p>
+          <p>
+            {sheets > 0 ? (
+              <span className="done-mark">
+                ✓ {sheets} sheet{sheets === 1 ? "" : "s"} ready to fill
+              </span>
+            ) : (
+              <span className="muted">No sheet yet. The Soul Forge style PDF always works without one.</span>
+            )}
+          </p>
+          <p className="muted">
+            Fillable sheets stay editable. A print version is written onto the page and cannot be edited afterwards. Fill a sheet from
+            Sheet, Export. <b>Manage sheets</b> there shows all your sheets with a preview, lets you rename or remove them, and has these
+            downloads again.
+          </p>
         </>
       ),
     },
@@ -231,28 +355,80 @@ export function Tutorial(p: TutorialProps) {
           <ul className="tutorial-tour">
             {board ? (
               <>
-                <li><b>Build</b> is a board that fills in as you go. On the left, <b>Species</b>, <b>Class</b>, <b>Background</b>, <b>Spells and magic</b> and <b>Equipment</b> open into lists with search and filters. Click an entry, or drag it onto its space in the middle, and it flies into place. Above them, the <b>status panel</b> says whether the character follows the rules and lists every choice still open; click a line to go there.</li>
-                <li>Click a space in the middle and its card flips out into a <b>window</b> with its own choices (languages, skills, feats, score increases); its slot waits empty until you press <b>Done</b>. Windows can be dragged (even partly off screen), resized, shrunk to their title bar with a double-click, or made large with the focus button. Several can be open at once, two class cards side by side to compare. The card shows which book it comes from; pick another book under <b>Source</b> to switch versions. The <b>i</b> buttons open the full rules in windows of their own.</li>
-                <li>The <b>Bag of Holding</b> in the corner keeps windows you are not using: drag a window onto it, or use its ▾ button; click one in the bag to take it out. <b>Tidy up</b> lines the open windows up, and <b>Put everything in the bag</b> clears the table. The layout is kept for each character.</li>
-                <li>A choice folds away when it is complete, and the list slides so you see the next one. Ability increases are boxes: tick abilities for +1 each, or the same one twice for +2. Your <b>hit points</b> stay gold with <b>Configure</b> until you choose fixed or rolled.</li>
-                <li>On the right: your <b>portrait</b> and name (click the portrait to change it), then your <b>ability scores</b>, worked in place. <b>Point buy</b> has plus and minus and a points counter (Custom rules for house rules); the <b>Standard array</b> numbers drag onto the scores to swap; <b>Manual</b> lets you type or roll 4d6 and drop the lowest. Below are your numbers and training.</li>
-                <li>The <b>spellbook</b> thickens as you choose spells: each chosen scroll flies in as a page and leaves a grey outline (click it to take the page back out). It counts <b>Learned</b> and <b>Prepared</b> apart; click Prepared to choose today's spells. The <b>backpack</b> has three parts: <b>Starting gear</b> (pick A or B, and any item of your choice right in its box), <b>Inventory</b>, and the <b>Shop</b>, which buys with your coins and sells back at the same price. On a narrow window the lists and the scores wait at the window edges behind a <b>+</b>; click one (or any See options button) to open it over the cards.</li>
-                <li>All the motion can be turned off with <b>Reduce motion</b> in Settings.</li>
+                <li>
+                  <b>Build</b> is a board that fills in as you go. On the left, <b>Species</b>, <b>Class</b>, <b>Background</b>,{" "}
+                  <b>Spells and magic</b> and <b>Equipment</b> open into lists with search and filters. Click an entry, or drag it onto its
+                  space in the middle, and it flies into place. Above them, the <b>status panel</b> says whether the character follows the
+                  rules and lists every choice still open; click a line to go there.
+                </li>
+                <li>
+                  Click a space in the middle and its card flips out into a <b>window</b> with its own choices (languages, skills, feats,
+                  score increases); its slot waits empty until you press <b>Done</b>. Windows can be dragged (even partly off screen),
+                  resized, shrunk to their title bar with a double-click, or made large with the focus button. Several can be open at once,
+                  two class cards side by side to compare. The card shows which book it comes from; pick another book under <b>Source</b> to
+                  switch versions. The <b>i</b> buttons open the full rules in windows of their own.
+                </li>
+                <li>
+                  The <b>Bag of Holding</b> in the corner keeps windows you are not using: drag a window onto it, or use its ▾ button; click
+                  one in the bag to take it out. <b>Tidy up</b> lines the open windows up, and <b>Put everything in the bag</b> clears the
+                  table. The layout is kept for each character.
+                </li>
+                <li>
+                  A choice folds away when it is complete, and the list slides so you see the next one. Ability increases are boxes: tick
+                  abilities for +1 each, or the same one twice for +2. Your <b>hit points</b> stay gold with <b>Configure</b> until you
+                  choose fixed or rolled.
+                </li>
+                <li>
+                  On the right: your <b>portrait</b> and name (click the portrait to change it), then your <b>ability scores</b>, worked in
+                  place. <b>Point buy</b> has plus and minus and a points counter (Custom rules for house rules); the <b>Standard array</b>{" "}
+                  numbers drag onto the scores to swap; <b>Manual</b> lets you type or roll 4d6 and drop the lowest. Below are your numbers
+                  and training.
+                </li>
+                <li>
+                  The <b>spellbook</b> thickens as you choose spells: each chosen scroll flies in as a page and leaves a grey outline (click
+                  it to take the page back out). It counts <b>Learned</b> and <b>Prepared</b> apart; click Prepared to choose today's
+                  spells. The <b>backpack</b> has three parts: <b>Starting gear</b> (pick A or B, and any item of your choice right in its
+                  box), <b>Inventory</b>, and the <b>Shop</b>, which buys with your coins and sells back at the same price. On a narrow
+                  window the lists and the scores wait at the window edges behind a <b>+</b>; click one (or any See options button) to open
+                  it over the cards.
+                </li>
+                <li>
+                  All the motion can be turned off with <b>Reduce motion</b> in Settings.
+                </li>
               </>
             ) : (
-              <li><b>Build</b>: species, class and background are picked from cards. Use <b>Learn more</b> to read the full rules. Options you cannot take yet stay visible, grayed out, with what is missing written on them; the <b>Locked</b> switch hides them.</li>
+              <li>
+                <b>Build</b>: species, class and background are picked from cards. Use <b>Learn more</b> to read the full rules. Options you
+                cannot take yet stay visible, grayed out, with what is missing written on them; the <b>Locked</b> switch hides them.
+              </li>
             )}
-            <li><b>Multiclassing</b>: <b>Level up</b> lets you add a level to a class you have or start a new one. Classes whose requirements you do not meet show the missing ability scores.</li>
-            <li><b>Play</b>: click any modifier to roll. The dice panel shows the dice and the sum written out, for example 16 + 2 = 18. Drag weapons, spells and features into <b>Favorites</b>, or click their star.</li>
-            <li><b>Export</b>: print the Soul Forge sheet or fill an official one, in your language if you like, with a preview. Tick <b>Print the entire spellbook</b> to list every spell you can prepare with blank boxes to mark each day; otherwise only today's prepared spells are printed.</li>
-            <li><b>Menu, Settings</b>: theme, interface size, which books show in lists, and backups.</li>
+            <li>
+              <b>Multiclassing</b>: <b>Level up</b> lets you add a level to a class you have or start a new one. Classes whose requirements
+              you do not meet show the missing ability scores.
+            </li>
+            <li>
+              <b>Play</b>: click any modifier to roll. The dice panel shows the dice and the sum written out, for example 16 + 2 = 18. Drag
+              weapons, spells and features into <b>Favorites</b>, or click their star.
+            </li>
+            <li>
+              <b>Export</b>: print the Soul Forge sheet or fill an official one, in your language if you like, with a preview. Tick{" "}
+              <b>Print the entire spellbook</b> to list every spell you can prepare with blank boxes to mark each day; otherwise only
+              today's prepared spells are printed.
+            </li>
+            <li>
+              <b>Menu, Settings</b>: theme, interface size, which books show in lists, and backups.
+            </li>
           </ul>
           {last && (
             <div className="tutorial-summary">
               <b>You are set up:</b>
               <ul>
-                <li>{aurora ? "✓" : "○"} Rules content {aurora ? "added" : "not added yet (Content tab)"}</li>
-                <li>{sheets > 0 ? "✓" : "○"} Character sheet {sheets > 0 ? "added" : "not added yet (optional)"}</li>
+                <li>
+                  {aurora ? "✓" : "○"} Rules content {aurora ? "added" : "not added yet (Content tab)"}
+                </li>
+                <li>
+                  {sheets > 0 ? "✓" : "○"} Character sheet {sheets > 0 ? "added" : "not added yet (optional)"}
+                </li>
               </ul>
             </div>
           )}
@@ -265,17 +441,35 @@ export function Tutorial(p: TutorialProps) {
   return (
     <div className="modal-back" role="dialog" aria-label="Tutorial" onClick={() => p.setMinimized(true)}>
       <div className="modal-page themed tutorial" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" aria-label="Minimize the tutorial" title="Minimize" onClick={() => p.setMinimized(true)}>×</button>
-        <small className="muted">Step {i + 1} of {TUTORIAL_STEPS}</small>
+        <button className="modal-close" aria-label="Minimize the tutorial" title="Minimize" onClick={() => p.setMinimized(true)}>
+          ×
+        </button>
+        <small className="muted">
+          Step {i + 1} of {TUTORIAL_STEPS}
+        </small>
         <h2>{step.title}</h2>
         {step.body}
-        <div className="tutorial-dots" aria-hidden="true">{steps.map((_, k) => <span key={k} className={k === i ? "on" : ""} />)}</div>
+        <div className="tutorial-dots" aria-hidden="true">
+          {steps.map((_, k) => (
+            <span key={k} className={k === i ? "on" : ""} />
+          ))}
+        </div>
         <div className="row tutorial-nav">
           {i > 0 && <button onClick={() => setStep(i - 1)}>Back</button>}
-          {!last && <button className="primary" onClick={() => setStep(i + 1)}>{i === 0 ? "Start" : "Next"}</button>}
-          {last && <button className="primary" onClick={finish}>Finish</button>}
+          {!last && (
+            <button className="primary" onClick={() => setStep(i + 1)}>
+              {i === 0 ? "Start" : "Next"}
+            </button>
+          )}
+          {last && (
+            <button className="primary" onClick={finish}>
+              Finish
+            </button>
+          )}
           <button onClick={p.onClose}>Skip for now</button>
-          <button className="ghost" onClick={finish} title="The tutorial will not open at start-up again. It stays under Menu.">Never show this again</button>
+          <button className="ghost" onClick={finish} title="The tutorial will not open at start-up again. It stays under Menu.">
+            Never show this again
+          </button>
         </div>
       </div>
     </div>

@@ -12,10 +12,18 @@ export interface Channel {
   close(): void;
 }
 
-interface Claim { kind: "claim"; window: string; character: string }
+interface Claim {
+  kind: "claim";
+  window: string;
+  character: string;
+}
 
 const isClaim = (m: unknown): m is Claim =>
-  !!m && typeof m === "object" && (m as Claim).kind === "claim" && typeof (m as Claim).window === "string" && typeof (m as Claim).character === "string";
+  !!m &&
+  typeof m === "object" &&
+  (m as Claim).kind === "claim" &&
+  typeof (m as Claim).window === "string" &&
+  typeof (m as Claim).character === "string";
 
 export class TabGuard {
   /** The open character is held by another window: this one does not save it. */

@@ -43,7 +43,13 @@ test.describe("Soul Forge smoke tests", () => {
     await page.reload();
     // The first moment any card is in the page, its look and text; the same a few seconds later.
     await page.waitForSelector(".char-cards > .char-card", { timeout: 30_000 });
-    const look = () => page.$$eval(".char-cards > .char-card .char-card-body", (cards) => cards.map((c) => `${(c as HTMLElement).style.getPropertyValue("--hue")}|${c.querySelector(".char-card-what")?.textContent}|${c.querySelector(".char-card-stats")?.textContent ?? ""}`));
+    const look = () =>
+      page.$$eval(".char-cards > .char-card .char-card-body", (cards) =>
+        cards.map(
+          (c) =>
+            `${(c as HTMLElement).style.getPropertyValue("--hue")}|${c.querySelector(".char-card-what")?.textContent}|${c.querySelector(".char-card-stats")?.textContent ?? ""}`,
+        ),
+      );
     const first = await look();
     expect(first.every((x) => !/Nothing chosen yet|^\|/.test(x))).toBe(true);
     await page.waitForTimeout(3000);
@@ -71,7 +77,10 @@ test.describe("Soul Forge smoke tests", () => {
     await randomCharacter(page, 5);
     await tab(page, "Play");
     const bar = page.getByRole("region", { name: "Favorites" });
-    await page.locator(".play-tabs").getByRole("button", { name: /^Features/ }).click();
+    await page
+      .locator(".play-tabs")
+      .getByRole("button", { name: /^Features/ })
+      .click();
     const rows = page.locator(".play-body .feature-row");
     const n = Math.min(3, await rows.count());
     test.skip(n < 2, "the random character has fewer than two features");
@@ -236,12 +245,19 @@ test.describe("Soul Forge smoke tests", () => {
   test("point buy follows the standard table and custom house rules", async ({ page }) => {
     await addTestContent(page);
     await tab(page, "Build");
-    await page.getByRole("button", { name: /^Ability/ }).first().click();
+    await page
+      .getByRole("button", { name: /^Ability/ })
+      .first()
+      .click();
     await page.getByRole("button", { name: "Point buy" }).click();
     await expect(page.getByText("0 / 27 points")).toBeVisible();
     // Three 15s are 27 points, so nothing else can go up.
     const plus = page.locator(".abilities .stepper button", { hasText: "+" });
-    for (let i = 0; i < 7; i++) { await plus.nth(0).click(); await plus.nth(1).click(); await plus.nth(2).click(); }
+    for (let i = 0; i < 7; i++) {
+      await plus.nth(0).click();
+      await plus.nth(1).click();
+      await plus.nth(2).click();
+    }
     await expect(page.getByText("27 / 27 points")).toBeVisible();
     await expect(plus.nth(3)).toBeDisabled();
     await page.locator(".pb-rules summary").click();
@@ -257,7 +273,10 @@ test.describe("Soul Forge smoke tests", () => {
     await addTestContent(page);
     await randomCharacter(page);
     await tab(page, "Build");
-    await page.getByRole("button", { name: /^Species/ }).first().click();
+    await page
+      .getByRole("button", { name: /^Species/ })
+      .first()
+      .click();
     await page.getByRole("button", { name: "Change" }).click();
     await expect(page.getByText(/hidden by your content filters/)).toHaveCount(0);
     await page.getByRole("button", { name: /^menu/i }).click();
@@ -283,24 +302,43 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(page.locator("table tbody tr")).toHaveCount(0);
     const origins = page.locator(".equip-origin");
     await expect(origins).toHaveCount(2);
-    await origins.first().getByRole("button", { name: /^(Add these|Use these instead)$/ }).first().click();
+    await origins
+      .first()
+      .getByRole("button", { name: /^(Add these|Use these instead)$/ })
+      .first()
+      .click();
     // The class folds, the background is still open, and the panel is still there.
     await expect(page.locator(".equip-origin-done")).toHaveCount(1);
     await expect(page.locator(".equip-origin:not(.equip-origin-done)")).toHaveCount(1);
-    await page.locator(".equip-origin:not(.equip-origin-done)").getByRole("button", { name: /^(Add these|Use these instead)$/ }).first().click();
+    await page
+      .locator(".equip-origin:not(.equip-origin-done)")
+      .getByRole("button", { name: /^(Add these|Use these instead)$/ })
+      .first()
+      .click();
     await expect(page.locator(".equip-done")).toBeVisible();
     // Change the class option: the earlier one is marked as added, and choosing the other replaces it.
     await page.getByRole("button", { name: "Add more..." }).click();
     await page.locator(".equip-origin-done").first().getByRole("button", { name: "Change" }).click();
     await expect(page.locator(".equip-card.chosen")).toHaveCount(1);
     // A and B in one box: the other option's radio, then "Use these instead".
-    await page.locator(".equip-option", { hasNot: page.locator(".done-mark") }).first().locator("input").check();
-    await page.locator(".equip-group .equip-card:not(.chosen)").first().getByRole("button", { name: /instead/ }).click();
+    await page
+      .locator(".equip-option", { hasNot: page.locator(".done-mark") })
+      .first()
+      .locator("input")
+      .check();
+    await page
+      .locator(".equip-group .equip-card:not(.chosen)")
+      .first()
+      .getByRole("button", { name: /instead/ })
+      .click();
     await expect(page.locator(".equip-done")).toBeVisible();
     // Gear you add is marked, counted, and the panel stays open.
     await page.getByRole("button", { name: "Add more..." }).click();
     const gear = page.locator(".equip-card ~ *, section.card").getByRole("button", { name: /^\+ / }).first();
-    const gearName = ((await gear.innerText()).replace(/^\+ /, "")).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const gearName = (await gear.innerText())
+      .replace(/^\+ /, "")
+      .trim()
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     await gear.click();
     await page.getByRole("button", { name: new RegExp(`✓ ${gearName}`) }).click();
     await expect(page.getByRole("button", { name: new RegExp(`✓ ${gearName} ×2`) })).toBeVisible();
@@ -326,7 +364,10 @@ test.describe("Soul Forge smoke tests", () => {
     await page.locator(".play-tabs").getByRole("button", { name: "Notes" }).click();
     await expect(strip.getByText("Ki")).toBeVisible();
     // Star a feature, then drag another in.
-    await page.locator(".play-tabs").getByRole("button", { name: /^Features/ }).click();
+    await page
+      .locator(".play-tabs")
+      .getByRole("button", { name: /^Features/ })
+      .click();
     const rows = page.locator(".play-body .feature-row");
     await rows.nth(0).getByRole("button", { name: "Add to favorites" }).click();
     await expect(bar.locator(".fav-tile.feature")).toHaveCount(1);
@@ -440,7 +481,8 @@ test.describe("Soul Forge smoke tests", () => {
       pg.drawText(`Test sheet page ${n + 1}`, { x: 40, y: 740, size: 14, font });
       if (n === 0) {
         const f = doc.getForm();
-        for (const [i, name] of ["CharacterName", "Wpn Name", "ClassLevel", "Race"].entries()) f.createTextField(name).addToPage(pg, { x: 40, y: 700 - i * 30, width: 200, height: 20 });
+        for (const [i, name] of ["CharacterName", "Wpn Name", "ClassLevel", "Race"].entries())
+          f.createTextField(name).addToPage(pg, { x: 40, y: 700 - i * 30, width: 200, height: 20 });
       }
     }
     const file = info.outputPath("classic-test.pdf");
@@ -515,7 +557,9 @@ test.describe("Soul Forge smoke tests", () => {
     const seen = watchProblems(page);
     await addTestContent(page);
     const foundry = {
-      name: "Imported Ira", type: "character", system: { abilities: { str: { value: 14 } }, details: {} },
+      name: "Imported Ira",
+      type: "character",
+      system: { abilities: { str: { value: 14 } }, details: {} },
       items: [
         { name: "Warden", type: "class", system: { levels: 2 } },
         { name: "Hollowfolk", type: "race", system: {} },
@@ -537,7 +581,10 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(kept).toContainText("Mystery Trinket");
     await kept.getByRole("button", { name: "Add to notes" }).click();
     await expect(page.locator(".notice-toast")).toContainText(/character's details/);
-    await page.locator(".notice-toast").getByRole("button", { name: /open notes/i }).click();
+    await page
+      .locator(".notice-toast")
+      .getByRole("button", { name: /open notes/i })
+      .click();
     await expect(page.locator("#character-notes")).toHaveValue(/Import notes: ira\.json[\s\S]*Mystery Trinket/);
     await page.getByRole("dialog", { name: "Character details" }).getByRole("button", { name: "Close" }).click();
     // The button stays on Build, and the report is not added twice.

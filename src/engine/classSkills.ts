@@ -14,17 +14,23 @@ import { bookKey } from "../aurora/books";
 
 /** Adds the missing tags; returns what was added ("Fighter (2024): Insight"), for the tests and the log. */
 export function alignClassSkills(byId: Map<string, AElement>): string[] {
-  const skills = [...byId.values()].filter((e) => e.type === "Proficiency" && e.origin !== "5etools" && e.supports.some((s) => s.trim() === "Skill"));
+  const skills = [...byId.values()].filter(
+    (e) => e.type === "Proficiency" && e.origin !== "5etools" && e.supports.some((s) => s.trim() === "Skill"),
+  );
   const skillByName = new Map(skills.map((e) => [e.name.toLowerCase(), e]));
   const twins = new Map<string, AElement>();
-  for (const el of byId.values()) if (el.type === "Class" && el.origin === "5etools") twins.set(`${el.name.toLowerCase()}|${isModern(el)}`, el);
+  for (const el of byId.values())
+    if (el.type === "Class" && el.origin === "5etools") twins.set(`${el.name.toLowerCase()}|${isModern(el)}`, el);
   const added: string[] = [];
   for (const cls of byId.values()) {
     if (cls.type !== "Class" || cls.origin === "5etools") continue;
     const twin = twins.get(`${cls.name.toLowerCase()}|${isModern(cls)}`);
     const theirs = twin?.rules.find((r) => r.kind === "select" && r.type === "Proficiency" && /ID_5ET_SKILL_/.test(r.supports));
     if (!twin || theirs?.kind !== "select") continue;
-    const want = theirs.supports.split("|").map((id) => byId.get(id.trim())?.name.toLowerCase()).filter((n): n is string => !!n);
+    const want = theirs.supports
+      .split("|")
+      .map((id) => byId.get(id.trim())?.name.toLowerCase())
+      .filter((n): n is string => !!n);
     for (const r of cls.rules) {
       if (r.kind !== "select" || r.type !== "Proficiency") continue;
       const parts = r.supports.split(",").map((s) => s.trim());
@@ -69,8 +75,15 @@ export function classProficiencyDiffs(reg: ARegistry): string[] {
     const KIND = /^(save|armor|weapon|skill|tool):/;
     // What the class grants itself: not the single weapons and armors Aurora's "simple weapons" grants in turn.
     const byCategory = (a: (typeof r.active)[number]) => !!a.from && r.reg.get(a.from)?.type === "Proficiency";
-    const granted = new Set(r.active.filter((a) => !byCategory(a)).map((a) => conceptOf(a.el)).filter((c): c is string => !!c && KIND.test(c)));
-    const choice = r.slots.find((s) => s.root.startsWith("class:") && s.rule.type === "Proficiency" && s.options.some((o) => conceptOf(o)?.startsWith("skill:")));
+    const granted = new Set(
+      r.active
+        .filter((a) => !byCategory(a))
+        .map((a) => conceptOf(a.el))
+        .filter((c): c is string => !!c && KIND.test(c)),
+    );
+    const choice = r.slots.find(
+      (s) => s.root.startsWith("class:") && s.rule.type === "Proficiency" && s.options.some((o) => conceptOf(o)?.startsWith("skill:")),
+    );
     const offers = new Set((choice?.options ?? []).map((o) => conceptOf(o)).filter((c): c is string => !!c?.startsWith("skill:")));
     return { granted, number: choice?.rule.number ?? 0, offers };
   };
@@ -79,7 +92,8 @@ export function classProficiencyDiffs(reg: ARegistry): string[] {
     if (cls.origin === "5etools" || cls.compendiumHidden || cls.comingSoon) continue;
     const twin = twins.get(`${cls.name.toLowerCase()}|${bookKey(cls.source)}`);
     if (!twin) continue;
-    const a = view(cls.id), f = view(twin.id);
+    const a = view(cls.id),
+      f = view(twin.id);
     const label = `${cls.name}${isModern(cls) ? " (2024)" : ""} [${cls.source}]`;
     for (const x of diff(f.granted, a.granted)) out.push(`${label}: 5e.tools grants ${x}, Aurora does not`);
     for (const x of diff(a.granted, f.granted)) out.push(`${label}: Aurora grants ${x}, 5e.tools does not`);

@@ -29,7 +29,10 @@ describe("homebrew builder", () => {
     const entries = [
       make("Moon Blade", "weapon", { data: { damage: "1d10", damageType: "radiant", magic: "1" } }),
       make("Dusk Mail", "armor", { data: { armor: "heavy", ac: "17" } }),
-      make("Star Bolt", "spell", { description: "A bolt of starlight.\n\nIt shines.", data: { level: "2", classes: "Spellsinger", concentration: true } }),
+      make("Star Bolt", "spell", {
+        description: "A bolt of starlight.\n\nIt shines.",
+        data: { level: "2", classes: "Spellsinger", concentration: true },
+      }),
       make("Night Eyes", "feat", { description: "You see in the dark.", effects: [{ kind: "skill", target: "perception", value: 2 }] }),
     ];
     const reg = withHomebrew(entries);
@@ -44,7 +47,16 @@ describe("homebrew builder", () => {
     const sword = make("Moon Blade", "weapon", { data: { damage: "1d10", damageType: "radiant", magic: "1", properties: "finesse" } });
     const mail = make("Dusk Mail", "armor", { data: { armor: "heavy", ac: "17" } });
     const reg = withHomebrew([sword, mail]);
-    const ch = autoFill({ ...newCharacter(), race: "ID_SF_RACE_EMBERKIN", background: "ID_SF_BACKGROUND_WAYFARER", classes: [{ classId: "ID_SF_CLASS_WARDEN", level: 1 }], abilityBase: { strength: 14, dexterity: 12, constitution: 12, intelligence: 10, wisdom: 10, charisma: 10 } }, reg);
+    const ch = autoFill(
+      {
+        ...newCharacter(),
+        race: "ID_SF_RACE_EMBERKIN",
+        background: "ID_SF_BACKGROUND_WAYFARER",
+        classes: [{ classId: "ID_SF_CLASS_WARDEN", level: 1 }],
+        abilityBase: { strength: 14, dexterity: 12, constitution: 12, intelligence: 10, wisdom: 10, charisma: 10 },
+      },
+      reg,
+    );
     ch.inventory = [
       { uid: "w", id: sword.id, qty: 1, equipped: true, attuned: false },
       { uid: "a", id: mail.id, qty: 1, equipped: true, attuned: false },
@@ -56,14 +68,42 @@ describe("homebrew builder", () => {
   });
 
   it("a feat's effects add to the character", () => {
-    const feat = make("Night Eyes", "feat", { effects: [{ kind: "skill", target: "perception", value: 2 }, { kind: "speed", value: 5 }, { kind: "ability", target: "wisdom", value: 1 }] });
+    const feat = make("Night Eyes", "feat", {
+      effects: [
+        { kind: "skill", target: "perception", value: 2 },
+        { kind: "speed", value: 5 },
+        { kind: "ability", target: "wisdom", value: 1 },
+      ],
+    });
     const reg = withHomebrew([feat]);
-    const ch = autoFill({ ...newCharacter(), race: "ID_SF_RACE_EMBERKIN", background: "ID_SF_BACKGROUND_WAYFARER", classes: [{ classId: "ID_SF_CLASS_WARDEN", level: 1 }], extras: [feat.id] }, reg);
-    const before = resolve(autoFill({ ...newCharacter(), race: "ID_SF_RACE_EMBERKIN", background: "ID_SF_BACKGROUND_WAYFARER", classes: [{ classId: "ID_SF_CLASS_WARDEN", level: 1 }] }, reg), reg);
+    const ch = autoFill(
+      {
+        ...newCharacter(),
+        race: "ID_SF_RACE_EMBERKIN",
+        background: "ID_SF_BACKGROUND_WAYFARER",
+        classes: [{ classId: "ID_SF_CLASS_WARDEN", level: 1 }],
+        extras: [feat.id],
+      },
+      reg,
+    );
+    const before = resolve(
+      autoFill(
+        {
+          ...newCharacter(),
+          race: "ID_SF_RACE_EMBERKIN",
+          background: "ID_SF_BACKGROUND_WAYFARER",
+          classes: [{ classId: "ID_SF_CLASS_WARDEN", level: 1 }],
+        },
+        reg,
+      ),
+      reg,
+    );
     const after = resolve(ch, reg);
     expect(after.stats.get("wisdom") - before.stats.get("wisdom")).toBe(1);
     expect(after.stats.get("speed") - before.stats.get("speed")).toBe(5);
-    expect(after.stats.get("perception") - before.stats.get("perception")).toBe(2 + (after.stats.get("wisdom:modifier") - before.stats.get("wisdom:modifier")));
+    expect(after.stats.get("perception") - before.stats.get("perception")).toBe(
+      2 + (after.stats.get("wisdom:modifier") - before.stats.get("wisdom:modifier")),
+    );
   });
 
   it("escapes text and refuses entries that would be useless", () => {

@@ -9,11 +9,17 @@ import { autoFill, buildPlan } from "./automap";
 const recorder = () => {
   const text = new Map<string, string>();
   const checks = new Map<string, boolean>();
-  const sink: Sink = { text: (w, v) => void text.set(`${w.p}:${w.name}`, v), check: (w, on) => void checks.set(`${w.p}:${w.name}:${w.x}:${w.y}`, on), image: (w) => void checks.set(`${w.p}:${w.name}:${w.x}:${w.y}`, true) };
+  const sink: Sink = {
+    text: (w, v) => void text.set(`${w.p}:${w.name}`, v),
+    check: (w, on) => void checks.set(`${w.p}:${w.name}:${w.x}:${w.y}`, on),
+    image: (w) => void checks.set(`${w.p}:${w.name}:${w.x}:${w.y}`, true),
+  };
   return { sink, text, checks };
 };
 
-const unreached = (ws: W[], text: Map<string, string>) => [...new Set(ws.filter((w) => w.t === "Tx" && !text.has(`${w.p}:${w.name}`)).map((w) => w.name.trim()))];
+const unreached = (ws: W[], text: Map<string, string>) => [
+  ...new Set(ws.filter((w) => w.t === "Tx" && !text.has(`${w.p}:${w.name}`)).map((w) => w.name.trim())),
+];
 
 describe("official sheets are fully mapped", () => {
   it("classic 2014 sheet: every text field is reached", () => {
@@ -33,7 +39,8 @@ describe("official sheets are fully mapped", () => {
 });
 
 describe("check boxes", () => {
-  const boxes = (ws: W[], checks: Map<string, boolean>) => ws.filter((w) => w.t === "Btn" && !checks.has(`${w.p}:${w.name}:${w.x}:${w.y}`)).map((w) => `${w.p}:${w.name}`);
+  const boxes = (ws: W[], checks: Map<string, boolean>) =>
+    ws.filter((w) => w.t === "Btn" && !checks.has(`${w.p}:${w.name}:${w.x}:${w.y}`)).map((w) => `${w.p}:${w.name}`);
   it("2024: every check box is decided", () => {
     const ws = LAYOUTS["2024"].widgets;
     const { sink, checks } = recorder();
@@ -71,7 +78,8 @@ describe("the other official layouts are matched by name", () => {
 });
 
 describe("matching sheets with other naming styles", () => {
-  const mk = (names: string[]) => names.map((n, i) => ({ name: n, t: "Tx" as const, p: 0, x: 40 + (i % 5) * 100, y: 700 - Math.floor(i / 5) * 20, w: 80, h: 14 }));
+  const mk = (names: string[]) =>
+    names.map((n, i) => ({ name: n, t: "Tx" as const, p: 0, x: 40 + (i % 5) * 100, y: 700 - Math.floor(i / 5) * 20, w: 80, h: 14 }));
   const keysOf = (names: string[]) => {
     const { plan } = buildPlan(mk(names));
     const out: Record<string, string[]> = {};
@@ -79,7 +87,23 @@ describe("matching sheets with other naming styles", () => {
     return out;
   };
   it("reads separators, plurals and word order", () => {
-    const k = keysOf(["Character Name", "Class & Level", "Strength Score", "Strength Modifier", "Saving Throw - Strength", "str_mod", "DEX", "Armor Class", "Hit Points Max", "Passive Perception", "Athletics Bonus", "Sleight of Hand", "Spell Save DC", "Copper", "Gold"]);
+    const k = keysOf([
+      "Character Name",
+      "Class & Level",
+      "Strength Score",
+      "Strength Modifier",
+      "Saving Throw - Strength",
+      "str_mod",
+      "DEX",
+      "Armor Class",
+      "Hit Points Max",
+      "Passive Perception",
+      "Athletics Bonus",
+      "Sleight of Hand",
+      "Spell Save DC",
+      "Copper",
+      "Gold",
+    ]);
     expect(k.name).toEqual(["Character Name"]);
     expect(k.classLevel).toEqual(["Class & Level"]);
     expect(k["strength.score"]).toEqual(["Strength Score"]);
@@ -95,8 +119,14 @@ describe("matching sheets with other naming styles", () => {
   });
   it("uses the printed label when the field name says nothing", async () => {
     const { attachLabels } = await import("./automap");
-    const fields = [{ name: "Text Field12", t: "Tx" as const, p: 0, x: 100, y: 500, w: 60, h: 14 }, { name: "Text Field13", t: "Tx" as const, p: 0, x: 200, y: 500, w: 60, h: 14 }];
-    const words = [{ p: 0, text: "Armor Class", x: 100, y: 488, w: 55, h: 8 }, { p: 0, text: "Initiative", x: 205, y: 488, w: 40, h: 8 }];
+    const fields = [
+      { name: "Text Field12", t: "Tx" as const, p: 0, x: 100, y: 500, w: 60, h: 14 },
+      { name: "Text Field13", t: "Tx" as const, p: 0, x: 200, y: 500, w: 60, h: 14 },
+    ];
+    const words = [
+      { p: 0, text: "Armor Class", x: 100, y: 488, w: 55, h: 8 },
+      { p: 0, text: "Initiative", x: 205, y: 488, w: 40, h: 8 },
+    ];
     const { plan } = buildPlan(attachLabels(fields, words));
     expect(plan.get("ac")?.[0].name).toBe("Text Field12");
     expect(plan.get("initiative")?.[0].name).toBe("Text Field13");

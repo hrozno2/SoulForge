@@ -3,8 +3,31 @@ import { outdatedFiveTools, FIVETOOLS_IMPORT_FORMAT } from "./content";
 import type { SourceConfig } from "./sources";
 
 const src = (files: string[], extra: Partial<SourceConfig> = {}): SourceConfig => ({
-  url: "5etools://x", name: "x", kind: "local", format: "5etools", disabled: [], versions: {}, lastChecked: 0, fileCount: files.length,
-  tree: { url: "5etools://x", name: "x", description: "", version: "local", files: [], children: [{ url: "5etools://x#core", name: "core", description: "", version: "local", files: files.map((f) => `5etools://x/${f}`), children: [] }] },
+  url: "5etools://x",
+  name: "x",
+  kind: "local",
+  format: "5etools",
+  disabled: [],
+  versions: {},
+  lastChecked: 0,
+  fileCount: files.length,
+  tree: {
+    url: "5etools://x",
+    name: "x",
+    description: "",
+    version: "local",
+    files: [],
+    children: [
+      {
+        url: "5etools://x#core",
+        name: "core",
+        description: "",
+        version: "local",
+        files: files.map((f) => `5etools://x/${f}`),
+        children: [],
+      },
+    ],
+  },
   ...extra,
 });
 

@@ -19,11 +19,7 @@ export interface ReqCtx {
   as?(self: string): ReqCtx;
 }
 
-type Node =
-  | { t: "and" | "or"; a: Node[] }
-  | { t: "not"; n: Node }
-  | { t: "id"; id: string }
-  | { t: "pair"; key: string; value: string };
+type Node = { t: "and" | "or"; a: Node[] } | { t: "not"; n: Node } | { t: "id"; id: string } | { t: "pair"; key: string; value: string };
 
 const ABILITY_ALIAS: Record<string, string> = {
   str: "strength",
@@ -147,7 +143,14 @@ export function meets(req: string | undefined, ctx: ReqCtx, equipment = false): 
   return node ? evalNode(node, ctx, equipment) : true;
 }
 
-const ABILITY_NAME: Record<string, string> = { strength: "Strength", dexterity: "Dexterity", constitution: "Constitution", intelligence: "Intelligence", wisdom: "Wisdom", charisma: "Charisma" };
+const ABILITY_NAME: Record<string, string> = {
+  strength: "Strength",
+  dexterity: "Dexterity",
+  constitution: "Constitution",
+  intelligence: "Intelligence",
+  wisdom: "Wisdom",
+  charisma: "Charisma",
+};
 
 /** A readable name for an element id when no registry is at hand: ID_WOTC_PHB_CLASS_FIGHTER becomes "Fighter". */
 const prettyId = (id: string) => {
@@ -159,7 +162,11 @@ const prettyId = (id: string) => {
  * What a character is missing for a requirement, in words: "Strength 13 or Dexterity 13" or "Level 4".
  * Only the parts that fail are named. Returns undefined when the requirement is met.
  */
-export function explainUnmet(req: string | undefined, ctx: ReqCtx, nameOf: (id: string) => string | undefined = () => undefined): string | undefined {
+export function explainUnmet(
+  req: string | undefined,
+  ctx: ReqCtx,
+  nameOf: (id: string) => string | undefined = () => undefined,
+): string | undefined {
   if (meets(req, ctx)) return undefined;
   const node = parse(req!);
   if (!node) return undefined;
@@ -167,7 +174,10 @@ export function explainUnmet(req: string | undefined, ctx: ReqCtx, nameOf: (id: 
   const say = (n: Node): string => {
     switch (n.t) {
       case "and":
-        return n.a.filter((x) => !evalNode(x, ctx, false)).map(say).join(" and ");
+        return n.a
+          .filter((x) => !evalNode(x, ctx, false))
+          .map(say)
+          .join(" and ");
       case "or":
         return n.a.map(say).join(" or ");
       case "not":

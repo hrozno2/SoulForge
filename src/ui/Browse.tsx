@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { flyInto } from "./flight";
 import type { AElement } from "../aurora/types";
-import { BOOK_KIND_LABEL, bookKind, formatRelease, groupVariants, hasRecommendation, hiddenBy, sortGroups, type Group, type SortMode, type Variant } from "../aurora/books";
+import {
+  BOOK_KIND_LABEL,
+  bookKind,
+  formatRelease,
+  groupVariants,
+  hasRecommendation,
+  hiddenBy,
+  sortGroups,
+  type Group,
+  type SortMode,
+  type Variant,
+} from "../aurora/books";
 import { applyFacets, facetCounts, facetsFor, type Selected } from "../aurora/facets";
 import { stripHtml } from "../aurora/sheet";
 import { shortRange, shortTime } from "../sheets/data";
@@ -39,8 +50,11 @@ function useStored<T extends string>(key: string, initial: T): [T, (v: T) => voi
 const STOCK = /^(Age|Alignment|Size|Speed|Languages?|Ability Score Increases?|Creature Type)\b[.:]?/i;
 export const blurb = (html: string, max = 170) => {
   // Each paragraph with the heading before it, if any ("<h5>Age</h5><p>...</p>" in 5e.tools' text).
-  const paras = [...html.matchAll(/(?:<h\d[^>]*>([\s\S]*?)<\/h\d>\s*)?<p[^>]*>([\s\S]*?)<\/p>/gi)].map((m) => ({ head: stripHtml(m[1] ?? "").trim(), text: stripHtml(m[2]).replace(/\s+/g, " ").trim() })).filter((x) => x.text);
-  const t = (paras.find((x) => !STOCK.test(x.head) && !STOCK.test(x.text)) ?? paras[0])?.text ?? stripHtml(html).replace(/\s+/g, " ").trim();
+  const paras = [...html.matchAll(/(?:<h\d[^>]*>([\s\S]*?)<\/h\d>\s*)?<p[^>]*>([\s\S]*?)<\/p>/gi)]
+    .map((m) => ({ head: stripHtml(m[1] ?? "").trim(), text: stripHtml(m[2]).replace(/\s+/g, " ").trim() }))
+    .filter((x) => x.text);
+  const t =
+    (paras.find((x) => !STOCK.test(x.head) && !STOCK.test(x.text)) ?? paras[0])?.text ?? stripHtml(html).replace(/\s+/g, " ").trim();
   return t.length > max ? `${t.slice(0, max).replace(/\s+\S*$/, "")}...` : t;
 };
 
@@ -56,45 +70,114 @@ export const featOf = (e: AElement, nameOf?: (id: string) => string | undefined)
   const known = nameOf?.(g.id);
   if (known) return known;
   const m = g.id.match(/FEAT_(?:[A-Z0-9]+_)??(.+)$/i);
-  return m ? m[1].toLowerCase().split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : undefined;
+  return m
+    ? m[1]
+        .toLowerCase()
+        .split("_")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ")
+    : undefined;
 };
 
 /** The "Feat:" line of a background's card. */
 export function BackgroundFeat({ el }: { el: AElement }) {
   const { reg } = useUi();
   const name = featOf(el, (id) => reg.get(id)?.name);
-  return name ? <p className="pick-feat"><b>Feat:</b> {name}</p> : null;
+  return name ? (
+    <p className="pick-feat">
+      <b>Feat:</b> {name}
+    </p>
+  ) : null;
 }
 
-const SORTS: [SortMode, string][] = [["az", "A to Z"], ["recommended", "Recommended"], ["newest", "Newest"]];
+const SORTS: [SortMode, string][] = [
+  ["az", "A to Z"],
+  ["recommended", "Recommended"],
+  ["newest", "Newest"],
+];
 
 /** The books an option comes from, as chips; a click switches to that version. */
 /** A source's kind as a small marker: Official, Setting, UA or Other. */
 export function KindTag({ v }: { v: Variant }) {
   const k = bookKind(v.book, v.el.source);
-  const soon = v.el.comingSoon ? <em className="soon-tag" title="Playtest content Soul Forge does not support yet: it cannot be picked">Coming soon</em> : null;
+  const soon = v.el.comingSoon ? (
+    <em className="soon-tag" title="Playtest content Soul Forge does not support yet: it cannot be picked">
+      Coming soon
+    </em>
+  ) : null;
   if (!k) return soon;
-  return <>{soon}<em className={`kind kind-${k}`} title={k === "playtest" ? "Unearthed Arcana: playtest material" : k === "setting" ? "An official setting or adventure book" : k === "official" ? "An official core book or supplement" : "Not an official book (third-party or homebrew)"}>{BOOK_KIND_LABEL[k]}</em></>;
+  return (
+    <>
+      {soon}
+      <em
+        className={`kind kind-${k}`}
+        title={
+          k === "playtest"
+            ? "Unearthed Arcana: playtest material"
+            : k === "setting"
+              ? "An official setting or adventure book"
+              : k === "official"
+                ? "An official core book or supplement"
+                : "Not an official book (third-party or homebrew)"
+        }
+      >
+        {BOOK_KIND_LABEL[k]}
+      </em>
+    </>
+  );
 }
 
-export function VariantChips({ g, activeId, chosen, onActive, short, onSwitch, onPickVersion }: { g: Group; activeId: string; chosen: Set<string>; onActive: (id: string) => void; short?: boolean; onSwitch?: (from: AElement, to: AElement) => void; onPickVersion?: (el: AElement) => void }) {
+export function VariantChips({
+  g,
+  activeId,
+  chosen,
+  onActive,
+  short,
+  onSwitch,
+  onPickVersion,
+}: {
+  g: Group;
+  activeId: string;
+  chosen: Set<string>;
+  onActive: (id: string) => void;
+  short?: boolean;
+  onSwitch?: (from: AElement, to: AElement) => void;
+  onPickVersion?: (el: AElement) => void;
+}) {
   const when = (r?: number) => (short ? (r ? String(Math.floor(r / 10000)) : "") : formatRelease(r));
   if (g.variants.length < 2) {
     const v = g.variants[0];
-    return <span className="vchips"><span className="vchip static" tabIndex={0} title={`${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`}>{v.book.abbr ?? v.el.source}{v.book.release ? ` · ${when(v.book.release)}` : ""}<KindTag v={v} /></span></span>;
+    return (
+      <span className="vchips">
+        <span
+          className="vchip static"
+          tabIndex={0}
+          title={`${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`}
+        >
+          {v.book.abbr ?? v.el.source}
+          {v.book.release ? ` · ${when(v.book.release)}` : ""}
+          <KindTag v={v} />
+        </span>
+      </span>
+    );
   }
   return (
     <span className="vchips" role="group" aria-label="Versions from different books">
       {g.variants.map((v) => (
-        <button key={v.el.id} className={`vchip ${v.el.id === activeId ? "on" : ""} ${chosen.has(v.el.id) ? "chosen" : ""}`} title={`${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`} onClick={(e) => {
-          e.stopPropagation();
-          onActive(v.el.id);
-          // In the list a version you click replaces the one you already picked from this group.
-          const have = g.variants.find((x) => chosen.has(x.el.id));
-          if (onSwitch && have && have.el.id !== v.el.id) onSwitch(have.el, v.el);
-          // Nothing from this group picked yet: in the list a click on a version picks it.
-          else if (!have && onPickVersion) onPickVersion(v.el);
-        }}>
+        <button
+          key={v.el.id}
+          className={`vchip ${v.el.id === activeId ? "on" : ""} ${chosen.has(v.el.id) ? "chosen" : ""}`}
+          title={`${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onActive(v.el.id);
+            // In the list a version you click replaces the one you already picked from this group.
+            const have = g.variants.find((x) => chosen.has(x.el.id));
+            if (onSwitch && have && have.el.id !== v.el.id) onSwitch(have.el, v.el);
+            // Nothing from this group picked yet: in the list a click on a version picks it.
+            else if (!have && onPickVersion) onPickVersion(v.el);
+          }}
+        >
           {v.book.abbr ?? v.el.source}
           {v.book.release ? <small> {when(v.book.release)}</small> : null}
           {v === g.newest && g.variants.length > 1 && v.book.release ? <em className="newest">newest</em> : null}
@@ -107,13 +190,27 @@ export function VariantChips({ g, activeId, chosen, onActive, short, onSwitch, o
 
 function SpellCells({ el }: { el: AElement }) {
   const s = el.setters;
-  const comps = [s.hasVerbalComponent?.value === "true" && "V", s.hasSomaticComponent?.value === "true" && "S", s.hasMaterialComponent?.value === "true" && "M"].filter(Boolean).join(" ");
+  const comps = [
+    s.hasVerbalComponent?.value === "true" && "V",
+    s.hasSomaticComponent?.value === "true" && "S",
+    s.hasMaterialComponent?.value === "true" && "M",
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <>
-      <span className="c-school" title={s.school?.value}>{SCHOOLS.has((s.school?.value ?? "").toLowerCase()) ? <SchoolIcon school={s.school?.value} size={20} /> : (s.school?.value ?? "").slice(0, 4)}</span>
+      <span className="c-school" title={s.school?.value}>
+        {SCHOOLS.has((s.school?.value ?? "").toLowerCase()) ? (
+          <SchoolIcon school={s.school?.value} size={20} />
+        ) : (
+          (s.school?.value ?? "").slice(0, 4)
+        )}
+      </span>
       <span className="c-time">{shortTime(s.time?.value ?? "")}</span>
       <span className="c-range">{shortRange(s.range?.value ?? "")}</span>
-      <span className="c-comp" title={s.materialComponent?.value}>{comps}</span>
+      <span className="c-comp" title={s.materialComponent?.value}>
+        {comps}
+      </span>
       <span className="c-flags">
         {s.isConcentration?.value === "true" && <b title="Concentration">C</b>}
         {s.isRitual?.value === "true" && <b title="Ritual">R</b>}
@@ -123,7 +220,14 @@ function SpellCells({ el }: { el: AElement }) {
 }
 
 export function LockIcon() {
-  return <svg className="lock-ico" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1.5A1.5 1.5 0 0 1 20 11.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 20.5v-9A1.5 1.5 0 0 1 5.5 10H7zm2 0h6V7a3 3 0 0 0-6 0v3z" fill="currentColor" /></svg>;
+  return (
+    <svg className="lock-ico" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+      <path
+        d="M7 10V7a5 5 0 0 1 10 0v3h1.5A1.5 1.5 0 0 1 20 11.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 20.5v-9A1.5 1.5 0 0 1 5.5 10H7zm2 0h6V7a3 3 0 0 0-6 0v3z"
+        fill="currentColor"
+      />
+    </svg>
+  );
 }
 
 export interface BrowseProps {
@@ -164,7 +268,21 @@ export interface BrowseProps {
 }
 
 /** An item's category as a short badge (Weapon, Armor, Gear, Tool, Pack, Focus...), or its rarity for a magic item. */
-const CATEGORY: Record<string, string> = { weapons: "Weapon", armor: "Armor", "adventuring gear": "Gear", tools: "Tool", "equipment packs": "Pack", "spellcasting focus": "Focus", "musical instruments": "Instrument", ammunition: "Ammo", "mounts & vehicles": "Mount", trinkets: "Trinket", trinket: "Trinket", poisons: "Poison", potions: "Potion" };
+const CATEGORY: Record<string, string> = {
+  weapons: "Weapon",
+  armor: "Armor",
+  "adventuring gear": "Gear",
+  tools: "Tool",
+  "equipment packs": "Pack",
+  "spellcasting focus": "Focus",
+  "musical instruments": "Instrument",
+  ammunition: "Ammo",
+  "mounts & vehicles": "Mount",
+  trinkets: "Trinket",
+  trinket: "Trinket",
+  poisons: "Poison",
+  potions: "Potion",
+};
 function itemBadge(e: AElement): string {
   if (!["Item", "Weapon", "Armor", "Magic Item"].includes(e.type)) return "";
   const cat = (e.setters.category?.value ?? "").toLowerCase().trim();
@@ -172,16 +290,47 @@ function itemBadge(e: AElement): string {
   return CATEGORY[cat] ?? (cat ? cat.replace(/s$/, "").replace(/^\w/, (c) => c.toUpperCase()) : e.type === "Item" ? "Gear" : e.type);
 }
 
-const ITEM_ICON: Record<string, (p: { size?: number }) => React.ReactNode> = { Weapon: Sword, Armor: Shield, "Magic Item": Wand, Item: Pack };
+const ITEM_ICON: Record<string, (p: { size?: number }) => React.ReactNode> = {
+  Weapon: Sword,
+  Armor: Shield,
+  "Magic Item": Wand,
+  Item: Pack,
+};
 
 /** The drag data type for an element type, so a drop target can tell what is over it before the drop. */
 export const dragMime = (type: string) => `application/x-sf-${type.toLowerCase().replace(/[^a-z]/g, "")}`;
 
-export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap: swapProp, disabledReason: reasonProp, ownedBy, defaultView = "list", allowCards = true, hero, onHover, pickLabel, rowLabel, defaultLocked, perPage = 48, defaultSort, draggable, barExtra, mini, viewKey, showAll, need }: BrowseProps) {
+export function Browse({
+  items: allItems,
+  type,
+  chosen,
+  onPick: pickProp,
+  onSwap: swapProp,
+  disabledReason: reasonProp,
+  ownedBy,
+  defaultView = "list",
+  allowCards = true,
+  hero,
+  onHover,
+  pickLabel,
+  rowLabel,
+  defaultLocked,
+  perPage = 48,
+  defaultSort,
+  draggable,
+  barExtra,
+  mini,
+  viewKey,
+  showAll,
+  need,
+}: BrowseProps) {
   const { books, learn } = useUi();
   const [view, setView] = useStored<"cards" | "list">(viewKey ?? `view.${type}`, defaultView);
   const [sort, setSort] = useStored<SortMode>(`sort.${type}`, defaultSort ?? (type === "Spell" ? "level" : "recommended"));
-  const [lockMode, setLockMode] = useStored<"show" | "hide">(defaultLocked && viewKey ? `locked.${viewKey}` : `locked.${type}`, defaultLocked ?? "show");
+  const [lockMode, setLockMode] = useStored<"show" | "hide">(
+    defaultLocked && viewKey ? `locked.${viewKey}` : `locked.${type}`,
+    defaultLocked ?? "show",
+  );
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState<Selected>({});
@@ -194,30 +343,71 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
     if (!anySoon) return reasonProp;
     return (e: AElement) => (e.comingSoon ? "Coming soon" : reasonProp?.(e));
   }, [allItems, reasonProp]);
-  const onPick = (e: AElement) => { if (!e.comingSoon) pickProp(e); };
-  const onSwap = swapProp && ((from: AElement, to: AElement) => { if (!to.comingSoon) swapProp(from, to); });
+  const onPick = (e: AElement) => {
+    if (!e.comingSoon) pickProp(e);
+  };
+  const onSwap =
+    swapProp &&
+    ((from: AElement, to: AElement) => {
+      if (!to.comingSoon) swapProp(from, to);
+    });
   const prefs = useSettings();
   // The global content filters. Whatever is already picked stays visible.
   const items = useMemo(() => {
     if (showAll) return allItems;
-    const kept = allItems.filter((e) => chosenSet.has(e.id) || !hiddenBy(books.info(e.source), e.source, { legacy: prefs.showLegacy, playtest: prefs.showPlaytest, unusual: prefs.showUnusual, scifi: prefs.showSciFi, modern: prefs.showModern }, e.type, e.supports));
+    const kept = allItems.filter(
+      (e) =>
+        chosenSet.has(e.id) ||
+        !hiddenBy(
+          books.info(e.source),
+          e.source,
+          {
+            legacy: prefs.showLegacy,
+            playtest: prefs.showPlaytest,
+            unusual: prefs.showUnusual,
+            scifi: prefs.showSciFi,
+            modern: prefs.showModern,
+          },
+          e.type,
+          e.supports,
+        ),
+    );
     // The content filters never leave a choice unable to be completed: when fewer options the character can take
     // remain than picks still to make, every option shows.
     const takeable = (list: typeof allItems) => list.filter((e) => !chosenSet.has(e.id) && !disabledReason?.(e)).length;
     const toPick = Math.max(0, (need ?? 1) - chosen.length);
     return kept.length && takeable(kept) >= Math.min(toPick, takeable(allItems)) ? kept : allItems;
-  }, [allItems, books, chosenSet, chosen, need, disabledReason, prefs.showLegacy, prefs.showPlaytest, prefs.showUnusual, prefs.showSciFi, prefs.showModern, showAll]);
+  }, [
+    allItems,
+    books,
+    chosenSet,
+    chosen,
+    need,
+    disabledReason,
+    prefs.showLegacy,
+    prefs.showPlaytest,
+    prefs.showUnusual,
+    prefs.showSciFi,
+    prefs.showModern,
+    showAll,
+  ]);
   const hidden = allItems.length - items.length;
 
   const defs = useMemo(() => facetsFor(type), [type]);
-  const counts = useMemo(() => defs.map((d) => ({ def: d, values: facetCounts(items, d, books) })).filter((x) => x.values.length > 1), [defs, items, books]);
+  const counts = useMemo(
+    () => defs.map((d) => ({ def: d, values: facetCounts(items, d, books) })).filter((x) => x.values.length > 1),
+    [defs, items, books],
+  );
   const filtered = useMemo(() => {
     const n = q.trim().toLowerCase();
     const byText = n ? items.filter((e) => e.name.toLowerCase().includes(n)) : items;
     const visible = lockMode === "hide" && disabledReason ? byText.filter((e) => chosenSet.has(e.id) || !disabledReason(e)) : byText;
     return applyFacets(visible, defs, sel, books);
   }, [items, q, sel, defs, books, lockMode, disabledReason, chosenSet]);
-  const lockedCount = useMemo(() => (disabledReason ? items.filter((e) => !chosenSet.has(e.id) && disabledReason(e)).length : 0), [items, disabledReason, chosenSet]);
+  const lockedCount = useMemo(
+    () => (disabledReason ? items.filter((e) => !chosenSet.has(e.id) && disabledReason(e)).length : 0),
+    [items, disabledReason, chosenSet],
+  );
   // Recommended only means something where there is a popularity order or the books differ in standing. Elsewhere it would just be A to Z.
   const recommends = useMemo(() => hasRecommendation(type, groupVariants(items, books)), [items, books, type]);
   const effSort: SortMode = sort === "recommended" && !recommends ? "az" : sort;
@@ -243,12 +433,22 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
   const sorts: [SortMode, string][] = type === "Spell" ? [["level", "Level"], ...base] : base;
   const useCards = allowCards && view === "cards";
 
-  const drag = (e: AElement, why?: string, owner?: string) => (draggable && !why && !owner ? {
-    draggable: true,
-    onDragStart: (ev: React.DragEvent) => { ev.dataTransfer.setData(dragMime(e.type), e.id); ev.dataTransfer.effectAllowed = "copy"; document.body.dataset.dragging = dragMime(e.type); },
-    onDragEnd: () => { delete document.body.dataset.dragging; },
-  } : {});
-  const activeOf = (g: Group): Variant => g.variants.find((v) => v.el.id === active[g.key]) ?? g.variants.find((v) => chosenSet.has(v.el.id)) ?? g.best;
+  const drag = (e: AElement, why?: string, owner?: string) =>
+    draggable && !why && !owner
+      ? {
+          draggable: true,
+          onDragStart: (ev: React.DragEvent) => {
+            ev.dataTransfer.setData(dragMime(e.type), e.id);
+            ev.dataTransfer.effectAllowed = "copy";
+            document.body.dataset.dragging = dragMime(e.type);
+          },
+          onDragEnd: () => {
+            delete document.body.dataset.dragging;
+          },
+        }
+      : {};
+  const activeOf = (g: Group): Variant =>
+    g.variants.find((v) => v.el.id === active[g.key]) ?? g.variants.find((v) => chosenSet.has(v.el.id)) ?? g.best;
 
   return (
     <div className={`browse ${useCards ? "as-cards" : "as-list"}`}>
@@ -263,42 +463,83 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
           <div className="seg-group">
             <span className="seg-label">Rules</span>
             <span className="seg" role="group" aria-label="Rules">
-              <button className={!prefs.showLegacy ? "on" : ""} onClick={() => updateSettings({ showLegacy: false })} title="Only the 2024 books, plus what you already picked">2024</button>
-              <button className={prefs.showLegacy ? "on" : ""} onClick={() => updateSettings({ showLegacy: true })} title="The 2024 and the 2014 books">All</button>
+              <button
+                className={!prefs.showLegacy ? "on" : ""}
+                onClick={() => updateSettings({ showLegacy: false })}
+                title="Only the 2024 books, plus what you already picked"
+              >
+                2024
+              </button>
+              <button
+                className={prefs.showLegacy ? "on" : ""}
+                onClick={() => updateSettings({ showLegacy: true })}
+                title="The 2024 and the 2014 books"
+              >
+                All
+              </button>
             </span>
           </div>
         )}
         <div className="seg-group">
           <span className="seg-label">Sort</span>
           <span className="seg" role="group" aria-label="Sort">
-            {sorts.map(([k, l]) => <button key={k} className={effSort === k ? "on" : ""} onClick={() => setSort(k)}>{l}</button>)}
+            {sorts.map(([k, l]) => (
+              <button key={k} className={effSort === k ? "on" : ""} onClick={() => setSort(k)}>
+                {l}
+              </button>
+            ))}
           </span>
         </div>
         {allowCards && (
           <div className="seg-group">
             <span className="seg-label">View</span>
             <span className="seg" role="group" aria-label="View">
-              <button className={view === "cards" ? "on" : ""} onClick={() => setView("cards")}>Cards</button>
-              <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}>List</button>
+              <button className={view === "cards" ? "on" : ""} onClick={() => setView("cards")}>
+                Cards
+              </button>
+              <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}>
+                List
+              </button>
             </span>
           </div>
         )}
         {/* A mixed choice (skills, tools, weapons... in one): its kinds as one switch on the bar (C1.3). */}
-        {counts.filter((c) => c.def.inline).map(({ def, values }) => (
-          <div key={def.id} className="seg-group">
-            <span className="seg-label">{def.label}</span>
-            <span className="seg" role="group" aria-label={def.label}>
-              <button className={!sel[def.id]?.size ? "on" : ""} onClick={() => setSel((s) => ({ ...s, [def.id]: new Set() }))}>All</button>
-              {values.map(([v, n]) => <button key={v} className={sel[def.id]?.has(v) ? "on" : ""} title={`${n} ${v.toLowerCase()}`} onClick={() => setSel((s) => ({ ...s, [def.id]: new Set([v]) }))}>{v}</button>)}
-            </span>
-          </div>
-        ))}
+        {counts
+          .filter((c) => c.def.inline)
+          .map(({ def, values }) => (
+            <div key={def.id} className="seg-group">
+              <span className="seg-label">{def.label}</span>
+              <span className="seg" role="group" aria-label={def.label}>
+                <button className={!sel[def.id]?.size ? "on" : ""} onClick={() => setSel((s) => ({ ...s, [def.id]: new Set() }))}>
+                  All
+                </button>
+                {values.map(([v, n]) => (
+                  <button
+                    key={v}
+                    className={sel[def.id]?.has(v) ? "on" : ""}
+                    title={`${n} ${v.toLowerCase()}`}
+                    onClick={() => setSel((s) => ({ ...s, [def.id]: new Set([v]) }))}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </span>
+            </div>
+          ))}
         {lockedCount > 0 && (
           <div className="seg-group">
             <span className="seg-label">Locked ({lockedCount})</span>
             <span className="seg" role="group" aria-label="Locked options">
-              <button className={lockMode === "show" ? "on" : ""} onClick={() => setLockMode("show")} title="Show options you cannot take yet, grayed out with the reason">Show</button>
-              <button className={lockMode === "hide" ? "on" : ""} onClick={() => setLockMode("hide")}>Hide</button>
+              <button
+                className={lockMode === "show" ? "on" : ""}
+                onClick={() => setLockMode("show")}
+                title="Show options you cannot take yet, grayed out with the reason"
+              >
+                Show
+              </button>
+              <button className={lockMode === "hide" ? "on" : ""} onClick={() => setLockMode("hide")}>
+                Hide
+              </button>
             </span>
           </div>
         )}
@@ -306,28 +547,44 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
           <span className="seg-label">&nbsp;</span>
           <span className="search-row">
             <span className="search-box">
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" /><path d="M15.5 15.5 21 21" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" /></svg>
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
+                <path d="M15.5 15.5 21 21" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+              </svg>
               <input type="search" placeholder={`Search ${items.length} options`} value={q} onChange={(e) => setQ(e.target.value)} />
             </span>
-            <button className={`filters-btn ${open || activeCount ? "on" : ""}`} onClick={() => setOpen(!open)}>Filters{activeCount ? ` (${activeCount})` : ""}</button>
+            <button className={`filters-btn ${open || activeCount ? "on" : ""}`} onClick={() => setOpen(!open)}>
+              Filters{activeCount ? ` (${activeCount})` : ""}
+            </button>
           </span>
         </div>
       </div>
       {barExtra}
-      <p className="muted count">{groups.length} shown{filtered.length !== groups.length ? `, ${filtered.length} versions` : ""}{hidden > 0 ? `, ${hidden} hidden by your content filters (Menu, Settings)` : ""}</p>
+      <p className="muted count">
+        {groups.length} shown{filtered.length !== groups.length ? `, ${filtered.length} versions` : ""}
+        {hidden > 0 ? `, ${hidden} hidden by your content filters (Menu, Settings)` : ""}
+      </p>
       {open && (
         <div className="filters">
-          {counts.filter((c) => !c.def.inline).map(({ def, values }) => (
-            <div key={def.id} className="filter-group">
-              <b>{def.label}</b>
-              <div className={`chips ${values.length > 14 ? "scroll" : ""}`}>
-                {values.map(([v, n]) => (
-                  <button key={v} className={sel[def.id]?.has(v) ? "pill active" : "pill"} onClick={() => toggle(def.id, v)}>{v} <small>{n}</small></button>
-                ))}
+          {counts
+            .filter((c) => !c.def.inline)
+            .map(({ def, values }) => (
+              <div key={def.id} className="filter-group">
+                <b>{def.label}</b>
+                <div className={`chips ${values.length > 14 ? "scroll" : ""}`}>
+                  {values.map(([v, n]) => (
+                    <button key={v} className={sel[def.id]?.has(v) ? "pill active" : "pill"} onClick={() => toggle(def.id, v)}>
+                      {v} <small>{n}</small>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-          {activeCount > 0 && <button className="more" onClick={() => setSel({})}>Clear filters</button>}
+            ))}
+          {activeCount > 0 && (
+            <button className="more" onClick={() => setSel({})}>
+              Clear filters
+            </button>
+          )}
         </div>
       )}
 
@@ -343,40 +600,107 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
             const owner = g.variants.map((x) => ownedBy?.(x.el)).find(Boolean);
             const picked = g.variants.some((x) => chosenSet.has(x.el.id));
             const level = e.setters.level?.value ?? "";
-            const prevLevel = idx > 0 ? activeOf(all[idx - 1]).el.setters.level?.value ?? "" : null;
-            const heading = type === "Spell" && effSort === "level" && level !== prevLevel ? <h4 key={`h${level}`} className="scroll-level">{level === "0" ? "Cantrips" : `Level ${level}`}</h4> : null;
+            const prevLevel = idx > 0 ? (activeOf(all[idx - 1]).el.setters.level?.value ?? "") : null;
+            const heading =
+              type === "Spell" && effSort === "level" && level !== prevLevel ? (
+                <h4 key={`h${level}`} className="scroll-level">
+                  {level === "0" ? "Cantrips" : `Level ${level}`}
+                </h4>
+              ) : null;
             if (type === "Spell") {
               const s = e.setters;
               const conc = s.isConcentration?.value === "true" || /concentration/i.test(s.duration?.value ?? "");
-              return [heading,
-                <div key={g.key} className={`scroll-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} title={owner ?? why} onMouseEnter={() => onHover?.(e)} {...drag(e, why, owner)}>
-                  <button className="scroll-main" onClick={() => { if (owner) return; if (!picked) flyInto("spellbook"); onPick(e); }} aria-pressed={picked} title={picked ? "In your spellbook: click to take it out" : undefined}>
-                    <span className="scroll-top"><span className="scroll-lvl">{level === "0" ? "Cantrip" : level ? `Level ${level}` : "Spell"}</span><SchoolIcon school={s.school?.value} size={16} /><span className="scroll-tick">{picked || owner ? "✓" : ""}</span></span>
+              return [
+                heading,
+                <div
+                  key={g.key}
+                  className={`scroll-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`}
+                  title={owner ?? why}
+                  onMouseEnter={() => onHover?.(e)}
+                  {...drag(e, why, owner)}
+                >
+                  <button
+                    className="scroll-main"
+                    onClick={() => {
+                      if (owner) return;
+                      if (!picked) flyInto("spellbook");
+                      onPick(e);
+                    }}
+                    aria-pressed={picked}
+                    title={picked ? "In your spellbook: click to take it out" : undefined}
+                  >
+                    <span className="scroll-top">
+                      <span className="scroll-lvl">{level === "0" ? "Cantrip" : level ? `Level ${level}` : "Spell"}</span>
+                      <SchoolIcon school={s.school?.value} size={16} />
+                      <span className="scroll-tick">{picked || owner ? "✓" : ""}</span>
+                    </span>
                     <b className="scroll-name">{e.name}</b>
-                    <small className="scroll-meta">{[shortTime(s.time?.value ?? ""), shortRange(s.range?.value ?? "")].filter(Boolean).join(" · ")}</small>
+                    <small className="scroll-meta">
+                      {[shortTime(s.time?.value ?? ""), shortRange(s.range?.value ?? "")].filter(Boolean).join(" · ")}
+                    </small>
                     {/* Concentration and ritual as marks of their own, seen at a glance (C7.12). */}
                     {(conc || s.isRitual?.value === "true") && (
                       <span className="scroll-marks">
-                        {conc && <span className="scroll-mark conc" title="Concentration: ends if you lose concentration or cast another such spell">Concentration</span>}
-                        {s.isRitual?.value === "true" && <span className="scroll-mark ritual" title="Ritual: can be cast without a slot, taking ten minutes longer">Ritual</span>}
+                        {conc && (
+                          <span
+                            className="scroll-mark conc"
+                            title="Concentration: ends if you lose concentration or cast another such spell"
+                          >
+                            Concentration
+                          </span>
+                        )}
+                        {s.isRitual?.value === "true" && (
+                          <span className="scroll-mark ritual" title="Ritual: can be cast without a slot, taking ten minutes longer">
+                            Ritual
+                          </span>
+                        )}
                       </span>
                     )}
                     {why && !owner && <small className="scroll-why">{why}</small>}
                   </button>
-                  <button className="board-ico scroll-learn" title="Learn more" aria-label={`Learn more about ${e.name}`} onClick={() => learn(e)}>i</button>
-                </div>];
+                  <button
+                    className="board-ico scroll-learn"
+                    title="Learn more"
+                    aria-label={`Learn more about ${e.name}`}
+                    onClick={() => learn(e)}
+                  >
+                    i
+                  </button>
+                </div>,
+              ];
             }
             return (
-              <div key={g.key} className={`mini-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} style={{ ["--hue" as string]: hueOf(e.name) }} title={owner ?? why} onMouseEnter={() => onHover?.(e)} {...drag(e, why, owner)}>
+              <div
+                key={g.key}
+                className={`mini-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`}
+                style={{ ["--hue" as string]: hueOf(e.name) }}
+                title={owner ?? why}
+                onMouseEnter={() => onHover?.(e)}
+                {...drag(e, why, owner)}
+              >
                 <button className="mini-main" onClick={() => !owner && onPick(e)} aria-pressed={picked}>
-                  <span className="mini-icon"><Emblem el={e} size={24} /></span>
+                  <span className="mini-icon">
+                    <Emblem el={e} size={24} />
+                  </span>
                   {itemBadge(e) && <span className="mini-badge">{itemBadge(e)}</span>}
                   <b className="mini-name">{e.name}</b>
                   <small className="mini-blurb">{CLASS_TAGS[e.name]?.[0] ?? blurb(e.description, 54)}</small>
-                  {why && !owner && <small className="mini-why"><LockIcon />{why}</small>}
+                  {why && !owner && (
+                    <small className="mini-why">
+                      <LockIcon />
+                      {why}
+                    </small>
+                  )}
                   {picked && <span className="mini-tick">✓</span>}
                 </button>
-                <button className="board-ico mini-learn" title="Learn more" aria-label={`Learn more about ${e.name}`} onClick={() => learn(e)}>i</button>
+                <button
+                  className="board-ico mini-learn"
+                  title="Learn more"
+                  aria-label={`Learn more about ${e.name}`}
+                  onClick={() => learn(e)}
+                >
+                  i
+                </button>
               </div>
             );
           })}
@@ -391,19 +715,49 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
             const owner = g.variants.map((x) => ownedBy?.(x.el)).find(Boolean);
             const picked = g.variants.some((x) => chosenSet.has(x.el.id));
             return (
-              <div key={g.key} title={owner} className={`pick-card ${type === "Class" ? "is-class" : ""} ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} style={{ ["--hue" as string]: hue }} data-glyph={hasClassIcon(e.name) ? "" : e.name.charAt(0)} onMouseEnter={() => onHover?.(e)} {...drag(e, why, owner)}>
+              <div
+                key={g.key}
+                title={owner}
+                className={`pick-card ${type === "Class" ? "is-class" : ""} ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`}
+                style={{ ["--hue" as string]: hue }}
+                data-glyph={hasClassIcon(e.name) ? "" : e.name.charAt(0)}
+                onMouseEnter={() => onHover?.(e)}
+                {...drag(e, why, owner)}
+              >
                 {hasClassIcon(e.name) && <ClassIcon name={e.name} size={260} className="pick-watermark" />}
-                {why && !owner && <div className="lock-note" role="note"><LockIcon />{why}</div>}
-                {type === "Class" && <div className="ribbon">{hasClassIcon(e.name) ? <ClassIcon name={e.name} size={34} /> : e.name.charAt(0)}</div>}
+                {why && !owner && (
+                  <div className="lock-note" role="note">
+                    <LockIcon />
+                    {why}
+                  </div>
+                )}
+                {type === "Class" && (
+                  <div className="ribbon">{hasClassIcon(e.name) ? <ClassIcon name={e.name} size={34} /> : e.name.charAt(0)}</div>
+                )}
                 <h3>{e.name}</h3>
-                {CLASS_TAGS[e.name] && type === "Class" && <div className="pick-tags">{CLASS_TAGS[e.name].map((t) => <span key={t}>{t}</span>)}</div>}
+                {CLASS_TAGS[e.name] && type === "Class" && (
+                  <div className="pick-tags">
+                    {CLASS_TAGS[e.name].map((t) => (
+                      <span key={t}>{t}</span>
+                    ))}
+                  </div>
+                )}
                 <p className="pick-blurb">{blurb(e.description) || "No description in the content file."}</p>
                 <BackgroundFeat el={e} />
                 <div className="pick-foot">
                   <VariantChips g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} />
                   <div className="pick-actions">
-                    <button className="ghost" onClick={() => learn(e)}>Learn more</button>
-                    <button className={`pick-select ${picked ? "is-on" : ""}`} disabled={!!why || !!owner} title={owner ?? why} onClick={() => onPick(e)}>{owner ? "✓ Already have" : chosenSet.has(e.id) ? "Selected" : (pickLabel?.(e) ?? "Select")}</button>
+                    <button className="ghost" onClick={() => learn(e)}>
+                      Learn more
+                    </button>
+                    <button
+                      className={`pick-select ${picked ? "is-on" : ""}`}
+                      disabled={!!why || !!owner}
+                      title={owner ?? why}
+                      onClick={() => onPick(e)}
+                    >
+                      {owner ? "✓ Already have" : chosenSet.has(e.id) ? "Selected" : (pickLabel?.(e) ?? "Select")}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -413,7 +767,16 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
       ) : (
         <div className={`rows ${type === "Spell" ? "spell-rows" : ""}`}>
           {type === "Spell" && groups.length > 0 && (
-            <div className="row-head"><span>Lv</span><span>Name</span><span>School</span><span>Time</span><span>Range</span><span>Comp</span><span /><span>Book</span></div>
+            <div className="row-head">
+              <span>Lv</span>
+              <span>Name</span>
+              <span>School</span>
+              <span>Time</span>
+              <span>Range</span>
+              <span>Comp</span>
+              <span />
+              <span>Book</span>
+            </div>
           )}
           {groups.slice(0, shown).map((g) => {
             const v = activeOf(g);
@@ -422,24 +785,63 @@ export function Browse({ items: allItems, type, chosen, onPick: pickProp, onSwap
             const owner = g.variants.map((x) => ownedBy?.(x.el)).find(Boolean);
             const picked = g.variants.some((x) => chosenSet.has(x.el.id));
             return (
-              <div key={g.key} className={`opt-row ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`} title={owner ?? why} onMouseEnter={() => onHover?.(e)} {...drag(e, why, owner)}>
-                {type === "Spell" && <span className={`lvl ${e.setters.level?.value === "0" ? "cantrip" : ""}`}>{e.setters.level?.value === "0" ? "C" : e.setters.level?.value ?? "?"}</span>}
-                <button className="opt-main" disabled={false} title={owner ?? why} aria-disabled={owner ? true : undefined} onClick={() => !owner && onPick(e)}>
+              <div
+                key={g.key}
+                className={`opt-row ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`}
+                title={owner ?? why}
+                onMouseEnter={() => onHover?.(e)}
+                {...drag(e, why, owner)}
+              >
+                {type === "Spell" && (
+                  <span className={`lvl ${e.setters.level?.value === "0" ? "cantrip" : ""}`}>
+                    {e.setters.level?.value === "0" ? "C" : (e.setters.level?.value ?? "?")}
+                  </span>
+                )}
+                <button
+                  className="opt-main"
+                  disabled={false}
+                  title={owner ?? why}
+                  aria-disabled={owner ? true : undefined}
+                  onClick={() => !owner && onPick(e)}
+                >
                   <span className="tick">{chosenSet.has(e.id) || owner ? "✓" : ""}</span>
-                  {type === "Item" && ITEM_ICON[e.type] && <span className="opt-type-ico" title={e.type}>{ITEM_ICON[e.type]({ size: 15 })}</span>}
+                  {type === "Item" && ITEM_ICON[e.type] && (
+                    <span className="opt-type-ico" title={e.type}>
+                      {ITEM_ICON[e.type]({ size: 15 })}
+                    </span>
+                  )}
                   <span className="opt-name">{e.name}</span>
                 </button>
                 {type === "Spell" ? <SpellCells el={e} /> : <span className="opt-blurb">{blurb(e.description, 110)}</span>}
-                {why && !owner && <small className="why"><LockIcon />{why}</small>}
+                {why && !owner && (
+                  <small className="why">
+                    <LockIcon />
+                    {why}
+                  </small>
+                )}
                 {rowLabel?.(e) && <span className="opt-label">{rowLabel(e)}</span>}
-                <VariantChips short g={g} activeId={e.id} chosen={chosenSet} onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))} onSwitch={onSwap} onPickVersion={owner || why ? undefined : onPick} />
-                <button className="learn" onClick={() => learn(e)} title="Read the full description">i</button>
+                <VariantChips
+                  short
+                  g={g}
+                  activeId={e.id}
+                  chosen={chosenSet}
+                  onActive={(id) => setActive((a) => ({ ...a, [g.key]: id }))}
+                  onSwitch={onSwap}
+                  onPickVersion={owner || why ? undefined : onPick}
+                />
+                <button className="learn" onClick={() => learn(e)} title="Read the full description">
+                  i
+                </button>
               </div>
             );
           })}
         </div>
       )}
-      {groups.length > shown && <button className="more" onClick={() => setShown(shown + perPage * 2)}>Show more ({groups.length - shown})</button>}
+      {groups.length > shown && (
+        <button className="more" onClick={() => setShown(shown + perPage * 2)}>
+          Show more ({groups.length - shown})
+        </button>
+      )}
     </div>
   );
 }

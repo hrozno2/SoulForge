@@ -34,7 +34,11 @@ export async function maybeRunSelfTest(): Promise<void> {
     localStorage.removeItem("charforge.selftest");
     await new Promise<void>((res, rej) => {
       const r = indexedDB.open("charforge-selftest", 1);
-      r.onsuccess = () => { r.result.close(); indexedDB.deleteDatabase("charforge-selftest"); res(); };
+      r.onsuccess = () => {
+        r.result.close();
+        indexedDB.deleteDatabase("charforge-selftest");
+        res();
+      };
       r.onerror = () => rej(r.error);
     });
   });
@@ -43,7 +47,13 @@ export async function maybeRunSelfTest(): Promise<void> {
     const st = await import("./aurora/storage");
     const before = (await st.listCharacters()).length;
     const { newCharacter } = await import("./aurora/character");
-    await st.saveCharacterRecord({ id: "selftest", name: "Self test", summary: "", updated: Date.now(), data: { ...newCharacter(), name: "Self test" } });
+    await st.saveCharacterRecord({
+      id: "selftest",
+      name: "Self test",
+      summary: "",
+      updated: Date.now(),
+      data: { ...newCharacter(), name: "Self test" },
+    });
     const during = (await st.listCharacters()).length;
     await st.deleteCharacterRecord("selftest");
     const after = (await st.listCharacters()).length;
@@ -76,7 +86,13 @@ export async function maybeRunSelfTest(): Promise<void> {
   });
   await run("image from data and blob URLs", async () => {
     const b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-    const load = (src: string) => new Promise<void>((res, rej) => { const i = new Image(); i.onload = () => res(); i.onerror = () => rej(new Error(`could not load ${src.slice(0, 12)}`)); i.src = src; });
+    const load = (src: string) =>
+      new Promise<void>((res, rej) => {
+        const i = new Image();
+        i.onload = () => res();
+        i.onerror = () => rej(new Error(`could not load ${src.slice(0, 12)}`));
+        i.src = src;
+      });
     await load(`data:image/png;base64,${b64}`);
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     const url = URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
@@ -84,13 +100,24 @@ export async function maybeRunSelfTest(): Promise<void> {
     URL.revokeObjectURL(url);
   });
   await run("pdf export", async () => {
-    const [{ resolve }, { ARegistry }, { newCharacter }, { buildSheet }, { buildPdf, DEFAULT_PDF_OPTIONS }, { loadFonts }] = await Promise.all([
-      import("./aurora/engine"), import("./aurora/registry"), import("./aurora/character"), import("./aurora/sheet"), import("./pdf/exportPdf"), import("./pdf/fonts"),
-    ]);
+    const [{ resolve }, { ARegistry }, { newCharacter }, { buildSheet }, { buildPdf, DEFAULT_PDF_OPTIONS }, { loadFonts }] =
+      await Promise.all([
+        import("./aurora/engine"),
+        import("./aurora/registry"),
+        import("./aurora/character"),
+        import("./aurora/sheet"),
+        import("./pdf/exportPdf"),
+        import("./pdf/fonts"),
+      ]);
     const reg = new ARegistry();
     reg.build();
     const r = resolve(newCharacter(), reg);
-    const bytes = await buildPdf(r, buildSheet(r), { ...DEFAULT_PDF_OPTIONS, spellCards: false, itemCards: false, featureCards: false, tips: true }, await loadFonts());
+    const bytes = await buildPdf(
+      r,
+      buildSheet(r),
+      { ...DEFAULT_PDF_OPTIONS, spellCards: false, itemCards: false, featureCards: false, tips: true },
+      await loadFonts(),
+    );
     const head = new TextDecoder().decode(bytes.slice(0, 5));
     if (head !== "%PDF-") throw new Error(`unexpected header ${head}`);
     return `${bytes.length} bytes`;

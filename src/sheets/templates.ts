@@ -53,32 +53,43 @@ export async function mergeDuplicateSheets(): Promise<number> {
 /** Works out what each PDF is and stores it as a sheet to fill. Returns one note per file. */
 export async function addSheetFiles(list: FileList | File[]): Promise<string[]> {
   const notes: string[] = [];
-    for (const file of [...list]) {
-      try {
-        const bytes = await file.arrayBuffer();
-        const doc = await PDFDocument.load(bytes, { updateMetadata: false });
-        const widgets = readWidgets(doc);
-        const found = [...detectPages(widgets).values()];
-                const official = found.length ? undefined : identifySheet(doc, file.name);
-        if (official) {
-          const label = `${LAYOUTS[official.layout].label}${official.form ? " (fillable)" : " (print)"}`;
-          notes.push(`${file.name}: ${label.toLowerCase()}${await keepOne({ id: uid(), name: label, kind: "official", pages: [official.layout], size: bytes.byteLength, added: Date.now(), layout: official.layout, form: official.form }, bytes)}`);
-          continue;
-        }
-        if (found.length) {
-          notes.push(`${file.name}: ${found.map((p) => DLDM_PAGES[p].label).join(", ")}${await keepOne({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "dldm5e24", pages: found, size: bytes.byteLength, added: Date.now() }, bytes)}`);
-          continue;
-        }
-        const layout = await companionLayoutOfPdf(bytes, file.name);
-        if (layout) {
-          notes.push(`${file.name}: companion sheet${await keepOne({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "companion", pages: [layout], size: bytes.byteLength, added: Date.now() }, bytes)}`);
-        } else if (doc.getForm().getFields().length > 0) {
-          notes.push(`${file.name}: a fillable sheet Soul Forge has not seen before. It will match fields by their names.${await keepOne({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "auto", pages: ["all"], size: bytes.byteLength, added: Date.now() }, bytes)}`);
-        } else notes.push(`${file.name}: not a sheet Soul Forge can fill (it fills the official 2024 and classic 2014 sheets, the DLDM 5E24 sheets and the DLDM companion sheets, and any fillable sheet)`);
-      } catch (e) {
-        notes.push(`${file.name}: ${(e as Error).message}`);
+  for (const file of [...list]) {
+    try {
+      const bytes = await file.arrayBuffer();
+      const doc = await PDFDocument.load(bytes, { updateMetadata: false });
+      const widgets = readWidgets(doc);
+      const found = [...detectPages(widgets).values()];
+      const official = found.length ? undefined : identifySheet(doc, file.name);
+      if (official) {
+        const label = `${LAYOUTS[official.layout].label}${official.form ? " (fillable)" : " (print)"}`;
+        notes.push(
+          `${file.name}: ${label.toLowerCase()}${await keepOne({ id: uid(), name: label, kind: "official", pages: [official.layout], size: bytes.byteLength, added: Date.now(), layout: official.layout, form: official.form }, bytes)}`,
+        );
+        continue;
       }
+      if (found.length) {
+        notes.push(
+          `${file.name}: ${found.map((p) => DLDM_PAGES[p].label).join(", ")}${await keepOne({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "dldm5e24", pages: found, size: bytes.byteLength, added: Date.now() }, bytes)}`,
+        );
+        continue;
+      }
+      const layout = await companionLayoutOfPdf(bytes, file.name);
+      if (layout) {
+        notes.push(
+          `${file.name}: companion sheet${await keepOne({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "companion", pages: [layout], size: bytes.byteLength, added: Date.now() }, bytes)}`,
+        );
+      } else if (doc.getForm().getFields().length > 0) {
+        notes.push(
+          `${file.name}: a fillable sheet Soul Forge has not seen before. It will match fields by their names.${await keepOne({ id: uid(), name: file.name.replace(/\.pdf$/i, ""), kind: "auto", pages: ["all"], size: bytes.byteLength, added: Date.now() }, bytes)}`,
+        );
+      } else
+        notes.push(
+          `${file.name}: not a sheet Soul Forge can fill (it fills the official 2024 and classic 2014 sheets, the DLDM 5E24 sheets and the DLDM companion sheets, and any fillable sheet)`,
+        );
+    } catch (e) {
+      notes.push(`${file.name}: ${(e as Error).message}`);
     }
+  }
   return notes;
 }
 

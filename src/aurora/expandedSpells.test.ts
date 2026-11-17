@@ -15,7 +15,9 @@ describe("a patron's expanded spells", () => {
     const ch = { ...newCharacter(), classes: [{ classId: warlock.id, level: 5 }] };
     const slot = resolve(ch, reg).slots.find((s) => s.rule.type === "Archetype")!;
     const r = resolve(sub ? { ...ch, selections: { [slot.key]: [slot.options.find((o) => o.name === sub)!.id] } } : ch, reg);
-    return new Set(r.slots.filter((s) => s.rule.type === "Spell" && /known/i.test(s.rule.name)).flatMap((s) => s.options.map((o) => o.name)));
+    return new Set(
+      r.slots.filter((s) => s.rule.type === "Spell" && /known/i.test(s.rule.name)).flatMap((s) => s.options.map((o) => o.name)),
+    );
   };
   it("are learnable with the patron, and not without it", () => {
     expect(known("The Fiend").has("Burning Hands")).toBe(true);

@@ -1,14 +1,4 @@
-import type {
-  AAppend,
-  AElement,
-  ARule,
-  MulticlassInfo,
-  ParsedFile,
-  ParsedIndex,
-  SetterValue,
-  SheetInfo,
-  SpellcastingInfo,
-} from "./types";
+import type { AAppend, AElement, ARule, MulticlassInfo, ParsedFile, ParsedIndex, SetterValue, SheetInfo, SpellcastingInfo } from "./types";
 
 /** Anything with the DOM parser API: the browser's DOMParser, or xmldom's in tests. */
 export interface XmlApi {
@@ -206,9 +196,7 @@ export function parseElementsXml(xmlText: string, xml: XmlApi, origin?: string):
         rules: parseRules(kids(el, "rules")[0]),
         spellcasting: parseSpellcasting(kids(el, "spellcasting")[0]),
         multiclass: parseMulticlass(kids(el, "multiclass")[0]),
-        extract: extractEl
-          ? kids(extractEl, "item").map((i) => ({ id: text(i), amount: int(attr(i, "amount")) ?? 1 }))
-          : undefined,
+        extract: extractEl ? kids(extractEl, "item").map((i) => ({ id: text(i), amount: int(attr(i, "amount")) ?? 1 })) : undefined,
         origin,
       } satisfies AElement);
     } else if (el.nodeName === "append") {

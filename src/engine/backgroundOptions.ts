@@ -17,9 +17,11 @@ export function background2024Choices(byId: Map<string, AElement>): number {
   // ("+2 to one score and +1 to another", "+1 to three") and origin-category feats, with the same marker as an
   // internal grant (5e.tools species give way to it, fivetools.ts customOrigin). Before, the option existed only with
   // Aurora loaded, and a character moved to 5e.tools lost its increases and origin feat.
-  const combos = [...byId.values()].some((e) => e.supports.includes("Custom Background Ability Score Combination")) && byId.has(BACKGROUND_ASI_MARKER);
+  const combos =
+    [...byId.values()].some((e) => e.supports.includes("Custom Background Ability Score Combination")) && byId.has(BACKGROUND_ASI_MARKER);
   // And origin feats to choose from: the SRD 5.1 alone has none, and its 2014 backgrounds got an empty feat choice.
-  const fiveParts = byId.has("ID_5ET_ASI_PATTERN_2_1") && [...byId.values()].some((e) => e.type === "Feat" && e.supports.includes("category O"));
+  const fiveParts =
+    byId.has("ID_5ET_ASI_PATTERN_2_1") && [...byId.values()].some((e) => e.type === "Feat" && e.supports.includes("category O"));
   if (!combos && !fiveParts) return 0;
   byId.set(BACKGROUND_2024_ID, {
     id: BACKGROUND_2024_ID,
@@ -29,11 +31,24 @@ export function background2024Choices(byId: Map<string, AElement>): number {
     supports: [],
     edition: "2024",
     compendiumHidden: true,
-    description: "<p>Use this background with the 2024 rules: choose three ability scores and increase one by 2 and another by 1, or all three by 1 (none above 20), and take an origin feat. A 2014 species then gives no ability score increases of its own. The background keeps its skills, tools, languages and equipment.</p>",
+    description:
+      "<p>Use this background with the 2024 rules: choose three ability scores and increase one by 2 and another by 1, or all three by 1 (none above 20), and take an origin feat. A 2014 species then gives no ability score increases of its own. The background keeps its skills, tools, languages and equipment.</p>",
     setters: {},
     rules: [
-      { kind: "select", type: "Ability Score Improvement", name: "Ability Score Combination (2024 rules)", supports: combos ? "Custom Background Ability Score Combination" : "5et asi pattern", number: 1 } as ARule,
-      { kind: "select", type: "Feat", name: "Origin Feat (2024 rules)", supports: combos ? "Origin" : "5et feat,(category O)", number: 1 } as ARule,
+      {
+        kind: "select",
+        type: "Ability Score Improvement",
+        name: "Ability Score Combination (2024 rules)",
+        supports: combos ? "Custom Background Ability Score Combination" : "5et asi pattern",
+        number: 1,
+      } as ARule,
+      {
+        kind: "select",
+        type: "Feat",
+        name: "Origin Feat (2024 rules)",
+        supports: combos ? "Origin" : "5et feat,(category O)",
+        number: 1,
+      } as ARule,
       { kind: "grant", type: "Grants", id: BACKGROUND_ASI_MARKER } as ARule,
     ],
   });
@@ -45,7 +60,12 @@ export function background2024Choices(byId: Map<string, AElement>): number {
   for (const f of byId.values()) {
     if (f.type !== "Background Feature" || f.id === BACKGROUND_2024_ID) continue;
     const selects = f.rules.filter((r) => r.kind === "select");
-    if (selects.length !== 1 || selects[0].type !== "Feat" || !/origin/i.test(`${selects[0].name} ${(selects[0] as { supports?: string }).supports ?? ""}`)) continue;
+    if (
+      selects.length !== 1 ||
+      selects[0].type !== "Feat" ||
+      !/origin/i.test(`${selects[0].name} ${(selects[0] as { supports?: string }).supports ?? ""}`)
+    )
+      continue;
     f.requirements = f.requirements ? `(${f.requirements}),!${BACKGROUND_2024_ID}` : `!${BACKGROUND_2024_ID}`;
     pkg.requirements = pkg.requirements ? `${pkg.requirements},!${f.id}` : `!${f.id}`;
   }
@@ -53,7 +73,10 @@ export function background2024Choices(byId: Map<string, AElement>): number {
   for (const bg of byId.values()) {
     if (bg.type !== "Background" || isModern(bg) || /custom/i.test(bg.name)) continue;
     if (bg.rules.some((r) => r.kind === "select" && r.name === CHOICE)) continue;
-    bg.rules = [...bg.rules, { kind: "select", type: "Background Feature", name: CHOICE, supports: BACKGROUND_2024_ID, number: 1, optional: true } as ARule];
+    bg.rules = [
+      ...bg.rules,
+      { kind: "select", type: "Background Feature", name: CHOICE, supports: BACKGROUND_2024_ID, number: 1, optional: true } as ARule,
+    ];
     added++;
   }
   return added;

@@ -20,7 +20,13 @@ export function UiProvider({ reg, children }: { reg: ARegistry; children: ReactN
   // only where there are no windows.
   const floating = useFloating();
   const open = floating?.open;
-  const learn = useMemo(() => (e: AElement) => { if (open) open({ kind: "entry", ref: e.id, title: e.name }); else setEl(e); }, [open]);
+  const learn = useMemo(
+    () => (e: AElement) => {
+      if (open) open({ kind: "entry", ref: e.id, title: e.name });
+      else setEl(e);
+    },
+    [open],
+  );
   const value = useMemo(() => ({ books, reg, learn }), [books, reg, learn]);
   return (
     <Ctx.Provider value={value}>
@@ -42,11 +48,27 @@ export function LearnBody({ el, books }: { el: AElement; books: BookIndex }) {
   const s = el.setters;
   return (
     <>
-      <p className="muted">{el.type} · {el.source}{b.release ? ` · ${formatRelease(b.release)}` : ""}{b.playtest ? " · playtest" : ""}</p>
+      <p className="muted">
+        {el.type} · {el.source}
+        {b.release ? ` · ${formatRelease(b.release)}` : ""}
+        {b.playtest ? " · playtest" : ""}
+      </p>
       {el.type === "Spell" && (
         <dl className="facts">
-          {[["Level", s.level?.value === "0" ? "Cantrip" : s.level?.value], ["School", s.school?.value], ["Casting time", s.time?.value], ["Range", s.range?.value], ["Duration", s.duration?.value]]
-            .filter(([, v]) => v).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+          {[
+            ["Level", s.level?.value === "0" ? "Cantrip" : s.level?.value],
+            ["School", s.school?.value],
+            ["Casting time", s.time?.value],
+            ["Range", s.range?.value],
+            ["Duration", s.duration?.value],
+          ]
+            .filter(([, v]) => v)
+            .map(([k, v]) => (
+              <div key={k}>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))}
         </dl>
       )}
       <Html cap html={el.description || "<p>No description in the content file.</p>"} />
@@ -65,8 +87,21 @@ function LearnModal({ el, books, onClose }: { el: AElement; books: BookIndex; on
   return (
     <div className="modal-back" onClick={onClose} role="dialog" aria-modal="true">
       <div className="modal-page themed learn-page" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
-        {floating && <button className="learn-float" title="Keep it open in a window of its own, as many as you like, while you work" onClick={() => { floating.open({ kind: "entry", ref: el.id, title: el.name }); onClose(); }}>⧉ Keep open</button>}
+        <button className="modal-close" onClick={onClose} aria-label="Close">
+          ×
+        </button>
+        {floating && (
+          <button
+            className="learn-float"
+            title="Keep it open in a window of its own, as many as you like, while you work"
+            onClick={() => {
+              floating.open({ kind: "entry", ref: el.id, title: el.name });
+              onClose();
+            }}
+          >
+            ⧉ Keep open
+          </button>
+        )}
         <h2>{el.name}</h2>
         <LearnBody el={el} books={books} />
       </div>

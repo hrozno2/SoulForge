@@ -15,15 +15,26 @@ import { saveFile } from "../store";
 import { getSettings } from "./Settings";
 import { APP_VERSION } from "./RulesCheck";
 
-
 export async function makeTestBatch(reg: ARegistry): Promise<{ id: string; ch: Character }[]> {
   const p = getSettings();
-  const batch = randomBatch(reg, 10, { legacy: p.showLegacy, playtest: p.showPlaytest, unusual: p.showUnusual, scifi: p.showSciFi, modern: p.showModern });
+  const batch = randomBatch(reg, 10, {
+    legacy: p.showLegacy,
+    playtest: p.showPlaytest,
+    unusual: p.showUnusual,
+    scifi: p.showSciFi,
+    modern: p.showModern,
+  });
   const out: { id: string; ch: Character }[] = [];
   for (const ch of batch) {
     const id = uid();
     const classes = ch.classes.map((c) => `${reg.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ");
-    await saveCharacterRecord({ id, name: ch.name, summary: [reg.get(ch.race ?? "")?.name, classes].filter(Boolean).join(" "), updated: Date.now(), data: ch });
+    await saveCharacterRecord({
+      id,
+      name: ch.name,
+      summary: [reg.get(ch.race ?? "")?.name, classes].filter(Boolean).join(" "),
+      updated: Date.now(),
+      data: ch,
+    });
     out.push({ id, ch });
   }
   return out;
@@ -54,11 +65,25 @@ export async function testExport(reg: ARegistry, onProgress: (s: string) => void
     const data = buildFillData(r, sh, { allSpells: true });
     const base = rec.name.replace(/[^\w -]+/g, "").trim() || rec.id;
     zip.file(`${base}/${base}.json`, JSON.stringify(ch, null, 2));
-    try { zip.file(`${base}/${base} - Soul Forge.pdf`, await buildPdf(r, sh, { ...DEFAULT_PDF_OPTIONS, paper: getSettings().paper }, fonts)); } catch (e) { notes.push(`${rec.name}: Soul Forge sheet failed: ${(e as Error).message}`); }
-    if (b2024) try { zip.file(`${base}/${base} - 2024.pdf`, (await fillOfficialSheet(b2024, t2024!.name, data, fonts)).bytes); } catch (e) { notes.push(`${rec.name}: 2024 sheet failed: ${(e as Error).message}`); }
-    if (b2014) try { zip.file(`${base}/${base} - 2014.pdf`, (await fillOfficialSheet(b2014, t2014!.name, data, fonts)).bytes); } catch (e) { notes.push(`${rec.name}: 2014 sheet failed: ${(e as Error).message}`); }
+    try {
+      zip.file(`${base}/${base} - Soul Forge.pdf`, await buildPdf(r, sh, { ...DEFAULT_PDF_OPTIONS, paper: getSettings().paper }, fonts));
+    } catch (e) {
+      notes.push(`${rec.name}: Soul Forge sheet failed: ${(e as Error).message}`);
+    }
+    if (b2024)
+      try {
+        zip.file(`${base}/${base} - 2024.pdf`, (await fillOfficialSheet(b2024, t2024!.name, data, fonts)).bytes);
+      } catch (e) {
+        notes.push(`${rec.name}: 2024 sheet failed: ${(e as Error).message}`);
+      }
+    if (b2014)
+      try {
+        zip.file(`${base}/${base} - 2014.pdf`, (await fillOfficialSheet(b2014, t2014!.name, data, fonts)).bytes);
+      } catch (e) {
+        notes.push(`${rec.name}: 2014 sheet failed: ${(e as Error).message}`);
+      }
   }
-  if (!list.length) return "No characters named \"Test ...\". Make a test batch first.";
+  if (!list.length) return 'No characters named "Test ...". Make a test batch first.';
   if (notes.length) zip.file("NOTES.txt", notes.join("\n"));
   const bytes = await zip.generateAsync({ type: "uint8array" });
   const ok = await saveFile(`soulforge-test-export-${new Date().toISOString().slice(0, 10)}.zip`, bytes, "application/zip");
@@ -78,14 +103,32 @@ export async function loadTestContent(onProgress: (s: string) => void): Promise<
   const root = "local://Test content (Aurora)";
   const urls: string[] = [];
   let n = 0;
-  const get = async (p: string, set = "") => (await fetch(`/__testcontent/file?p=${encodeURIComponent(p)}${set ? `&set=${set}` : ""}`)).text();
+  const get = async (p: string, set = "") =>
+    (await fetch(`/__testcontent/file?p=${encodeURIComponent(p)}${set ? `&set=${set}` : ""}`)).text();
   for (const p of aurora) {
     const url = `${root}/${p}`;
     await idbFileCache.put(url, await get(p), root);
     urls.push(url);
     if (++n % 200 === 0) onProgress(`Aurora files: ${n} of ${aurora.length}`);
   }
-  await saveSource({ url: root, name: "Test content (Aurora)", kind: "local", format: "aurora", tree: { url: root, name: "Test content (Aurora)", description: "The test cache's Aurora files", version: "local", files: urls, children: [] }, disabled: [], versions: {}, lastChecked: Date.now(), fileCount: urls.length });
+  await saveSource({
+    url: root,
+    name: "Test content (Aurora)",
+    kind: "local",
+    format: "aurora",
+    tree: {
+      url: root,
+      name: "Test content (Aurora)",
+      description: "The test cache's Aurora files",
+      version: "local",
+      files: urls,
+      children: [],
+    },
+    disabled: [],
+    versions: {},
+    lastChecked: Date.now(),
+    fileCount: urls.length,
+  });
   const files = new Map<string, string>();
   n = 0;
   for (const p of list.fivetools) {
@@ -110,7 +153,8 @@ export async function moveCharactersToFiveTools(both: ARegistry, onProgress: (s:
   // The rules reference (class tables) the rules check compares against; loaded on demand elsewhere. Without it every
   // moved character got "Class not in the rules reference", which says nothing about the character.
   await ensureRulesRef().catch(() => undefined);
-  if (!both.all().some((e) => e.origin !== "5etools" && !e.id.startsWith("ID_5ET") && !/^SRD /.test(e.source))) return "Aurora's content is not loaded: turn the 5e.tools-only switch off, then move the characters.";
+  if (!both.all().some((e) => e.origin !== "5etools" && !e.id.startsWith("ID_5ET") && !/^SRD /.test(e.source)))
+    return "Aurora's content is not loaded: turn the 5e.tools-only switch off, then move the characters.";
   onProgress("Reading 5e.tools content on its own...");
   const sources = (await listSources()).filter((s) => s.format !== "aurora");
   const { reg: five } = await buildRegistry(sources);
@@ -127,16 +171,42 @@ export async function moveCharactersToFiveTools(both: ARegistry, onProgress: (s:
       results.push({ ...res, name: rec.name });
       const id = uid();
       // Checked with this version: the copy was made now, so "saved by an older Soul Forge" would be untrue.
-      const ch: Character = { ...res.migration.ch, name: `${rec.name} (5e.tools)`, movedFrom: rec.id, importReport: moveNote(res), checkedWith: APP_VERSION };
+      const ch: Character = {
+        ...res.migration.ch,
+        name: `${rec.name} (5e.tools)`,
+        movedFrom: rec.id,
+        importReport: moveNote(res),
+        checkedWith: APP_VERSION,
+      };
       const classes = ch.classes.map((c) => `${five.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ");
-      await saveCharacterRecord({ id, name: ch.name, summary: [five.get(ch.race ?? "")?.name, classes].filter(Boolean).join(" "), updated: Date.now(), data: ch });
+      await saveCharacterRecord({
+        id,
+        name: ch.name,
+        summary: [five.get(ch.race ?? "")?.name, classes].filter(Boolean).join(" "),
+        updated: Date.now(),
+        data: ch,
+      });
     } catch (e) {
-      results.push({ name: rec.name, migration: { ch: rec.data, moved: 0, noTwin: [], unplaced: [], open: [], againstRules: [], filled: [], kept: [], decisions: [] }, changed: [], dropped: [], rules: [`Could not be moved: ${(e as Error).message} (new)`], newRules: 1, explained: [], unavailable: [] });
+      results.push({
+        name: rec.name,
+        migration: { ch: rec.data, moved: 0, noTwin: [], unplaced: [], open: [], againstRules: [], filled: [], kept: [], decisions: [] },
+        changed: [],
+        dropped: [],
+        rules: [`Could not be moved: ${(e as Error).message} (new)`],
+        newRules: 1,
+        explained: [],
+        unavailable: [],
+      });
     }
   }
   if (!todo.length) return "Every saved character has a 5e.tools copy already.";
   const report = moveReport(results);
-  const ok = await saveFile(`soulforge-moved-to-5etools-${new Date().toISOString().slice(0, 10)}.md`, new TextEncoder().encode(report), "text/markdown");
-  const changed = results.filter((r) => r.changed.length).length, rules = results.filter((r) => r.rules.length).length;
+  const ok = await saveFile(
+    `soulforge-moved-to-5etools-${new Date().toISOString().slice(0, 10)}.md`,
+    new TextEncoder().encode(report),
+    "text/markdown",
+  );
+  const changed = results.filter((r) => r.changed.length).length,
+    rules = results.filter((r) => r.rules.length).length;
   return `Moved ${results.length} characters to 5e.tools as new copies ("... (5e.tools)"); the originals are untouched. ${changed} sheets changed, ${rules} with a rules finding.${ok ? " The report is saved." : ""} Each copy's import notes say what moved.`;
 }

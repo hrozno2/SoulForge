@@ -1,7 +1,17 @@
 import { browserXml, parseElementsXml, type XmlApi } from "./parse";
 import { logEvent } from "../logbook";
 import { ARegistry } from "./registry";
-import { crawlIndex, countFiles, flatten, syncFiles, type IndexNode, type Progress, type SourceConfig, type SyncResult, type TextFetcher } from "./sources";
+import {
+  crawlIndex,
+  countFiles,
+  flatten,
+  syncFiles,
+  type IndexNode,
+  type Progress,
+  type SourceConfig,
+  type SyncResult,
+  type TextFetcher,
+} from "./sources";
 import { idbFileCache, readFiles, saveSource } from "./storage";
 import type { AElement } from "./types";
 import { FIVETOOLS_CORE_FILES, FIVETOOLS_EXTRA_FILES, convertFiveTools } from "./fivetools";
@@ -16,7 +26,10 @@ export const fetchText: TextFetcher = async (url) => {
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 /** Waits until the page has drawn (two frames), so a progress label shows before a long step starts. */
-const painted = () => new Promise<void>((r) => (typeof requestAnimationFrame === "function" ? requestAnimationFrame(() => requestAnimationFrame(() => r())) : setTimeout(r, 0)));
+const painted = () =>
+  new Promise<void>((r) =>
+    typeof requestAnimationFrame === "function" ? requestAnimationFrame(() => requestAnimationFrame(() => r())) : setTimeout(r, 0),
+  );
 
 /** Parses every cached file of every enabled index, in load order, into one registry. */
 declare const __BUILD_ID__: string;
@@ -34,7 +47,10 @@ function hashText(text: string): string {
 export let lastLoadTimes: Record<string, number> = {};
 
 /** Reads the bundled SRD rules into the registry. Returns what went wrong; outside a page (tests) there is nothing to read. */
-export async function addSrdBundle(reg: ARegistry, get: typeof fetch | undefined = typeof window === "undefined" ? undefined : window.fetch.bind(window)): Promise<string[]> {
+export async function addSrdBundle(
+  reg: ARegistry,
+  get: typeof fetch | undefined = typeof window === "undefined" ? undefined : window.fetch.bind(window),
+): Promise<string[]> {
   if (!get) return [];
   const errors: string[] = [];
   for (const name of ["srd-5.1.json", "srd-5.2.json"]) {
@@ -112,7 +128,11 @@ export async function buildRegistry(
       times.parse += performance.now() - t;
       // The one long step (seconds, after an update or a new import): said so, as it has no count of its own, and that
       // it is a one-off (C1.7).
-      onProgress?.(n, total, `Rebuilding the rules database for ${source.name} after an update or a new import. This happens once; later launches are faster.`);
+      onProgress?.(
+        n,
+        total,
+        `Rebuilding the rules database for ${source.name} after an update or a new import. This happens once; later launches are faster.`,
+      );
       await painted();
       t = performance.now();
       try {
@@ -154,9 +174,20 @@ export async function buildRegistry(
   reg.build();
   times.build = performance.now() - tb;
   lastLoadTimes = { ...times, total: performance.now() - t0 };
-  console.info(`[load] ${Object.entries(lastLoadTimes).map(([k, v]) => `${k} ${Math.round(v)} ms`).join(", ")}`);
+  console.info(
+    `[load] ${Object.entries(lastLoadTimes)
+      .map(([k, v]) => `${k} ${Math.round(v)} ms`)
+      .join(", ")}`,
+  );
   // The log (A2.11): what was loaded, how long it took, and what the build passes fixed or could not use.
-  logEvent("content", `loaded ${reg.all().length} elements from ${plan.length} sources (${plan.map((p) => `${p.source.name}: ${p.urls.length} files`).join("; ")}) in ${Math.round(lastLoadTimes.total)} ms (${Object.entries(times).map(([k, v]) => `${k} ${Math.round(v)}`).join(", ")})`);
+  logEvent(
+    "content",
+    `loaded ${reg.all().length} elements from ${plan.length} sources (${plan.map((p) => `${p.source.name}: ${p.urls.length} files`).join("; ")}) in ${Math.round(lastLoadTimes.total)} ms (${Object.entries(
+      times,
+    )
+      .map(([k, v]) => `${k} ${Math.round(v)}`)
+      .join(", ")})`,
+  );
   if (errors.length) logEvent("content", `${errors.length} files could not be read: ${errors.slice(0, 10).join("; ")}`);
   if (reg.skillFixes.length) logEvent("content", `class skill lists aligned with 5e.tools: ${reg.skillFixes.join(", ")}`);
   return { reg, errors };
@@ -215,7 +246,8 @@ const trimSlash = (u: string) => u.replace(/\/+$/, "");
 export function beastsOnly(text: string): string {
   try {
     const json = JSON.parse(text) as { monster?: { type?: unknown; _copy?: unknown }[] };
-    const isBeast = (m: { type?: unknown; _copy?: unknown }) => !!m._copy || /^beast$/i.test(String(typeof m.type === "object" && m.type ? (m.type as { type?: unknown }).type : m.type));
+    const isBeast = (m: { type?: unknown; _copy?: unknown }) =>
+      !!m._copy || /^beast$/i.test(String(typeof m.type === "object" && m.type ? (m.type as { type?: unknown }).type : m.type));
     return JSON.stringify({ monster: (json.monster ?? []).filter(isBeast) });
   } catch {
     return text;
@@ -223,7 +255,10 @@ export function beastsOnly(text: string): string {
 }
 
 /** Fetches the files of a 5etools `data` folder from an address. Missing optional files are skipped. */
-export async function fetchFiveTools(baseUrl: string, onProgress?: (p: Progress) => void): Promise<{ files: Map<string, string>; failed: string[] }> {
+export async function fetchFiveTools(
+  baseUrl: string,
+  onProgress?: (p: Progress) => void,
+): Promise<{ files: Map<string, string>; failed: string[] }> {
   const base = trimSlash(baseUrl.trim());
   const files = new Map<string, string>();
   const failed: string[] = [];
@@ -275,9 +310,28 @@ export async function storeFiveTools(name: string, files: Map<string, string>, b
     const g = path.includes("/") ? path.split("/")[0] : "core lists";
     (groups.get(g) ?? groups.set(g, []).get(g)!).push(url);
   }
-  const children: IndexNode[] = [...groups.entries()].map(([g, list]) => ({ url: `${root}#${g}`, name: g, description: "", version: "local", files: list, children: [] }));
+  const children: IndexNode[] = [...groups.entries()].map(([g, list]) => ({
+    url: `${root}#${g}`,
+    name: g,
+    description: "",
+    version: "local",
+    files: list,
+    children: [],
+  }));
   const tree: IndexNode = { url: root, name, description: "5etools data", version: "local", files: [], children };
-  return { url: root, name, kind: "local", format: "5etools", importFormat: FIVETOOLS_IMPORT_FORMAT, baseUrl, tree, disabled: [], versions: {}, lastChecked: Date.now(), fileCount: urls.length };
+  return {
+    url: root,
+    name,
+    kind: "local",
+    format: "5etools",
+    importFormat: FIVETOOLS_IMPORT_FORMAT,
+    baseUrl,
+    tree,
+    disabled: [],
+    versions: {},
+    lastChecked: Date.now(),
+    fileCount: urls.length,
+  };
 }
 
 /**
@@ -293,12 +347,22 @@ export const FIVETOOLS_IMPORT_FORMAT = 2;
  * (single items from the 5e.tools picker) are not full imports.
  */
 export function outdatedFiveTools(sources: SourceConfig[]): SourceConfig[] {
-  const files = (s: SourceConfig) => { const out: string[] = []; const walk = (n?: IndexNode) => { if (!n) return; out.push(...n.files); n.children.forEach(walk); }; walk(s.tree); return out; };
+  const files = (s: SourceConfig) => {
+    const out: string[] = [];
+    const walk = (n?: IndexNode) => {
+      if (!n) return;
+      out.push(...n.files);
+      n.children.forEach(walk);
+    };
+    walk(s.tree);
+    return out;
+  };
   return sources.filter((s) => {
     if (s.format !== "5etools" || s.disabled.includes(s.url)) return false;
     const list = files(s);
     if (!list.some((f) => /\/races\.json$/.test(f))) return false;
-    const format = s.importFormat ?? (list.some((f) => /\/magicvariants\.json$/.test(f)) && list.some((f) => /\/foundry-races\.json$/.test(f)) ? 2 : 1);
+    const format =
+      s.importFormat ?? (list.some((f) => /\/magicvariants\.json$/.test(f)) && list.some((f) => /\/foundry-races\.json$/.test(f)) ? 2 : 1);
     return format < FIVETOOLS_IMPORT_FORMAT;
   });
 }

@@ -15,15 +15,20 @@ export function uploadBudget(limits = UPLOAD_LIMITS) {
   return {
     /** Before unpacking: the size the archive states for a file, when it states one. */
     declared(name: string, bytes: number | undefined) {
-      if (bytes !== undefined && bytes > limits.fileBytes) throw new Error(`${name} unpacks to ${mb(bytes)}, more than the ${mb(limits.fileBytes)} a content file may have. Nothing was added.`);
-      if (bytes !== undefined && total + bytes > limits.totalBytes) throw new Error(`This upload unpacks to more than ${mb(limits.totalBytes)}. Nothing was added.`);
+      if (bytes !== undefined && bytes > limits.fileBytes)
+        throw new Error(
+          `${name} unpacks to ${mb(bytes)}, more than the ${mb(limits.fileBytes)} a content file may have. Nothing was added.`,
+        );
+      if (bytes !== undefined && total + bytes > limits.totalBytes)
+        throw new Error(`This upload unpacks to more than ${mb(limits.totalBytes)}. Nothing was added.`);
     },
     /** After reading a file: its real size. */
     took(name: string, bytes: number) {
       files++;
       total += bytes;
       if (files > limits.files) throw new Error(`This upload has more than ${limits.files} files. Nothing was added.`);
-      if (bytes > limits.fileBytes) throw new Error(`${name} is ${mb(bytes)}, more than the ${mb(limits.fileBytes)} a content file may have. Nothing was added.`);
+      if (bytes > limits.fileBytes)
+        throw new Error(`${name} is ${mb(bytes)}, more than the ${mb(limits.fileBytes)} a content file may have. Nothing was added.`);
       if (total > limits.totalBytes) throw new Error(`This upload unpacks to more than ${mb(limits.totalBytes)}. Nothing was added.`);
     },
   };

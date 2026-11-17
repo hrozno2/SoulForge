@@ -26,7 +26,13 @@ export interface BookInfo {
  * case, quotes and spacing do not make a different book.
  */
 export const bookKey = (s: string) =>
-  s.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s*\(2014\)\s*$/, "").replace(/^[\w' ]+ presents:\s*/, "").replace(/\s+/g, " ").trim();
+  s
+    .toLowerCase()
+    .replace(/[’‘`]/g, "'")
+    .replace(/\s*\(2014\)\s*$/, "")
+    .replace(/^[\w' ]+ presents:\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
 const key = bookKey;
 
 export class BookIndex {
@@ -37,7 +43,10 @@ export class BookIndex {
       const had = this.map.get(key(e.name));
       const group = e.setters.group?.value || undefined;
       // 5e.tools' group for the book is kept with Aurora's description of it.
-      if (had && e.origin === "5etools") { had.group ??= group; continue; }
+      if (had && e.origin === "5etools") {
+        had.group ??= group;
+        continue;
+      }
       const rel = parseInt(e.setters.release?.value ?? "", 10);
       this.map.set(key(e.name), {
         name: e.name,
@@ -72,10 +81,100 @@ export const ruleSetOf = (book: BookInfo, source: string): "2024" | "Legacy" =>
 
 /** Most-played options first, by the usual community ordering. The rest follow by book. */
 const POPULAR: Record<string, string[]> = {
-  Race: ["human", "elf", "dwarf", "halfling", "half-elf", "half-orc", "tiefling", "dragonborn", "gnome", "aasimar", "goliath", "orc", "tabaxi", "genasi", "goblin", "firbolg", "kenku", "lizardfolk", "triton", "bugbear", "hobgoblin", "kobold", "aarakocra", "changeling", "warforged", "shifter", "tortle", "yuan-ti pureblood", "satyr", "fairy", "harengon", "owlin", "autognome", "giff", "hadozee", "plasmoid", "thri-kreen"],
-  Class: ["fighter", "wizard", "rogue", "cleric", "paladin", "ranger", "barbarian", "bard", "warlock", "sorcerer", "druid", "monk", "artificer"],
-  Background: ["soldier", "acolyte", "criminal", "sage", "noble", "folk hero", "charlatan", "entertainer", "outlander", "urchin", "hermit", "guild artisan", "artisan", "sailor", "farmer", "guard", "merchant", "scribe", "wayfarer", "guide"],
-  Feat: ["great weapon master", "sharpshooter", "war caster", "lucky", "alert", "resilient", "tough", "sentinel", "polearm master", "crossbow expert", "mobile", "observant", "magic initiate", "skilled", "savage attacker", "ability score improvement"],
+  Race: [
+    "human",
+    "elf",
+    "dwarf",
+    "halfling",
+    "half-elf",
+    "half-orc",
+    "tiefling",
+    "dragonborn",
+    "gnome",
+    "aasimar",
+    "goliath",
+    "orc",
+    "tabaxi",
+    "genasi",
+    "goblin",
+    "firbolg",
+    "kenku",
+    "lizardfolk",
+    "triton",
+    "bugbear",
+    "hobgoblin",
+    "kobold",
+    "aarakocra",
+    "changeling",
+    "warforged",
+    "shifter",
+    "tortle",
+    "yuan-ti pureblood",
+    "satyr",
+    "fairy",
+    "harengon",
+    "owlin",
+    "autognome",
+    "giff",
+    "hadozee",
+    "plasmoid",
+    "thri-kreen",
+  ],
+  Class: [
+    "fighter",
+    "wizard",
+    "rogue",
+    "cleric",
+    "paladin",
+    "ranger",
+    "barbarian",
+    "bard",
+    "warlock",
+    "sorcerer",
+    "druid",
+    "monk",
+    "artificer",
+  ],
+  Background: [
+    "soldier",
+    "acolyte",
+    "criminal",
+    "sage",
+    "noble",
+    "folk hero",
+    "charlatan",
+    "entertainer",
+    "outlander",
+    "urchin",
+    "hermit",
+    "guild artisan",
+    "artisan",
+    "sailor",
+    "farmer",
+    "guard",
+    "merchant",
+    "scribe",
+    "wayfarer",
+    "guide",
+  ],
+  Feat: [
+    "great weapon master",
+    "sharpshooter",
+    "war caster",
+    "lucky",
+    "alert",
+    "resilient",
+    "tough",
+    "sentinel",
+    "polearm master",
+    "crossbow expert",
+    "mobile",
+    "observant",
+    "magic initiate",
+    "skilled",
+    "savage attacker",
+    "ability score improvement",
+  ],
 };
 
 /** True when the "recommended" order has anything to go on for this type: a popularity list, or choices from books of different standing. */
@@ -135,7 +234,13 @@ export interface Group {
   newest: Variant;
 }
 
-const sameName = (n: string) => n.toLowerCase().replace(/[’`]/g, "'").replace(/\s*\((20\d\d|legacy|revised)\)\s*$/i, "").replace(/\s+/g, " ").trim();
+const sameName = (n: string) =>
+  n
+    .toLowerCase()
+    .replace(/[’`]/g, "'")
+    .replace(/\s*\((20\d\d|legacy|revised)\)\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 /** One entry per name, with its versions from different books newest first. */
 export function groupVariants(items: AElement[], books: BookIndex): Group[] {
@@ -178,11 +283,15 @@ export function sortGroups(groups: Group[], mode: SortMode): Group[] {
     const lv = (g: Group) => parseInt(g.best.el.setters.level?.value ?? "99", 10);
     return arr.sort((a, b) => lv(a) - lv(b) || a.name.localeCompare(b.name));
   }
-  return arr.sort((a, b) => popularity(a.type, a.name) - popularity(b.type, b.name) || tier(a) - tier(b) || rel(b) - rel(a) || a.name.localeCompare(b.name));
+  return arr.sort(
+    (a, b) =>
+      popularity(a.type, a.name) - popularity(b.type, b.name) || tier(a) - tier(b) || rel(b) - rel(a) || a.name.localeCompare(b.name),
+  );
 }
 
 /** Campaign setting and adventure books, whose options suit one world. */
-const SETTING_BOOKS = /eberron|ravnica|theros|strixhaven|spelljammer|wildemount|explorer.s guide to|planescape|dragonlance|ravenloft|van richten|forgotten realms|sword coast|avernus|baldur|icewind|candlekeep|acquisitions inc|mythic odysseys|plane shift|critical role|radiant citadel|netherdeep|witchlight|journeys through|golden vault|infinite staircase|dragonlance|dark sun|greyhawk|midnight|kobold press|tal.dorei|lost laboratory|call of the|astral adventurer|boo.s astral|adventurers league|tomb of annihilation|storm king|princes of the apocalypse|out of the abyss|waterdeep|rime of the|ghosts of saltmarsh|elemental evil|tyranny of dragons|adventure with muk/i;
+const SETTING_BOOKS =
+  /eberron|ravnica|theros|strixhaven|spelljammer|wildemount|explorer.s guide to|planescape|dragonlance|ravenloft|van richten|forgotten realms|sword coast|avernus|baldur|icewind|candlekeep|acquisitions inc|mythic odysseys|plane shift|critical role|radiant citadel|netherdeep|witchlight|journeys through|golden vault|infinite staircase|dragonlance|dark sun|greyhawk|midnight|kobold press|tal.dorei|lost laboratory|call of the|astral adventurer|boo.s astral|adventurers league|tomb of annihilation|storm king|princes of the apocalypse|out of the abyss|waterdeep|rime of the|ghosts of saltmarsh|elemental evil|tyranny of dragons|adventure with muk/i;
 
 /**
  * `scifi`: futuristic technology (laser rifles, powered armor). `modern`: renaissance and modern technology that is not

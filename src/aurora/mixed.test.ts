@@ -47,6 +47,7 @@ describe.skipIf(!A || !B)("2014 and 2024 content together", () => {
     const r = resolve(ch, reg!);
     const taken = [...r.ids].filter((i) => reg!.get(i)?.type === "Feat");
     const feat = r.slots.filter((s) => s.rule.type === "Feat");
-    for (const s of feat) for (const id of taken) if (!s.chosen.includes(id) && s.options.some((o) => o.id === id)) expect(s.blocked.has(id)).toBe(true);
+    for (const s of feat)
+      for (const id of taken) if (!s.chosen.includes(id) && s.options.some((o) => o.id === id)) expect(s.blocked.has(id)).toBe(true);
   });
 });

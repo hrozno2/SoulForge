@@ -62,7 +62,10 @@ describe("filters", () => {
     const { reg, books } = setup();
     const spells = reg.ofType("Spell");
     const defs = facetsFor("Spell");
-    const pick = (id: string, v: string) => applyFacets(spells, defs, { [id]: new Set([v]) }, books).map((s) => s.name).sort();
+    const pick = (id: string, v: string) =>
+      applyFacets(spells, defs, { [id]: new Set([v]) }, books)
+        .map((s) => s.name)
+        .sort();
     expect(pick("level", "C")).toEqual(["Fire Bolt"]);
     expect(pick("level", "3")).toEqual(["Fireball"]);
     expect(pick("class", "Sorcerer")).toEqual(["Shield"]);
@@ -79,7 +82,9 @@ describe("filters", () => {
     const spells = reg.ofType("Spell");
     const defs = facetsFor("Spell");
     expect(applyFacets(spells, defs, { level: new Set(["C", "3"]) }, books)).toHaveLength(2);
-    expect(applyFacets(spells, defs, { level: new Set(["C", "3"]), concentration: new Set(["Yes"]) }, books).map((s) => s.name)).toEqual(["Fireball"]);
+    expect(applyFacets(spells, defs, { level: new Set(["C", "3"]), concentration: new Set(["Yes"]) }, books).map((s) => s.name)).toEqual([
+      "Fireball",
+    ]);
   });
 
   it("counts values for the filter bar, cantrips first", () => {
@@ -91,18 +96,30 @@ describe("filters", () => {
 
 describe("global content filters", () => {
   const reg = new ARegistry();
-  reg.addFile(parseElementsXml(`<elements>
+  reg.addFile(
+    parseElementsXml(
+      `<elements>
     <element name="Player's Handbook (2024)" type="Source" source="Core" id="A"><setters><set name="release">20240917</set><set name="official">true</set></setters></element>
     <element name="Player's Handbook" type="Source" source="Core" id="B"><setters><set name="release">20140819</set><set name="official">true</set></setters></element>
     <element name="Unearthed Arcana: Fresh" type="Source" source="Core" id="C"><setters><set name="release">20230101</set><set name="official">true</set></setters></element>
     <element name="Eberron: Rising from the Last War" type="Source" source="Core" id="D"><setters><set name="release">20190119</set><set name="official">true</set></setters></element>
     <element name="Some Friend's Book" type="Source" source="Core" id="E"><setters><set name="release">20240101</set><set name="official">false</set></setters></element>
-  </elements>`, nodeXml));
+  </elements>`,
+      nodeXml,
+    ),
+  );
   reg.build();
   const books = new BookIndex(reg);
   const hide = (src: string, f: Partial<typeof ALL_CONTENT>) => hiddenBy(books.info(src), src, { ...ALL_CONTENT, ...f });
   it("shows everything by default", () => {
-    for (const s of ["Player's Handbook (2024)", "Player's Handbook", "Unearthed Arcana: Fresh", "Eberron: Rising from the Last War", "Some Friend's Book"]) expect(hide(s, {}), s).toBe(false);
+    for (const s of [
+      "Player's Handbook (2024)",
+      "Player's Handbook",
+      "Unearthed Arcana: Fresh",
+      "Eberron: Rising from the Last War",
+      "Some Friend's Book",
+    ])
+      expect(hide(s, {}), s).toBe(false);
   });
   it("hides 2014 rules, playtest, and settings or unofficial books independently", () => {
     expect(hide("Player's Handbook", { legacy: false })).toBe(true);

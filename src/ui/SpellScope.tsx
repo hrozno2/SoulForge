@@ -8,7 +8,10 @@ import { updateSettings, useSettings } from "./Settings";
 export function SpellScope() {
   const all = useSettings().allSpells;
   return (
-    <label className="check spell-scope" title="Ticked: every spell you can prepare, with blank boxes to mark each day and how many you prepare. Unticked: only today's prepared spells. For sheets and spell cards alike.">
+    <label
+      className="check spell-scope"
+      title="Ticked: every spell you can prepare, with blank boxes to mark each day and how many you prepare. Unticked: only today's prepared spells. For sheets and spell cards alike."
+    >
       <input type="checkbox" checked={all} onChange={(e) => updateSettings({ allSpells: e.target.checked })} /> Print the entire spellbook
     </label>
   );

@@ -22,16 +22,33 @@ import type { Translation } from "./TranslateOptions";
 
 /** Fill the player's own copy of a fillable character sheet PDF. The PDF is stored on this computer only. */
 
-
 /**
  * The cards added after a filled sheet: the same spell scope as the sheet's spell pages, so "Print the entire
  * spellbook" gives a card for every spell the character can prepare (Chris, 2026-11-12: it gave only today's).
  */
 export function extraCardOptions(cards: { spells: boolean; items: boolean; features: boolean; tips: boolean }, allSpells: boolean) {
-  return { paper: "letter" as const, sheet: false, spellCards: cards.spells, spellCardScope: spellScopeOf(allSpells), itemCards: cards.items, featureCards: cards.features, tips: cards.tips };
+  return {
+    paper: "letter" as const,
+    sheet: false,
+    spellCards: cards.spells,
+    spellCardScope: spellScopeOf(allSpells),
+    itemCards: cards.items,
+    featureCards: cards.features,
+    tips: cards.tips,
+  };
 }
 
-export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolved; sheet: SheetData; tr: Translation; allSpells?: boolean }) {
+export function TemplateExport({
+  r,
+  sheet,
+  tr,
+  allSpells = false,
+}: {
+  r: Resolved;
+  sheet: SheetData;
+  tr: Translation;
+  allSpells?: boolean;
+}) {
   const [templates, setTemplates] = useState<TemplateRecord[]>([]);
   const [pick, setPick] = useState("");
   const [pages, setPages] = useState<DldmPage[]>([]);
@@ -49,8 +66,15 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => listTemplates().then(setTemplates);
-  useEffect(() => { void mergeDuplicateSheets().then(refresh); }, []);
-  const current = templates.find((t) => t.id === pick) ?? templates.find((t) => t.kind === "official" && t.form) ?? templates.find((t) => t.kind === "official") ?? templates.find((t) => t.kind === "dldm5e24") ?? templates[0];
+  useEffect(() => {
+    void mergeDuplicateSheets().then(refresh);
+  }, []);
+  const current =
+    templates.find((t) => t.id === pick) ??
+    templates.find((t) => t.kind === "official" && t.form) ??
+    templates.find((t) => t.kind === "official") ??
+    templates.find((t) => t.kind === "dldm5e24") ??
+    templates[0];
   useEffect(() => {
     if (current?.kind === "dldm5e24") setPages(current.pages as DldmPage[]);
   }, [current?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -89,14 +113,19 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
     void refresh();
   };
 
-    /** How many pieces of text the translation service could not do during this export. */
+  /** How many pieces of text the translation service could not do during this export. */
   const failedRef = useRef(0);
-  const onFailed = (f: number) => { failedRef.current += f; };
+  const onFailed = (f: number) => {
+    failedRef.current += f;
+  };
   /** The values for the sheet, translated when a language is chosen. */
   const fillData = async (translate = true) => {
     const data = buildFillData(r, sheet, { allSpells: allSpells });
     if (!translate) return data;
-    const t = tr.option((d, n) => setMsg(`Translating ${d} of ${n}...`), (f) => onFailed(f));
+    const t = tr.option(
+      (d, n) => setMsg(`Translating ${d} of ${n}...`),
+      (f) => onFailed(f),
+    );
     return t ? translateFill(data, t) : data;
   };
 
@@ -128,7 +157,11 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
       const name = r.character.companions.find((c) => c.id === id)?.name ?? el.name;
       const cf = companionFill(el, name, r.reg);
       const t = preview ? undefined : tr.option((d, n) => setMsg(`Translating ${d} of ${n}...`), onFailed);
-      bytes = await fillCompanion(tpl, t ? await translateCompanion(cf, t) : cf, { font: fonts, profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency), layout: current.pages[0] as "mount" | "ranger" });
+      bytes = await fillCompanion(tpl, t ? await translateCompanion(cf, t) : cf, {
+        font: fonts,
+        profBonus: sheet.proficiency >= 0 ? `+${sheet.proficiency}` : String(sheet.proficiency),
+        layout: current.pages[0] as "mount" | "ranger",
+      });
     }
     return { bytes, notes };
   };
@@ -157,11 +190,24 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
     warmPdf();
     // A frame first, so "Drawing..." shows before the work starts.
     window.setTimeout(() => {
-      build(true).then((res) => { setPreviewBytes(res.bytes); setDrawnKey(key); }).catch((e) => { setPreviewBytes(null); setPreviewNote((e as Error).message); }).finally(() => setDrawing(false));
+      build(true)
+        .then((res) => {
+          setPreviewBytes(res.bytes);
+          setDrawnKey(key);
+        })
+        .catch((e) => {
+          setPreviewBytes(null);
+          setPreviewNote((e as Error).message);
+        })
+        .finally(() => setDrawing(false));
     }, 30);
   };
   // Another sheet chosen: the old picture does not belong to it.
-  useEffect(() => { setPreviewBytes(null); setDrawnKey(""); setPreviewNote(""); }, [current?.id, pages.join(","), companion]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setPreviewBytes(null);
+    setDrawnKey("");
+    setPreviewNote("");
+  }, [current?.id, pages.join(","), companion]); // eslint-disable-line react-hooks/exhaustive-deps
   const previewStale = !!drawnKey && drawnKey !== previewKey;
 
   const run = async () => {
@@ -177,14 +223,29 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
       let bytes = built.bytes;
       const notes = built.notes;
       if (cards.spells || cards.items || cards.features || cards.tips) {
-        const extra = await buildPdf(r, sheet, { ...extraCardOptions(cards, allSpells), translate: tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`), onFailed) }, fonts);
+        const extra = await buildPdf(
+          r,
+          sheet,
+          { ...extraCardOptions(cards, allSpells), translate: tr.option((d, t) => setMsg(`Translating ${d} of ${t}...`), onFailed) },
+          fonts,
+        );
         const main = await PDFDocument.load(bytes);
         const add = await PDFDocument.load(extra);
         for (const pg of await main.copyPages(add, add.getPageIndices())) main.addPage(pg);
         bytes = await main.save();
       }
       const ok = await saveFile(`${base} - ${current.name}.pdf`, bytes, "application/pdf");
-      setMsg([ok ? "Saved." : "Cancelled.", ...notes, failedRef.current ? `${failedRef.current} pieces of text could not be translated and stayed in English. Try again in a minute, or pick another translation service.` : ""].filter(Boolean).join(" "));
+      setMsg(
+        [
+          ok ? "Saved." : "Cancelled.",
+          ...notes,
+          failedRef.current
+            ? `${failedRef.current} pieces of text could not be translated and stayed in English. Try again in a minute, or pick another translation service.`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+      );
     } catch (e) {
       setMsg(`Could not fill the sheet: ${(e as Error).message}`);
     } finally {
@@ -197,19 +258,51 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
       <ul className="sheet-downloads">
         {OFFICIAL_DOWNLOADS.map((o) => (
           <li key={o.id}>
-            <div><b>{o.label}</b><small className="muted">{o.by}. {o.note}</small></div>
-            <button onClick={() => getOfficial(o)} title="Downloaded from the maker's own address and kept on this computer">Get</button>
+            <div>
+              <b>{o.label}</b>
+              <small className="muted">
+                {o.by}. {o.note}
+              </small>
+            </div>
+            <button onClick={() => getOfficial(o)} title="Downloaded from the maker's own address and kept on this computer">
+              Get
+            </button>
           </li>
         ))}
         <li>
-          <div><b>Your own PDF</b><small className="muted">Any fillable sheet works: Soul Forge matches its fields by name and lists anything it cannot place.</small></div>
+          <div>
+            <b>Your own PDF</b>
+            <small className="muted">
+              Any fillable sheet works: Soul Forge matches its fields by name and lists anything it cannot place.
+            </small>
+          </div>
           <button onClick={choose}>Add PDF...</button>
         </li>
       </ul>
       <p className="muted small-text">
         Fillable sheets stay editable. Print copies have the text written onto the page. Files stay on this computer.{" "}
-        {SHEET_LINKS.filter((l) => /drive\.google/.test(l.url)).map((l) => <a key={l.url} href={l.url} onClick={(e) => { e.preventDefault(); void openExternal(l.url); }}>DLtheDM's folder</a>)}
-        {" · "}<a href={SHEET_SEARCH} onClick={(e) => { e.preventDefault(); void openExternal(SHEET_SEARCH); }}>Search for a sheet</a>
+        {SHEET_LINKS.filter((l) => /drive\.google/.test(l.url)).map((l) => (
+          <a
+            key={l.url}
+            href={l.url}
+            onClick={(e) => {
+              e.preventDefault();
+              void openExternal(l.url);
+            }}
+          >
+            DLtheDM's folder
+          </a>
+        ))}
+        {" · "}
+        <a
+          href={SHEET_SEARCH}
+          onClick={(e) => {
+            e.preventDefault();
+            void openExternal(SHEET_SEARCH);
+          }}
+        >
+          Search for a sheet
+        </a>
       </p>
     </>
   );
@@ -217,49 +310,98 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
   return (
     <div className="subcard">
       <h3>Fill a character sheet</h3>
-      {templates.length === 0 && <p className="muted">No sheet yet. Get one below or add your own PDF; your character is written onto it.</p>}
-      <input ref={fileRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { void add(e.target.files); e.target.value = ""; }} />
+      {templates.length === 0 && (
+        <p className="muted">No sheet yet. Get one below or add your own PDF; your character is written onto it.</p>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".pdf"
+        multiple
+        hidden
+        onChange={(e) => {
+          void add(e.target.files);
+          e.target.value = "";
+        }}
+      />
       {templates.length > 0 && (
         <>
           <div className="row sheet-pick">
-            <label className="field-inline">Sheet
+            <label className="field-inline">
+              Sheet
               <select aria-label="Sheet" value={current?.id ?? ""} onChange={(e) => setPick(e.target.value)}>
-                {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
               </select>
             </label>
-            <button onClick={() => setManage(true)} title="See all your sheets, rename or remove them">Manage sheets ({templates.length})</button>
-            <button className="ghost" onClick={choose}>Add PDF...</button>
+            <button onClick={() => setManage(true)} title="See all your sheets, rename or remove them">
+              Manage sheets ({templates.length})
+            </button>
+            <button className="ghost" onClick={choose}>
+              Add PDF...
+            </button>
           </div>
           {current?.kind === "dldm5e24" && (
             <div>
               {(current.pages as DldmPage[]).map((p) => (
                 <label key={p} className="check">
-                  <input type="checkbox" checked={pages.includes(p)} onChange={() => setPages((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]))} />
+                  <input
+                    type="checkbox"
+                    checked={pages.includes(p)}
+                    onChange={() => setPages((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]))}
+                  />
                   {DLDM_PAGES[p].label} <small className="muted">{DLDM_PAGES[p].note}</small>
                 </label>
               ))}
             </div>
           )}
-          {current && (previewBytes || drawing || previewNote ? (
-            <>
-              {previewStale && !drawing && (
-                <p className="notice row">The character changed since this preview was drawn. <button onClick={drawPreview}>Redraw the preview</button></p>
-              )}
-              <SheetPreview bytes={previewBytes} note={previewNote} />
-            </>
-          ) : (
-            <div className="sheet-preview-ask">
-              <button onClick={drawPreview}>Show a preview of the filled sheet</button>
-              <p className="muted small-text">Drawing a preview fills the whole sheet and takes a few seconds, during which the app is slower. Saving the sheet does not need it.</p>
-            </div>
-          ))}
+          {current &&
+            (previewBytes || drawing || previewNote ? (
+              <>
+                {previewStale && !drawing && (
+                  <p className="notice row">
+                    The character changed since this preview was drawn. <button onClick={drawPreview}>Redraw the preview</button>
+                  </p>
+                )}
+                <SheetPreview bytes={previewBytes} note={previewNote} />
+              </>
+            ) : (
+              <div className="sheet-preview-ask">
+                <button onClick={drawPreview}>Show a preview of the filled sheet</button>
+                <p className="muted small-text">
+                  Drawing a preview fills the whole sheet and takes a few seconds, during which the app is slower. Saving the sheet does not
+                  need it.
+                </p>
+              </div>
+            ))}
           {current && current.kind !== "companion" && (
             <div>
               <small className="muted">Add to the end of the PDF</small>
-              <label className="check"><input type="checkbox" checked={cards.tips} onChange={(e) => setCards({ ...cards, tips: e.target.checked })} />Tips and tricks for play</label>
-              {counts.spells > 0 && <label className="check"><input type="checkbox" checked={cards.spells} onChange={(e) => setCards({ ...cards, spells: e.target.checked })} />Spell cards <small className="muted">{counts.spells}</small></label>}
-              {counts.items > 0 && <label className="check"><input type="checkbox" checked={cards.items} onChange={(e) => setCards({ ...cards, items: e.target.checked })} />Item cards <small className="muted">{counts.items}</small></label>}
-              {counts.features > 0 && <label className="check"><input type="checkbox" checked={cards.features} onChange={(e) => setCards({ ...cards, features: e.target.checked })} />Feature cards <small className="muted">{counts.features}</small></label>}
+              <label className="check">
+                <input type="checkbox" checked={cards.tips} onChange={(e) => setCards({ ...cards, tips: e.target.checked })} />
+                Tips and tricks for play
+              </label>
+              {counts.spells > 0 && (
+                <label className="check">
+                  <input type="checkbox" checked={cards.spells} onChange={(e) => setCards({ ...cards, spells: e.target.checked })} />
+                  Spell cards <small className="muted">{counts.spells}</small>
+                </label>
+              )}
+              {counts.items > 0 && (
+                <label className="check">
+                  <input type="checkbox" checked={cards.items} onChange={(e) => setCards({ ...cards, items: e.target.checked })} />
+                  Item cards <small className="muted">{counts.items}</small>
+                </label>
+              )}
+              {counts.features > 0 && (
+                <label className="check">
+                  <input type="checkbox" checked={cards.features} onChange={(e) => setCards({ ...cards, features: e.target.checked })} />
+                  Feature cards <small className="muted">{counts.features}</small>
+                </label>
+              )}
             </div>
           )}
           {current?.kind === "companion" && (
@@ -267,19 +409,43 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
               <span className="muted">Companion</span>
               <select value={companion} onChange={(e) => setCompanion(e.target.value)}>
                 {companionList.length === 0 && <option value="">none yet</option>}
-                {companionList.map((c) => <option key={c.id + c.name} value={c.id}>{c.name}</option>)}
+                {companionList.map((c) => (
+                  <option key={c.id + c.name} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
             </div>
           )}
-          <button className="primary" disabled={busy || !tr.ready || !current || (current.kind === "dldm5e24" && pages.length === 0)} onClick={() => (current && isPlain(current) ? setConfirmPlain(true) : run())}>{busy ? "Filling..." : "Fill and save"}</button>
+          <button
+            className="primary"
+            disabled={busy || !tr.ready || !current || (current.kind === "dldm5e24" && pages.length === 0)}
+            onClick={() => (current && isPlain(current) ? setConfirmPlain(true) : run())}
+          >
+            {busy ? "Filling..." : "Fill and save"}
+          </button>
           {confirmPlain && (
             <div className="modal-back" role="dialog" aria-label="This sheet is not editable" onClick={() => setConfirmPlain(false)}>
               <div className="modal-page themed" onClick={(e) => e.stopPropagation()}>
                 <h2>This sheet is not a form</h2>
-                <p>The copy you loaded has no form fields. Soul Forge will write the text straight onto the page, so afterwards <b>you cannot edit it in a PDF viewer</b>: a mistake means making the PDF again from Soul Forge.</p>
-                <p className="muted">A fillable copy of the same sheet keeps every box editable. The official 2014 sheet and the DLDM sheets come as fillable files.</p>
+                <p>
+                  The copy you loaded has no form fields. Soul Forge will write the text straight onto the page, so afterwards{" "}
+                  <b>you cannot edit it in a PDF viewer</b>: a mistake means making the PDF again from Soul Forge.
+                </p>
+                <p className="muted">
+                  A fillable copy of the same sheet keeps every box editable. The official 2014 sheet and the DLDM sheets come as fillable
+                  files.
+                </p>
                 <div className="row">
-                  <button className="primary" onClick={() => { setConfirmPlain(false); void run(); }}>Proceed</button>
+                  <button
+                    className="primary"
+                    onClick={() => {
+                      setConfirmPlain(false);
+                      void run();
+                    }}
+                  >
+                    Proceed
+                  </button>
                   <button onClick={() => setConfirmPlain(false)}>Cancel</button>
                 </div>
               </div>
@@ -288,7 +454,18 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
         </>
       )}
       {msg && <p className="notice">{msg}</p>}
-      {manage && <SheetManager templates={templates} current={current?.id} onUse={setPick} onChanged={refresh} onClose={() => setManage(false)} msg={msg}>{getSheets}</SheetManager>}
+      {manage && (
+        <SheetManager
+          templates={templates}
+          current={current?.id}
+          onUse={setPick}
+          onChanged={refresh}
+          onClose={() => setManage(false)}
+          msg={msg}
+        >
+          {getSheets}
+        </SheetManager>
+      )}
       <details className="sheet-get" open={templates.length === 0}>
         <summary>Get more sheets</summary>
         {getSheets}

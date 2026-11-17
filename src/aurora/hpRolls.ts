@@ -18,11 +18,22 @@ export function dieForLevel(ch: Character, reg: ARegistry, n: number): number {
 }
 
 /** The character with a roll set for a level (or removed, with no value), and the record of who made it. */
-export function withHpRoll(c: Character, level: number, value: number | undefined, by: "app" | "player", die: number, at = Date.now()): Character {
+export function withHpRoll(
+  c: Character,
+  level: number,
+  value: number | undefined,
+  by: "app" | "player",
+  die: number,
+  at = Date.now(),
+): Character {
   const key = String(level);
   const rolls = { ...c.hpRolls };
   const log = { ...(c.hpRollLog ?? {}) };
-  if (!value) { delete rolls[key]; delete log[key]; return { ...c, hpRolls: rolls, hpRollLog: log }; }
+  if (!value) {
+    delete rolls[key];
+    delete log[key];
+    return { ...c, hpRolls: rolls, hpRollLog: log };
+  }
   const v = Math.min(die, Math.max(1, Math.round(value)));
   rolls[key] = v;
   log[key] = { value: v, die, by, at };
@@ -50,11 +61,20 @@ export function hpBreakdown(ch: Character, reg: ARegistry, conMod: number): HpLi
       n++;
       const roll = ch.hpMode === "roll" ? ch.hpRolls[String(n)] : undefined;
       const by = ch.hpRollLog?.[String(n)]?.by;
-      out.push(n === 1
-        ? { level: n, className: cls?.name ?? "", die, value: die, how: "maximum", con: conMod }
-        : roll !== undefined
-          ? { level: n, className: cls?.name ?? "", die, value: roll, how: by === "app" ? "rolled by Soul Forge" : "entered by you", con: conMod }
-          : { level: n, className: cls?.name ?? "", die, value: Math.floor(die / 2) + 1, how: "average", con: conMod });
+      out.push(
+        n === 1
+          ? { level: n, className: cls?.name ?? "", die, value: die, how: "maximum", con: conMod }
+          : roll !== undefined
+            ? {
+                level: n,
+                className: cls?.name ?? "",
+                die,
+                value: roll,
+                how: by === "app" ? "rolled by Soul Forge" : "entered by you",
+                con: conMod,
+              }
+            : { level: n, className: cls?.name ?? "", die, value: Math.floor(die / 2) + 1, how: "average", con: conMod },
+      );
     }
   }
   return out;
@@ -74,15 +94,22 @@ export interface RollAudit {
 
 /** A check of the rolls Soul Forge made for one or more characters. */
 export function rollAudit(chars: Character[]): RollAudit {
-  let count = 0, sum = 0, exp = 0, outOfRange = 0;
+  let count = 0,
+    sum = 0,
+    exp = 0,
+    outOfRange = 0;
   const faces: Record<number, number[]> = {};
-  for (const ch of chars) for (const r of Object.values(ch.hpRollLog ?? {})) {
-    if (r.by !== "app" || !r.die) continue;
-    count++;
-    sum += r.value;
-    exp += (r.die + 1) / 2;
-    if (r.value < 1 || r.value > r.die || !Number.isInteger(r.value)) { outOfRange++; continue; }
-    (faces[r.die] ??= Array.from({ length: r.die }, () => 0))[r.value - 1]++;
-  }
+  for (const ch of chars)
+    for (const r of Object.values(ch.hpRollLog ?? {})) {
+      if (r.by !== "app" || !r.die) continue;
+      count++;
+      sum += r.value;
+      exp += (r.die + 1) / 2;
+      if (r.value < 1 || r.value > r.die || !Number.isInteger(r.value)) {
+        outOfRange++;
+        continue;
+      }
+      (faces[r.die] ??= Array.from({ length: r.die }, () => 0))[r.value - 1]++;
+    }
   return { count, mean: count ? sum / count : 0, expected: count ? exp / count : 0, outOfRange, faces };
 }

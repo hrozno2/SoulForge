@@ -1,7 +1,22 @@
 /** What the standard conditions do to d20 rolls, so rolls can apply them and say so. */
 export type RollKind = "attack" | "check" | "save" | "damage" | "other";
 
-export const CONDITIONS = ["Blinded", "Charmed", "Deafened", "Frightened", "Grappled", "Incapacitated", "Invisible", "Paralyzed", "Petrified", "Poisoned", "Prone", "Restrained", "Stunned", "Unconscious"];
+export const CONDITIONS = [
+  "Blinded",
+  "Charmed",
+  "Deafened",
+  "Frightened",
+  "Grappled",
+  "Incapacitated",
+  "Invisible",
+  "Paralyzed",
+  "Petrified",
+  "Poisoned",
+  "Prone",
+  "Restrained",
+  "Stunned",
+  "Unconscious",
+];
 
 export const MAX_EXHAUSTION = 6;
 
@@ -51,18 +66,33 @@ export function effectsFor(kind: RollKind, ability: string | undefined, conditio
   let dis = 0;
   const why: string[] = [];
   if (kind === "attack") {
-    for (const c of ATTACK_DIS) if (has(c)) { dis++; why.push(`${c}: disadvantage`); }
-    if (has("Invisible")) { adv++; why.push("Invisible: advantage"); }
+    for (const c of ATTACK_DIS)
+      if (has(c)) {
+        dis++;
+        why.push(`${c}: disadvantage`);
+      }
+    if (has("Invisible")) {
+      adv++;
+      why.push("Invisible: advantage");
+    }
     if (has("Grappled")) why.push("Grappled: disadvantage unless you attack the grappler");
     if (has("Charmed")) why.push("Charmed: you cannot attack the charmer");
   } else if (kind === "check") {
-    for (const c of CHECK_DIS) if (has(c)) { dis++; why.push(`${c}: disadvantage`); }
+    for (const c of CHECK_DIS)
+      if (has(c)) {
+        dis++;
+        why.push(`${c}: disadvantage`);
+      }
     if (has("Blinded")) why.push("Blinded: fails checks that need sight");
     if (has("Deafened")) why.push("Deafened: fails checks that need hearing");
   } else {
-    if (has("Restrained") && ability === "dexterity") { dis++; why.push("Restrained: disadvantage"); }
+    if (has("Restrained") && ability === "dexterity") {
+      dis++;
+      why.push("Restrained: disadvantage");
+    }
     const bad = FAIL_SAVES.find(has);
-    if (bad && (ability === "strength" || ability === "dexterity")) out.autoFail = `${bad}: automatically fails ${ability === "strength" ? "Strength" : "Dexterity"} saves`;
+    if (bad && (ability === "strength" || ability === "dexterity"))
+      out.autoFail = `${bad}: automatically fails ${ability === "strength" ? "Strength" : "Dexterity"} saves`;
   }
   if (INCAPACITATED.some(has) && kind === "attack") why.push("Incapacitated: you cannot take actions");
   if (exhaustion > 0) {

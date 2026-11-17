@@ -12,9 +12,16 @@ import type { CharacterRecord } from "../aurora/storage";
 export type SaveState = "saved" | "pending" | "saving" | "failed";
 
 /** What the library card shows; worked out when the save is scheduled (it needs the content for the names). */
-export interface SaveLabel { name: string; summary: string }
+export interface SaveLabel {
+  name: string;
+  summary: string;
+}
 
-interface Waiting { id: string; character: Character; label: SaveLabel }
+interface Waiting {
+  id: string;
+  character: Character;
+  label: SaveLabel;
+}
 
 export class SaveQueue {
   state: SaveState = "saved";

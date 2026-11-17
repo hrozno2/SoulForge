@@ -19,7 +19,10 @@ describe.skipIf(!C)("copies of one feat", () => {
     const ch = newCharacter();
     ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_ROGUE", level: 8 }];
     let r = resolve(ch, reg);
-    const asiSlots = () => r.slots.filter((s) => s.rule.type === "Feat" && /^Ability Score Improvement \(Rogue/.test(s.rule.name)).sort((a, b) => a.rule.name.localeCompare(b.rule.name));
+    const asiSlots = () =>
+      r.slots
+        .filter((s) => s.rule.type === "Feat" && /^Ability Score Improvement \(Rogue/.test(s.rule.name))
+        .sort((a, b) => a.rule.name.localeCompare(b.rule.name));
     const [first] = asiSlots();
     ch.selections[first.key] = [ASI];
     r = resolve(ch, reg);
@@ -30,7 +33,7 @@ describe.skipIf(!C)("copies of one feat", () => {
     expect(second.blocked.has(ASI) || !second.options.some((o) => o.id === ASI)).toBe(true);
   }, 600000);
 
-  it("a feat taken again through its repeat copy is not \"Same feat twice\" (2024 Magic Initiate, another list)", () => {
+  it('a feat taken again through its repeat copy is not "Same feat twice" (2024 Magic Initiate, another list)', () => {
     const ch = newCharacter();
     ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_ROGUE", level: 4 }];
     ch.extras = ["ID_WOTC_PHB24_FEAT_MAGIC_INITIATE", "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_2"];

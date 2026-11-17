@@ -6,7 +6,10 @@ import type { ARegistry } from "./registry";
  */
 export function companionHtml(value: string | undefined, reg: ARegistry | undefined): string {
   if (!value) return "";
-  const parts = value.split(",").map((x) => x.trim()).filter(Boolean);
+  const parts = value
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
   if (!parts.some((p) => /^ID_[A-Z0-9_]+$/.test(p))) return value;
   return parts
     .map((p) => {
@@ -30,10 +33,14 @@ export function companionBonuses(stats: { names(): string[]; get(n: string): num
     const save = /^(\w+):save(?::misc)?$/.exec(rest);
     if (save) return `${save[1].charAt(0).toUpperCase()}${save[1].slice(1)} saves`;
     const skill = /^(.+?):(?:misc|proficiency)$/.exec(rest);
-    if (skill) return `${skill[1].replace(/s$/, "").replace(/^./, (c) => c.toUpperCase())}${/proficiency$/.test(rest) ? " (proficient)" : ""}`;
+    if (skill)
+      return `${skill[1].replace(/s$/, "").replace(/^./, (c) => c.toUpperCase())}${/proficiency$/.test(rest) ? " (proficient)" : ""}`;
     return rest === "attack" ? "Attacks" : rest === "damage" ? "Damage" : rest === "ac" ? "AC" : rest.replace(/^./, (c) => c.toUpperCase());
   };
-  for (const n of stats.names().filter((x) => x.startsWith("companion:")).sort()) {
+  for (const n of stats
+    .names()
+    .filter((x) => x.startsWith("companion:"))
+    .sort()) {
     const v = stats.get(n);
     if (v) out.push(`${label(n.slice(10))} ${v >= 0 ? "+" : ""}${v}`);
   }

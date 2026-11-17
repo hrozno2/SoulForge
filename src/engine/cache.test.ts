@@ -15,17 +15,21 @@ const seeded = (seed: number) => () => {
   return seed / 4294967296;
 };
 
-const picture = (r: Resolved) => JSON.stringify({
-  ids: [...r.ids].sort(),
-  stats: r.stats.names().sort().map((n) => [n, r.stats.get(n)]),
-  slots: r.slots.map((s) => [s.key, s.chosen, s.options.length, [...s.blocked].sort(), !!s.declined]),
-  spells: r.spellPicks.map((p) => [p.id, p.casting, p.granted]),
-  warnings: r.warnings,
-});
+const picture = (r: Resolved) =>
+  JSON.stringify({
+    ids: [...r.ids].sort(),
+    stats: r.stats
+      .names()
+      .sort()
+      .map((n) => [n, r.stats.get(n)]),
+    slots: r.slots.map((s) => [s.key, s.chosen, s.options.length, [...s.blocked].sort(), !!s.declined]),
+    spells: r.spellPicks.map((p) => [p.id, p.casting, p.granted]),
+    warnings: r.warnings,
+  });
 
 /** One edit a player could make. */
 function edit(ch: Character, r: Resolved, rng: () => number): Character {
-  const pick = <T,>(list: T[]): T | undefined => list[Math.floor(rng() * list.length)];
+  const pick = <T>(list: T[]): T | undefined => list[Math.floor(rng() * list.length)];
   const kind = Math.floor(rng() * 7);
   const slots = r.slots.filter((s) => s.rule.type !== "List" && s.options.length > 1);
   const s = pick(slots);
@@ -34,7 +38,11 @@ function edit(ch: Character, r: Resolved, rng: () => number): Character {
     const other = pick(s.options.filter((o) => !s.chosen.includes(o.id)));
     if (other) return { ...ch, selections: { ...ch.selections, [s.key]: [other.id, ...s.chosen.slice(1)].slice(0, s.rule.number) } };
   }
-  if (kind === 2 && s) { const { [s.key]: _gone, ...rest } = ch.selections; void _gone; return { ...ch, selections: rest }; }
+  if (kind === 2 && s) {
+    const { [s.key]: _gone, ...rest } = ch.selections;
+    void _gone;
+    return { ...ch, selections: rest };
+  }
   if (kind === 3 && ch.classes.length) {
     const i = Math.floor(rng() * ch.classes.length);
     const total = ch.classes.reduce((n, c) => n + c.level, 0);
@@ -52,7 +60,8 @@ function edit(ch: Character, r: Resolved, rng: () => number): Character {
   }
   if (s && (s.rule.optional || s.declined)) {
     const declined = new Set(ch.declined ?? []);
-    if (declined.has(s.key)) declined.delete(s.key); else declined.add(s.key);
+    if (declined.has(s.key)) declined.delete(s.key);
+    else declined.add(s.key);
     return { ...ch, declined: [...declined] };
   }
   return { ...ch, xp: ch.xp + 1 };
@@ -73,7 +82,10 @@ describe("kept levels", () => {
         r = resolve(ch, warm);
         clearTimelineCache(cold);
         const fresh = resolve(ch, cold);
-        if (picture(r) !== picture(fresh)) throw new Error(`character ${i}, edit ${step}: the kept resolve differs from a fresh one\n${JSON.stringify({ classes: ch.classes, race: ch.race, background: ch.background })}`);
+        if (picture(r) !== picture(fresh))
+          throw new Error(
+            `character ${i}, edit ${step}: the kept resolve differs from a fresh one\n${JSON.stringify({ classes: ch.classes, race: ch.race, background: ch.background })}`,
+          );
         compared++;
       }
     }

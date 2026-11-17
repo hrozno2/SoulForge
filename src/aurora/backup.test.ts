@@ -51,7 +51,11 @@ describe("backups", () => {
     const files = new Map<string, string>();
     for (let i = 1; i <= 16; i++) files.set(`soul-forge-backup-2020-01-${String(i).padStart(2, "0")}.json`, "{}");
     files.set("notes.txt", "mine");
-    const disk: BackupDisk = { write: async (n, t) => void files.set(n, t), names: async () => [...files.keys()], remove: async (n) => void files.delete(n) };
+    const disk: BackupDisk = {
+      write: async (n, t) => void files.set(n, t),
+      names: async () => [...files.keys()],
+      remove: async (n) => void files.delete(n),
+    };
     await runAutoBackup(true, disk);
     const today = `soul-forge-backup-${localDate()}.json`;
     expect(isBackup(JSON.parse(files.get(today)!))).toBe(true);
@@ -67,7 +71,13 @@ describe("backups", () => {
 
   it("a disk that fails does not fail the backup", async () => {
     const errors: unknown[] = [];
-    const disk: BackupDisk = { write: async () => { throw new Error("read-only"); }, names: async () => [], remove: async () => undefined };
+    const disk: BackupDisk = {
+      write: async () => {
+        throw new Error("read-only");
+      },
+      names: async () => [],
+      remove: async () => undefined,
+    };
     await expect(runAutoBackup(true, disk, (e) => errors.push(e))).resolves.toBeNull();
     expect(errors.length).toBe(1);
   });
@@ -75,7 +85,13 @@ describe("backups", () => {
   // The audit's S3: an unreadable library read as empty, so a merge restore wrote older copies over newer ones.
   it("stops a restore when the library cannot be read, and reads again afterwards", async () => {
     await saveCharacterRecord(rec("n", "Newer here", 900));
-    const backup = { app: "Soul Forge" as const, kind: "backup" as const, version: 1 as const, created: 1, characters: [rec("n", "Older in the file", 100)] };
+    const backup = {
+      app: "Soul Forge" as const,
+      kind: "backup" as const,
+      version: 1 as const,
+      created: 1,
+      characters: [rec("n", "Older in the file", 100)],
+    };
     await closeDb();
     const spy = vi.spyOn(indexedDB, "open").mockImplementation(() => {
       const req = { error: new Error("storage broken") } as unknown as IDBOpenDBRequest;

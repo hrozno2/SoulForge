@@ -30,8 +30,14 @@ export function packFillOf(ch: Character, plans: EquipPlan[]): number {
     return items.length ? items.filter((i) => have.has(i.id)).length / items.length : 1;
   };
   if (plans.length) {
-    const per = plans.map((p) => { const mine = added.filter((l) => l.startsWith(`${p.title}, `)); return mine.length ? Math.max(...mine.map(kept)) : 0; });
-    const extra = Math.min(0.15, ch.inventory.filter((i) => !added.some((l) => (ch.equipmentLedger?.[l]?.items ?? []).some((x) => x.id === i.id))).length * 0.03);
+    const per = plans.map((p) => {
+      const mine = added.filter((l) => l.startsWith(`${p.title}, `));
+      return mine.length ? Math.max(...mine.map(kept)) : 0;
+    });
+    const extra = Math.min(
+      0.15,
+      ch.inventory.filter((i) => !added.some((l) => (ch.equipmentLedger?.[l]?.items ?? []).some((x) => x.id === i.id))).length * 0.03,
+    );
     return Math.min(1, per.reduce((a, b) => a + b, 0) / plans.length + extra);
   }
   return Math.min(1, ch.inventory.length / 12);
@@ -48,7 +54,8 @@ export function preparedCount(r: Resolved, sheet: SheetData): { have: number; ne
 
 export function openChoices(r: Resolved, sheet: SheetData): OpenChoice[] {
   const ch = r.character;
-  const kindOfSlot = (sl: Resolved["slots"][number]): BoardKind => (tabOfSlot(sl) === "magic" ? "magic" : sl.root === "race" ? "race" : sl.root === "background" ? "background" : "class");
+  const kindOfSlot = (sl: Resolved["slots"][number]): BoardKind =>
+    tabOfSlot(sl) === "magic" ? "magic" : sl.root === "race" ? "race" : sl.root === "background" ? "background" : "class";
   const { have, need } = preparedCount(r, sheet);
   const plans = startingPlans(ch, r.reg);
   // Missing picks first, then each open choice.
@@ -56,12 +63,22 @@ export function openChoices(r: Resolved, sheet: SheetData): OpenChoice[] {
     ...(!ch.race ? [{ kind: "race" as const, text: "Choose a species", list: true }] : []),
     ...(!ch.classes.length ? [{ kind: "class" as const, text: "Choose a class", list: true }] : []),
     ...(!ch.background ? [{ kind: "background" as const, text: "Choose a background", list: true }] : []),
-    ...r.slots.filter((sl) => stillToChoose(sl, r)).map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: false })),
+    ...r.slots
+      .filter((sl) => stillToChoose(sl, r))
+      .map((sl) => ({ kind: kindOfSlot(sl), text: `${sl.rule.name}: ${sl.rule.number - sl.chosen.length} to choose`, list: false })),
     // Spells to prepare: the build is not ready to play while a caster has none prepared (C7.18: "every choice is
     // made" stood beside a spellbook missing its prepared spells). The line opens the prepare list.
-    ...(have < need ? [{ kind: "magic" as const, text: `Prepare spells: ${have} of ${need}`, list: false, target: "prepare" as const }] : []),
+    ...(have < need
+      ? [{ kind: "magic" as const, text: `Prepare spells: ${have} of ${need}`, list: false, target: "prepare" as const }]
+      : []),
     // Hit points: fixed or rolled, until the player picks (C7.10).
-    ...(ch.classes.length && !hpConfigured(ch) ? [{ kind: "class" as const, text: "Hit points: choose fixed or rolled", list: false, label: "Hit points", target: "hp" as const }] : []),
-    ...(plans.length && packFillOf(ch, plans) < 1 && !plans.every((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))) ? [{ kind: "equipment" as const, text: "Starting equipment", list: false }] : []),
+    ...(ch.classes.length && !hpConfigured(ch)
+      ? [{ kind: "class" as const, text: "Hit points: choose fixed or rolled", list: false, label: "Hit points", target: "hp" as const }]
+      : []),
+    ...(plans.length &&
+    packFillOf(ch, plans) < 1 &&
+    !plans.every((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `)))
+      ? [{ kind: "equipment" as const, text: "Starting equipment", list: false }]
+      : []),
   ];
 }

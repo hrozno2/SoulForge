@@ -15,15 +15,36 @@ export function Journal({ ch, set }: { ch: Character; set: SetCharacter }) {
   const entries = [...(ch.journal ?? [])].sort((a, b) => b.date.localeCompare(a.date));
   const q = filter.trim().toLowerCase();
   const shown = q ? entries.filter((e) => `${e.title} ${e.text}`.toLowerCase().includes(q)) : entries;
-  const edit = (id: string, p: Partial<JournalEntry>) => set((c) => ({ ...c, journal: (c.journal ?? []).map((e) => (e.uid === id ? { ...e, ...p } : e)) }));
+  const edit = (id: string, p: Partial<JournalEntry>) =>
+    set((c) => ({ ...c, journal: (c.journal ?? []).map((e) => (e.uid === id ? { ...e, ...p } : e)) }));
   return (
     <>
-      <label className="field"><span>Notes</span><TextArea rows={8} value={ch.notes} onCommit={(v) => set((c) => ({ ...c, notes: v }))} /></label>
+      <label className="field">
+        <span>Notes</span>
+        <TextArea rows={8} value={ch.notes} onCommit={(v) => set((c) => ({ ...c, notes: v }))} />
+      </label>
       <section className="block journal">
         <h3>Session log</h3>
         <div className="row">
-          <button className="primary" onClick={() => { const id = uid(); set((c) => ({ ...c, journal: [...(c.journal ?? []), { uid: id, date: today(), title: "", text: "" }] })); setOpen((o) => [...o, id]); }}>New entry</button>
-          {entries.length > 3 && <input type="search" aria-label="Search the session log" placeholder="Search" value={filter} onChange={(e) => setFilter(e.target.value)} />}
+          <button
+            className="primary"
+            onClick={() => {
+              const id = uid();
+              set((c) => ({ ...c, journal: [...(c.journal ?? []), { uid: id, date: today(), title: "", text: "" }] }));
+              setOpen((o) => [...o, id]);
+            }}
+          >
+            New entry
+          </button>
+          {entries.length > 3 && (
+            <input
+              type="search"
+              aria-label="Search the session log"
+              placeholder="Search"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+          )}
         </div>
         {entries.length === 0 && <p className="muted">Nothing yet. Add an entry after a session to keep track of what happened.</p>}
         {shown.map((e) => {
@@ -41,8 +62,23 @@ export function Journal({ ch, set }: { ch: Character; set: SetCharacter }) {
                 <div className="journal-body">
                   <div className="row">
                     <input type="date" aria-label="Session date" value={e.date} onChange={(ev) => edit(e.uid, { date: ev.target.value })} />
-                    <input aria-label="Entry title" placeholder="Title" value={e.title} onChange={(ev) => edit(e.uid, { title: ev.target.value })} />
-                    <button onClick={async () => { if (!e.text.trim() || (await askConfirm({ title: "Delete this journal entry?", message: "This cannot be undone." }))) set((c) => ({ ...c, journal: (c.journal ?? []).filter((x) => x.uid !== e.uid) })); }}>Delete</button>
+                    <input
+                      aria-label="Entry title"
+                      placeholder="Title"
+                      value={e.title}
+                      onChange={(ev) => edit(e.uid, { title: ev.target.value })}
+                    />
+                    <button
+                      onClick={async () => {
+                        if (
+                          !e.text.trim() ||
+                          (await askConfirm({ title: "Delete this journal entry?", message: "This cannot be undone." }))
+                        )
+                          set((c) => ({ ...c, journal: (c.journal ?? []).filter((x) => x.uid !== e.uid) }));
+                      }}
+                    >
+                      Delete
+                    </button>
                   </div>
                   <textarea rows={8} aria-label="Entry text" value={e.text} onChange={(ev) => edit(e.uid, { text: ev.target.value })} />
                 </div>

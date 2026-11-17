@@ -38,7 +38,10 @@ export function PortraitPicker({ onPick }: { onPick: (dataUrl: string) => void }
   const [list, setList] = useState<PortraitEntry[]>([]);
   const [hover, setHover] = useState<PortraitEntry | null>(null);
   useEffect(() => {
-    fetch(`${base()}index.json`).then((r) => r.json()).then(setList).catch(() => setList([]));
+    fetch(`${base()}index.json`)
+      .then((r) => r.json())
+      .then(setList)
+      .catch(() => setList([]));
   }, []);
   const pick = async (p: PortraitEntry) => {
     try {
@@ -60,7 +63,16 @@ export function PortraitPicker({ onPick }: { onPick: (dataUrl: string) => void }
         ))}
       </div>
       <small className="muted">
-        {hover ? <>{hover.title} · {hover.license} · <a href={hover.source} target="_blank" rel="noreferrer">source</a></> : "Public domain or CC0 art from Wikimedia Commons and OpenGameArt. Hover a portrait for its source; the link stays here until you hover another."}
+        {hover ? (
+          <>
+            {hover.title} · {hover.license} ·{" "}
+            <a href={hover.source} target="_blank" rel="noreferrer">
+              source
+            </a>
+          </>
+        ) : (
+          "Public domain or CC0 art from Wikimedia Commons and OpenGameArt. Hover a portrait for its source; the link stays here until you hover another."
+        )}
       </small>
     </details>
   );
@@ -104,10 +116,16 @@ export function PortraitCropper({ file, onDone, onCancel }: { file: File; onDone
   const side = img ? Math.min(img.naturalWidth, img.naturalHeight) / zoom : 0;
   // The centre is kept where the square fits, so a drag never pushes it past the edge and then sticks there.
   const half = img ? [side / 2 / img.naturalWidth, side / 2 / img.naturalHeight] : [0, 0];
-  const clamp = (fx: number, fy: number): [number, number] => [Math.min(Math.max(fx, half[0]), 1 - half[0]), Math.min(Math.max(fy, half[1]), 1 - half[1])];
+  const clamp = (fx: number, fy: number): [number, number] => [
+    Math.min(Math.max(fx, half[0]), 1 - half[0]),
+    Math.min(Math.max(fy, half[1]), 1 - half[1]),
+  ];
   const [fx, fy] = clamp(focus[0], focus[1]);
   const preview = img ? cropAround(img, fx, fy, zoom, 160) : "";
-  const at = (e: React.PointerEvent<HTMLDivElement>) => { const r = e.currentTarget.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }; };
+  const at = (e: React.PointerEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+  };
   const down = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!img) return;
     e.preventDefault();
@@ -124,7 +142,9 @@ export function PortraitCropper({ file, onDone, onCancel }: { file: File; onDone
     const p = at(e);
     setFocus(clamp(d.fx + p.x - d.x, d.fy + p.y - d.y));
   };
-  const up = () => { drag.current = null; };
+  const up = () => {
+    drag.current = null;
+  };
   const wheel = (e: React.WheelEvent) => setZoom((z) => Math.min(5, Math.max(1, Math.round((z - e.deltaY / 500) * 10) / 10)));
   return createPortal(
     <div className="modal-back cropper-back" role="dialog" aria-label="Crop portrait" onClick={onCancel}>
@@ -137,15 +157,24 @@ export function PortraitCropper({ file, onDone, onCancel }: { file: File; onDone
             {img && (
               <span
                 className="crop-box"
-                style={{ left: `${(fx - half[0]) * 100}%`, top: `${(fy - half[1]) * 100}%`, width: `${half[0] * 200}%`, height: `${half[1] * 200}%` }}
+                style={{
+                  left: `${(fx - half[0]) * 100}%`,
+                  top: `${(fy - half[1]) * 100}%`,
+                  width: `${half[0] * 200}%`,
+                  height: `${half[1] * 200}%`,
+                }}
               />
             )}
           </div>
           <div className="crop-side">
             {preview && <img className="portrait-lg" src={preview} alt="Preview" />}
-            <label>Zoom <input type="range" min={1} max={5} step={0.1} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} /></label>
+            <label>
+              Zoom <input type="range" min={1} max={5} step={0.1} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} />
+            </label>
             <div className="row">
-              <button className="primary" disabled={!img} onClick={() => img && onDone(cropAround(img, fx, fy, zoom))}>Use this crop</button>
+              <button className="primary" disabled={!img} onClick={() => img && onDone(cropAround(img, fx, fy, zoom))}>
+                Use this crop
+              </button>
               <button onClick={onCancel}>Cancel</button>
             </div>
           </div>

@@ -74,14 +74,30 @@ function parseSupports(src: string): SNode | null {
         if (toks[pos] === ")") pos++;
         return { t: "not", n };
       }
-      return { t: "not", n: { t: "any", words: t.slice(1).split("|").map((w) => w.trim().toLowerCase()).filter(Boolean) } };
+      return {
+        t: "not",
+        n: {
+          t: "any",
+          words: t
+            .slice(1)
+            .split("|")
+            .map((w) => w.trim().toLowerCase())
+            .filter(Boolean),
+        },
+      };
     }
     if (t === "(") {
       const n = parseOr();
       if (toks[pos] === ")") pos++;
       return n;
     }
-    return { t: "any", words: (t ?? "").split("|").map((w) => w.trim().toLowerCase()).filter(Boolean) };
+    return {
+      t: "any",
+      words: (t ?? "")
+        .split("|")
+        .map((w) => w.trim().toLowerCase())
+        .filter(Boolean),
+    };
   };
   const node = toks.length ? parseOr() : null;
   supportsCache.set(src, node);
@@ -100,10 +116,14 @@ function offered(el: AElement): Set<string> {
   if (el.type === "Spell" && el.setters.isRitual?.value === "true") s.add("ritual");
   if (el.type === "Spell" && el.setters.isConcentration?.value === "true") s.add("concentration");
   // Creatures: their type, size and challenge rating work as tags ("Beast,(Tiny||Small||Medium),(1/4||1/8||0)").
-  if (el.type === "Companion" || el.type === "Monster") for (const k of ["type", "size", "challenge", "cr"]) {
-    const v = el.setters[k]?.value?.trim().toLowerCase();
-    if (v) { s.add(v); s.add(v.split(/[\s(]/)[0]); }
-  }
+  if (el.type === "Companion" || el.type === "Monster")
+    for (const k of ["type", "size", "challenge", "cr"]) {
+      const v = el.setters[k]?.value?.trim().toLowerCase();
+      if (v) {
+        s.add(v);
+        s.add(v.split(/[\s(]/)[0]);
+      }
+    }
   return s;
 }
 
@@ -122,11 +142,15 @@ export function matchesSupports(el: AElement, filter: string): boolean {
 /** True when a requirement holds with nothing switched on: every top-level part is a "not" ("!X", "!(X||Y)"). */
 function byDefault(req: string): boolean {
   const parts: string[] = [];
-  let depth = 0, cur = "";
+  let depth = 0,
+    cur = "";
   for (const ch of req) {
     if (ch === "(") depth++;
     if (ch === ")") depth--;
-    if (ch === "," && depth === 0) { parts.push(cur); cur = ""; } else cur += ch;
+    if (ch === "," && depth === 0) {
+      parts.push(cur);
+      cur = "";
+    } else cur += ch;
   }
   parts.push(cur);
   return parts.every((p) => p.trim().startsWith("!"));
@@ -174,7 +198,11 @@ export class ARegistry {
     }
     // Every element's edition, from its book's release date.
     const release = new Map<string, number>();
-    for (const el of this.byId.values()) if (el.type === "Source") { const r = parseInt(el.setters.release?.value ?? "", 10); if (r > 19000000 && !release.has(bookKey(el.name))) release.set(bookKey(el.name), r); }
+    for (const el of this.byId.values())
+      if (el.type === "Source") {
+        const r = parseInt(el.setters.release?.value ?? "", 10);
+        if (r > 19000000 && !release.has(bookKey(el.name))) release.set(bookKey(el.name), r);
+      }
     stampEditions(this.byId.values(), (src) => release.get(bookKey(src)));
     // 5e.tools features whose mechanics are only prose take them from the same feature in Aurora's content.
     this.mechanics = borrowMechanics(this.byId);
@@ -190,11 +218,21 @@ export class ARegistry {
     }
     // Sci-fi and modern technology are marked from 5e.tools' item ages; Aurora's items of the same name (any book) share it.
     const TECH = ["scifi", "modern"];
-    const tech = new Map(TECH.map((t) => [t, new Set([...this.byId.values()].filter((e) => e.supports.includes(t)).map((e) => e.name.toLowerCase()))]));
+    const tech = new Map(
+      TECH.map((t) => [t, new Set([...this.byId.values()].filter((e) => e.supports.includes(t)).map((e) => e.name.toLowerCase()))]),
+    );
     for (const el of this.byId.values()) {
-      if (/item|weapon|armor/i.test(el.type)) for (const t of TECH) if (tech.get(t)!.size && !el.supports.includes(t) && tech.get(t)!.has(el.name.toLowerCase())) el.supports = [...el.supports, t];
-      if (!el.lore) { const l = lore.get(twinKey(el)); if (l) el.lore = l; }
-      if (!el.attacks?.length) { const a = attacks.get(twinKey(el)); if (a) el.attacks = a; }
+      if (/item|weapon|armor/i.test(el.type))
+        for (const t of TECH)
+          if (tech.get(t)!.size && !el.supports.includes(t) && tech.get(t)!.has(el.name.toLowerCase())) el.supports = [...el.supports, t];
+      if (!el.lore) {
+        const l = lore.get(twinKey(el));
+        if (l) el.lore = l;
+      }
+      if (!el.attacks?.length) {
+        const a = attacks.get(twinKey(el));
+        if (a) el.attacks = a;
+      }
     }
     resolveCreatureRefs(this.byId);
     markComingSoon(this.byId);
@@ -231,8 +269,10 @@ export class ARegistry {
       // unless Tasha's "Customizing Your Origin" is on). A rule that needs an option switched on does not.
       if ("requirements" in r && r.requirements && !byDefault(r.requirements)) continue;
       if (r.kind === "stat" && ABIL.test(r.name) && Number(r.value) > 0) out.add(r.name.slice(0, 3).toUpperCase());
-      else if (r.kind === "grant" && r.id) { const g = this.byId.get(r.id); if (g) for (const a of this.abilitiesRaised(g, depth + 1, seen)) out.add(a); }
-      else if (r.kind === "select" && /ability score|sub race|race variant|racial trait|feat feature|option/i.test(r.type)) {
+      else if (r.kind === "grant" && r.id) {
+        const g = this.byId.get(r.id);
+        if (g) for (const a of this.abilitiesRaised(g, depth + 1, seen)) out.add(a);
+      } else if (r.kind === "select" && /ability score|sub race|race variant|racial trait|feat feature|option/i.test(r.type)) {
         for (const o of this.find(r.type, r.supports).slice(0, 60)) for (const a of this.abilitiesRaised(o, depth + 1, seen)) out.add(a);
       }
     }
@@ -288,9 +328,19 @@ const ABILITIES = ["Strength", "Dexterity", "Constitution", "Intelligence", "Wis
 
 /** The six abilities as +1 or +2 options of one improvement, with their own tag so other choices do not block them. */
 function abilityOptions(tag: string, n: 1 | 2, key: string): AElement[] {
-  return ABILITIES.map((a) => ({ id: `ID_INTERNAL_${key}_${a.toUpperCase()}_PLUS_${n}`, name: a, type: "Ability Score Improvement", source: "Internal", supports: [tag], description: `<p>Your ${a} increases by ${n}. You can't raise a score above 20 this way.</p>`, compendiumHidden: true, sheet: { display: false, descriptions: [] }, setters: {}, rules: [{ kind: "stat", name: a.toLowerCase(), value: String(n), alt: "Ability Score Improvement" } as never] }));
+  return ABILITIES.map((a) => ({
+    id: `ID_INTERNAL_${key}_${a.toUpperCase()}_PLUS_${n}`,
+    name: a,
+    type: "Ability Score Improvement",
+    source: "Internal",
+    supports: [tag],
+    description: `<p>Your ${a} increases by ${n}. You can't raise a score above 20 this way.</p>`,
+    compendiumHidden: true,
+    sheet: { display: false, descriptions: [] },
+    setters: {},
+    rules: [{ kind: "stat", name: a.toLowerCase(), value: String(n), alt: "Ability Score Improvement" } as never],
+  }));
 }
-
 
 /**
  * The original Aurora app builds the choices behind "Improvement Option" selects itself (the 2014 classes' Ability
@@ -301,35 +351,87 @@ function improvementOptions(all: AElement[]): AElement[] {
   const out: AElement[] = [];
   const have = new Set(all.map((e) => e.id));
   const tagged = (tag: string) => all.some((e) => e.supports.some((x) => x.trim().toLowerCase() === tag.toLowerCase()));
-  for (const [n, tag] of [[1, "Custom Ability Score Increase 1"], [2, "Custom Ability Score Increase 2"]] as const) {
+  for (const [n, tag] of [
+    [1, "Custom Ability Score Increase 1"],
+    [2, "Custom Ability Score Increase 2"],
+  ] as const) {
     if (tagged(tag)) continue;
     for (const a of ABILITIES) {
       const id = `ID_INTERNAL_ASI_${a.toUpperCase()}_PLUS_${n}`;
-      if (!have.has(id)) out.push({ id, name: a, type: "Ability Score Improvement", source: "Internal", supports: [tag], description: `<p>Your ${a} increases by ${n}.</p>`, compendiumHidden: true, setters: {}, rules: [{ kind: "stat", name: a.toLowerCase(), value: String(n), alt: "Ability Score Improvement" } as never] });
+      if (!have.has(id))
+        out.push({
+          id,
+          name: a,
+          type: "Ability Score Improvement",
+          source: "Internal",
+          supports: [tag],
+          description: `<p>Your ${a} increases by ${n}.</p>`,
+          compendiumHidden: true,
+          setters: {},
+          rules: [{ kind: "stat", name: a.toLowerCase(), value: String(n), alt: "Ability Score Improvement" } as never],
+        });
     }
   }
   // ID_INTERNAL_ASI_STRENGTH and its kin: referenced by species (Changeling, Warforged) but made by the original app.
   for (const a of ABILITIES) {
     const id = `ID_INTERNAL_ASI_${a.toUpperCase()}`;
-    if (!have.has(id)) out.push({ id, name: a, type: "Ability Score Improvement", source: "Internal", supports: [], description: `<p>Your ${a} increases by 1.</p>`, compendiumHidden: true, setters: {}, rules: [{ kind: "stat", name: a.toLowerCase(), value: "1", alt: "Ability Score Increase" } as never] });
+    if (!have.has(id))
+      out.push({
+        id,
+        name: a,
+        type: "Ability Score Improvement",
+        source: "Internal",
+        supports: [],
+        description: `<p>Your ${a} increases by 1.</p>`,
+        compendiumHidden: true,
+        setters: {},
+        rules: [{ kind: "stat", name: a.toLowerCase(), value: "1", alt: "Ability Score Increase" } as never],
+      });
   }
   const seen = new Set<string>();
   for (const el of all) {
     for (const r of el.rules) {
       if (r.kind !== "select" || !/^\s*Improvement Option\s*,/i.test(r.supports) || seen.has(r.supports)) continue;
       seen.add(r.supports);
-      const parts = r.supports.split(",").map((x) => x.trim()).filter(Boolean);
+      const parts = r.supports
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean);
       // Content that ships its own options for this select keeps them.
-      if (all.some((e) => e.type === r.type && parts.every((p) => e.supports.some((x) => x.trim().toLowerCase() === p.toLowerCase())))) continue;
-      const key = parts.join("_").toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+      if (all.some((e) => e.type === r.type && parts.every((p) => e.supports.some((x) => x.trim().toLowerCase() === p.toLowerCase()))))
+        continue;
+      const key = parts
+        .join("_")
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, "_");
       // Hidden from the sheet: the increase shows in the scores, and a feat taken here shows under feats.
-      const make = (suffix: string, name: string, text: string, rules: AElement["rules"]): AElement => ({ id: `ID_INTERNAL_IMPROVEMENT_${key}_${suffix}`, name, type: r.type, source: "Internal", supports: parts, description: `<p>${text}</p>`, compendiumHidden: true, sheet: { display: false, descriptions: [] }, setters: {}, rules });
+      const make = (suffix: string, name: string, text: string, rules: AElement["rules"]): AElement => ({
+        id: `ID_INTERNAL_IMPROVEMENT_${key}_${suffix}`,
+        name,
+        type: r.type,
+        source: "Internal",
+        supports: parts,
+        description: `<p>${text}</p>`,
+        compendiumHidden: true,
+        sheet: { display: false, descriptions: [] },
+        setters: {},
+        rules,
+      });
       const t2 = `Improvement ${key} +2`;
       const t1 = `Improvement ${key} +1`;
       out.push(
-        make("PLUS2", "Ability Score Improvement (+2)", "Increase one ability score by 2. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +2", supports: t2, number: 1 }]),
-        make("PLUS1", "Ability Score Improvement (+1, +1)", "Increase two different ability scores by 1. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +1", supports: t1, number: 2 }]),
-        make("FEAT", "Feat", "Take a feat instead of increasing your ability scores.", [{ kind: "select", type: "Feat", name: "Feat", supports: "", number: 1 }]),
+        make("PLUS2", "Ability Score Improvement (+2)", "Increase one ability score by 2. You can't raise a score above 20 this way.", [
+          { kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +2", supports: t2, number: 1 },
+        ]),
+        make(
+          "PLUS1",
+          "Ability Score Improvement (+1, +1)",
+          "Increase two different ability scores by 1. You can't raise a score above 20 this way.",
+          [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +1", supports: t1, number: 2 }],
+        ),
+        make("FEAT", "Feat", "Take a feat instead of increasing your ability scores.", [
+          { kind: "select", type: "Feat", name: "Feat", supports: "", number: 1 },
+        ]),
         ...abilityOptions(t2, 2, key),
         ...abilityOptions(t1, 1, key),
       );
@@ -354,7 +456,11 @@ export function resolveCreatureRefs(byId: Map<string, AElement>): void {
   const find = (ref: string): string | undefined => {
     creatures ??= (() => {
       const m = new Map<string, AElement[]>();
-      for (const e of byId.values()) if (e.type === "Companion") { const k = e.name.toLowerCase(); (m.get(k) ?? m.set(k, []).get(k)!).push(e); }
+      for (const e of byId.values())
+        if (e.type === "Companion") {
+          const k = e.name.toLowerCase();
+          (m.get(k) ?? m.set(k, []).get(k)!).push(e);
+        }
       return m;
     })();
     const [name, book] = ref.slice("CREATUREREF:".length).split("|");
@@ -363,15 +469,37 @@ export function resolveCreatureRefs(byId: Map<string, AElement>): void {
     return (list.find((e) => book && e.id.toLowerCase().startsWith(`id_5et_creature_${book}_`)) ?? list[0])?.id;
   };
   for (const el of byId.values()) {
-    if (!el.rules.some((r) => (r.kind === "grant" && String(r.id).startsWith("CREATUREREF:")) || (r.kind === "select" && String(r.supports ?? "").includes("CREATUREREF:")))) continue;
+    if (
+      !el.rules.some(
+        (r) =>
+          (r.kind === "grant" && String(r.id).startsWith("CREATUREREF:")) ||
+          (r.kind === "select" && String(r.supports ?? "").includes("CREATUREREF:")),
+      )
+    )
+      continue;
     el.rules = el.rules.flatMap((r) => {
-      if (r.kind === "grant" && String(r.id).startsWith("CREATUREREF:")) { const id = find(String(r.id)); return id ? [{ ...r, id }] : []; }
+      if (r.kind === "grant" && String(r.id).startsWith("CREATUREREF:")) {
+        const id = find(String(r.id));
+        return id ? [{ ...r, id }] : [];
+      }
       // A choice among named creatures ("CREATUREREF:beast of the land|tce|CREATUREREF:…"): split before each ref, so a
       // ref's own "|book" stays with it, and each creature found brings its twin of the other provider, so the lists'
       // one-copy rule keeps the copy it shows (the 5e.tools copy alone left Primal Companion empty with Aurora loaded).
       if (r.kind === "select" && String(r.supports ?? "").includes("CREATUREREF:")) {
-        const withTwins = (id: string | undefined) => { const e = id ? byId.get(id) : undefined; return e ? (creatures!.get(e.name.toLowerCase()) ?? []).filter((x) => x.id === id || twinKey(x) === twinKey(e)).map((x) => x.id) : []; };
-        const ids = [...new Set(String(r.supports).split(/\|(?=CREATUREREF:)/).flatMap((x) => (x.startsWith("CREATUREREF:") ? withTwins(find(x)) : x.split("|"))).filter((x): x is string => !!x))];
+        const withTwins = (id: string | undefined) => {
+          const e = id ? byId.get(id) : undefined;
+          return e
+            ? (creatures!.get(e.name.toLowerCase()) ?? []).filter((x) => x.id === id || twinKey(x) === twinKey(e)).map((x) => x.id)
+            : [];
+        };
+        const ids = [
+          ...new Set(
+            String(r.supports)
+              .split(/\|(?=CREATUREREF:)/)
+              .flatMap((x) => (x.startsWith("CREATUREREF:") ? withTwins(find(x)) : x.split("|")))
+              .filter((x): x is string => !!x),
+          ),
+        ];
         return ids.length ? [{ ...r, supports: ids.join("|") }] : [];
       }
       return [r];
@@ -398,7 +526,9 @@ export function requiredChoices(byId: Map<string, AElement>): number {
   let n = 0;
   for (const el of byId.values()) {
     if (!el.rules.some((r) => r.kind === "select" && r.optional && REQUIRED_DESPITE_FLAG.some((x) => x.name.test(r.name)))) continue;
-    el.rules = el.rules.map((r) => (r.kind === "select" && r.optional && REQUIRED_DESPITE_FLAG.some((x) => x.name.test(r.name)) ? (n++, { ...r, optional: false }) : r));
+    el.rules = el.rules.map((r) =>
+      r.kind === "select" && r.optional && REQUIRED_DESPITE_FLAG.some((x) => x.name.test(r.name)) ? (n++, { ...r, optional: false }) : r,
+    );
   }
   return n;
 }
@@ -444,7 +574,9 @@ function plusTwoChoices(all: AElement[]): AElement[] {
   const plusOne = (e: AElement) => {
     const st = e.rules.filter((x) => x.kind === "stat");
     const r = st[0] as { name: string; value: string } | undefined;
-    return st.length === 1 && e.rules.length === 1 && r && ABIL.has(r.name.toLowerCase()) && r.value === "1" ? r.name.toLowerCase() : undefined;
+    return st.length === 1 && e.rules.length === 1 && r && ABIL.has(r.name.toLowerCase()) && r.value === "1"
+      ? r.name.toLowerCase()
+      : undefined;
   };
   for (const el of all) {
     const text = el.description.replace(/<[^>]+>/g, " ");
@@ -455,11 +587,27 @@ function plusTwoChoices(all: AElement[]): AElement[] {
       const abilities = [...new Set(opts.map(plusOne))];
       if (!opts.length || abilities.some((x) => !x)) return r;
       const key = `PLUS_TWO_${el.id}_${i}`.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
-      const tag = `Plus two ${el.id} ${i}`, t2 = `${tag} +2`;
-      const make = (suffix: string, name: string, text: string, rules: AElement["rules"]): AElement => ({ id: `ID_INTERNAL_${key}_${suffix}`, name, type: "Ability Score Improvement", source: "Internal", supports: [tag], description: `<p>${text}</p>`, compendiumHidden: true, sheet: { display: false, descriptions: [] }, setters: {}, rules });
+      const tag = `Plus two ${el.id} ${i}`,
+        t2 = `${tag} +2`;
+      const make = (suffix: string, name: string, text: string, rules: AElement["rules"]): AElement => ({
+        id: `ID_INTERNAL_${key}_${suffix}`,
+        name,
+        type: "Ability Score Improvement",
+        source: "Internal",
+        supports: [tag],
+        description: `<p>${text}</p>`,
+        compendiumHidden: true,
+        sheet: { display: false, descriptions: [] },
+        setters: {},
+        rules,
+      });
       out.push(
-        make("PLUS2", "+2 to one ability", "Increase one ability score by 2. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: `${r.name} +2`, supports: t2, number: 1 }]),
-        make("PLUS1", "+1 to two abilities", "Increase two different ability scores by 1. You can't raise a score above 20 this way.", [{ ...r, name: `${r.name} +1` }]),
+        make("PLUS2", "+2 to one ability", "Increase one ability score by 2. You can't raise a score above 20 this way.", [
+          { kind: "select", type: "Ability Score Improvement", name: `${r.name} +2`, supports: t2, number: 1 },
+        ]),
+        make("PLUS1", "+1 to two abilities", "Increase two different ability scores by 1. You can't raise a score above 20 this way.", [
+          { ...r, name: `${r.name} +1` },
+        ]),
         ...abilityOptions(t2, 2, key).filter((e) => abilities.includes(e.name.toLowerCase())),
       );
       return { ...r, supports: tag, number: 1 };
@@ -477,17 +625,42 @@ function classAsiChoices(all: AElement[]): AElement[] {
   const out: AElement[] = [];
   for (const el of all) {
     el.rules = el.rules.map((r) => {
-      if (r.kind !== "select" || r.type !== "Ability Score Improvement" || !/^\s*ability score improvement\s*,\s*class\s*$/i.test(r.supports)) return r;
+      if (
+        r.kind !== "select" ||
+        r.type !== "Ability Score Improvement" ||
+        !/^\s*ability score improvement\s*,\s*class\s*$/i.test(r.supports)
+      )
+        return r;
       if (all.some((e) => e.type === r.type && matchesSupports(e, r.supports))) return r;
       const tag = `Class ASI ${el.id} ${r.level ?? 0}`;
       const key = tag.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
-      const make = (suffix: string, name: string, text: string, rules: AElement["rules"]): AElement => ({ id: `ID_INTERNAL_${key}_${suffix}`, name, type: "Class Feature", source: "Internal", supports: [tag], description: `<p>${text}</p>`, compendiumHidden: true, sheet: { display: false, descriptions: [] }, setters: {}, rules });
+      const make = (suffix: string, name: string, text: string, rules: AElement["rules"]): AElement => ({
+        id: `ID_INTERNAL_${key}_${suffix}`,
+        name,
+        type: "Class Feature",
+        source: "Internal",
+        supports: [tag],
+        description: `<p>${text}</p>`,
+        compendiumHidden: true,
+        sheet: { display: false, descriptions: [] },
+        setters: {},
+        rules,
+      });
       const t2 = `Improvement ${key} +2`;
       const t1 = `Improvement ${key} +1`;
       out.push(
-        make("PLUS2", "Ability Score Improvement (+2)", "Increase one ability score by 2. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +2", supports: t2, number: 1 }]),
-        make("PLUS1", "Ability Score Improvement (+1, +1)", "Increase two different ability scores by 1. You can't raise a score above 20 this way.", [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +1", supports: t1, number: 2 }]),
-        make("FEAT", "Feat", "Take a feat instead of increasing your ability scores.", [{ kind: "select", type: "Feat", name: "Feat", supports: "", number: 1 }]),
+        make("PLUS2", "Ability Score Improvement (+2)", "Increase one ability score by 2. You can't raise a score above 20 this way.", [
+          { kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +2", supports: t2, number: 1 },
+        ]),
+        make(
+          "PLUS1",
+          "Ability Score Improvement (+1, +1)",
+          "Increase two different ability scores by 1. You can't raise a score above 20 this way.",
+          [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement +1", supports: t1, number: 2 }],
+        ),
+        make("FEAT", "Feat", "Take a feat instead of increasing your ability scores.", [
+          { kind: "select", type: "Feat", name: "Feat", supports: "", number: 1 },
+        ]),
         ...abilityOptions(t2, 2, key),
         ...abilityOptions(t1, 1, key),
       );

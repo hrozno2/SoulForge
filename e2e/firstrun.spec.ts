@@ -20,8 +20,12 @@ test("the built-in rules' attribution is word for word in Settings", async ({ pa
   await page.goto("/");
   await page.getByRole("button", { name: /^menu/i }).click();
   await page.getByRole("button", { name: /^Settings/ }).click();
-  await expect(page.getByText("This work includes material taken from the System Reference Document 5.1 (“SRD 5.1”)", { exact: false })).toBeVisible();
-  await expect(page.getByText("This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”)", { exact: false })).toBeVisible();
+  await expect(
+    page.getByText("This work includes material taken from the System Reference Document 5.1 (“SRD 5.1”)", { exact: false }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”)", { exact: false }),
+  ).toBeVisible();
 });
 
 test("the built-in rules sit beside added content", async ({ page }) => {

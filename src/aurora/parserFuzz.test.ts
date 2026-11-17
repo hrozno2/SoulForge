@@ -12,12 +12,79 @@ const seeded = (seed: number) => () => {
   seed = (seed * 1664525 + 1013904223) >>> 0;
   return seed / 4294967296;
 };
-const PIECES = ["ID_A", "ID_B_C", "!", "(", ")", ",", "||", "&&", "|", "[", "]", "[str:13]", "[level:5]", "[character:", "[type:Feat]", "[armor:none]", ":", "{", "}", "{level}", "{a:b}", "+", "-", "*", "/", "0", "12", "3.5", "floor", "min", "max(", " ", "  ", "Wizard", "$(spellcasting:list)", "$(", "é", "\u0000", "\n", "''", "\"", "<b>", "1/4", "!!", "(((", ")))", ",,", "||||"];
-const junk = (rng: () => number) => Array.from({ length: 1 + Math.floor(rng() * 14) }, () => PIECES[Math.floor(rng() * PIECES.length)]).join(rng() < 0.3 ? " " : "");
+const PIECES = [
+  "ID_A",
+  "ID_B_C",
+  "!",
+  "(",
+  ")",
+  ",",
+  "||",
+  "&&",
+  "|",
+  "[",
+  "]",
+  "[str:13]",
+  "[level:5]",
+  "[character:",
+  "[type:Feat]",
+  "[armor:none]",
+  ":",
+  "{",
+  "}",
+  "{level}",
+  "{a:b}",
+  "+",
+  "-",
+  "*",
+  "/",
+  "0",
+  "12",
+  "3.5",
+  "floor",
+  "min",
+  "max(",
+  " ",
+  "  ",
+  "Wizard",
+  "$(spellcasting:list)",
+  "$(",
+  "é",
+  "\u0000",
+  "\n",
+  "''",
+  '"',
+  "<b>",
+  "1/4",
+  "!!",
+  "(((",
+  ")))",
+  ",,",
+  "||||",
+];
+const junk = (rng: () => number) =>
+  Array.from({ length: 1 + Math.floor(rng() * 14) }, () => PIECES[Math.floor(rng() * PIECES.length)]).join(rng() < 0.3 ? " " : "");
 
-const ctx: ReqCtx = { hasId: (id) => id.length % 2 === 0, hasType: () => true, level: 5, characterLevel: 7, stat: (n) => n.length, equipped: () => true };
+const ctx: ReqCtx = {
+  hasId: (id) => id.length % 2 === 0,
+  hasType: () => true,
+  level: 5,
+  characterLevel: 7,
+  stat: (n) => n.length,
+  equipped: () => true,
+};
 ctx.as = () => ctx;
-const el = { id: "ID_X", name: "X", type: "Spell", source: "S", supports: ["Wizard", "Evocation"], description: "", compendiumHidden: false, setters: { level: { value: "3", attrs: {} } }, rules: [] } as AElement;
+const el = {
+  id: "ID_X",
+  name: "X",
+  type: "Spell",
+  source: "S",
+  supports: ["Wizard", "Evocation"],
+  description: "",
+  compendiumHidden: false,
+  setters: { level: { value: "3", attrs: {} } },
+  rules: [],
+} as AElement;
 
 describe("content's small languages never throw", () => {
   it("requirements, filters and formulas on 6,000 random strings", () => {

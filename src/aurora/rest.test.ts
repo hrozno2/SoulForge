@@ -4,15 +4,32 @@ import { hitDiceLeft, hitDicePools, hitDiceSpent, longRest, restoreSlots, shortR
 import type { CastingLine, SheetData } from "./sheet";
 
 const line = (name: string, levels: number[], pactLevel?: number): CastingLine => ({
-  name, ability: "charisma", dc: 13, attack: 5, prepare: false, prepareMax: 0, pactLevel,
+  name,
+  ability: "charisma",
+  dc: 13,
+  attack: 5,
+  prepare: false,
+  prepareMax: 0,
+  pactLevel,
   slots: levels.map((level) => ({ level, total: 2, used: 0, pact: !!pactLevel })),
-  cantripsKnown: [], spells: [], granted: [], maxSpellLevel: Math.max(...levels),
+  cantripsKnown: [],
+  spells: [],
+  granted: [],
+  maxSpellLevel: Math.max(...levels),
 });
 const sheetOf = (o: Partial<SheetData>): SheetData => ({ hp: 30, level: 5, hitDice: [], casting: [], features: [], ...o }) as SheetData;
-const withPlay = (play: Partial<PlayState>): Character => { const c = newCharacter(); return { ...c, play: { ...c.play, ...play } }; };
+const withPlay = (play: Partial<PlayState>): Character => {
+  const c = newCharacter();
+  return { ...c, play: { ...c.play, ...play } };
+};
 
 // Fighter 3 / Wizard 2.
-const mixed = sheetOf({ hitDice: [{ die: 10, count: 3, classId: "F", name: "Fighter" }, { die: 6, count: 2, classId: "W", name: "Wizard" }] });
+const mixed = sheetOf({
+  hitDice: [
+    { die: 10, count: 3, classId: "F", name: "Fighter" },
+    { die: 6, count: 2, classId: "W", name: "Wizard" },
+  ],
+});
 // Warlock 3 / Wizard 3: Pact Magic slots of 2nd level beside the Wizard's 1st and 2nd.
 const pactAndBook = sheetOf({ casting: [line("Warlock", [2], 2), line("Wizard", [1, 2])] });
 
@@ -20,7 +37,10 @@ describe("hit dice by size (the audit's R3)", () => {
   const pools = hitDicePools(mixed);
 
   it("a multiclass character has a pool per die, largest first", () => {
-    expect(pools).toEqual([{ die: 10, total: 3 }, { die: 6, total: 2 }]);
+    expect(pools).toEqual([
+      { die: 10, total: 3 },
+      { die: 6, total: 2 },
+    ]);
   });
 
   it("spends the die that was chosen, not always the largest", () => {
@@ -30,7 +50,10 @@ describe("hit dice by size (the audit's R3)", () => {
     expect(play.hitDiceUsed).toBe(1);
     play = spendHitDie(spendHitDie(play, pools, 6), pools, 6);
     // Only two d6: the third is not spent.
-    expect(hitDiceLeft(play, pools)).toEqual([{ die: 10, total: 3, left: 3 }, { die: 6, total: 2, left: 0 }]);
+    expect(hitDiceLeft(play, pools)).toEqual([
+      { die: 10, total: 3, left: 3 },
+      { die: 6, total: 2, left: 0 },
+    ]);
     expect(play.hitDiceUsed).toBe(2);
   });
 
@@ -40,7 +63,17 @@ describe("hit dice by size (the audit's R3)", () => {
 });
 
 describe("long rest (the audit's R2)", () => {
-  const spentAll = withPlay({ hitDiceUsed: 5, hp: 3, tempHp: 4, slotsUsed: { "1": 2 }, pactUsed: 2, featureUses: { x: 1 }, exhaustion: 2, concentration: "Bless", deathSaves: { success: 1, fail: 2 } });
+  const spentAll = withPlay({
+    hitDiceUsed: 5,
+    hp: 3,
+    tempHp: 4,
+    slotsUsed: { "1": 2 },
+    pactUsed: 2,
+    featureUses: { x: 1 },
+    exhaustion: 2,
+    concentration: "Bless",
+    deathSaves: { success: 1, fail: 2 },
+  });
 
   it("2014 rules: half the hit dice return (at least one), largest first", () => {
     const after = longRest(spentAll, mixed, "2014").play;
@@ -55,9 +88,23 @@ describe("long rest (the audit's R2)", () => {
   });
 
   it("returns hit points, slots, uses and counters, ends forms and concentration, and eases exhaustion by one", () => {
-    const ch = { ...spentAll, resources: [{ id: "a", name: "Ki", current: 0, max: 4, refresh: "short" as const }, { id: "b", name: "Charges", current: 1, max: 7, refresh: "none" as const }] };
+    const ch = {
+      ...spentAll,
+      resources: [
+        { id: "a", name: "Ki", current: 0, max: 4, refresh: "short" as const },
+        { id: "b", name: "Charges", current: 1, max: 7, refresh: "none" as const },
+      ],
+    };
     const after = longRest(ch, mixed, "2024");
-    expect(after.play).toMatchObject({ hp: 30, tempHp: 0, slotsUsed: {}, pactUsed: 0, featureUses: {}, exhaustion: 1, deathSaves: { success: 0, fail: 0 } });
+    expect(after.play).toMatchObject({
+      hp: 30,
+      tempHp: 0,
+      slotsUsed: {},
+      pactUsed: 0,
+      featureUses: {},
+      exhaustion: 1,
+      deathSaves: { success: 0, fail: 0 },
+    });
     expect(after.play.concentration).toBeUndefined();
     expect(after.resources.map((r) => r.current)).toEqual([4, 1]);
   });
@@ -88,8 +135,19 @@ describe("Pact Magic slots are counted apart (the audit's R1)", () => {
   });
 
   it("a short rest returns features and counters that say so, no others", () => {
-    const sheet = sheetOf({ features: [{ id: "sw", name: "Second Wind", usage: "1/Short Rest" }, { id: "rage", name: "Rage", usage: "3/Long Rest" }] as SheetData["features"] });
-    const ch = { ...withPlay({ featureUses: { sw: 1, rage: 2 } }), resources: [{ id: "a", name: "Ki", current: 0, max: 4, refresh: "short" as const }, { id: "b", name: "Luck", current: 0, max: 3, refresh: "long" as const }] };
+    const sheet = sheetOf({
+      features: [
+        { id: "sw", name: "Second Wind", usage: "1/Short Rest" },
+        { id: "rage", name: "Rage", usage: "3/Long Rest" },
+      ] as SheetData["features"],
+    });
+    const ch = {
+      ...withPlay({ featureUses: { sw: 1, rage: 2 } }),
+      resources: [
+        { id: "a", name: "Ki", current: 0, max: 4, refresh: "short" as const },
+        { id: "b", name: "Luck", current: 0, max: 3, refresh: "long" as const },
+      ],
+    };
     const after = shortRest(ch, sheet);
     expect(after.play.featureUses).toEqual({ rage: 2 });
     expect(after.resources.map((r) => r.current)).toEqual([4, 0]);
@@ -98,7 +156,9 @@ describe("Pact Magic slots are counted apart (the audit's R1)", () => {
   });
 
   it("a feature that returns one use on a short rest returns one, not all", () => {
-    const sheet = sheetOf({ features: [{ id: "rage", name: "Rage", usage: "3/Long Rest (one on a Short Rest)" }] as SheetData["features"] });
+    const sheet = sheetOf({
+      features: [{ id: "rage", name: "Rage", usage: "3/Long Rest (one on a Short Rest)" }] as SheetData["features"],
+    });
     expect(shortRest(withPlay({ featureUses: { rage: 3 } }), sheet).play.featureUses).toEqual({ rage: 2 });
     expect(shortRest(withPlay({ featureUses: { rage: 1 } }), sheet).play.featureUses).toEqual({});
   });

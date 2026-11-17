@@ -78,13 +78,34 @@ export function makeTranslator(cfg: TranslatorConfig, fetcher: typeof fetch = fe
       const tsv = entries.map(([a, b]) => `${a}\t${b}`).join("\n");
       const id = `${target}:${hash(tsv)}`;
       if (glossaryIds.has(id)) return glossaryIds.get(id) ?? undefined;
-      const saved = (() => { try { return localStorage.getItem(`charforge.deepl.glossary.${id}`); } catch { return null; } })();
-      if (saved) { glossaryIds.set(id, saved); return saved; }
+      const saved = (() => {
+        try {
+          return localStorage.getItem(`charforge.deepl.glossary.${id}`);
+        } catch {
+          return null;
+        }
+      })();
+      if (saved) {
+        glossaryIds.set(id, saved);
+        return saved;
+      }
       try {
-        const res = await call(f, "/v2/glossaries", { name: `soulforge-${id}`, source_lang: "EN", target_lang: target.split("-")[0], entries: tsv, entries_format: "tsv" });
+        const res = await call(f, "/v2/glossaries", {
+          name: `soulforge-${id}`,
+          source_lang: "EN",
+          target_lang: target.split("-")[0],
+          entries: tsv,
+          entries_format: "tsv",
+        });
         const gid = res.ok ? ((await res.json()) as { glossary_id?: string }).glossary_id : undefined;
         glossaryIds.set(id, gid ?? null);
-        if (gid) { try { localStorage.setItem(`charforge.deepl.glossary.${id}`, gid); } catch { /* not remembered */ } }
+        if (gid) {
+          try {
+            localStorage.setItem(`charforge.deepl.glossary.${id}`, gid);
+          } catch {
+            /* not remembered */
+          }
+        }
         return gid;
       } catch {
         glossaryIds.set(id, null);
@@ -96,9 +117,16 @@ export function makeTranslator(cfg: TranslatorConfig, fetcher: typeof fetch = fe
       const f = fetcher === fetch ? await desktopFetch() : fetcher;
       const target = DEEPL_LANG[code] ?? code.toUpperCase();
       const gid = await glossaryFor(f, target);
-      const res = await call(f, "/v2/translate", { text: texts, source_lang: "EN", target_lang: target, preserve_formatting: true, ...(gid ? { glossary_id: gid } : {}) });
+      const res = await call(f, "/v2/translate", {
+        text: texts,
+        source_lang: "EN",
+        target_lang: target,
+        preserve_formatting: true,
+        ...(gid ? { glossary_id: gid } : {}),
+      });
       if (res.status === 456) throw new Error("Your DeepL character allowance for this month is used up.");
-      if (res.status === 403) throw new Error("DeepL did not accept the key. Check it, and that it belongs to the right plan (free keys end in :fx).");
+      if (res.status === 403)
+        throw new Error("DeepL did not accept the key. Check it, and that it belongs to the right plan (free keys end in :fx).");
       if (!res.ok) throw new Error(`DeepL answered ${res.status}.`);
       const json = (await res.json()) as { translations: { text: string }[] };
       return json.translations.map((t) => t.text);
@@ -107,24 +135,34 @@ export function makeTranslator(cfg: TranslatorConfig, fetcher: typeof fetch = fe
   if (cfg.provider === "gfree") {
     // The public endpoint behind translate.google.com. It needs no key but has no promises: it can slow down or refuse.
     const one = async (text: string, target: string): Promise<string> => {
-      const res = await fetcher(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${encodeURIComponent(target)}&dt=t`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: `q=${encodeURIComponent(text)}`,
-      });
-      if (!res.ok) throw new Error(res.status === 429 ? "Google is limiting free requests right now. Wait a few minutes, or add an API key." : `Google Translate answered ${res.status}.`);
+      const res = await fetcher(
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${encodeURIComponent(target)}&dt=t`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+          body: `q=${encodeURIComponent(text)}`,
+        },
+      );
+      if (!res.ok)
+        throw new Error(
+          res.status === 429
+            ? "Google is limiting free requests right now. Wait a few minutes, or add an API key."
+            : `Google Translate answered ${res.status}.`,
+        );
       const json = (await res.json()) as [string[][]];
       return (json[0] ?? []).map((seg) => seg[0] ?? "").join("");
     };
     return async (texts, target) => {
       const out: string[] = new Array(texts.length).fill("");
       let next = 0;
-      await Promise.all(Array.from({ length: 3 }, async () => {
-        while (next < texts.length) {
-          const i = next++;
-          out[i] = await one(texts[i], target);
-        }
-      }));
+      await Promise.all(
+        Array.from({ length: 3 }, async () => {
+          while (next < texts.length) {
+            const i = next++;
+            out[i] = await one(texts[i], target);
+          }
+        }),
+      );
       return out;
     };
   }
@@ -133,18 +171,33 @@ export function makeTranslator(cfg: TranslatorConfig, fetcher: typeof fetch = fe
     const key = cfg.key.trim();
     return async (texts, target) => {
       if (!key) throw new Error("Add your DeepSeek API key first.");
-      const terms = glossary ? Object.entries(glossary).slice(0, 300).map(([en, tr]) => `${en} = ${tr}`).join("\n") : "";
+      const terms = glossary
+        ? Object.entries(glossary)
+            .slice(0, 300)
+            .map(([en, tr]) => `${en} = ${tr}`)
+            .join("\n")
+        : "";
       const system = [
         `You translate text from a Dungeons & Dragons 5e character sheet from English into the language with the code "${target}".`,
         "Use the terms of the official D&D translation where one exists. Keep names, numbers, dice (1d8+2) and abbreviations (AC, HP, DC) as they are.",
         terms ? `Always translate these terms this way:\n${terms}` : "",
         'Answer with a JSON object {"t": [...]} holding exactly one translation for each input string, in the same order.',
-      ].filter(Boolean).join("\n");
+      ]
+        .filter(Boolean)
+        .join("\n");
       const f = fetcher === fetch ? await desktopFetch() : fetcher;
       const res = await f("https://api.deepseek.com/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "deepseek-chat", temperature: 0, response_format: { type: "json_object" }, messages: [{ role: "system", content: system }, { role: "user", content: JSON.stringify(texts) }] }),
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          temperature: 0,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: JSON.stringify(texts) },
+          ],
+        }),
       });
       if (res.status === 401) throw new Error("DeepSeek did not accept the key. Check it at platform.deepseek.com.");
       if (res.status === 402) throw new Error("Your DeepSeek balance is used up.");

@@ -9,11 +9,20 @@ if (!arg) {
   console.error("Usage: node scripts/release.mjs patch|minor|major|x.y.z [--dry]");
   process.exit(1);
 }
-const sh = (cmd, opts = {}) => execSync(cmd, { encoding: "utf8", stdio: opts.show ? "inherit" : ["ignore", "pipe", "pipe"] })?.toString().trim() ?? "";
+const sh = (cmd, opts = {}) =>
+  execSync(cmd, { encoding: "utf8", stdio: opts.show ? "inherit" : ["ignore", "pipe", "pipe"] })
+    ?.toString()
+    .trim() ?? "";
 
 const current = JSON.parse(readFileSync("package.json", "utf8")).version;
 const [maj, min, pat] = current.split(".").map(Number);
-const next = /^\d+\.\d+\.\d+$/.test(arg) ? arg : arg === "major" ? `${maj + 1}.0.0` : arg === "minor" ? `${maj}.${min + 1}.0` : `${maj}.${min}.${pat + 1}`;
+const next = /^\d+\.\d+\.\d+$/.test(arg)
+  ? arg
+  : arg === "major"
+    ? `${maj + 1}.0.0`
+    : arg === "minor"
+      ? `${maj}.${min + 1}.0`
+      : `${maj}.${min}.${pat + 1}`;
 
 if (sh("git status --porcelain")) throw new Error("The working tree has uncommitted changes. Commit or stash them first.");
 if (sh("git rev-parse --abbrev-ref HEAD") !== "main") throw new Error("Releases are cut from main.");
@@ -62,7 +71,9 @@ sh("npx playwright test", { show: true });
 const now = new Date();
 const workHours = now.getDay() >= 1 && now.getDay() <= 4 && now.getHours() >= 9 && now.getHours() < 17;
 const tier = process.env.RULES_TIER || (workHours ? "full" : "standard");
-console.log(`Rules check (fresh seed, ${tier === "full" ? "full coverage" : "standard: full coverage runs Monday to Thursday, 9 to 17"})...`);
+console.log(
+  `Rules check (fresh seed, ${tier === "full" ? "full coverage" : "standard: full coverage runs Monday to Thursday, 9 to 17"})...`,
+);
 execSync("node scripts/rules-check.mjs", { stdio: "inherit", env: { ...process.env, RULES_TIER: tier } });
 
 sh(`node scripts/bump-version.mjs ${next}`, { show: true });

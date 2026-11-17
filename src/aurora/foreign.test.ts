@@ -19,7 +19,19 @@ describe.skipIf(!CONTENT || !DIR)("foreign character import", () => {
 
   it("Roll20: Talaan, a level 13 College of Whispers bard", () => {
     const res = importForeignCharacter(load("Talaan Istodaewl(1).json"), reg!);
-    if (process.env.SHOW) console.log(JSON.stringify({ notes: res.notes, missing: res.missing, matched: res.matched.length, ch: { ...res.character, inventory: res.character.inventory.length } }, null, 1));
+    if (process.env.SHOW)
+      console.log(
+        JSON.stringify(
+          {
+            notes: res.notes,
+            missing: res.missing,
+            matched: res.matched.length,
+            ch: { ...res.character, inventory: res.character.inventory.length },
+          },
+          null,
+          1,
+        ),
+      );
     const ch = res.character;
     expect(ch.name).toBe("Talaan Istodaewl");
     expect(ch.classes[0].level).toBe(13);
@@ -46,7 +58,19 @@ describe.skipIf(!CONTENT || !DIR)("foreign character import", () => {
 
   it("Foundry: Waldrom Brahms", () => {
     const res = importForeignCharacter(load("fvtt-Actor-waldrom-brahms-Be4NGiw22hg7gVBb(1).json"), reg!);
-    if (process.env.SHOW) console.log(JSON.stringify({ notes: res.notes, missing: res.missing, matched: res.matched.length, ch: { ...res.character, inventory: res.character.inventory.length } }, null, 1));
+    if (process.env.SHOW)
+      console.log(
+        JSON.stringify(
+          {
+            notes: res.notes,
+            missing: res.missing,
+            matched: res.matched.length,
+            ch: { ...res.character, inventory: res.character.inventory.length },
+          },
+          null,
+          1,
+        ),
+      );
     expect(res.character.name).toMatch(/Waldrom/i);
     const ch = res.character;
     expect(reg!.get(ch.classes[0].classId)?.name).toBe("Fighter");
@@ -80,7 +104,9 @@ describe.skipIf(!CONTENT24 || !DIR)("foreign import against the 2024 rules", () 
     expect(open.map((s) => s.options[0].type)).toEqual(["Archetype"]);
     const names = (id: string) => r.slots.filter((s) => s.key.includes(id)).flatMap((s) => s.chosen.map((c) => reg.get(c)?.name));
     expect(names("ELVEN_LINEAGE|")).toContain("Drow");
-    expect(names("CLASS_FEATURE_BARD_EXPERTISE")).toEqual(expect.arrayContaining(["Skill Expertise (Perception)", "Skill Expertise (Stealth)"]));
+    expect(names("CLASS_FEATURE_BARD_EXPERTISE")).toEqual(
+      expect.arrayContaining(["Skill Expertise (Perception)", "Skill Expertise (Stealth)"]),
+    );
     expect(names("CLASS_BARD|5")).toEqual(expect.arrayContaining(["Tool Proficiency (Lute)", "Tool Proficiency (Lyre)"]));
     // Resilient goes to the one saving throw the class does not already give.
     expect(names("FEAT_RESILIENT")).toEqual(["Constitution"]);
@@ -92,7 +118,9 @@ describe.skipIf(!CONTENT24 || !DIR)("foreign import against the 2024 rules", () 
     const res = importForeignCharacter(JSON.parse(readFileSync(`${DIR}/fvtt-Actor-waldrom-brahms-Be4NGiw22hg7gVBb(1).json`, "utf8")), reg);
     const r = resolve(res.character, reg);
     // Spell choices the file does not fill are left for the player; everything else is settled.
-    const open = r.slots.filter((s) => s.rule.type !== "Spell" && !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length);
+    const open = r.slots.filter(
+      (s) => s.rule.type !== "Spell" && !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length,
+    );
     expect(open.map((s) => s.rule.name)).toEqual([]);
     const names = (id: string) => r.slots.filter((s) => s.key.includes(id)).flatMap((s) => s.chosen.map((c) => reg.get(c)?.name));
     expect(names("RACE_HUMAN|2")).toEqual(["Medium"]);
@@ -105,23 +133,41 @@ describe.skipIf(!CONTENT24 || !DIR)("foreign import against the 2024 rules", () 
 });
 
 describe("Roll20's 2024 sheet and betterR20's file", () => {
-  const int = (type: string, fields: Record<string, unknown>) => ({ _enabled: true, type, arrayPosition: 1, childIDs: "[]", parentID: "", ...fields });
+  const int = (type: string, fields: Record<string, unknown>) => ({
+    _enabled: true,
+    type,
+    arrayPosition: 1,
+    childIDs: "[]",
+    parentID: "",
+    ...fields,
+  });
   const store = {
-    integrants: { integrants: {
-      a1: int("Ability Score", { ability: "Strength", calculation: "Set Value", valueFormula: { flatValue: 15 } }),
-      a2: int("Ability Score", { ability: "Strength", calculation: "Modify", valueFormula: { flatValue: 1 } }),
-      off: int("Ability Score", { _enabled: false, ability: "Wisdom", calculation: "Set Value", valueFormula: { flatValue: 18 } }),
-      c1: int("Class", { name: "Fighter", arrayPosition: 1 }), l1: int("Class Level", { classID: "c1", level: 1, parentID: "c1" }), l2: int("Class Level", { classID: "c1", level: 2, parentID: "c1" }),
-      c2: int("Class", { name: "Wizard", arrayPosition: 2 }), l3: int("Class Level", { classID: "c2", level: 1 }),
-      s1: int("Species", { name: "Dwarf" }),
-      f1: int("Features", { name: "Second Wind", parentID: "l1" }), f2: int("Features", { name: "Alert", source: "Feat" }), f3: int("Features", { name: "Stonecunning", parentID: "s1" }),
-      sp: int("Spell", { name: "Shield", level: 1, _prepared: true }), sa: int("Spell", { name: "Bless", level: 1, alwaysPrepared: true }),
-      it: int("Item", { name: "Longsword", quantity: 2, equipData: { equipped: true } }),
-      la: int("Language", { name: "Dwarvish" }),
-      p1: int("Proficiency", { category: "Saving Throw", proficiency: "Strength", proficiencyLevel: "Proficient" }),
-      p2: int("Proficiency", { category: "Skill", proficiency: "Sleight of Hand", proficiencyLevel: "Expertise" }),
-    } },
-    hitpoints: { currentHP: 12 }, classLevel: { currentExp: 300 }, currencies: { gp: 7 }, about: { characteristics: { alignment: "Good" } },
+    integrants: {
+      integrants: {
+        a1: int("Ability Score", { ability: "Strength", calculation: "Set Value", valueFormula: { flatValue: 15 } }),
+        a2: int("Ability Score", { ability: "Strength", calculation: "Modify", valueFormula: { flatValue: 1 } }),
+        off: int("Ability Score", { _enabled: false, ability: "Wisdom", calculation: "Set Value", valueFormula: { flatValue: 18 } }),
+        c1: int("Class", { name: "Fighter", arrayPosition: 1 }),
+        l1: int("Class Level", { classID: "c1", level: 1, parentID: "c1" }),
+        l2: int("Class Level", { classID: "c1", level: 2, parentID: "c1" }),
+        c2: int("Class", { name: "Wizard", arrayPosition: 2 }),
+        l3: int("Class Level", { classID: "c2", level: 1 }),
+        s1: int("Species", { name: "Dwarf" }),
+        f1: int("Features", { name: "Second Wind", parentID: "l1" }),
+        f2: int("Features", { name: "Alert", source: "Feat" }),
+        f3: int("Features", { name: "Stonecunning", parentID: "s1" }),
+        sp: int("Spell", { name: "Shield", level: 1, _prepared: true }),
+        sa: int("Spell", { name: "Bless", level: 1, alwaysPrepared: true }),
+        it: int("Item", { name: "Longsword", quantity: 2, equipData: { equipped: true } }),
+        la: int("Language", { name: "Dwarvish" }),
+        p1: int("Proficiency", { category: "Saving Throw", proficiency: "Strength", proficiencyLevel: "Proficient" }),
+        p2: int("Proficiency", { category: "Skill", proficiency: "Sleight of Hand", proficiencyLevel: "Expertise" }),
+      },
+    },
+    hitpoints: { currentHP: 12 },
+    classLevel: { currentExp: 300 },
+    currencies: { gp: 7 },
+    about: { characteristics: { alignment: "Good" } },
   };
   const attrs = storeToAttribs(JSON.stringify(store));
   const get = (n: string) => attrs.find((a) => a.name === n)?.current;
@@ -129,7 +175,14 @@ describe("Roll20's 2024 sheet and betterR20's file", () => {
   it("reads the store as the older sheet's attributes", () => {
     expect(get("strength")).toBe(16);
     expect(get("wisdom")).toBeUndefined();
-    expect([get("class"), get("base_level"), get("level"), get("multiclass1"), get("multiclass1_lvl"), get("race")]).toEqual(["Fighter", 2, 3, "Wizard", 1, "Dwarf"]);
+    expect([get("class"), get("base_level"), get("level"), get("multiclass1"), get("multiclass1_lvl"), get("race")]).toEqual([
+      "Fighter",
+      2,
+      3,
+      "Wizard",
+      1,
+      "Dwarf",
+    ]);
     expect(rows(/_spellname$/)).toEqual(["Shield", "Bless (A)"]);
     expect(rows(/_itemname$/)).toEqual(["Longsword"]);
     expect(get("strength_save_prof")).toBe("(@{pb})");
@@ -137,7 +190,10 @@ describe("Roll20's 2024 sheet and betterR20's file", () => {
     expect([get("hp"), get("xp"), get("gp"), get("alignment")]).toEqual([12, 300, 7, "Good"]);
   });
   it("sorts features by where they hang", () => {
-    const by = (name: string) => { const id = attrs.find((a) => a.name.endsWith("_name") && a.current === name)!.name.split("_")[2]; return attrs.find((a) => a.name === `repeating_traits_${id}_source`)!.current; };
+    const by = (name: string) => {
+      const id = attrs.find((a) => a.name.endsWith("_name") && a.current === name)!.name.split("_")[2];
+      return attrs.find((a) => a.name === `repeating_traits_${id}_source`)!.current;
+    };
     expect([by("Second Wind"), by("Alert"), by("Stonecunning")]).toEqual(["Class", "Feat", "Racial"]);
   });
   it("leaves alone what is not a store", () => {

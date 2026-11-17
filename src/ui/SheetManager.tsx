@@ -12,7 +12,23 @@ export function sheetKind(t: TemplateRecord): string {
 }
 
 /** Every stored sheet side by side: a picture of its first page, rename, use and remove. */
-export function SheetManager({ templates, current, onUse, onChanged, onClose, msg, children }: { templates: TemplateRecord[]; current?: string; onUse: (id: string) => void; onChanged: () => void; onClose: () => void; msg?: string; children?: React.ReactNode }) {
+export function SheetManager({
+  templates,
+  current,
+  onUse,
+  onChanged,
+  onClose,
+  msg,
+  children,
+}: {
+  templates: TemplateRecord[];
+  current?: string;
+  onUse: (id: string) => void;
+  onChanged: () => void;
+  onClose: () => void;
+  msg?: string;
+  children?: React.ReactNode;
+}) {
   const [thumbs, setThumbs] = useState<Record<string, { img: string; pages: number } | "error">>({});
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
@@ -34,7 +50,9 @@ export function SheetManager({ templates, current, onUse, onChanged, onClose, ms
         }
       }
     })();
-    return () => { stop = true; };
+    return () => {
+      stop = true;
+    };
   }, [templates]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -56,7 +74,9 @@ export function SheetManager({ templates, current, onUse, onChanged, onClose, ms
   return (
     <div className="modal-back" role="dialog" aria-label="Manage sheets" onClick={onClose}>
       <div className="modal-page themed sheet-manager" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" aria-label="Close" onClick={onClose}>×</button>
+        <button className="modal-close" aria-label="Close" onClick={onClose}>
+          ×
+        </button>
         <h2>Your sheets</h2>
         <p className="muted">Stored on this computer only. Click a name to rename it.</p>
         {templates.length === 0 && <p>No sheets yet.</p>}
@@ -71,24 +91,63 @@ export function SheetManager({ templates, current, onUse, onChanged, onClose, ms
                   {th && th !== "error" && <img src={th.img} alt={`First page of ${t.name}`} />}
                 </div>
                 {editing?.id === t.id ? (
-                  <input autoFocus aria-label="Sheet name" value={editing.name} onChange={(e) => setEditing({ id: t.id, name: e.target.value })} onBlur={rename} onKeyDown={(e) => { if (e.key === "Enter") void rename(); if (e.key === "Escape") { e.stopPropagation(); setEditing(null); } }} />
+                  <input
+                    autoFocus
+                    aria-label="Sheet name"
+                    value={editing.name}
+                    onChange={(e) => setEditing({ id: t.id, name: e.target.value })}
+                    onBlur={rename}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void rename();
+                      if (e.key === "Escape") {
+                        e.stopPropagation();
+                        setEditing(null);
+                      }
+                    }}
+                  />
                 ) : (
-                  <button className="sheet-name" title="Rename" onClick={() => setEditing({ id: t.id, name: t.name })}>{t.name}</button>
+                  <button className="sheet-name" title="Rename" onClick={() => setEditing({ id: t.id, name: t.name })}>
+                    {t.name}
+                  </button>
                 )}
                 <small className="muted">
                   {sheetKind(t)}
-                  {th && th !== "error" ? ` · ${th.pages} page${th.pages === 1 ? "" : "s"}` : ""} · {Math.max(1, Math.round(t.size / 1024))} KB · added {new Date(t.added).toLocaleDateString()}
+                  {th && th !== "error" ? ` · ${th.pages} page${th.pages === 1 ? "" : "s"}` : ""} · {Math.max(1, Math.round(t.size / 1024))}{" "}
+                  KB · added {new Date(t.added).toLocaleDateString()}
                 </small>
                 {removing === t.id ? (
                   <div className="row">
                     <span>Remove it?</span>
-                    <button className="danger" onClick={async () => { await deleteTemplate(t.id); setRemoving(null); onChanged(); }}>Remove</button>
+                    <button
+                      className="danger"
+                      onClick={async () => {
+                        await deleteTemplate(t.id);
+                        setRemoving(null);
+                        onChanged();
+                      }}
+                    >
+                      Remove
+                    </button>
                     <button onClick={() => setRemoving(null)}>Keep</button>
                   </div>
                 ) : (
                   <div className="row">
-                    {t.id === current ? <span className="tag">In use</span> : <button className="primary" onClick={() => { onUse(t.id); onClose(); }}>Use</button>}
-                    <button className="ghost" onClick={() => setRemoving(t.id)}>Remove...</button>
+                    {t.id === current ? (
+                      <span className="tag">In use</span>
+                    ) : (
+                      <button
+                        className="primary"
+                        onClick={() => {
+                          onUse(t.id);
+                          onClose();
+                        }}
+                      >
+                        Use
+                      </button>
+                    )}
+                    <button className="ghost" onClick={() => setRemoving(t.id)}>
+                      Remove...
+                    </button>
                   </div>
                 )}
               </li>

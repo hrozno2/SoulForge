@@ -13,7 +13,8 @@ for (const url of urls) {
     const res = await fetch(url, { method: "GET", redirect: "follow", headers: { "user-agent": "Mozilla/5.0 (SoulForge link check)" } });
     const body = res.headers.get("content-type")?.includes("html") ? await res.text() : "";
     // Drive answers 200 for a folder that was deleted; its page says so.
-    const gone = /couldn't be found|can't be found|does not exist|no longer available|Page not found/i.test(body) && /drive\.google\.com/.test(url);
+    const gone =
+      /couldn't be found|can't be found|does not exist|no longer available|Page not found/i.test(body) && /drive\.google\.com/.test(url);
     if (!res.ok || gone) {
       console.error(`DOWN  ${res.status}${gone ? " (page says it is gone)" : ""}  ${url}`);
       bad++;

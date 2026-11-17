@@ -15,14 +15,82 @@ import type { AElement, ARule, SetterValue } from "./types";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type J = any;
 
-const ABIL: Record<string, string> = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" };
-const SKILLS = ["acrobatics", "animal handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight of hand", "stealth", "survival"];
-const SCHOOL: Record<string, string> = { A: "Abjuration", C: "Conjuration", D: "Divination", E: "Enchantment", V: "Evocation", I: "Illusion", N: "Necromancy", T: "Transmutation" };
-const DMG: Record<string, string> = { B: "bludgeoning", P: "piercing", S: "slashing", F: "fire", C: "cold", L: "lightning", T: "thunder", N: "necrotic", R: "radiant", O: "force", A: "acid", I: "poison", Y: "psychic" };
-const PROP: Record<string, string> = { F: "finesse", L: "light", H: "heavy", T: "thrown", V: "versatile", R: "reach", A: "ammunition", LD: "loading", "2H": "two-handed", S: "special", RLD: "reload", BF: "burst fire", AF: "ammunition (firearm)" };
+const ABIL: Record<string, string> = {
+  str: "strength",
+  dex: "dexterity",
+  con: "constitution",
+  int: "intelligence",
+  wis: "wisdom",
+  cha: "charisma",
+};
+const SKILLS = [
+  "acrobatics",
+  "animal handling",
+  "arcana",
+  "athletics",
+  "deception",
+  "history",
+  "insight",
+  "intimidation",
+  "investigation",
+  "medicine",
+  "nature",
+  "perception",
+  "performance",
+  "persuasion",
+  "religion",
+  "sleight of hand",
+  "stealth",
+  "survival",
+];
+const SCHOOL: Record<string, string> = {
+  A: "Abjuration",
+  C: "Conjuration",
+  D: "Divination",
+  E: "Enchantment",
+  V: "Evocation",
+  I: "Illusion",
+  N: "Necromancy",
+  T: "Transmutation",
+};
+const DMG: Record<string, string> = {
+  B: "bludgeoning",
+  P: "piercing",
+  S: "slashing",
+  F: "fire",
+  C: "cold",
+  L: "lightning",
+  T: "thunder",
+  N: "necrotic",
+  R: "radiant",
+  O: "force",
+  A: "acid",
+  I: "poison",
+  Y: "psychic",
+};
+const PROP: Record<string, string> = {
+  F: "finesse",
+  L: "light",
+  H: "heavy",
+  T: "thrown",
+  V: "versatile",
+  R: "reach",
+  A: "ammunition",
+  LD: "loading",
+  "2H": "two-handed",
+  S: "special",
+  RLD: "reload",
+  BF: "burst fire",
+  AF: "ammunition (firearm)",
+};
 
-const slug = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "");
-export const ftId = (kind: string, name: string, source: string, extra = "") => `ID_5ET_${kind}_${slug(source)}_${slug(name)}${extra ? `_${slug(extra)}` : ""}`;
+const slug = (s: string) =>
+  s
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+export const ftId = (kind: string, name: string, source: string, extra = "") =>
+  `ID_5ET_${kind}_${slug(source)}_${slug(name)}${extra ? `_${slug(extra)}` : ""}`;
 const abilFull = (k: string) => ABIL[k] ?? k;
 // A new word starts after a space or bracket, never after an apostrophe ("Alchemist's", not "Alchemist'S").
 const cap = (s: string) => s.replace(/(^|[^\w'’])(\w)/g, (_, a, c) => a + c.toUpperCase());
@@ -35,36 +103,64 @@ const cap = (s: string) => s.replace(/(^|[^\w'’])(\w)/g, (_, a, c) => a + c.to
  * code or a chapter number in the text ("the ground becomes 3" for "{@quickref difficult terrain||3}"). Every tag in the
  * data is decided in the guard in fivetools.test.ts.
  */
-const TAG_SHOWN: Record<string, number> = { filter: 99, book: 99, adventure: 99, "5etools": 99, link: 99, card: 99, deity: 3, quickref: 4, classFeature: 5, subclassFeature: 7, subclass: 99, tip: 99, color: 99 };
+const TAG_SHOWN: Record<string, number> = {
+  filter: 99,
+  book: 99,
+  adventure: 99,
+  "5etools": 99,
+  link: 99,
+  card: 99,
+  deity: 3,
+  quickref: 4,
+  classFeature: 5,
+  subclassFeature: 7,
+  subclass: 99,
+  tip: 99,
+  color: 99,
+};
 
 function tag(raw: string): string {
   // Tags can nest ("{@note ... {@link this is incorrect|url}}"): the innermost go first.
   let out = raw;
-  for (let i = 0; i < 4 && out.includes("{@"); i++) { const next = tagOnce(out); if (next === out) break; out = next; }
+  for (let i = 0; i < 4 && out.includes("{@"); i++) {
+    const next = tagOnce(out);
+    if (next === out) break;
+    out = next;
+  }
   return out;
 }
 
 function tagOnce(raw: string): string {
-  return raw
-    .replace(/\{@h\}/g, "<i>Hit:</i> ")
-    .replace(/\{@atk ([^{}]*)\}/g, (_m, t: string) => {
-      const map: Record<string, string> = { mw: "Melee Weapon Attack:", rw: "Ranged Weapon Attack:", "mw,rw": "Melee or Ranged Weapon Attack:", ms: "Melee Spell Attack:", rs: "Ranged Spell Attack:", m: "Melee Attack:", r: "Ranged Attack:" };
-      return `<i>${map[t] ?? "Attack:"}</i>`;
-    })
-    .replace(/\{@(b|bold)\s+([^{}]*)\}/g, "<b>$2</b>")
-    .replace(/\{@(i|italic)\s+([^{}]*)\}/g, "<i>$2</i>")
-    .replace(/\{@dc\s+([^{}|]*)[^{}]*\}/g, "DC $1")
-    .replace(/\{@hit\s+([^{}|]*)[^{}]*\}/g, (_m, n: string) => (/^[+-]/.test(n.trim()) ? n.trim() : `+${n.trim()}`))
-    // "{@damage 2d6|shown}": the roll, or what the text shows instead.
-    .replace(/\{@(?:damage|dice)\s+([^{}|]*)(?:\|([^{}|]*))?[^{}]*\}/g, (_m, roll: string, shown?: string) => shown || roll)
-    // "{@scaledamage 8d6|3-9|1d6}": the first part is the spell's whole damage, the last what each slot level adds.
-    .replace(/\{@(?:scaledamage|scaledice)\s+([^{}|]*)\|[^{}|]*\|([^{}|]*)[^{}]*\}/g, "$2")
-    .replace(/\{@chance\s+([^{}|]*)(?:\|([^{}|]*))?[^{}]*\}/g, (_m, n: string, shown?: string) => shown || `${n} percent`)
-    .replace(/\{@(\w+)\s+([^{}]*)\}/g, (_m, t: string, rest: string) => {
-      const parts = rest.split("|");
-      const shown = parts[TAG_SHOWN[t] ?? 2] || parts[0];
-      return shown.replace(/\s*\[[^\]]*\]/g, "");
-    });
+  return (
+    raw
+      .replace(/\{@h\}/g, "<i>Hit:</i> ")
+      .replace(/\{@atk ([^{}]*)\}/g, (_m, t: string) => {
+        const map: Record<string, string> = {
+          mw: "Melee Weapon Attack:",
+          rw: "Ranged Weapon Attack:",
+          "mw,rw": "Melee or Ranged Weapon Attack:",
+          ms: "Melee Spell Attack:",
+          rs: "Ranged Spell Attack:",
+          m: "Melee Attack:",
+          r: "Ranged Attack:",
+        };
+        return `<i>${map[t] ?? "Attack:"}</i>`;
+      })
+      .replace(/\{@(b|bold)\s+([^{}]*)\}/g, "<b>$2</b>")
+      .replace(/\{@(i|italic)\s+([^{}]*)\}/g, "<i>$2</i>")
+      .replace(/\{@dc\s+([^{}|]*)[^{}]*\}/g, "DC $1")
+      .replace(/\{@hit\s+([^{}|]*)[^{}]*\}/g, (_m, n: string) => (/^[+-]/.test(n.trim()) ? n.trim() : `+${n.trim()}`))
+      // "{@damage 2d6|shown}": the roll, or what the text shows instead.
+      .replace(/\{@(?:damage|dice)\s+([^{}|]*)(?:\|([^{}|]*))?[^{}]*\}/g, (_m, roll: string, shown?: string) => shown || roll)
+      // "{@scaledamage 8d6|3-9|1d6}": the first part is the spell's whole damage, the last what each slot level adds.
+      .replace(/\{@(?:scaledamage|scaledice)\s+([^{}|]*)\|[^{}|]*\|([^{}|]*)[^{}]*\}/g, "$2")
+      .replace(/\{@chance\s+([^{}|]*)(?:\|([^{}|]*))?[^{}]*\}/g, (_m, n: string, shown?: string) => shown || `${n} percent`)
+      .replace(/\{@(\w+)\s+([^{}]*)\}/g, (_m, t: string, rest: string) => {
+        const parts = rest.split("|");
+        const shown = parts[TAG_SHOWN[t] ?? 2] || parts[0];
+        return shown.replace(/\s*\[[^\]]*\]/g, "");
+      })
+  );
 }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -97,7 +193,12 @@ export function entriesHtml(entries: J, depth = 0): string {
       return `<p><b>${inlineHtml(e.name ?? "")}.</b> ${inlineHtml(typeof e.entry === "string" ? e.entry : "")}</p>${e.entries ? entriesHtml(e.entries) : ""}`;
     case "table": {
       const cols = (e.colLabels ?? []).map((c: string) => `<th>${inlineHtml(c)}</th>`).join("");
-      const rows = (e.rows ?? []).map((r: J[]) => `<tr>${r.map((c) => `<td>${typeof c === "object" && c ? entriesHtml(c.entry ?? c.entries ?? c.roll?.exact ?? "") : inlineHtml(String(c))}</td>`).join("")}</tr>`).join("");
+      const rows = (e.rows ?? [])
+        .map(
+          (r: J[]) =>
+            `<tr>${r.map((c) => `<td>${typeof c === "object" && c ? entriesHtml(c.entry ?? c.entries ?? c.roll?.exact ?? "") : inlineHtml(String(c))}</td>`).join("")}</tr>`,
+        )
+        .join("");
       return `<table>${e.caption ? `<caption>${inlineHtml(e.caption)}</caption>` : ""}<thead><tr>${cols}</tr></thead><tbody>${rows}</tbody></table>`;
     }
     case "abilityDc":
@@ -109,14 +210,23 @@ export function entriesHtml(entries: J, depth = 0): string {
   }
 }
 
-
 // ---------------------------------------------------------------- shared synthetic elements
 
 /** 5e.tools markup left in a name ("{@item Hand Crossbow|phb}") becomes its plain text. */
 const plainName = (s: string) => s.replace(/\{@\w+\s+([^|}]*)[^}]*\}?/g, "$1");
 
 const base = (id: string, name: string, type: string, source: string, extra: Partial<AElement> = {}): AElement => ({
-  id, name: plainName(name), type, source, supports: [], description: "", compendiumHidden: false, setters: {}, rules: [], origin: "5etools", ...extra,
+  id,
+  name: plainName(name),
+  type,
+  source,
+  supports: [],
+  description: "",
+  compendiumHidden: false,
+  setters: {},
+  rules: [],
+  origin: "5etools",
+  ...extra,
   // A caller's "setters: undefined" must not leave an element without them (lookups read them).
   ...(extra.setters ? {} : { setters: {} }),
 });
@@ -132,70 +242,145 @@ const repeatIds = (id: string, n: number) => Array.from({ length: n }, (_, i) =>
 
 export function syntheticElements(): AElement[] {
   const out: AElement[] = [];
-  out.push(base(MARK_SPECIES_ASI, "Species ability score increase", "Information", "5etools", { compendiumHidden: true, description: "Marks that the species already raises ability scores." }));
+  out.push(
+    base(MARK_SPECIES_ASI, "Species ability score increase", "Information", "5etools", {
+      compendiumHidden: true,
+      description: "Marks that the species already raises ability scores.",
+    }),
+  );
   // The damage defenses as elements: the content grants them as markers (the sheet reads the ids), and a choice of
   // one ("resistance to acid, cold or fire") needs them as options.
-  for (const [kind, word] of [["RESISTANCE", "resistance"], ["IMMUNITY", "immunity"], ["VULNERABILITY", "vulnerability"]]) {
-    for (const t of ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"]) {
-      out.push(base(`ID_INTERNAL_CONDITION_DAMAGE_${kind}_${t.toUpperCase()}`, `${cap(t)} ${word}`, "Condition", "5etools", { compendiumHidden: true, description: `<p>${cap(t)} damage ${word}.</p>` }));
+  for (const [kind, word] of [
+    ["RESISTANCE", "resistance"],
+    ["IMMUNITY", "immunity"],
+    ["VULNERABILITY", "vulnerability"],
+  ]) {
+    for (const t of [
+      "acid",
+      "bludgeoning",
+      "cold",
+      "fire",
+      "force",
+      "lightning",
+      "necrotic",
+      "piercing",
+      "poison",
+      "psychic",
+      "radiant",
+      "slashing",
+      "thunder",
+    ]) {
+      out.push(
+        base(`ID_INTERNAL_CONDITION_DAMAGE_${kind}_${t.toUpperCase()}`, `${cap(t)} ${word}`, "Condition", "5etools", {
+          compendiumHidden: true,
+          description: `<p>${cap(t)} damage ${word}.</p>`,
+        }),
+      );
     }
   }
   // The 2014 Ability Score Improvement, as an option of the class's feat-or-improvement choice: +2 to one score or +1
   // to two. Taken again at each level that offers it.
   // The custom-lineage rule some species use instead of fixed increases (Van Richten's, Monsters of the Multiverse:
   // 5e.tools "lineage"): +2 to one score and +1 to another, or +1 to three different scores.
-  out.push(base("ID_5ET_ASI_PATTERN_2_1", "+2 to one score and +1 to another", "Ability Score Improvement", "5etools", {
-    compendiumHidden: true, supports: ["5et asi pattern"],
-    rules: [
-      { kind: "select", type: "Ability Score Improvement", name: "+2 to one score", supports: "5et asi one,amt2", number: 1 },
-      { kind: "select", type: "Ability Score Improvement", name: "+1 to another score", supports: "5et asi one,amt1", number: 1 },
-    ],
-  }));
-  out.push(base("ID_5ET_ASI_PATTERN_1_1_1", "+1 to three different scores", "Ability Score Improvement", "5etools", {
-    compendiumHidden: true, supports: ["5et asi pattern"],
-    rules: [{ kind: "select", type: "Ability Score Improvement", name: "+1 to three scores", supports: "5et asi one,amt1", number: 3 }],
-  }));
+  out.push(
+    base("ID_5ET_ASI_PATTERN_2_1", "+2 to one score and +1 to another", "Ability Score Improvement", "5etools", {
+      compendiumHidden: true,
+      supports: ["5et asi pattern"],
+      rules: [
+        { kind: "select", type: "Ability Score Improvement", name: "+2 to one score", supports: "5et asi one,amt2", number: 1 },
+        { kind: "select", type: "Ability Score Improvement", name: "+1 to another score", supports: "5et asi one,amt1", number: 1 },
+      ],
+    }),
+  );
+  out.push(
+    base("ID_5ET_ASI_PATTERN_1_1_1", "+1 to three different scores", "Ability Score Improvement", "5etools", {
+      compendiumHidden: true,
+      supports: ["5et asi pattern"],
+      rules: [{ kind: "select", type: "Ability Score Improvement", name: "+1 to three scores", supports: "5et asi one,amt1", number: 3 }],
+    }),
+  );
   // One copy per time it can be taken (a class gives at most seven): each has its own choice of scores. An element
   // is counted once however often it is picked, so a repeat needs its own copy, as Aurora's content does it.
   for (const id of repeatIds("ID_5ET_ASI_CHOICE", 8)) {
-    out.push(base(id, "Ability Score Improvement", "Feat", "5etools", {
-      compendiumHidden: true, supports: ["5et asi choice"],
-      description: "<p>Increase one ability score by 2, or two ability scores by 1. A score cannot go above 20 this way.</p>",
-      rules: [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement", supports: "5et asi", number: 1 }],
-    }));
+    out.push(
+      base(id, "Ability Score Improvement", "Feat", "5etools", {
+        compendiumHidden: true,
+        supports: ["5et asi choice"],
+        description: "<p>Increase one ability score by 2, or two ability scores by 1. A score cannot go above 20 this way.</p>",
+        rules: [{ kind: "select", type: "Ability Score Improvement", name: "Ability Score Improvement", supports: "5et asi", number: 1 }],
+      }),
+    );
   }
   for (const s of SKILLS) {
-    out.push(base(`ID_5ET_SKILL_${slug(s)}`, cap(s), "Proficiency", "5etools", {
-      supports: ["5et skill"], compendiumHidden: true,
-      rules: [{ kind: "stat", name: `${s}:proficiency`, value: "proficiency", bonus: "proficiency" }],
-    }));
-    out.push(base(`ID_5ET_EXPERTISE_${slug(s)}`, `${cap(s)} (expertise)`, "Proficiency", "5etools", {
-      supports: ["5et expertise"], compendiumHidden: true,
-      // Expertise is chosen among the skills a character is proficient in ("anyProficientSkill" in 5e.tools, "two of
-      // your skill proficiencies" in both Player's Handbooks). Without this, expertise could be taken in any skill
-      // and counted as plain proficiency there: 130 of 500 random characters had it (2026-11-11).
-      requirements: `ID_5ET_SKILL_${slug(s)}`,
-      rules: [{ kind: "stat", name: `${s}:proficiency`, value: "proficiency", bonus: "double" }],
-    }));
+    out.push(
+      base(`ID_5ET_SKILL_${slug(s)}`, cap(s), "Proficiency", "5etools", {
+        supports: ["5et skill"],
+        compendiumHidden: true,
+        rules: [{ kind: "stat", name: `${s}:proficiency`, value: "proficiency", bonus: "proficiency" }],
+      }),
+    );
+    out.push(
+      base(`ID_5ET_EXPERTISE_${slug(s)}`, `${cap(s)} (expertise)`, "Proficiency", "5etools", {
+        supports: ["5et expertise"],
+        compendiumHidden: true,
+        // Expertise is chosen among the skills a character is proficient in ("anyProficientSkill" in 5e.tools, "two of
+        // your skill proficiencies" in both Player's Handbooks). Without this, expertise could be taken in any skill
+        // and counted as plain proficiency there: 130 of 500 random characters had it (2026-11-11).
+        requirements: `ID_5ET_SKILL_${slug(s)}`,
+        rules: [{ kind: "stat", name: `${s}:proficiency`, value: "proficiency", bonus: "double" }],
+      }),
+    );
   }
-  const cats: [string, string][] = [["ARMOR_LIGHT", "Armor Proficiency (Light Armor)"], ["ARMOR_MEDIUM", "Armor Proficiency (Medium Armor)"], ["ARMOR_HEAVY", "Armor Proficiency (Heavy Armor)"], ["ARMOR_SHIELD", "Armor Proficiency (Shields)"], ["WEAPON_SIMPLE", "Weapon Proficiency (Simple Weapons)"], ["WEAPON_MARTIAL", "Weapon Proficiency (Martial Weapons)"]];
+  const cats: [string, string][] = [
+    ["ARMOR_LIGHT", "Armor Proficiency (Light Armor)"],
+    ["ARMOR_MEDIUM", "Armor Proficiency (Medium Armor)"],
+    ["ARMOR_HEAVY", "Armor Proficiency (Heavy Armor)"],
+    ["ARMOR_SHIELD", "Armor Proficiency (Shields)"],
+    ["WEAPON_SIMPLE", "Weapon Proficiency (Simple Weapons)"],
+    ["WEAPON_MARTIAL", "Weapon Proficiency (Martial Weapons)"],
+  ];
   for (const [k, n] of cats) out.push(base(`ID_5ET_PROF_${k}`, n, "Proficiency", "5etools", { compendiumHidden: true }));
   out.push(base("ID_INTERNAL_GRANT_MULTICLASS", "Multiclass marker", "Grants", "5etools", { compendiumHidden: true }));
   // Heavy armor's Strength does not slow the character (the Dwarf), as a marker the armor's speed rule asks about.
-  out.push(base("ID_INTERNAL_GRANT_ARMOR_IGNORE_STRENGTH_REQUIREMENT", "Heavy armor does not reduce speed", "Grants", "5etools", { compendiumHidden: true }));
-  for (const a of Object.values(ABIL)) {
-    out.push(base(`ID_5ET_SAVE_${slug(a)}`, `Saving throw proficiency (${cap(a)})`, "Proficiency", "5etools", {
+  out.push(
+    base("ID_INTERNAL_GRANT_ARMOR_IGNORE_STRENGTH_REQUIREMENT", "Heavy armor does not reduce speed", "Grants", "5etools", {
       compendiumHidden: true,
-      rules: [{ kind: "stat", name: `${a}:save:proficiency`, value: "proficiency", bonus: "proficiency" }],
-    }));
+    }),
+  );
+  for (const a of Object.values(ABIL)) {
+    out.push(
+      base(`ID_5ET_SAVE_${slug(a)}`, `Saving throw proficiency (${cap(a)})`, "Proficiency", "5etools", {
+        compendiumHidden: true,
+        rules: [{ kind: "stat", name: `${a}:save:proficiency`, value: "proficiency", bonus: "proficiency" }],
+      }),
+    );
   }
   const keys = Object.keys(ABIL);
   const asi = (id: string, name: string, parts: [string, number][]) =>
-    out.push(base(id, name, "Ability Score Improvement", "5etools", { supports: ["5et asi"], compendiumHidden: true, rules: parts.map(([a, n]) => ({ kind: "stat" as const, name: abilFull(a), value: String(n) })) }));
+    out.push(
+      base(id, name, "Ability Score Improvement", "5etools", {
+        supports: ["5et asi"],
+        compendiumHidden: true,
+        rules: parts.map(([a, n]) => ({ kind: "stat" as const, name: abilFull(a), value: String(n) })),
+      }),
+    );
   for (const a of keys) asi(`ID_5ET_ASI_2_${a}`, `+2 ${cap(abilFull(a))}`, [[a, 2]]);
-  for (let i = 0; i < keys.length; i++) for (let j = i + 1; j < keys.length; j++) asi(`ID_5ET_ASI_1_${keys[i]}_${keys[j]}`, `+1 ${cap(abilFull(keys[i]))}, +1 ${cap(abilFull(keys[j]))}`, [[keys[i], 1], [keys[j], 1]]);
+  for (let i = 0; i < keys.length; i++)
+    for (let j = i + 1; j < keys.length; j++)
+      asi(`ID_5ET_ASI_1_${keys[i]}_${keys[j]}`, `+1 ${cap(abilFull(keys[i]))}, +1 ${cap(abilFull(keys[j]))}`, [
+        [keys[i], 1],
+        [keys[j], 1],
+      ]);
   // single-ability steps used by species and backgrounds
-  for (const a of keys) for (const n of [1, 2]) out.push(base(`ID_5ET_ASIONE_${n}_${a}`, `+${n} ${cap(abilFull(a))}`, "Ability Score Improvement", "5etools", { supports: ["5et asi one", `amt${n}`, a.toUpperCase()], compendiumHidden: true, rules: [{ kind: "stat", name: abilFull(a), value: String(n) }] }));
+  for (const a of keys)
+    for (const n of [1, 2])
+      out.push(
+        base(`ID_5ET_ASIONE_${n}_${a}`, `+${n} ${cap(abilFull(a))}`, "Ability Score Improvement", "5etools", {
+          supports: ["5et asi one", `amt${n}`, a.toUpperCase()],
+          compendiumHidden: true,
+          rules: [{ kind: "stat", name: abilFull(a), value: String(n) }],
+        }),
+      );
   return out;
 }
 
@@ -208,8 +393,15 @@ function skillRules(list: J[] | undefined, label: string): ARule[] {
     for (const [k, v] of Object.entries(entry)) {
       if (k === "choose") {
         const from: string[] = (v as J).from ?? SKILLS;
-        rules.push({ kind: "select", type: "Proficiency", name: `${label} skill`, supports: from.map(skillIdOf).join("|"), number: (v as J).count ?? 1 });
-      } else if (k === "any") rules.push({ kind: "select", type: "Proficiency", name: `${label} skill`, supports: "5et skill", number: Number(v) || 1 });
+        rules.push({
+          kind: "select",
+          type: "Proficiency",
+          name: `${label} skill`,
+          supports: from.map(skillIdOf).join("|"),
+          number: (v as J).count ?? 1,
+        });
+      } else if (k === "any")
+        rules.push({ kind: "select", type: "Proficiency", name: `${label} skill`, supports: "5et skill", number: Number(v) || 1 });
       else if (v === true && SKILLS.includes(k)) rules.push({ kind: "grant", type: "Proficiency", id: skillIdOf(k) });
     }
   }
@@ -223,14 +415,22 @@ function langRules(list: J[] | undefined, label: string): { rules: ARule[]; lang
     for (const [k, v] of Object.entries(entry)) {
       // "Any standard language": the Standard Languages table, or with the DM's leave any other (2014 PHB, chapter 4;
       // Plutonium offers every language here for the same reason). The auto-fill takes a standard one.
-      if (k === "anyStandard") rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(v) || 1 });
-      else if (k === "any" || k === "other") rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(v) || 1 });
+      if (k === "anyStandard")
+        rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(v) || 1 });
+      else if (k === "any" || k === "other")
+        rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(v) || 1 });
       // "choose": {"from": ["elvish", "other"], "count": 1} (Simic Hybrid, the Ravnica backgrounds): one of these, and
       // "other" (or "any") opens it to any language, as Plutonium offers it.
       else if (k === "choose" && v && typeof v === "object") {
         const from = (((v as J).from as string[]) ?? []).map((x) => String(x).toLowerCase());
         const open = from.some((x) => x === "other" || x === "any" || x === "anystandard");
-        rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: open || !from.length ? "5et language" : from.map((x) => `ID_5ET_LANGUAGE_${slug(x)}`).join("|"), number: Number((v as J).count) || 1 });
+        rules.push({
+          kind: "select",
+          type: "Language",
+          name: `${label} language`,
+          supports: open || !from.length ? "5et language" : from.map((x) => `ID_5ET_LANGUAGE_${slug(x)}`).join("|"),
+          number: Number((v as J).count) || 1,
+        });
       } else if (v === true) {
         languages.push(k);
         rules.push({ kind: "grant", type: "Language", id: `ID_5ET_LANGUAGE_${slug(k)}` });
@@ -243,10 +443,37 @@ function langRules(list: J[] | undefined, label: string): { rules: ARule[]; lang
 /** The standard tools by kind, for "any artisan's tool" style choices. */
 /** The standard tools of each kind, by name (also the options for gear that names only a kind). */
 export const TOOL_KINDS: Record<string, string[]> = {
-  artisan: ["alchemist's supplies", "brewer's supplies", "calligrapher's supplies", "carpenter's tools", "cartographer's tools", "cobbler's tools", "cook's utensils", "glassblower's tools", "jeweler's tools", "leatherworker's tools", "mason's tools", "painter's supplies", "potter's tools", "smith's tools", "tinker's tools", "weaver's tools", "woodcarver's tools"],
+  artisan: [
+    "alchemist's supplies",
+    "brewer's supplies",
+    "calligrapher's supplies",
+    "carpenter's tools",
+    "cartographer's tools",
+    "cobbler's tools",
+    "cook's utensils",
+    "glassblower's tools",
+    "jeweler's tools",
+    "leatherworker's tools",
+    "mason's tools",
+    "painter's supplies",
+    "potter's tools",
+    "smith's tools",
+    "tinker's tools",
+    "weaver's tools",
+    "woodcarver's tools",
+  ],
   gaming: ["dice set", "dragonchess set", "playing card set", "three-dragon ante set"],
   instrument: ["bagpipes", "drum", "dulcimer", "flute", "horn", "lute", "lyre", "pan flute", "shawm", "viol"],
-  other: ["disguise kit", "forgery kit", "herbalism kit", "navigator's tools", "poisoner's kit", "thieves' tools", "vehicles (land)", "vehicles (water)"],
+  other: [
+    "disguise kit",
+    "forgery kit",
+    "herbalism kit",
+    "navigator's tools",
+    "poisoner's kit",
+    "thieves' tools",
+    "vehicles (land)",
+    "vehicles (water)",
+  ],
 };
 /**
  * Instruments the data has beyond the Player's Handbook's list (the Sword Coast's birdpipes, glaur, longhorn, thelarr,
@@ -261,7 +488,13 @@ function toolId(name: string, out: AElement[]): string {
   const n = plainName(name).toLowerCase();
   const kind = Object.entries(TOOL_KINDS).find(([, l]) => l.includes(n))?.[0] ?? (EXTRA_INSTRUMENTS.has(n) ? "instrument" : "other");
   const id = `ID_5ET_TOOL_${slug(n)}`;
-  if (!out.some((o) => o.id === id)) out.push(base(id, `Tool Proficiency (${cap(n)})`, "Proficiency", "5etools", { compendiumHidden: true, supports: ["5et tool", `5et tool ${kind}`] }));
+  if (!out.some((o) => o.id === id))
+    out.push(
+      base(id, `Tool Proficiency (${cap(n)})`, "Proficiency", "5etools", {
+        compendiumHidden: true,
+        supports: ["5et tool", `5et tool ${kind}`],
+      }),
+    );
   return id;
 }
 
@@ -282,11 +515,17 @@ function weaponId(k: string, out: AElement[]): string | undefined {
   if (w === "simple") return "ID_5ET_PROF_WEAPON_SIMPLE";
   if (w === "martial") return "ID_5ET_PROF_WEAPON_MARTIAL";
   const wid = ftId("PROF_WEAPON", w, "ALL");
-  if (!out.some((o) => o.id === wid)) out.push(base(wid, `Weapon Proficiency (${cap(w)})`, "Proficiency", "5etools", { compendiumHidden: true, supports: ["5et weapon"] }));
+  if (!out.some((o) => o.id === wid))
+    out.push(base(wid, `Weapon Proficiency (${cap(w)})`, "Proficiency", "5etools", { compendiumHidden: true, supports: ["5et weapon"] }));
   return wid;
 }
 
-const ARMOR_IDS: Record<string, string> = { light: "ID_5ET_PROF_ARMOR_LIGHT", medium: "ID_5ET_PROF_ARMOR_MEDIUM", heavy: "ID_5ET_PROF_ARMOR_HEAVY", shield: "ID_5ET_PROF_ARMOR_SHIELD" };
+const ARMOR_IDS: Record<string, string> = {
+  light: "ID_5ET_PROF_ARMOR_LIGHT",
+  medium: "ID_5ET_PROF_ARMOR_MEDIUM",
+  heavy: "ID_5ET_PROF_ARMOR_HEAVY",
+  shield: "ID_5ET_PROF_ARMOR_SHIELD",
+};
 
 /**
  * Every proficiency-like field a 5e.tools entry can carry, read the same way for species, subraces, lineages,
@@ -295,59 +534,94 @@ const ARMOR_IDS: Record<string, string> = { light: "ID_5ET_PROF_ARMOR_LIGHT", me
  */
 function profRules(e: J, label: string, out: AElement[]): ARule[] {
   const rules: ARule[] = [];
-  const grant = (id: string | undefined) => { if (id) rules.push({ kind: "grant", type: "Proficiency", id }); };
-  const pick = (name: string, supports: string, number: number) => rules.push({ kind: "select", type: "Proficiency", name, supports, number });
-  for (const entry of (e.toolProficiencies as J[]) ?? []) for (const [k, v] of Object.entries(entry ?? {})) {
-    if (k === "choose") pick(`${label} tool`, ((v as J).from as string[] ?? []).map((t) => GENERIC_TOOL[plainName(t).toLowerCase()] ? `5et tool ${GENERIC_TOOL[plainName(t).toLowerCase()]}` : toolId(t, out)).join("|"), Number((v as J).count) || 1);
-    else if (k === "any") pick(`${label} tool`, "5et tool", Number(v) || 1);
-    else if (k === "anyArtisansTool") pick(`${label} artisan's tool`, "5et tool artisan", Number(v) || 1);
-    else if (k === "anyGamingSet") pick(`${label} gaming set`, "5et tool gaming", Number(v) || 1);
-    else if (k === "anyMusicalInstrument") pick(`${label} musical instrument`, "5et tool instrument", Number(v) || 1);
-    else if (GENERIC_TOOL[plainName(k).toLowerCase()]) pick(`${label} ${plainName(k).toLowerCase()}`, `5et tool ${GENERIC_TOOL[plainName(k).toLowerCase()]}`, 1);
-    else if (v) grant(toolId(k, out));
-  }
-  for (const entry of (e.weaponProficiencies as J[]) ?? []) for (const [k, v] of Object.entries(entry ?? {})) {
-    if (k === "choose") {
-      const c = v as J;
-      const from = ((c.fromFilter ? [] : c.from) as string[] ?? []).map((w) => weaponId(w, out)).filter(Boolean) as string[];
-      pick(`${label} weapon`, from.length ? from.join("|") : "5et weapon", Number(c.count) || 1);
-    } else if (k === "firearms" || k === "improvised") {
-      // Proficiency with firearms (an optional rule) or with improvised weapons (Tavern Brawler).
-      const wid = `ID_5ET_PROF_WEAPON_${k.toUpperCase()}`;
-      if (!out.some((o) => o.id === wid)) out.push(base(wid, `Weapon Proficiency (${k === "improvised" ? "Improvised Weapons" : "Firearms"})`, "Proficiency", "5etools", { compendiumHidden: true }));
-      grant(wid);
-    } else if (v) grant(weaponId(k, out));
-  }
-  for (const entry of (e.armorProficiencies as J[]) ?? []) for (const [k, v] of Object.entries(entry ?? {})) if (v && ARMOR_IDS[k.split("|")[0]]) grant(ARMOR_IDS[k.split("|")[0]]);
-  for (const entry of (e.savingThrowProficiencies as J[]) ?? []) for (const [k, v] of Object.entries(entry ?? {})) {
-    if (k === "choose") pick(`${label} saving throw`, ((v as J).from as string[] ?? Object.keys(ABIL)).map((a) => `ID_5ET_SAVE_${slug(abilFull(a))}`).join("|"), Number((v as J).count) || 1);
-    else if (v && k in ABIL) grant(`ID_5ET_SAVE_${slug(abilFull(k))}`);
-  }
+  const grant = (id: string | undefined) => {
+    if (id) rules.push({ kind: "grant", type: "Proficiency", id });
+  };
+  const pick = (name: string, supports: string, number: number) =>
+    rules.push({ kind: "select", type: "Proficiency", name, supports, number });
+  for (const entry of (e.toolProficiencies as J[]) ?? [])
+    for (const [k, v] of Object.entries(entry ?? {})) {
+      if (k === "choose")
+        pick(
+          `${label} tool`,
+          (((v as J).from as string[]) ?? [])
+            .map((t) =>
+              GENERIC_TOOL[plainName(t).toLowerCase()] ? `5et tool ${GENERIC_TOOL[plainName(t).toLowerCase()]}` : toolId(t, out),
+            )
+            .join("|"),
+          Number((v as J).count) || 1,
+        );
+      else if (k === "any") pick(`${label} tool`, "5et tool", Number(v) || 1);
+      else if (k === "anyArtisansTool") pick(`${label} artisan's tool`, "5et tool artisan", Number(v) || 1);
+      else if (k === "anyGamingSet") pick(`${label} gaming set`, "5et tool gaming", Number(v) || 1);
+      else if (k === "anyMusicalInstrument") pick(`${label} musical instrument`, "5et tool instrument", Number(v) || 1);
+      else if (GENERIC_TOOL[plainName(k).toLowerCase()])
+        pick(`${label} ${plainName(k).toLowerCase()}`, `5et tool ${GENERIC_TOOL[plainName(k).toLowerCase()]}`, 1);
+      else if (v) grant(toolId(k, out));
+    }
+  for (const entry of (e.weaponProficiencies as J[]) ?? [])
+    for (const [k, v] of Object.entries(entry ?? {})) {
+      if (k === "choose") {
+        const c = v as J;
+        const from = (((c.fromFilter ? [] : c.from) as string[]) ?? []).map((w) => weaponId(w, out)).filter(Boolean) as string[];
+        pick(`${label} weapon`, from.length ? from.join("|") : "5et weapon", Number(c.count) || 1);
+      } else if (k === "firearms" || k === "improvised") {
+        // Proficiency with firearms (an optional rule) or with improvised weapons (Tavern Brawler).
+        const wid = `ID_5ET_PROF_WEAPON_${k.toUpperCase()}`;
+        if (!out.some((o) => o.id === wid))
+          out.push(
+            base(wid, `Weapon Proficiency (${k === "improvised" ? "Improvised Weapons" : "Firearms"})`, "Proficiency", "5etools", {
+              compendiumHidden: true,
+            }),
+          );
+        grant(wid);
+      } else if (v) grant(weaponId(k, out));
+    }
+  for (const entry of (e.armorProficiencies as J[]) ?? [])
+    for (const [k, v] of Object.entries(entry ?? {})) if (v && ARMOR_IDS[k.split("|")[0]]) grant(ARMOR_IDS[k.split("|")[0]]);
+  for (const entry of (e.savingThrowProficiencies as J[]) ?? [])
+    for (const [k, v] of Object.entries(entry ?? {})) {
+      if (k === "choose")
+        pick(
+          `${label} saving throw`,
+          (((v as J).from as string[]) ?? Object.keys(ABIL)).map((a) => `ID_5ET_SAVE_${slug(abilFull(a))}`).join("|"),
+          Number((v as J).count) || 1,
+        );
+      else if (v && k in ABIL) grant(`ID_5ET_SAVE_${slug(abilFull(k))}`);
+    }
   for (const entry of (e.skillToolLanguageProficiencies as J[]) ?? []) {
     for (const c of [].concat((entry as J)?.choose ?? []) as J[]) {
       const kinds = (c.from as string[]) ?? [];
-      const sup = kinds.map((k) => (k === "anySkill" ? "5et skill" : k === "anyTool" ? "5et tool" : k === "anyLanguage" ? "5et language" : "")).filter(Boolean);
-      if (sup.includes("5et language")) rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(c.count) || 1 });
+      const sup = kinds
+        .map((k) => (k === "anySkill" ? "5et skill" : k === "anyTool" ? "5et tool" : k === "anyLanguage" ? "5et language" : ""))
+        .filter(Boolean);
+      if (sup.includes("5et language"))
+        rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(c.count) || 1 });
       const other = sup.filter((x) => x !== "5et language");
       if (other.length) pick(`${label} skill or tool`, other.join("|"), Number(c.count) || 1);
     }
     for (const [k, v] of Object.entries(entry ?? {})) {
       if (k === "anyTool") pick(`${label} tool`, "5et tool", Number(v) || 1);
-      else if (k === "anyLanguage") rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(v) || 1 });
+      else if (k === "anyLanguage")
+        rules.push({ kind: "select", type: "Language", name: `${label} language`, supports: "5et language", number: Number(v) || 1 });
       else if (k === "anySkill") pick(`${label} skill`, "5et skill", Number(v) || 1);
     }
   }
-  for (const entry of (e.expertise as J[]) ?? []) for (const [k, v] of Object.entries(entry ?? {})) {
-    if (k === "anyProficientSkill") pick(`${label} expertise`, "5et expertise", Number(v) || 1);
-    else if (v && SKILLS.includes(k)) grant(`ID_5ET_EXPERTISE_${slug(k)}`);
-  }
-  for (const f of ["senses", "bonusSenses"]) for (const entry of (e[f] as J[]) ?? []) for (const [k, v] of Object.entries(entry ?? {})) {
-    const range = typeof v === "number" ? v : Number((v as J)?.range) || 0;
-    if (!range || !/^(darkvision|blindsight|truesight|tremorsense)$/.test(k)) continue;
-    const vid = `ID_5ET_SENSE_${slug(k)}_${range}`;
-    if (!out.some((o) => o.id === vid)) out.push(base(vid, `${cap(k)} (${range} ft.)`, "Vision", "5etools", { compendiumHidden: true }));
-    rules.push({ kind: "grant", type: "Vision", id: vid });
-  }
+  for (const entry of (e.expertise as J[]) ?? [])
+    for (const [k, v] of Object.entries(entry ?? {})) {
+      if (k === "anyProficientSkill") pick(`${label} expertise`, "5et expertise", Number(v) || 1);
+      else if (v && SKILLS.includes(k)) grant(`ID_5ET_EXPERTISE_${slug(k)}`);
+    }
+  for (const f of ["senses", "bonusSenses"])
+    for (const entry of (e[f] as J[]) ?? [])
+      for (const [k, v] of Object.entries(entry ?? {})) {
+        const range = typeof v === "number" ? v : Number((v as J)?.range) || 0;
+        if (!range || !/^(darkvision|blindsight|truesight|tremorsense)$/.test(k)) continue;
+        const vid = `ID_5ET_SENSE_${slug(k)}_${range}`;
+        if (!out.some((o) => o.id === vid))
+          out.push(base(vid, `${cap(k)} (${range} ft.)`, "Vision", "5etools", { compendiumHidden: true }));
+        rules.push({ kind: "grant", type: "Vision", id: vid });
+      }
   return rules;
 }
 
@@ -370,7 +644,16 @@ function describeSet(entry: J): string {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-const TRAINING_FIELDS = ["skillProficiencies", "languageProficiencies", "toolProficiencies", "weaponProficiencies", "armorProficiencies", "savingThrowProficiencies", "skillToolLanguageProficiencies", "expertise"];
+const TRAINING_FIELDS = [
+  "skillProficiencies",
+  "languageProficiencies",
+  "toolProficiencies",
+  "weaponProficiencies",
+  "armorProficiencies",
+  "savingThrowProficiencies",
+  "skillToolLanguageProficiencies",
+  "expertise",
+];
 
 /**
  * "Languages and Tool Proficiencies: Two of your choice" (the 2014 Custom Background) is one total, which 5e.tools
@@ -385,13 +668,16 @@ function combinedTotal(e: J): J {
   const counts = (x: J) => Object.entries(x ?? {}).filter(([k, v]) => /^any/.test(k) && typeof v === "number") as [string, number][];
   const plain = sets.every((x) => counts(x).length && counts(x).length === Object.keys(x ?? {}).length);
   const max = Math.max(...sets.map((x) => counts(x).reduce((t, [, v]) => t + v, 0)));
-  const padded = !plain ? sets : sets.map((x) => {
-    const c = counts(x);
-    const total = c.reduce((t, [, v]) => t + v, 0);
-    return total >= max ? x : { ...x, [c[c.length - 1][0]]: c[c.length - 1][1] + max - total };
-  });
+  const padded = !plain
+    ? sets
+    : sets.map((x) => {
+        const c = counts(x);
+        const total = c.reduce((t, [, v]) => t + v, 0);
+        return total >= max ? x : { ...x, [c[c.length - 1][0]]: c[c.length - 1][1] + max - total };
+      });
   const { languageProficiencies, toolProficiencies, ...rest } = e;
-  void languageProficiencies; void toolProficiencies;
+  void languageProficiencies;
+  void toolProficiencies;
   return { ...rest, skillToolLanguageProficiencies: padded };
 }
 
@@ -412,17 +698,34 @@ function trainingRules(e0: J, label: string, out: AElement[], ctx: Ctx, idBase: 
     const ids = list.map((entry, i) => {
       const oid = `${idBase}_${slug(f)}_OPTION_${i + 1}`;
       const optRules = trainingRules({ [f]: [entry], entries: e.entries }, label, out, ctx, oid);
-      out.push(base(oid, describeSet(entry) || `Option ${i + 1}`, "Training Option", "5etools", { compendiumHidden: true, supports: [`${idBase} ${f} options`], rules: optRules }));
+      out.push(
+        base(oid, describeSet(entry) || `Option ${i + 1}`, "Training Option", "5etools", {
+          compendiumHidden: true,
+          supports: [`${idBase} ${f} options`],
+          rules: optRules,
+        }),
+      );
       return oid;
     });
-    rules.push({ kind: "select", type: "Training Option", name: `${label}: ${f.replace(/Proficiencies$/, "").replace(/([A-Z])/g, " $1").toLowerCase()} (choose one set)`, supports: ids.join("|"), number: 1 });
+    rules.push({
+      kind: "select",
+      type: "Training Option",
+      name: `${label}: ${f
+        .replace(/Proficiencies$/, "")
+        .replace(/([A-Z])/g, " $1")
+        .toLowerCase()} (choose one set)`,
+      supports: ids.join("|"),
+      number: 1,
+    });
   }
   rules.push(...skillRules(single.skillProficiencies, label));
   // "other": the language the entry's own text names.
   const langs = (single.languageProficiencies as J[] | undefined)?.map((entry) => {
     if (!entry?.other) return entry;
     const text = stripTags(JSON.stringify(e.entries ?? "")).toLowerCase();
-    const named = (ctx.languageNames ?? []).filter((n) => n.length > 3 && !(n in entry) && new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(text));
+    const named = (ctx.languageNames ?? []).filter(
+      (n) => n.length > 3 && !(n in entry) && new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(text),
+    );
     if (!named.length) return entry;
     const { other, ...rest } = entry;
     void other;
@@ -462,42 +765,92 @@ export function proseChoiceRules(f: J, idBase: string, level: number | undefined
   const choice = (label: string, options: { name: string; rules?: ARule[]; entries?: unknown[] }[]) => {
     const ids = options.map((o) => {
       const oid = `${idBase}_CHOICE_${slug(o.name)}`;
-      if (!out.some((e) => e.id === oid)) out.push(o.entries ? featureElement({ ...f, name: o.name, entries: o.entries }, "5et subclass feature", "Training Option", oid, ctx, false, out) : base(oid, o.name, "Training Option", "5etools", { compendiumHidden: true, rules: o.rules ?? [] }));
+      if (!out.some((e) => e.id === oid))
+        out.push(
+          o.entries
+            ? featureElement({ ...f, name: o.name, entries: o.entries }, "5et subclass feature", "Training Option", oid, ctx, false, out)
+            : base(oid, o.name, "Training Option", "5etools", { compendiumHidden: true, rules: o.rules ?? [] }),
+        );
       return oid;
     });
     rules.push({ kind: "select", type: "Training Option", name: label, supports: ids.join("|"), number: 1, ...lvl });
   };
   const first = typeof entries[0] === "string" ? stripTags(entries[0]) : "";
   if (/^you gain one of the following (?:feature )?options of your choice\./.test(first)) {
-    const named = entries.slice(1).flatMap((e) => { const x = e as J; return x?.name ? [x] : ((x?.entries as J[]) ?? []).filter((y) => y?.name); });
-    if (named.length > 1) choice(`${f.name}: choose one`, named.map((x) => ({ name: String(x.name), entries: x.entries as unknown[] })));
+    const named = entries.slice(1).flatMap((e) => {
+      const x = e as J;
+      return x?.name ? [x] : ((x?.entries as J[]) ?? []).filter((y) => y?.name);
+    });
+    if (named.length > 1)
+      choice(
+        `${f.name}: choose one`,
+        named.map((x) => ({ name: String(x.name), entries: x.entries as unknown[] })),
+      );
   }
   const text = stripTags(raw);
   const types = /(?:"|\. |, )choose one of (?:the following|those) (?:damage )?types: ([^.]+)\./i.exec(text);
   if (types && !/your allies/i.test(text)) {
-    const names = types[1].replace(/\bor\b/g, "").split(",").map((x) => x.trim()).filter(Boolean);
+    const names = types[1]
+      .replace(/\bor\b/g, "")
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
     const resists = /you have resistance to that damage type/i.test(text);
-    choice(`${f.name}: damage type`, names.map((n) => ({ name: cap(n.toLowerCase()), rules: resists ? [{ kind: "grant", type: "Condition", id: `ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_${slug(n)}` } as ARule] : [] })));
+    choice(
+      `${f.name}: damage type`,
+      names.map((n) => ({
+        name: cap(n.toLowerCase()),
+        rules: resists ? [{ kind: "grant", type: "Condition", id: `ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_${slug(n)}` } as ARule] : [],
+      })),
+    );
   }
   if (/you choose one type of dragon as your ancestor/i.test(text)) {
     const table = entries.find((e) => (e as J)?.type === "table") as J | undefined;
-    if (table) choice(`${f.name}: dragon`, (table.rows as unknown[][]).map((row) => ({ name: cap(`${stripTags(String(row[0]))} (${stripTags(String(row[1]))})`) })));
+    if (table)
+      choice(
+        `${f.name}: dragon`,
+        (table.rows as unknown[][]).map((row) => ({ name: cap(`${stripTags(String(row[0]))} (${stripTags(String(row[1]))})`) })),
+      );
   }
   // "When you take this feat, choose one of the benefits listed below" (Strike of the Giants).
   if (/choose one of the benefits listed below/i.test(first)) {
     const named = entries.slice(1).filter((e) => (e as J)?.name) as J[];
-    if (named.length > 1) choice(`${f.name}: choose one`, named.map((x) => ({ name: String(x.name), entries: x.entries as unknown[] })));
+    if (named.length > 1)
+      choice(
+        `${f.name}: choose one`,
+        named.map((x) => ({ name: String(x.name), entries: x.entries as unknown[] })),
+      );
   }
   // A feat's own weapon mastery (2024 Weapon Master), from the same list a class's comes from. A class has its own table.
   const mastery = /mastery propert(?:y|ies) of (one|two|three) kinds? of [^.]*weapons?[^.]* of your choice/i.exec(text);
-  if (mastery && level === undefined) rules.push({ kind: "select", type: "Class Feature", name: `Weapon Mastery (${f.name})`, supports: "5et weapon mastery", number: { one: 1, two: 2, three: 3 }[mastery[1].toLowerCase()]! });
+  if (mastery && level === undefined)
+    rules.push({
+      kind: "select",
+      type: "Class Feature",
+      name: `Weapon Mastery (${f.name})`,
+      supports: "5et weapon mastery",
+      number: { one: 1, two: 2, three: 3 }[mastery[1].toLowerCase()]!,
+    });
   // A spellcasting ability named only in prose (Eldritch Adept, Rune Shaper).
-  const casts = /your spellcasting ability for (?:this feat|the invocation) is (intelligence|wisdom|charisma), (intelligence|wisdom|charisma), or (intelligence|wisdom|charisma) \(choose/i.exec(text);
-  if (casts && level === undefined) rules.push(...castingAbilityChoice({ choose: [casts[1], casts[2], casts[3]].map((x) => x.slice(0, 3).toLowerCase()) }, String(f.name), String(f.source), out));
+  const casts =
+    /your spellcasting ability for (?:this feat|the invocation) is (intelligence|wisdom|charisma), (intelligence|wisdom|charisma), or (intelligence|wisdom|charisma) \(choose/i.exec(
+      text,
+    );
+  if (casts && level === undefined)
+    rules.push(
+      ...castingAbilityChoice(
+        { choose: [casts[1], casts[2], casts[3]].map((x) => x.slice(0, 3).toLowerCase()) },
+        String(f.name),
+        String(f.source),
+        out,
+      ),
+    );
   const feats = /You gain another \{@filter [^|}]*\|feats\|category=(\w+)\} of your choice/.exec(raw);
-  if (feats) rules.push({ kind: "select", type: "Feat", name: `${f.name} feat`, supports: `5et feat,(category ${feats[1]})`, number: 1, ...lvl });
+  if (feats)
+    rules.push({ kind: "select", type: "Feat", name: `${f.name} feat`, supports: `5et feat,(category ${feats[1]})`, number: 1, ...lvl });
   if (/choose two types of weapons to be your kensei weapons/i.test(raw)) {
-    const pick = (lv: number, number: number) => rules.push({ kind: "select", type: "Proficiency", name: "Kensei weapon", supports: "5et weapon", number, level: lv });
+    const pick = (lv: number, number: number) =>
+      rules.push({ kind: "select", type: "Proficiency", name: "Kensei weapon", supports: "5et weapon", number, level: lv });
     pick(level ?? 3, 2);
     for (const lv of [6, 11, 17]) pick(lv, 1);
   }
@@ -516,7 +869,12 @@ function applyTextExpertiseOnChoices(out: AElement[]): void {
   const have = new Set(out.map((e) => e.id));
   for (const el of out) {
     const text = el.description ? stripTags(el.description.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ") : "";
-    if (!/proficiency bonus is doubled for any ability check you make that uses (?:either|any|each|both) of (?:those|the chosen) skills/i.test(text)) continue;
+    if (
+      !/proficiency bonus is doubled for any ability check you make that uses (?:either|any|each|both) of (?:those|the chosen) skills/i.test(
+        text,
+      )
+    )
+      continue;
     el.rules = el.rules.map((r) => {
       if (r.kind !== "select" || r.type !== "Proficiency") return r;
       const ids = r.supports.split("|");
@@ -524,7 +882,18 @@ function applyTextExpertiseOnChoices(out: AElement[]): void {
       const wrapped = ids.map((id) => {
         const oid = `${el.id}_SKILL_${id.slice("ID_5ET_SKILL_".length)}`;
         const skill = out.find((e) => e.id === id);
-        if (!have.has(oid)) { have.add(oid); added.push(base(oid, skill?.name ?? id, "Proficiency", "5etools", { compendiumHidden: true, rules: [{ kind: "grant", type: "Proficiency", id } as ARule, { kind: "grant", type: "Proficiency", id: id.replace("ID_5ET_SKILL_", "ID_5ET_EXPERTISE_") } as ARule] })); }
+        if (!have.has(oid)) {
+          have.add(oid);
+          added.push(
+            base(oid, skill?.name ?? id, "Proficiency", "5etools", {
+              compendiumHidden: true,
+              rules: [
+                { kind: "grant", type: "Proficiency", id } as ARule,
+                { kind: "grant", type: "Proficiency", id: id.replace("ID_5ET_SKILL_", "ID_5ET_EXPERTISE_") } as ARule,
+              ],
+            }),
+          );
+        }
         return oid;
       });
       // Same kind, name and level, so the choice keeps the key characters saved its picks under (choiceKey).
@@ -547,21 +916,52 @@ function applyTextSkillChoices(out: AElement[]): void {
     const text = stripTags(el.description.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ");
     const m = /\b(?:in|of) (one|two|three) of the following skills(?: of your choice)?: ([^.]+)\./i.exec(text);
     if (!m) continue;
-    const touchesSkill = (r: ARule) => (r.kind === "select" && (/skill|expertise/i.test(r.name) || /ID_5ET_SKILL_|ID_5ET_EXPERTISE_|_skillProficiencies_|_expertise_/i.test(r.supports))) || (r.kind === "grant" && /^ID_5ET_(SKILL|EXPERTISE)_/.test(r.id ?? ""));
-    const optionTouches = (r: ARule) => r.kind === "select" && r.supports.split("|").some((id) => out.find((o) => o.id === id)?.rules.some(touchesSkill));
+    const touchesSkill = (r: ARule) =>
+      (r.kind === "select" &&
+        (/skill|expertise/i.test(r.name) || /ID_5ET_SKILL_|ID_5ET_EXPERTISE_|_skillProficiencies_|_expertise_/i.test(r.supports))) ||
+      (r.kind === "grant" && /^ID_5ET_(SKILL|EXPERTISE)_/.test(r.id ?? ""));
+    const optionTouches = (r: ARule) =>
+      r.kind === "select" && r.supports.split("|").some((id) => out.find((o) => o.id === id)?.rules.some(touchesSkill));
     if (el.rules.some((r) => touchesSkill(r) || optionTouches(r))) continue;
     // A species states its skill choice on itself and words it in a trait (Kenku Training, Primal Intuition): the
     // element that gives this one already asks.
-    if (out.some((o) => o.rules.some((r) => (r.kind === "grant" && r.id === el.id) || (r.kind === "select" && r.supports.split("|").includes(el.id))) && o.rules.some((r) => r.kind === "select" && /skill/i.test(r.name)))) continue;
-    const names = m[2].replace(/\bor\b|\band\b/g, ",").split(",").map((x) => x.trim().toLowerCase()).filter((x) => SKILLS.includes(x));
+    if (
+      out.some(
+        (o) =>
+          o.rules.some((r) => (r.kind === "grant" && r.id === el.id) || (r.kind === "select" && r.supports.split("|").includes(el.id))) &&
+          o.rules.some((r) => r.kind === "select" && /skill/i.test(r.name)),
+      )
+    )
+      continue;
+    const names = m[2]
+      .replace(/\bor\b|\band\b/g, ",")
+      .split(",")
+      .map((x) => x.trim().toLowerCase())
+      .filter((x) => SKILLS.includes(x));
     if (names.length < 2) continue;
-    const expert = /you (?:also )?have expertise in th(?:ose|e) (?:two |three |chosen )?skills?/i.test(text) || /proficiency bonus is doubled for any ability check you make that uses either of those skills/i.test(text);
+    const expert =
+      /you (?:also )?have expertise in th(?:ose|e) (?:two |three |chosen )?skills?/i.test(text) ||
+      /proficiency bonus is doubled for any ability check you make that uses either of those skills/i.test(text);
     const ids = names.map((n) => {
       const oid = `${el.id}_SKILL_${slug(n)}`;
-      added.push(base(oid, cap(n), "Training Option", "5etools", { compendiumHidden: true, rules: [{ kind: "grant", type: "Proficiency", id: skillIdOf(n) }, ...(expert ? [{ kind: "grant", type: "Proficiency", id: `ID_5ET_EXPERTISE_${slug(n)}` } as ARule] : [])] }));
+      added.push(
+        base(oid, cap(n), "Training Option", "5etools", {
+          compendiumHidden: true,
+          rules: [
+            { kind: "grant", type: "Proficiency", id: skillIdOf(n) },
+            ...(expert ? [{ kind: "grant", type: "Proficiency", id: `ID_5ET_EXPERTISE_${slug(n)}` } as ARule] : []),
+          ],
+        }),
+      );
       return oid;
     });
-    el.rules.push({ kind: "select", type: "Training Option", name: `${el.name}: ${expert ? "skill and expertise" : "skill"}`, supports: ids.join("|"), number: { one: 1, two: 2, three: 3 }[m[1].toLowerCase()]! });
+    el.rules.push({
+      kind: "select",
+      type: "Training Option",
+      name: `${el.name}: ${expert ? "skill and expertise" : "skill"}`,
+      supports: ids.join("|"),
+      number: { one: 1, two: 2, three: 3 }[m[1].toLowerCase()]!,
+    });
   }
   out.push(...added);
 }
@@ -578,16 +978,35 @@ export function favoredChoices(f: J, idBase: string, level: number, ctx: Ctx, ou
   const ORD = (x: string) => Number(/(\d+)/.exec(x)?.[1]);
   for (const m of text.matchAll(/choose (?:a|one) type of (favored enemy|favored terrain): ([^.]+)\./gi)) {
     const what = m[1].toLowerCase();
-    const names = m[2].replace(/\bor\b/g, ",").split(",").map((x) => x.trim().replace(/^the\s+/i, "")).filter(Boolean).map((x) => (/^underdark$/i.test(x) ? "Underdark" : cap(x)));
+    const names = m[2]
+      .replace(/\bor\b/g, ",")
+      .split(",")
+      .map((x) => x.trim().replace(/^the\s+/i, ""))
+      .filter(Boolean)
+      .map((x) => (/^underdark$/i.test(x) ? "Underdark" : cap(x)));
     if (what === "favored enemy" && /two races of humanoid/i.test(text)) names.push("Humanoids (two races)");
     if (names.length < 3) continue;
     const ids = names.map((n) => {
       const oid = `${idBase}_CHOICE_${slug(n)}`;
-      if (!out.some((o) => o.id === oid)) out.push(base(oid, n, "Training Option", srcName(ctx, f.source), { compendiumHidden: true, description: `<p>${esc(cap(what))}: ${esc(n)}.</p>` }));
+      if (!out.some((o) => o.id === oid))
+        out.push(
+          base(oid, n, "Training Option", srcName(ctx, f.source), {
+            compendiumHidden: true,
+            description: `<p>${esc(cap(what))}: ${esc(n)}.</p>`,
+          }),
+        );
       return oid;
     });
     const later = new RegExp(`additional ${what}[^.]*?at (\\d+)(?:st|nd|rd|th) and (\\d+)(?:st|nd|rd|th) level`, "i").exec(text);
-    for (const lv of [level, ...(later ? [ORD(later[1]), ORD(later[2])] : [])]) rules.push({ kind: "select", type: "Training Option", name: `${cap(what)} (level ${lv})`, supports: ids.join("|"), number: 1, ...(lv > level ? { level: lv } : { level }) } as ARule);
+    for (const lv of [level, ...(later ? [ORD(later[1]), ORD(later[2])] : [])])
+      rules.push({
+        kind: "select",
+        type: "Training Option",
+        name: `${cap(what)} (level ${lv})`,
+        supports: ids.join("|"),
+        number: 1,
+        ...(lv > level ? { level: lv } : { level }),
+      } as ARule);
   }
   return rules;
 }
@@ -605,24 +1024,47 @@ export function leveledOptionChoices(f: J, idBase: string, ctx: Ctx, out: AEleme
   const byLevel = new Map<number, string[]>();
   entries.forEach((e, i) => {
     if (typeof e !== "string") return;
-    const m = /^At (\d+)(?:st|nd|rd|th) level,.*choose one of (?:the options you didn't take at (\d+)(?:st|nd|rd|th) level, or one of )?the following options:$/i.exec(stripTags(e));
+    const m =
+      /^At (\d+)(?:st|nd|rd|th) level,.*choose one of (?:the options you didn't take at (\d+)(?:st|nd|rd|th) level, or one of )?the following options:$/i.exec(
+        stripTags(e),
+      );
     const list = entries[i + 1] as J | undefined;
     const items = ((list?.type === "list" ? list.items : []) as J[]).filter((x) => x?.name);
     if (!m || items.length < 2) return;
     const ids = items.map((x) => {
       const oid = `${idBase}_CHOICE_${slug(String(x.name))}`;
       if (!out.some((o) => o.id === oid)) {
-        const opt = featureElement({ name: x.name, source: f.source, entries: x.entries ?? [x.entry] }, "5et trait", "Training Option", oid, ctx, false, out);
+        const opt = featureElement(
+          { name: x.name, source: f.source, entries: x.entries ?? [x.entry] },
+          "5et trait",
+          "Training Option",
+          oid,
+          ctx,
+          false,
+          out,
+        );
         const text = stripTags(JSON.stringify(x.entries ?? x.entry ?? ""));
-        for (const [mode, word] of [["climb", "climbing"], ["swim", "swimming"]] as const) if (new RegExp(`you have a ${word} speed equal to your walking speed`, "i").test(text)) opt.rules.push({ kind: "stat", name: `innate speed:${mode}`, value: "innate speed", bonus: "base" } as ARule);
+        for (const [mode, word] of [
+          ["climb", "climbing"],
+          ["swim", "swimming"],
+        ] as const)
+          if (new RegExp(`you have a ${word} speed equal to your walking speed`, "i").test(text))
+            opt.rules.push({ kind: "stat", name: `innate speed:${mode}`, value: "innate speed", bonus: "base" } as ARule);
         out.push(opt);
       }
       return oid;
     });
     const level = Number(m[1]);
-    const earlier = m[2] ? byLevel.get(Number(m[2])) ?? [] : [];
+    const earlier = m[2] ? (byLevel.get(Number(m[2])) ?? []) : [];
     byLevel.set(level, ids);
-    rules.push({ kind: "select", type: "Training Option", name: `${f.name} (level ${level})`, supports: [...earlier, ...ids].join("|"), number: 1, ...(level > 1 ? { level } : {}) } as ARule);
+    rules.push({
+      kind: "select",
+      type: "Training Option",
+      name: `${f.name} (level ${level})`,
+      supports: [...earlier, ...ids].join("|"),
+      number: 1,
+      ...(level > 1 ? { level } : {}),
+    } as ARule);
   });
   return rules;
 }
@@ -638,14 +1080,38 @@ function customOrigin(rules0: ARule[], label: string, ctx: Ctx, out: AElement[])
   // A 2014 species' increases give way to a 2014 background taken under the 2024 rules (backgroundOptions.ts: that
   // package raises three scores itself and grants this marker), as Aurora's species do.
   const off = "!ID_INTERNAL_GRANTS_BACKGROUND_ASI";
-  const rules = rules0.map((r) => ((r.kind === "stat" && Object.values(ABIL).includes(r.name as never)) || (r.kind === "select" && r.type === "Ability Score Improvement") ? ({ ...r, requirements: r.requirements ? `${r.requirements},${off}` : off } as ARule) : r));
-  const fixed = rules.filter((r) => r.kind === "stat" && Object.values(ABIL).includes(r.name as never) && Number((r as { value: string }).value) > 0 && r.requirements === off);
+  const rules = rules0.map((r) =>
+    (r.kind === "stat" && Object.values(ABIL).includes(r.name as never)) || (r.kind === "select" && r.type === "Ability Score Improvement")
+      ? ({ ...r, requirements: r.requirements ? `${r.requirements},${off}` : off } as ARule)
+      : r,
+  );
+  const fixed = rules.filter(
+    (r) =>
+      r.kind === "stat" &&
+      Object.values(ABIL).includes(r.name as never) &&
+      Number((r as { value: string }).value) > 0 &&
+      r.requirements === off,
+  );
   if (!fixed.length) return rules;
-  if (!out.some((o) => o.id === CUSTOM_ORIGIN_ASI)) out.push(base(CUSTOM_ORIGIN_ASI, "Customized Ability Score Increases", "Option", srcName(ctx, "TCE"), {
-    description: "<p>Customizing Your Origin: any ability score increase your species gives you can go to an ability score of your choice instead, each increase to a different score.</p>",
-  }));
+  if (!out.some((o) => o.id === CUSTOM_ORIGIN_ASI))
+    out.push(
+      base(CUSTOM_ORIGIN_ASI, "Customized Ability Score Increases", "Option", srcName(ctx, "TCE"), {
+        description:
+          "<p>Customizing Your Origin: any ability score increase your species gives you can go to an ability score of your choice instead, each increase to a different score.</p>",
+      }),
+    );
   const kept = rules.map((r) => (fixed.includes(r) ? ({ ...r, requirements: `!${CUSTOM_ORIGIN_ASI},${off}` } as ARule) : r));
-  for (const r of fixed) { const v = (r as { value: string }).value; kept.push({ kind: "select", type: "Ability Score Improvement", name: `${label}: customized increase (+${v})`, supports: `5et asi one,amt${v}`, number: 1, requirements: `${CUSTOM_ORIGIN_ASI},${off}` } as ARule); }
+  for (const r of fixed) {
+    const v = (r as { value: string }).value;
+    kept.push({
+      kind: "select",
+      type: "Ability Score Improvement",
+      name: `${label}: customized increase (+${v})`,
+      supports: `5et asi one,amt${v}`,
+      number: 1,
+      requirements: `${CUSTOM_ORIGIN_ASI},${off}`,
+    } as ARule);
+  }
   return kept;
 }
 
@@ -658,16 +1124,39 @@ function abilityRules(list: J[] | undefined, label: string, sets?: { out: AEleme
   if (sets && Array.isArray(list) && list.length > 1) {
     const words = (entry: J) => {
       const c = entry.choose as J | undefined;
-      if (c?.weighted) { const w = c.weighted.weights as number[]; return w.every((x) => x === 1) ? `+1 to ${w.length} scores` : w.map((x, i) => `+${x} to ${i ? "another score" : "one score"}`).join(" and "); }
+      if (c?.weighted) {
+        const w = c.weighted.weights as number[];
+        return w.every((x) => x === 1)
+          ? `+1 to ${w.length} scores`
+          : w.map((x, i) => `+${x} to ${i ? "another score" : "one score"}`).join(" and ");
+      }
       if (c) return `+${c.amount ?? 1} to ${(c.count ?? 1) > 1 ? `${c.count} scores` : "one score"}`;
-      return Object.entries(entry).filter(([k]) => k in ABIL).map(([k, v]) => `${cap(abilFull(k))} +${v}`).join(", ");
+      return Object.entries(entry)
+        .filter(([k]) => k in ABIL)
+        .map(([k, v]) => `${cap(abilFull(k))} +${v}`)
+        .join(", ");
     };
     const ids = list.map((entry, i) => {
       const oid = `${sets.idBase}_ABILITY_OPTION_${i + 1}`;
-      if (!sets.out.some((o) => o.id === oid)) sets.out.push(base(oid, words(entry) || `Option ${i + 1}`, "Ability Score Improvement", "5etools", { compendiumHidden: true, supports: [`${sets.idBase} ability options`], rules: abilityRules([entry], label) }));
+      if (!sets.out.some((o) => o.id === oid))
+        sets.out.push(
+          base(oid, words(entry) || `Option ${i + 1}`, "Ability Score Improvement", "5etools", {
+            compendiumHidden: true,
+            supports: [`${sets.idBase} ability options`],
+            rules: abilityRules([entry], label),
+          }),
+        );
       return oid;
     });
-    return [{ kind: "select", type: "Ability Score Improvement", name: `${label}: ability score increases (choose one)`, supports: ids.join("|"), number: 1 }];
+    return [
+      {
+        kind: "select",
+        type: "Ability Score Improvement",
+        name: `${label}: ability score increases (choose one)`,
+        supports: ids.join("|"),
+        number: 1,
+      },
+    ];
   }
   const rules: ARule[] = [];
   const tops: ARule[] = [];
@@ -677,9 +1166,19 @@ function abilityRules(list: J[] | undefined, label: string, sets?: { out: AEleme
     const top = Number(entry.max) > 20 ? String(Number(entry.max) - 20) : undefined;
     // Added after the entry's own rules: a choice is saved under its rule's place in the list, which must not move.
     if (top) {
-      for (const k of Object.keys(entry)) if (k in ABIL && typeof entry[k] === "number") tops.push({ kind: "stat", name: `${abilFull(k)}:max:extra`, value: top, bonus: "base" });
+      for (const k of Object.keys(entry))
+        if (k in ABIL && typeof entry[k] === "number")
+          tops.push({ kind: "stat", name: `${abilFull(k)}:max:extra`, value: top, bonus: "base" });
       const c = entry.choose as J | undefined;
-      if (c && !c.weighted) for (const a of ((c.from as string[]) ?? Object.keys(ABIL))) tops.push({ kind: "stat", name: `${abilFull(a)}:max:extra`, value: top, bonus: "base", requirements: `ID_5ET_ASIONE_${c.amount ?? 1}_${a}` });
+      if (c && !c.weighted)
+        for (const a of (c.from as string[]) ?? Object.keys(ABIL))
+          tops.push({
+            kind: "stat",
+            name: `${abilFull(a)}:max:extra`,
+            value: top,
+            bonus: "base",
+            requirements: `ID_5ET_ASIONE_${c.amount ?? 1}_${a}`,
+          });
     }
     for (const [k, v] of Object.entries(entry)) {
       if (k in ABIL && typeof v === "number") rules.push({ kind: "stat", name: abilFull(k), value: String(v) });
@@ -687,10 +1186,23 @@ function abilityRules(list: J[] | undefined, label: string, sets?: { out: AEleme
         const c = v as J;
         if (c.weighted) {
           const from = (c.weighted.from as string[]).map((a) => a.toUpperCase());
-          for (const w of c.weighted.weights as number[]) rules.push({ kind: "select", type: "Ability Score Improvement", name: `${label} (+${w})`, supports: `5et asi one,amt${w},(${from.join("||")})`, number: 1 });
+          for (const w of c.weighted.weights as number[])
+            rules.push({
+              kind: "select",
+              type: "Ability Score Improvement",
+              name: `${label} (+${w})`,
+              supports: `5et asi one,amt${w},(${from.join("||")})`,
+              number: 1,
+            });
         } else {
           const from = ((c.from as string[]) ?? Object.keys(ABIL)).map((a) => a.toUpperCase());
-          rules.push({ kind: "select", type: "Ability Score Improvement", name: `${label} (+${c.amount ?? 1})`, supports: `5et asi one,amt${c.amount ?? 1},(${from.join("||")})`, number: c.count ?? 1 });
+          rules.push({
+            kind: "select",
+            type: "Ability Score Improvement",
+            name: `${label} (+${c.amount ?? 1})`,
+            supports: `5et asi one,amt${c.amount ?? 1},(${from.join("||")})`,
+            number: c.count ?? 1,
+          });
         }
       }
     }
@@ -700,7 +1212,8 @@ function abilityRules(list: J[] | undefined, label: string, sets?: { out: AEleme
   // added in the middle would move the places saved choices are kept under.
   if (tops.length && sets?.after) {
     const mid = `${sets.idBase}_SCORE_MAXIMUM`;
-    if (!sets.out.some((o) => o.id === mid)) sets.out.push(base(mid, `${label}: score maximum`, "Information", "5etools", { compendiumHidden: true, rules: tops }));
+    if (!sets.out.some((o) => o.id === mid))
+      sets.out.push(base(mid, `${label}: score maximum`, "Information", "5etools", { compendiumHidden: true, rules: tops }));
     sets.after.push({ kind: "grant", type: "Information", id: mid });
   }
   return rules;
@@ -731,8 +1244,18 @@ interface Ctx {
  */
 function withItemEntries(i: J, ctx: Ctx): J {
   if (!Array.isArray(i.entries) || !JSON.stringify(i.entries).includes("{#itemEntry")) return i;
-  const value = (k: string) => { const v = i[k]; return Array.isArray(v) ? v.join(" and ") : String(v ?? ""); };
-  const fill = (x: unknown): unknown => typeof x === "string" ? x.replace(/\{\{(?:getFullImmRes )?item\.(\w+)\}\}/g, (_m, k: string) => value(k)) : Array.isArray(x) ? x.map(fill) : x && typeof x === "object" ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, fill(v)])) : x;
+  const value = (k: string) => {
+    const v = i[k];
+    return Array.isArray(v) ? v.join(" and ") : String(v ?? "");
+  };
+  const fill = (x: unknown): unknown =>
+    typeof x === "string"
+      ? x.replace(/\{\{(?:getFullImmRes )?item\.(\w+)\}\}/g, (_m, k: string) => value(k))
+      : Array.isArray(x)
+        ? x.map(fill)
+        : x && typeof x === "object"
+          ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, fill(v)]))
+          : x;
   const entries = (i.entries as unknown[]).flatMap((e) => {
     const m = typeof e === "string" ? /^\{#itemEntry ([^|}]+)(?:\|([^}]*))?\}$/.exec(e) : null;
     if (!m) return [e];
@@ -747,7 +1270,14 @@ function withItemEntries(i: J, ctx: Ctx): J {
  * "Unearthed Arcana: The Mystic Class", so it counts as playtest material and meets Aurora's copy of the same article.
  */
 // Playtest codes as Plutonium tells them: "UA..." (Unearthed Arcana) and "XUA..." (the One D&D playtest).
-const srcName = (ctx: Ctx, code: string) => ctx.books[code] ?? (/^X?UA[A-Z0-9]/.test(code) ? `Unearthed Arcana: ${code.replace(/^X?UA/, "").replace(/([a-z])([A-Z0-9])/g, "$1 $2").replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")}` : code);
+const srcName = (ctx: Ctx, code: string) =>
+  ctx.books[code] ??
+  (/^X?UA[A-Z0-9]/.test(code)
+    ? `Unearthed Arcana: ${code
+        .replace(/^X?UA/, "")
+        .replace(/([a-z])([A-Z0-9])/g, "$1 $2")
+        .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")}`
+    : code);
 
 /** "10 minutes", "1 mile": 5e.tools gives a number and a unit, and its unit is not always the right number ("1 miles", "8 hour"). */
 function counted(amount: unknown, unit: unknown): string {
@@ -761,24 +1291,57 @@ function counted(amount: unknown, unit: unknown): string {
 function convertSpell(s: J, ctx: Ctx): AElement {
   const comp = s.components ?? {};
   // More than one way to cast: "Action (Overgrowth) or 8 hours (Enrichment)".
-  const oneTime = (t: J) => counted(t.number ?? 1, t.unit).replace(/^1 action$/, "Action").replace(/^1 bonus$/, "Bonus Action").replace(/^1 reaction$/, "Reaction") + (t.note ? ` (${t.note})` : "");
+  const oneTime = (t: J) =>
+    counted(t.number ?? 1, t.unit)
+      .replace(/^1 action$/, "Action")
+      .replace(/^1 bonus$/, "Bonus Action")
+      .replace(/^1 reaction$/, "Reaction") + (t.note ? ` (${t.note})` : "");
   const time = ((s.time as J[] | undefined) ?? []).map(oneTime).join(" or ");
   const r = s.range;
   // An area around the caster is "Self (15-foot cone)": its size is not a range (the sheet read "15 feet").
-  const area = /^(cone|radius|sphere|hemisphere|line|cube|emanation)$/.test(String(r?.type)) && r?.distance?.amount ? `Self (${r.distance.amount}-${String(r.distance.type).replace(/^feet$/, "foot").replace(/^miles?$/, "mile")} ${r.type})` : "";
-  const range = area || (r?.type === "special" ? "Special" : r?.distance ? (r.distance.type === "self" || r.type === "self" ? "Self" : counted(r.distance.amount, r.distance.type)) : "");
+  const area =
+    /^(cone|radius|sphere|hemisphere|line|cube|emanation)$/.test(String(r?.type)) && r?.distance?.amount
+      ? `Self (${r.distance.amount}-${String(r.distance.type)
+          .replace(/^feet$/, "foot")
+          .replace(/^miles?$/, "mile")} ${r.type})`
+      : "";
+  const range =
+    area ||
+    (r?.type === "special"
+      ? "Special"
+      : r?.distance
+        ? r.distance.type === "self" || r.type === "self"
+          ? "Self"
+          : counted(r.distance.amount, r.distance.type)
+        : "");
   const d = s.duration?.[0];
-  const dur = d ? (d.type === "instant" ? "Instantaneous" : d.type === "permanent" ? `Until dispelled${(d.ends as string[] | undefined)?.includes("trigger") ? " or triggered" : ""}` : d.type === "special" ? "Special" : `${d.concentration ? "Concentration, up to " : ""}${counted(d.duration?.amount, d.duration?.type)}`.trim()) : "";
+  const dur = d
+    ? d.type === "instant"
+      ? "Instantaneous"
+      : d.type === "permanent"
+        ? `Until dispelled${(d.ends as string[] | undefined)?.includes("trigger") ? " or triggered" : ""}`
+        : d.type === "special"
+          ? "Special"
+          : `${d.concentration ? "Concentration, up to " : ""}${counted(d.duration?.amount, d.duration?.type)}`.trim()
+    : "";
   const classes = ctx.spellClasses[s.source]?.[String(s.name).toLowerCase()] ?? s.classes?.fromClassList?.map((c: J) => c.name) ?? [];
-  const mat = comp.m ? (typeof comp.m === "string" ? comp.m : comp.m.text ?? "") : "";
+  const mat = comp.m ? (typeof comp.m === "string" ? comp.m : (comp.m.text ?? "")) : "";
   const setters: Record<string, SetterValue> = {
-    level: set(String(s.level ?? 0)), school: set(SCHOOL[s.school] ?? s.school ?? ""), time: set(time), range: set(range), duration: set(dur),
-    hasVerbalComponent: set(comp.v ? "true" : "false"), hasSomaticComponent: set(comp.s ? "true" : "false"), hasMaterialComponent: set(comp.m ? "true" : "false"),
-    isConcentration: set(d?.concentration ? "true" : "false"), isRitual: set(s.meta?.ritual ? "true" : "false"),
+    level: set(String(s.level ?? 0)),
+    school: set(SCHOOL[s.school] ?? s.school ?? ""),
+    time: set(time),
+    range: set(range),
+    duration: set(dur),
+    hasVerbalComponent: set(comp.v ? "true" : "false"),
+    hasSomaticComponent: set(comp.s ? "true" : "false"),
+    hasMaterialComponent: set(comp.m ? "true" : "false"),
+    isConcentration: set(d?.concentration ? "true" : "false"),
+    isRitual: set(s.meta?.ritual ? "true" : "false"),
   };
   if (mat) setters.materialComponent = set(mat);
   return base(ftId("SPELL", s.name, s.source), s.name, "Spell", srcName(ctx, s.source), {
-    supports: [...new Set<string>(classes)], setters,
+    supports: [...new Set<string>(classes)],
+    setters,
     description: entriesHtml(s.entries) + entriesHtml(s.entriesHigherLevel),
   });
 }
@@ -799,14 +1362,24 @@ function convertItem(raw: J, ctx: Ctx): AElement | null {
   const t = String(m.type ?? "").split("|")[0];
   const weapon = t === "M" || t === "R" || !!m.weaponCategory || !!m.weapon;
   const armor = ["LA", "MA", "HA", "S"].includes(t);
-  const magic = m.rarity && m.rarity !== "none" && m.rarity !== "unknown" && !(!i.baseItem && (weapon || armor) && m.source === (b.source ?? m.source) && !i.reqAttune && !i.bonusWeapon && !i.bonusAc);
+  const magic =
+    m.rarity &&
+    m.rarity !== "none" &&
+    m.rarity !== "unknown" &&
+    !(!i.baseItem && (weapon || armor) && m.source === (b.source ?? m.source) && !i.reqAttune && !i.bonusWeapon && !i.bonusAc);
   const type = weapon ? "Weapon" : armor ? "Armor" : magic ? "Magic Item" : "Item";
-  const setters: Record<string, SetterValue> = { category: set(weapon ? "Weapons" : armor ? "Armor" : magic ? "Magic Items" : "Adventuring Gear") };
+  const setters: Record<string, SetterValue> = {
+    category: set(weapon ? "Weapons" : armor ? "Armor" : magic ? "Magic Items" : "Adventuring Gear"),
+  };
   const rules: ARule[] = [];
   // Futuristic technology (5e.tools' "age": laser rifles, powered armor) is "scifi" and renaissance or modern technology
   // (pistols, muskets, revolvers, rifles, modern vehicles) is "modern", each for its own global filter; a magic item
   // built on one ("+1 Laser Rifle") takes its base item's age.
-  const supports: string[] = /^futuristic$/i.test(String(m.age ?? "")) ? ["scifi"] : /^(modern|renaissance)$/i.test(String(m.age ?? "")) ? ["modern"] : [];
+  const supports: string[] = /^futuristic$/i.test(String(m.age ?? ""))
+    ? ["scifi"]
+    : /^(modern|renaissance)$/i.test(String(m.age ?? ""))
+      ? ["modern"]
+      : [];
   // Something that holds other things (a backpack, a pouch, a bag of holding), for "Kept in" in the inventory.
   // Only one that holds gear: a weight, or a volume of half a cubic foot or more (a bucket, a barrel). A liquid's small
   // measure (a waterskin, a flask, a vial) holds no gear; a quiver or a scroll case holds only what it is made for (C7.3).
@@ -815,7 +1388,9 @@ function convertItem(raw: J, ctx: Ctx): AElement | null {
     if (holdsCap.weight?.length || Math.max(0, ...(holdsCap.volume ?? [])) >= 0.5) supports.push("container");
     else if (holdsCap.item?.length) {
       supports.push("container-for");
-      setters.holds = set([...new Set(holdsCap.item.flatMap((g) => Object.keys(g).map((k) => k.split("|")[0].replace(/\s*\(.*\)$/, ""))))].join("; "));
+      setters.holds = set(
+        [...new Set(holdsCap.item.flatMap((g) => Object.keys(g).map((k) => k.split("|")[0].replace(/\s*\(.*\)$/, ""))))].join("; "),
+      );
     }
   }
   // A spellcasting focus is filed in its group, as Aurora files it (C7.7: "an arcane focus" in starting gear offers them).
@@ -832,23 +1407,34 @@ function convertItem(raw: J, ctx: Ctx): AElement | null {
   if (magic && (m.miscTags ?? []).includes("CNS")) setters.consumable = set("true");
   // Every item with a real rarity keeps it, the common magic weapons too (a Staff of Adornment is not a plain staff:
   // starting gear's "any simple weapon" offered it, Chris 2026-10-29).
-  if (magic || (m.rarity && m.rarity !== "none" && m.rarity !== "unknown")) setters.rarity = set(`${cap(String(m.rarity))}${m.reqAttune ? " (requires attunement)" : ""}`);
+  if (magic || (m.rarity && m.rarity !== "none" && m.rarity !== "unknown"))
+    setters.rarity = set(`${cap(String(m.rarity))}${m.reqAttune ? " (requires attunement)" : ""}`);
   if (weapon) {
     if (m.dmg1) setters.damage = set(String(m.dmg1), { type: DMG[m.dmgType] ?? "" });
     if (m.dmg2) setters.versatile = set(String(m.dmg2));
     // A property can be an object with a note: {uid: "2H|XPHB", note: "unless mounted"} (the 2024 Lance).
-    const props = ((m.property as unknown[]) ?? []).map((p) => String(typeof p === "string" ? p : (p as J)?.uid ?? "").split("|")[0]).filter(Boolean);
+    const props = ((m.property as unknown[]) ?? [])
+      .map((p) => String(typeof p === "string" ? p : ((p as J)?.uid ?? "")).split("|")[0])
+      .filter(Boolean);
     for (const p of props) supports.push(PROP[p] ?? p.toLowerCase());
     if (t === "R" || props.includes("A")) supports.push("ranged");
     const cat = m.weaponCategory === "martial" ? "MARTIAL" : "SIMPLE";
     supports.push(cat.toLowerCase());
     // A firearm is also covered by training with firearms as a kind (Gunner's "firearms": true), as Plutonium reads
     // it: one of the kinds beside simple and martial. Without it a Gunner was "not proficient" with every firearm.
-    setters.proficiency = set(`ID_5ET_PROF_WEAPON_${cat},${ftId("PROF_WEAPON", m.name.replace(/^[+-]\d+ /, ""), "ALL")}${m.firearm ? ",ID_5ET_PROF_WEAPON_FIREARMS" : ""}`);
+    setters.proficiency = set(
+      `ID_5ET_PROF_WEAPON_${cat},${ftId("PROF_WEAPON", m.name.replace(/^[+-]\d+ /, ""), "ALL")}${m.firearm ? ",ID_5ET_PROF_WEAPON_FIREARMS" : ""}`,
+    );
     setters.slot = set(props.includes("2H") ? "twohand" : "onehand");
     if (m.range) setters.range = set(String(m.range));
     // The 2024 mastery property ("Topple|XPHB"), in the id the sheet reads masteries by.
-    for (const ms of (m.mastery as string[]) ?? []) supports.push(`ID_WOTC_PHB24_WEAPON_PROPERTY_${String(ms).split("|")[0].toUpperCase().replace(/[^A-Z]+/g, "_")}`);
+    for (const ms of (m.mastery as string[]) ?? [])
+      supports.push(
+        `ID_WOTC_PHB24_WEAPON_PROPERTY_${String(ms)
+          .split("|")[0]
+          .toUpperCase()
+          .replace(/[^A-Z]+/g, "_")}`,
+      );
     if (m.bonusWeapon) setters.attackBonus = set(String(parseInt(m.bonusWeapon, 10) || 0));
     if (m.bonusWeaponDamage || m.bonusWeapon) setters.damageBonus = set(String(parseInt(m.bonusWeaponDamage ?? m.bonusWeapon, 10) || 0));
   }
@@ -861,7 +1447,14 @@ function convertItem(raw: J, ctx: Ctx): AElement | null {
     // Heavy armor without its Strength costs 10 feet of speed (PHB), unless a feature says otherwise (the Dwarf's speed
     // "is not reduced by wearing heavy armor"), as Aurora's armor states it. Without it a 5e.tools Paladin with
     // Strength 8 in chain mail moved 30 feet, not 20.
-    if (m.strength) rules.push({ kind: "stat", name: "speed", value: "-10", bonus: "armor", requirements: `!([str:${parseInt(String(m.strength), 10) || 0}]||${IGNORE_ARMOR_STRENGTH})` } as ARule);
+    if (m.strength)
+      rules.push({
+        kind: "stat",
+        name: "speed",
+        value: "-10",
+        bonus: "armor",
+        requirements: `!([str:${parseInt(String(m.strength), 10) || 0}]||${IGNORE_ARMOR_STRENGTH})`,
+      } as ARule);
     if (m.stealth) setters.stealth = set("Disadvantage");
     if (t === "S") rules.push({ kind: "stat", name: "ac:shield", value: String(m.ac ?? 2), bonus: "shield" });
     else if (m.ac) rules.push({ kind: "stat", name: "ac:armored:armor", value: String(m.ac) });
@@ -869,38 +1462,63 @@ function convertItem(raw: J, ctx: Ctx): AElement | null {
   // Magic bonuses that apply while the item is worn or wielded.
   const bonus = (v: unknown) => (typeof v === "string" ? parseInt(v, 10) || 0 : Number(v) || 0);
   if (m.bonusAc) rules.push({ kind: "stat", name: "ac:misc", value: String(bonus(m.bonusAc)), bonus: "magic" });
-  if (m.bonusSavingThrow) for (const a of Object.values(ABIL)) rules.push({ kind: "stat", name: `${a}:save:misc`, value: String(bonus(m.bonusSavingThrow)) });
+  if (m.bonusSavingThrow)
+    for (const a of Object.values(ABIL)) rules.push({ kind: "stat", name: `${a}:save:misc`, value: String(bonus(m.bonusSavingThrow)) });
   if (m.bonusSpellAttack) rules.push({ kind: "stat", name: "spellcasting:attack", value: String(bonus(m.bonusSpellAttack)) }); // the name Aurora content and the engine use
   if (m.bonusSpellSaveDc) rules.push({ kind: "stat", name: "spellcasting:dc", value: String(bonus(m.bonusSpellSaveDc)) });
   // Charges, as Aurora's items keep them, and how they come back.
   if (m.charges !== undefined) setters.charges = set(String(m.charges));
   if (m.recharge) setters.recharge = set(`${m.recharge}${m.rechargeAmount ? ` (${stripTags(String(m.rechargeAmount))})` : ""}`);
   // Who may attune: any one of the tags (a class, any spellcaster); in the requirement syntax the checker reads.
-  const attune = ((m.reqAttuneTags as J[]) ?? []).map((t) => (t.class ? `[level:${String(t.class).split("|")[0].toLowerCase()}:1]` : t.spellcasting ? "[type:spell]" : "")).filter(Boolean);
+  const attune = ((m.reqAttuneTags as J[]) ?? [])
+    .map((t) => (t.class ? `[level:${String(t.class).split("|")[0].toLowerCase()}:1]` : t.spellcasting ? "[type:spell]" : ""))
+    .filter(Boolean);
   if (attune.length) setters["attune requirements"] = set(attune.length > 1 ? `(${attune.join("||")})` : attune[0]);
   if (m.critThreshold) setters.critRange = set(String(m.critThreshold));
   if (m.dexterityMax !== undefined && m.dexterityMax !== null) setters["dexterity max"] = set(String(m.dexterityMax));
 
-  if (m.bonusWeaponAttack) setters.attackBonus = set(String((parseInt(setters.attackBonus?.value ?? "0", 10) || 0) + bonus(m.bonusWeaponAttack)));
+  if (m.bonusWeaponAttack)
+    setters.attackBonus = set(String((parseInt(setters.attackBonus?.value ?? "0", 10) || 0) + bonus(m.bonusWeaponAttack)));
   if (m.bonusProficiencyBonus) rules.push({ kind: "stat", name: "proficiency", value: String(bonus(m.bonusProficiencyBonus)) });
   // A bonus to every ability check: every skill, and initiative (a Dexterity check).
-  if (m.bonusAbilityCheck) for (const sk of [...SKILLS, "initiative"]) rules.push({ kind: "stat", name: sk === "initiative" ? "initiative" : `${sk}:misc`, value: String(bonus(m.bonusAbilityCheck)) });
+  if (m.bonusAbilityCheck)
+    for (const sk of [...SKILLS, "initiative"])
+      rules.push({ kind: "stat", name: sk === "initiative" ? "initiative" : `${sk}:misc`, value: String(bonus(m.bonusAbilityCheck)) });
   // Speeds an item sets or adds: {static: {fly: 30}}, {bonus: {"*": 5}}, {equal: {fly: "walk"}}.
   const sp = m.modifySpeed as J | undefined;
   if (sp) {
-    for (const [mode, v] of Object.entries((sp.static as J) ?? {})) rules.push({ kind: "stat", name: mode === "walk" ? "innate speed" : `innate speed:${mode}`, value: String(v), bonus: "item speed" });
-    for (const [mode, v] of Object.entries((sp.bonus as J) ?? {})) for (const md of mode === "*" ? ["walk", "climb", "fly", "swim", "burrow"] : [mode]) rules.push({ kind: "stat", name: md === "walk" ? "speed:misc" : `speed:${md}:misc`, value: String(v) });
-    for (const [mode, v] of Object.entries((sp.equal as J) ?? {})) if (v === "walk") rules.push({ kind: "stat", name: `innate speed:${mode}`, value: "speed", bonus: "item speed" });
+    for (const [mode, v] of Object.entries((sp.static as J) ?? {}))
+      rules.push({ kind: "stat", name: mode === "walk" ? "innate speed" : `innate speed:${mode}`, value: String(v), bonus: "item speed" });
+    for (const [mode, v] of Object.entries((sp.bonus as J) ?? {}))
+      for (const md of mode === "*" ? ["walk", "climb", "fly", "swim", "burrow"] : [mode])
+        rules.push({ kind: "stat", name: md === "walk" ? "speed:misc" : `speed:${md}:misc`, value: String(v) });
+    for (const [mode, v] of Object.entries((sp.equal as J) ?? {}))
+      if (v === "walk") rules.push({ kind: "stat", name: `innate speed:${mode}`, value: "speed", bonus: "item speed" });
   }
   if (m.ability && typeof m.ability === "object") {
-    for (const [k, v] of Object.entries(m.ability.static ?? {})) rules.push({ kind: "stat", name: `${abilFull(k)}:score:set`, value: String(v) });
-    for (const [k, v] of Object.entries(m.ability)) if (k in ABIL && typeof v === "number") rules.push({ kind: "stat", name: abilFull(k), value: String(v) });
+    for (const [k, v] of Object.entries(m.ability.static ?? {}))
+      rules.push({ kind: "stat", name: `${abilFull(k)}:score:set`, value: String(v) });
+    for (const [k, v] of Object.entries(m.ability))
+      if (k in ABIL && typeof v === "number") rules.push({ kind: "stat", name: abilFull(k), value: String(v) });
   }
   // The spells an item lets its wearer cast, listed with the item (casting them uses the item's own rules).
   const attached = m.attachedSpells as J | string[] | undefined;
-  const spellNames = Array.isArray(attached) ? attached : attached ? Object.values(attached).flatMap((x) => (Array.isArray(x) ? x : Object.values(x as J).flat())) : [];
-  const desc = (entriesHtml(m.entries) || (m.type ? "" : "")) + (spellNames.length ? `<p><b>Spells:</b> ${esc(spellNames.map((x) => titleCase(plainName(String(x).split("|")[0].split("#")[0]))).join(", "))}</p>` : "");
-  return base(ftId("ITEM", i.name, i.source ?? m.source), i.name, type, srcName(ctx, i.source ?? m.source), { supports, setters, rules, description: desc });
+  const spellNames = Array.isArray(attached)
+    ? attached
+    : attached
+      ? Object.values(attached).flatMap((x) => (Array.isArray(x) ? x : Object.values(x as J).flat()))
+      : [];
+  const desc =
+    (entriesHtml(m.entries) || (m.type ? "" : "")) +
+    (spellNames.length
+      ? `<p><b>Spells:</b> ${esc(spellNames.map((x) => titleCase(plainName(String(x).split("|")[0].split("#")[0]))).join(", "))}</p>`
+      : "");
+  return base(ftId("ITEM", i.name, i.source ?? m.source), i.name, type, srcName(ctx, i.source ?? m.source), {
+    supports,
+    setters,
+    rules,
+    description: desc,
+  });
 }
 
 /** Feats like Magic Initiate offer one variant per spell list; each becomes its own feat. */
@@ -915,15 +1533,45 @@ function featVariants(f: J, ctx: Ctx, out: AElement[]): boolean {
     const ability = Array.isArray(g.ability?.choose) ? g.ability.choose[0] : g.ability;
     rules.push(...castingAbilityChoice(g.ability, `${f.name} (${list})`, f.source, out));
     const known = (g.known?._ as J[]) ?? [];
-    for (const k of known) if (k.choose) rules.push({ kind: "select", type: "Spell", name: `${list} cantrip`, supports: `${list}, 0`, number: k.count ?? 1, spellcasting: `${f.name} (${list})` });
+    for (const k of known)
+      if (k.choose)
+        rules.push({
+          kind: "select",
+          type: "Spell",
+          name: `${list} cantrip`,
+          supports: `${list}, 0`,
+          number: k.count ?? 1,
+          spellcasting: `${f.name} (${list})`,
+        });
     const inn = Object.values(g.innate?._?.daily ?? {}).flat() as J[];
-    for (const k of inn) if (k.choose) rules.push({ kind: "select", type: "Spell", name: `${list} level 1 spell`, supports: `${list}, 1`, number: 1, spellcasting: `${f.name} (${list})` });
+    for (const k of inn)
+      if (k.choose)
+        rules.push({
+          kind: "select",
+          type: "Spell",
+          name: `${list} level 1 spell`,
+          supports: `${list}, 1`,
+          number: 1,
+          spellcasting: `${f.name} (${list})`,
+        });
     const name = `${f.name} (${list})`;
     const html = entriesHtml(f.entries);
     out.push({
       // Each version keeps the feat's prerequisite (2014 Ritual Caster and Spell Sniper had none).
-      ...base(ftId("FEAT", name, f.source), name, "Feat", srcName(ctx, f.source), { supports: ["5et feat", ...(f.category ? [`category ${f.category}`] : [])], rules, requirements: prerequisiteOf(f.prerequisite as J[] | undefined, out), description: html, sheet: { display: true, descriptions: [{ text: html }] } }),
-      spellcasting: { name: `${f.name} (${list})`, ability: ability ? cap(abilFull(ability)) : "Intelligence", prepare: false, list: [list], extendLists: [] },
+      ...base(ftId("FEAT", name, f.source), name, "Feat", srcName(ctx, f.source), {
+        supports: ["5et feat", ...(f.category ? [`category ${f.category}`] : [])],
+        rules,
+        requirements: prerequisiteOf(f.prerequisite as J[] | undefined, out),
+        description: html,
+        sheet: { display: true, descriptions: [{ text: html }] },
+      }),
+      spellcasting: {
+        name: `${f.name} (${list})`,
+        ability: ability ? cap(abilFull(ability)) : "Intelligence",
+        prepare: false,
+        list: [list],
+        extendLists: [],
+      },
     });
   }
   return true;
@@ -941,16 +1589,45 @@ function prerequisiteOf(list: J[] | undefined, out: AElement[]): string | undefi
   for (const p of list ?? []) {
     const all: string[] = [];
     const ab = p.ability as J[] | undefined;
-    if (ab) all.push(any(ab.map((o) => { const e = Object.entries(o).map(([k, v]) => `[${k}:${v}]`); return e.length > 1 ? `(${e.join(",")})` : e[0]; })));
+    if (ab)
+      all.push(
+        any(
+          ab.map((o) => {
+            const e = Object.entries(o).map(([k, v]) => `[${k}:${v}]`);
+            return e.length > 1 ? `(${e.join(",")})` : e[0];
+          }),
+        ),
+      );
     if (p.level) all.push(`[level:${typeof p.level === "object" ? p.level.level : p.level}]`);
-    if (p.feat) all.push(any((p.feat as string[]).map((x) => { const [name, , shown] = String(x).split("|"); return `@feat:${slug(shown ?? name)}`; })));
-    if (p.race) all.push(any((p.race as J[]).map((x) => (/^small race$/i.test(x.name) ? "ID_5ET_SIZE_SMALL" : `@race:${slug(x.name)}${x.subrace ? `:${slug(x.subrace)}` : ""}`))));
+    if (p.feat)
+      all.push(
+        any(
+          (p.feat as string[]).map((x) => {
+            const [name, , shown] = String(x).split("|");
+            return `@feat:${slug(shown ?? name)}`;
+          }),
+        ),
+      );
+    if (p.race)
+      all.push(
+        any(
+          (p.race as J[]).map((x) =>
+            /^small race$/i.test(x.name) ? "ID_5ET_SIZE_SMALL" : `@race:${slug(x.name)}${x.subrace ? `:${slug(x.subrace)}` : ""}`,
+          ),
+        ),
+      );
     if (p.background) all.push(any((p.background as J[]).map((x) => `@background:${slug(x.name)}`)));
     if (p.feature) all.push(any((p.feature as string[]).map((x) => `@feature:${slug(x)}`)));
     if (p.spellcasting) all.push("[type:spell]");
     if (p.spellcasting2020 || p.spellcastingFeature) all.push("(@feature:SPELLCASTING||@feature:PACT_MAGIC)");
     if (p.proficiency) {
-      const ids = (p.proficiency as J[]).flatMap((x) => [...(x.armor ? [ARMOR_IDS[String(x.armor).toLowerCase()]] : []), ...(x.weapon ? [weaponId(String(x.weapon).toLowerCase(), out)] : []), ...(x.weaponGroup ? [weaponId(String(x.weaponGroup).toLowerCase(), out)] : [])]).filter((x): x is string => !!x);
+      const ids = (p.proficiency as J[])
+        .flatMap((x) => [
+          ...(x.armor ? [ARMOR_IDS[String(x.armor).toLowerCase()]] : []),
+          ...(x.weapon ? [weaponId(String(x.weapon).toLowerCase(), out)] : []),
+          ...(x.weaponGroup ? [weaponId(String(x.weaponGroup).toLowerCase(), out)] : []),
+        ])
+        .filter((x): x is string => !!x);
       if (ids.length) all.push(any(ids));
     }
     if (all.length) alternatives.push(all.length > 1 ? `(${all.join(",")})` : all[0]);
@@ -963,27 +1640,50 @@ function prerequisiteOf(list: J[] | undefined, out: AElement[]): string | undefi
 /** The tokens prerequisiteOf left, as the ids of what now exists. What names nothing here does not stop anyone. */
 function resolvePrerequisites(out: AElement[]): void {
   const byKind = new Map<string, Map<string, string[]>>();
-  const add = (kind: string, key: string, id: string) => { if (!byKind.has(kind)) byKind.set(kind, new Map()); const m = byKind.get(kind)!; if (!m.has(key)) m.set(key, []); m.get(key)!.push(id); };
+  const add = (kind: string, key: string, id: string) => {
+    if (!byKind.has(kind)) byKind.set(kind, new Map());
+    const m = byKind.get(kind)!;
+    if (!m.has(key)) m.set(key, []);
+    m.get(key)!.push(id);
+  };
   for (const e of out) {
     const key = slug(e.name.replace(/\s*\(.*\)$/, ""));
-    if (e.type === "Feat") { add("feat", slug(e.name), e.id); add("feat", key, e.id); }
-    if (e.type === "Race" || e.type === "Sub Race") { add("race", key, e.id); const sub = /\((.+)\)$/.exec(e.name)?.[1]; if (sub) add("race", `${key}:${slug(sub)}`, e.id); if (e.type === "Sub Race") add("subrace", slug(e.name), e.id); }
+    if (e.type === "Feat") {
+      add("feat", slug(e.name), e.id);
+      add("feat", key, e.id);
+    }
+    if (e.type === "Race" || e.type === "Sub Race") {
+      add("race", key, e.id);
+      const sub = /\((.+)\)$/.exec(e.name)?.[1];
+      if (sub) add("race", `${key}:${slug(sub)}`, e.id);
+      if (e.type === "Sub Race") add("subrace", slug(e.name), e.id);
+    }
     if (e.type === "Background") add("background", key, e.id);
     if (e.type === "Class Feature" || e.type === "Archetype Feature") add("feature", key, e.id);
   }
   // Condition immunities are granted as markers (Boon of Poison Mastery, Blackrazor), and had no element to point at.
   const made = new Set<string>();
-  for (const e of [...out]) for (const r of e.rules) {
-    const m = r.kind === "grant" ? /^ID_INTERNAL_CONDITION_CONDITION_IMMUNITY_([A-Z_]+)$/.exec(r.id ?? "") : null;
-    if (!m || made.has(m[0])) continue;
-    made.add(m[0]);
-    if (!out.some((o) => o.id === m[0])) out.push(base(m[0], `${cap(m[1].toLowerCase())} immunity`, "Condition", "5etools", { compendiumHidden: true, description: `<p>Immune to ${m[1].toLowerCase()}.</p>` }));
-  }
+  for (const e of [...out])
+    for (const r of e.rules) {
+      const m = r.kind === "grant" ? /^ID_INTERNAL_CONDITION_CONDITION_IMMUNITY_([A-Z_]+)$/.exec(r.id ?? "") : null;
+      if (!m || made.has(m[0])) continue;
+      made.add(m[0]);
+      if (!out.some((o) => o.id === m[0]))
+        out.push(
+          base(m[0], `${cap(m[1].toLowerCase())} immunity`, "Condition", "5etools", {
+            compendiumHidden: true,
+            description: `<p>Immune to ${m[1].toLowerCase()}.</p>`,
+          }),
+        );
+    }
   for (const e of out) {
     if (!e.requirements?.includes("@")) continue;
     e.requirements = e.requirements.replace(/@(feat|race|background|feature):([A-Z0-9_:]+)/g, (_, kind: string, key: string) => {
       let ids = byKind.get(kind)?.get(key);
-      if (!ids && kind === "race" && key.includes(":")) { const sub = key.split(":")[1]; ids = [...(byKind.get("subrace") ?? [])].filter(([k]) => k.includes(sub)).flatMap(([, v]) => v); }
+      if (!ids && kind === "race" && key.includes(":")) {
+        const sub = key.split(":")[1];
+        ids = [...(byKind.get("subrace") ?? [])].filter(([k]) => k.includes(sub)).flatMap(([, v]) => v);
+      }
       const unique = [...new Set(ids ?? [])];
       return unique.length ? (unique.length > 1 ? `(${unique.join("||")})` : unique[0]) : "[level:0]";
     });
@@ -993,7 +1693,11 @@ function resolvePrerequisites(out: AElement[]): void {
 function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
   const reqs = prerequisiteOf(f.prerequisite as J[] | undefined, out);
   const afterAll: ARule[] = [];
-  const rules = [...abilityRules(f.ability, f.name, { out, idBase: ftId("FEAT", f.name, f.source), after: afterAll }), ...trainingRules(f, f.name, out, ctx, ftId("FEAT", f.name, f.source)), ...defenseRules(f)];
+  const rules = [
+    ...abilityRules(f.ability, f.name, { out, idBase: ftId("FEAT", f.name, f.source), after: afterAll }),
+    ...trainingRules(f, f.name, out, ctx, ftId("FEAT", f.name, f.source)),
+    ...defenseRules(f),
+  ];
   const spells = additionalSpellRules(f.additionalSpells, f.name, f.source, out);
   rules.push(...tableSpellChoices(f, spells.rules));
   // The options a feat teaches (Martial Adept's maneuvers, Metamagic Adept's options, Fighting Initiate's style).
@@ -1005,8 +1709,10 @@ function convertFeat(f: J, ctx: Ctx, out: AElement[]): AElement {
     // A feat the rules let a character take more than once (Elemental Adept, Ability Score Improvement).
     ...(f.repeatable ? { setters: { "allow duplicate": set("true") } } : {}),
     spellcasting: spells.rules.length ? castingFor(f.name, spells.ability) : undefined,
-    supports: ["5et feat", ...(f.category ? [`category ${f.category}`] : [])], rules,
-    requirements: reqs, description: html,
+    supports: ["5et feat", ...(f.category ? [`category ${f.category}`] : [])],
+    rules,
+    requirements: reqs,
+    description: html,
     sheet: { display: true, descriptions: [{ text: html }] },
   });
 }
@@ -1024,17 +1730,27 @@ function textProficiencies(entries: unknown, out?: AElement[], fallbacks?: ARule
   const all: ARule[] = [];
   const text = stripTags(JSON.stringify(entries ?? [])).replace(/\\"/g, '"');
   const TOOLS = new Set(Object.values(TOOL_KINDS).flat());
-  for (const m of text.matchAll(/\byou (?:also )?gain proficiency (?:in|with) (.+?)(?:\.|,? (?:and you|if|but|while|when|which)\b|"|$)/gi)) {
+  for (const m of text.matchAll(
+    /\byou (?:also )?gain proficiency (?:in|with) (.+?)(?:\.|,? (?:and you|if|but|while|when|which)\b|"|$)/gi,
+  )) {
     const fallback = /^\s*if you (?:are )?already (?:have|are proficient|proficient)/i.test(text.slice(m.index! + m[0].length));
     const rules: ARule[] = fallback ? (fallbacks ?? []) : all;
     for (const raw of m[1].split(/,\s*(?:and\s+)?|\s+and\s+/)) {
-      const x = raw.trim().toLowerCase().replace(/[’‘`]/g, "'").replace(/^the\s+/, "");
+      const x = raw
+        .trim()
+        .toLowerCase()
+        .replace(/[’‘`]/g, "'")
+        .replace(/^the\s+/, "");
       let r: RegExpExecArray | null;
-      if ((r = /^(strength|dexterity|constitution|intelligence|wisdom|charisma) saving throws?$/.exec(x))) rules.push({ kind: "grant", type: "Proficiency", id: `ID_5ET_SAVE_${slug(r[1])}` });
+      if ((r = /^(strength|dexterity|constitution|intelligence|wisdom|charisma) saving throws?$/.exec(x)))
+        rules.push({ kind: "grant", type: "Proficiency", id: `ID_5ET_SAVE_${slug(r[1])}` });
       else if ((r = /^(light|medium|heavy) armor$/.exec(x))) rules.push({ kind: "grant", type: "Proficiency", id: ARMOR_IDS[r[1]] });
       else if (x === "shields") rules.push({ kind: "grant", type: "Proficiency", id: ARMOR_IDS.shield });
-      else if (x === "martial weapons") { const w = weaponId("martial", out); if (w) rules.push({ kind: "grant", type: "Proficiency", id: w }); }
-      else if ((r = /^([a-z ]+) skill$/.exec(x)) && SKILLS.includes(r[1])) rules.push({ kind: "grant", type: "Proficiency", id: skillIdOf(r[1]) });
+      else if (x === "martial weapons") {
+        const w = weaponId("martial", out);
+        if (w) rules.push({ kind: "grant", type: "Proficiency", id: w });
+      } else if ((r = /^([a-z ]+) skill$/.exec(x)) && SKILLS.includes(r[1]))
+        rules.push({ kind: "grant", type: "Proficiency", id: skillIdOf(r[1]) });
       else if (TOOLS.has(x)) rules.push({ kind: "grant", type: "Proficiency", id: toolId(x, out) });
     }
   }
@@ -1066,15 +1782,37 @@ function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, 
   // A feature named after the creature it tags ("Steel Defender" and its {@creature steel defender|tce}) gives that
   // creature as a companion (found by name and book once all content is in: registry.ts resolveCreatureRefs).
   const fb: ARule[] = [];
-  const own = [...JSON.stringify(f.entries ?? []).matchAll(/@creature ([^|}]+)(?:\|([^|}]*))?/g)].find((m) => m[1].trim().toLowerCase() === String(f.name).toLowerCase());
-  const rules: ARule[] = [...(own ? [{ kind: "grant", type: "Companion", id: `CREATUREREF:${own[1].trim().toLowerCase()}|${(own[2] ?? "").trim().toLowerCase()}` } as ARule] : []), ...textProficiencies(f.entries, out, fb), ...creatureChoiceRules(f), ...castableSpells(f)];
+  const own = [...JSON.stringify(f.entries ?? []).matchAll(/@creature ([^|}]+)(?:\|([^|}]*))?/g)].find(
+    (m) => m[1].trim().toLowerCase() === String(f.name).toLowerCase(),
+  );
+  const rules: ARule[] = [
+    ...(own
+      ? [
+          {
+            kind: "grant",
+            type: "Companion",
+            id: `CREATUREREF:${own[1].trim().toLowerCase()}|${(own[2] ?? "").trim().toLowerCase()}`,
+          } as ARule,
+        ]
+      : []),
+    ...textProficiencies(f.entries, out, fb),
+    ...creatureChoiceRules(f),
+    ...castableSpells(f),
+  ];
   if (ctx) for (const rule of fb) (ctx.fallbacks ??= []).push({ to: id, rule });
-  return base(id, f.name, type, srcName(ctx, f.source), { description: html, sheet: { display: !hide, descriptions: [{ text: html }] }, supports: [kind], rules, ...(setters ? { setters } : {}) });
+  return base(id, f.name, type, srcName(ctx, f.source), {
+    description: html,
+    sheet: { display: !hide, descriptions: [{ text: html }] },
+    supports: [kind],
+    rules,
+    ...(setters ? { setters } : {}),
+  });
 }
 
 function languageElement(l: J, ctx: Ctx): AElement {
   return base(`ID_5ET_LANGUAGE_${slug(l.name)}`, l.name, "Language", srcName(ctx, l.source ?? "PHB"), {
-    supports: [...((l.types as string[] | undefined) ?? [String(l.type ?? "regional").toLowerCase()]), "5et language"], description: entriesHtml(l.entries),
+    supports: [...((l.types as string[] | undefined) ?? [String(l.type ?? "regional").toLowerCase()]), "5et language"],
+    description: entriesHtml(l.entries),
     setters: { script: set(l.script ?? ""), speakers: set(Array.isArray(l.typicalSpeakers) ? l.typicalSpeakers.join(", ") : "") },
   });
 }
@@ -1083,15 +1821,24 @@ function speedRules(sp: J): ARule[] {
   const rules: ARule[] = [];
   const walk = typeof sp === "number" ? sp : sp?.walk;
   rules.push({ kind: "stat", name: "innate speed", value: String(walk ?? 30), bonus: "base" });
-  if (sp && typeof sp === "object") for (const k of ["fly", "swim", "climb", "burrow"]) {
-    const v = sp[k];
-    if (v === true) rules.push({ kind: "stat", name: `innate speed:${k}`, value: "innate speed", bonus: "base" });
-    else if (typeof v === "number") rules.push({ kind: "stat", name: `innate speed:${k}`, value: String(v), bonus: "base" });
-  }
+  if (sp && typeof sp === "object")
+    for (const k of ["fly", "swim", "climb", "burrow"]) {
+      const v = sp[k];
+      if (v === true) rules.push({ kind: "stat", name: `innate speed:${k}`, value: "innate speed", bonus: "base" });
+      else if (typeof v === "number") rules.push({ kind: "stat", name: `innate speed:${k}`, value: String(v), bonus: "base" });
+    }
   return rules;
 }
 
-function traitList(entries: J[] | undefined, parentId: string, ctx: Ctx, source: string, out: AElement[], kind: string, type: string): ARule[] {
+function traitList(
+  entries: J[] | undefined,
+  parentId: string,
+  ctx: Ctx,
+  source: string,
+  out: AElement[],
+  kind: string,
+  type: string,
+): ARule[] {
   const rules: ARule[] = [];
   for (const e of entries ?? []) {
     if (!e || typeof e !== "object" || !e.name) continue;
@@ -1108,7 +1855,10 @@ function traitList(entries: J[] | undefined, parentId: string, ctx: Ctx, source:
 function expandVersions(list: J[]): J[] {
   const out: J[] = [];
   for (const v of list) {
-    if (!v?._abstract || !Array.isArray(v._implementations)) { out.push(v); continue; }
+    if (!v?._abstract || !Array.isArray(v._implementations)) {
+      out.push(v);
+      continue;
+    }
     for (const impl of v._implementations as J[]) {
       const vars = (impl._variables as Record<string, string>) ?? {};
       const filled = JSON.parse(JSON.stringify(v._abstract).replace(/\{\{(\w+)\}\}/g, (m, k) => vars[k] ?? m));
@@ -1125,14 +1875,25 @@ function expandVersions(list: J[]): J[] {
 /** Damage resistances, immunities and condition immunities, as the entries Aurora content grants for them. */
 function defenseRules(r: J, owner = String(r.name ?? "")): ARule[] {
   const rules: ARule[] = [];
-  const LABEL: Record<string, string> = { DAMAGE_RESISTANCE: "Damage resistance", DAMAGE_IMMUNITY: "Damage immunity", DAMAGE_VULNERABILITY: "Damage vulnerability", CONDITION_IMMUNITY: "Condition immunity" };
+  const LABEL: Record<string, string> = {
+    DAMAGE_RESISTANCE: "Damage resistance",
+    DAMAGE_IMMUNITY: "Damage immunity",
+    DAMAGE_VULNERABILITY: "Damage vulnerability",
+    CONDITION_IMMUNITY: "Condition immunity",
+  };
   const add = (list: unknown, kind: string) => {
     for (const x of (Array.isArray(list) ? list : []) as unknown[]) {
       if (typeof x === "string") rules.push({ kind: "grant", type: "Condition", id: `ID_INTERNAL_CONDITION_${kind}_${slug(x)}` });
       // {"choose": {"from": [...], "count": 2}}: the player picks (Boon of Energy Resistance, the Dragonborn's type).
       else if (x && typeof x === "object" && Array.isArray((x as J).choose?.from)) {
         const ids = ((x as J).choose.from as string[]).map((t) => `ID_INTERNAL_CONDITION_${kind}_${slug(t)}`);
-        rules.push({ kind: "select", type: "Condition", name: `${LABEL[kind]} (${owner})`, supports: ids.join("||"), number: Number((x as J).choose.count) || 1 } as ARule);
+        rules.push({
+          kind: "select",
+          type: "Condition",
+          name: `${LABEL[kind]} (${owner})`,
+          supports: ids.join("||"),
+          number: Number((x as J).choose.count) || 1,
+        } as ARule);
       }
     }
   };
@@ -1164,29 +1925,59 @@ function applyVersion(r: J, v: J): J | undefined {
 function applyMods(out: J, mods: J | undefined): void {
   for (const [field, raw] of Object.entries(mods ?? {})) {
     for (const m of Array.isArray(raw) ? raw : [raw]) {
-      if (m === "remove") { delete out[field]; continue; }
+      if (m === "remove") {
+        delete out[field];
+        continue;
+      }
       if (m?.mode === "replaceTxt") {
         const re = new RegExp(String(m.replace ?? ""), String(m.flags ?? "g"));
-        const swap = (x: unknown): unknown => (typeof x === "string" ? x.replace(re, String(m.with ?? "")) : Array.isArray(x) ? x.map(swap) : x && typeof x === "object" ? Object.fromEntries(Object.entries(x as J).map(([k, y]) => [k, k === "name" ? y : swap(y)])) : x);
-        for (const f of field === "*" ? Object.keys(out).filter((k) => !k.startsWith("_") && k !== "name" && k !== "source") : [field]) if (out[f] !== undefined) out[f] = swap(out[f]);
+        const swap = (x: unknown): unknown =>
+          typeof x === "string"
+            ? x.replace(re, String(m.with ?? ""))
+            : Array.isArray(x)
+              ? x.map(swap)
+              : x && typeof x === "object"
+                ? Object.fromEntries(Object.entries(x as J).map(([k, y]) => [k, k === "name" ? y : swap(y)]))
+                : x;
+        for (const f of field === "*" ? Object.keys(out).filter((k) => !k.startsWith("_") && k !== "name" && k !== "source") : [field])
+          if (out[f] !== undefined) out[f] = swap(out[f]);
         continue;
       }
       let list: J[] = Array.isArray(out[field]) ? [...out[field]] : out[field] !== undefined ? [out[field]] : [];
       const items = m?.items === undefined ? [] : Array.isArray(m.items) ? m.items : [m.items];
       const at = (name: unknown) => list.findIndex((e) => (e && typeof e === "object" ? e.name : e) === name);
-      if (m?.mode === "replaceArr") { const i = at(m.replace); if (i >= 0) list.splice(i, 1, ...items); else list.push(...items); }
-      else if (m?.mode === "appendArr") list.push(...items);
+      if (m?.mode === "replaceArr") {
+        const i = at(m.replace);
+        if (i >= 0) list.splice(i, 1, ...items);
+        else list.push(...items);
+      } else if (m?.mode === "appendArr") list.push(...items);
       else if (m?.mode === "prependArr") list.unshift(...items);
       else if (m?.mode === "insertArr") list.splice(Math.max(0, Number(m.index) || 0), 0, ...items);
-      else if (m?.mode === "removeArr") { for (const n of [].concat(m.names ?? m.items ?? [])) { const i = at(typeof n === "object" && n ? (n as J).name : n); if (i >= 0) list.splice(i, 1); } }
-      else continue;
+      else if (m?.mode === "removeArr") {
+        for (const n of [].concat(m.names ?? m.items ?? [])) {
+          const i = at(typeof n === "object" && n ? (n as J).name : n);
+          if (i >= 0) list.splice(i, 1);
+        }
+      } else continue;
       out[field] = list;
     }
   }
 }
 
 /** What a copy does not take from its original unless "_preserve" says so: where and how the original was published. */
-const NOT_COPIED = ["page", "srd", "srd52", "basicRules", "basicRules2024", "reprintedAs", "otherSources", "additionalSources", "hasFluff", "hasFluffImages", "_versions"];
+const NOT_COPIED = [
+  "page",
+  "srd",
+  "srd52",
+  "basicRules",
+  "basicRules2024",
+  "reprintedAs",
+  "otherSources",
+  "additionalSources",
+  "hasFluff",
+  "hasFluffImages",
+  "_versions",
+];
 
 /**
  * Resolves "_copy" everywhere in the data, before anything is converted: a reprint written as "the VGM Goblin, with
@@ -1221,28 +2012,56 @@ export function resolveCopies(files: Record<string, J>): Record<string, J> {
   };
   const result: Record<string, J> = {};
   for (const [path, json] of Object.entries(files)) {
-    if (!json || typeof json !== "object" || Array.isArray(json)) { result[path] = json; continue; }
-    result[path] = Object.fromEntries(Object.entries(json).map(([kind, v]) => [kind, Array.isArray(v) ? v.map((x) => (x && typeof x === "object" && x._copy ? resolveOne(kind, x, 0) : x)) : v]));
+    if (!json || typeof json !== "object" || Array.isArray(json)) {
+      result[path] = json;
+      continue;
+    }
+    result[path] = Object.fromEntries(
+      Object.entries(json).map(([kind, v]) => [
+        kind,
+        Array.isArray(v) ? v.map((x) => (x && typeof x === "object" && x._copy ? resolveOne(kind, x, 0) : x)) : v,
+      ]),
+    );
   }
   return result;
 }
 
 function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const id = ftId("RACE", r.name, r.source);
-  const rules: ARule[] = [...speedRules(r.speed), ...customOrigin(abilityRules(r.ability, r.name, { out, idBase: id }), r.name, ctx, out), ...trainingRules(r, r.name, out, ctx, id), ...defenseRules(r), ...featRules(r)];
+  const rules: ARule[] = [
+    ...speedRules(r.speed),
+    ...customOrigin(abilityRules(r.ability, r.name, { out, idBase: id }), r.name, ctx, out),
+    ...trainingRules(r, r.name, out, ctx, id),
+    ...defenseRules(r),
+    ...featRules(r),
+  ];
   // A species that lists no languages leaves them to the character's origin: under the 2024 rules Common and two
   // standard languages; in the books before them (Monsters of the Multiverse, the Ravenloft lineages) Common and one.
   if (!r.languageProficiencies?.length) {
     rules.push({ kind: "grant", type: "Language", id: "ID_5ET_LANGUAGE_COMMON" });
-    rules.push({ kind: "select", type: "Language", name: `${r.name} language`, supports: "5et language", number: isModern({ id: id, source: String(r.source) }) ? 2 : 1 });
+    rules.push({
+      kind: "select",
+      type: "Language",
+      name: `${r.name} language`,
+      supports: "5et language",
+      number: isModern({ id: id, source: String(r.source) }) ? 2 : 1,
+    });
   }
   // A species on the custom-lineage rule chooses its increases (the background's, under the 2024 rules, instead).
   if (r.lineage && !abilityRules(r.ability, r.name).length) {
-    rules.push({ kind: "select", type: "Ability Score Improvement", name: `Ability score increases (${r.name})`, supports: "5et asi pattern", number: 1, requirements: "!ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
+    rules.push({
+      kind: "select",
+      type: "Ability Score Improvement",
+      name: `Ability score increases (${r.name})`,
+      supports: "5et asi pattern",
+      number: 1,
+      requirements: "!ID_INTERNAL_GRANTS_BACKGROUND_ASI",
+    });
     rules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI, requirements: "!ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
   }
   // Older (2014) species carry their own ability score increases. The 2024 background's would count a second time.
-  if (abilityRules(r.ability, r.name).length) rules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI, requirements: "!ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
+  if (abilityRules(r.ability, r.name).length)
+    rules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI, requirements: "!ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
   // Creature types ("humanoid", or a choice such as fey or humanoid), shown with the species.
   const types = ((r.creatureTypes as string[]) ?? []).map((t) => cap(String(t)));
   const raceSetters: Record<string, SetterValue> = types.length ? { "creature type": set(types.join(" or ")) } : {};
@@ -1259,19 +2078,26 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   // A species whose versions each carry one of its spell sets (the 2024 Elf's lineages, the Tiefling's legacies)
   // gives them with the version; the species itself gives none.
   const setsInVersions = (r.additionalSpells?.length ?? 0) > 1 && ((r._versions as J[]) ?? []).length > 0;
-  const racialSpells = setsInVersions ? { rules: [] as ARule[], ability: undefined } : additionalSpellRules(r.additionalSpells, r.name, r.source, out);
+  const racialSpells = setsInVersions
+    ? { rules: [] as ARule[], ability: undefined }
+    : additionalSpellRules(r.additionalSpells, r.name, r.source, out);
   rules.push(...racialSpells.rules);
   // Its own ids: Aurora's ID_INTERNAL_RACIAL_TRAIT_* are a different kind of entry (a size choice), and loading these
   // after Aurora replaced them (the 2024 Aasimar's size choice lost its options). A species of more than one size
   // (the Dhampir: Small or Medium) lets the player choose.
   const SIZE_NAMES: Record<string, string> = { T: "Tiny", S: "Small", M: "Medium", L: "Large" };
-  const sizeIds = (Array.isArray(r.size) ? r.size : [r.size]).flatMap((x: string) => (x === "V" ? ["S", "M"] : [x])).filter((x: string) => SIZE_NAMES[x]).map((x: string) => {
-    const sid = `ID_5ET_SIZE_${SIZE_NAMES[x].toUpperCase()}`;
-    if (!out.some((o) => o.id === sid)) out.push(base(sid, SIZE_NAMES[x], "Size", "5etools", { compendiumHidden: true, supports: ["5et size"] }));
-    return sid;
-  });
+  const sizeIds = (Array.isArray(r.size) ? r.size : [r.size])
+    .flatMap((x: string) => (x === "V" ? ["S", "M"] : [x]))
+    .filter((x: string) => SIZE_NAMES[x])
+    .map((x: string) => {
+      const sid = `ID_5ET_SIZE_${SIZE_NAMES[x].toUpperCase()}`;
+      if (!out.some((o) => o.id === sid))
+        out.push(base(sid, SIZE_NAMES[x], "Size", "5etools", { compendiumHidden: true, supports: ["5et size"] }));
+      return sid;
+    });
   if (sizeIds.length === 1) rules.push({ kind: "grant", type: "Size", id: sizeIds[0] });
-  else if (sizeIds.length > 1) rules.push({ kind: "select", type: "Size", name: `Size (${r.name})`, supports: sizeIds.join("|"), number: 1 });
+  else if (sizeIds.length > 1)
+    rules.push({ kind: "select", type: "Size", name: `Size (${r.name})`, supports: sizeIds.join("|"), number: 1 });
   const replacedByVersions = new Set<string>();
   for (const v of expandVersions((r._versions as J[]) ?? [])) {
     const mods = (v?._mod?.entries ?? v?._abstract?._mod?.entries) as J;
@@ -1285,32 +2111,61 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const mine = subs.filter((s) => s.raceName === r.name && (s.raceSource ?? r.source) === r.source);
   // A subrace that overwrites a field (Duergar: languages; Draconblood: ability scores) replaces the species' own:
   // the species' rules from that field do not apply with it.
-  const overwriting = (field: string) => mine.filter((s) => s.overwrite?.[field]).map((s) => ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source));
+  const overwriting = (field: string) =>
+    mine.filter((s) => s.overwrite?.[field]).map((s) => ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source));
   const gate = (pick: (x: ARule) => boolean, ids: string[]) => {
     if (!ids.length) return;
     const not = ids.map((x) => `!${x}`).join(",");
-    for (let i = 0; i < rules.length; i++) if (pick(rules[i])) rules[i] = { ...rules[i], requirements: rules[i].requirements ? `${rules[i].requirements},${not}` : not } as ARule;
+    for (let i = 0; i < rules.length; i++)
+      if (pick(rules[i]))
+        rules[i] = { ...rules[i], requirements: rules[i].requirements ? `${rules[i].requirements},${not}` : not } as ARule;
   };
-  gate((x) => (x.kind === "stat" && Object.values(ABIL).includes(x.name as never)) || (x.kind === "select" && x.type === "Ability Score Improvement") || (x.kind === "grant" && x.id === MARK_SPECIES_ASI), overwriting("ability"));
+  gate(
+    (x) =>
+      (x.kind === "stat" && Object.values(ABIL).includes(x.name as never)) ||
+      (x.kind === "select" && x.type === "Ability Score Improvement") ||
+      (x.kind === "grant" && x.id === MARK_SPECIES_ASI),
+    overwriting("ability"),
+  );
   gate((x) => (x.kind === "grant" || x.kind === "select") && x.type === "Language", overwriting("languageProficiencies"));
-  gate((x) => (x.kind === "grant" || x.kind === "select") && x.type === "Proficiency" && /SKILL|skill/.test(x.kind === "grant" ? x.id : x.supports), overwriting("skillProficiencies"));
+  gate(
+    (x) =>
+      (x.kind === "grant" || x.kind === "select") && x.type === "Proficiency" && /SKILL|skill/.test(x.kind === "grant" ? x.id : x.supports),
+    overwriting("skillProficiencies"),
+  );
   // A subrace is required. A subrace without a name is, in 5e.tools, the species as it is (the standard Human next
   // to the Variant Human); it is one of the options, "Human (standard)", so what it adds is not lost.
   // It starts on the standard one when there is one, so a fresh pick leaves nothing open; the player can change it.
   const standard = mine.find((s) => !s.name);
-  if (mine.length) rules.push({ kind: "select", type: "Sub Race", name: "Subrace", supports: `5et subrace of ${id}`, number: 1, ...(standard ? { default: ftId("SUBRACE", `${r.name} Base`, standard.source) } : {}) } as ARule);
+  if (mine.length)
+    rules.push({
+      kind: "select",
+      type: "Sub Race",
+      name: "Subrace",
+      supports: `5et subrace of ${id}`,
+      number: 1,
+      ...(standard ? { default: ftId("SUBRACE", `${r.name} Base`, standard.source) } : {}),
+    } as ARule);
   // Lineages, legacies and ancestries kept as "_versions" of the species (the 2024 Elf's Drow, High Elf and Wood Elf).
   // Each becomes a required choice; it carries only what differs from the base species.
-  const versions = expandVersions((r._versions as J[]) ?? []).map((v) => applyVersion(r, v)).filter(Boolean) as J[];
+  const versions = expandVersions((r._versions as J[]) ?? [])
+    .map((v) => applyVersion(r, v))
+    .filter(Boolean) as J[];
   if (versions.length) {
     // What the versions set for themselves is not also asked of the species: a Dragonborn's damage type comes with its
     // ancestry, a Kobold's skill or cantrip with its legacy. Asking both let the two disagree.
     const varies = (k: string) => versions.some((v) => JSON.stringify(v[k]) !== JSON.stringify(r[k]));
-    const dropFromBase = (given: ARule[]) => { const keys = new Set(given.map((x) => JSON.stringify(x))); for (let i = rules.length - 1; i >= 0; i--) if (keys.has(JSON.stringify(rules[i]))) rules.splice(i, 1); };
+    const dropFromBase = (given: ARule[]) => {
+      const keys = new Set(given.map((x) => JSON.stringify(x)));
+      for (let i = rules.length - 1; i >= 0; i--) if (keys.has(JSON.stringify(rules[i]))) rules.splice(i, 1);
+    };
     if (varies("resist")) dropFromBase(defenseRules(r));
     // Only when a version goes without it: a Drow's longer darkvision adds to the Elf's.
     const darkVaries = !!r.darkvision && versions.some((v) => !v.darkvision);
-    if (darkVaries) { const at = rules.findIndex((x) => x.kind === "grant" && x.id === `${id}_DARKVISION`); if (at >= 0) rules.splice(at, 1); }
+    if (darkVaries) {
+      const at = rules.findIndex((x) => x.kind === "grant" && x.id === `${id}_DARKVISION`);
+      if (at >= 0) rules.splice(at, 1);
+    }
     if (varies("skillProficiencies")) dropFromBase(trainingRules({ skillProficiencies: r.skillProficiencies }, r.name, out, ctx, id));
     const spellsVary = !setsInVersions && varies("additionalSpells");
     if (spellsVary) dropFromBase(racialSpells.rules);
@@ -1321,42 +2176,97 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     for (const x of rules) if (x.kind === "select") baseIds.add(`choice|${x.type}|${x.supports}|${x.number}|${x.level ?? 0}`);
 
     const baseTraits = new Set(((r.entries as J[]) ?? []).map((e) => JSON.stringify(e)));
-    rules.push({ kind: "select", type: "Sub Race", name: `${r.name} ${/legacy/i.test(versions[0].name) ? "legacy" : /ancestry/i.test(versions[0].name) ? "ancestry" : "lineage"}`, supports: `5et version of ${id}`, number: 1 });
+    rules.push({
+      kind: "select",
+      type: "Sub Race",
+      name: `${r.name} ${/legacy/i.test(versions[0].name) ? "legacy" : /ancestry/i.test(versions[0].name) ? "ancestry" : "lineage"}`,
+      supports: `5et version of ${id}`,
+      number: 1,
+    });
     for (const v of versions) {
       const vname = String(v.name).split(";").pop()!.trim() || String(v.name);
       const vid = ftId("RACEVERSION", `${r.name} ${vname}`, v.source ?? r.source);
-      const vrules: ARule[] = [...speedRules(v.speed), ...customOrigin(abilityRules(v.ability, vname, { out, idBase: vid }), vname, ctx, out), ...trainingRules(v, vname, out, ctx, vid), ...defenseRules(v, r.name)].filter((x) => !baseIds.has(JSON.stringify(x)) && !(x.kind === "select" && baseIds.has(`choice|${x.type}|${x.supports}|${x.number}|${x.level ?? 0}`)));
+      const vrules: ARule[] = [
+        ...speedRules(v.speed),
+        ...customOrigin(abilityRules(v.ability, vname, { out, idBase: vid }), vname, ctx, out),
+        ...trainingRules(v, vname, out, ctx, vid),
+        ...defenseRules(v, r.name),
+      ].filter(
+        (x) =>
+          !baseIds.has(JSON.stringify(x)) &&
+          !(x.kind === "select" && baseIds.has(`choice|${x.type}|${x.supports}|${x.number}|${x.level ?? 0}`)),
+      );
       if (v.darkvision && (darkVaries || v.darkvision !== r.darkvision)) {
         const dv = `${vid}_DARKVISION`;
         out.push(base(dv, `Darkvision (${v.darkvision} ft.)`, "Vision", srcName(ctx, r.source), { compendiumHidden: true }));
         vrules.push({ kind: "grant", type: "Vision", id: dv });
       }
-      const vSpells = spellsVary || JSON.stringify(v.additionalSpells) !== JSON.stringify(r.additionalSpells) ? additionalSpellRules(v.additionalSpells, vname, v.source ?? r.source, out) : { rules: [] as ARule[], ability: undefined };
+      const vSpells =
+        spellsVary || JSON.stringify(v.additionalSpells) !== JSON.stringify(r.additionalSpells)
+          ? additionalSpellRules(v.additionalSpells, vname, v.source ?? r.source, out)
+          : { rules: [] as ARule[], ability: undefined };
       vrules.push(...vSpells.rules);
       const changed = ((v.entries as J[]) ?? []).filter((e) => !baseTraits.has(JSON.stringify(e)));
       vrules.push(...traitList(changed, vid, ctx, v.source ?? r.source, out, "5et trait", "Racial Trait"));
-      out.push(base(vid, vname, "Sub Race", srcName(ctx, v.source ?? r.source), { supports: [`5et version of ${id}`], rules: vrules, spellcasting: vSpells.rules.length ? castingFor(vname, vSpells.ability) : undefined, description: entriesHtml(changed) }));
+      out.push(
+        base(vid, vname, "Sub Race", srcName(ctx, v.source ?? r.source), {
+          supports: [`5et version of ${id}`],
+          rules: vrules,
+          spellcasting: vSpells.rules.length ? castingFor(vname, vSpells.ability) : undefined,
+          description: entriesHtml(changed),
+        }),
+      );
     }
   }
   // NPC races (the DMG's monsters played as NPCs) are not species a player character takes.
-  out.push(base(id, r.name, "Race", srcName(ctx, r.source), { rules, setters: raceSetters, compendiumHidden: ((r.traitTags as string[]) ?? []).includes("NPC Race"), spellcasting: racialSpells.rules.length ? castingFor(r.name, racialSpells.ability) : undefined, description: entriesHtml(r.entries), supports: [] }));
+  out.push(
+    base(id, r.name, "Race", srcName(ctx, r.source), {
+      rules,
+      setters: raceSetters,
+      compendiumHidden: ((r.traitTags as string[]) ?? []).includes("NPC Race"),
+      spellcasting: racialSpells.rules.length ? castingFor(r.name, racialSpells.ability) : undefined,
+      description: entriesHtml(r.entries),
+      supports: [],
+    }),
+  );
   for (const s of mine) {
     const sid = ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source);
-    const srules: ARule[] = [...customOrigin(abilityRules(s.ability, s.name ?? r.name, { out, idBase: sid }), s.name ?? r.name, ctx, out), ...trainingRules(s, s.name ?? r.name, out, ctx, sid), ...defenseRules(s), ...featRules(s)];
-    if (abilityRules(s.ability, s.name ?? r.name).length) srules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI, requirements: "!ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
+    const srules: ARule[] = [
+      ...customOrigin(abilityRules(s.ability, s.name ?? r.name, { out, idBase: sid }), s.name ?? r.name, ctx, out),
+      ...trainingRules(s, s.name ?? r.name, out, ctx, sid),
+      ...defenseRules(s),
+      ...featRules(s),
+    ];
+    if (abilityRules(s.ability, s.name ?? r.name).length)
+      srules.push({ kind: "grant", type: "Information", id: MARK_SPECIES_ASI, requirements: "!ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
     if (s.speed) srules.push(...speedRules(s.speed));
     srules.push(...traitList(s.entries, sid, ctx, s.source, out, "5et trait", "Racial Trait"));
     const subSpells = additionalSpellRules(s.additionalSpells, s.name ?? r.name, s.source, out);
     srules.push(...subSpells.rules);
-    out.push(base(sid, s.name ? `${s.name} ${r.name}` : `${r.name} (standard)`, "Sub Race", srcName(ctx, s.source), { spellcasting: subSpells.rules.length ? castingFor(s.name ?? r.name, subSpells.ability) : undefined, supports: [`5et subrace of ${id}`], rules: srules, description: entriesHtml(s.entries) }));
+    out.push(
+      base(sid, s.name ? `${s.name} ${r.name}` : `${r.name} (standard)`, "Sub Race", srcName(ctx, s.source), {
+        spellcasting: subSpells.rules.length ? castingFor(s.name ?? r.name, subSpells.ability) : undefined,
+        supports: [`5et subrace of ${id}`],
+        rules: srules,
+        description: entriesHtml(s.entries),
+      }),
+    );
   }
 }
 
 const EQUIPMENT_TYPES: Record<string, string> = {
-  setGaming: "gaming set", toolArtisan: "artisan's tools", instrumentMusical: "musical instrument",
-  weaponSimple: "simple weapon", weaponMartial: "martial weapon", weaponSimpleMelee: "simple melee weapon",
-  weaponMartialMelee: "martial melee weapon", weaponSimpleRanged: "simple ranged weapon", weaponMartialRanged: "martial ranged weapon",
-  focusSpellcastingArcane: "arcane focus", focusSpellcastingHoly: "holy symbol", focusSpellcastingDruidic: "druidic focus",
+  setGaming: "gaming set",
+  toolArtisan: "artisan's tools",
+  instrumentMusical: "musical instrument",
+  weaponSimple: "simple weapon",
+  weaponMartial: "martial weapon",
+  weaponSimpleMelee: "simple melee weapon",
+  weaponMartialMelee: "martial melee weapon",
+  weaponSimpleRanged: "simple ranged weapon",
+  weaponMartialRanged: "martial ranged weapon",
+  focusSpellcastingArcane: "arcane focus",
+  focusSpellcastingHoly: "holy symbol",
+  focusSpellcastingDruidic: "druidic focus",
 };
 /** "dungeoneer's pack" to "Dungeoneer's Pack": capitals at word starts only, not after an apostrophe. */
 const titleCase = (t: string) => t.replace(/(^|[\s(-])([a-z])/g, (_, a, b) => a + b.toUpperCase());
@@ -1369,12 +2279,22 @@ function gearText(it: unknown): string {
   if (x.value !== undefined) return `${Math.round(Number(x.value) / 100)} GP`;
   const worth = x.containsValue ? ` (with ${Math.round(Number(x.containsValue) / 100)} GP)` : "";
   // "One of these kinds" (the 2024 Monk), worded so the starting-gear builder offers both.
-  if (Array.isArray(x.equipmentTypes)) return `${(x.equipmentTypes as string[]).map((t) => titleCase(EQUIPMENT_TYPES[t] ?? t)).sort().join(" or ")} chosen for the tool proficiency above`;
+  if (Array.isArray(x.equipmentTypes))
+    return `${(x.equipmentTypes as string[])
+      .map((t) => titleCase(EQUIPMENT_TYPES[t] ?? t))
+      .sort()
+      .join(" or ")} chosen for the tool proficiency above`;
   if (x.equipmentType && !x.displayName) {
     const noun = EQUIPMENT_TYPES[String(x.equipmentType)] ?? String(x.equipmentType);
     return `${q > 1 ? `${q} ${noun}s` : `${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun}`}${worth}`;
   }
-  const name = x.displayName ? plainName(String(x.displayName)) : x.item ? titleCase(plainName(String(x.item).split("|")[0])) : x.special ? String(x.special) : "";
+  const name = x.displayName
+    ? plainName(String(x.displayName))
+    : x.item
+      ? titleCase(plainName(String(x.item).split("|")[0]))
+      : x.special
+        ? String(x.special)
+        : "";
   return `${q > 1 ? `${q} ` : ""}${name}${worth}`;
 }
 
@@ -1391,14 +2311,26 @@ function equipmentHtml(se: unknown): string {
     // The book's own line decides the gold: 5e.tools' data has the 2024 Cleric's 7 GP as 7000 copper, which is 70 GP.
     const lines = Array.isArray(se) ? [] : (se as J)?.entries;
     const line = Array.isArray(lines) ? lines.join(" ") : "";
-    const gold = (k: string, text: string) => { const m = new RegExp(`\\(${k}\\)[^;]*?(\\d[\\d,]*) ?GP`).exec(line); return m ? text.replace(/\b\d[\d,]* GP$/, `${m[1]} GP`) : text; };
-    const parts = Object.entries(data[0]).map(([k, items]) => `(${k}) ${(items as unknown[]).map(gearText).filter(Boolean).map((t) => gold(k, t)).join(", ")}`);
+    const gold = (k: string, text: string) => {
+      const m = new RegExp(`\\(${k}\\)[^;]*?(\\d[\\d,]*) ?GP`).exec(line);
+      return m ? text.replace(/\b\d[\d,]* GP$/, `${m[1]} GP`) : text;
+    };
+    const parts = Object.entries(data[0]).map(
+      ([k, items]) =>
+        `(${k}) ${(items as unknown[])
+          .map(gearText)
+          .filter(Boolean)
+          .map((t) => gold(k, t))
+          .join(", ")}`,
+    );
     return `<ul><li><strong>Equipment:</strong> ${esc(`Choose ${Object.keys(data[0]).join(" or ")}: ${parts.join("; or ")}`)}</li></ul>`;
   }
   const lis = data.map((group) => {
     const fixed = group._ as unknown[] | undefined;
     if (fixed) return esc(fixed.map(gearText).filter(Boolean).join(", "));
-    return Object.entries(group).map(([k, items]) => `<i>(${k})</i> ${esc((items as unknown[]).map(gearText).filter(Boolean).join(", "))}`).join(" or ");
+    return Object.entries(group)
+      .map(([k, items]) => `<i>(${k})</i> ${esc((items as unknown[]).map(gearText).filter(Boolean).join(", "))}`)
+      .join(" or ");
   });
   return `<h5>EQUIPMENT</h5><ul>${lis.map((l) => `<li>${l}</li>`).join("")}</ul>`;
 }
@@ -1414,9 +2346,18 @@ function featRules(owner: J): ARule[] {
   // More than one entry is a choice of one, as 5e.tools lists alternatives everywhere (the Book of Many Things'
   // Rewarded: Lucky, Magic Initiate or Skilled). Before, all three were given.
   const list = (owner.feats as J[]) ?? [];
-  const named = (f: J) => { const ks = Object.keys(f); return ks.length === 1 && f[ks[0]] === true && !["any", "anyFromCategory"].includes(ks[0]) ? ks[0] : undefined; };
+  const named = (f: J) => {
+    const ks = Object.keys(f);
+    return ks.length === 1 && f[ks[0]] === true && !["any", "anyFromCategory"].includes(ks[0]) ? ks[0] : undefined;
+  };
   if (list.length > 1 && list.every((f) => named(f))) {
-    rules.push({ kind: "select", type: "Feat", name: `${owner.name} feat`, supports: list.map((f) => featId(named(f)!)).join("|"), number: 1 });
+    rules.push({
+      kind: "select",
+      type: "Feat",
+      name: `${owner.name} feat`,
+      supports: list.map((f) => featId(named(f)!)).join("|"),
+      number: 1,
+    });
     return rules;
   }
   // A named feat or any of a category (the Haunted One: "Survivor or a Dark Gift feat of your choice"): one choice.
@@ -1424,20 +2365,34 @@ function featRules(owner: J): ARule[] {
   if (list.length > 1 && cat && list.every((f) => f === cat || named(f))) {
     const cats = ((cat.anyFromCategory.category as string[]) ?? []).map((c) => `category ${c}`);
     const ids = list.filter((f) => f !== cat).map((f) => featId(named(f)!));
-    rules.push({ kind: "select", type: "Feat", name: `${owner.name} feat`, supports: `(${ids.join("||")})||(5et feat,(${cats.join("||")}))`, number: 1 });
+    rules.push({
+      kind: "select",
+      type: "Feat",
+      name: `${owner.name} feat`,
+      supports: `(${ids.join("||")})||(5et feat,(${cats.join("||")}))`,
+      number: 1,
+    });
     return rules;
   }
-  for (const f of list) for (const k of Object.keys(f)) {
-    // "Any feat of a category" (the Haunted One's Dark Gift) is a choice limited to that category.
-    if (k === "anyFromCategory") {
-      const cats = ((f[k]?.category as string[]) ?? []).map((c) => `category ${c}`);
-      rules.push({ kind: "select", type: "Feat", name: `${owner.name} feat`, supports: cats.length ? `5et feat,(${cats.join("||")})` : "5et feat", number: f[k]?.count ?? 1 });
-      continue;
+  for (const f of list)
+    for (const k of Object.keys(f)) {
+      // "Any feat of a category" (the Haunted One's Dark Gift) is a choice limited to that category.
+      if (k === "anyFromCategory") {
+        const cats = ((f[k]?.category as string[]) ?? []).map((c) => `category ${c}`);
+        rules.push({
+          kind: "select",
+          type: "Feat",
+          name: `${owner.name} feat`,
+          supports: cats.length ? `5et feat,(${cats.join("||")})` : "5et feat",
+          number: f[k]?.count ?? 1,
+        });
+        continue;
+      }
+      if (k === "any") continue;
+      rules.push({ kind: "grant", type: "Feat", id: featId(k) });
     }
-    if (k === "any") continue;
-    rules.push({ kind: "grant", type: "Feat", id: featId(k) });
-  }
-  for (const f of (owner.feats as J[]) ?? []) if (f.any) rules.push({ kind: "select", type: "Feat", name: "Origin feat", supports: "5et feat", number: f.any });
+  for (const f of (owner.feats as J[]) ?? [])
+    if (f.any) rules.push({ kind: "select", type: "Feat", name: "Origin feat", supports: "5et feat", number: f.any });
   return rules;
 }
 
@@ -1449,11 +2404,19 @@ function convertBackground(b: J, ctx: Ctx, out: AElement[]): void {
   // for a 2014 background taken under the 2024 rules and as Aurora's 2024 backgrounds do. Before 2026-11-12 it was
   // the other way round here: the species kept its increases and the background's were skipped.
   const raises = abilityRules(b.ability, "Ability score increase").length > 0;
-  const rules: ARule[] = [...trainingRules(b, b.name, out, ctx, id), ...abilityRules(b.ability, "Ability score increase", { out, idBase: id })];
+  const rules: ARule[] = [
+    ...trainingRules(b, b.name, out, ctx, id),
+    ...abilityRules(b.ability, "Ability score increase", { out, idBase: id }),
+  ];
   rules.push(...featRules(b));
   rules.push(...traitList(b.entries, id, ctx, b.source, out, "5et trait", "Background Feature"));
   if (raises) rules.push({ kind: "grant", type: "Grants", id: "ID_INTERNAL_GRANTS_BACKGROUND_ASI" });
-  out.push(base(id, b.name, "Background", srcName(ctx, b.source), { rules, description: entriesHtml(b.entries) + equipmentHtml(b.startingEquipment) }));
+  out.push(
+    base(id, b.name, "Background", srcName(ctx, b.source), {
+      rules,
+      description: entriesHtml(b.entries) + equipmentHtml(b.startingEquipment),
+    }),
+  );
 }
 
 function mod(h: J): string {
@@ -1462,17 +2425,41 @@ function mod(h: J): string {
 
 function convertMonster(m: J, ctx: Ctx): AElement {
   const ac = Array.isArray(m.ac) ? (typeof m.ac[0] === "object" ? m.ac[0].ac : m.ac[0]) : m.ac;
-  const speed = m.speed ? Object.entries(m.speed).map(([k, v]) => `${k === "walk" ? "" : `${k} `}${typeof v === "object" ? (v as J).number : v} ft.`.trim()).join(", ") : "";
+  const speed = m.speed
+    ? Object.entries(m.speed)
+        .map(([k, v]) => `${k === "walk" ? "" : `${k} `}${typeof v === "object" ? (v as J).number : v} ft.`.trim())
+        .join(", ")
+    : "";
   const type = typeof m.type === "object" ? m.type.type : m.type;
-  const act = (m.action ?? []).map((a: J) => `<p><b>${inlineHtml(a.name)}.</b> ${entriesHtml(a.entries).replace(/^<p>|<\/p>$/g, "")}</p>`).join("");
-  const traits = (m.trait ?? []).map((a: J) => `<p><b>${inlineHtml(a.name)}.</b> ${entriesHtml(a.entries).replace(/^<p>|<\/p>$/g, "")}</p>`).join("");
+  const act = (m.action ?? [])
+    .map((a: J) => `<p><b>${inlineHtml(a.name)}.</b> ${entriesHtml(a.entries).replace(/^<p>|<\/p>$/g, "")}</p>`)
+    .join("");
+  const traits = (m.trait ?? [])
+    .map((a: J) => `<p><b>${inlineHtml(a.name)}.</b> ${entriesHtml(a.entries).replace(/^<p>|<\/p>$/g, "")}</p>`)
+    .join("");
   const setters: Record<string, SetterValue> = {
-    size: set(Array.isArray(m.size) ? m.size[0] : m.size ?? ""), type: set(String(type ?? "")), ac: set(String(ac ?? "")), hp: set(m.hp?.average ? `${m.hp.average} (${m.hp.formula ?? ""})` : ""),
-    speed: set(speed), strength: set(mod(m.str)), dexterity: set(mod(m.dex)), constitution: set(mod(m.con)), intelligence: set(mod(m.int)), wisdom: set(mod(m.wis)), charisma: set(mod(m.cha)),
-    senses: set([...(m.senses ?? []), m.passive ? `passive Perception ${m.passive}` : ""].filter(Boolean).join(", ")), languages: set((m.languages ?? []).join(", ")), challenge: set(String(m.cr?.cr ?? m.cr ?? "")),
-    traits: set(traits), actions: set(act),
+    size: set(Array.isArray(m.size) ? m.size[0] : (m.size ?? "")),
+    type: set(String(type ?? "")),
+    ac: set(String(ac ?? "")),
+    hp: set(m.hp?.average ? `${m.hp.average} (${m.hp.formula ?? ""})` : ""),
+    speed: set(speed),
+    strength: set(mod(m.str)),
+    dexterity: set(mod(m.dex)),
+    constitution: set(mod(m.con)),
+    intelligence: set(mod(m.int)),
+    wisdom: set(mod(m.wis)),
+    charisma: set(mod(m.cha)),
+    senses: set([...(m.senses ?? []), m.passive ? `passive Perception ${m.passive}` : ""].filter(Boolean).join(", ")),
+    languages: set((m.languages ?? []).join(", ")),
+    challenge: set(String(m.cr?.cr ?? m.cr ?? "")),
+    traits: set(traits),
+    actions: set(act),
   };
-  return base(ftId("CREATURE", m.name, m.source), m.name, "Companion", srcName(ctx, m.source), { setters, supports: ["5et creature", String(type ?? ""), ...(typeof m.type === "object" && m.type?.swarmSize ? ["swarm"] : [])], description: "" });
+  return base(ftId("CREATURE", m.name, m.source), m.name, "Companion", srcName(ctx, m.source), {
+    setters,
+    supports: ["5et creature", String(type ?? ""), ...(typeof m.type === "object" && m.type?.swarmSize ? ["swarm"] : [])],
+    description: "",
+  });
 }
 
 /**
@@ -1489,13 +2476,19 @@ export function castableSpells(f: J): ARule[] {
   const text = JSON.stringify(f.entries ?? []);
   const seen = new Set<string>();
   const rules: ARule[] = [];
-  for (const m of text.matchAll(/\byou can (?:also )?(?:spend [^."]{1,40}? to |use [^."]{1,40}? to |expend [^."]{1,40}? to )?cast (?:the )?\{@spell ([^|}]+)(?:\|([^|}]*))?[^}]*\}/gi)) {
+  for (const m of text.matchAll(
+    /\byou can (?:also )?(?:spend [^."]{1,40}? to |use [^."]{1,40}? to |expend [^."]{1,40}? to )?cast (?:the )?\{@spell ([^|}]+)(?:\|([^|}]*))?[^}]*\}/gi,
+  )) {
     const name = m[1].trim().toLowerCase();
     if (seen.has(name)) continue;
     seen.add(name);
     // No spellcasting named: the sheet places it on the class whose list has it (Misty Escape on the Warlock's line,
     // with its DC), or on a line of its own (Empty Body). Named after the feature, it made a line and a DC of its own.
-    rules.push({ kind: "grant", type: "Spell", id: `SPELLREF:${name}|${(m[2] ?? "").trim().toLowerCase()}|${String(f.source ?? "").toLowerCase()}` } as ARule);
+    rules.push({
+      kind: "grant",
+      type: "Spell",
+      id: `SPELLREF:${name}|${(m[2] ?? "").trim().toLowerCase()}|${String(f.source ?? "").toLowerCase()}`,
+    } as ARule);
   }
   return rules;
 }
@@ -1522,32 +2515,65 @@ export function creatureChoiceRules(f: J): ARule[] {
     if (!/\bchoose\b/i.test(sentence) || /\bwhen(?:ever)? you (?:cast|summon|use|activate)\b/i.test(sentence)) continue;
     const named = [...sentence.matchAll(/\{@creature ([^|}]+)(?:\|([^|}]*))?[^}]*\}/g)];
     if (named.length >= 2 && /\bor\b/.test(sentence)) {
-      rules.push({ kind: "select", type: "Companion", name: String(f.name), supports: named.map((m) => `CREATUREREF:${m[1].trim().toLowerCase()}|${(m[2] ?? "").trim().toLowerCase()}`).join("|"), number: 1 } as ARule);
+      rules.push({
+        kind: "select",
+        type: "Companion",
+        name: String(f.name),
+        supports: named.map((m) => `CREATUREREF:${m[1].trim().toLowerCase()}|${(m[2] ?? "").trim().toLowerCase()}`).join("|"),
+        number: 1,
+      } as ARule);
       continue;
     }
     const fl = /\{@filter [^|}]*\|bestiary\|([^}]*)\}/i.exec(sentence);
     if (!fl || !/\bchoose an? \{@filter/i.test(sentence)) continue;
-    const params = Object.fromEntries(fl[1].split("|").map((p) => p.split("=")).filter((p) => p.length === 2).map(([k, v]) => [k.trim().toLowerCase(), v.trim().toLowerCase()]));
+    const params = Object.fromEntries(
+      fl[1]
+        .split("|")
+        .map((p) => p.split("="))
+        .filter((p) => p.length === 2)
+        .map(([k, v]) => [k.trim().toLowerCase(), v.trim().toLowerCase()]),
+    );
     // No provider tag: with Aurora loaded the lists show Aurora's copy of a creature, so both must fit. Sizes are
     // letters in 5e.tools ("M") and words in Aurora ("Medium").
-    const SIZE_WORD: Record<string, string> = { f: "fine", d: "diminutive", t: "tiny", s: "small", m: "medium", l: "large", h: "huge", g: "gargantuan" };
+    const SIZE_WORD: Record<string, string> = {
+      f: "fine",
+      d: "diminutive",
+      t: "tiny",
+      s: "small",
+      m: "medium",
+      l: "large",
+      h: "huge",
+      g: "gargantuan",
+    };
     const parts: string[] = [];
     if (params.type) parts.push(params.type.split(";").length > 1 ? `(${params.type.split(";").join("||")})` : params.type);
-    if (params.size) parts.push(`(${params.size.split(";").flatMap((x) => [x, SIZE_WORD[x]].filter(Boolean)).join("||")})`);
+    if (params.size)
+      parts.push(
+        `(${params.size
+          .split(";")
+          .flatMap((x) => [x, SIZE_WORD[x]].filter(Boolean))
+          .join("||")})`,
+      );
     const cr = /^\[&?([^;\]]*);&?([^\]]*)\]$/.exec(params["challenge rating"] ?? "");
     if (cr) {
-      const lo = Math.max(0, CR_ORDER.indexOf(cr[1] || "0")), hi = CR_ORDER.indexOf(cr[2]);
+      const lo = Math.max(0, CR_ORDER.indexOf(cr[1] || "0")),
+        hi = CR_ORDER.indexOf(cr[2]);
       if (hi >= lo) parts.push(`(${CR_ORDER.slice(lo, hi + 1).join("||")})`);
     }
     if (/!swarm/.test(params.miscellaneous ?? "")) parts.push("!swarm");
-    if (parts.length) rules.push({ kind: "select", type: "Companion", name: String(f.name), supports: parts.join(","), number: 1 } as ARule);
+    if (parts.length)
+      rules.push({ kind: "select", type: "Companion", name: String(f.name), supports: parts.join(","), number: 1 } as ARule);
   }
   return rules;
 }
 
 // classes -------------------------------------------------------------
 
-const stripTags = (s: string) => s.replace(/\{@[^}|]*\s([^}|]*)[^}]*\}/g, "$1").trim().toLowerCase();
+const stripTags = (s: string) =>
+  s
+    .replace(/\{@[^}|]*\s([^}|]*)[^}]*\}/g, "$1")
+    .trim()
+    .toLowerCase();
 
 /**
  * A class table cell as a number. 5e.tools writes cells as numbers, as text with links ("{@filter 3rd|spells|...}"),
@@ -1584,14 +2610,32 @@ function applyTableMechanics(c: J, out: AElement[]): void {
         const el = feats.find((e) => e.name === "Martial Arts");
         if (!el || el.rules.some((r) => r.kind === "stat" && r.name === "martial arts:dice")) return;
         const faces = (g.rows as J[]).map((r) => Number(r[col]?.toRoll?.[0]?.faces ?? 0));
-        el.rules = [...el.rules, ...steps(faces).map(({ v, level }) => ({ kind: "stat", name: "martial arts:dice", value: String(v), bonus: "martial arts", ...(level > 1 ? { level } : {}) }) as ARule)];
+        el.rules = [
+          ...el.rules,
+          ...steps(faces).map(
+            ({ v, level }) =>
+              ({
+                kind: "stat",
+                name: "martial arts:dice",
+                value: String(v),
+                bonus: "martial arts",
+                ...(level > 1 ? { level } : {}),
+              }) as ARule,
+          ),
+        ];
         return;
       }
       // The Rage Damage column: the number the sheet shows beside Rage.
       if (/^rage damage$/i.test(stripTags(label))) {
         const el = feats.find((e) => e.name === "Rage");
         if (!el || el.rules.some((r) => r.kind === "stat" && r.name === "barbarian rage:damage")) return;
-        el.rules = [...el.rules, ...steps((g.rows as J[]).map((r) => cellNumber(r[col]))).map(({ v, level }) => ({ kind: "stat", name: "barbarian rage:damage", value: String(v), bonus: "base", ...(level > 1 ? { level } : {}) }) as ARule)];
+        el.rules = [
+          ...el.rules,
+          ...steps((g.rows as J[]).map((r) => cellNumber(r[col]))).map(
+            ({ v, level }) =>
+              ({ kind: "stat", name: "barbarian rage:damage", value: String(v), bonus: "base", ...(level > 1 ? { level } : {}) }) as ARule,
+          ),
+        ];
         return;
       }
       for (const el of feats) {
@@ -1600,10 +2644,29 @@ function applyTableMechanics(c: J, out: AElement[]): void {
         // The column is the feature's by name ("Rages" for Rage), or it is a column of points the feature's own text
         // speaks of ("Ki Points" for Ki, "Focus Points" for Monk's Focus, "Sorcery Points" for Font of Magic): a Monk 9
         // had 1 ki point.
-        const points = /\bpoints$/i.test(stripTags(label)) && el.description.replace(/<[^>]+>/g, " ").toLowerCase().includes(stripTags(label).toLowerCase()) && feats.find((f) => f.rules.some((r) => r.kind === "stat" && r.name === `${f.name.toLowerCase()}:uses`) && f.description.replace(/<[^>]+>/g, " ").toLowerCase().includes(stripTags(label).toLowerCase())) === el;
+        const points =
+          /\bpoints$/i.test(stripTags(label)) &&
+          el.description
+            .replace(/<[^>]+>/g, " ")
+            .toLowerCase()
+            .includes(stripTags(label).toLowerCase()) &&
+          feats.find(
+            (f) =>
+              f.rules.some((r) => r.kind === "stat" && r.name === `${f.name.toLowerCase()}:uses`) &&
+              f.description
+                .replace(/<[^>]+>/g, " ")
+                .toLowerCase()
+                .includes(stripTags(label).toLowerCase()),
+          ) === el;
         if (at < 0 || (norm(el.name) !== norm(label) && !points)) continue;
         const counts = (g.rows as J[]).map((r) => cellNumber(r[col]));
-        el.rules = [...el.rules.filter((_, i) => i !== at), ...steps(counts).map(({ v, level }) => ({ kind: "stat", name: uses, value: String(v), bonus: "text uses", ...(level > 1 ? { level } : {}) }) as ARule)];
+        el.rules = [
+          ...el.rules.filter((_, i) => i !== at),
+          ...steps(counts).map(
+            ({ v, level }) =>
+              ({ kind: "stat", name: uses, value: String(v), bonus: "text uses", ...(level > 1 ? { level } : {}) }) as ARule,
+          ),
+        ];
       }
     });
   }
@@ -1637,7 +2700,13 @@ export function schoolLimit(text: string): { schools: string[]; anyAt: number[] 
   return { schools: [cap1(m[1]), cap1(m[2])], anyAt: [...new Set(anyAt)].sort((a, b) => a - b) };
 }
 
-function castingRules(c: J, name: string, lists: string[], classLevel: string, limit?: { schools: string[]; anyAt: number[] }): { spellcasting?: AElement["spellcasting"]; rules: ARule[]; shares: boolean } {
+function castingRules(
+  c: J,
+  name: string,
+  lists: string[],
+  classLevel: string,
+  limit?: { schools: string[]; anyAt: number[] },
+): { spellcasting?: AElement["spellcasting"]; rules: ARule[]; shares: boolean } {
   const rules: ARule[] = [];
   if (!c.spellcastingAbility && !c.casterProgression) return { rules, shares: false };
   const lname = name.toLowerCase();
@@ -1646,7 +2715,8 @@ function castingRules(c: J, name: string, lists: string[], classLevel: string, l
     const prepared = !!(c.preparedSpells || c.preparedSpellsProgression);
     spellcasting = { name, ability: cap(abilFull(c.spellcastingAbility ?? "int")), prepare: prepared, list: lists, extendLists: [] };
     const key = `${lname}:spellcasting`;
-    const rows = ([...((c.classTableGroups as J[]) ?? []), ...((c.subclassTableGroups as J[]) ?? [])]).find((g) => g.rowsSpellProgression)?.rowsSpellProgression as number[][] | undefined;
+    const rows = [...((c.classTableGroups as J[]) ?? []), ...((c.subclassTableGroups as J[]) ?? [])].find((g) => g.rowsSpellProgression)
+      ?.rowsSpellProgression as number[][] | undefined;
     if (c.casterProgression === "pact" || tableColumn(c, /^slot level/)) {
       const count = tableColumn(c, /^spell slots/) ?? [];
       const slotLevel = tableColumn(c, /^slot level/) ?? [];
@@ -1655,54 +2725,135 @@ function castingRules(c: J, name: string, lists: string[], classLevel: string, l
         const level = i + 1;
         const vec = Array(9).fill(0) as number[];
         if (slotLevel[i]) vec[slotLevel[i] - 1] = n;
-        vec.forEach((v, j) => { if (v - prevVec[j]) rules.push({ kind: "stat", name: `${key}:slots:${j + 1}`, value: String(v - prevVec[j]), level }); });
-        const dc = n - (i ? count[i - 1] : 0); if (dc) rules.push({ kind: "stat", name: `${key}:slots:count`, value: String(dc), level });
-        const dl = (slotLevel[i] ?? 0) - (i ? (slotLevel[i - 1] ?? 0) : 0); if (dl) rules.push({ kind: "stat", name: `${key}:slot`, value: String(dl), level });
+        vec.forEach((v, j) => {
+          if (v - prevVec[j]) rules.push({ kind: "stat", name: `${key}:slots:${j + 1}`, value: String(v - prevVec[j]), level });
+        });
+        const dc = n - (i ? count[i - 1] : 0);
+        if (dc) rules.push({ kind: "stat", name: `${key}:slots:count`, value: String(dc), level });
+        const dl = (slotLevel[i] ?? 0) - (i ? (slotLevel[i - 1] ?? 0) : 0);
+        if (dl) rules.push({ kind: "stat", name: `${key}:slot`, value: String(dl), level });
         prevVec = vec;
       });
     } else if (rows) {
       let prev = Array(9).fill(0) as number[];
       rows.forEach((row, i) => {
-        row.forEach((v, j) => { if (v - prev[j]) rules.push({ kind: "stat", name: `${key}:slots:${j + 1}`, value: String(v - prev[j]), level: i + 1 }); });
+        row.forEach((v, j) => {
+          if (v - prev[j]) rules.push({ kind: "stat", name: `${key}:slots:${j + 1}`, value: String(v - prev[j]), level: i + 1 });
+        });
         prev = row;
       });
     }
     const cant = (c.cantripProgression as number[] | undefined) ?? tableColumn(c, /^cantrips/);
-    if (cant) deltas(cant).forEach((n, i) => { if (n > 0) rules.push({ kind: "select", type: "Spell", name: `Cantrip (${name})`, supports: "$(spellcasting:list), 0", number: n, level: i + 1, spellcasting: name }); });
+    if (cant)
+      deltas(cant).forEach((n, i) => {
+        if (n > 0)
+          rules.push({
+            kind: "select",
+            type: "Spell",
+            name: `Cantrip (${name})`,
+            supports: "$(spellcasting:list), 0",
+            number: n,
+            level: i + 1,
+            spellcasting: name,
+          });
+      });
     const known = (c.spellsKnownProgression as number[] | undefined) ?? tableColumn(c, /^spells known/);
     const fixed = c.spellsKnownProgressionFixed as number[] | undefined;
     const knownSteps = fixed ?? (known ? deltas(known) : undefined);
-    if (knownSteps) knownSteps.forEach((n, i) => {
-      if (n <= 0) return;
-      const label = prepared && fixed ? `Spellbook (${name})` : `Spell known (${name})`;
-      if (!limit) { rules.push({ kind: "select", type: "Spell", name: label, supports: "$(spellcasting:list), $(spellcasting:slots)", number: n, level: i + 1, spellcasting: name }); return; }
-      // A school-limited subclass: its picks of its two schools, and the one "any school" pick at the levels it has one.
-      const free = limit.anyAt.includes(i + 1) ? Math.min(1, n) : 0;
-      const schools = limit.schools.map((x) => `${x} School`).join("||");
-      if (n - free > 0) rules.push({ kind: "select", type: "Spell", name: `Spell known (${name}: ${limit.schools.join(" or ").toLowerCase()})`, supports: `$(spellcasting:list), $(spellcasting:slots), (${schools})`, number: n - free, level: i + 1, spellcasting: name });
-      if (free) rules.push({ kind: "select", type: "Spell", name: `Spell known (${name}: any school)`, supports: "$(spellcasting:list), $(spellcasting:slots)", number: free, level: i + 1, spellcasting: name });
-    });
+    if (knownSteps)
+      knownSteps.forEach((n, i) => {
+        if (n <= 0) return;
+        const label = prepared && fixed ? `Spellbook (${name})` : `Spell known (${name})`;
+        if (!limit) {
+          rules.push({
+            kind: "select",
+            type: "Spell",
+            name: label,
+            supports: "$(spellcasting:list), $(spellcasting:slots)",
+            number: n,
+            level: i + 1,
+            spellcasting: name,
+          });
+          return;
+        }
+        // A school-limited subclass: its picks of its two schools, and the one "any school" pick at the levels it has one.
+        const free = limit.anyAt.includes(i + 1) ? Math.min(1, n) : 0;
+        const schools = limit.schools.map((x) => `${x} School`).join("||");
+        if (n - free > 0)
+          rules.push({
+            kind: "select",
+            type: "Spell",
+            name: `Spell known (${name}: ${limit.schools.join(" or ").toLowerCase()})`,
+            supports: `$(spellcasting:list), $(spellcasting:slots), (${schools})`,
+            number: n - free,
+            level: i + 1,
+            spellcasting: name,
+          });
+        if (free)
+          rules.push({
+            kind: "select",
+            type: "Spell",
+            name: `Spell known (${name}: any school)`,
+            supports: "$(spellcasting:list), $(spellcasting:slots)",
+            number: free,
+            level: i + 1,
+            spellcasting: name,
+          });
+      });
     // Spells of a set level learned at set class levels (the Warlock's Mystic Arcanum: one 6th-level spell at 11...).
     for (const [lv, byLevel] of Object.entries((c.spellsKnownProgressionFixedByLevel as Record<string, Record<string, number>>) ?? {})) {
-      for (const [spellLevel, n] of Object.entries(byLevel)) rules.push({ kind: "select", type: "Spell", name: `Level ${spellLevel} spell (${name} ${lv})`, supports: `$(spellcasting:list), ${spellLevel}`, number: Number(n) || 1, level: Number(lv), spellcasting: name });
+      for (const [spellLevel, n] of Object.entries(byLevel))
+        rules.push({
+          kind: "select",
+          type: "Spell",
+          name: `Level ${spellLevel} spell (${name} ${lv})`,
+          supports: `$(spellcasting:list), ${spellLevel}`,
+          number: Number(n) || 1,
+          level: Number(lv),
+          spellcasting: name,
+        });
     }
     const prep = (c.preparedSpellsProgression as number[] | undefined) ?? tableColumn(c, /^prepared spells/);
-    if (prep) deltas(prep).forEach((n, i) => { if (n) rules.push({ kind: "stat", name: `${key}:prepare`, value: String(n), level: i + 1 }); });
+    if (prep)
+      deltas(prep).forEach((n, i) => {
+        if (n) rules.push({ kind: "stat", name: `${key}:prepare`, value: String(n), level: i + 1 });
+      });
     else if (typeof c.preparedSpells === "string") {
       for (const tok of String(c.preparedSpells).split("+")) {
         const t = tok.trim();
         if (/<\$level\$>\s*\/\s*2/.test(t)) rules.push({ kind: "stat", name: `${key}:prepare`, value: `level:${classLevel}:half` });
         else if (/<\$level\$>/.test(t)) rules.push({ kind: "stat", name: `${key}:prepare`, value: `level:${classLevel}` });
-        else { const m = t.match(/<\$(\w+)_mod\$>/); if (m) rules.push({ kind: "stat", name: `${key}:prepare`, value: `${abilFull(m[1])}:modifier` }); }
+        else {
+          const m = t.match(/<\$(\w+)_mod\$>/);
+          if (m) rules.push({ kind: "stat", name: `${key}:prepare`, value: `${abilFull(m[1])}:modifier` });
+        }
       }
     }
     // Share slots with other classes when multiclassing.
     const prog = c.casterProgression as string | undefined;
     if (prog === "full" || prog === "1/2" || prog === "1/3" || prog === "artificer") {
       for (let l = 1; l <= 20; l++) {
-        const cnt = (lvl: number) => (prog === "full" ? lvl : prog === "1/2" ? (c.edition === "one" ? Math.ceil(lvl / 2) : Math.floor(lvl / 2)) : prog === "artificer" ? Math.ceil(lvl / 2) : lvl < 3 ? 0 : Math.floor(lvl / 3));
+        const cnt = (lvl: number) =>
+          prog === "full"
+            ? lvl
+            : prog === "1/2"
+              ? c.edition === "one"
+                ? Math.ceil(lvl / 2)
+                : Math.floor(lvl / 2)
+              : prog === "artificer"
+                ? Math.ceil(lvl / 2)
+                : lvl < 3
+                  ? 0
+                  : Math.floor(lvl / 3);
         const d = cnt(l) - cnt(l - 1);
-        if (d) rules.push({ kind: "stat", name: "multiclass:spellcasting:level", value: String(d), level: l, requirements: "ID_INTERNAL_GRANT_MULTICLASS" });
+        if (d)
+          rules.push({
+            kind: "stat",
+            name: "multiclass:spellcasting:level",
+            value: String(d),
+            level: l,
+            requirements: "ID_INTERNAL_GRANT_MULTICLASS",
+          });
       }
     }
   }
@@ -1716,21 +2867,37 @@ function castingRules(c: J, name: string, lists: string[], classLevel: string, l
  * refSubclassFeature ("Name|Class|ClassSource|Subclass|SubclassSource|Level|Source") and refOptionalfeature
  * ("Name|Source"). With `optionsOnly`, plain references are left alone (the subclass loop converts those already).
  */
-function refRules(entries: unknown, label: string, level: number, data: { cf: J[]; sf: J[]; ctx: Ctx; out: AElement[]; progressed?: boolean }, optionsOnly = false): ARule[] {
+function refRules(
+  entries: unknown,
+  label: string,
+  level: number,
+  data: { cf: J[]; sf: J[]; ctx: Ctx; out: AElement[]; progressed?: boolean },
+  optionsOnly = false,
+): ARule[] {
   const rules: ARule[] = [];
   const idOf = (ref: J): { id: string; type: string } | undefined => {
     if (ref.type === "refClassFeature") {
       const [name, cls, csrc, lv, src] = String(ref.classFeature).split("|");
-      const f = data.cf.find((x) => x.name === name && x.className === cls && (x.classSource ?? "PHB") === (csrc || x.classSource) && String(x.level) === lv && x.source === (src || csrc || "PHB"));
+      const f = data.cf.find(
+        (x) =>
+          x.name === name &&
+          x.className === cls &&
+          (x.classSource ?? "PHB") === (csrc || x.classSource) &&
+          String(x.level) === lv &&
+          x.source === (src || csrc || "PHB"),
+      );
       if (!f) return undefined;
       const id = ftId("CF", `${cls} ${name}`, f.source, String(f.level));
-      if (!data.out.some((o) => o.id === id)) data.out.push(featureElement(f, "5et class feature", "Class Feature", id, data.ctx, false, data.out));
+      if (!data.out.some((o) => o.id === id))
+        data.out.push(featureElement(f, "5et class feature", "Class Feature", id, data.ctx, false, data.out));
       return { id, type: "Class Feature" };
     }
     if (ref.type === "refSubclassFeature") {
       const [name, , csrc, short, ssrc, lv, src] = String(ref.subclassFeature).split("|");
       const book = src || ssrc || csrc || "PHB";
-      const hit = data.out.find((o) => ["", "1", "2", "3", "4"].some((h) => o.id === ftId("SF", `${short ?? ""} ${name}`, book, `${lv ?? ""}${h}`)));
+      const hit = data.out.find((o) =>
+        ["", "1", "2", "3", "4"].some((h) => o.id === ftId("SF", `${short ?? ""} ${name}`, book, `${lv ?? ""}${h}`)),
+      );
       if (hit) return { id: hit.id, type: "Archetype Feature" };
       // A feature only reachable through a "choose" block (Hunter's Prey's Colossus Slayer): the subclass's own list
       // leaves it out, so it is made here. Without it the choice had no options and vanished.
@@ -1754,7 +2921,9 @@ function refRules(entries: unknown, label: string, level: number, data: { cf: J[
   const earlierOf = (ref: J): string | undefined => {
     if (ref.type !== "refSubclassFeature") return undefined;
     const [name, , , short, , lv] = String(ref.subclassFeature).split("|");
-    const first = data.sf.filter((x) => x.name === name && x.subclassShortName === short && Number(x.level) < Number(lv)).sort((a, b) => a.level - b.level)[0];
+    const first = data.sf
+      .filter((x) => x.name === name && x.subclassShortName === short && Number(x.level) < Number(lv))
+      .sort((a, b) => a.level - b.level)[0];
     return first ? ftId("SF", `${short} ${name}`, first.source, `${first.level}${first.header ?? ""}`) : undefined;
   };
   const walk = (x: unknown, inOptions: boolean) => {
@@ -1785,11 +2954,25 @@ function refRules(entries: unknown, label: string, level: number, data: { cf: J[
       if (data.progressed && refs.every((r) => r.type === "Optional Feature")) return;
       if (refs.length) {
         const types = [...new Set(refs.map((r) => r.type))];
-        rules.push({ kind: "select", type: types[0], name: `${label}: choose ${e.count ?? 1}`, supports: refs.filter((r) => r.type === types[0]).map((r) => r.id).join("|"), number: Number(e.count) || 1, level });
+        rules.push({
+          kind: "select",
+          type: types[0],
+          name: `${label}: choose ${e.count ?? 1}`,
+          supports: refs
+            .filter((r) => r.type === types[0])
+            .map((r) => r.id)
+            .join("|"),
+          number: Number(e.count) || 1,
+          level,
+        });
       }
       return;
     }
-    if (!inOptions && !optionsOnly && e.type === "refClassFeature") { const r = idOf(e); if (r) rules.push({ kind: "grant", type: r.type, id: r.id, level }); return; }
+    if (!inOptions && !optionsOnly && e.type === "refClassFeature") {
+      const r = idOf(e);
+      if (r) rules.push({ kind: "grant", type: r.type, id: r.id, level });
+      return;
+    }
     if (e.entries) walk(e.entries, inOptions);
   };
   walk(entries, false);
@@ -1805,32 +2988,62 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   const setters: Record<string, SetterValue> = { hd: set(`d${c.hd?.faces ?? 8}`) };
   const gained: ARule[] = [];
 
-  for (const a of (c.proficiency as string[]) ?? []) rules.push({ kind: "grant", type: "Proficiency", id: `ID_5ET_SAVE_${slug(abilFull(a))}`, ...first });
+  for (const a of (c.proficiency as string[]) ?? [])
+    rules.push({ kind: "grant", type: "Proficiency", id: `ID_5ET_SAVE_${slug(abilFull(a))}`, ...first });
   const sp = c.startingProficiencies ?? {};
   const mc = c.multiclassing ?? {};
   const armorGrant = (a: string): string | undefined => {
-    const k = String(typeof a === "string" ? a : (a as J).proficiency ?? "").split("|")[0].toLowerCase();
-    return k === "light" ? "ID_5ET_PROF_ARMOR_LIGHT" : k === "medium" ? "ID_5ET_PROF_ARMOR_MEDIUM" : k === "heavy" ? "ID_5ET_PROF_ARMOR_HEAVY" : k === "shield" ? "ID_5ET_PROF_ARMOR_SHIELD" : undefined;
+    const k = String(typeof a === "string" ? a : ((a as J).proficiency ?? ""))
+      .split("|")[0]
+      .toLowerCase();
+    return k === "light"
+      ? "ID_5ET_PROF_ARMOR_LIGHT"
+      : k === "medium"
+        ? "ID_5ET_PROF_ARMOR_MEDIUM"
+        : k === "heavy"
+          ? "ID_5ET_PROF_ARMOR_HEAVY"
+          : k === "shield"
+            ? "ID_5ET_PROF_ARMOR_SHIELD"
+            : undefined;
   };
-  for (const a of sp.armor ?? []) { const g = armorGrant(a); if (g) rules.push({ kind: "grant", type: "Proficiency", id: g, ...first }); }
+  for (const a of sp.armor ?? []) {
+    const g = armorGrant(a);
+    if (g) rules.push({ kind: "grant", type: "Proficiency", id: g, ...first });
+  }
   const weaponId = (k: string) => {
     const wid = ftId("PROF_WEAPON", k, "ALL");
-    if (!out.some((o) => o.id === wid)) out.push(base(wid, `Weapon Proficiency (${cap(k)})`, "Proficiency", "5etools", { compendiumHidden: true }));
+    if (!out.some((o) => o.id === wid))
+      out.push(base(wid, `Weapon Proficiency (${cap(k)})`, "Proficiency", "5etools", { compendiumHidden: true }));
     return wid;
   };
   // Weapons by kind and property: "Martial weapons that have the {@filter Finesse or Light|items|type=martial
   // weapon|property=finesse;light} property" (the 2024 Rogue and Monk) is every such weapon, not one named that.
-  const PROPERTY: Record<string, string> = { finesse: "F", light: "L", heavy: "H", reach: "R", thrown: "T", "two-handed": "2H", versatile: "V", ammunition: "A", loading: "LD" };
+  const PROPERTY: Record<string, string> = {
+    finesse: "F",
+    light: "L",
+    heavy: "H",
+    reach: "R",
+    thrown: "T",
+    "two-handed": "2H",
+    versatile: "V",
+    ammunition: "A",
+    loading: "LD",
+  };
   const byFilter = (text: string): string[] | undefined => {
     const f = /\{@filter [^|}]*\|items\|([^}]*)\}/.exec(text)?.[1];
     if (!f) return undefined;
     const params = new Map(f.split("|").map((x) => x.split("=") as [string, string]));
     const cat = /\b(simple|martial)\b/.exec(params.get("type") ?? "")?.[1];
-    const props = new Set((params.get("property") ?? "").split(";").map((x) => PROPERTY[x.trim().toLowerCase()]).filter(Boolean));
+    const props = new Set(
+      (params.get("property") ?? "")
+        .split(";")
+        .map((x) => PROPERTY[x.trim().toLowerCase()])
+        .filter(Boolean),
+    );
     const names = new Set<string>();
     for (const b of ctx.baseItems.values()) {
       if (!b.weaponCategory || (cat && b.weaponCategory !== cat)) continue;
-      const has = ((b.property ?? []) as unknown[]).map((x) => String(typeof x === "string" ? x : (x as J).uid ?? "").split("|")[0]);
+      const has = ((b.property ?? []) as unknown[]).map((x) => String(typeof x === "string" ? x : ((x as J).uid ?? "")).split("|")[0]);
       if (!props.size || has.some((x) => props.has(x))) names.add(String(b.name).toLowerCase());
     }
     return [...names].sort();
@@ -1838,7 +3051,7 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   const weaponGrants = (w: unknown): string[] => {
     // An optional proficiency is the DM's to give (the Artificer's firearms), not the class's.
     if (w && typeof w === "object" && (w as J).optional) return [];
-    const text = String(typeof w === "string" ? w : (w as J).proficiency ?? "");
+    const text = String(typeof w === "string" ? w : ((w as J).proficiency ?? ""));
     const filtered = byFilter(text);
     if (filtered) return filtered.map(weaponId);
     const k = weaponName(text);
@@ -1850,8 +3063,12 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   for (const r of skillRules(sp.skills, c.name)) rules.push({ ...r, ...first } as ARule);
   for (const r of profRules({ toolProficiencies: sp.toolProficiencies }, c.name, out)) rules.push({ ...r, ...first } as ARule);
   for (const r of profRules({ toolProficiencies: mc.proficienciesGained?.toolProficiencies }, c.name, out)) gained.push(r);
-  for (const a of mc.proficienciesGained?.armor ?? []) { const g = armorGrant(a); if (g) gained.push({ kind: "grant", type: "Proficiency", id: g }); }
-  for (const w of mc.proficienciesGained?.weapons ?? []) for (const g of weaponGrants(w)) gained.push({ kind: "grant", type: "Proficiency", id: g });
+  for (const a of mc.proficienciesGained?.armor ?? []) {
+    const g = armorGrant(a);
+    if (g) gained.push({ kind: "grant", type: "Proficiency", id: g });
+  }
+  for (const w of mc.proficienciesGained?.weapons ?? [])
+    for (const g of weaponGrants(w)) gained.push({ kind: "grant", type: "Proficiency", id: g });
   for (const r of skillRules(mc.proficienciesGained?.skills, c.name)) gained.push(r);
 
   // Features by level, and the subclass choice.
@@ -1867,7 +3084,9 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     const level = parseInt(lv, 10);
     const gainSub = typeof ref === "object" && ref.gainSubclassFeature;
     if (gainSub && subLevel === undefined) subLevel = level;
-    const feat = data.cf.find((f) => f.name === name && f.className === c.name && f.level === level && (f.classSource ?? c.source) === (csrc || c.source));
+    const feat = data.cf.find(
+      (f) => f.name === name && f.className === c.name && f.level === level && (f.classSource ?? c.source) === (csrc || c.source),
+    );
     if (/^Ability Score Improvement$/i.test(name)) {
       asiLevels.push(level);
       continue;
@@ -1880,9 +3099,20 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     // ("Deft Explorer Improvement") come with it, and the feature it replaces goes when it is taken.
     if (feat.isClassFeatureVariant) {
       const base = [...variants.keys()].find((v) => name !== v && name.startsWith(v));
-      if (base) { rules.push({ kind: "grant", type: "Class Feature", id: fid, level, requirements: variants.get(base) }); continue; }
+      if (base) {
+        rules.push({ kind: "grant", type: "Class Feature", id: fid, level, requirements: variants.get(base) });
+        continue;
+      }
       variants.set(name, fid);
-      rules.push({ kind: "select", type: "Class Feature", name: `Optional class feature: ${name} (${c.name} ${level})`, supports: fid, number: 1, level, optional: true });
+      rules.push({
+        kind: "select",
+        type: "Class Feature",
+        name: `Optional class feature: ${name} (${c.name} ${level})`,
+        supports: fid,
+        number: 1,
+        level,
+        optional: true,
+      });
       const replaced = /replaces the (.+?) feature/i.exec(stripTags(JSON.stringify(feat.entries ?? [])))?.[1];
       if (replaced) replacements.push({ name: replaced, by: fid });
       continue;
@@ -1890,10 +3120,22 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     granted.set(fid, name);
     rules.push({ kind: "grant", type: "Class Feature", id: fid, level });
     // On the feature itself, so a feature an optional one replaces (Favored Foe for Favored Enemy) takes them along.
-    { const fav = favoredChoices(feat, fid, level, ctx, out); const el = out.find((o) => o.id === fid); if (el && fav.length) el.rules.push(...fav); }
+    {
+      const fav = favoredChoices(feat, fid, level, ctx, out);
+      const el = out.find((o) => o.id === fid);
+      if (el && fav.length) el.rules.push(...fav);
+    }
     // "Choose one of these" blocks inside the feature (the 2024 Cleric's Divine Order: Protector or Thaumaturge) are
     // a choice; a feature it simply refers to (Monk's Focus: Flurry of Blows) is given with it.
-    rules.push(...refRules(feat.entries, `${name} (${c.name} ${level})`, level, { cf: data.cf, sf: data.sf, ctx, out, progressed: !!(c.optionalfeatureProgression as J[] | undefined)?.length }));
+    rules.push(
+      ...refRules(feat.entries, `${name} (${c.name} ${level})`, level, {
+        cf: data.cf,
+        sf: data.sf,
+        ctx,
+        out,
+        progressed: !!(c.optionalfeatureProgression as J[] | undefined)?.length,
+      }),
+    );
   }
   // The replaced feature itself requires the optional one's absence, as Aurora's content does (a requirement on the
   // class's own grant would not see a choice the class itself offers).
@@ -1907,7 +3149,14 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   // An Ability Score Improvement is one choice: a feat, or the improvement itself (2014: +2 to one score or +1 to two;
   // 2024: the Ability Score Improvement feat among the feats). Before, both could be taken.
   for (const level of asiLevels) {
-    rules.push({ kind: "select", type: "Feat", name: `Ability Score Improvement or feat (level ${level})`, supports: c.edition === "one" ? "5et feat" : "5et feat||5et asi choice", number: 1, level });
+    rules.push({
+      kind: "select",
+      type: "Feat",
+      name: `Ability Score Improvement or feat (level ${level})`,
+      supports: c.edition === "one" ? "5et feat" : "5et feat||5et asi choice",
+      number: 1,
+      level,
+    });
   }
   rules.push(...optionalFeatureRules(c));
   // Feats a class takes at set levels, by category (2024: the Fighting Style feat at 1, the Epic Boon at 19).
@@ -1916,18 +3165,42 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     // 19th level): any feat, each by its own requirements. Offering boons alone ruled out a legal Alert or Athlete there.
     const cats = ((fp.category as string[]) ?? []).filter((x) => x !== "EB").map((x) => `category ${x}`);
     const any = ((fp.category as string[]) ?? []).includes("EB");
-    for (const [lv, n] of Object.entries((fp.progression as J) ?? {})) rules.push({ kind: "select", type: "Feat", name: `${fp.name ?? "Feat"} (${c.name} ${lv})`, supports: cats.length && !any ? `5et feat,(${cats.join("||")})` : "5et feat", number: Number(n) || 1, level: Number(lv) });
+    for (const [lv, n] of Object.entries((fp.progression as J) ?? {}))
+      rules.push({
+        kind: "select",
+        type: "Feat",
+        name: `${fp.name ?? "Feat"} (${c.name} ${lv})`,
+        supports: cats.length && !any ? `5et feat,(${cats.join("||")})` : "5et feat",
+        number: Number(n) || 1,
+        level: Number(lv),
+      });
   }
   // Weapon Mastery (2024): the masteries known at each level, chosen from the weapons that have one.
   const mastery = c.itemMasteriesProgression as Record<string, number> | undefined;
   if (mastery) {
     let had = 0;
     for (const [lv, n] of Object.entries(mastery).sort((a, b) => Number(a[0]) - Number(b[0]))) {
-      if (Number(n) > had) rules.push({ kind: "select", type: "Class Feature", name: `Weapon Mastery (${c.name} ${lv})`, supports: "5et weapon mastery", number: Number(n) - had, level: Number(lv) });
+      if (Number(n) > had)
+        rules.push({
+          kind: "select",
+          type: "Class Feature",
+          name: `Weapon Mastery (${c.name} ${lv})`,
+          supports: "5et weapon mastery",
+          number: Number(n) - had,
+          level: Number(lv),
+        });
       had = Math.max(had, Number(n));
     }
   }
-  if (subLevel !== undefined) rules.push({ kind: "select", type: "Archetype", name: c.subclassTitle ?? `${c.name} Subclass`, supports: subTag, number: 1, level: subLevel });
+  if (subLevel !== undefined)
+    rules.push({
+      kind: "select",
+      type: "Archetype",
+      name: c.subclassTitle ?? `${c.name} Subclass`,
+      supports: subTag,
+      number: 1,
+      level: subLevel,
+    });
 
   // Spellcasting: tables become per-level stat steps so everything flows through the same rules.
   const casting = castingRules(c, c.name, [c.name], lname);
@@ -1940,19 +3213,30 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     if (f.className !== c.name || (f.classSource ?? c.source) !== c.source) continue;
     const t = stripTags(JSON.stringify(f.entries ?? []));
     const m = /choose (two|three|\d+) (?:additional )?spells from any class/i.exec(t);
-    if (m && /included in the number in the spells known column|count as \w+ spells for you/i.test(t)) secrets.set(Number(f.level), ({ two: 2, three: 3 } as Record<string, number>)[m[1].toLowerCase()] ?? Number(m[1]));
+    if (m && /included in the number in the spells known column|count as \w+ spells for you/i.test(t))
+      secrets.set(Number(f.level), ({ two: 2, three: 3 } as Record<string, number>)[m[1].toLowerCase()] ?? Number(m[1]));
   }
   // The class's own spells (2024: the Paladin's Divine Smite at 2 and Find Steed at 5, the Ranger's Hunter's Mark,
   // the Druid's Speak with Animals, the Warlock's Contact Other Plane, always prepared), at its class level. Before,
   // only species, feats and subclasses read this, and a 5e.tools Paladin had no Divine Smite. Magical Secrets is in
   // the same field as extra picks, but the rule takes them out of the spells known: that is done just below.
-  const ownSpells = ((c.additionalSpells as J[] | undefined) ?? []).filter((a) => !(secrets.size && /magical secrets/i.test(String(a.name ?? ""))));
+  const ownSpells = ((c.additionalSpells as J[] | undefined) ?? []).filter(
+    (a) => !(secrets.size && /magical secrets/i.test(String(a.name ?? ""))),
+  );
   if (ownSpells.length) rules.push(...additionalSpellRules(ownSpells, c.name, c.source, out).rules);
   for (const r of casting.rules) {
     const n = r.kind === "select" && r.name === `Spell known (${c.name})` ? secrets.get(Number(r.level)) : undefined;
-    if (!n || r.kind !== "select") { rules.push(r); continue; }
+    if (!n || r.kind !== "select") {
+      rules.push(r);
+      continue;
+    }
     if (Number(r.number) > n) rules.push({ ...r, number: Number(r.number) - n });
-    rules.push({ ...r, name: `Magical Secrets (${c.name} ${r.level})`, supports: "($(spellcasting:slots)||0)", number: Math.min(n, Number(r.number)) });
+    rules.push({
+      ...r,
+      name: `Magical Secrets (${c.name} ${r.level})`,
+      supports: "($(spellcasting:slots)||0)",
+      number: Math.min(n, Number(r.number)),
+    });
   }
   if (casting.shares) gained.push({ kind: "grant", type: "Grants", id: "ID_INTERNAL_GRANT_MULTICLASS" });
   rules.push({ kind: "grant", type: "Grants", id: "ID_INTERNAL_GRANT_MULTICLASS", requirements: mcId });
@@ -1960,8 +3244,12 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   // Multiclass requirements: 2014 states them ({str: 13, or: [{str: 13, dex: 13}]}, "or" meaning any one of the
   // group); 2024 has them as the primary ability, 13 in it ([{str: true}, {dex: true}]: Strength or Dexterity).
   const reqObj = (mc.requirements ?? {}) as J;
-  const reqParts = Object.entries(reqObj).filter(([k]) => k in ABIL).map(([k, v]) => `[${k}:${v}]`);
-  const words: string[] = Object.entries(reqObj).filter(([k]) => k in ABIL).map(([k, v]) => `${cap(abilFull(k))} ${v}`);
+  const reqParts = Object.entries(reqObj)
+    .filter(([k]) => k in ABIL)
+    .map(([k, v]) => `[${k}:${v}]`);
+  const words: string[] = Object.entries(reqObj)
+    .filter(([k]) => k in ABIL)
+    .map(([k, v]) => `${cap(abilFull(k))} ${v}`);
   for (const group of (reqObj.or as J[]) ?? []) {
     const alts = Object.entries(group).filter(([k]) => k in ABIL);
     if (!alts.length) continue;
@@ -1979,11 +3267,19 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   const goldAlt = /\{@dice ([^|}]+)/.exec(String(c.startingEquipment?.goldAlternative ?? ""))?.[1]?.trim();
   if (goldAlt) setters["starting gold"] = set(goldAlt.replace(/\s*[×x*]\s*/g, " × "));
   const el = base(id, c.name, "Class", srcName(ctx, c.source), {
-    setters, rules, spellcasting,
+    setters,
+    rules,
+    spellcasting,
     // Sidekicks (Tasha's) are companions the DM runs, not classes a player character takes.
     compendiumHidden: !!c.isSidekick,
     description: `<p>${esc(c.name)}, from ${esc(srcName(ctx, c.source))}. Hit die d${c.hd?.faces ?? "?"}.</p>${equipmentHtml(c.startingEquipment)}`,
-    multiclass: { id: mcId, requirements: reqParts.length ? `(${reqParts.join(",")})` : undefined, prerequisite: words.length ? words.join(", ") : undefined, setters: {}, rules: gained },
+    multiclass: {
+      id: mcId,
+      requirements: reqParts.length ? `(${reqParts.join(",")})` : undefined,
+      prerequisite: words.length ? words.join(", ") : undefined,
+      setters: {},
+      rules: gained,
+    },
   });
   out.push(el);
 
@@ -1996,11 +3292,24 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     // copied onto a 2024 class keeps its PHB features, which the class's source alone would not find (as Plutonium
     // reads these references: an empty class or subclass source is the PHB, an empty feature source the subclass's).
     // Without a list, the features that name this class and subclass.
-    const refs = ((s.subclassFeatures as unknown[]) ?? []).map((x) => String(typeof x === "string" ? x : (x as J).subclassFeature ?? "")).filter(Boolean);
+    const refs = ((s.subclassFeatures as unknown[]) ?? [])
+      .map((x) => String(typeof x === "string" ? x : ((x as J).subclassFeature ?? "")))
+      .filter(Boolean);
     const lookup = (uid: string): J | undefined => {
       const [name, className, classSource, shortName, subSource, level, source] = uid.split("|").map((p) => p.trim());
-      const cs = (classSource || "PHB").toLowerCase(), ss = (subSource || "PHB").toLowerCase(), fs = (source || subSource || "PHB").toLowerCase();
-      return data.sf.find((x) => x.name.toLowerCase() === name.toLowerCase() && String(x.className).toLowerCase() === className.toLowerCase() && String(x.classSource ?? "PHB").toLowerCase() === cs && String(x.subclassShortName).toLowerCase() === shortName.toLowerCase() && String(x.subclassSource ?? "PHB").toLowerCase() === ss && Number(x.level) === Number(level) && String(x.source).toLowerCase() === fs);
+      const cs = (classSource || "PHB").toLowerCase(),
+        ss = (subSource || "PHB").toLowerCase(),
+        fs = (source || subSource || "PHB").toLowerCase();
+      return data.sf.find(
+        (x) =>
+          x.name.toLowerCase() === name.toLowerCase() &&
+          String(x.className).toLowerCase() === className.toLowerCase() &&
+          String(x.classSource ?? "PHB").toLowerCase() === cs &&
+          String(x.subclassShortName).toLowerCase() === shortName.toLowerCase() &&
+          String(x.subclassSource ?? "PHB").toLowerCase() === ss &&
+          Number(x.level) === Number(level) &&
+          String(x.source).toLowerCase() === fs,
+      );
     };
     // The listed features, then every feature they refer to outside a "choose" block ("Battle Smith" at level 3 holds
     // Steel Defender, Battle Ready and the tool proficiency as references): those are part of the subclass too.
@@ -2011,50 +3320,97 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       if (byRef.includes(f)) continue;
       byRef.push(f);
       const walk = (x: unknown) => {
-        if (Array.isArray(x)) { for (const y of x) walk(y); return; }
+        if (Array.isArray(x)) {
+          for (const y of x) walk(y);
+          return;
+        }
         if (!x || typeof x !== "object") return;
         const e = x as J;
         if (e.type === "options") return;
-        if (e.type === "refSubclassFeature") { const g = lookup(String(e.subclassFeature)); if (g && !byRef.includes(g)) queue.push(g); return; }
+        if (e.type === "refSubclassFeature") {
+          const g = lookup(String(e.subclassFeature));
+          if (g && !byRef.includes(g)) queue.push(g);
+          return;
+        }
         if (e.entries) walk(e.entries);
       };
       walk(f.entries);
     }
     const variantsOf: { name: string; by: string }[] = [];
-    const features = byRef.length ? byRef : data.sf.filter((x) => x.className === c.name && x.subclassShortName === (s.shortName ?? s.name) && (x.subclassSource ?? s.source) === s.source && (x.classSource ?? c.source) === c.source);
+    const features = byRef.length
+      ? byRef
+      : data.sf.filter(
+          (x) =>
+            x.className === c.name &&
+            x.subclassShortName === (s.shortName ?? s.name) &&
+            (x.subclassSource ?? s.source) === s.source &&
+            (x.classSource ?? c.source) === c.source,
+        );
     for (const f of features) {
       const fid = ftId("SF", `${s.shortName ?? s.name} ${f.name}`, f.source, `${f.level}${f.header ?? ""}`);
       // A feature two copies of one subclass share (the PHB subclass and its copy for the 2024 class) is one element,
       // granted by both.
       const had = out.some((o) => o.id === fid);
-      if (!had) out.push(featureElement(f, "5et subclass feature", "Archetype Feature", fid, ctx, f.name === (s.name), out));
+      if (!had) out.push(featureElement(f, "5et subclass feature", "Archetype Feature", fid, ctx, f.name === s.name, out));
       // An optional subclass feature (Tasha's Blessed Strikes, Primal Companion) is a choice, as a class's is, and the
       // feature it replaces goes when it is taken. Granted, a Cleric had Divine Strike and Blessed Strikes both.
       if (f.isClassFeatureVariant) {
-        srules.push({ kind: "select", type: "Archetype Feature", name: `Optional class feature: ${f.name} (${s.shortName ?? s.name} ${f.level})`, supports: fid, number: 1, level: f.level, optional: true });
+        srules.push({
+          kind: "select",
+          type: "Archetype Feature",
+          name: `Optional class feature: ${f.name} (${s.shortName ?? s.name} ${f.level})`,
+          supports: fid,
+          number: 1,
+          level: f.level,
+          optional: true,
+        });
         const replaced = /replaces the (.+?) feature/i.exec(stripTags(JSON.stringify(f.entries ?? [])))?.[1]?.toLowerCase();
         if (replaced) variantsOf.push({ name: replaced, by: fid });
       } else srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
       srules.push(...proseChoiceRules(f, fid, f.level, ctx, out));
-      srules.push(...refRules(f.entries, `${f.name} (${s.shortName ?? s.name} ${f.level})`, f.level, { cf: data.cf, sf: data.sf, ctx, out, progressed: !!(s.optionalfeatureProgression as J[] | undefined)?.length }, true));
+      srules.push(
+        ...refRules(
+          f.entries,
+          `${f.name} (${s.shortName ?? s.name} ${f.level})`,
+          f.level,
+          { cf: data.cf, sf: data.sf, ctx, out, progressed: !!(s.optionalfeatureProgression as J[] | undefined)?.length },
+          true,
+        ),
+      );
     }
     // The replaced feature requires the optional one's absence (Divine Strike: !Blessed Strikes), as for a class.
     for (const { name, by } of variantsOf) {
       for (const f of features) {
         if (String(f.name).toLowerCase() !== name || f.isClassFeatureVariant) continue;
         const el = out.find((o) => o.id === ftId("SF", `${s.shortName ?? s.name} ${f.name}`, f.source, `${f.level}${f.header ?? ""}`));
-        if (el && !String(el.requirements ?? "").includes(`!${by}`)) el.requirements = el.requirements ? `${el.requirements},!${by}` : `!${by}`;
+        if (el && !String(el.requirements ?? "").includes(`!${by}`))
+          el.requirements = el.requirements ? `${el.requirements},!${by}` : `!${by}`;
       }
     }
     // A subclass that casts (Eldritch Knight, Arcane Trickster): its list is the class whose spells it expands with.
     const expandedFrom = [...JSON.stringify(s.additionalSpells ?? []).matchAll(/class=([A-Za-z ]+)/g)].map((m) => m[1].trim());
-    const castText = features.filter((f) => /spellcasting/i.test(String(f.name))).map((f) => JSON.stringify(f.entries ?? "")).join(" ").replace(/\{@\w+ ([^|}]*)[^}]*\}/g, "$1");
-    const subCasting = castingRules(s, s.shortName ?? s.name, expandedFrom.length ? [...new Set(expandedFrom)] : [c.name], lname, schoolLimit(castText));
+    const castText = features
+      .filter((f) => /spellcasting/i.test(String(f.name)))
+      .map((f) => JSON.stringify(f.entries ?? ""))
+      .join(" ")
+      .replace(/\{@\w+ ([^|}]*)[^}]*\}/g, "$1");
+    const subCasting = castingRules(
+      s,
+      s.shortName ?? s.name,
+      expandedFrom.length ? [...new Set(expandedFrom)] : [c.name],
+      lname,
+      schoolLimit(castText),
+    );
     // A subclass's spells are its class's (domain, oath and patron spells; Arcana Domain's Arcane Mastery picks count as
     // Cleric spells), or its own casting's where it has one. Named after the subclass, the sheet put a Cleric 17's
     // Arcane Mastery spells on a Wizard 3's line. The labels and spell-set ids keep the subclass's name (saved picks).
     const castName = subCasting.spellcasting?.name ?? c.name;
-    const recast = (rs: ARule[]) => rs.map((r) => ((r.kind === "grant" || r.kind === "select") && (r as { spellcasting?: string }).spellcasting === s.name ? ({ ...r, spellcasting: castName } as ARule) : r));
+    const recast = (rs: ARule[]) =>
+      rs.map((r) =>
+        (r.kind === "grant" || r.kind === "select") && (r as { spellcasting?: string }).spellcasting === s.name
+          ? ({ ...r, spellcasting: castName } as ARule)
+          : r,
+      );
     const before = out.length;
     srules.push(...recast(additionalSpellRules(s.additionalSpells, s.name, s.source, out).rules));
     for (let k = before; k < out.length; k++) if (out[k].type === "Spell Set") out[k].rules = recast(out[k].rules);
@@ -2063,13 +3419,32 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     // An expanded spell list (2014 Warlock patrons: "expanded": {"s1": ["faerie fire", "sleep"], ...}): those spells
     // join the class's list while the subclass is had, as Aurora's "extend" does. Unread, a 2014 Warlock could not learn
     // its patron's spells on 5e.tools content (found moving characters, 2026-11-16).
-    const expanded = ((s.additionalSpells as J[] | undefined) ?? []).flatMap((a) => Object.values((a.expanded as J) ?? {}).flat()).map((x) => String(x));
+    const expanded = ((s.additionalSpells as J[] | undefined) ?? [])
+      .flatMap((a) => Object.values((a.expanded as J) ?? {}).flat())
+      .map((x) => String(x));
     const expandTag = `5et expanded ${slug(s.source ?? "")} ${slug(s.shortName ?? s.name)}`.toLowerCase();
     if (expanded.length && !subCasting.spellcasting) (ctx.expanded ??= []).push({ tag: expandTag, spells: expanded });
-    out.push(base(sid, s.name, "Archetype", srcName(ctx, s.source), { supports: [subTag], rules: srules, spellcasting: subCasting.spellcasting ?? (expanded.length ? { name: c.name, ability: cap(abilFull(String(c.spellcastingAbility ?? "cha"))), prepare: false, list: [], extend: true, extendLists: [expandTag] } : undefined), description: entriesHtml(s.entries ?? []) }));
+    out.push(
+      base(sid, s.name, "Archetype", srcName(ctx, s.source), {
+        supports: [subTag],
+        rules: srules,
+        spellcasting:
+          subCasting.spellcasting ??
+          (expanded.length
+            ? {
+                name: c.name,
+                ability: cap(abilFull(String(c.spellcastingAbility ?? "cha"))),
+                prepare: false,
+                list: [],
+                extend: true,
+                extendLists: [expandTag],
+              }
+            : undefined),
+        description: entriesHtml(s.entries ?? []),
+      }),
+    );
   }
 }
-
 
 // ---------------------------------------------------------------- additional spells and optional features
 
@@ -2083,13 +3458,18 @@ function spellRefs(section: J | undefined): { level?: number; refs: unknown[]; u
     // How often, as 5e.tools nests it and Plutonium reads it: {"daily": {"1": [...]}} is once a long rest ("1e": once
     // each), {"rest": {"1": [...]}} once a short rest; "will" and "ritual" have no count.
     const walk = (x: unknown, period?: string, times?: string): void => {
-      if (Array.isArray(x)) for (const r of x) { refs.push(r); uses.push(period && times ? `${parseInt(times, 10) || 1}/${period}` : undefined); }
-      else if (x && typeof x === "object") for (const [key, y] of Object.entries(x as J)) {
-        if (key === "daily") walk(y, "Long Rest");
-        else if (key === "rest") walk(y, "Short Rest");
-        else if (period && !times) walk(y, period, key);
-        else walk(y, period, times);
-      }
+      if (Array.isArray(x))
+        for (const r of x) {
+          refs.push(r);
+          uses.push(period && times ? `${parseInt(times, 10) || 1}/${period}` : undefined);
+        }
+      else if (x && typeof x === "object")
+        for (const [key, y] of Object.entries(x as J)) {
+          if (key === "daily") walk(y, "Long Rest");
+          else if (key === "rest") walk(y, "Short Rest");
+          else if (period && !times) walk(y, period, key);
+          else walk(y, period, times);
+        }
     };
     walk(v);
     if (refs.length) out.push({ level: Number.isNaN(level) ? undefined : level, refs, uses });
@@ -2109,7 +3489,15 @@ function castingAbilityChoice(ab: J, casting: string, ownerSource: string, out: 
   for (const k of ab.choose as string[]) {
     const full = abilFull(k);
     const oid = `ID_5ET_SPELLABILITY_${slug(ownerSource)}_${slug(casting)}_${slug(full)}`;
-    if (!out.some((o) => o.id === oid)) out.push(base(oid, cap(full), "Spellcasting Ability", "5etools", { compendiumHidden: true, supports: [tag], rules: [{ kind: "stat", name: `${casting.toLowerCase()}:spellcasting:ability:${full.toLowerCase()}`, value: "1" } as ARule], description: `<p>${esc(cap(full))} is the spellcasting ability for ${esc(casting)}'s spells.</p>` }));
+    if (!out.some((o) => o.id === oid))
+      out.push(
+        base(oid, cap(full), "Spellcasting Ability", "5etools", {
+          compendiumHidden: true,
+          supports: [tag],
+          rules: [{ kind: "stat", name: `${casting.toLowerCase()}:spellcasting:ability:${full.toLowerCase()}`, value: "1" } as ARule],
+          description: `<p>${esc(cap(full))} is the spellcasting ability for ${esc(casting)}'s spells.</p>`,
+        }),
+      );
   }
   return [{ kind: "select", type: "Spellcasting Ability", name: `Spellcasting ability (${casting})`, supports: tag, number: 1 } as ARule];
 }
@@ -2120,7 +3508,12 @@ function castingAbilityChoice(ab: J, casting: string, ownerSource: string, out: 
  * the Land's lands, Strixhaven Initiate's colleges, Divinely Favored's alignments): with `out`, each set becomes a
  * hidden option holding its own spells and spell choices, and the owner gets one choice among them.
  */
-export function additionalSpellRules(adds: J[] | undefined, owner: string, ownerSource: string, out?: AElement[]): { rules: ARule[]; ability?: string } {
+export function additionalSpellRules(
+  adds: J[] | undefined,
+  owner: string,
+  ownerSource: string,
+  out?: AElement[],
+): { rules: ARule[]; ability?: string } {
   if (out && (adds?.length ?? 0) > 1) {
     const tag = `5et spell set ${slug(ownerSource)} ${slug(owner)}`.toLowerCase();
     let ability: string | undefined;
@@ -2128,9 +3521,20 @@ export function additionalSpellRules(adds: J[] | undefined, owner: string, owner
       const own = additionalSpellRules([set], owner, ownerSource, out);
       ability ??= own.ability;
       // An unnamed set is named by its first spells ("Light, Sacred Flame").
-      const first = JSON.stringify(set).match(/"([a-z][a-z' /-]+)(?:\|[a-z0-9]+)?(?:#c)?"/gi)?.slice(0, 2).map((x) => titleCase(plainName(x.replace(/"/g, "").split("|")[0].split("#")[0]))) ?? [];
+      const first =
+        JSON.stringify(set)
+          .match(/"([a-z][a-z' /-]+)(?:\|[a-z0-9]+)?(?:#c)?"/gi)
+          ?.slice(0, 2)
+          .map((x) => titleCase(plainName(x.replace(/"/g, "").split("|")[0].split("#")[0]))) ?? [];
       const label = set.name ? String(set.name) : first.join(", ") || `Option ${i + 1}`;
-      out.push(base(`ID_5ET_SPELLSET_${slug(ownerSource)}_${slug(owner)}_${i + 1}`, `${owner}: ${label}`, "Spell Set", "5etools", { compendiumHidden: true, supports: [tag], rules: own.rules, description: `<p>${esc(label)}: the spells this choice of ${esc(owner)} gives.</p>` }));
+      out.push(
+        base(`ID_5ET_SPELLSET_${slug(ownerSource)}_${slug(owner)}_${i + 1}`, `${owner}: ${label}`, "Spell Set", "5etools", {
+          compendiumHidden: true,
+          supports: [tag],
+          rules: own.rules,
+          description: `<p>${esc(label)}: the spells this choice of ${esc(owner)} gives.</p>`,
+        }),
+      );
     });
     return { rules: [{ kind: "select", type: "Spell Set", name: `${owner} spells`, supports: tag, number: 1 } as ARule], ability };
   }
@@ -2139,7 +3543,8 @@ export function additionalSpellRules(adds: J[] | undefined, owner: string, owner
   for (const a of adds ?? []) {
     const ab = a.ability;
     if (!ability && ab) ability = typeof ab === "string" ? ab : Array.isArray(ab?.choose) ? ab.choose[0] : undefined;
-    if (out && !rules.some((r) => r.kind === "select" && r.type === "Spellcasting Ability")) rules.push(...castingAbilityChoice(ab, owner, ownerSource, out));
+    if (out && !rules.some((r) => r.kind === "select" && r.type === "Spellcasting Ability"))
+      rules.push(...castingAbilityChoice(ab, owner, ownerSource, out));
     for (const kind of ["innate", "known", "prepared"] as const) {
       for (const { level, refs, uses } of spellRefs(a[kind])) {
         for (const [i, r] of refs.entries()) {
@@ -2147,17 +3552,56 @@ export function additionalSpellRules(adds: J[] | undefined, owner: string, owner
             const [name, src] = r.split("#")[0].split("|");
             // "hellish rebuke#2": cast as a 2nd-level spell. "#c" marks a cantrip.
             const castAt = Number(/#(\d)$/.exec(r)?.[1]) || undefined;
-            rules.push({ kind: "grant", type: "Spell", id: `SPELLREF:${name.trim().toLowerCase()}|${(src ?? "").toLowerCase()}|${ownerSource.toLowerCase()}`, level, spellcasting: owner, ...(uses[i] ? { uses: uses[i] } : {}), ...(castAt ? { castAt } : {}) } as ARule);
+            rules.push({
+              kind: "grant",
+              type: "Spell",
+              id: `SPELLREF:${name.trim().toLowerCase()}|${(src ?? "").toLowerCase()}|${ownerSource.toLowerCase()}`,
+              level,
+              spellcasting: owner,
+              ...(uses[i] ? { uses: uses[i] } : {}),
+              ...(castAt ? { castAt } : {}),
+            } as ARule);
           } else if (r && typeof (r as J).choose === "string") {
-            const crit = Object.fromEntries(String((r as J).choose).split("|").map((p) => p.split("=")).filter((p) => p.length === 2).map(([k, v]) => [k.trim().toLowerCase(), v])) as Record<string, string>;
+            const crit = Object.fromEntries(
+              String((r as J).choose)
+                .split("|")
+                .map((p) => p.split("="))
+                .filter((p) => p.length === 2)
+                .map(([k, v]) => [k.trim().toLowerCase(), v]),
+            ) as Record<string, string>;
             // 5e.tools separates alternatives with ";" (class=Cleric;Wizard); the filter syntax here uses "||".
-            const anyOf = (v?: string) => (v ? (v.includes(";") ? `(${v.split(";").map((x) => x.trim()).filter(Boolean).join("||")})` : v.trim()) : "");
-            const school = crit.school ? crit.school.split(";").map((x) => SCHOOL[x.trim().toUpperCase()] ?? x).join(";") : "";
+            const anyOf = (v?: string) =>
+              v
+                ? v.includes(";")
+                  ? `(${v
+                      .split(";")
+                      .map((x) => x.trim())
+                      .filter(Boolean)
+                      .join("||")})`
+                  : v.trim()
+                : "";
+            const school = crit.school
+              ? crit.school
+                  .split(";")
+                  .map((x) => SCHOOL[x.trim().toUpperCase()] ?? x)
+                  .join(";")
+              : "";
             // "components & miscellaneous=ritual" (Ritual Caster, Magic Initiate's rituals): spells that are rituals, or
             // concentration spells; the registry offers both as tags.
-            const misc = (crit["components & miscellaneous"] ?? "").split(";").map((x) => x.trim().toLowerCase()).filter((x) => x === "ritual" || x === "concentration");
+            const misc = (crit["components & miscellaneous"] ?? "")
+              .split(";")
+              .map((x) => x.trim().toLowerCase())
+              .filter((x) => x === "ritual" || x === "concentration");
             const parts = [anyOf(crit.class), anyOf(crit.level), anyOf(school), ...misc].filter(Boolean) as string[];
-            rules.push({ kind: "select", type: "Spell", name: `${owner} spell`, supports: parts.join(", ") || "0", number: (r as J).count ?? 1, level, spellcasting: owner } as ARule);
+            rules.push({
+              kind: "select",
+              type: "Spell",
+              name: `${owner} spell`,
+              supports: parts.join(", ") || "0",
+              number: (r as J).count ?? 1,
+              level,
+              spellcasting: owner,
+            } as ARule);
           }
         }
       }
@@ -2179,18 +3623,37 @@ export function tableSpellChoices(f: J, rules: ARule[]): ARule[] {
   const tables: J[] = [];
   const walk = (x: unknown): void => {
     if (Array.isArray(x)) x.forEach(walk);
-    else if (x && typeof x === "object") { if ((x as J).type === "table") tables.push(x as J); Object.values(x as J).forEach(walk); }
+    else if (x && typeof x === "object") {
+      if ((x as J).type === "table") tables.push(x as J);
+      Object.values(x as J).forEach(walk);
+    }
   };
   walk(f.entries);
-  const names = new Set(tables.flatMap((t) => [...JSON.stringify(t.rows ?? []).matchAll(/\{@spell ([^|}]+)/gi)].map((x) => x[1].trim().toLowerCase())));
-  const inTable = (r: ARule) => r.kind === "grant" && String(r.id).startsWith("SPELLREF:") && names.has(String(r.id).slice(9).split("|")[0]);
+  const names = new Set(
+    tables.flatMap((t) => [...JSON.stringify(t.rows ?? []).matchAll(/\{@spell ([^|}]+)/gi)].map((x) => x[1].trim().toLowerCase())),
+  );
+  const inTable = (r: ARule) =>
+    r.kind === "grant" && String(r.id).startsWith("SPELLREF:") && names.has(String(r.id).slice(9).split("|")[0]);
   const options = rules.filter(inTable).map((r) => String((r as { id: string }).id));
   if (options.length < 2) return rules;
   const kept = rules.filter((r) => !inTable(r));
   const noun = titleCase(m[1].replace(/s$/i, ""));
   const spellcasting = (rules.find(inTable) as { spellcasting?: string }).spellcasting;
   const nth = ["", "2nd ", "3rd "];
-  kept.push(...[1, 9, 17].map((level, i) => ({ kind: "select", type: "Spell", name: `${nth[i]}${noun} Spell (${f.name})`, supports: options.join("|"), number: 1, ...(i ? { level } : {}), spellcasting } as ARule)));
+  kept.push(
+    ...[1, 9, 17].map(
+      (level, i) =>
+        ({
+          kind: "select",
+          type: "Spell",
+          name: `${nth[i]}${noun} Spell (${f.name})`,
+          supports: options.join("|"),
+          number: 1,
+          ...(i ? { level } : {}),
+          spellcasting,
+        }) as ARule,
+    ),
+  );
   return kept;
 }
 
@@ -2215,10 +3678,19 @@ function convertOptionalFeature(o: J, ctx: Ctx): AElement {
   for (const fp of (o.featProgression as J[]) ?? []) {
     const cats = ((fp.category as string[]) ?? []).map((x) => `category ${x}`);
     const n = Object.values((fp.progression as J) ?? {}).reduce((t: number, x) => t + (Number(x) || 0), 0);
-    if (n > 0) rules.push({ kind: "select", type: "Feat", name: `${fp.name ?? "Feat"} (${o.name})`, supports: cats.length ? `5et feat,(${cats.join("||")})` : "5et feat", number: n });
+    if (n > 0)
+      rules.push({
+        kind: "select",
+        type: "Feat",
+        name: `${fp.name ?? "Feat"} (${o.name})`,
+        supports: cats.length ? `5et feat,(${cats.join("||")})` : "5et feat",
+        number: n,
+      });
   }
   return base(ftId("OPT", o.name, o.source), o.name, "Optional Feature", srcName(ctx, o.source), {
-    supports: ["5et optional feature", ...types], rules, description: html,
+    supports: ["5et optional feature", ...types],
+    rules,
+    description: html,
     sheet: { display: true, descriptions: [{ text: html }] },
     setters: lv ? { level: set(String(lv)) } : {},
   });
@@ -2236,25 +3708,47 @@ function optionalFeatureRules(c: J, have: ARule[] = []): ARule[] {
     const types: string[] = p.featureType ?? [];
     if (!types.length) continue;
     const tags = types.map(optTag);
-    if (have.some((r) => r.kind === "select" && r.type === "Optional Feature" && tags.some((t) => r.supports.split("|").includes(t)))) continue;
+    if (have.some((r) => r.kind === "select" && r.type === "Optional Feature" && tags.some((t) => r.supports.split("|").includes(t))))
+      continue;
     const prog = p.progression;
     if (prog && !Array.isArray(prog) && prog["*"] !== undefined) {
-      rules.push({ kind: "select", type: "Optional Feature", name: String(p.name ?? "Optional feature"), supports: tags.join("|"), number: Number(prog["*"]) || 1 });
+      rules.push({
+        kind: "select",
+        type: "Optional Feature",
+        name: String(p.name ?? "Optional feature"),
+        supports: tags.join("|"),
+        number: Number(prog["*"]) || 1,
+      });
       continue;
     }
-    const counts: number[] = Array.isArray(prog) ? prog : Array.from({ length: 20 }, (_, i) => {
-      const keys = Object.keys(prog ?? {}).map(Number).sort((x, y) => x - y);
-      const k = keys.filter((n) => n <= i + 1).pop();
-      return k === undefined ? 0 : Number(prog[String(k)]);
-    });
+    const counts: number[] = Array.isArray(prog)
+      ? prog
+      : Array.from({ length: 20 }, (_, i) => {
+          const keys = Object.keys(prog ?? {})
+            .map(Number)
+            .sort((x, y) => x - y);
+          const k = keys.filter((n) => n <= i + 1).pop();
+          return k === undefined ? 0 : Number(prog[String(k)]);
+        });
     // "required": {"3": ["Elemental Attunement|PHB"]}: options the character must take at that level. They are given,
     // and the choice at that level is that many smaller (Way of the Four Elements knows Elemental Attunement and one more).
     const required = (p.required ?? {}) as Record<string, string[]>;
     deltas(counts).forEach((n, i) => {
-      const must = (required[String(i + 1)] ?? []).map((r) => { const [name, src] = String(r).split("|"); return ftId("OPT", name, src || "PHB"); });
+      const must = (required[String(i + 1)] ?? []).map((r) => {
+        const [name, src] = String(r).split("|");
+        return ftId("OPT", name, src || "PHB");
+      });
       for (const id of must) rules.push({ kind: "grant", type: "Optional Feature", id, level: i + 1 });
       const left = n - must.length;
-      if (left > 0) rules.push({ kind: "select", type: "Optional Feature", name: String(p.name ?? "Optional feature"), supports: types.map(optTag).join("|"), number: left, level: i + 1 });
+      if (left > 0)
+        rules.push({
+          kind: "select",
+          type: "Optional Feature",
+          name: String(p.name ?? "Optional feature"),
+          supports: types.map(optTag).join("|"),
+          number: left,
+          level: i + 1,
+        });
     });
   }
   return rules;
@@ -2280,23 +3774,41 @@ function expandVariant(v: J, ctx: Ctx): J[] {
   const inh: J = v.inherits;
   if (!inh || !Array.isArray(v.requires)) return [];
   const lc = (x: unknown) => String(x ?? "").toLowerCase();
-  const fits = (b: J, o: J) => Object.entries(o).every(([k, want]) => (Array.isArray(want) ? want.some((w) => lc(w) === lc(b[k])) : typeof want === "boolean" ? !!b[k] === want : lc(want) === lc(b[k])));
+  const fits = (b: J, o: J) =>
+    Object.entries(o).every(([k, want]) =>
+      Array.isArray(want) ? want.some((w) => lc(w) === lc(b[k])) : typeof want === "boolean" ? !!b[k] === want : lc(want) === lc(b[k]),
+    );
   const excludes: J[] = Array.isArray(v.excludes) ? v.excludes : v.excludes ? [v.excludes] : [];
   const modern = /^(XPHB|XDMG|XMM)$/i.test(String(inh.source ?? ""));
   const bases = [...ctx.baseItems.values()]
-    .filter((b) => (v.requires as J[]).some((o) => fits(b, o)) && !excludes.some((o) => Object.entries(o).some(([k, x]) => fits(b, { [k]: x }))))
+    .filter(
+      (b) => (v.requires as J[]).some((o) => fits(b, o)) && !excludes.some((o) => Object.entries(o).some(([k, x]) => fits(b, { [k]: x }))),
+    )
     .sort((a, b) => Number(/^XPHB$/i.test(b.source) === modern) - Number(/^XPHB$/i.test(a.source) === modern));
   const { namePrefix = "", nameSuffix = "", lootTables, tier, ...rest } = inh;
-  void lootTables; void tier;
+  void lootTables;
+  void tier;
   return bases.map((b) => {
-    const item: J = { ...rest, name: `${namePrefix}${b.name}${nameSuffix}`, source: inh.source ?? v.source ?? b.source, baseItem: `${b.name}|${b.source}`, _variant: `${v.name}|${inh.source ?? v.source ?? ""}` };
-    const fill = (t: string) => t.replace(/\{=(\w+)(?:\/(\w+))?\}/g, (_m, key: string, mod?: string) => {
-      const val = key === "baseName" ? b.name : key === "dmgType" ? ({ S: "slashing", P: "piercing", B: "bludgeoning" } as Record<string, string>)[String(b.dmgType)] ?? "" : String(item[key] ?? b[key] ?? "");
-      if (mod === "l") return val.toLowerCase();
-      if (mod === "u") return val.toUpperCase();
-      if (mod === "a" || mod === "at") return `${/^[aeiou]/i.test(val) ? "an" : "a"} ${mod === "at" ? val.toLowerCase() : val}`;
-      return val;
-    });
+    const item: J = {
+      ...rest,
+      name: `${namePrefix}${b.name}${nameSuffix}`,
+      source: inh.source ?? v.source ?? b.source,
+      baseItem: `${b.name}|${b.source}`,
+      _variant: `${v.name}|${inh.source ?? v.source ?? ""}`,
+    };
+    const fill = (t: string) =>
+      t.replace(/\{=(\w+)(?:\/(\w+))?\}/g, (_m, key: string, mod?: string) => {
+        const val =
+          key === "baseName"
+            ? b.name
+            : key === "dmgType"
+              ? (({ S: "slashing", P: "piercing", B: "bludgeoning" } as Record<string, string>)[String(b.dmgType)] ?? "")
+              : String(item[key] ?? b[key] ?? "");
+        if (mod === "l") return val.toLowerCase();
+        if (mod === "u") return val.toUpperCase();
+        if (mod === "a" || mod === "at") return `${/^[aeiou]/i.test(val) ? "an" : "a"} ${mod === "at" ? val.toLowerCase() : val}`;
+        return val;
+      });
     if (item.entries) item.entries = JSON.parse(fill(JSON.stringify(item.entries)));
     return item;
   });
@@ -2305,12 +3817,18 @@ function expandVariant(v: J, ctx: Ctx): J[] {
 /** Converts every recognised file. Unknown files are ignored. */
 export function convertFiveTools(input: FiveToolsInput): AElement[] {
   const ctx: Ctx = { books: {}, spellClasses: {}, baseItems: new Map() };
-  ctx.itemEntries = new Map((Object.values(input.files as Record<string, J>).flatMap((f) => (f?.itemEntry as J[]) ?? [])).map((e) => [`${e.name}|${e.source}`.toLowerCase(), e]));
+  ctx.itemEntries = new Map(
+    Object.values(input.files as Record<string, J>)
+      .flatMap((f) => (f?.itemEntry as J[]) ?? [])
+      .map((e) => [`${e.name}|${e.source}`.toLowerCase(), e]),
+  );
   // The Foundry files (Plutonium's mechanics) hold "feat", "item", "classFeature"... lists of mechanics, not content:
   // set aside here and applied to the converted elements at the end (foundry.ts).
   const isFoundry = (p: string) => /(^|\/)foundry(-[a-z]+)?\.json$/i.test(p);
   const foundryFiles = Object.entries(input.files as Record<string, J>).filter(([p]) => isFoundry(p));
-  const all = Object.entries(resolveCopies(Object.fromEntries(Object.entries(input.files as Record<string, J>).filter(([p]) => !isFoundry(p)))));
+  const all = Object.entries(
+    resolveCopies(Object.fromEntries(Object.entries(input.files as Record<string, J>).filter(([p]) => !isFoundry(p)))),
+  );
   for (const [path, json] of all) {
     if (json?.book && Array.isArray(json.book)) for (const b of json.book) if (b.id) ctx.books[b.id] = b.name;
     if (json?.adventure && Array.isArray(json.adventure)) for (const b of json.adventure) if (b.id) ctx.books[b.id] = b.name;
@@ -2321,7 +3839,18 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
         // (Tasha's Artificer has Absorb Elements). Tasha's optional additions to older classes' lists do not count.
         for (const [spell, v] of Object.entries(spells as J)) {
           const own = ((v as J).classVariant ?? []) as J[];
-          bucket[spell.toLowerCase()] = [...new Set([...(((v as J).class ?? []) as J[]), ...own.filter((c) => !c.definedInSource || [src.toLowerCase(), String(c.source).toLowerCase()].includes(String(c.definedInSource).toLowerCase()))].map((c) => String(c.name)))];
+          bucket[spell.toLowerCase()] = [
+            ...new Set(
+              [
+                ...(((v as J).class ?? []) as J[]),
+                ...own.filter(
+                  (c) =>
+                    !c.definedInSource ||
+                    [src.toLowerCase(), String(c.source).toLowerCase()].includes(String(c.definedInSource).toLowerCase()),
+                ),
+              ].map((c) => String(c.name)),
+            ),
+          ];
         }
       }
     }
@@ -2333,22 +3862,33 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   for (const names of Object.values(TOOL_KINDS)) for (const n of names) toolId(n, out);
   // Every plain instrument item too (no rarity: a Horn of Blasting is a magic item, not a kind of instrument).
   EXTRA_INSTRUMENTS.clear();
-  for (const [, json] of all) for (const i of [...((json?.baseitem as J[]) ?? []), ...((json?.item as J[]) ?? [])]) {
-    if (String(i?.type ?? "").split("|")[0] !== "INS" || (i.rarity && i.rarity !== "none")) continue;
-    const n = plainName(String(i.name)).toLowerCase();
-    if (!TOOL_KINDS.instrument.includes(n)) { EXTRA_INSTRUMENTS.add(n); toolId(n, out); }
-  }
+  for (const [, json] of all)
+    for (const i of [...((json?.baseitem as J[]) ?? []), ...((json?.item as J[]) ?? [])]) {
+      if (String(i?.type ?? "").split("|")[0] !== "INS" || (i.rarity && i.rarity !== "none")) continue;
+      const n = plainName(String(i.name)).toLowerCase();
+      if (!TOOL_KINDS.instrument.includes(n)) {
+        EXTRA_INSTRUMENTS.add(n);
+        toolId(n, out);
+      }
+    }
   const spellIds: Record<string, { id: string; source: string }[]> = {};
   // One Source element per book, so lists can show release dates the way the Aurora content does.
   for (const [, json] of all) {
     for (const b of json?.book ?? []) {
       if (!b.name) continue;
       const rel = typeof b.published === "string" ? b.published.replace(/-/g, "").slice(0, 8) : "";
-      out.push(base(`ID_5ET_SOURCE_${slug(b.id ?? b.name)}`, b.name, "Source", "5etools", {
-        compendiumHidden: true,
-        // 5e.tools' own classification of the book: core, supplement, setting, prerelease, homebrew...
-        setters: { release: set(rel), official: set(/^(UA|HB|Unearthed)/i.test(b.id ?? "") ? "false" : "true"), abbreviation: set(String(b.id ?? "")), group: set(String(b.group ?? "")) },
-      }));
+      out.push(
+        base(`ID_5ET_SOURCE_${slug(b.id ?? b.name)}`, b.name, "Source", "5etools", {
+          compendiumHidden: true,
+          // 5e.tools' own classification of the book: core, supplement, setting, prerelease, homebrew...
+          setters: {
+            release: set(rel),
+            official: set(/^(UA|HB|Unearthed)/i.test(b.id ?? "") ? "false" : "true"),
+            abbreviation: set(String(b.id ?? "")),
+            group: set(String(b.group ?? "")),
+          },
+        }),
+      );
     }
   }
   const variantItems: J[] = [];
@@ -2366,7 +3906,10 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   }
   for (const [, json] of all) {
     if (!json || typeof json !== "object") continue;
-    for (const s of json.spell ?? []) { out.push(convertSpell(s, ctx)); (spellIds[String(s.name).toLowerCase()] ??= []).push({ id: ftId("SPELL", s.name, s.source), source: String(s.source).toLowerCase() }); }
+    for (const s of json.spell ?? []) {
+      out.push(convertSpell(s, ctx));
+      (spellIds[String(s.name).toLowerCase()] ??= []).push({ id: ftId("SPELL", s.name, s.source), source: String(s.source).toLowerCase() });
+    }
     for (const i of json.baseitem ?? []) {
       const e = convertItem(i, ctx);
       if (e) out.push(e);
@@ -2374,10 +3917,20 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
       for (const ms of (i.mastery as string[]) ?? []) {
         const mname = `${i.name} (${cap(String(ms).split("|")[0])})`;
         const mid = ftId("MASTERY", mname, i.source);
-        if (!out.some((o) => o.id === mid)) out.push(base(mid, mname, "Class Feature", srcName(ctx, i.source), { compendiumHidden: true, supports: ["5et weapon mastery", "Weapon Mastery"], description: `<p>You can use the ${esc(cap(String(ms).split("|")[0]))} mastery property of the ${esc(i.name)}.</p>` }));
+        if (!out.some((o) => o.id === mid))
+          out.push(
+            base(mid, mname, "Class Feature", srcName(ctx, i.source), {
+              compendiumHidden: true,
+              supports: ["5et weapon mastery", "Weapon Mastery"],
+              description: `<p>You can use the ${esc(cap(String(ms).split("|")[0]))} mastery property of the ${esc(i.name)}.</p>`,
+            }),
+          );
       }
     }
-    for (const i of json.item ?? []) { const e = convertItem(i, ctx); if (e) out.push(e); }
+    for (const i of json.item ?? []) {
+      const e = convertItem(i, ctx);
+      if (e) out.push(e);
+    }
     for (const v of json.magicvariant ?? []) variantItems.push(...expandVariant(v, ctx));
     for (const f of json.feat ?? []) {
       if (featVariants(f, ctx, out)) continue;
@@ -2390,9 +3943,26 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
         // Each copy has its own option elements (an element counts once, so copies cannot share them).
         const opts = out.filter((o) => o.id.startsWith(`${el.id}_ABILITY_OPTION_`));
         for (let i = 1; i < ids.length; i++) {
-          for (const o of opts) out.push({ ...o, id: o.id.replace(el.id, ids[i]), supports: o.supports.map((t) => t.replace(el.id, ids[i])), rules: [...o.rules] });
-          const rules = el.rules.map((r) => (r.kind === "select" && r.supports.includes(`${el.id}_ABILITY_OPTION_`) ? { ...r, supports: r.supports.split(el.id).join(ids[i]) } : r));
-          out.push({ ...el, id: ids[i], rules, compendiumHidden: true, requirements: el.requirements ? `${el.requirements},${ids[i - 1]}` : ids[i - 1], setters: { ...el.setters } });
+          for (const o of opts)
+            out.push({
+              ...o,
+              id: o.id.replace(el.id, ids[i]),
+              supports: o.supports.map((t) => t.replace(el.id, ids[i])),
+              rules: [...o.rules],
+            });
+          const rules = el.rules.map((r) =>
+            r.kind === "select" && r.supports.includes(`${el.id}_ABILITY_OPTION_`)
+              ? { ...r, supports: r.supports.split(el.id).join(ids[i]) }
+              : r,
+          );
+          out.push({
+            ...el,
+            id: ids[i],
+            rules,
+            compendiumHidden: true,
+            requirements: el.requirements ? `${el.requirements},${ids[i - 1]}` : ids[i - 1],
+            setters: { ...el.setters },
+          });
         }
       }
     }
@@ -2401,7 +3971,10 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
     // list (Dragonlance's Abanasinian, Ravnica's Kraul) or a monster's language is "regional", not a Standard Language.
     {
       const byName = new Map<string, J[]>();
-      for (const l of (json.language as J[] | undefined) ?? []) { const k = slug(String(l.name)); (byName.get(k) ?? byName.set(k, []).get(k)!).push(l); }
+      for (const l of (json.language as J[] | undefined) ?? []) {
+        const k = slug(String(l.name));
+        (byName.get(k) ?? byName.set(k, []).get(k)!).push(l);
+      }
       for (const group of byName.values()) {
         const core = group.filter((l) => /^X?PHB$/.test(String(l.source ?? "PHB")));
         const first = core[0] ?? group.find((l) => l.entries) ?? group[0];
@@ -2424,7 +3997,12 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   }
   for (const c of classes) convertClass(c, { cf, sc, sf }, ctx, out);
   // Foundry mechanics first, so the reference passes below also mend what they grant (Auran becomes Primordial).
-  if (foundryFiles.length) applyFoundry(foundryFiles, out, ftId, (data, el) => [...withFallbacks(data, trainingRules({ ...data, entries: undefined }, el.name, out, ctx, el.id), el.id), ...defenseRules(data, el.name), ...additionalSpellRules(data.additionalSpells, el.name, el.source ?? "", out).rules]);
+  if (foundryFiles.length)
+    applyFoundry(foundryFiles, out, ftId, (data, el) => [
+      ...withFallbacks(data, trainingRules({ ...data, entries: undefined }, el.name, out, ctx, el.id), el.id),
+      ...defenseRules(data, el.name),
+      ...additionalSpellRules(data.additionalSpells, el.name, el.source ?? "", out).rules,
+    ]);
   for (const f of ctx.follow ?? []) {
     const el = out.find((o) => o.id === f.to);
     if (el && !el.rules.some((r) => r.kind === "grant" && f.rule.kind === "grant" && r.id === f.rule.id)) el.rules.push(f.rule);
@@ -2435,7 +4013,13 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   applyTextExpertiseOnChoices(out);
   applyTextUses(out);
   applyTextDc(out);
-  applyTextStats(out, { tool: (n) => toolId(n, out), weapon: (k) => weaponId(k, out), armor: (k) => ARMOR_IDS[k], skill: (n) => `ID_5ET_SKILL_${slug(n)}`, language: (n) => `ID_5ET_LANGUAGE_${slug(n)}` });
+  applyTextStats(out, {
+    tool: (n) => toolId(n, out),
+    weapon: (k) => weaponId(k, out),
+    armor: (k) => ARMOR_IDS[k],
+    skill: (n) => `ID_5ET_SKILL_${slug(n)}`,
+    language: (n) => `ID_5ET_LANGUAGE_${slug(n)}`,
+  });
   for (const c of classes) applyTableMechanics(c, out);
   dropPoolDefaults(out);
   applyTextUseSteps(out);
@@ -2443,17 +4027,21 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   resolveSpellRefs(out, spellIds);
   // Expanded lists: each named spell carries the subclass's list tag ("sleep", "hex|xphb": by name, the book when
   // given; every edition's copy otherwise, and the choice's edition rule offers the right one).
-  for (const x of ctx.expanded ?? []) for (const ref of x.spells) {
-    const [nm, book] = ref.toLowerCase().split("|");
-    for (const sp of spellIds[nm.trim()] ?? []) {
-      if (book && sp.source.toLowerCase() !== book) continue;
-      const el = out.find((e) => e.id === sp.id);
-      if (el && !el.supports.includes(x.tag)) el.supports = [...el.supports, x.tag];
+  for (const x of ctx.expanded ?? [])
+    for (const ref of x.spells) {
+      const [nm, book] = ref.toLowerCase().split("|");
+      for (const sp of spellIds[nm.trim()] ?? []) {
+        if (book && sp.source.toLowerCase() !== book) continue;
+        const el = out.find((e) => e.id === sp.id);
+        if (el && !el.supports.includes(x.tag)) el.supports = [...el.supports, x.tag];
+      }
     }
-  }
   resolveLooseRefs(out);
   const fluff = new Map<string, J[]>();
-  for (const [, json] of all) if (json && typeof json === "object" && !Array.isArray(json)) for (const [k, v] of Object.entries(json as J)) if (/Fluff$/.test(k) && Array.isArray(v)) (fluff.get(k) ?? fluff.set(k, []).get(k)!).push(...v);
+  for (const [, json] of all)
+    if (json && typeof json === "object" && !Array.isArray(json))
+      for (const [k, v] of Object.entries(json as J))
+        if (/Fluff$/.test(k) && Array.isArray(v)) (fluff.get(k) ?? fluff.set(k, []).get(k)!).push(...v);
   if (fluff.size) lastLoreReport = applyLore(fluff, out, ftId, entriesHtml);
   resolvePrerequisites(out);
   return out;
@@ -2469,22 +4057,32 @@ function resolveLooseRefs(out: AElement[]): void {
   const ELEMENTAL = /^ID_5ET_LANGUAGE_(AURAN|AQUAN|IGNAN|TERRAN)$/;
   // In a choice too: the Book of Many Things' Rewarded offers "Magic Initiate", which the data holds as its versions.
   const versions = (id: string) => out.filter((e) => e.type === "Feat" && e.id.startsWith(`${id}_`)).map((e) => e.id);
-  for (const el of out) for (let i = 0; i < el.rules.length; i++) {
-    const r = el.rules[i];
-    if (r.kind !== "select" || r.type !== "Feat" || !/^ID_[A-Z0-9_|]+$/.test(String(r.supports))) continue;
-    const parts = String(r.supports).split("|").filter(Boolean);
-    if (parts.every((x) => ids.has(x))) continue;
-    el.rules[i] = { ...r, supports: parts.flatMap((x) => (ids.has(x) ? [x] : versions(x))).join("|") } as ARule;
-  }
+  for (const el of out)
+    for (let i = 0; i < el.rules.length; i++) {
+      const r = el.rules[i];
+      if (r.kind !== "select" || r.type !== "Feat" || !/^ID_[A-Z0-9_|]+$/.test(String(r.supports))) continue;
+      const parts = String(r.supports).split("|").filter(Boolean);
+      if (parts.every((x) => ids.has(x))) continue;
+      el.rules[i] = { ...r, supports: parts.flatMap((x) => (ids.has(x) ? [x] : versions(x))).join("|") } as ARule;
+    }
   for (const el of out) {
     if (!el.rules.some((r) => r.kind === "grant" && !ids.has(r.id))) continue;
     el.rules = el.rules.map((r) => {
       if (r.kind !== "grant" || ids.has(r.id)) return r;
       if (r.type === "Feat") {
         const variants = out.filter((e) => e.type === "Feat" && e.id.startsWith(`${r.id}_`)).map((e) => e.id);
-        if (variants.length) return { kind: "select", type: "Feat", name: `${variants.length > 1 ? "Feat version" : "Feat"}`, supports: variants.join("||"), number: 1, requirements: r.requirements } as ARule;
+        if (variants.length)
+          return {
+            kind: "select",
+            type: "Feat",
+            name: `${variants.length > 1 ? "Feat version" : "Feat"}`,
+            supports: variants.join("||"),
+            number: 1,
+            requirements: r.requirements,
+          } as ARule;
       }
-      if (r.type === "Language" && ELEMENTAL.test(r.id) && ids.has("ID_5ET_LANGUAGE_PRIMORDIAL")) return { ...r, id: "ID_5ET_LANGUAGE_PRIMORDIAL" };
+      if (r.type === "Language" && ELEMENTAL.test(r.id) && ids.has("ID_5ET_LANGUAGE_PRIMORDIAL"))
+        return { ...r, id: "ID_5ET_LANGUAGE_PRIMORDIAL" };
       return r;
     });
   }
@@ -2493,18 +4091,32 @@ function resolveLooseRefs(out: AElement[]): void {
 /** Turns SPELLREF placeholders into spell element ids; a spell that was not imported is dropped quietly. */
 function resolveSpellRefs(out: AElement[], spellIds: Record<string, { id: string; source: string }[]>): void {
   for (const el of out) {
-    if (!el.rules.some((r) => (r.kind === "grant" && String(r.id).startsWith("SPELLREF:")) || (r.kind === "select" && String(r.supports).includes("SPELLREF:")))) continue;
+    if (
+      !el.rules.some(
+        (r) =>
+          (r.kind === "grant" && String(r.id).startsWith("SPELLREF:")) || (r.kind === "select" && String(r.supports).includes("SPELLREF:")),
+      )
+    )
+      continue;
     const resolve = (ref: string) => {
       const [name, src, owner] = ref.slice(9).split("|");
       const list = spellIds[name] ?? [];
-      return list.find((x) => src && x.source === src) ?? list.find((x) => x.source === owner) ?? list.find((x) => x.source === "xphb") ?? list.find((x) => x.source === "phb") ?? list[0];
+      return (
+        list.find((x) => src && x.source === src) ??
+        list.find((x) => x.source === owner) ??
+        list.find((x) => x.source === "xphb") ??
+        list.find((x) => x.source === "phb") ??
+        list[0]
+      );
     };
     el.rules = el.rules.flatMap((r) => {
       // A choice among named spells (tableSpellChoices): "SPELLREF:a|src|owner|SPELLREF:b|…" becomes the ids of every
       // version of those spells, so the edition rule offers the choice's own edition's copy (a 2014 choice drops 2024-only
       // spells, and resolving to one copy left the Rune Carver's choice empty).
       if (r.kind === "select" && String(r.supports).includes("SPELLREF:")) {
-        const ids = String(r.supports).split(/\|(?=SPELLREF:)/).flatMap((ref) => (spellIds[ref.slice(9).split("|")[0]] ?? []).map((x) => x.id));
+        const ids = String(r.supports)
+          .split(/\|(?=SPELLREF:)/)
+          .flatMap((ref) => (spellIds[ref.slice(9).split("|")[0]] ?? []).map((x) => x.id));
         return ids.length ? [{ ...r, supports: [...new Set(ids)].join("|") }] : [];
       }
       if (r.kind !== "grant" || !String(r.id).startsWith("SPELLREF:")) return [r];
@@ -2515,10 +4127,32 @@ function resolveSpellRefs(out: AElement[], spellIds: Record<string, { id: string
 }
 
 /** Files a 5etools data folder offers, for a base address. Index files list the book-specific parts. */
-export const FIVETOOLS_CORE_FILES = ["books.json", "races.json", "backgrounds.json", "feats.json", "items-base.json", "items.json", "magicvariants.json", "languages.json", "optionalfeatures.json", "spells/sources.json"];
+export const FIVETOOLS_CORE_FILES = [
+  "books.json",
+  "races.json",
+  "backgrounds.json",
+  "feats.json",
+  "items-base.json",
+  "items.json",
+  "magicvariants.json",
+  "languages.json",
+  "optionalfeatures.json",
+  "spells/sources.json",
+];
 /** Plutonium's Foundry mechanics (foundry.ts) and the lore files (lore.ts), fetched with the core files when there. */
 export const FIVETOOLS_EXTRA_FILES = [
-  "foundry-feats.json", "foundry-items.json", "foundry-optionalfeatures.json", "foundry-races.json", "foundry-actions.json", "foundry-backgrounds.json",
-  "class/foundry.json", "spells/foundry.json",
-  "fluff-races.json", "fluff-backgrounds.json", "fluff-feats.json", "fluff-items.json", "fluff-optionalfeatures.json", "fluff-languages.json",
+  "foundry-feats.json",
+  "foundry-items.json",
+  "foundry-optionalfeatures.json",
+  "foundry-races.json",
+  "foundry-actions.json",
+  "foundry-backgrounds.json",
+  "class/foundry.json",
+  "spells/foundry.json",
+  "fluff-races.json",
+  "fluff-backgrounds.json",
+  "fluff-feats.json",
+  "fluff-items.json",
+  "fluff-optionalfeatures.json",
+  "fluff-languages.json",
 ];

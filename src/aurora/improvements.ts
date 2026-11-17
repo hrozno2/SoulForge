@@ -19,13 +19,28 @@ export type Ability = (typeof ABILITY_ORDER)[number];
 type Slot = Resolved["slots"][number];
 
 /** One increase: its amount, how many abilities it raises, the choice holding the picks, and the option per ability. */
-export interface GridColumn { amount: number; count: number; key: string; options: Map<Ability, string> }
+export interface GridColumn {
+  amount: number;
+  count: number;
+  key: string;
+  options: Map<Ability, string>;
+}
 
 /** One way to take the increase: a package (or the choice itself) and its columns; fixed increases are pre-ticked. */
-export interface GridMode { label: string; optionId?: string; columns: GridColumn[]; fixed: { ability: Ability; amount: number }[] }
+export interface GridMode {
+  label: string;
+  optionId?: string;
+  columns: GridColumn[];
+  fixed: { ability: Ability; amount: number }[];
+}
 
 /** One set of abilities (a three-ability combination): the abilities it holds and its ways, for the boxes (C7.11). */
-export interface SetWays { id: string; abilities: Set<Ability>; modeKey: string; modes: GridMode[] }
+export interface SetWays {
+  id: string;
+  abilities: Set<Ability>;
+  modeKey: string;
+  modes: GridMode[];
+}
 
 export interface Grid {
   /** The choice the grid stands for (the first of a sibling group). */
@@ -62,7 +77,9 @@ function columnOf(key: string, rule: SelectRule, options: AElement[]): GridColum
   const amounts = new Set(inc.map((x) => x!.amount));
   if (amounts.size !== 1) return undefined;
   const map = new Map<Ability, string>();
-  options.forEach((o, i) => { if (!map.has(inc[i]!.ability)) map.set(inc[i]!.ability, o.id); });
+  options.forEach((o, i) => {
+    if (!map.has(inc[i]!.ability)) map.set(inc[i]!.ability, o.id);
+  });
   return { amount: [...amounts][0], count: rule.number, key, options: map };
 }
 
@@ -126,27 +143,52 @@ export function findGrids(r: Resolved, slots: Slot[]): Grid[] {
       // the ticks (C7.11, Chris 2026-10-29: no list of combinations to pick from first).
       const each: SetWays[] = sets.map(({ o, inner }) => {
         const ms = inner!.packages.map((p) => modeOf(r, p)!);
-        const abilities = new Set<Ability>(ms.flatMap((m) => [...m.columns.flatMap((c) => [...c.options.keys()]), ...m.fixed.map((f) => f.ability)]));
+        const abilities = new Set<Ability>(
+          ms.flatMap((m) => [...m.columns.flatMap((c) => [...c.options.keys()]), ...m.fixed.map((f) => f.ability)]),
+        );
         return { id: o.id, abilities, modeKey: inner!.key, modes: ms };
       });
-      out.push({ anchor: s, keys, sets: { key: s.key, options: s.options.map((o) => ({ id: o.id, label: o.name })), chosen, each }, modeKey: cur?.inner!.key, modes, others: [], chosenMode: modeChosen });
+      out.push({
+        anchor: s,
+        keys,
+        sets: { key: s.key, options: s.options.map((o) => ({ id: o.id, label: o.name })), chosen, each },
+        modeKey: cur?.inner!.key,
+        modes,
+        others: [],
+        chosenMode: modeChosen,
+      });
       keys.forEach((k) => used.add(k));
       continue;
     }
     // Packages (and options that are not, such as a feat instead).
     // A feat that also raises an ability (a half-feat: Crusher, Elven Accuracy) is a feat, not a way of taking the
     // increase; only the increase itself (the 2024 "Ability Score Improvement" feat, packages) is a mode.
-    const modes = s.options.map((o) => ({ o, m: o.type === "Feat" && !/^ability score improvement/i.test(o.name) ? undefined : modeOf(r, o) }));
+    const modes = s.options.map((o) => ({
+      o,
+      m: o.type === "Feat" && !/^ability score improvement/i.test(o.name) ? undefined : modeOf(r, o),
+    }));
     if (modes.some((x) => x.m)) {
       const ms = modes.filter((x) => x.m).map((x) => x.m!);
       const keys = new Set([s.key, ...ms.flatMap((m) => m.columns.map((c) => c.key))]);
-      out.push({ anchor: s, keys, modeKey: s.key, modes: ms, others: modes.filter((x) => !x.m).map((x) => ({ id: x.o.id, label: x.o.name })), chosenMode: s.chosen[0] });
+      out.push({
+        anchor: s,
+        keys,
+        modeKey: s.key,
+        modes: ms,
+        others: modes.filter((x) => !x.m).map((x) => ({ id: x.o.id, label: x.o.name })),
+        chosenMode: s.chosen[0],
+      });
       keys.forEach((k) => used.add(k));
     }
   }
   for (const list of groups.values()) {
     if (list.some((x) => used.has(x.slot.key))) continue;
-    out.push({ anchor: list[0].slot, keys: new Set(list.map((x) => x.slot.key)), modes: [{ label: "", columns: list.map((x) => x.col), fixed: [] }], others: [] });
+    out.push({
+      anchor: list[0].slot,
+      keys: new Set(list.map((x) => x.slot.key)),
+      modes: [{ label: "", columns: list.map((x) => x.col), fixed: [] }],
+      others: [],
+    });
   }
   // A choice another grid already draws (the 2024 background's combination holds its +2/+1 choice) is not a grid of its
   // own as well: it showed twice (C6.1).
@@ -170,7 +212,9 @@ export function tickBox(ch: Character, mode: GridMode, col: number, n: number, a
   const picks = gridPicks(ch, mode).map((p) => p.map((x) => (x === a ? undefined : x)));
   picks[col][n] = a;
   const out: Record<string, string[]> = {};
-  mode.columns.forEach((c, i) => { out[c.key] = picks[i].filter((x): x is Ability => !!x).map((x) => c.options.get(x)!); });
+  mode.columns.forEach((c, i) => {
+    out[c.key] = picks[i].filter((x): x is Ability => !!x).map((x) => c.options.get(x)!);
+  });
   return out;
 }
 
@@ -179,18 +223,37 @@ export function tickBox(ch: Character, mode: GridMode, col: number, n: number, a
  * and +1 to another" or "+1 to three" (or "+2 to one" or "+1 to two"). A "+2" column, then as many "+1" columns as
  * either way has; the ticks decide the way: a "+2" ticked takes the way with +2, none the way of +1s.
  */
-export interface Unified { modeKey: string; two: GridMode; one: GridMode; ones: number; onesWithTwo: number }
+export interface Unified {
+  modeKey: string;
+  two: GridMode;
+  one: GridMode;
+  ones: number;
+  onesWithTwo: number;
+}
 
 // A way's increases: its columns', or (a set of three that each get +1, no choice) its fixed ones.
-const amounts = (m: GridMode) => [...m.columns.flatMap((c) => Array.from({ length: c.count }, () => c.amount)), ...m.fixed.map((f) => f.amount)];
+const amounts = (m: GridMode) => [
+  ...m.columns.flatMap((c) => Array.from({ length: c.count }, () => c.amount)),
+  ...m.fixed.map((f) => f.amount),
+];
 
 export function unifiedOf(grid: Grid): Unified | undefined {
   if (!grid.modeKey || grid.modes.length !== 2) return undefined;
-  const two = grid.modes.find((m) => !m.fixed.length && amounts(m).filter((a) => a === 2).length === 1 && amounts(m).every((a) => a === 1 || a === 2));
+  const two = grid.modes.find(
+    (m) => !m.fixed.length && amounts(m).filter((a) => a === 2).length === 1 && amounts(m).every((a) => a === 1 || a === 2),
+  );
   // The other way: +1s to choose, or +1 to each of a fixed set (then ticking all of them takes it).
-  const one = grid.modes.find((m) => m !== two && amounts(m).length > 0 && amounts(m).every((a) => a === 1) && (!m.fixed.length || !m.columns.length));
+  const one = grid.modes.find(
+    (m) => m !== two && amounts(m).length > 0 && amounts(m).every((a) => a === 1) && (!m.fixed.length || !m.columns.length),
+  );
   if (!two || !one) return undefined;
-  return { modeKey: grid.modeKey, two, one, ones: Math.max(amounts(one).length, amounts(two).length - 1), onesWithTwo: amounts(two).length - 1 };
+  return {
+    modeKey: grid.modeKey,
+    two,
+    one,
+    ones: Math.max(amounts(one).length, amounts(two).length - 1),
+    onesWithTwo: amounts(two).length - 1,
+  };
 }
 
 /** What the unified grid shows: the +2 pick and the +1 picks, from the way taken now. */
@@ -201,7 +264,12 @@ export function unifiedPicks(ch: Character, u: Unified, chosenMode?: string): { 
   const picks = gridPicks(ch, mode);
   let two: Ability | undefined;
   let i = 0;
-  mode.columns.forEach((c, ci) => picks[ci].forEach((a) => { if (c.amount === 2) two = a; else ones[i++] = a; }));
+  mode.columns.forEach((c, ci) =>
+    picks[ci].forEach((a) => {
+      if (c.amount === 2) two = a;
+      else ones[i++] = a;
+    }),
+  );
   for (const f of mode.fixed) if (i < ones.length) ones[i++] = f.ability;
   return { two, ones };
 }
@@ -234,7 +302,9 @@ export function unifiedBoxes(ch: Character, u: Unified, chosenMode?: string): (A
   const p = unifiedPicks(ch, u, chosenMode);
   const boxes: (Ability | undefined)[] = Array.from({ length: u.ones }, () => undefined);
   const list = p.two ? [p.two, p.two, ...p.ones.filter(Boolean).slice(0, u.onesWithTwo)] : p.ones;
-  list.forEach((a, i) => { if (i < boxes.length) boxes[i] = a; });
+  list.forEach((a, i) => {
+    if (i < boxes.length) boxes[i] = a;
+  });
   return boxes;
 }
 
@@ -242,7 +312,12 @@ export function unifiedBoxes(ch: Character, u: Unified, chosenMode?: string): (A
 export function boxesSelections(u: Unified, boxes: (Ability | undefined)[]): Record<string, string[]> {
   const ticked = boxes.filter((a): a is Ability => !!a);
   const twice = ticked.find((a, i) => ticked.indexOf(a) !== i);
-  if (twice) return unifiedSelections(u, twice, ticked.filter((a) => a !== twice));
+  if (twice)
+    return unifiedSelections(
+      u,
+      twice,
+      ticked.filter((a) => a !== twice),
+    );
   return unifiedSelections(u, undefined, ticked);
 }
 
@@ -256,19 +331,29 @@ export function tickUnified(boxes: (Ability | undefined)[], i: number, a: Abilit
   if (count(a) > 2) next[next.findIndex((x, j) => x === a && j !== i)] = undefined;
   // Two doubled abilities, or a +2 with more +1s than that way has: the other doubled one goes down to one box.
   const doubled = [...new Set(next.filter((x): x is Ability => !!x && count(x) === 2))];
-  if (doubled.length > 1) { const other = doubled.find((x) => x !== a)!; next[next.findIndex((x, j) => x === other && j !== i)] = undefined; }
+  if (doubled.length > 1) {
+    const other = doubled.find((x) => x !== a)!;
+    next[next.findIndex((x, j) => x === other && j !== i)] = undefined;
+  }
   const two = next.find((x) => !!x && count(x) === 2);
   if (two) {
     // The other +1s: the box just ticked stays, the oldest others go until the way's count is met.
     const others = next.map((x, j) => (x && x !== two ? j : -1)).filter((j) => j >= 0);
     let over = others.length - u.onesWithTwo;
-    for (const j of others) { if (over <= 0) break; if (j !== i) { next[j] = undefined; over--; } }
+    for (const j of others) {
+      if (over <= 0) break;
+      if (j !== i) {
+        next[j] = undefined;
+        over--;
+      }
+    }
   }
   return next;
 }
 
 /** The usual pair of ways for one set, as `unifiedOf` reads a grid. */
-export const unifiedOfSet = (w: SetWays): Unified | undefined => unifiedOf({ anchor: undefined as never, keys: new Set(), modeKey: w.modeKey, modes: w.modes, others: [] });
+export const unifiedOfSet = (w: SetWays): Unified | undefined =>
+  unifiedOf({ anchor: undefined as never, keys: new Set(), modeKey: w.modeKey, modes: w.modes, others: [] });
 
 /**
  * The set the ticked abilities belong to (C7.11): the one taken now when it holds them all, else the first that does;
@@ -292,6 +377,10 @@ export function setBoxesSelections(grid: Grid, boxes: (Ability | undefined)[]): 
   const u = w && unifiedOfSet(w);
   if (!w || !u) return undefined;
   const clear: Record<string, string[]> = {};
-  for (const o of sets.each) if (o.id !== w.id) { clear[o.modeKey] = []; for (const m of o.modes) for (const c of m.columns) clear[c.key] = []; }
+  for (const o of sets.each)
+    if (o.id !== w.id) {
+      clear[o.modeKey] = [];
+      for (const m of o.modes) for (const c of m.columns) clear[c.key] = [];
+    }
   return { ...clear, [sets.key]: ticked.length ? [w.id] : [], ...(ticked.length ? boxesSelections(u, boxes) : { [w.modeKey]: [] }) };
 }

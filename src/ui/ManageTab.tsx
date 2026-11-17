@@ -13,22 +13,48 @@ import { companionHtml } from "../aurora/companion";
 import { twinKey } from "../engine/timeline";
 
 type Sub = "options" | "bonuses" | "additions" | "attacks" | "companions";
-const SUBS: [Sub, string][] = [ ["options", "Options"], ["bonuses", "Custom bonuses"], ["additions", "Manual additions"], ["attacks", "Attacks"], ["companions", "Companions"]];
+const SUBS: [Sub, string][] = [
+  ["options", "Options"],
+  ["bonuses", "Custom bonuses"],
+  ["additions", "Manual additions"],
+  ["attacks", "Attacks"],
+  ["companions", "Companions"],
+];
 
 export { CONDITIONS } from "./conditions";
 
 const FIELDS: [keyof Character["info"], string][] = [
-  ["alignment", "Alignment"], ["deity", "Deity"], ["gender", "Gender"], ["age", "Age"], ["height", "Height"], ["weight", "Weight"], ["eyes", "Eyes"], ["hair", "Hair"], ["skin", "Skin"],
+  ["alignment", "Alignment"],
+  ["deity", "Deity"],
+  ["gender", "Gender"],
+  ["age", "Age"],
+  ["height", "Height"],
+  ["weight", "Weight"],
+  ["eyes", "Eyes"],
+  ["hair", "Hair"],
+  ["skin", "Skin"],
 ];
-const AREAS: [keyof Character["info"], string][] = [["traits", "Personality traits"], ["ideals", "Ideals"], ["bonds", "Bonds"], ["flaws", "Flaws"], ["allies", "Allies and organizations"], ["backstory", "Backstory"]];
+const AREAS: [keyof Character["info"], string][] = [
+  ["traits", "Personality traits"],
+  ["ideals", "Ideals"],
+  ["bonds", "Bonds"],
+  ["flaws", "Flaws"],
+  ["allies", "Allies and organizations"],
+  ["backstory", "Backstory"],
+];
 
 /** Shrinks an image to a small JPEG so it stays cheap to save. */
 function PickOrType({ label, items, value, onChange }: { label: string; items: AElement[]; value: string; onChange: (v: string) => void }) {
   const listId = `dl-${label}`;
   return (
-    <label className="field"><span>{label}</span>
+    <label className="field">
+      <span>{label}</span>
       <TextInput list={listId} value={value} onCommit={onChange} />
-      <datalist id={listId}>{items.map((i) => <option key={i.id} value={i.name} />)}</datalist>
+      <datalist id={listId}>
+        {items.map((i) => (
+          <option key={i.id} value={i.name} />
+        ))}
+      </datalist>
     </label>
   );
 }
@@ -40,22 +66,71 @@ function Info({ ch, set, r }: { ch: Character; set: SetCharacter; r: Resolved })
     <>
       <div className="row">
         {ch.portrait && <img className="portrait small" src={ch.portrait} alt="Portrait" />}
-        <label>Portrait: <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f && f.type.startsWith("image/")) setCrop(f); }} /></label>
+        <label>
+          Portrait:{" "}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f && f.type.startsWith("image/")) setCrop(f);
+            }}
+          />
+        </label>
         {ch.portrait && <button onClick={() => set((c) => ({ ...c, portrait: undefined }))}>Remove</button>}
       </div>
       <PortraitPicker onPick={(url) => set((c) => ({ ...c, portrait: url }))} />
-      {crop && <PortraitCropper file={crop} onCancel={() => setCrop(null)} onDone={(url) => { set((c) => ({ ...c, portrait: url })); setCrop(null); }} />}
+      {crop && (
+        <PortraitCropper
+          file={crop}
+          onCancel={() => setCrop(null)}
+          onDone={(url) => {
+            set((c) => ({ ...c, portrait: url }));
+            setCrop(null);
+          }}
+        />
+      )}
       <div className="row">
-        <label className="field"><span>Character name</span><TextInput value={ch.name} onCommit={(v) => set((c) => ({ ...c, name: v }))} /></label>
-        <label className="field"><span>Player</span><TextInput value={ch.playerName} onCommit={(v) => set((c) => ({ ...c, playerName: v }))} /></label>
+        <label className="field">
+          <span>Character name</span>
+          <TextInput value={ch.name} onCommit={(v) => set((c) => ({ ...c, name: v }))} />
+        </label>
+        <label className="field">
+          <span>Player</span>
+          <TextInput value={ch.playerName} onCommit={(v) => set((c) => ({ ...c, playerName: v }))} />
+        </label>
       </div>
       <div className="grid-fields">
-        <PickOrType label="Alignment" items={[...new Map(r.reg.ofType("Alignment").map((a) => [a.name, a])).values()]} value={ch.info.alignment} onChange={(v) => put("alignment", v)} />
-        <PickOrType label="Deity" items={[...new Map(r.reg.ofType("Deity").map((a) => [a.name, a])).values()].sort((a, b) => a.name.localeCompare(b.name))} value={ch.info.deity} onChange={(v) => put("deity", v)} />
-        {FIELDS.filter(([k]) => k !== "alignment" && k !== "deity").map(([k, label]) => <label className="field" key={k}><span>{label}</span><TextInput value={ch.info[k]} onCommit={(v) => put(k, v)} /></label>)}
+        <PickOrType
+          label="Alignment"
+          items={[...new Map(r.reg.ofType("Alignment").map((a) => [a.name, a])).values()]}
+          value={ch.info.alignment}
+          onChange={(v) => put("alignment", v)}
+        />
+        <PickOrType
+          label="Deity"
+          items={[...new Map(r.reg.ofType("Deity").map((a) => [a.name, a])).values()].sort((a, b) => a.name.localeCompare(b.name))}
+          value={ch.info.deity}
+          onChange={(v) => put("deity", v)}
+        />
+        {FIELDS.filter(([k]) => k !== "alignment" && k !== "deity").map(([k, label]) => (
+          <label className="field" key={k}>
+            <span>{label}</span>
+            <TextInput value={ch.info[k]} onCommit={(v) => put(k, v)} />
+          </label>
+        ))}
       </div>
-      {AREAS.map(([k, label]) => <label className="field" key={k}><span>{label}</span><TextArea rows={k === "backstory" ? 6 : 3} value={ch.info[k]} onCommit={(v) => put(k, v)} /></label>)}
-      <label className="field"><span>Notes</span><TextArea id="character-notes" rows={6} value={ch.notes} onCommit={(v) => set((c) => ({ ...c, notes: v }))} /></label>
+      {AREAS.map(([k, label]) => (
+        <label className="field" key={k}>
+          <span>{label}</span>
+          <TextArea rows={k === "backstory" ? 6 : 3} value={ch.info[k]} onCommit={(v) => put(k, v)} />
+        </label>
+      ))}
+      <label className="field">
+        <span>Notes</span>
+        <TextArea id="character-notes" rows={6} value={ch.notes} onCommit={(v) => set((c) => ({ ...c, notes: v }))} />
+      </label>
     </>
   );
 }
@@ -65,16 +140,34 @@ function Info({ ch, set, r }: { ch: Character; set: SetCharacter; r: Resolved })
  * details, personality, backstory and notes, in a dialog the board's "Details" button, Play's description, the
  * character badge and "Open notes" all open (the "cf-details" event, `{ notes: true }` to bring the notes into view).
  */
-export function DetailsDialog({ r, ch, set, notes, onClose }: { r: Resolved; ch: Character; set: SetCharacter; notes?: boolean; onClose: () => void }) {
+export function DetailsDialog({
+  r,
+  ch,
+  set,
+  notes,
+  onClose,
+}: {
+  r: Resolved;
+  ch: Character;
+  set: SetCharacter;
+  notes?: boolean;
+  onClose: () => void;
+}) {
   useEffect(() => {
     if (!notes) return;
-    const t = window.setTimeout(() => { const el = document.getElementById("character-notes"); el?.scrollIntoView({ block: "center" }); el?.focus(); }, 60);
+    const t = window.setTimeout(() => {
+      const el = document.getElementById("character-notes");
+      el?.scrollIntoView({ block: "center" });
+      el?.focus();
+    }, 60);
     return () => window.clearTimeout(t);
   }, [notes]);
   return createPortal(
     <div className="modal-back" onClick={onClose}>
       <div className="modal-page themed details-dialog" role="dialog" aria-label="Character details" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
+        <button className="modal-close" onClick={onClose} aria-label="Close">
+          ×
+        </button>
         <h2>Character details</h2>
         <p className="muted">None of this is a choice to make: blank details stay blank on the sheet.</p>
         <Info ch={ch} set={set} r={r} />
@@ -85,12 +178,17 @@ export function DetailsDialog({ r, ch, set, notes, onClose }: { r: Resolved; ch:
 }
 
 /** True when the player has written none of the details (portrait and name aside). */
-export const detailsBlank = (ch: Character) => !ch.playerName.trim() && !ch.notes.trim() && Object.values(ch.info).every((v) => !String(v ?? "").trim());
+export const detailsBlank = (ch: Character) =>
+  !ch.playerName.trim() && !ch.notes.trim() && Object.values(ch.info).every((v) => !String(v ?? "").trim());
 
 /** The "i" beside a Manage row (C2: the right-hand lore panel left Manage): opens the full description. */
 function LearnIcon({ el }: { el: AElement }) {
   const { learn } = useUi();
-  return <button className="learn" title={`Read about ${el.name}`} aria-label={`Read about ${el.name}`} onClick={() => learn(el)}>i</button>;
+  return (
+    <button className="learn" title={`Read about ${el.name}`} aria-label={`Read about ${el.name}`} onClick={() => learn(el)}>
+      i
+    </button>
+  );
 }
 
 function Options({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
@@ -99,7 +197,8 @@ function Options({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter
   const all = r.reg.ofType("Option");
   const aurora = new Set(all.filter((o) => o.origin !== "5etools").map(twinKey));
   const opts = all.filter((o) => o.origin !== "5etools" || ch.options.includes(o.id) || !aurora.has(twinKey(o)));
-  if (!opts.length) return <p className="muted">No character options are loaded. Options such as optional rules come from content files.</p>;
+  if (!opts.length)
+    return <p className="muted">No character options are loaded. Options such as optional rules come from content files.</p>;
   return (
     <ul className="options boxed">
       {opts.map((o) => {
@@ -107,7 +206,12 @@ function Options({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter
         return (
           <li key={o.id} className={on ? "picked" : ""}>
             <button onClick={() => set((c) => ({ ...c, options: on ? c.options.filter((x) => x !== o.id) : [...c.options, o.id] }))}>
-              <span className="tick">{on ? "✓" : ""}</span><span className="opt-name">{o.name}</span><span className="opt-meta" /><span className="opt-src" title={o.source}>{o.source}</span>
+              <span className="tick">{on ? "✓" : ""}</span>
+              <span className="opt-name">{o.name}</span>
+              <span className="opt-meta" />
+              <span className="opt-src" title={o.source}>
+                {o.source}
+              </span>
             </button>
             <LearnIcon el={o} />
           </li>
@@ -118,12 +222,49 @@ function Options({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter
 }
 
 const BONUS_PRESETS: [string, string][] = [
-  ["Armor Class", "ac:misc"], ["Initiative", "initiative:misc"], ["Speed", "speed:misc"], ["Hit points", "hp"], ["Proficiency bonus", "proficiency"],
-  ["Strength", "strength"], ["Dexterity", "dexterity"], ["Constitution", "constitution"], ["Intelligence", "intelligence"], ["Wisdom", "wisdom"], ["Charisma", "charisma"],
-  ["Strength save", "strength:save:misc"], ["Dexterity save", "dexterity:save:misc"], ["Constitution save", "constitution:save:misc"], ["Intelligence save", "intelligence:save:misc"], ["Wisdom save", "wisdom:save:misc"], ["Charisma save", "charisma:save:misc"],
-  ["Spell save DC", "spellcasting:dc"], ["Spell attack", "spellcasting:attack"],
-  ["Melee attacks", "melee:attack"], ["Melee damage", "melee:damage"], ["Ranged attacks", "ranged:attack"], ["Ranged damage", "ranged:damage"],
-  ...["acrobatics", "animal handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight of hand", "stealth", "survival"].map((k): [string, string] => [k.replace(/\b\w/g, (c) => c.toUpperCase()), `${k}:misc`]),
+  ["Armor Class", "ac:misc"],
+  ["Initiative", "initiative:misc"],
+  ["Speed", "speed:misc"],
+  ["Hit points", "hp"],
+  ["Proficiency bonus", "proficiency"],
+  ["Strength", "strength"],
+  ["Dexterity", "dexterity"],
+  ["Constitution", "constitution"],
+  ["Intelligence", "intelligence"],
+  ["Wisdom", "wisdom"],
+  ["Charisma", "charisma"],
+  ["Strength save", "strength:save:misc"],
+  ["Dexterity save", "dexterity:save:misc"],
+  ["Constitution save", "constitution:save:misc"],
+  ["Intelligence save", "intelligence:save:misc"],
+  ["Wisdom save", "wisdom:save:misc"],
+  ["Charisma save", "charisma:save:misc"],
+  ["Spell save DC", "spellcasting:dc"],
+  ["Spell attack", "spellcasting:attack"],
+  ["Melee attacks", "melee:attack"],
+  ["Melee damage", "melee:damage"],
+  ["Ranged attacks", "ranged:attack"],
+  ["Ranged damage", "ranged:damage"],
+  ...[
+    "acrobatics",
+    "animal handling",
+    "arcana",
+    "athletics",
+    "deception",
+    "history",
+    "insight",
+    "intimidation",
+    "investigation",
+    "medicine",
+    "nature",
+    "perception",
+    "performance",
+    "persuasion",
+    "religion",
+    "sleight of hand",
+    "stealth",
+    "survival",
+  ].map((k): [string, string] => [k.replace(/\b\w/g, (c) => c.toUpperCase()), `${k}:misc`]),
 ];
 
 /** Table rulings and homebrew: add a number to any statistic. */
@@ -134,16 +275,40 @@ function Bonuses({ ch, set }: { ch: Character; set: SetCharacter }) {
   const label = (s: string) => BONUS_PRESETS.find(([, k]) => k === s)?.[0] ?? s;
   return (
     <>
-      <p className="muted">Add or subtract from any statistic. It is counted like a bonus from content, and shows up on the sheet. Ability score changes can also be made on the Build tab.</p>
+      <p className="muted">
+        Add or subtract from any statistic. It is counted like a bonus from content, and shows up on the sheet. Ability score changes can
+        also be made on the Build tab.
+      </p>
       <div className="row">
-        <select value={stat} onChange={(e) => setStat(e.target.value)}>{BONUS_PRESETS.map(([l, k]) => <option key={k} value={k}>{l}</option>)}</select>
+        <select value={stat} onChange={(e) => setStat(e.target.value)}>
+          {BONUS_PRESETS.map(([l, k]) => (
+            <option key={k} value={k}>
+              {l}
+            </option>
+          ))}
+        </select>
         <input type="number" value={value} onChange={(e) => setValue(Number(e.target.value) || 0)} style={{ width: 80 }} />
         <input placeholder="Why (optional)" value={note} onChange={(e) => setNote(e.target.value)} style={{ flex: 1 }} />
-        <button className="primary" disabled={!value} onClick={() => { set((c) => ({ ...c, customStats: [...c.customStats, { id: uid(), stat, value, note: note || "Custom bonus" }] })); setNote(""); }}>Add</button>
+        <button
+          className="primary"
+          disabled={!value}
+          onClick={() => {
+            set((c) => ({ ...c, customStats: [...c.customStats, { id: uid(), stat, value, note: note || "Custom bonus" }] }));
+            setNote("");
+          }}
+        >
+          Add
+        </button>
       </div>
       <ul className="added">
         {ch.customStats.map((c) => (
-          <li key={c.id}><span>{label(c.stat)} {c.value >= 0 ? "+" : ""}{c.value} <small className="muted">{c.note}</small></span><button onClick={() => set((x) => ({ ...x, customStats: x.customStats.filter((y) => y.id !== c.id) }))}>Remove</button></li>
+          <li key={c.id}>
+            <span>
+              {label(c.stat)} {c.value >= 0 ? "+" : ""}
+              {c.value} <small className="muted">{c.note}</small>
+            </span>
+            <button onClick={() => set((x) => ({ ...x, customStats: x.customStats.filter((y) => y.id !== c.id) }))}>Remove</button>
+          </li>
         ))}
         {!ch.customStats.length && <li className="muted">No custom bonuses.</li>}
       </ul>
@@ -151,7 +316,19 @@ function Bonuses({ ch, set }: { ch: Character; set: SetCharacter }) {
   );
 }
 
-const ADD_TYPES = ["Language", "Feat", "Spell", "Proficiency", "Racial Trait", "Class Feature", "Feat Feature", "Archetype Feature", "Background Feature", "Item", "Magic Item"];
+const ADD_TYPES = [
+  "Language",
+  "Feat",
+  "Spell",
+  "Proficiency",
+  "Racial Trait",
+  "Class Feature",
+  "Feat Feature",
+  "Archetype Feature",
+  "Background Feature",
+  "Item",
+  "Magic Item",
+];
 
 /** Table rulings and homebrew: add any content to the character without going through a choice. */
 function Additions({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
@@ -159,25 +336,54 @@ function Additions({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharact
   const [type, setType] = useState("Language");
   const results = useMemo(() => {
     const n = q.trim().toLowerCase();
-    return r.reg.ofType(type).filter((e) => !e.compendiumHidden && (!n || e.name.toLowerCase().includes(n)) && !ch.extras.includes(e.id)).slice(0, 80);
+    return r.reg
+      .ofType(type)
+      .filter((e) => !e.compendiumHidden && (!n || e.name.toLowerCase().includes(n)) && !ch.extras.includes(e.id))
+      .slice(0, 80);
   }, [q, type, r.reg, ch.extras]);
   return (
     <>
-      <p className="muted">Add anything the rules did not give you by choice, such as a bonus language from a story reward or a feat your table allows. It follows the same rules as normal content.</p>
+      <p className="muted">
+        Add anything the rules did not give you by choice, such as a bonus language from a story reward or a feat your table allows. It
+        follows the same rules as normal content.
+      </p>
       <div className="row">
-        <select value={type} onChange={(e) => setType(e.target.value)}>{ADD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</select>
+        <select value={type} onChange={(e) => setType(e.target.value)}>
+          {ADD_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
         <input style={{ flex: 1 }} placeholder={`Search ${type.toLowerCase()}`} value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       <ul className="options boxed">
         {results.map((o) => (
-          <li key={o.id}><button onClick={() => set((c) => ({ ...c, extras: [...c.extras, o.id] }))}><span className="tick">+</span><span className="opt-name">{o.name}</span><span className="opt-meta" /><span className="opt-src" title={o.source}>{o.source}</span></button><LearnIcon el={o} /></li>
+          <li key={o.id}>
+            <button onClick={() => set((c) => ({ ...c, extras: [...c.extras, o.id] }))}>
+              <span className="tick">+</span>
+              <span className="opt-name">{o.name}</span>
+              <span className="opt-meta" />
+              <span className="opt-src" title={o.source}>
+                {o.source}
+              </span>
+            </button>
+            <LearnIcon el={o} />
+          </li>
         ))}
       </ul>
       <h3>Added</h3>
       <ul className="added">
         {ch.extras.map((id) => {
           const el = r.reg.get(id);
-          return <li key={id}><span>{el?.name ?? id} <small className="muted">{el?.type}</small></span><button onClick={() => set((c) => ({ ...c, extras: c.extras.filter((x) => x !== id) }))}>Remove</button></li>;
+          return (
+            <li key={id}>
+              <span>
+                {el?.name ?? id} <small className="muted">{el?.type}</small>
+              </span>
+              <button onClick={() => set((c) => ({ ...c, extras: c.extras.filter((x) => x !== id) }))}>Remove</button>
+            </li>
+          );
         })}
         {!ch.extras.length && <li className="muted">Nothing added by hand.</li>}
       </ul>
@@ -188,7 +394,8 @@ function Additions({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharact
 function AutoAttacks({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
   const lines = useMemo(() => buildSheet(r).attacksAll.filter((a) => a.auto), [r]);
   const [open, setOpen] = useState<string | null>(null);
-  const edit = (id: string, p: Partial<AttackEdit>) => set((c) => ({ ...c, attackEdits: { ...(c.attackEdits ?? {}), [id]: { ...(c.attackEdits?.[id] ?? {}), ...p } } }));
+  const edit = (id: string, p: Partial<AttackEdit>) =>
+    set((c) => ({ ...c, attackEdits: { ...(c.attackEdits ?? {}), [id]: { ...(c.attackEdits?.[id] ?? {}), ...p } } }));
   if (!lines.length) return <p className="muted">Equip a weapon on the Equipment tab and its attack shows up here, ready to edit.</p>;
   return (
     <ul className="added auto-attacks">
@@ -199,19 +406,64 @@ function AutoAttacks({ r, ch, set }: { r: Resolved; ch: Character; set: SetChara
         return (
           <li key={id} className={a.hiddenByEdit ? "muted" : ""}>
             <span>
-              <b>{a.name}</b> · {a.bonus >= 0 ? "+" : ""}{a.bonus} to hit · {a.damage} {a.damageType}{a.hiddenByEdit ? " · hidden" : ""}{edited ? " · edited" : ""}
+              <b>{a.name}</b> · {a.bonus >= 0 ? "+" : ""}
+              {a.bonus} to hit · {a.damage} {a.damageType}
+              {a.hiddenByEdit ? " · hidden" : ""}
+              {edited ? " · edited" : ""}
               <small className="muted"> (from your equipped weapon)</small>
             </span>
             <button onClick={() => setOpen(open === id ? null : id)}>{open === id ? "Done" : "Edit"}</button>
             {open === id && (
               <div className="attack-edit">
-                <label>Name <input value={e.name ?? ""} placeholder={a.name} onChange={(ev) => edit(id, { name: ev.target.value })} /></label>
-                <label>Bonus adjustment <input type="number" value={e.bonusAdjust ?? 0} onChange={(ev) => edit(id, { bonusAdjust: Number(ev.target.value) || 0 })} style={{ width: 70 }} /></label>
-                <label>Damage <input value={e.damage ?? ""} placeholder={a.damage} onChange={(ev) => edit(id, { damage: ev.target.value })} style={{ width: 120 }} /></label>
-                <label>Type <input value={e.damageType ?? ""} placeholder={a.damageType} onChange={(ev) => edit(id, { damageType: ev.target.value })} style={{ width: 110 }} /></label>
-                <label>Notes <input value={e.notes ?? ""} placeholder={a.notes} onChange={(ev) => edit(id, { notes: ev.target.value })} /></label>
-                <label className="check"><input type="checkbox" checked={!!e.hidden} onChange={(ev) => edit(id, { hidden: ev.target.checked })} /> Hide this attack</label>
-                {edited && <button onClick={() => set((c) => { const next = { ...(c.attackEdits ?? {}) }; delete next[id]; return { ...c, attackEdits: next }; })}>Reset to calculated</button>}
+                <label>
+                  Name <input value={e.name ?? ""} placeholder={a.name} onChange={(ev) => edit(id, { name: ev.target.value })} />
+                </label>
+                <label>
+                  Bonus adjustment{" "}
+                  <input
+                    type="number"
+                    value={e.bonusAdjust ?? 0}
+                    onChange={(ev) => edit(id, { bonusAdjust: Number(ev.target.value) || 0 })}
+                    style={{ width: 70 }}
+                  />
+                </label>
+                <label>
+                  Damage{" "}
+                  <input
+                    value={e.damage ?? ""}
+                    placeholder={a.damage}
+                    onChange={(ev) => edit(id, { damage: ev.target.value })}
+                    style={{ width: 120 }}
+                  />
+                </label>
+                <label>
+                  Type{" "}
+                  <input
+                    value={e.damageType ?? ""}
+                    placeholder={a.damageType}
+                    onChange={(ev) => edit(id, { damageType: ev.target.value })}
+                    style={{ width: 110 }}
+                  />
+                </label>
+                <label>
+                  Notes <input value={e.notes ?? ""} placeholder={a.notes} onChange={(ev) => edit(id, { notes: ev.target.value })} />
+                </label>
+                <label className="check">
+                  <input type="checkbox" checked={!!e.hidden} onChange={(ev) => edit(id, { hidden: ev.target.checked })} /> Hide this attack
+                </label>
+                {edited && (
+                  <button
+                    onClick={() =>
+                      set((c) => {
+                        const next = { ...(c.attackEdits ?? {}) };
+                        delete next[id];
+                        return { ...c, attackEdits: next };
+                      })
+                    }
+                  >
+                    Reset to calculated
+                  </button>
+                )}
                 <small className="muted">Leave a box empty to keep the calculated value. The bonus adjustment is added on top of it.</small>
               </div>
             )}
@@ -223,7 +475,14 @@ function AutoAttacks({ r, ch, set }: { r: Resolved; ch: Character; set: SetChara
 }
 
 function Attacks({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter }) {
-  const [form, setForm] = useState({ name: "", ability: "strength" as AbilityId, damage: "1d6", damageType: "", proficient: true, bonus: 0 });
+  const [form, setForm] = useState({
+    name: "",
+    ability: "strength" as AbilityId,
+    damage: "1d6",
+    damageType: "",
+    proficient: true,
+    bonus: 0,
+  });
   return (
     <>
       <h3>From equipped weapons</h3>
@@ -232,16 +491,69 @@ function Attacks({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter
       <p className="muted">Use this for attacks that are not items, such as natural weapons or spell-like effects.</p>
       <div className="row">
         <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <select value={form.ability} onChange={(e) => setForm({ ...form, ability: e.target.value as AbilityId })}>{ABILITY_IDS.map((a) => <option key={a} value={a}>{ABILITY_LABEL[a]}</option>)}</select>
-        <input placeholder="Damage" value={form.damage} onChange={(e) => setForm({ ...form, damage: e.target.value })} style={{ width: 90 }} />
-        <input placeholder="Type" value={form.damageType} onChange={(e) => setForm({ ...form, damageType: e.target.value })} style={{ width: 110 }} />
-        <label className="check"><input type="checkbox" checked={form.proficient} onChange={(e) => setForm({ ...form, proficient: e.target.checked })} /> Proficient</label>
-        <input type="number" title="Extra attack bonus" value={form.bonus} onChange={(e) => setForm({ ...form, bonus: Number(e.target.value) || 0 })} style={{ width: 70 }} />
-        <button className="primary" disabled={!form.name.trim()} onClick={() => { set((c) => ({ ...c, attacks: [...c.attacks, { uid: uid(), name: form.name.trim(), ability: form.ability, proficient: form.proficient, damage: form.damage, damageType: form.damageType, bonus: form.bonus }] })); setForm({ ...form, name: "" }); }}>Add</button>
+        <select value={form.ability} onChange={(e) => setForm({ ...form, ability: e.target.value as AbilityId })}>
+          {ABILITY_IDS.map((a) => (
+            <option key={a} value={a}>
+              {ABILITY_LABEL[a]}
+            </option>
+          ))}
+        </select>
+        <input
+          placeholder="Damage"
+          value={form.damage}
+          onChange={(e) => setForm({ ...form, damage: e.target.value })}
+          style={{ width: 90 }}
+        />
+        <input
+          placeholder="Type"
+          value={form.damageType}
+          onChange={(e) => setForm({ ...form, damageType: e.target.value })}
+          style={{ width: 110 }}
+        />
+        <label className="check">
+          <input type="checkbox" checked={form.proficient} onChange={(e) => setForm({ ...form, proficient: e.target.checked })} />{" "}
+          Proficient
+        </label>
+        <input
+          type="number"
+          title="Extra attack bonus"
+          value={form.bonus}
+          onChange={(e) => setForm({ ...form, bonus: Number(e.target.value) || 0 })}
+          style={{ width: 70 }}
+        />
+        <button
+          className="primary"
+          disabled={!form.name.trim()}
+          onClick={() => {
+            set((c) => ({
+              ...c,
+              attacks: [
+                ...c.attacks,
+                {
+                  uid: uid(),
+                  name: form.name.trim(),
+                  ability: form.ability,
+                  proficient: form.proficient,
+                  damage: form.damage,
+                  damageType: form.damageType,
+                  bonus: form.bonus,
+                },
+              ],
+            }));
+            setForm({ ...form, name: "" });
+          }}
+        >
+          Add
+        </button>
       </div>
       <ul className="added">
         {ch.attacks.map((a) => (
-          <li key={a.uid}><span>{a.name} · {ABILITY_LABEL[a.ability]} · {a.damage} {a.damageType}</span><button onClick={() => set((c) => ({ ...c, attacks: c.attacks.filter((x) => x.uid !== a.uid) }))}>Remove</button></li>
+          <li key={a.uid}>
+            <span>
+              {a.name} · {ABILITY_LABEL[a.ability]} · {a.damage} {a.damageType}
+            </span>
+            <button onClick={() => set((c) => ({ ...c, attacks: c.attacks.filter((x) => x.uid !== a.uid) }))}>Remove</button>
+          </li>
         ))}
       </ul>
     </>
@@ -266,23 +578,51 @@ function Companions({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
   return (
     <>
       <SlotList slots={slots} r={r} set={set} onDetail={onDetail} />
-      {granted.map((a) => <CompanionCard key={a.el.id} el={a.el} />)}
+      {granted.map((a) => (
+        <CompanionCard key={a.el.id} el={a.el} />
+      ))}
       <h3>Add a companion by hand</h3>
       <div className="row">
-        {([["all", "All"], ["companion", "Familiars and creatures"], ["mount", "Mounts"]] as const).map(([k, label]) => <button key={k} className={kind === k ? "pill active" : "pill"} onClick={() => setKind(k)}>{label}</button>)}
+        {(
+          [
+            ["all", "All"],
+            ["companion", "Familiars and creatures"],
+            ["mount", "Mounts"],
+          ] as const
+        ).map(([k, label]) => (
+          <button key={k} className={kind === k ? "pill active" : "pill"} onClick={() => setKind(k)}>
+            {label}
+          </button>
+        ))}
         <input className="slot-search" placeholder="Search by name" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1 }} />
       </div>
       <small className="muted">{found.length} listed</small>
       <ul className="options boxed companion-list">
         {found.map((c) => (
-          <li key={c.id}><button onClick={() => set((x) => ({ ...x, companions: [...x.companions, { uid: uid(), id: c.id, name: c.name }] }))}><span className="tick">+</span><span className="opt-name">{c.name}</span><span className="opt-meta" /><span className="opt-src" title={c.source}>{c.source}</span></button><LearnIcon el={c} /></li>
+          <li key={c.id}>
+            <button onClick={() => set((x) => ({ ...x, companions: [...x.companions, { uid: uid(), id: c.id, name: c.name }] }))}>
+              <span className="tick">+</span>
+              <span className="opt-name">{c.name}</span>
+              <span className="opt-meta" />
+              <span className="opt-src" title={c.source}>
+                {c.source}
+              </span>
+            </button>
+            <LearnIcon el={c} />
+          </li>
         ))}
       </ul>
       {ch.companions.map((c) => {
         const el = r.reg.get(c.id);
         return (
           <div key={c.uid} className="card sub">
-            <div className="row"><TextInput value={c.name} onCommit={(v) => set((x) => ({ ...x, companions: x.companions.map((y) => (y.uid === c.uid ? { ...y, name: v } : y)) }))} /><button onClick={() => set((x) => ({ ...x, companions: x.companions.filter((y) => y.uid !== c.uid) }))}>Remove</button></div>
+            <div className="row">
+              <TextInput
+                value={c.name}
+                onCommit={(v) => set((x) => ({ ...x, companions: x.companions.map((y) => (y.uid === c.uid ? { ...y, name: v } : y)) }))}
+              />
+              <button onClick={() => set((x) => ({ ...x, companions: x.companions.filter((y) => y.uid !== c.uid) }))}>Remove</button>
+            </div>
             {el && <CompanionCard el={el} />}
           </div>
         );
@@ -291,7 +631,15 @@ function Companions({ r, ch, set, onDetail }: { r: Resolved; ch: Character; set:
   );
 }
 
-const COMPANION_LABEL: Record<string, string> = { skills: "Skills", senses: "Senses", languages: "Languages", challenge: "Challenge", resistances: "Damage Resistances", immunities: "Damage Immunities", conditionImmunities: "Condition Immunities" };
+const COMPANION_LABEL: Record<string, string> = {
+  skills: "Skills",
+  senses: "Senses",
+  languages: "Languages",
+  challenge: "Challenge",
+  resistances: "Damage Resistances",
+  immunities: "Damage Immunities",
+  conditionImmunities: "Condition Immunities",
+};
 
 export function CompanionCard({ el }: { el: AElement }) {
   const { reg } = useUi();
@@ -302,7 +650,9 @@ export function CompanionCard({ el }: { el: AElement }) {
     return (
       <div className="statblock">
         <h4>{el.name}</h4>
-        <p className="muted">{[val("category"), val("cost") && `${val("cost")}`, val("weight") && `${val("weight")}`].filter(Boolean).join(" · ")}</p>
+        <p className="muted">
+          {[val("category"), val("cost") && `${val("cost")}`, val("weight") && `${val("weight")}`].filter(Boolean).join(" · ")}
+        </p>
         <Html html={el.description} />
       </div>
     );
@@ -312,12 +662,28 @@ export function CompanionCard({ el }: { el: AElement }) {
     <div className="statblock">
       <h4>{el.name}</h4>
       <p className="muted">{[val("size"), val("type"), val("alignment")].filter(Boolean).join(", ")}</p>
-      <p><b>AC</b> {val("ac")} · <b>HP</b> {val("hp")} · <b>Speed</b> {val("speed")}</p>
+      <p>
+        <b>AC</b> {val("ac")} · <b>HP</b> {val("hp")} · <b>Speed</b> {val("speed")}
+      </p>
       {stats.length > 0 && <p className="abil-line">{stats.map((k) => `${k.slice(0, 3).toUpperCase()} ${val(k)}`).join("  ")}</p>}
-      {["skills", "senses", "languages", "challenge", "resistances", "immunities", "conditionImmunities"].filter(val).map((k) => <p key={k}><b>{COMPANION_LABEL[k] ?? k}</b> {val(k)}</p>)}
+      {["skills", "senses", "languages", "challenge", "resistances", "immunities", "conditionImmunities"].filter(val).map((k) => (
+        <p key={k}>
+          <b>{COMPANION_LABEL[k] ?? k}</b> {val(k)}
+        </p>
+      ))}
       {val("traits") && <Html html={companionHtml(val("traits"), reg)} />}
-      {val("actions") && <><h5>Actions</h5><Html html={companionHtml(val("actions"), reg)} /></>}
-      {val("reactions") && <><h5>Reactions</h5><Html html={companionHtml(val("reactions"), reg)} /></>}
+      {val("actions") && (
+        <>
+          <h5>Actions</h5>
+          <Html html={companionHtml(val("actions"), reg)} />
+        </>
+      )}
+      {val("reactions") && (
+        <>
+          <h5>Reactions</h5>
+          <Html html={companionHtml(val("reactions"), reg)} />
+        </>
+      )}
       {el.description && <Html html={el.description} />}
     </div>
   );
@@ -328,8 +694,24 @@ export function ManageTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character
   const other = r.slots.filter((s) => tabOfSlot(s) === "other" && s.rule.type !== "Companion");
   return (
     <div>
-      <nav className="subtabs">{SUBS.map(([k, label]) => <button key={k} className={sub === k ? "subtab active" : "subtab"} onClick={() => setSub(k)}>{label}</button>)}</nav>
-      {sub === "options" && (<><Options r={r} ch={ch} set={set} />{other.length > 0 && (<><h3>Other choices</h3><SlotList slots={other} r={r} set={set} onDetail={onDetail} /></>)}</>)}
+      <nav className="subtabs">
+        {SUBS.map(([k, label]) => (
+          <button key={k} className={sub === k ? "subtab active" : "subtab"} onClick={() => setSub(k)}>
+            {label}
+          </button>
+        ))}
+      </nav>
+      {sub === "options" && (
+        <>
+          <Options r={r} ch={ch} set={set} />
+          {other.length > 0 && (
+            <>
+              <h3>Other choices</h3>
+              <SlotList slots={other} r={r} set={set} onDetail={onDetail} />
+            </>
+          )}
+        </>
+      )}
       {sub === "bonuses" && <Bonuses ch={ch} set={set} />}
       {sub === "additions" && <Additions r={r} ch={ch} set={set} />}
       {sub === "attacks" && <Attacks r={r} ch={ch} set={set} />}

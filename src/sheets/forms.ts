@@ -4,7 +4,18 @@
  * Check boxes have no useful names on these sheets, so they are found by where they sit next to a labelled field.
  */
 import type { SpellRow } from "./data";
-import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString, PDFTextField, TextAlignment, type PDFFont, type PDFPage, rgb } from "pdf-lib";
+import {
+  PDFDict,
+  PDFDocument,
+  PDFHexString,
+  PDFName,
+  PDFString,
+  PDFTextField,
+  TextAlignment,
+  type PDFFont,
+  type PDFPage,
+  rgb,
+} from "pdf-lib";
 import { splitPersonality, type FillData } from "./data";
 import { readWidgets, type Widget } from "./widgets";
 import { attachLabels, autoFill, type AutoField } from "./automap";
@@ -33,7 +44,10 @@ const cy = (w: W) => w.y + w.h / 2;
 const cx = (w: W) => w.x + w.w / 2;
 
 class Sheet {
-  constructor(readonly ws: W[], readonly sink: Sink) {}
+  constructor(
+    readonly ws: W[],
+    readonly sink: Sink,
+  ) {}
 
   find(name: string, page?: number): W | undefined {
     return this.ws.find((w) => trim(w.name) === name && w.t === "Tx" && (page === undefined || w.p === page));
@@ -47,7 +61,9 @@ class Sheet {
   /** The nearest check box to the left of a field, on the same line. */
   boxLeftOf(field: W, reach = 30): W | undefined {
     return this.ws
-      .filter((b) => b.t === "Btn" && b.p === field.p && Math.abs(cy(b) - cy(field)) <= 6 && cx(b) < field.x + 2 && field.x - cx(b) <= reach)
+      .filter(
+        (b) => b.t === "Btn" && b.p === field.p && Math.abs(cy(b) - cy(field)) <= 6 && cx(b) < field.x + 2 && field.x - cx(b) <= reach,
+      )
       .sort((a, b) => cx(b) - cx(a))[0];
   }
 
@@ -59,14 +75,31 @@ class Sheet {
 
   /** Check boxes in a row: those at about this height and between two x values, left to right. */
   boxesIn(page: number, y: number, x0: number, x1: number, tol = 4): W[] {
-    return this.ws.filter((b) => b.t === "Btn" && b.p === page && Math.abs(cy(b) - y) <= tol && cx(b) >= x0 && cx(b) <= x1).sort((a, b) => cx(a) - cx(b));
+    return this.ws
+      .filter((b) => b.t === "Btn" && b.p === page && Math.abs(cy(b) - y) <= tol && cx(b) >= x0 && cx(b) <= x1)
+      .sort((a, b) => cx(a) - cx(b));
   }
 }
 
 const SKILLS_2024: Record<string, string> = {
-  acrobatics: "ACROBATICS", "animal handling": "ANIMAL HANDLING", arcana: "ARCANA", athletics: "ATHLETICS", deception: "DECEPTION", history: "HISTORY", insight: "INSIGHT",
-  intimidation: "INTIMIDATE", investigation: "INVESTIGATION", medicine: "MEDICINE", nature: "NATURE", perception: "PERCEPTION", performance: "PERFORMANCE", persuasion: "PERSUASION",
-  religion: "RELIGION", "sleight of hand": "SLEIGHT OF HAND", stealth: "STEALTH", survival: "SURVIVAL",
+  acrobatics: "ACROBATICS",
+  "animal handling": "ANIMAL HANDLING",
+  arcana: "ARCANA",
+  athletics: "ATHLETICS",
+  deception: "DECEPTION",
+  history: "HISTORY",
+  insight: "INSIGHT",
+  intimidation: "INTIMIDATE",
+  investigation: "INVESTIGATION",
+  medicine: "MEDICINE",
+  nature: "NATURE",
+  perception: "PERCEPTION",
+  performance: "PERFORMANCE",
+  persuasion: "PERSUASION",
+  religion: "RELIGION",
+  "sleight of hand": "SLEIGHT OF HAND",
+  stealth: "STEALTH",
+  survival: "SURVIVAL",
 };
 const ABIL_KEYS = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const;
 const SHORT = { strength: "STR", dexterity: "DEX", constitution: "CON", intelligence: "INT", wisdom: "WIS", charisma: "CHA" } as const;
@@ -75,11 +108,17 @@ const joinLines = (a: string[]) => a.join("\n");
 
 /** Spell rows: the name fields from top to bottom, with the other fields on the same line. */
 /** Fills the spell table row by row. Returns the spells that did not fit. */
-function spellRows(s: Sheet, page: number, d: FillData, ctx: { level: string; name: string; time: string; range: string; notes: string; boxX: [number, number, number] }): SpellRow[] {
+function spellRows(
+  s: Sheet,
+  page: number,
+  d: FillData,
+  ctx: { level: string; name: string; time: string; range: string; notes: string; boxX: [number, number, number] },
+): SpellRow[] {
   const names = s.ws.filter((w) => w.t === "Tx" && w.p === page && w.name.startsWith(ctx.name)).sort((a, b) => b.y - a.y);
   const seen = new Set<number>();
   const rows = names.filter((w) => (seen.has(Math.round(w.y)) ? false : (seen.add(Math.round(w.y)), true)));
-  const sameLine = (prefix: string, row: W) => s.ws.find((w) => w.t === "Tx" && w.p === page && w.name.startsWith(prefix) && Math.abs(cy(w) - cy(row)) <= 5);
+  const sameLine = (prefix: string, row: W) =>
+    s.ws.find((w) => w.t === "Tx" && w.p === page && w.name.startsWith(prefix) && Math.abs(cy(w) - cy(row)) <= 5);
   d.spells.slice(0, rows.length).forEach((sp, i) => {
     const row = rows[i];
     s.sink.text(row, sp.name);
@@ -93,7 +132,9 @@ function spellRows(s: Sheet, page: number, d: FillData, ctx: { level: string; na
     const note = [sp.duration, sp.notes].filter(Boolean).join(", ");
     if (nt && note) s.sink.text(nt, note);
     const boxes = s.boxesIn(page, cy(row), ctx.boxX[0] - 6, ctx.boxX[2] + 6);
-    [sp.concentration, sp.ritual, sp.m].forEach((on, k) => { if (boxes[k]) s.sink.check(boxes[k], on); });
+    [sp.concentration, sp.ritual, sp.m].forEach((on, k) => {
+      if (boxes[k]) s.sink.check(boxes[k], on);
+    });
   });
   return rows.length ? d.spells.slice(rows.length) : [];
 }
@@ -104,14 +145,28 @@ function spellRows(s: Sheet, page: number, d: FillData, ctx: { level: string; na
 export function fill2024Form(ws: W[], d: FillData, sink: Sink, overflow: SpellRow[] = []): string[] {
   const notes: string[] = [];
   const s = new Sheet(ws, sink);
-  s.set("Name", d.name); s.set("Background", d.background); s.set("Class", d.className); s.set("Species", d.species); s.set("Subclass", d.subclass);
-  s.set("Level", d.level); s.set("XP Points", d.xp || ""); s.set("Armor Class", d.ac); s.set("Current HP", d.hpCurrent); s.set("Max HP", d.hpMax); s.set("Temp HP", d.hpTemp || "");
-  s.set("Spent HD", d.hdSpent || ""); s.set("Max HD", d.hdMax);
-  s.set("init", d.initiative); s.set("SPEED", d.speed ? `${d.speed} ft` : ""); s.set("SIZE", d.size); s.set("PROF BONUS", d.profBonus);
+  s.set("Name", d.name);
+  s.set("Background", d.background);
+  s.set("Class", d.className);
+  s.set("Species", d.species);
+  s.set("Subclass", d.subclass);
+  s.set("Level", d.level);
+  s.set("XP Points", d.xp || "");
+  s.set("Armor Class", d.ac);
+  s.set("Current HP", d.hpCurrent);
+  s.set("Max HP", d.hpMax);
+  s.set("Temp HP", d.hpTemp || "");
+  s.set("Spent HD", d.hdSpent || "");
+  s.set("Max HD", d.hdMax);
+  s.set("init", d.initiative);
+  s.set("SPEED", d.speed ? `${d.speed} ft` : "");
+  s.set("SIZE", d.size);
+  s.set("PROF BONUS", d.profBonus);
   s.set("PASSIVE PERCEPTION", d.passive);
   for (const a of ABIL_KEYS) {
     const ab = d.abilities[a];
-    s.set(`${SHORT[a]} SCORE`, ab.score); s.set(`${SHORT[a]} MOD`, ab.mod);
+    s.set(`${SHORT[a]} SCORE`, ab.score);
+    s.set(`${SHORT[a]} MOD`, ab.mod);
     // The Wisdom save field kept a default name on this sheet.
     const saveName = a === "wisdom" ? "Text Field71" : `${SHORT[a]} SAVE`;
     s.set(saveName, ab.save);
@@ -124,51 +179,104 @@ export function fill2024Form(ws: W[], d: FillData, sink: Sink, overflow: SpellRo
     s.boxFor(field, k.prof);
   }
   d.weapons.slice(0, 6).forEach((wp, i) => {
-    s.set(`NAME - WEAPON ${i + 1}`, wp.name); s.set(`BONUS/DC - WEAPON ${i + 1}`, wp.bonus); s.set(`DAMAGE/TYPE - WEAPON ${i + 1}`, wp.damage); s.set(`NOTES - WEAPON ${i + 1}`, wp.notes);
+    s.set(`NAME - WEAPON ${i + 1}`, wp.name);
+    s.set(`BONUS/DC - WEAPON ${i + 1}`, wp.bonus);
+    s.set(`DAMAGE/TYPE - WEAPON ${i + 1}`, wp.damage);
+    s.set(`NOTES - WEAPON ${i + 1}`, wp.notes);
   });
-  const feats = d.featureList.filter((f) => f.group === "Class features").map((f) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${f.text}`);
+  const feats = d.featureList
+    .filter((f) => f.group === "Class features")
+    .map((f) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${f.text}`);
   const half = Math.ceil(feats.length / 2);
-  s.set("CLASS FEATURES 1", joinLines(feats.slice(0, half))); s.set("CLASS FEATURES 2", joinLines(feats.slice(half)));
+  s.set("CLASS FEATURES 1", joinLines(feats.slice(0, half)));
+  s.set("CLASS FEATURES 2", joinLines(feats.slice(half)));
   // Damage defenses first: the sheet has no box of its own for them, and they matter at the table.
-  s.set("SPECIES TRAITS", joinLines([d.defenses, ...d.featureList.filter((f) => f.group === "Species traits").map((f) => `${f.name}: ${f.text}`)].filter(Boolean)));
+  s.set(
+    "SPECIES TRAITS",
+    joinLines(
+      [d.defenses, ...d.featureList.filter((f) => f.group === "Species traits").map((f) => `${f.name}: ${f.text}`)].filter(Boolean),
+    ),
+  );
   // Feat spellcasting with its own DC (Shadow-Touched, Magic Initiate) first, so it shows even when the spells overflow.
   s.set("FEATS", joinLines([...d.otherCasting, ...d.featureList.filter((f) => f.group === "Feats").map((f) => `${f.name}: ${f.text}`)]));
   s.set("TOOL PROF", d.toolsOnly);
-  s.set("WEAPON PROF", [d.weaponTraining.simple && "Simple", d.weaponTraining.martial && "Martial", d.weaponsOther].filter(Boolean).join(", "));
+  s.set(
+    "WEAPON PROF",
+    [d.weaponTraining.simple && "Simple", d.weaponTraining.martial && "Martial", d.weaponsOther].filter(Boolean).join(", "),
+  );
   // Armor training boxes sit in a row near the bottom left, then the shield, heroic inspiration and death saves.
   const armor = s.boxesIn(0, 125, 40, 200, 6);
-  [d.armorTraining.light, d.armorTraining.medium, d.armorTraining.heavy, d.armorTraining.shield].forEach((on, i) => armor[i] && sink.check(armor[i], on));
+  [d.armorTraining.light, d.armorTraining.medium, d.armorTraining.heavy, d.armorTraining.shield].forEach(
+    (on, i) => armor[i] && sink.check(armor[i], on),
+  );
   for (const b of ws) {
     if (b.t !== "Btn" || b.p !== 0) continue;
     if (b.name === "shield chk") sink.check(b, d.shield);
-    if (/^SUCCESS (LEFT L|CTR|RIGHT) chk$/.test(b.name)) sink.check(b, d.deathSuccess >= ({ "SUCCESS LEFT L chk": 1, "SUCCESS CTR chk": 2, "SUCCESS RIGHT chk": 3 } as Record<string, number>)[b.name]);
-    if (/^FAILURE (LEFT|CTR|RIGHT) chk$/.test(b.name)) sink.check(b, d.deathFail >= ({ "FAILURE LEFT chk": 1, "FAILURE CTR chk": 2, "FAILURE RIGHT chk": 3 } as Record<string, number>)[b.name]);
+    if (/^SUCCESS (LEFT L|CTR|RIGHT) chk$/.test(b.name))
+      sink.check(
+        b,
+        d.deathSuccess >= ({ "SUCCESS LEFT L chk": 1, "SUCCESS CTR chk": 2, "SUCCESS RIGHT chk": 3 } as Record<string, number>)[b.name],
+      );
+    if (/^FAILURE (LEFT|CTR|RIGHT) chk$/.test(b.name))
+      sink.check(
+        b,
+        d.deathFail >= ({ "FAILURE LEFT chk": 1, "FAILURE CTR chk": 2, "FAILURE RIGHT chk": 3 } as Record<string, number>)[b.name],
+      );
     if (b.name === "Check Box1") sink.check(b, d.inspiration);
   }
 
   // Page 2: spellcasting, slots, spell rows, personal notes
-  s.set("SPELLCASTING ABILITY", d.casting?.ability, 1); s.set("SPELLCASTING MOD", d.casting?.mod, 1); s.set("SPELL SAVE DC", d.casting?.dc, 1); s.set("SPELL ATTACK BONUS", d.casting?.attack, 1);
+  s.set("SPELLCASTING ABILITY", d.casting?.ability, 1);
+  s.set("SPELLCASTING MOD", d.casting?.mod, 1);
+  s.set("SPELL SAVE DC", d.casting?.dc, 1);
+  s.set("SPELL ATTACK BONUS", d.casting?.attack, 1);
   for (let n = 1; n <= 9; n++) {
     const total = d.casting?.slots[n - 1] ?? 0;
     if (total) s.set(`LVL${n} TOTAL`, total, 1);
-    const colX: [number, number][] = [[195, 232], [284, 314], [364, 384]];
+    const colX: [number, number][] = [
+      [195, 232],
+      [284, 314],
+      [364, 384],
+    ];
     const [x0, x1] = colX[Math.floor((n - 1) / 3)];
     const row = [680, 666, 652][(n - 1) % 3];
     const boxes = s.boxesIn(1, row + 3.5, x0, x1, 5);
     // The boxes you have are ticked as spent; the rest stay empty.
     boxes.forEach((b, i) => sink.check(b, i < Math.min(total, d.casting?.used[n - 1] ?? 0)));
   }
-  const left = spellRows(s, 1, d, { level: "SPELL LEVEL", name: "SPELL NAME", time: "CASTING TIME", range: "RANGE", notes: "SPELL NOTES", boxX: [239, 261, 283] });
+  const left = spellRows(s, 1, d, {
+    level: "SPELL LEVEL",
+    name: "SPELL NAME",
+    time: "CASTING TIME",
+    range: "RANGE",
+    notes: "SPELL NOTES",
+    boxX: [239, 261, 283],
+  });
   // What does not fit continues on pages added at the end (the caller adds them).
   overflow.push(...left);
   s.set("LANGUAGES", d.languages, 1);
-  s.set("EQUIPMENT", [d.armorWorn && `Armor: ${d.armorWorn}`, d.weaponsText && `Weapons: ${d.weaponsText.replace(/\n/g, ", ")}`, d.otherGear.replace(/\n/g, ", ")].filter(Boolean).join("\n"), 1);
-  d.magicItems.slice(0, 3).forEach((m, i) => { s.set(`ATTUNMENT ${i + 1}`, m.name, 1); s.boxFor(`ATTUNMENT ${i + 1}`, m.attuned); });
+  s.set(
+    "EQUIPMENT",
+    [
+      d.armorWorn && `Armor: ${d.armorWorn}`,
+      d.weaponsText && `Weapons: ${d.weaponsText.replace(/\n/g, ", ")}`,
+      d.otherGear.replace(/\n/g, ", "),
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    1,
+  );
+  d.magicItems.slice(0, 3).forEach((m, i) => {
+    s.set(`ATTUNMENT ${i + 1}`, m.name, 1);
+    s.boxFor(`ATTUNMENT ${i + 1}`, m.attuned);
+  });
   for (let i = d.magicItems.length; i < 3; i++) s.boxFor(`ATTUNMENT ${i + 1}`, false);
   for (const b of ws) if (b.t === "Btn" && /portrait|image/i.test(b.name)) sink.image?.(b);
   s.set("PERSONALITY", [d.appearance, d.personality].filter(Boolean).join("\n\n"), 1);
   // Newer copies of the sheet split the text into three boxes.
-  s.set("APPEARANCE", d.appearance, 1); s.set("Alignment", d.alignment, 1); s.set("BACKSTORY / PERSONALITY", [d.personality, d.backstory].filter(Boolean).join("\n\n"), 1);
+  s.set("APPEARANCE", d.appearance, 1);
+  s.set("Alignment", d.alignment, 1);
+  s.set("BACKSTORY / PERSONALITY", [d.personality, d.backstory].filter(Boolean).join("\n\n"), 1);
   for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) s.set(k.toUpperCase(), d.coins[k] === "0" ? "" : d.coins[k], 1);
   return notes;
 }
@@ -176,60 +284,136 @@ export function fill2024Form(ws: W[], d: FillData, sink: Sink, overflow: SpellRo
 // ---------------------------------------------------------------- 2014 classic
 
 const SKILLS_2014: Record<string, string> = {
-  acrobatics: "Acrobatics", "animal handling": "Animal", arcana: "Arcana", athletics: "Athletics", deception: "Deception", history: "History", insight: "Insight", intimidation: "Intimidation",
-  investigation: "Investigation", medicine: "Medicine", nature: "Nature", perception: "Perception", performance: "Performance", persuasion: "Persuasion", religion: "Religion",
-  "sleight of hand": "SleightofHand", stealth: "Stealth", survival: "Survival",
+  acrobatics: "Acrobatics",
+  "animal handling": "Animal",
+  arcana: "Arcana",
+  athletics: "Athletics",
+  deception: "Deception",
+  history: "History",
+  insight: "Insight",
+  intimidation: "Intimidation",
+  investigation: "Investigation",
+  medicine: "Medicine",
+  nature: "Nature",
+  perception: "Perception",
+  performance: "Performance",
+  persuasion: "Persuasion",
+  religion: "Religion",
+  "sleight of hand": "SleightofHand",
+  stealth: "Stealth",
+  survival: "Survival",
 };
 
 export function fill2014(ws: W[], d: FillData, sink: Sink, overflow: SpellRow[] = []): void {
   const s = new Sheet(ws, sink);
-  s.set("CharacterName", d.name); s.set("CharacterName 2", d.name); s.set("PlayerName", d.body.player);
-  s.set("ClassLevel", [d.className, d.level].filter(Boolean).join(" ")); s.set("Background", d.background); s.set("Race", d.species);
-  s.set("Alignment", d.alignment); s.set("XP", d.xp || "");
+  s.set("CharacterName", d.name);
+  s.set("CharacterName 2", d.name);
+  s.set("PlayerName", d.body.player);
+  s.set("ClassLevel", [d.className, d.level].filter(Boolean).join(" "));
+  s.set("Background", d.background);
+  s.set("Race", d.species);
+  s.set("Alignment", d.alignment);
+  s.set("XP", d.xp || "");
   s.set("Inspiration", d.inspiration ? "1" : "");
-  s.set("ProfBonus", d.profBonus); s.set("AC", d.ac); s.set("Initiative", d.initiative); s.set("Speed", d.speed);
-  s.set("HPMax", d.hpMax); s.set("HPCurrent", d.hpCurrent); s.set("HPTemp", d.hpTemp || "");
-  s.set("HDTotal", d.hdMax); s.set("HD", d.hdMax.replace(/^\d+/, String(Math.max(0, parseInt(d.hdMax, 10) - d.hdSpent || 0))));
+  s.set("ProfBonus", d.profBonus);
+  s.set("AC", d.ac);
+  s.set("Initiative", d.initiative);
+  s.set("Speed", d.speed);
+  s.set("HPMax", d.hpMax);
+  s.set("HPCurrent", d.hpCurrent);
+  s.set("HPTemp", d.hpTemp || "");
+  s.set("HDTotal", d.hdMax);
+  s.set("HD", d.hdMax.replace(/^\d+/, String(Math.max(0, parseInt(d.hdMax, 10) - d.hdSpent || 0))));
   s.set("Passive", d.passive);
-  const mods: Record<string, string> = { strength: "STRmod", dexterity: "DEXmod", constitution: "CONmod", intelligence: "INTmod", wisdom: "WISmod", charisma: "CHamod" };
-  const names2014: Record<string, string> = { strength: "ST Strength", dexterity: "ST Dexterity", constitution: "ST Constitution", intelligence: "ST Intelligence", wisdom: "ST Wisdom", charisma: "ST Charisma" };
+  const mods: Record<string, string> = {
+    strength: "STRmod",
+    dexterity: "DEXmod",
+    constitution: "CONmod",
+    intelligence: "INTmod",
+    wisdom: "WISmod",
+    charisma: "CHamod",
+  };
+  const names2014: Record<string, string> = {
+    strength: "ST Strength",
+    dexterity: "ST Dexterity",
+    constitution: "ST Constitution",
+    intelligence: "ST Intelligence",
+    wisdom: "ST Wisdom",
+    charisma: "ST Charisma",
+  };
   for (const a of ABIL_KEYS) {
     const ab = d.abilities[a];
-    s.set(SHORT[a], ab.score); s.set(mods[a], ab.mod);
-    s.set(names2014[a], ab.save); s.boxFor(names2014[a], ab.saveProf);
+    s.set(SHORT[a], ab.score);
+    s.set(mods[a], ab.mod);
+    s.set(names2014[a], ab.save);
+    s.boxFor(names2014[a], ab.saveProf);
   }
   for (const [skill, field] of Object.entries(SKILLS_2014)) {
     const k = d.skills[skill];
     if (!k) continue;
-    s.set(field, k.bonus); s.boxFor(field, k.prof || k.expert);
+    s.set(field, k.bonus);
+    s.boxFor(field, k.prof || k.expert);
   }
   d.weapons.slice(0, 3).forEach((wp, i) => {
     const n = i === 0 ? "" : ` ${i + 1}`;
-    s.set(`Wpn Name${n}`, wp.name); s.set(`Wpn${i + 1} AtkBonus`, wp.bonus); s.set(`Wpn${i + 1} Damage`, wp.damage);
+    s.set(`Wpn Name${n}`, wp.name);
+    s.set(`Wpn${i + 1} AtkBonus`, wp.bonus);
+    s.set(`Wpn${i + 1} Damage`, wp.damage);
   });
   const extra = d.weapons.slice(3).map((wp) => `${wp.name} ${wp.bonus}, ${wp.damage}`);
-  s.set("AttacksSpellcasting", joinLines([...extra, d.casting ? `Spell save DC ${d.casting.dc}, spell attack ${d.casting.attack}` : "", ...d.otherCasting].filter(Boolean)));
-  s.set("ProficienciesLang", [d.languages && `Languages: ${d.languages}`, d.tools && `Tools: ${d.tools}`, `Armor: ${[d.armorTraining.light && "light", d.armorTraining.medium && "medium", d.armorTraining.heavy && "heavy", d.armorTraining.shield && "shields"].filter(Boolean).join(", ") || "none"}`, `Weapons: ${[d.weaponTraining.simple && "simple", d.weaponTraining.martial && "martial"].filter(Boolean).join(", ") || "none"}`].filter(Boolean).join("\n"));
+  s.set(
+    "AttacksSpellcasting",
+    joinLines(
+      [...extra, d.casting ? `Spell save DC ${d.casting.dc}, spell attack ${d.casting.attack}` : "", ...d.otherCasting].filter(Boolean),
+    ),
+  );
+  s.set(
+    "ProficienciesLang",
+    [
+      d.languages && `Languages: ${d.languages}`,
+      d.tools && `Tools: ${d.tools}`,
+      `Armor: ${[d.armorTraining.light && "light", d.armorTraining.medium && "medium", d.armorTraining.heavy && "heavy", d.armorTraining.shield && "shields"].filter(Boolean).join(", ") || "none"}`,
+      `Weapons: ${[d.weaponTraining.simple && "simple", d.weaponTraining.martial && "martial"].filter(Boolean).join(", ") || "none"}`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  );
   for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) s.set(k.toUpperCase(), d.coins[k] === "0" ? "" : d.coins[k]);
   s.set("Equipment", [d.armorWorn, d.weaponsText.replace(/\n/g, ", "), d.otherGear.replace(/\n/g, ", ")].filter(Boolean).join("\n"));
   const feats = d.featureList.map((f) => `${f.name}${f.usage ? ` (${f.usage})` : ""}: ${f.text}`);
   s.set("Features and Traits", joinLines([d.defenses, ...feats].filter(Boolean)));
   // Death saves: the six boxes by the Death Saves panel, successes above failures.
-  const death = ws.filter((b) => b.t === "Btn" && b.p === 0 && /^Check Box 1[2-7]$/.test(trim(b.name))).sort((a, b) => b.y - a.y || a.x - b.x);
+  const death = ws
+    .filter((b) => b.t === "Btn" && b.p === 0 && /^Check Box 1[2-7]$/.test(trim(b.name)))
+    .sort((a, b) => b.y - a.y || a.x - b.x);
   death.forEach((b, i) => sink.check(b, i < 3 ? i < d.deathSuccess : i - 3 < d.deathFail));
   for (const b of ws) if (b.t === "Btn" && /image/i.test(b.name)) sink.image?.(b);
   // Personality text and notes
   const person = splitPersonality(d.personality);
   if (person.found) {
-    s.set("PersonalityTraits", person.traits); s.set("Ideals", person.ideals); s.set("Bonds", person.bonds); s.set("Flaws", person.flaws);
+    s.set("PersonalityTraits", person.traits);
+    s.set("Ideals", person.ideals);
+    s.set("Bonds", person.bonds);
+    s.set("Flaws", person.flaws);
   } else s.set("PersonalityTraits", d.personality);
-  s.set("Backstory", d.backstory); s.set("Allies", d.body.allies); s.set("Treasure", d.magicItems.map((m) => m.name).join(", "));
-  s.set("Age", d.body.age); s.set("Height", d.body.height); s.set("Weight", d.body.weight); s.set("Eyes", d.body.eyes); s.set("Skin", d.body.skin); s.set("Hair", d.body.hair);
-  s.set("FactionName", d.body.deity); s.set("Feat+Traits", d.notes);
+  s.set("Backstory", d.backstory);
+  s.set("Allies", d.body.allies);
+  s.set("Treasure", d.magicItems.map((m) => m.name).join(", "));
+  s.set("Age", d.body.age);
+  s.set("Height", d.body.height);
+  s.set("Weight", d.body.weight);
+  s.set("Eyes", d.body.eyes);
+  s.set("Skin", d.body.skin);
+  s.set("Hair", d.body.hair);
+  s.set("FactionName", d.body.deity);
+  s.set("Feat+Traits", d.notes);
 
   // Spellcasting page
   if (d.casting) {
-    s.set("Spellcasting Class 2", d.className); s.set("SpellcastingAbility 2", d.casting.ability); s.set("SpellSaveDC  2", d.casting.dc); s.set("SpellAtkBonus 2", d.casting.attack);
+    s.set("Spellcasting Class 2", d.className);
+    s.set("SpellcastingAbility 2", d.casting.ability);
+    s.set("SpellSaveDC  2", d.casting.dc);
+    s.set("SpellAtkBonus 2", d.casting.attack);
     for (let n = 1; n <= 9; n++) {
       const total = d.casting.slots[n - 1] ?? 0;
       s.set(`SlotsTotal ${18 + n}`, total || "", 2);
@@ -260,7 +444,9 @@ export function fill2014(ws: W[], d: FillData, sink: Sink, overflow: SpellRow[] 
     }
     used.set(lv, (used.get(lv) ?? 0) + 1);
     sink.text(slotField, sp.name);
-    const box = ws.find((b) => b.t === "Btn" && b.p === 2 && Math.abs(cy(b) - cy(slotField)) <= 5 && cx(b) < slotField.x && slotField.x - cx(b) < 24);
+    const box = ws.find(
+      (b) => b.t === "Btn" && b.p === 2 && Math.abs(cy(b) - cy(slotField)) <= 5 && cx(b) < slotField.x && slotField.x - cx(b) < 24,
+    );
     if (box) sink.check(box, lv === 0 ? false : (sp.prepared ?? /prepared|always/.test(sp.notes)));
   }
 }
@@ -281,7 +467,9 @@ function wantsMulti(font: PDFFont, value: string, w: W): boolean {
 /** Fits text into a box: the largest size that keeps every line inside. */
 function layout(font: PDFFont, text: string, w: number, h: number, multi: boolean): { lines: string[]; size: number } {
   const big = !multi && isShort(text) && h > 22 ? [20, 18, 16, 14, 12] : [];
-  const tries = multi ? [9, 8.5, 8, 7.5, 7, 6.5, 6, 5.5, 5, 4.5, 4] : [...big, 11, 10, 9, 8, 7, 6.5, 6, 5.5, 5].filter((t) => t <= Math.max(5, big.length ? h * 0.6 : h * 0.78));
+  const tries = multi
+    ? [9, 8.5, 8, 7.5, 7, 6.5, 6, 5.5, 5, 4.5, 4]
+    : [...big, 11, 10, 9, 8, 7, 6.5, 6, 5.5, 5].filter((t) => t <= Math.max(5, big.length ? h * 0.6 : h * 0.78));
   for (const size of tries) {
     if (!multi) {
       if (font.widthOfTextAtSize(text, size) <= w - 3 && size * 1.1 <= h + 1) return { lines: [text], size };
@@ -365,7 +553,15 @@ export function formSink(doc: PDFDocument, font: PDFFont): Sink & { done(): void
         } catch {
           centred = !multi && w.w <= 50;
         }
-        lines.forEach((l, i) => page.drawText(l, { x: w.x + (centred ? (w.w - font.widthOfTextAtSize(l, size)) / 2 : 2), y: multi ? w.y + w.h - 2 - size - i * Math.max(size * 1.15, font.heightAtSize(size) * 1.2) : w.y + (w.h - size * 0.72) / 2, size, font, color: BLACK }));
+        lines.forEach((l, i) =>
+          page.drawText(l, {
+            x: w.x + (centred ? (w.w - font.widthOfTextAtSize(l, size)) / 2 : 2),
+            y: multi ? w.y + w.h - 2 - size - i * Math.max(size * 1.15, font.heightAtSize(size) * 1.2) : w.y + (w.h - size * 0.72) / 2,
+            size,
+            font,
+            color: BLACK,
+          }),
+        );
         return;
       }
       try {
@@ -385,7 +581,9 @@ export function formSink(doc: PDFDocument, font: PDFFont): Sink & { done(): void
         }
         // A widget can carry its own default appearance, which wins over the field's. Keep them in step.
         const da = f.acroField.getDefaultAppearance();
-        if (da) for (const x of widgets.filter((y) => y.name === w.name)) if (x.dict.has(PDFName.of("DA"))) x.dict.set(PDFName.of("DA"), PDFString.of(da));
+        if (da)
+          for (const x of widgets.filter((y) => y.name === w.name))
+            if (x.dict.has(PDFName.of("DA"))) x.dict.set(PDFName.of("DA"), PDFString.of(da));
       } catch {
         /* a field the sheet does not have */
       }
@@ -447,7 +645,14 @@ export async function placePortrait(doc: PDFDocument, data: FillData, boxes: W[]
     const box = boxes.slice().sort((a, b) => b.w * b.h - a.w * a.h)[0];
     if (draw) {
       const s = Math.min(box.w / img.width, box.h / img.height);
-      doc.getPage(box.p).drawImage(img, { x: box.x + (box.w - img.width * s) / 2, y: box.y + (box.h - img.height * s) / 2, width: img.width * s, height: img.height * s });
+      doc
+        .getPage(box.p)
+        .drawImage(img, {
+          x: box.x + (box.w - img.width * s) / 2,
+          y: box.y + (box.h - img.height * s) / 2,
+          width: img.width * s,
+          height: img.height * s,
+        });
     } else {
       doc.getForm().getButton(box.name).setImage(img);
     }
@@ -486,7 +691,11 @@ export interface AutoFillResult extends FormFillResult {
 }
 
 /** Fills any fillable sheet by reading its field names and tooltips. */
-export async function fillAuto(template: Uint8Array | ArrayBuffer, data: FillData, font: { regular: ArrayBuffer | Uint8Array }): Promise<AutoFillResult> {
+export async function fillAuto(
+  template: Uint8Array | ArrayBuffer,
+  data: FillData,
+  font: { regular: ArrayBuffer | Uint8Array },
+): Promise<AutoFillResult> {
   const doc = await PDFDocument.load(template, { ignoreEncryption: true });
   const fontkit = (await import("@pdf-lib/fontkit")).default;
   doc.registerFontkit(fontkit);
@@ -509,6 +718,9 @@ export async function fillAuto(template: Uint8Array | ArrayBuffer, data: FillDat
   const res = autoFill(fields, data, sink);
   sink.done();
   const notes = [`Matched ${res.matched} entries to ${res.total} fields.`];
-  if (res.unmatched.length) notes.push(`Not matched, fill by hand: ${res.unmatched.slice(0, 12).join(", ")}${res.unmatched.length > 12 ? ` and ${res.unmatched.length - 12} more` : ""}.`);
+  if (res.unmatched.length)
+    notes.push(
+      `Not matched, fill by hand: ${res.unmatched.slice(0, 12).join(", ")}${res.unmatched.length > 12 ? ` and ${res.unmatched.length - 12} more` : ""}.`,
+    );
   return { bytes: await doc.save({ updateFieldAppearances: false }), notes, ...res };
 }

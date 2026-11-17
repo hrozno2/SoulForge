@@ -26,11 +26,25 @@ export function importReportText(res: ForeignImport, file: string, when = new Da
     ...part("Different from the file's own numbers", res.differences),
     ...part("Notes", notes),
     ...part("Kept as custom items", items),
-  ].join("\n").trim();
+  ]
+    .join("\n")
+    .trim();
 }
 
 /** What an import brought in, what is left to choose and what it could not find. Shown right after importing. */
-export function ImportReport({ name, res, rules = [], onClose, onBuild }: { name: string; res: ForeignImport; rules?: string[]; onClose: () => void; onBuild: () => void }) {
+export function ImportReport({
+  name,
+  res,
+  rules = [],
+  onClose,
+  onBuild,
+}: {
+  name: string;
+  res: ForeignImport;
+  rules?: string[];
+  onClose: () => void;
+  onBuild: () => void;
+}) {
   useEffect(() => {
     const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", key);
@@ -40,55 +54,103 @@ export function ImportReport({ name, res, rules = [], onClose, onBuild }: { name
   return (
     <div className="modal-back" role="dialog" aria-label="Import report" onClick={onClose}>
       <div className="modal-page themed import-report" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" aria-label="Close" onClick={onClose}>×</button>
+        <button className="modal-close" aria-label="Close" onClick={onClose}>
+          ×
+        </button>
         <h2>Imported {name || "the character"}</h2>
         <p className="muted">{res.matched.length} things matched your loaded content. Check these before you play:</p>
         {other.length > 0 && (
           <section className="ir-group bad">
             <h3>Not imported ({other.length})</h3>
-            <p className="muted small-text">Not in your loaded content. Add the book on the Content tab, or add it by hand on Manage, Manual additions.</p>
-            <ul>{other.map((m, i) => <li key={i}>{m}</li>)}</ul>
+            <p className="muted small-text">
+              Not in your loaded content. Add the book on the Content tab, or add it by hand on Manage, Manual additions.
+            </p>
+            <ul>
+              {other.map((m, i) => (
+                <li key={i}>{m}</li>
+              ))}
+            </ul>
           </section>
         )}
         {res.todo.length > 0 && (
           <section className="ir-group warn">
             <h3>To do: choose these ({res.todo.length})</h3>
-            <p className="muted small-text">The file does not say, so these are left open for you instead of guessed. Make them on the Build or Magic tab; the list is also in the character's notes.</p>
-            <ul>{res.todo.map((g, i) => <li key={i}>{g}</li>)}</ul>
+            <p className="muted small-text">
+              The file does not say, so these are left open for you instead of guessed. Make them on the Build or Magic tab; the list is
+              also in the character's notes.
+            </p>
+            <ul>
+              {res.todo.map((g, i) => (
+                <li key={i}>{g}</li>
+              ))}
+            </ul>
           </section>
         )}
         {rules.length > 0 && (
           <section className="ir-group bad">
             <h3>Against the rules ({rules.length})</h3>
-            <p className="muted small-text">As the file has it. Fix these on the Build or Magic tab; the Rules check on Build keeps track.</p>
-            <ul>{rules.map((g, i) => <li key={i}>{g}</li>)}</ul>
+            <p className="muted small-text">
+              As the file has it. Fix these on the Build or Magic tab; the Rules check on Build keeps track.
+            </p>
+            <ul>
+              {rules.map((g, i) => (
+                <li key={i}>{g}</li>
+              ))}
+            </ul>
           </section>
         )}
         {res.differences.length > 0 && (
           <section className="ir-group warn">
             <h3>Different from the file ({res.differences.length})</h3>
-            <p className="muted small-text">The file states these numbers itself. A difference means the file breaks a rule, uses something not in your content, or a choice above is still open.</p>
-            <ul>{res.differences.map((g, i) => <li key={i}>{g}</li>)}</ul>
+            <p className="muted small-text">
+              The file states these numbers itself. A difference means the file breaks a rule, uses something not in your content, or a
+              choice above is still open.
+            </p>
+            <ul>
+              {res.differences.map((g, i) => (
+                <li key={i}>{g}</li>
+              ))}
+            </ul>
           </section>
         )}
         {notes.length > 0 && (
           <section className="ir-group">
             <h3>Notes</h3>
-            <ul>{notes.map((n, i) => <li key={i}>{n}</li>)}</ul>
+            <ul>
+              {notes.map((n, i) => (
+                <li key={i}>{n}</li>
+              ))}
+            </ul>
           </section>
         )}
         {items.length > 0 && (
           <section className="ir-group">
             <h3>Kept as custom items ({items.length})</h3>
-            <p className="muted small-text">Not in the loaded content, so they are in the inventory by name only, without weight or rules.</p>
-            <ul className="ir-items">{items.map((m, i) => <li key={i}>{m}</li>)}</ul>
+            <p className="muted small-text">
+              Not in the loaded content, so they are in the inventory by name only, without weight or rules.
+            </p>
+            <ul className="ir-items">
+              {items.map((m, i) => (
+                <li key={i}>{m}</li>
+              ))}
+            </ul>
           </section>
         )}
-        {other.length + res.todo.length + rules.length + res.differences.length + notes.length + items.length === 0 && <p>Everything came through. Nothing to check.</p>}
+        {other.length + res.todo.length + rules.length + res.differences.length + notes.length + items.length === 0 && (
+          <p>Everything came through. Nothing to check.</p>
+        )}
         <p className="muted small-text">This report is saved in the character's notes.</p>
         <div className="levelup-foot">
           <button onClick={onClose}>Close</button>
-          <button className="primary" onClick={() => { onBuild(); onClose(); }}>Review on Build</button>
+          <button
+            className="primary"
+            onClick={() => {
+              onBuild();
+              onClose();
+            }}
+          >
+            Review on Build
+          </button>
         </div>
       </div>
     </div>
@@ -96,7 +158,23 @@ export function ImportReport({ name, res, rules = [], onClose, onBuild }: { name
 }
 
 /** The kept import report of a character, with a button to add it to the character's notes. */
-export function ImportNotes({ text, added, onAdd, onClose, title = "Import notes", lead, onDismiss }: { text: string; added: boolean; onAdd: () => void; onClose: () => void; title?: string; lead?: string; onDismiss?: () => void }) {
+export function ImportNotes({
+  text,
+  added,
+  onAdd,
+  onClose,
+  title = "Import notes",
+  lead,
+  onDismiss,
+}: {
+  text: string;
+  added: boolean;
+  onAdd: () => void;
+  onClose: () => void;
+  title?: string;
+  lead?: string;
+  onDismiss?: () => void;
+}) {
   useEffect(() => {
     const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", key);
@@ -105,14 +183,22 @@ export function ImportNotes({ text, added, onAdd, onClose, title = "Import notes
   return (
     <div className="modal-back" role="dialog" aria-label={title} onClick={onClose}>
       <div className="modal-page themed" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" aria-label="Close" onClick={onClose}>×</button>
+        <button className="modal-close" aria-label="Close" onClick={onClose}>
+          ×
+        </button>
         <h2>{title}</h2>
         {lead && <p className="muted">{lead}</p>}
         <pre className="import-notes">{text}</pre>
         <div className="row">
-          <button className="primary" disabled={added} onClick={onAdd}>{added ? "Already in the notes" : "Add to notes"}</button>
+          <button className="primary" disabled={added} onClick={onAdd}>
+            {added ? "Already in the notes" : "Add to notes"}
+          </button>
           <button onClick={onClose}>Close</button>
-          {onDismiss && <button onClick={onDismiss} title="Everything is put right: remove this report from the character">All put right, remove the report</button>}
+          {onDismiss && (
+            <button onClick={onDismiss} title="Everything is put right: remove this report from the character">
+              All put right, remove the report
+            </button>
+          )}
         </div>
       </div>
     </div>

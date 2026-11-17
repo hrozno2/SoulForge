@@ -20,9 +20,12 @@ const find = (type: string, name: string, year: "2014" | "2024") => {
 function build(r: ARegistry, cls: string, year: "2014" | "2024", weapons: string[], extra: Partial<Character> = {}, armor?: string) {
   const items = [...weapons.map((w) => find("Weapon", w, year)), ...(armor ? [find("Armor", armor, year)] : [])];
   const ch: Character = {
-    ...newCharacter(), classes: [{ classId: find("Class", cls, year).id, level: 5 }], abilityMethod: "manual",
+    ...newCharacter(),
+    classes: [{ classId: find("Class", cls, year).id, level: 5 }],
+    abilityMethod: "manual",
     abilityBase: { strength: 8, dexterity: 18, constitution: 12, intelligence: 10, wisdom: 14, charisma: 10 },
-    inventory: items.map((e, i) => ({ uid: `u${i}`, id: e.id, qty: 1, equipped: true, attuned: false })), ...extra,
+    inventory: items.map((e, i) => ({ uid: `u${i}`, id: e.id, qty: 1, equipped: true, attuned: false })),
+    ...extra,
   };
   const res = resolve(ch, r);
   const sheet = buildSheet(res);
@@ -51,8 +54,37 @@ describe("a class's named weapons are trained (the converter read the link's own
   // The rules check judges training on its own now: with the class's reference it names a trained weapon shown untrained.
   it("the rules check says so when a trained weapon shows as untrained", () => {
     const { res, sheet } = build(reg, "Rogue", "2014", ["Rapier"]);
-    const ref = [{ name: "Rogue", source: "PHB", edition: "classic", hd: 8, saves: [], caster: null, cantrips: null, prepared: null, preparedFormula: null, known: null, slots: null, pact: null, features: [], subclassLevel: 3, asiLevels: [], epicBoon: null, multiclass: null, multiclassOr: null, primaryAbility: null, subclasses: [], startWeapons: ["simple"], startWeaponNames: ["hand crossbow", "longsword", "rapier", "shortsword"], startMartialWith: [] }] as unknown as RefClass[];
-    const broken = { ...sheet, attacks: sheet.attacks.map((a) => (a.name === "Rapier" ? { ...a, bonus: a.bonus - sheet.proficiency, notes: "not proficient" } : a)) };
+    const ref = [
+      {
+        name: "Rogue",
+        source: "PHB",
+        edition: "classic",
+        hd: 8,
+        saves: [],
+        caster: null,
+        cantrips: null,
+        prepared: null,
+        preparedFormula: null,
+        known: null,
+        slots: null,
+        pact: null,
+        features: [],
+        subclassLevel: 3,
+        asiLevels: [],
+        epicBoon: null,
+        multiclass: null,
+        multiclassOr: null,
+        primaryAbility: null,
+        subclasses: [],
+        startWeapons: ["simple"],
+        startWeaponNames: ["hand crossbow", "longsword", "rapier", "shortsword"],
+        startMartialWith: [],
+      },
+    ] as unknown as RefClass[];
+    const broken = {
+      ...sheet,
+      attacks: sheet.attacks.map((a) => (a.name === "Rapier" ? { ...a, bonus: a.bonus - sheet.proficiency, notes: "not proficient" } : a)),
+    };
     expect(checkCharacter(res, broken, ref).map((f) => f.rule)).toContain("Weapon the class trains counted as untrained");
     expect(checkCharacter(res, sheet, ref).map((f) => f.rule)).not.toContain("Weapon the class trains counted as untrained");
   });

@@ -30,9 +30,42 @@ export const EFFECTS: { kind: EffectKind; label: string; needsTarget?: "ability"
 ];
 
 export const ABILITY_NAMES = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"];
-export const SKILL_NAMES = ["acrobatics", "animal handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight of hand", "stealth", "survival"];
+export const SKILL_NAMES = [
+  "acrobatics",
+  "animal handling",
+  "arcana",
+  "athletics",
+  "deception",
+  "history",
+  "insight",
+  "intimidation",
+  "investigation",
+  "medicine",
+  "nature",
+  "perception",
+  "performance",
+  "persuasion",
+  "religion",
+  "sleight of hand",
+  "stealth",
+  "survival",
+];
 export const SCHOOLS = ["Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"];
-export const DAMAGE_TYPES = ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"];
+export const DAMAGE_TYPES = [
+  "acid",
+  "bludgeoning",
+  "cold",
+  "fire",
+  "force",
+  "lightning",
+  "necrotic",
+  "piercing",
+  "poison",
+  "psychic",
+  "radiant",
+  "slashing",
+  "thunder",
+];
 export const WEAPON_PROPERTIES = ["finesse", "light", "heavy", "two-handed", "thrown", "reach", "ammunition", "loading"];
 
 export interface HbEffect {
@@ -53,19 +86,56 @@ export interface HbEntry {
 
 export function newEntry(kind: HbKind): HbEntry {
   const defaults: Record<HbKind, Record<string, string | boolean>> = {
-    weapon: { category: "martial", range: "melee", damage: "1d8", damageType: "slashing", versatile: "", properties: "", magic: "0", weight: "3", cost: "15" },
+    weapon: {
+      category: "martial",
+      range: "melee",
+      damage: "1d8",
+      damageType: "slashing",
+      versatile: "",
+      properties: "",
+      magic: "0",
+      weight: "3",
+      cost: "15",
+    },
     armor: { armor: "medium", ac: "14", stealth: false, strength: "", magic: "0", weight: "20", cost: "50" },
     item: { weight: "1", cost: "1", category: "Adventuring Gear" },
     magic: { rarity: "Uncommon", attunement: false, weight: "1", slot: "" },
-    spell: { level: "1", school: "Evocation", time: "1 action", range: "60 feet", duration: "Instantaneous", v: true, s: true, m: false, material: "", concentration: false, ritual: false, classes: "", higher: "" },
+    spell: {
+      level: "1",
+      school: "Evocation",
+      time: "1 action",
+      range: "60 feet",
+      duration: "Instantaneous",
+      v: true,
+      s: true,
+      m: false,
+      material: "",
+      concentration: false,
+      ritual: false,
+      classes: "",
+      higher: "",
+    },
     feat: { prerequisite: "", level: "", origin: false, usage: "", action: "" },
     feature: { usage: "", action: "" },
   };
-  return { id: `ID_HB_${kind.toUpperCase()}_${Math.random().toString(36).slice(2, 9).toUpperCase()}`, kind, name: "", description: "", data: defaults[kind], effects: [] };
+  return {
+    id: `ID_HB_${kind.toUpperCase()}_${Math.random().toString(36).slice(2, 9).toUpperCase()}`,
+    kind,
+    name: "",
+    description: "",
+    data: defaults[kind],
+    effects: [],
+  };
 }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const paras = (t: string) => t.trim().split(/\n{2,}|\n/).filter(Boolean).map((p) => `<p>${esc(p.trim())}</p>`).join("") || "<p></p>";
+const paras = (t: string) =>
+  t
+    .trim()
+    .split(/\n{2,}|\n/)
+    .filter(Boolean)
+    .map((p) => `<p>${esc(p.trim())}</p>`)
+    .join("") || "<p></p>";
 const num = (v: unknown) => (Number.isFinite(Number(v)) && String(v).trim() !== "" ? Number(v) : 0);
 const bool = (v: unknown) => v === true || v === "true";
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
@@ -75,7 +145,8 @@ export function validate(e: HbEntry): string[] {
   const out: string[] = [];
   if (!e.name.trim()) out.push("Give it a name.");
   if (e.kind === "weapon" && !/^\d+d\d+([+-]\d+)?$/.test(str(e.data.damage).replace(/\s+/g, ""))) out.push("Damage should look like 1d8.");
-  if (e.kind === "weapon" && str(e.data.versatile) && !/^\d+d\d+$/.test(str(e.data.versatile))) out.push("Versatile damage should look like 1d10.");
+  if (e.kind === "weapon" && str(e.data.versatile) && !/^\d+d\d+$/.test(str(e.data.versatile)))
+    out.push("Versatile damage should look like 1d10.");
   if (e.kind === "armor" && !(num(e.data.ac) > 0)) out.push("Armor class must be a number above 0.");
   if (e.kind === "spell" && !(num(e.data.level) >= 0 && num(e.data.level) <= 9)) out.push("Spell level is 0 to 9.");
   if (e.kind === "spell" && !str(e.data.classes)) out.push("Name at least one class so the spell shows up on a list.");
@@ -89,21 +160,43 @@ function effectRules(effects: HbEffect[]): string[] {
     if (!f.value) continue;
     const v = String(f.value);
     switch (f.kind) {
-      case "ability": rules.push(`<stat name="${esc(f.target ?? "strength")}" value="${v}" />`); break;
-      case "save": rules.push(`<stat name="${esc(f.target ?? "strength")}:save" value="${v}" />`); break;
-      case "skill": rules.push(`<stat name="${esc(f.target ?? "athletics")}" value="${v}" />`); break;
-      case "ac": rules.push(`<stat name="ac" value="${v}" />`); break;
-      case "speed": rules.push(`<stat name="speed" value="${v}" />`); break;
-      case "hp": rules.push(`<stat name="hp" value="${v}" />`); break;
-      case "initiative": rules.push(`<stat name="initiative" value="${v}" />`); break;
-      case "attack": rules.push(`<stat name="attack" value="${v}" />`); break;
-      case "damage": rules.push(`<stat name="damage" value="${v}" />`); break;
+      case "ability":
+        rules.push(`<stat name="${esc(f.target ?? "strength")}" value="${v}" />`);
+        break;
+      case "save":
+        rules.push(`<stat name="${esc(f.target ?? "strength")}:save" value="${v}" />`);
+        break;
+      case "skill":
+        rules.push(`<stat name="${esc(f.target ?? "athletics")}" value="${v}" />`);
+        break;
+      case "ac":
+        rules.push(`<stat name="ac" value="${v}" />`);
+        break;
+      case "speed":
+        rules.push(`<stat name="speed" value="${v}" />`);
+        break;
+      case "hp":
+        rules.push(`<stat name="hp" value="${v}" />`);
+        break;
+      case "initiative":
+        rules.push(`<stat name="initiative" value="${v}" />`);
+        break;
+      case "attack":
+        rules.push(`<stat name="attack" value="${v}" />`);
+        break;
+      case "damage":
+        rules.push(`<stat name="damage" value="${v}" />`);
+        break;
     }
   }
   return rules;
 }
 
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const slug = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 
 function usageSheet(desc: string, usage: string, action: string): string {
   if (!usage && !action) return "";
@@ -123,7 +216,10 @@ export function entryXml(e: HbEntry, source: string): string {
 
   switch (e.kind) {
     case "weapon": {
-      const props = str(d.properties).split(",").map((p) => p.trim()).filter(Boolean);
+      const props = str(d.properties)
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
       const tags = [
         `ID_INTERNAL_WEAPON_CATEGORY_${str(d.category) === "simple" ? "SIMPLE" : "MARTIAL"}_${str(d.range) === "ranged" ? "RANGED" : "MELEE"}`,
         ...props.map((p) => `ID_INTERNAL_WEAPON_PROPERTY_${p.toUpperCase().replace(/[^A-Z]+/g, "_")}`),
@@ -137,7 +233,12 @@ export function entryXml(e: HbEntry, source: string): string {
         setter("slot", props.includes("two-handed") ? "twohand" : "onehand"),
         setter("damage", str(d.damage).replace(/\s+/g, ""), `type="${esc(str(d.damageType) || "slashing")}"`),
         str(d.versatile) ? setter("versatile", str(d.versatile)) : "",
-        setter("proficiency", str(d.category) === "simple" ? "ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_WEAPONS" : "ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_WEAPONS"),
+        setter(
+          "proficiency",
+          str(d.category) === "simple"
+            ? "ID_PROFICIENCY_WEAPON_PROFICIENCY_SIMPLE_WEAPONS"
+            : "ID_PROFICIENCY_WEAPON_PROFICIENCY_MARTIAL_WEAPONS",
+        ),
         magic ? setter("attackBonus", String(magic)) : "",
         magic ? setter("damageBonus", String(magic)) : "",
       ].filter(Boolean);
@@ -156,9 +257,13 @@ export function entryXml(e: HbEntry, source: string): string {
         setter("armorClass", String(ac)),
         kind === "heavy" || bool(d.stealth) ? setter("stealth", "Disadvantage") : "",
         str(d.strength) ? setter("strength", str(d.strength)) : "",
-        setter("proficiency", kind === "shield" ? "ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELDS" : `ID_PROFICIENCY_ARMOR_PROFICIENCY_${kind.toUpperCase()}_ARMOR`),
+        setter(
+          "proficiency",
+          kind === "shield" ? "ID_PROFICIENCY_ARMOR_PROFICIENCY_SHIELDS" : `ID_PROFICIENCY_ARMOR_PROFICIENCY_${kind.toUpperCase()}_ARMOR`,
+        ),
       ].filter(Boolean);
-      const base = kind === "shield" ? `<stat name="ac:shield" value="${ac}" bonus="shield" />` : `<stat name="ac:armored:armor" value="${ac}" />`;
+      const base =
+        kind === "shield" ? `<stat name="ac:shield" value="${ac}" bonus="shield" />` : `<stat name="ac:armored:armor" value="${ac}" />`;
       return `${head("Armor")}\n\t\t<supports>ID_INTERNAL_ARMOR_GROUP_${kind.toUpperCase()}</supports>\n\t\t<description>${paras(e.description)}</description>\n\t\t<setters>${set.join("")}</setters>${rulesXml([base])}\n\t</element>`;
     }
     case "item":
@@ -188,7 +293,11 @@ export function entryXml(e: HbEntry, source: string): string {
         setter("isRitual", String(bool(d.ritual))),
       ].filter(Boolean);
       const higher = str(d.higher);
-      const supports = str(d.classes).split(",").map((c) => c.trim()).filter(Boolean).join(", ");
+      const supports = str(d.classes)
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean)
+        .join(", ");
       return `${head("Spell")}\n\t\t<supports>${esc(supports)}</supports>\n\t\t<description>${paras(e.description)}${higher ? paras(`At higher levels. ${higher}`) : ""}</description>\n\t\t<setters>${set.join("")}</setters>\n\t</element>`;
     }
     case "feat": {

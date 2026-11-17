@@ -13,11 +13,19 @@ import { loadContentSet } from "../engine/testContent";
 describe("ability scores above 20", () => {
   const reg = loadContentSet("", "srd");
   const barbarian = (edition: string) => reg.ofType("Class").find((c) => c.name === "Barbarian" && c.source.includes(edition))!;
-  const at = (classId: string, level: number, strength: number): Character => ({ ...newCharacter(), classes: [{ classId, level }], abilityMethod: "manual", abilityBase: { ...newCharacter().abilityBase, strength, constitution: 16 } });
+  const at = (classId: string, level: number, strength: number): Character => ({
+    ...newCharacter(),
+    classes: [{ classId, level }],
+    abilityMethod: "manual",
+    abilityBase: { ...newCharacter().abilityBase, strength, constitution: 16 },
+  });
   const str = (ch: Character) => buildSheet(resolve(ch, reg)).abilities[0].score;
 
   it("Primal Champion adds 4 to Strength and Constitution, to 24 (2014) and 25 (2024)", () => {
-    for (const [edition, top] of [["2014", 24], ["2024", 25]] as const) {
+    for (const [edition, top] of [
+      ["2014", 24],
+      ["2024", 25],
+    ] as const) {
       const id = barbarian(edition).id;
       expect(str(at(id, 19, 18)), `${edition} at 19`).toBe(18);
       expect(str(at(id, 20, 18)), `${edition} at 20`).toBe(22);
@@ -39,10 +47,16 @@ describe("ability scores above 20", () => {
   it("an Epic Boon's +1 goes past 20, for the score chosen and no other", () => {
     const boon = reg.ofType("Feat").find((f) => /^Boon of /.test(f.name));
     expect(boon, "an Epic Boon in the free rules").toBeTruthy();
-    const base: Character = { ...at(barbarian("2024").id, 19, 20), extras: [boon!.id], abilityBase: { ...newCharacter().abilityBase, strength: 20, constitution: 20 } };
+    const base: Character = {
+      ...at(barbarian("2024").id, 19, 20),
+      extras: [boon!.id],
+      abilityBase: { ...newCharacter().abilityBase, strength: 20, constitution: 20 },
+    };
     const slot = resolve(base, reg).slots.find((s) => s.owner.id === boon!.id && s.rule.type === "Ability Score Improvement")!;
     const pick = slot.options.find((o) => /strength/i.test(o.name))!;
-    const sh = buildSheet(resolve({ ...base, selections: { [slot.key]: [pick.id] }, customStats: [{ id: "x", stat: "constitution", value: 1 }] }, reg));
+    const sh = buildSheet(
+      resolve({ ...base, selections: { [slot.key]: [pick.id] }, customStats: [{ id: "x", stat: "constitution", value: 1 }] }, reg),
+    );
     expect(sh.abilities[0].score).toBe(21);
     expect(sh.abilities[2].score).toBe(20);
   });

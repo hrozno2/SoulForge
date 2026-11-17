@@ -95,7 +95,10 @@ function findAllByName(reg: ARegistry, types: string[], name: string): AElement[
  * Of several elements for one name, the primary provider's, as the lists show them: Aurora's content where it has
  * the element, 5e.tools' otherwise (docs/ENGINE-PLAN.md 3.1, one primary by a fixed priority).
  */
-const primary = (els: AElement[]) => { const a = els.filter((e) => e.origin !== "5etools"); return a.length ? a : els; };
+const primary = (els: AElement[]) => {
+  const a = els.filter((e) => e.origin !== "5etools");
+  return a.length ? a : els;
+};
 
 /** The element of that name from the character's edition when both exist (2024 when the file does not say). */
 function findByName(reg: ARegistry, types: string[], name: string, edition?: Edition): AElement | undefined {
@@ -134,7 +137,6 @@ function raceByTraits(reg: ARegistry, candidates: AElement[], traitNames: Set<st
   return [...candidates].sort((a, b) => score(b) - score(a))[0];
 }
 
-
 /**
  * Of the versions of a class (2014, 2024, playtest), the one whose own features the file lists. The class features
  * of ID_..._CLASS_CLERIC are ID_..._CLASS_FEATURE_CLERIC_..., so their names are counted against the file's.
@@ -146,7 +148,13 @@ function classByFeatures(reg: ARegistry, name: string, featureNames: Set<string>
     let n = 0;
     for (const name of grantedNames(reg, c)) if (featureNames.has(name)) n++;
     // Tasha's Cauldron reprints the Eberron artificer with changes; the newer one wins a tie.
-    return n - (isPlaytest(c) ? 0.5 : 0) + (edition && isModern(c) === (edition === "2024") ? 0.25 : 0) - (/rising from the last war/i.test(c.source) ? 0.1 : 0) + (c.origin !== "5etools" ? 0.05 : 0);
+    return (
+      n -
+      (isPlaytest(c) ? 0.5 : 0) +
+      (edition && isModern(c) === (edition === "2024") ? 0.25 : 0) -
+      (/rising from the last war/i.test(c.source) ? 0.1 : 0) +
+      (c.origin !== "5etools" ? 0.05 : 0)
+    );
   };
   return [...all].sort((a, b) => score(b) - score(a))[0];
 }
@@ -232,12 +240,23 @@ function itemBonuses(mods: string): { stat: string; value: number }[] {
 }
 
 /** Letters only, for names written with different punctuation: "Brewers supplies" and "Brewer’s Supplies". */
-const tight = (s: string) => s.toLowerCase().replace(/\(.*?\)/g, "").replace(/[^a-z]/g, "");
+const tight = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/\(.*?\)/g, "")
+    .replace(/[^a-z]/g, "");
 
 /** One name's words all appear in the other ("dice" and "Dice set"), ignoring punctuation and brackets. */
 function sameWords(a: string, b: string): boolean {
   // Singular words, so "Playing cards" is the "Playing card set".
-  const words = (x: string) => x.toLowerCase().replace(/[’']/g, "").replace(/\(.*?\)/g, " ").split(/[^a-z]+/).filter(Boolean).map((w) => (w.length > 3 ? w.replace(/s$/, "") : w));
+  const words = (x: string) =>
+    x
+      .toLowerCase()
+      .replace(/[’']/g, "")
+      .replace(/\(.*?\)/g, " ")
+      .split(/[^a-z]+/)
+      .filter(Boolean)
+      .map((w) => (w.length > 3 ? w.replace(/s$/, "") : w));
   const [wa, wb] = [words(a), words(b)];
   if (!wa.length || !wb.length) return false;
   const [small, big] = wa.length <= wb.length ? [wa, wb] : [wb, wa];
@@ -272,7 +291,10 @@ function fuzzyItem(reg: ARegistry, name: string, edition?: Edition): AElement | 
   if (want.length < 8) return undefined;
   const pool = ITEM_TYPES.flatMap((t) => reg.ofType(t));
   const names = new Map<string, AElement[]>();
-  for (const e of pool) { const k = normalizeFull(e.name); (names.get(k) ?? names.set(k, []).get(k)!).push(e); }
+  for (const e of pool) {
+    const k = normalizeFull(e.name);
+    (names.get(k) ?? names.set(k, []).get(k)!).push(e);
+  }
   const pickOf = (k: string) => findByName(reg, ITEM_TYPES, names.get(k)![0].name, edition);
   // Cut short: the start of exactly one name.
   if (want.length >= 12) {
@@ -284,14 +306,42 @@ function fuzzyItem(reg: ARegistry, name: string, edition?: Edition): AElement | 
   let bestD = max + 1;
   for (const k of names.keys()) {
     const d = distance(want, k, max);
-    if (d < bestD) { bestD = d; best = [k]; } else if (d === bestD) best.push(k);
+    if (d < bestD) {
+      bestD = d;
+      best = [k];
+    } else if (d === bestD) best.push(k);
   }
   return bestD <= max && best.length === 1 ? pickOf(best[0]) : undefined;
 }
 
-const COUNT_WORDS: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twenty: 20 };
+const COUNT_WORDS: Record<string, number> = {
+  a: 1,
+  an: 1,
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  twenty: 20,
+};
 /** A plural noun to its singular: "potions" "potion", "javelins" "javelin", "flasks" "flask", "torches" "torch". */
-const singular = (w: string) => (/(us|ss|is)$/i.test(w) ? w : /axes$/i.test(w) ? w.slice(0, -1) : /(ch|sh|x|ss)es$/i.test(w) ? w.slice(0, -2) : /ies$/i.test(w) ? `${w.slice(0, -3)}y` : /[^s]s$/i.test(w) ? w.slice(0, -1) : w);
+const singular = (w: string) =>
+  /(us|ss|is)$/i.test(w)
+    ? w
+    : /axes$/i.test(w)
+      ? w.slice(0, -1)
+      : /(ch|sh|x|ss)es$/i.test(w)
+        ? w.slice(0, -2)
+        : /ies$/i.test(w)
+          ? `${w.slice(0, -3)}y`
+          : /[^s]s$/i.test(w)
+            ? w.slice(0, -1)
+            : w;
 
 /**
  * An item as a sheet writes it in words, to the item and how many: "2 potions of healing" is 2 Potion of Healing,
@@ -303,9 +353,15 @@ export function textItem(raw: string): { name: string; qty: number } {
   const focus = /^(?:arcane|druidic|holy) (?:focus|symbol)\s*:\s*(.+)$|^holy symbol\s*:\s*(.+)$|^ammunition\s*:\s*(.+)$/i.exec(t);
   if (focus) t = (focus[1] ?? focus[2] ?? focus[3]).trim();
   const tail = /^(.*\S)\s*\((\d+)\)$/.exec(t);
-  if (tail) { t = tail[1]; qty = Number(tail[2]); }
+  if (tail) {
+    t = tail[1];
+    qty = Number(tail[2]);
+  }
   const lead = /^(\d+|a|an|one|two|three|four|five|six|seven|eight|nine|ten|twenty)\s+(?:\((\d+)\)\s+)?(.+)$/i.exec(t);
-  if (lead) { qty = Number(lead[2] ?? (/^\d+$/.test(lead[1]) ? lead[1] : COUNT_WORDS[lead[1].toLowerCase()])) || qty; t = lead[3]; }
+  if (lead) {
+    qty = Number(lead[2] ?? (/^\d+$/.test(lead[1]) ? lead[1] : COUNT_WORDS[lead[1].toLowerCase()])) || qty;
+    t = lead[3];
+  }
   // The head noun is the last word before "of" ("potions of healing"), or the last word.
   const of = /^(.+?)(\s+of\s+.+)$/i.exec(t);
   const head = of ? of[1] : t;
@@ -321,7 +377,16 @@ class Importer {
   matched: string[] = [];
   missing: string[] = [];
   /** `early`: placed with the cantrips, before the open choices are filled (a spell a feat's text names). */
-  private wantedChoices: { types: string[]; name: string; label: string; alts?: string[]; from?: string; edition?: Edition; early?: boolean; exactId?: string }[] = [];
+  private wantedChoices: {
+    types: string[];
+    name: string;
+    label: string;
+    alts?: string[];
+    from?: string;
+    edition?: Edition;
+    early?: boolean;
+    exactId?: string;
+  }[] = [];
   /** Which rules the character was made with, when the file says. Picks the 2014 or 2024 version of a name. */
   edition?: Edition;
   /** Weapons the character carries, for weapon mastery when the file names none. */
@@ -347,7 +412,9 @@ class Importer {
   sourcedPick(source: string, kind: "skills" | "expertise" | "tools" | "languages", value: string): void {
     const key = normalize(source);
     if (!key) return;
-    const rec = this.sourced.get(key) ?? this.sourced.set(key, { skills: new Set(), expertise: new Set(), tools: new Set(), languages: new Set() }).get(key)!;
+    const rec =
+      this.sourced.get(key) ??
+      this.sourced.set(key, { skills: new Set(), expertise: new Set(), tools: new Set(), languages: new Set() }).get(key)!;
     rec[kind].add(value.toLowerCase());
   }
   /** Option names that, without their brackets, name several options of the choice being filled. */
@@ -360,7 +427,20 @@ class Importer {
   private deferring = false;
   private deferred: { types: string[]; name: string; label: string; alts?: string[]; from?: string; edition?: Edition }[] = [];
   /** What the file says the character has, used to fill open choices (skills, languages, tools, expertise, saves). */
-  hints = { skills: new Set<string>(), expertise: new Set<string>(), tools: new Set<string>(), languages: new Set<string>(), saves: new Set<string>(), names: new Set<string>(), masteries: new Set<string>(), size: "", armor: new Set<string>(), weapons: new Set<string>(), spells: new Set<string>(), resist: new Set<string>() };
+  hints = {
+    skills: new Set<string>(),
+    expertise: new Set<string>(),
+    tools: new Set<string>(),
+    languages: new Set<string>(),
+    saves: new Set<string>(),
+    names: new Set<string>(),
+    masteries: new Set<string>(),
+    size: "",
+    armor: new Set<string>(),
+    weapons: new Set<string>(),
+    spells: new Set<string>(),
+    resist: new Set<string>(),
+  };
 
   /**
    * A feature or option name the file lists. "Replicate Bag of Holding" is the Replicate Magic Item infusion with
@@ -374,7 +454,10 @@ class Importer {
     const comma = /^[^,]+,\s*(.+)$/.exec(t);
     if (comma) this.hints.names.add(normalizeFull(comma[1]));
     const rep = /^replicate\s+(?:magic item\s*)?[:(-]?\s*(.+?)\)?$/i.exec(t);
-    if (rep) { this.hints.names.add("replicate magic item"); this.hints.names.add(normalizeFull(rep[1])); }
+    if (rep) {
+      this.hints.names.add("replicate magic item");
+      this.hints.names.add(normalizeFull(rep[1]));
+    }
     const colon = /^[^:]+:\s*(.+)$/.exec(t);
     if (colon) this.hints.names.add(normalizeFull(colon[1]));
   }
@@ -390,7 +473,9 @@ class Importer {
     if (!custom) return;
     this.ch.background = custom.id;
     this.missingBackground = name.replace(/ \(background\)$/, "");
-    this.notes.push(`${name.replace(/ \(background\)$/, "")} is not in your loaded content, so the character has a Custom Background with the skills, tools and languages from the file.`);
+    this.notes.push(
+      `${name.replace(/ \(background\)$/, "")} is not in your loaded content, so the character has a Custom Background with the skills, tools and languages from the file.`,
+    );
   }
 
   /** The 2024 books drop the wizard from some spell names: "Tiny Hut" is Leomund's Tiny Hut, "Arcane Hand" Bigby's Hand. */
@@ -398,13 +483,19 @@ class Importer {
     const RENAMED: Record<string, string> = { "arcane hand": "Bigby’s Hand", "arcane sword": "Mordenkainen’s Sword" };
     const tail = normalize(name);
     if (RENAMED[tail]) return findAllByName(this.reg, ["Spell"], RENAMED[tail]);
-    return this.reg.ofType("Spell").filter((e) => { const n = normalize(e.name.replace(/^[\w-]+[’']s\s+/, "")); return n === tail && n !== normalize(e.name); });
+    return this.reg.ofType("Spell").filter((e) => {
+      const n = normalize(e.name.replace(/^[\w-]+[’']s\s+/, ""));
+      return n === tail && n !== normalize(e.name);
+    });
   }
 
   /** A language the file lists; "Any" and blanks say nothing. */
   addLanguage(n: string): void {
     for (const part of n.split(/[,;]/)) {
-      const l = part.replace(/\(.*?\)/g, "").trim().toLowerCase();
+      const l = part
+        .replace(/\(.*?\)/g, "")
+        .trim()
+        .toLowerCase();
       if (l && !/^(any|other|none|-)$/.test(l)) this.hints.languages.add(l);
     }
   }
@@ -416,19 +507,41 @@ class Importer {
   /** Spells the file marks prepared that were left to the class list (name to element), checked at the end. */
   private leftToPrepare = new Map<string, string>();
   /** `exactId`: the file names the element itself (a Soul Forge export's flags.soulforge.id); no search by name. */
-  want(types: string[], name: string, label: string, alts: string[] = [], from?: string, edition?: Edition, early?: boolean, exactId?: string): void {
+  want(
+    types: string[],
+    name: string,
+    label: string,
+    alts: string[] = [],
+    from?: string,
+    edition?: Edition,
+    early?: boolean,
+    exactId?: string,
+  ): void {
     if (name && label === "spell") this.hints.spells.add(normalize(name));
     if (name && label === "feat") this.featCount.set(normalize(name), (this.featCount.get(normalize(name)) ?? 0) + 1);
     if (name) this.wantedChoices.push({ types, name, label, alts, from, edition, early, exactId });
   }
 
-  addItem(name: string, qty: number, equipped: boolean, attuned: boolean, extra: { base?: string; magic?: number; bonuses?: { stat: string; value: number }[]; edition?: Edition } = {}): void {
+  addItem(
+    name: string,
+    qty: number,
+    equipped: boolean,
+    attuned: boolean,
+    extra: { base?: string; magic?: number; bonuses?: { stat: string; value: number }[]; edition?: Edition } = {},
+  ): void {
     const edition = extra.edition ?? this.edition;
     // How sheets write a count, a plural or a focus: "2 potions of healing", "five (5) javelins", "ammunition:
     // arrows (20)", "arcane focus: crystal", "holy symbol: amulet". The item itself, and how many.
     // Only when the spoken form names an item: "Bracers" stays Bracers, "10 Feet of String" stays for the rules below.
     const spoken = textItem(name);
-    if (spoken.name !== name && !findByName(this.reg, ITEM_TYPES, name, edition) && itemNameVariants(spoken.name).some((v) => findByName(this.reg, ITEM_TYPES, v, edition))) { name = spoken.name; if (qty <= 1) qty = spoken.qty; }
+    if (
+      spoken.name !== name &&
+      !findByName(this.reg, ITEM_TYPES, name, edition) &&
+      itemNameVariants(spoken.name).some((v) => findByName(this.reg, ITEM_TYPES, v, edition))
+    ) {
+      name = spoken.name;
+      if (qty <= 1) qty = spoken.qty;
+    }
     // "Crossbow Bolts (20)" and "Blowgun Needles (50)" are a count of the item.
     const count = /^(.*\S)\s*\((\d{1,4})\)$/.exec(name);
     if (count && qty <= 1) {
@@ -461,21 +574,41 @@ class Importer {
     if (!el) el = (this.index ??= new ItemIndex(this.reg)).find(name);
     for (const c of itemNameVariants(name, extra.base).slice(0, 4)) if (!el) el = fuzzyItem(this.reg, c, edition);
     // "Rusty Manacles", "Cracked Hourglass", "Pale Robes": plain adventuring gear with a describing word in front.
-    const words = name.replace(/^(?:a|an|set of|pair of)\s+/i, "").trim().split(/\s+/);
-    const plainWord = /^(rusty|cracked|pale|old|worn|broken|battered|tattered|dirty|torn|small|large|little|simple|plain|wooden|iron|steel|leather|silk|black|white|red|blue|green|pink|gr[ae]y|brown|golden|gold|silver|copper|travel|spare|cheap|sturdy)$/i;
-    if (!el && words.length === 2 && plainWord.test(words[0])) el = findAllByName(this.reg, ["Item"], words[1]).find((e) => !e.compendiumHidden);
+    const words = name
+      .replace(/^(?:a|an|set of|pair of)\s+/i, "")
+      .trim()
+      .split(/\s+/);
+    const plainWord =
+      /^(rusty|cracked|pale|old|worn|broken|battered|tattered|dirty|torn|small|large|little|simple|plain|wooden|iron|steel|leather|silk|black|white|red|blue|green|pink|gr[ae]y|brown|golden|gold|silver|copper|travel|spare|cheap|sturdy)$/i;
+    if (!el && words.length === 2 && plainWord.test(words[0]))
+      el = findAllByName(this.reg, ["Item"], words[1]).find((e) => !e.compendiumHidden);
     // "+1 Shield", "Rapier +1" and "Requital (+2 The Emerald Blade)" are a base item with a bonus.
     // An element that is already the magic version ("Rhythm-Maker's Drum, +2") carries its own bonus.
     const magic = el && /[+]\d/.test(el.name) ? 0 : extra.magic || Number(/[+]([1-3])\b/.exec(name)?.[1]) || 0;
-    const plain = name.replace(/[+]\d\s*/g, "").replace(/\(\s*\)/g, "").replace(/\s+/g, " ").replace(/\s*,\s*$/, "").trim();
+    const plain = name
+      .replace(/[+]\d\s*/g, "")
+      .replace(/\(\s*\)/g, "")
+      .replace(/\s+/g, " ")
+      .replace(/\s*,\s*$/, "")
+      .trim();
     const label = el && normalize(plain) !== normalize(el.name) && normalizeFull(plain) !== normalizeFull(el.name) ? plain : undefined;
     // A custom item's bonuses the file applies (Roll20 item modifiers) become custom bonuses named after it.
-    if (!el) for (const bo of extra.bonuses ?? []) this.ch.customStats.push({ id: uid(), stat: bo.stat, value: bo.value, note: `${name} (from the file)` });
-    this.ch.inventory.push({ uid: uid(), id: el?.id ?? "", qty: Math.max(1, qty), equipped, attuned, custom: el ? undefined : { name }, ...(label ? { label } : {}), ...(el && magic ? { magic } : {}) });
+    if (!el)
+      for (const bo of extra.bonuses ?? [])
+        this.ch.customStats.push({ id: uid(), stat: bo.stat, value: bo.value, note: `${name} (from the file)` });
+    this.ch.inventory.push({
+      uid: uid(),
+      id: el?.id ?? "",
+      qty: Math.max(1, qty),
+      equipped,
+      attuned,
+      custom: el ? undefined : { name },
+      ...(label ? { label } : {}),
+      ...(el && magic ? { magic } : {}),
+    });
     (el ? this.matched : this.missing).push(el ? `${el.name} (${el.type})` : `${name} (item, kept as a custom item)`);
     if (el?.type === "Weapon") this.carried.add(normalize(el.name).replace(/ /g, ""));
   }
-
 
   private score(slotName: string, optionName: string, scores: Partial<Record<AbilityId, number>>, el?: AElement): number {
     const n = optionName.toLowerCase().trim();
@@ -483,7 +616,16 @@ class Importer {
     const h = this.hints;
     // A choice whose source the file says chose something of this kind takes from those picks only: a class's
     // skill list does not take the skills a feat chose.
-    const kind: "skills" | "expertise" | "tools" | "languages" | undefined = el?.type === "Language" ? "languages" : /^tool proficiency/.test(n) ? "tools" : /^skill expertise/.test(n) ? "expertise" : /^skill proficiency/.test(n) || SKILL_NAMES.includes(n) || SKILL_NAMES.includes(inner) ? "skills" : undefined;
+    const kind: "skills" | "expertise" | "tools" | "languages" | undefined =
+      el?.type === "Language"
+        ? "languages"
+        : /^tool proficiency/.test(n)
+          ? "tools"
+          : /^skill expertise/.test(n)
+            ? "expertise"
+            : /^skill proficiency/.test(n) || SKILL_NAMES.includes(n) || SKILL_NAMES.includes(inner)
+              ? "skills"
+              : undefined;
     if (kind) {
       const recs = this.slotSources.map((x) => this.sourced.get(x)?.[kind]).filter((x): x is Set<string> => !!x && x.size > 0);
       if (recs.length) {
@@ -502,16 +644,25 @@ class Importer {
     }
     // Without the brackets only when that names one option: "Cloud's Jaunt" is "Cloud's Jaunt (Cloud Giant)", but
     // "Resilient" names all of "Resilient (Strength)" to "Resilient (Charisma)".
-    if (h.names.has(normalizeFull(optionName)) || (h.names.has(normalize(optionName)) && !this.ambiguous.has(normalize(optionName)))) return 100;
+    if (h.names.has(normalizeFull(optionName)) || (h.names.has(normalize(optionName)) && !this.ambiguous.has(normalize(optionName))))
+      return 100;
     // "Infernal Legacy" for a file that says "Tiefling, Infernal": the option without its kind word.
-    const core = normalize(optionName).replace(/\b(legacy|lineage|ancestry|heritage|descent)\b/g, " ").replace(/\s+/g, " ").trim();
+    const core = normalize(optionName)
+      .replace(/\b(legacy|lineage|ancestry|heritage|descent)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
     if (core && core !== normalize(optionName) && h.names.has(core)) return 100;
     // A one-word option the file names as part of a longer name: "Witherbloom" in "Witherbloom Initiate".
     const word = normalize(optionName);
     if (word.length >= 6 && !word.includes(" ") && [...h.names].some((x) => x.startsWith(`${word} `))) return 60;
     // Weapon mastery options read "Longsword (Sap)".
     const mastery = normalize(optionName).replace(/ /g, "");
-    if (h.masteries.size ? h.masteries.has(mastery) : /\((cleave|graze|nick|push|sap|slow|topple|vex)\)/i.test(optionName) && this.carried.has(mastery)) return 100;
+    if (
+      h.masteries.size
+        ? h.masteries.has(mastery)
+        : /\((cleave|graze|nick|push|sap|slow|topple|vex)\)/i.test(optionName) && this.carried.has(mastery)
+    )
+      return 100;
     if (h.size && n === h.size) return 100;
     if (h.languages.has(n) || [...h.languages].some((l) => tight(l) === tight(n))) return 100;
     // "Strength", "Resilient (Strength)" and "Ability Score Increase (Strength)" all name an ability.
@@ -546,13 +697,23 @@ class Importer {
    */
   private setFit(o: AElement, had: Set<string | undefined>): number {
     if (o.type !== "Training Option") return 0;
-    const slug = (x: string) => x.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const slug = (x: string) =>
+      x
+        .toLowerCase()
+        .replace(/['’]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
     const left = (kind: string, set: Set<string>) => [...set].filter((x) => !had.has(`${kind}:${slug(x)}`)).length;
-    const avail: Record<string, number> = { language: left("language", this.hints.languages), tool: left("tool", this.hints.tools), skill: left("skill", this.hints.skills) };
+    const avail: Record<string, number> = {
+      language: left("language", this.hints.languages),
+      tool: left("tool", this.hints.tools),
+      skill: left("skill", this.hints.skills),
+    };
     let sc = 0;
     for (const r of o.rules) {
       if (r.kind !== "select") continue;
-      const kind = r.type === "Language" ? "language" : /5et tool/.test(r.supports) ? "tool" : /5et skill/.test(r.supports) ? "skill" : undefined;
+      const kind =
+        r.type === "Language" ? "language" : /5et tool/.test(r.supports) ? "tool" : /5et skill/.test(r.supports) ? "skill" : undefined;
       if (!kind) continue;
       const fit = Math.min(r.number, avail[kind]);
       avail[kind] -= fit;
@@ -590,14 +751,26 @@ class Importer {
    * Mage Hand, Message and Find Familiar point to the wizard.
    */
   private spellListScore(o: AElement): number {
-    const cls = /^(?:magic initiate\s*[:(]\s*)?(artificer|bard|cleric|druid|paladin|ranger|sorcerer|warlock|wizard)\)?$/i.exec(o.name.trim())?.[1];
+    const cls = /^(?:magic initiate\s*[:(]\s*)?(artificer|bard|cleric|druid|paladin|ranger|sorcerer|warlock|wizard)\)?$/i.exec(
+      o.name.trim(),
+    )?.[1];
     if (!cls || !this.hints.spells.size) return 0;
     let n = 0;
     // Only spells the character's own classes do not have count: those are the ones a feat brought.
     const own = new Set(this.ch.classes.map((c) => (this.reg.get(c.classId)?.name ?? "").toLowerCase()));
     const offList = (sp: AElement) => !sp.supports.some((x) => own.has(x.toLowerCase()));
-    const offNames = new Set(this.reg.ofType("Spell").filter((sp) => this.hints.spells.has(normalize(sp.name))).filter((sp) => !this.reg.ofType("Spell").some((o) => normalize(o.name) === normalize(sp.name) && !offList(o))).map((sp) => normalize(sp.name)));
-    for (const name of offNames) if (this.reg.ofType("Spell").some((sp) => normalize(sp.name) === name && sp.supports.some((x) => x.toLowerCase() === cls.toLowerCase()))) n++;
+    const offNames = new Set(
+      this.reg
+        .ofType("Spell")
+        .filter((sp) => this.hints.spells.has(normalize(sp.name)))
+        .filter((sp) => !this.reg.ofType("Spell").some((o) => normalize(o.name) === normalize(sp.name) && !offList(o)))
+        .map((sp) => normalize(sp.name)),
+    );
+    for (const name of offNames)
+      if (
+        this.reg.ofType("Spell").some((sp) => normalize(sp.name) === name && sp.supports.some((x) => x.toLowerCase() === cls.toLowerCase()))
+      )
+        n++;
     // The feat may use the character's own class list (a cleric's Magic Initiate: Cleric for two more cleric
     // cantrips). Without spells from outside the class, the own list is the likelier pick, but still a guess.
     if (!n && own.has(cls.toLowerCase())) return 0.4;
@@ -647,16 +820,26 @@ class Importer {
    */
   private assignTrainings(start: Character): Character {
     const r = resolve(start, this.reg);
-    const slug = (x: string) => x.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const slug = (x: string) =>
+      x
+        .toLowerCase()
+        .replace(/['’]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
     const had = new Set(r.active.map((a) => conceptOf(a.el)).filter(Boolean) as string[]);
     const facts = [
       ...[...this.hints.skills].map((x) => `skill:${slug(x)}`),
       ...[...this.hints.expertise].map((x) => `expertise:${slug(x)}`),
       ...[...this.hints.languages].map((x) => `language:${slug(x)}`),
       ...[...this.hints.tools].map((x) => `tool:${slug(x)}`),
-    ].filter((k, i, a) => a.indexOf(k) === i && !had.has(k))
+    ]
+      .filter((k, i, a) => a.indexOf(k) === i && !had.has(k))
       // A skill the file also gives expertise in goes first: the expertise needs the proficiency.
-      .sort((a, b) => Number(this.hints.expertise.has(b.replace(/^skill:/, "").replace(/-/g, " "))) - Number(this.hints.expertise.has(a.replace(/^skill:/, "").replace(/-/g, " "))) || a.localeCompare(b));
+      .sort(
+        (a, b) =>
+          Number(this.hints.expertise.has(b.replace(/^skill:/, "").replace(/-/g, " "))) -
+            Number(this.hints.expertise.has(a.replace(/^skill:/, "").replace(/-/g, " "))) || a.localeCompare(b),
+      );
     if (!facts.length) return start;
     // One node per open place in a training choice.
     const places: { key: string; options: Map<string, string> }[] = [];
@@ -668,7 +851,10 @@ class Importer {
       const free = s.rule.number - s.chosen.length;
       if (free <= 0) continue;
       const options = new Map<string, string>();
-      for (const o of s.options) { const k = conceptOf(o); if (k && !s.blocked.has(o.id) && !s.chosen.includes(o.id) && !options.has(k)) options.set(k, o.id); }
+      for (const o of s.options) {
+        const k = conceptOf(o);
+        if (k && !s.blocked.has(o.id) && !s.chosen.includes(o.id) && !options.has(k)) options.set(k, o.id);
+      }
       for (let i = 0; i < free; i++) places.push({ key: s.key, options });
     }
     const placeOf = new Map<string, number>(); // fact -> place
@@ -678,7 +864,11 @@ class Importer {
         if (!places[p].options.has(f) || seen.has(p)) continue;
         seen.add(p);
         const other = factAt.get(p);
-        if (other === undefined || tryFact(other, seen)) { factAt.set(p, f); placeOf.set(f, p); return true; }
+        if (other === undefined || tryFact(other, seen)) {
+          factAt.set(p, f);
+          placeOf.set(f, p);
+          return true;
+        }
       }
       return false;
     };
@@ -698,13 +888,26 @@ class Importer {
     let cur = this.assignTrainings(start);
     // When the file says nothing, an option from the same books as the character beats one from elsewhere
     // (a 2024 fighter's weapon mastery is a longsword, not a firearm from the Dungeon Master's Guide).
-    const own = new Set([...start.classes.map((c) => c.classId), start.race ?? "", start.background ?? ""].map((id) => this.reg.get(id)?.source).filter(Boolean) as string[]);
+    const own = new Set(
+      [...start.classes.map((c) => c.classId), start.race ?? "", start.background ?? ""]
+        .map((id) => this.reg.get(id)?.source)
+        .filter(Boolean) as string[],
+    );
     const skip = new Set<string>();
     for (let i = 0; i < 600; i++) {
       const r = resolve(cur, this.reg);
       // The narrowest choice first: a class's skill list before a background that takes any skill, so the file's
       // skills land where only they fit.
-      const open = r.slots.filter((s) => !skip.has(s.key) && !(skipSpells && s.rule.type === "Spell") && !s.rule.optional && !s.defaulted && s.chosen.length < s.rule.number && s.options.length)
+      const open = r.slots
+        .filter(
+          (s) =>
+            !skip.has(s.key) &&
+            !(skipSpells && s.rule.type === "Spell") &&
+            !s.rule.optional &&
+            !s.defaulted &&
+            s.chosen.length < s.rule.number &&
+            s.options.length,
+        )
         .sort((a, b) => a.options.length - b.options.length)[0];
       if (!open) break;
       const taken = new Set(open.chosen);
@@ -722,14 +925,30 @@ class Importer {
       // Only when picking a feat: a feat's own choice whose options are stored as feats ("Resilient (Constitution)")
       // is settled by the file's other data.
       const featPick = open.owner.type !== "Feat";
-      const spent = (o: AElement) => featPick && o.type === "Feat" && !/^ability score improvement/i.test(o.name) && (this.featCount.size > 0 || this.asiTaken > 0) && (this.featCount.has(normalize(o.name)) ? (feats.get(normalize(o.name)) ?? 0) >= this.featCount.get(normalize(o.name))! : !this.hints.names.has(normalizeFull(o.name)) && !this.hints.names.has(normalize(o.name)));
+      const spent = (o: AElement) =>
+        featPick &&
+        o.type === "Feat" &&
+        !/^ability score improvement/i.test(o.name) &&
+        (this.featCount.size > 0 || this.asiTaken > 0) &&
+        (this.featCount.has(normalize(o.name))
+          ? (feats.get(normalize(o.name)) ?? 0) >= this.featCount.get(normalize(o.name))!
+          : !this.hints.names.has(normalizeFull(o.name)) && !this.hints.names.has(normalize(o.name)));
       // The sources of this choice: the element offering it and the class, species or background it belongs to.
-      const rootName = open.root.startsWith("class:") ? this.reg.get(open.root.slice(6))?.name : open.root === "race" ? this.reg.get(cur.race ?? "")?.name : open.root === "background" ? this.reg.get(cur.background ?? "")?.name : undefined;
+      const rootName = open.root.startsWith("class:")
+        ? this.reg.get(open.root.slice(6))?.name
+        : open.root === "race"
+          ? this.reg.get(cur.race ?? "")?.name
+          : open.root === "background"
+            ? this.reg.get(cur.background ?? "")?.name
+            : undefined;
       // Every source above the choice: the feature offering it, the subclass or feat it belongs to, the class.
       const chain: string[] = [];
       const fromOf = new Map(r.active.map((a) => [a.el.id, a.from]));
-      for (let id: string | undefined = open.owner.id, i = 0; id && i < 6; id = fromOf.get(id), i++) chain.push(this.reg.get(id)?.name ?? "");
-      this.slotSources = [...chain, rootName ?? "", open.root === "background" ? this.missingBackground : ""].map((x) => normalize(x.replace(/^level \d+: /i, ""))).filter(Boolean);
+      for (let id: string | undefined = open.owner.id, i = 0; id && i < 6; id = fromOf.get(id), i++)
+        chain.push(this.reg.get(id)?.name ?? "");
+      this.slotSources = [...chain, rootName ?? "", open.root === "background" ? this.missingBackground : ""]
+        .map((x) => normalize(x.replace(/^level \d+: /i, "")))
+        .filter(Boolean);
       const counts = new Map<string, number>();
       for (const o of open.options) counts.set(normalize(o.name), (counts.get(normalize(o.name)) ?? 0) + 1);
       this.ambiguous = new Set([...counts].filter(([, n]) => n > 1).map(([k]) => k));
@@ -742,16 +961,32 @@ class Importer {
       // Divine Soul's affinity, a Circle of the Land's terrain) still is.
       // The class list inside a feat already taken (the 2024 Magic Initiate's "Wizard", a feat-type option) is scored.
       const LIST = /^(artificer|bard|cleric|druid|paladin|ranger|sorcerer|warlock|wizard)$/i;
-      const named = (o: AElement) => o.type !== "Feat" || LIST.test(o.name.trim()) || this.featCount.has(normalize(o.name)) || this.hints.names.has(normalizeFull(o.name));
+      const named = (o: AElement) =>
+        o.type !== "Feat" ||
+        LIST.test(o.name.trim()) ||
+        this.featCount.has(normalize(o.name)) ||
+        this.hints.names.has(normalizeFull(o.name));
       const spellScore = (o: AElement) => (named(o) ? this.spellListScore(o) + this.grantedSpellScore(o) : 0);
       const candidates = open.options
         .filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !had(o) && !spent(o))
-        .map((o) => ({ o, sc: this.score(`${open.key} ${open.rule.name}`, o.name, scores, o) + this.trainingScore(o) + this.setFit(o, hadConcepts) + spellScore(o) + this.resistScore(o, r.ids) + (own.has(o.source) ? 0.5 : 0) }))
+        .map((o) => ({
+          o,
+          sc:
+            this.score(`${open.key} ${open.rule.name}`, o.name, scores, o) +
+            this.trainingScore(o) +
+            this.setFit(o, hadConcepts) +
+            spellScore(o) +
+            this.resistScore(o, r.ids) +
+            (own.has(o.source) ? 0.5 : 0),
+        }))
         .sort((a, b) => b.sc - a.sc);
       const best = candidates[0] ?? { o: open.options.find((o) => !taken.has(o.id)), sc: 0 };
       if (!best.o) break;
       // The one guess allowed: a level's improvement with nothing to go on stays the score improvement, never another feat.
-      if (best.sc <= 0.5 && !(/^\s*ability score/i.test(open.rule.name) && (best.o.type !== "Feat" || /^ability score improvement/i.test(best.o.name)))) {
+      if (
+        best.sc <= 0.5 &&
+        !(/^\s*ability score/i.test(open.rule.name) && (best.o.type !== "Feat" || /^ability score improvement/i.test(best.o.name)))
+      ) {
         skip.add(open.key);
         continue;
       }
@@ -784,21 +1019,29 @@ class Importer {
       const bare = tight(at.name.replace(/^\+\d\s*(magic\s*)?/i, ""));
       const named = (x: { name: string }) => tight(x.name.replace(/^\+\d\s*/, ""));
       const magic = /^\+\d/.test(at.name);
-      const ours = sh.attacksCarried.find((x) => named(x).startsWith(bare) && (x.magic ?? 0) > 0 === magic) ?? sh.attacksCarried.find((x) => named(x) === bare) ?? sh.attacksCarried.find((x) => tight(x.name).includes(bare));
+      const ours =
+        sh.attacksCarried.find((x) => named(x).startsWith(bare) && (x.magic ?? 0) > 0 === magic) ??
+        sh.attacksCarried.find((x) => named(x) === bare) ??
+        sh.attacksCarried.find((x) => tight(x.name).includes(bare));
       if (ours) diff(`${at.name} attack`, at.bonus, ours.bonus);
       else out.push(`${at.name} attack: in the file, not on the Soul Forge sheet`);
     }
     const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
     const LV = ["no proficiency", "proficiency", "expertise"];
-    if (f.skillLevels) for (const k of sh.skills) {
-      const file = Math.min(2, Math.floor(f.skillLevels[k.name.toLowerCase()] ?? 0));
-      const ours = k.level === "expertise" ? 2 : k.level === "proficient" ? 1 : 0;
-      if (file !== ours) out.push(`${cap(k.name)}: the file has ${LV[file]}, Soul Forge has ${LV[ours]}`);
-    }
-    if (f.saveProficient) for (const a of sh.abilities) {
-      const file = f.saveProficient.includes(a.id);
-      if (file !== a.saveProficient) out.push(`${cap(a.id)} saving throw: the file ${file ? "is" : "is not"} proficient, Soul Forge ${a.saveProficient ? "is" : "is not"}`);
-    }
+    if (f.skillLevels)
+      for (const k of sh.skills) {
+        const file = Math.min(2, Math.floor(f.skillLevels[k.name.toLowerCase()] ?? 0));
+        const ours = k.level === "expertise" ? 2 : k.level === "proficient" ? 1 : 0;
+        if (file !== ours) out.push(`${cap(k.name)}: the file has ${LV[file]}, Soul Forge has ${LV[ours]}`);
+      }
+    if (f.saveProficient)
+      for (const a of sh.abilities) {
+        const file = f.saveProficient.includes(a.id);
+        if (file !== a.saveProficient)
+          out.push(
+            `${cap(a.id)} saving throw: the file ${file ? "is" : "is not"} proficient, Soul Forge ${a.saveProficient ? "is" : "is not"}`,
+          );
+      }
     const has = (list: string[], x: string) => list.some((y) => tight(y) === tight(x) || sameWords(y, x));
     if (f.languages) {
       const ours = sh.proficiencies.languages;
@@ -822,18 +1065,27 @@ class Importer {
     for (const c of ch.classes) for (let i = 0; i < c.level; i++) dice.push(hitDieOf(this.reg.get(c.classId)));
     if (dice.length < 2) return ch;
     const rolls: Record<string, number> = {};
-    for (let n = 2; n <= dice.length; n++) rolls[String(n)] = ch.hpMode === "roll" && ch.hpRolls[String(n)] ? ch.hpRolls[String(n)] : Math.floor(dice[n - 1] / 2) + 1;
+    for (let n = 2; n <= dice.length; n++)
+      rolls[String(n)] = ch.hpMode === "roll" && ch.hpRolls[String(n)] ? ch.hpRolls[String(n)] : Math.floor(dice[n - 1] / 2) + 1;
     // Spread the difference one point at a time across the levels, as evenly as the dice allow.
     for (let guard = 0; delta !== 0 && guard < 400; guard++) {
       let moved = false;
       for (let n = 2; n <= dice.length && delta !== 0; n++) {
         const k = String(n);
-        if (delta > 0 && rolls[k] < dice[n - 1]) { rolls[k]++; delta--; moved = true; }
-        else if (delta < 0 && rolls[k] > 1) { rolls[k]--; delta++; moved = true; }
+        if (delta > 0 && rolls[k] < dice[n - 1]) {
+          rolls[k]++;
+          delta--;
+          moved = true;
+        } else if (delta < 0 && rolls[k] > 1) {
+          rolls[k]--;
+          delta++;
+          moved = true;
+        }
       }
       if (!moved) break;
     }
-    if (delta !== 0) this.notes.push(`Hit points: the file's maximum of ${target} is outside what the hit dice allow, so it is ${target - delta}.`);
+    if (delta !== 0)
+      this.notes.push(`Hit points: the file's maximum of ${target} is outside what the hit dice allow, so it is ${target - delta}.`);
     return { ...ch, hpMode: "roll", hpRolls: rolls };
   }
 
@@ -847,7 +1099,8 @@ class Importer {
       const drop = s.chosen.filter((id) => repeats.some((t) => t.includes(`: ${this.reg.get(id)?.name} (`)));
       if (!drop.length) continue;
       out = { ...out, selections: { ...out.selections, [s.key]: s.chosen.filter((id) => !drop.includes(id)) } };
-      for (const id of drop) this.notes.push(`${this.reg.get(id)?.name} was in ${s.rule.name} and also comes from elsewhere; that choice is left for you.`);
+      for (const id of drop)
+        this.notes.push(`${this.reg.get(id)?.name} was in ${s.rule.name} and also comes from elsewhere; that choice is left for you.`);
     }
     return out;
   }
@@ -862,24 +1115,35 @@ class Importer {
     // Foundry's 2024 species read "Elf, Wood": the Elf with the Wood Elf lineage.
     const flipped = /^([^,;()]+),\s*([^,;()]+)$/.exec(raw.trim());
     if (flipped) raw = `${flipped[1].trim()}; ${flipped[2].trim()} ${flipped[1].trim()}`;
-    const parts = raw.split(/;(?![^(]*\))/).map((x) => x.trim()).filter(Boolean);
+    const parts = raw
+      .split(/;(?![^(]*\))/)
+      .map((x) => x.trim())
+      .filter(Boolean);
     if (!parts.length) return false;
     const main = parts[0];
     const m = /^(.*?)\s*\((.*)\)\s*$/.exec(main);
     const base = (m?.[1] ?? main).trim();
-    const inner = (m?.[2] ?? "").split(";").map((x) => x.trim()).filter(Boolean);
+    const inner = (m?.[2] ?? "")
+      .split(";")
+      .map((x) => x.trim())
+      .filter(Boolean);
     const extras = [...inner, ...parts.slice(1)].map((x) => x.replace(/\b(lineage|legacy|descent|variant)\b/gi, "").trim()).filter(Boolean);
     const RACE = ["Race"];
     const SUB = ["Sub Race", "Race Variant"];
-    const pick = (n: string) => (this.speciesTraits.size ? raceByTraits(this.reg, findAllByName(this.reg, RACE, n), this.speciesTraits, this.edition) : findByName(this.reg, RACE, n, this.edition));
+    const pick = (n: string) =>
+      this.speciesTraits.size
+        ? raceByTraits(this.reg, findAllByName(this.reg, RACE, n), this.speciesTraits, this.edition)
+        : findByName(this.reg, RACE, n, this.edition);
     let race = pick(main) ?? (inner.length ? pick(`${inner[0]} ${base}`) : undefined);
     let rest = race && race.name.toLowerCase() !== base.toLowerCase() ? [] : extras;
     if (!race) race = pick(base);
     if (!race) {
       // "Hill Dwarf" is the Hill Dwarf subrace of the Dwarf.
       const sub = findByName(this.reg, SUB, main, this.edition);
-      const parent = sub && this.reg.ofType("Race").filter((r) => new RegExp(`\\b${r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(sub.name));
-      const pick = parent?.length ? parent.find((r) => isModern(r) === isModern(sub!)) ?? parent[0] : undefined;
+      const parent =
+        sub &&
+        this.reg.ofType("Race").filter((r) => new RegExp(`\\b${r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(sub.name));
+      const pick = parent?.length ? (parent.find((r) => isModern(r) === isModern(sub!)) ?? parent[0]) : undefined;
       if (sub && pick) {
         race = pick;
         rest = [sub.name];
@@ -888,12 +1152,16 @@ class Importer {
     if (!race) return false;
     this.ch.race = race.id;
     this.matched.push(`${race.name} (species)`);
-    for (const x of rest) this.want([...SUB, "Racial Trait"], `${x} ${base}`, "subrace or lineage", [x, `${base} (${x})`, `${x} ${race.name}`]);
+    for (const x of rest)
+      this.want([...SUB, "Racial Trait"], `${x} ${base}`, "subrace or lineage", [x, `${base} (${x})`, `${x} ${race.name}`]);
     return true;
   }
 
   /** Puts one wanted thing into a choice that can hold it. Spells and feats nothing can hold are added by hand. */
-  private place(ch: Character, w: { types: string[]; name: string; label: string; alts?: string[]; from?: string; edition?: Edition; exactId?: string }): Character {
+  private place(
+    ch: Character,
+    w: { types: string[]; name: string; label: string; alts?: string[]; from?: string; edition?: Edition; exactId?: string },
+  ): Character {
     // "Magic Initiate: Warlock" is the Magic Initiate feat with Warlock chosen inside it.
     const base = w.name.split(/[:(]/)[0].trim();
     const inner = w.name.slice(base.length).replace(/[:()]/g, " ").trim();
@@ -920,8 +1188,19 @@ class Importer {
         const FEATURES = ["Class Feature", "Archetype Feature", "Racial Trait", "Race", "Sub Race"];
         // Or a part a feature of the character describes: Font of Magic tells of Sorcery Points and Flexible Casting.
         const said = clean.toLowerCase();
-        const described = () => resolve(ch, this.reg).active.some((a) => /feature|archetype|trait/i.test(a.el.type) && a.el.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").toLowerCase().includes(said));
-        const known = key.length >= 4 && (FEATURES.some((t) => this.reg.ofType(t).some((e) => featureKey(e.name) === key)) || (said.length >= 8 && described()));
+        const described = () =>
+          resolve(ch, this.reg).active.some(
+            (a) =>
+              /feature|archetype|trait/i.test(a.el.type) &&
+              a.el.description
+                .replace(/<[^>]+>/g, " ")
+                .replace(/\s+/g, " ")
+                .toLowerCase()
+                .includes(said),
+          );
+        const known =
+          key.length >= 4 &&
+          (FEATURES.some((t) => this.reg.ofType(t).some((e) => featureKey(e.name) === key)) || (said.length >= 8 && described()));
         if (known) {
           this.addName(clean);
           this.matched.push(`${w.name} (comes with the class or species)`);
@@ -936,7 +1215,13 @@ class Importer {
     if (inner) this.hints.names.add(normalizeFull(inner));
     const r = resolve(ch, this.reg);
     // A spell the character already has under this name (a domain spell in the other edition) is not taken twice.
-    if (all[0].type === "Spell" && [...r.ids].some((id) => { const e = this.reg.get(id); return e?.type === "Spell" && normalize(e.name) === normalize(all[0].name); })) {
+    if (
+      all[0].type === "Spell" &&
+      [...r.ids].some((id) => {
+        const e = this.reg.get(id);
+        return e?.type === "Spell" && normalize(e.name) === normalize(all[0].name);
+      })
+    ) {
       this.matched.push(`${all[0].name} (already granted)`);
       return ch;
     }
@@ -947,10 +1232,22 @@ class Importer {
     // ("Abyssal" is the Abyssal Legacy, "Red Dragon" the Red ancestry, "Fire Giant" the Fire's Burn (Fire Giant)).
     if (!fits.length && /subrace|lineage|subclass/.test(w.label)) {
       const GENERIC = new Set(["legacy", "ancestry", "lineage", "heritage", "dragon", "giant", "the", "of"]);
-      const words = (t: string) => new Set(normalizeFull(t).split(" ").filter((x) => x && !GENERIC.has(x)));
+      const words = (t: string) =>
+        new Set(
+          normalizeFull(t)
+            .split(" ")
+            .filter((x) => x && !GENERIC.has(x)),
+        );
       const want = words(w.alts?.[0] ?? w.name);
       const open = r.slots.filter((s) => s.chosen.length < s.rule.number && w.types.includes(s.rule.type));
-      const near = open.flatMap((s) => s.options.filter((o) => { const ow = words(o.name.replace(/^.*?\((.+)\)$/, "$1")); return ow.size > 0 && [...ow].every((x) => want.has(x)) && [...want].every((x) => ow.has(x) || [...ow].some((y) => y.startsWith(x))); }));
+      const near = open.flatMap((s) =>
+        s.options.filter((o) => {
+          const ow = words(o.name.replace(/^.*?\((.+)\)$/, "$1"));
+          return (
+            ow.size > 0 && [...ow].every((x) => want.has(x)) && [...want].every((x) => ow.has(x) || [...ow].some((y) => y.startsWith(x)))
+          );
+        }),
+      );
       if (near.length === 1) fits = near;
     }
     const pool = fits.length ? fits : all;
@@ -961,7 +1258,8 @@ class Importer {
     const rank = (e: AElement) => {
       const inner = (/\((.*)\)\s*$/.exec(e.name)?.[1] ?? "").toLowerCase();
       const ab = ABILITY_IDS.find((a) => a === inner);
-      if (ab && /resilient/i.test(e.name)) return this.hints.saves.has(ab) && !r.ids.has(`ID_PROFICIENCY_SAVINGTHROW_${ab.toUpperCase()}`) ? 100 : 0;
+      if (ab && /resilient/i.test(e.name))
+        return this.hints.saves.has(ab) && !r.ids.has(`ID_PROFICIENCY_SAVINGTHROW_${ab.toUpperCase()}`) ? 100 : 0;
       return this.score(w.label, e.name, this.scores);
     };
     const el = list.length > 1 ? [...list].sort((x, y) => rank(y) - rank(x))[0] : list[0];
@@ -972,7 +1270,9 @@ class Importer {
     // A feat the background or species already gives (the 2024 Sage's Magic Initiate) is the one the file lists.
     if (el.type === "Feat") {
       // The Sage grants Magic Initiate (Wizard) as the feat's own part, ID_..._FEAT_MAGIC_INITIATE_WIZARD.
-      const asPart = r.active.some((a) => a.el.type !== "Feat" && a.el.id.startsWith(`${el.id}_`)) && !r.active.some((a) => a.el.type === "Feat" && normalize(a.el.name) === normalize(el.name));
+      const asPart =
+        r.active.some((a) => a.el.type !== "Feat" && a.el.id.startsWith(`${el.id}_`)) &&
+        !r.active.some((a) => a.el.type === "Feat" && normalize(a.el.name) === normalize(el.name));
       const have = r.active.filter((a) => a.el.type === "Feat" && normalize(a.el.name) === normalize(el.name)).length + (asPart ? 1 : 0);
       if (have >= (this.featCount.get(normalize(w.name)) ?? 1)) {
         this.matched.push(`${el.name} (already granted)`);
@@ -991,15 +1291,28 @@ class Importer {
       const e = s.rule.spellcasting ? r.spellcasting.get(s.rule.spellcasting.toLowerCase()) : undefined;
       // The class's own choices only: a subclass's (the Evoker's Evocation Savant, now under the Wizard's casting) adds
       // to the spellbook, whatever the file marks prepared.
-      return prepares(e) && s.owner.type === "Class" && !/spellbook/i.test(s.rule.name) && s.rule.type === "Spell" && Number(el.setters.level?.value ?? 0) > 0;
+      return (
+        prepares(e) &&
+        s.owner.type === "Class" &&
+        !/spellbook/i.test(s.rule.name) &&
+        s.rule.type === "Spell" &&
+        Number(el.setters.level?.value ?? 0) > 0
+      );
     };
     const filePrepared = this.prepared.has(normalize(el.name)) || !this.preparedKnown;
-    const fits2 = r.slots.filter((s) => s.chosen.length < s.rule.number && s.options.some((o) => o.id === el.id) && (filePrepared || !isPrepareChoice(s)));
+    const fits2 = r.slots.filter(
+      (s) => s.chosen.length < s.rule.number && s.options.some((o) => o.id === el.id) && (filePrepared || !isPrepareChoice(s)),
+    );
     // A wizard's spellbook holds more than the level-up picks (copied spells): those are kept, as additions.
-    const spellbookOf = (e: { name: string }) => r.slots.some((s) => /spellbook/i.test(s.rule.name) && (s.rule.spellcasting ?? "").toLowerCase() === e.name.toLowerCase());
+    const spellbookOf = (e: { name: string }) =>
+      r.slots.some((s) => /spellbook/i.test(s.rule.name) && (s.rule.spellcasting ?? "").toLowerCase() === e.name.toLowerCase());
     // On the list by name: another book's copy of the spell (Princes of the Apocalypse's Catapult) may lack the tag.
     const copies = el.type === "Spell" ? findAllByName(this.reg, ["Spell"], el.name) : [];
-    const onListBy = (tagged: AElement[], strict = false) => el.type === "Spell" && [...r.spellcasting.values()].some((e) => (strict ? !!e.prepare : prepares(e)) && !spellbookOf(e) && e.lists.some((l) => tagged.some((c) => c.supports.includes(l))));
+    const onListBy = (tagged: AElement[], strict = false) =>
+      el.type === "Spell" &&
+      [...r.spellcasting.values()].some(
+        (e) => (strict ? !!e.prepare : prepares(e)) && !spellbookOf(e) && e.lists.some((l) => tagged.some((c) => c.supports.includes(l))),
+      );
     const onClassList = onListBy([el]);
     // Left to the prepared list only where the sheet keeps one (the class's spellcasting prepares, as the sheet reads
     // it): elsewhere a prepared spell the file lists is kept by hand, as before.
@@ -1018,11 +1331,28 @@ class Importer {
     }
     // The part of the character the named source belongs to ("Elven Lineage" is a species trait): a choice there is the
     // source's own even when its name differs (the High Elf's "Wizard Cantrip" for the Elven Lineage's cantrip).
-    const fromRoot = from ? r.active.find((a) => normalize(a.el.sheet?.alt ?? a.el.name) === from || normalize(a.el.name) === from)?.root : undefined;
-    const origin = (s: (typeof fits2)[number]) => (from && (normalize(s.owner.name).includes(from) || normalize(s.owner.id.replace(/_/g, " ")).includes(from) || normalize(s.rule.name).includes(from)) ? 0 : fromRoot && s.root === fromRoot ? 0.5 : 1);
+    const fromRoot = from
+      ? r.active.find((a) => normalize(a.el.sheet?.alt ?? a.el.name) === from || normalize(a.el.name) === from)?.root
+      : undefined;
+    const origin = (s: (typeof fits2)[number]) =>
+      from &&
+      (normalize(s.owner.name).includes(from) ||
+        normalize(s.owner.id.replace(/_/g, " ")).includes(from) ||
+        normalize(s.rule.name).includes(from))
+        ? 0
+        : fromRoot && s.root === fromRoot
+          ? 0.5
+          : 1;
     // A spell the file says came from a feat whose choice is not open yet (the Magic Initiate list is picked later)
     // waits for it rather than filling the class's own spells.
-    if (this.deferring && from && el.type === "Spell" && !fits2.some((s) => origin(s) === 0) && !/^(class|race|species|background)\b/.test(from) && !this.reg.ofType("Class").some((c) => normalize(c.name) === from)) {
+    if (
+      this.deferring &&
+      from &&
+      el.type === "Spell" &&
+      !fits2.some((s) => origin(s) === 0) &&
+      !/^(class|race|species|background)\b/.test(from) &&
+      !this.reg.ofType("Class").some((c) => normalize(c.name) === from)
+    ) {
       this.deferred.push(w);
       return ch;
     }
@@ -1036,13 +1366,23 @@ class Importer {
     // equal width (one spell list per class, spellChoicePools) no longer guide the first placement, so this keeps an
     // early pick from taking the only choice a later one fits.
     if (!this.deferring) {
-      const takes = (s: (typeof r.slots)[number], id: string) => s.options.some((o) => o.id === id) && !s.blocked.has(id) && (filePrepared || !isPrepareChoice(s));
+      const takes = (s: (typeof r.slots)[number], id: string) =>
+        s.options.some((o) => o.id === id) && !s.blocked.has(id) && (filePrepared || !isPrepareChoice(s));
       for (const full of r.slots.filter((s) => s.chosen.length >= s.rule.number && !s.defaulted && takes(s, el.id))) {
         for (const moved of full.chosen) {
-          const to = r.slots.find((t) => t !== full && t.chosen.length < t.rule.number && !t.defaulted && t.options.some((o) => o.id === moved));
+          const to = r.slots.find(
+            (t) => t !== full && t.chosen.length < t.rule.number && !t.defaulted && t.options.some((o) => o.id === moved),
+          );
           if (!to) continue;
           this.matched.push(`${el.name} (${w.label})`);
-          return { ...ch, selections: { ...ch.selections, [full.key]: [...full.chosen.filter((x) => x !== moved), el.id], [to.key]: [...to.chosen, moved] } };
+          return {
+            ...ch,
+            selections: {
+              ...ch.selections,
+              [full.key]: [...full.chosen.filter((x) => x !== moved), el.id],
+              [to.key]: [...to.chosen, moved],
+            },
+          };
         }
       }
     }
@@ -1059,22 +1399,29 @@ class Importer {
     this.hints.names.add(normalizeFull(el.name));
     if (w.label === "subclass") {
       const lv = ch.classes.map((c) => `${this.reg.get(c.classId)?.name ?? "?"} ${c.level}`).join(", ");
-      this.notes.push(`${w.name}: the file gives this subclass, but the class does not offer it at this level (${lv}), so it was left out. Add it on the Build tab when the class reaches the subclass level.`);
+      this.notes.push(
+        `${w.name}: the file gives this subclass, but the class does not offer it at this level (${lv}), so it was left out. Add it on the Build tab when the class reaches the subclass level.`,
+      );
     }
     return ch;
   }
 
   /** Fill choices (subclass, feats, spells) with everything wanted, then derive base scores. */
-  finish(importedScores: Partial<Record<AbilityId, number>>, opts: { scoresIncludeItems?: boolean; hpMax?: number; numbers?: FileNumbers } = {}): ForeignImport {
+  finish(
+    importedScores: Partial<Record<AbilityId, number>>,
+    opts: { scoresIncludeItems?: boolean; hpMax?: number; numbers?: FileNumbers } = {},
+  ): ForeignImport {
     this.scores = importedScores;
     let ch = this.ch;
     // Subclasses and lineages first, so the spell lists and granted spells they bring exist; then feats; then the
     // remaining non-spell choices; spells last, so spells a species or subclass already grants are not picked twice.
     // Cantrips come before the other choices too: invocations such as Agonizing Blast need Eldritch Blast.
-    const cantrip = (w: { label: string; name: string }) => w.label === "spell" && findAllByName(this.reg, ["Spell"], w.name).some((e) => Number(e.setters.level?.value) === 0);
+    const cantrip = (w: { label: string; name: string }) =>
+      w.label === "spell" && findAllByName(this.reg, ["Spell"], w.name).some((e) => Number(e.setters.level?.value) === 0);
     // A spell a feat gives (Magic Initiate's) goes in with the cantrips too, before the open choices are filled, so
     // they see it is had and do not take another feat for it.
-    const order = (w: { label: string; name: string; early?: boolean }) => (w.label === "subclass" ? 0 : /subrace|lineage/.test(w.label) ? 1 : w.label === "feat" ? 2 : cantrip(w) || w.early ? 3 : 4);
+    const order = (w: { label: string; name: string; early?: boolean }) =>
+      w.label === "subclass" ? 0 : /subrace|lineage/.test(w.label) ? 1 : w.label === "feat" ? 2 : cantrip(w) || w.early ? 3 : 4;
     // Within a step, what the file says came from somewhere first: it claims its own choice before a spell with no
     // origin takes that choice as merely the narrowest one.
     const wanted = [...this.wantedChoices].sort((x, y) => order(x) - order(y) || Number(!x.from) - Number(!y.from));
@@ -1111,14 +1458,21 @@ class Importer {
     const generic = ch.inventory.map((it) => (!it.id && it.custom ? { name: it.custom.name } : undefined));
     if (generic.some(Boolean)) {
       const ids = resolve(ch, this.reg).ids;
-      const done = resolveChosenTools(generic.map((g) => ({ name: g?.name ?? "", el: undefined, qty: 1 })), ids, this.reg);
-      ch = { ...ch, inventory: ch.inventory.map((it, i) => {
-        const el = generic[i] && done[i]?.el;
-        if (!el) return it;
-        this.missing = this.missing.filter((m) => m !== `${it.custom!.name} (item, kept as a custom item)`);
-        this.matched.push(`${el.name} (${it.custom!.name})`);
-        return { ...it, id: el.id, custom: undefined };
-      }) };
+      const done = resolveChosenTools(
+        generic.map((g) => ({ name: g?.name ?? "", el: undefined, qty: 1 })),
+        ids,
+        this.reg,
+      );
+      ch = {
+        ...ch,
+        inventory: ch.inventory.map((it, i) => {
+          const el = generic[i] && done[i]?.el;
+          if (!el) return it;
+          this.missing = this.missing.filter((m) => m !== `${it.custom!.name} (item, kept as a custom item)`);
+          this.matched.push(`${el.name} (${it.custom!.name})`);
+          return { ...it, id: el.id, custom: undefined };
+        }),
+      };
     }
     // Hit points: the file's maximum wins. The difference from the average goes into the rolls of levels 2 and up.
     if (opts.hpMax) ch = this.matchHitPoints(ch, opts.hpMax);
@@ -1129,18 +1483,36 @@ class Importer {
       for (const line of buildSheet(rr).casting) {
         if (!line.prepare) continue;
         // Spells the class or subclass always has prepared (domain spells) are not counted against the limit.
-        const always = new Set([...line.granted.map((g) => normalize(rr.reg.get(g.id)?.name ?? "")), ...line.spells.filter((p) => p.granted).map((p) => normalize(rr.reg.get(p.id)?.name ?? ""))]);
+        const always = new Set([
+          ...line.granted.map((g) => normalize(rr.reg.get(g.id)?.name ?? "")),
+          ...line.spells.filter((p) => p.granted).map((p) => normalize(rr.reg.get(p.id)?.name ?? "")),
+        ]);
         // Spells held in a choice (a Mystic Arcanum, a ritual from the Book of Ancient Secrets) are had anyway and do
         // not count against the prepared limit.
-        const inChoice = new Set(rr.slots.filter((x) => x.rule.type === "Spell").flatMap((x) => x.chosen).map((id) => normalize(rr.reg.get(id)?.name ?? "")));
-        const ids = preparePool(rr, line).filter((e) => this.prepared.has(normalize(e.name)) && !always.has(normalize(e.name)) && !inChoice.has(normalize(e.name))).map((e) => e.id);
+        const inChoice = new Set(
+          rr.slots
+            .filter((x) => x.rule.type === "Spell")
+            .flatMap((x) => x.chosen)
+            .map((id) => normalize(rr.reg.get(id)?.name ?? "")),
+        );
+        const ids = preparePool(rr, line)
+          .filter((e) => this.prepared.has(normalize(e.name)) && !always.has(normalize(e.name)) && !inChoice.has(normalize(e.name)))
+          .map((e) => e.id);
         const max = line.prepareMax > 0 ? line.prepareMax : ids.length;
         // More than the rules allow: the first ones are prepared and the rest kept as added by hand, so nothing the
         // file lists is lost (the player can sort it out; the rules check names it).
-        if (ids.length > max) this.notes.push(`${line.name}: the file prepares ${ids.length} spells; the rules allow ${max}, so the first ${max} are prepared and the rest added by hand.`);
+        if (ids.length > max)
+          this.notes.push(
+            `${line.name}: the file prepares ${ids.length} spells; the rules allow ${max}, so the first ${max} are prepared and the rest added by hand.`,
+          );
         // One per spell name: two books' copies of a spell are one prepared spell.
         const seenName = new Set<string>();
-        const uniq = [...new Set(ids)].filter((id) => { const n = normalize(rr.reg.get(id)?.name ?? id); if (seenName.has(n)) return false; seenName.add(n); return true; });
+        const uniq = [...new Set(ids)].filter((id) => {
+          const n = normalize(rr.reg.get(id)?.name ?? id);
+          if (seenName.has(n)) return false;
+          seenName.add(n);
+          return true;
+        });
         if (uniq.length) prepared[line.name] = uniq.slice(0, max);
         const over = uniq.slice(max).filter((id) => !ch.extras.includes(id));
         if (over.length) ch = { ...ch, extras: [...ch.extras, ...over] };
@@ -1150,39 +1522,120 @@ class Importer {
       // a 3rd-level Haste for a 5th-level artificer) is kept by hand: nothing the file lists is lost.
       if (this.leftToPrepare.size) {
         const sh = buildSheet(resolve(ch, this.reg));
-        const have = new Set([...sh.casting.flatMap((l) => [...l.cantripsKnown, ...l.spells, ...l.granted].map((p) => p.id)), ...ch.extras].map((id) => normalize(this.reg.get(id)?.name ?? "")));
+        const have = new Set(
+          [...sh.casting.flatMap((l) => [...l.cantripsKnown, ...l.spells, ...l.granted].map((p) => p.id)), ...ch.extras].map((id) =>
+            normalize(this.reg.get(id)?.name ?? ""),
+          ),
+        );
         const lost = [...this.leftToPrepare].filter(([n]) => !have.has(n)).map(([, id]) => id);
         if (lost.length) ch = { ...ch, extras: [...ch.extras, ...lost] };
       }
     }
-    if (this.missing.length) this.notes.push(`${this.missing.length} things were not found in your loaded content and were skipped or kept as custom items.`);
+    if (this.missing.length)
+      this.notes.push(`${this.missing.length} things were not found in your loaded content and were skipped or kept as custom items.`);
     this.notes.push(`${this.matched.length} matched.`);
     // The log (A2.11): what an import found, missed and left open.
-    logEvent("import", `${ch.name || "a character"}: ${this.matched.length} matched, ${this.missing.length} not found${this.missing.length ? ` (${this.missing.slice(0, 8).join("; ")})` : ""}, ${todo.length} left open${todo.length ? ` (${todo.slice(0, 6).join("; ")})` : ""}`);
-    return { character: ch, notes: this.notes, matched: this.matched, missing: this.missing, todo, differences: this.compare(ch, opts.numbers) };
+    logEvent(
+      "import",
+      `${ch.name || "a character"}: ${this.matched.length} matched, ${this.missing.length} not found${this.missing.length ? ` (${this.missing.slice(0, 8).join("; ")})` : ""}, ${todo.length} left open${todo.length ? ` (${todo.slice(0, 6).join("; ")})` : ""}`,
+    );
+    return {
+      character: ch,
+      notes: this.notes,
+      matched: this.matched,
+      missing: this.missing,
+      todo,
+      differences: this.compare(ch, opts.numbers),
+    };
   }
 }
 
 // ---------------------------------------------------------------- Foundry
 
 const cap = (s: unknown) => (typeof s === "string" && s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
-const ABBR: Record<string, AbilityId> = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" };
+const ABBR: Record<string, AbilityId> = {
+  str: "strength",
+  dex: "dexterity",
+  con: "constitution",
+  int: "intelligence",
+  wis: "wisdom",
+  cha: "charisma",
+};
 
-const SKILL_NAMES = ["acrobatics", "animal handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight of hand", "stealth", "survival"];
+const SKILL_NAMES = [
+  "acrobatics",
+  "animal handling",
+  "arcana",
+  "athletics",
+  "deception",
+  "history",
+  "insight",
+  "intimidation",
+  "investigation",
+  "medicine",
+  "nature",
+  "perception",
+  "performance",
+  "persuasion",
+  "religion",
+  "sleight of hand",
+  "stealth",
+  "survival",
+];
 
 /** Foundry's language keys that differ from the language's name. */
-const FLANG: Record<string, string> = { sign: "common sign language", deep: "deep speech", cant: "thieves' cant", thieves: "thieves' cant", gith: "githyanki", aarakocra: "auran" };
+const FLANG: Record<string, string> = {
+  sign: "common sign language",
+  deep: "deep speech",
+  cant: "thieves' cant",
+  thieves: "thieves' cant",
+  gith: "githyanki",
+  aarakocra: "auran",
+};
 
 /** Foundry's tool keys (dnd5e system): the kits and instruments by their short names. */
 const FTOOL: Record<string, string> = {
-  thief: "thieves' tools", disg: "disguise kit", forg: "forgery kit", herb: "herbalism kit", navg: "navigator's tools", pois: "poisoner's kit",
-  alchemist: "alchemist's supplies", brewer: "brewer's supplies", calligrapher: "calligrapher's supplies", carpenter: "carpenter's tools",
-  cartographer: "cartographer's tools", cobbler: "cobbler's tools", cook: "cook's utensils", glassblower: "glassblower's tools",
-  jeweler: "jeweler's tools", leatherworker: "leatherworker's tools", mason: "mason's tools", painter: "painter's supplies",
-  potter: "potter's tools", smith: "smith's tools", tinker: "tinker's tools", weaver: "weaver's tools", woodcarver: "woodcarver's tools",
-  chess: "dragonchess set", card: "playing card set", dice: "dice set", "three-dragon": "three-dragon ante set",
-  bagpipes: "bagpipes", drum: "drum", dulcimer: "dulcimer", flute: "flute", horn: "horn", lute: "lute", lyre: "lyre", panflute: "pan flute", shawm: "shawm", viol: "viol",
-  air: "vehicles (air)", land: "vehicles (land)", space: "vehicles (space)", water: "vehicles (water)",
+  thief: "thieves' tools",
+  disg: "disguise kit",
+  forg: "forgery kit",
+  herb: "herbalism kit",
+  navg: "navigator's tools",
+  pois: "poisoner's kit",
+  alchemist: "alchemist's supplies",
+  brewer: "brewer's supplies",
+  calligrapher: "calligrapher's supplies",
+  carpenter: "carpenter's tools",
+  cartographer: "cartographer's tools",
+  cobbler: "cobbler's tools",
+  cook: "cook's utensils",
+  glassblower: "glassblower's tools",
+  jeweler: "jeweler's tools",
+  leatherworker: "leatherworker's tools",
+  mason: "mason's tools",
+  painter: "painter's supplies",
+  potter: "potter's tools",
+  smith: "smith's tools",
+  tinker: "tinker's tools",
+  weaver: "weaver's tools",
+  woodcarver: "woodcarver's tools",
+  chess: "dragonchess set",
+  card: "playing card set",
+  dice: "dice set",
+  "three-dragon": "three-dragon ante set",
+  bagpipes: "bagpipes",
+  drum: "drum",
+  dulcimer: "dulcimer",
+  flute: "flute",
+  horn: "horn",
+  lute: "lute",
+  lyre: "lyre",
+  panflute: "pan flute",
+  shawm: "shawm",
+  viol: "viol",
+  air: "vehicles (air)",
+  land: "vehicles (land)",
+  space: "vehicles (space)",
+  water: "vehicles (water)",
 };
 
 export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
@@ -1197,7 +1650,12 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   const items: Json[] = Array.isArray(data.items) ? data.items : [];
   // The species traits the file lists tell the versions of a species apart (the Dungeon Master's Guide aasimar has
   // Celestial Legacy, Volo's has a subrace).
-  b.speciesTraits = new Set(items.filter((it) => it.type === "feat" && String(it.system?.type?.value ?? "") === "race").map((it) => featureKey(String(it.name ?? ""))).filter(Boolean));
+  b.speciesTraits = new Set(
+    items
+      .filter((it) => it.type === "feat" && String(it.system?.type?.value ?? "") === "race")
+      .map((it) => featureKey(String(it.name ?? "")))
+      .filter(Boolean),
+  );
   // The rules a character uses: Foundry marks classes "2014" or "2024"; otherwise the books named say it.
   const ruleOf = (it: Json): Edition | undefined => {
     const src: Json = it.system?.source ?? {};
@@ -1216,15 +1674,27 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
     if (/\b(PHB|SRD 5\.1|XGE|TCE|TCoE|VGM|MPMM|SCAG|PHB'?14)\b/i.test(book)) return "2014";
     return undefined;
   };
-  const votes = items.filter((it) => ["class", "subclass", "race", "background"].includes(it.type)).map(ruleOf).filter(Boolean);
+  const votes = items
+    .filter((it) => ["class", "subclass", "race", "background"].includes(it.type))
+    .map(ruleOf)
+    .filter(Boolean);
   if (votes.length) b.edition = votes.filter((v) => v === "2024").length > votes.length / 2 ? "2024" : "2014";
   const subclasses: { name: string; id?: string }[] = [];
   let speciesSet = false;
   // An item Soul Forge exported names its element (flags.soulforge.id): when the content has it, that is the one.
-  const sfEl = (it: Json): AElement | undefined => { const id = it.flags?.soulforge?.id; return typeof id === "string" ? reg.get(id) : undefined; };
+  const sfEl = (it: Json): AElement | undefined => {
+    const id = it.flags?.soulforge?.id;
+    return typeof id === "string" ? reg.get(id) : undefined;
+  };
   // And the picks made in its own choices (flags.soulforge.choices), each placed exactly.
-  const LABEL = (t: string) => (t === "Archetype" ? "subclass" : /^(Sub Race|Race Variant)$/.test(t) ? "subrace or lineage" : t === "Spell" ? "spell" : "feat");
-  const sfChoices = (it: Json) => { for (const id of (it.flags?.soulforge?.choices ?? []) as string[]) { const c = reg.get(id); if (c) b.want([c.type], c.name, LABEL(c.type), [], undefined, c.edition, false, c.id); } };
+  const LABEL = (t: string) =>
+    t === "Archetype" ? "subclass" : /^(Sub Race|Race Variant)$/.test(t) ? "subrace or lineage" : t === "Spell" ? "spell" : "feat";
+  const sfChoices = (it: Json) => {
+    for (const id of (it.flags?.soulforge?.choices ?? []) as string[]) {
+      const c = reg.get(id);
+      if (c) b.want([c.type], c.name, LABEL(c.type), [], undefined, c.edition, false, c.id);
+    }
+  };
   for (const it of items) {
     const name = String(it.name ?? "");
     const isys: Json = it.system ?? {};
@@ -1251,7 +1721,11 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
         if (own?.type === "Race") {
           b.ch.race = own.id;
           b.matched.push(`${own.name} (species)`);
-          for (const id of (it.flags?.soulforge?.lineages ?? []) as string[]) { const l = reg.get(id); if (l) b.want(["Sub Race", "Race Variant", "Racial Trait"], l.name, "subrace or lineage", [], undefined, l.edition, false, l.id); }
+          for (const id of (it.flags?.soulforge?.lineages ?? []) as string[]) {
+            const l = reg.get(id);
+            if (l)
+              b.want(["Sub Race", "Race Variant", "Racial Trait"], l.name, "subrace or lineage", [], undefined, l.edition, false, l.id);
+          }
           sfChoices(it);
           speciesSet = true;
           break;
@@ -1265,7 +1739,12 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
       case "background": {
         const own = sfEl(it);
         if (own?.type === "Background") sfChoices(it);
-        const el = own?.type === "Background" ? own : findByName(reg, ["Background"], name, ruleOf(it) ?? b.edition) ?? findByName(reg, ["Background"], name.replace(/^variant\s+/i, "").replace(/\s*\(.*\)\s*$/, ""), b.edition) ?? findByName(reg, ["Background"], /\((.*)\)/.exec(name)?.[1] ?? "", b.edition);
+        const el =
+          own?.type === "Background"
+            ? own
+            : (findByName(reg, ["Background"], name, ruleOf(it) ?? b.edition) ??
+              findByName(reg, ["Background"], name.replace(/^variant\s+/i, "").replace(/\s*\(.*\)\s*$/, ""), b.edition) ??
+              findByName(reg, ["Background"], /\((.*)\)/.exec(name)?.[1] ?? "", b.edition));
         if (el) {
           b.ch.background = el.id;
           b.matched.push(`${el.name} (background)`);
@@ -1276,23 +1755,32 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
         // Class, species and background features come from the content itself. Only real feats are choices.
         // Plutonium stores species traits ("Age", "Languages", "Speed") and background features as untyped feats.
         const kind = String(isys.type?.value ?? "");
-        const trait = /^(age|alignment|size|speed|languages?|creature type|darkvision|feature:|variant feature|optional rule|infusions?:|ability score (increase|improvement)s?$)/i.test(name);
+        const trait =
+          /^(age|alignment|size|speed|languages?|creature type|darkvision|feature:|variant feature|optional rule|infusions?:|ability score (increase|improvement)s?$)/i.test(
+            name,
+          );
         const ownFeat = sfEl(it);
         if (ownFeat?.type === "Feat") {
           b.want(["Feat"], ownFeat.name, "feat", [], undefined, ownFeat.edition, false, ownFeat.id);
           // Its own choices, exactly (a Soul Forge export lists them): the list Magic Initiate draws from, and so on.
-          for (const id of (it.flags?.soulforge?.choices ?? []) as string[]) { const c = reg.get(id); if (c) b.want([c.type], c.name, c.type === "Spell" ? "spell" : "feat", [], undefined, c.edition, false, c.id); }
+          for (const id of (it.flags?.soulforge?.choices ?? []) as string[]) {
+            const c = reg.get(id);
+            if (c) b.want([c.type], c.name, c.type === "Spell" ? "spell" : "feat", [], undefined, c.edition, false, c.id);
+          }
         }
         // Any other element Soul Forge exported (an invocation, a metamagic option, a maneuver, a fighting style):
         // placed exactly into the choice that offers it; one the content grants by itself is just recognised.
         else if (ownFeat) b.want([ownFeat.type], ownFeat.name, "feat", [], undefined, ownFeat.edition, false, ownFeat.id);
-        else if (kind === "feat" || (!kind && !trait)) b.want(["Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature"], name, "feat", [], undefined, ruleOf(it));
+        else if (kind === "feat" || (!kind && !trait))
+          b.want(["Feat", "Feat Feature", "Racial Trait", "Class Feature", "Archetype Feature"], name, "feat", [], undefined, ruleOf(it));
         else b.addName(name);
         break;
       }
       case "spell": {
         // Foundry 5 says where a spell came from: "class:wizard", "feat:magic-initiate", "race:gnome-rock".
-        const origin = String(isys.sourceItem ?? "").replace(/^\w+:/, "").replace(/-/g, " ");
+        const origin = String(isys.sourceItem ?? "")
+          .replace(/^\w+:/, "")
+          .replace(/-/g, " ");
         const ownSpell = sfEl(it);
         b.want(["Spell"], name, "spell", [], origin || undefined, ruleOf(it), false, ownSpell?.type === "Spell" ? ownSpell.id : undefined);
         const prep = isys.prepared ?? isys.preparation?.prepared;
@@ -1317,7 +1805,11 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
         const magic = Number(isys.magicalBonus ?? isys.armor?.magicalBonus) || 0;
         // Foundry names the base item by its key: "dice" is the Dice Set, "thief" the thieves' tools.
         const baseKey = String(isys.type?.baseItem ?? "");
-        b.addItem(name, Number(isys.quantity) || 1, equipped, attuned, { base: FTOOL[baseKey] ?? (baseKey || undefined), magic, edition: ruleOf(it) });
+        b.addItem(name, Number(isys.quantity) || 1, equipped, attuned, {
+          base: FTOOL[baseKey] ?? (baseKey || undefined),
+          magic,
+          edition: ruleOf(it),
+        });
         break;
       }
       default:
@@ -1332,7 +1824,9 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   }
   if (!b.ch.background && textName(det0.background)) {
     const n = textName(det0.background);
-    const el = findByName(reg, ["Background"], n, b.edition) ?? findByName(reg, ["Background"], n.replace(/^variant\s+/i, "").replace(/\s*\(.*\)\s*$/, ""), b.edition);
+    const el =
+      findByName(reg, ["Background"], n, b.edition) ??
+      findByName(reg, ["Background"], n.replace(/^variant\s+/i, "").replace(/\s*\(.*\)\s*$/, ""), b.edition);
     if (el) {
       b.ch.background = el.id;
       b.matched.push(`${el.name} (background)`);
@@ -1342,7 +1836,26 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   if (!b.ch.classes.length) b.notes.push("No class found in the file.");
   // Subclasses are choices of the class, so place them after the classes are set.
   for (const s of subclasses) b.want(["Archetype"], s.name, "subclass", [], undefined, undefined, false, s.id);
-  const FSKILL: Record<string, string> = { acr: "acrobatics", ani: "animal handling", arc: "arcana", ath: "athletics", dec: "deception", his: "history", ins: "insight", itm: "intimidation", inv: "investigation", med: "medicine", nat: "nature", prc: "perception", prf: "performance", per: "persuasion", rel: "religion", slt: "sleight of hand", ste: "stealth", sur: "survival" };
+  const FSKILL: Record<string, string> = {
+    acr: "acrobatics",
+    ani: "animal handling",
+    arc: "arcana",
+    ath: "athletics",
+    dec: "deception",
+    his: "history",
+    ins: "insight",
+    itm: "intimidation",
+    inv: "investigation",
+    med: "medicine",
+    nat: "nature",
+    prc: "perception",
+    prf: "performance",
+    per: "persuasion",
+    rel: "religion",
+    slt: "sleight of hand",
+    ste: "stealth",
+    sur: "survival",
+  };
   for (const [k, name] of Object.entries(FSKILL)) {
     const v = Number(sys.skills?.[k]?.value);
     if (v >= 1) b.hints.skills.add(name);
@@ -1353,8 +1866,10 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   b.hints.size = SIZE[String(sys.traits?.size ?? "")] ?? "";
   for (const it of items) if (it?.name && ["feat", "subclass"].includes(it.type)) b.addName(String(it.name));
   for (const l of sys.traits?.languages?.value ?? []) b.addLanguage(FLANG[String(l).toLowerCase()] ?? String(l));
-  for (const l of sys.traits?.languages?.custom ? String(sys.traits.languages.custom).split(/[;,]/) : []) if (l.trim()) b.hints.languages.add(l.trim().toLowerCase());
-  for (const [k, t] of Object.entries<Json>(sys.tools ?? {})) if (Number(t?.value) >= 1) b.hints.tools.add(FTOOL[k.toLowerCase()] ?? k.toLowerCase());
+  for (const l of sys.traits?.languages?.custom ? String(sys.traits.languages.custom).split(/[;,]/) : [])
+    if (l.trim()) b.hints.languages.add(l.trim().toLowerCase());
+  for (const [k, t] of Object.entries<Json>(sys.tools ?? {}))
+    if (Number(t?.value) >= 1) b.hints.tools.add(FTOOL[k.toLowerCase()] ?? k.toLowerCase());
   // Instruments and kits the character carries name the kind a generic "music" or "game" proficiency means.
   for (const it of items) {
     const base = String(it.system?.type?.baseItem ?? "").toLowerCase();
@@ -1363,7 +1878,8 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   for (const it of items) {
     if (it.type !== "class") continue;
     const adv = it.system?.advancement;
-    for (const a of (Array.isArray(adv) ? adv : Object.values<Json>(adv ?? {})) as Json[]) if (a?.type === "AbilityScoreImprovement" && a.value?.type === "asi" && Object.keys(a.value?.assignments ?? {}).length) b.asiTaken++;
+    for (const a of (Array.isArray(adv) ? adv : Object.values<Json>(adv ?? {})) as Json[])
+      if (a?.type === "AbilityScoreImprovement" && a.value?.type === "asi" && Object.keys(a.value?.assignments ?? {}).length) b.asiTaken++;
   }
   // The choices the class, species and background items record: "skills:ath", "tool:art:smith", "languages:exotic:draconic".
   for (const it of items) {
@@ -1379,11 +1895,21 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
         const title = String(a.title ?? a.name ?? "");
         // Expertise records are their own (a Rogue's Expertise is not its skill choice); mastery is a weapon matter.
         const mode = String(a.configuration?.mode ?? "default");
-        if (kind === "skills" && FSKILL[last]) { b.hints.skills.add(FSKILL[last]); for (const src of [source, title]) { if (mode === "expertise") b.sourcedPick(src, "expertise", FSKILL[last]); else if (mode === "default") b.sourcedPick(src, "skills", FSKILL[last]); } }
-        else if (kind === "languages") { b.addLanguage(FLANG[last] ?? last); for (const src of [source, title]) b.sourcedPick(src, "languages", FLANG[last] ?? last); }
-        else if (kind === "tool") { b.hints.tools.add(FTOOL[last] ?? last); for (const src of [source, title]) b.sourcedPick(src, "tools", FTOOL[last] ?? last); }
-        else if (kind === "saves" && ABBR[last]) b.hints.saves.add(ABBR[last]);
-        else if (kind === "armor") b.hints.armor.add(({ lgt: "light", med: "medium", hvy: "heavy", shl: "shields" } as Record<string, string>)[last] ?? last);
+        if (kind === "skills" && FSKILL[last]) {
+          b.hints.skills.add(FSKILL[last]);
+          for (const src of [source, title]) {
+            if (mode === "expertise") b.sourcedPick(src, "expertise", FSKILL[last]);
+            else if (mode === "default") b.sourcedPick(src, "skills", FSKILL[last]);
+          }
+        } else if (kind === "languages") {
+          b.addLanguage(FLANG[last] ?? last);
+          for (const src of [source, title]) b.sourcedPick(src, "languages", FLANG[last] ?? last);
+        } else if (kind === "tool") {
+          b.hints.tools.add(FTOOL[last] ?? last);
+          for (const src of [source, title]) b.sourcedPick(src, "tools", FTOOL[last] ?? last);
+        } else if (kind === "saves" && ABBR[last]) b.hints.saves.add(ABBR[last]);
+        else if (kind === "armor")
+          b.hints.armor.add(({ lgt: "light", med: "medium", hvy: "heavy", shl: "shields" } as Record<string, string>)[last] ?? last);
         else if (kind === "weapon" && /^(sim|mar)$/.test(last)) b.hints.weapons.add(last === "sim" ? "simple" : "martial");
         // "weapon:mar:greataxe" names one weapon: a weapon mastery in the 2024 rules.
         else if (kind === "weapon" && rest.length === 2) b.hints.masteries.add(last.replace(/[^a-z]/g, ""));
@@ -1391,9 +1917,16 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
     }
   }
   for (const d of (sys.traits?.dr?.value ?? []) as string[]) b.hints.resist.add(String(d).toLowerCase());
-  for (const a of (sys.traits?.armorProf?.value ?? []) as string[]) b.hints.armor.add(({ lgt: "light", med: "medium", hvy: "heavy", shl: "shields" } as Record<string, string>)[a] ?? a);
-  for (const w of (sys.traits?.weaponProf?.value ?? []) as string[]) if (/^(sim|mar)$/.test(w)) b.hints.weapons.add(w === "sim" ? "simple" : "martial");
-  for (const m of sys.traits?.weaponProf?.mastery?.value ?? []) b.hints.masteries.add(String(m).toLowerCase().replace(/[^a-z]/g, ""));
+  for (const a of (sys.traits?.armorProf?.value ?? []) as string[])
+    b.hints.armor.add(({ lgt: "light", med: "medium", hvy: "heavy", shl: "shields" } as Record<string, string>)[a] ?? a);
+  for (const w of (sys.traits?.weaponProf?.value ?? []) as string[])
+    if (/^(sim|mar)$/.test(w)) b.hints.weapons.add(w === "sim" ? "simple" : "martial");
+  for (const m of sys.traits?.weaponProf?.mastery?.value ?? [])
+    b.hints.masteries.add(
+      String(m)
+        .toLowerCase()
+        .replace(/[^a-z]/g, ""),
+    );
   const hp = Number(sys.attributes?.hp?.value);
   if (Number.isFinite(hp) && hp > 0) b.ch.play.hp = hp;
   const det: Json = sys.details ?? {};
@@ -1413,7 +1946,13 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   info.flaws = str(det.flaw);
   const xp = Number(det.xp?.value);
   if (Number.isFinite(xp) && xp > 0) b.ch.xp = xp;
-  const bio = typeof sys.details?.biography?.value === "string" ? sys.details.biography.value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
+  const bio =
+    typeof sys.details?.biography?.value === "string"
+      ? sys.details.biography.value
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+      : "";
   if (bio) info.backstory = bio.slice(0, 3000);
   const coins = sys.currency ?? {};
   for (const k of ["cp", "sp", "ep", "gp", "pp"] as const) if (Number.isFinite(Number(coins[k]))) b.ch.coins[k] = Number(coins[k]);
@@ -1425,9 +1964,13 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   const numbers: FileNumbers = {
     hpMax: Number.isFinite(hpMax) && hpMax > 0 ? hpMax : undefined,
     skillLevels: Object.fromEntries(Object.entries(FSKILL).map(([k, name]) => [name, Number(sys.skills?.[k]?.value) || 0])),
-    saveProficient: Object.entries(ABBR).filter(([k]) => Number(sys.abilities?.[k]?.proficient) >= 1).map(([, a]) => a),
+    saveProficient: Object.entries(ABBR)
+      .filter(([k]) => Number(sys.abilities?.[k]?.proficient) >= 1)
+      .map(([, a]) => a),
     languages: [...b.hints.languages],
-    tools: Object.entries<Json>(sys.tools ?? {}).filter(([k, t]) => Number(t?.value) >= 1 && FTOOL[k]).map(([k]) => FTOOL[k]),
+    tools: Object.entries<Json>(sys.tools ?? {})
+      .filter(([k, t]) => Number(t?.value) >= 1 && FTOOL[k])
+      .map(([k]) => FTOOL[k]),
   };
   return b.finish(scores, { scoresIncludeItems: false, hpMax: Number.isFinite(hpMax) && hpMax > 0 ? hpMax : undefined, numbers });
 }
@@ -1447,7 +1990,9 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   const storeAttr = given.find((a) => a?.name === "store");
   const has2024Store = !!storeAttr && isRoll20Store(storeAttr.current);
   const stated = new Set(given.map((a) => a?.name));
-  const attribs: Attrib[] = has2024Store ? [...given.filter((a) => a !== storeAttr), ...storeToAttribs(storeAttr!.current).filter((a) => !stated.has(a.name))] : given;
+  const attribs: Attrib[] = has2024Store
+    ? [...given.filter((a) => a !== storeAttr), ...storeToAttribs(storeAttr!.current).filter((a) => !stated.has(a.name))]
+    : given;
   const flat = new Map<string, Attrib>();
   const rows = new Map<string, Map<string, Record<string, string>>>();
   const rowRe = /^repeating_([a-z0-9-]+?)_(-[A-Za-z0-9_-]{19})_(.+)$/;
@@ -1474,8 +2019,18 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   const className = val("class").replace(/\d+/g, "").trim();
   // The class features the sheet lists tell the 2014 and the 2024 class apart.
   const traitRows = [...(rows.get("traits")?.values() ?? [])];
-  const featureNames = new Set(traitRows.filter((f) => /class/i.test(f.source ?? "")).map((f) => featureKey(f.name ?? "")).filter(Boolean));
-  b.speciesTraits = new Set(traitRows.filter((f) => /rac/i.test(f.source ?? "")).map((f) => featureKey(f.name ?? "")).filter(Boolean));
+  const featureNames = new Set(
+    traitRows
+      .filter((f) => /class/i.test(f.source ?? ""))
+      .map((f) => featureKey(f.name ?? ""))
+      .filter(Boolean),
+  );
+  b.speciesTraits = new Set(
+    traitRows
+      .filter((f) => /rac/i.test(f.source ?? ""))
+      .map((f) => featureKey(f.name ?? ""))
+      .filter(Boolean),
+  );
   const cls = className ? classByFeatures(reg, className, featureNames, has2024Store ? "2024" : undefined) : undefined;
   if (cls) b.edition = isModern(cls) ? "2024" : "2014";
   // Multiclass levels sit in multiclass1..3 with their own level; the main class level is what is left.
@@ -1496,7 +2051,10 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   else b.notes.push("No class found in the file.");
   for (const c of extraClasses) {
     const el = classByFeatures(reg, c.name, featureNames, b.edition);
-    if (el) { b.ch.classes.push({ classId: el.id, level: c.level }); b.matched.push(`${el.name} (class)`); } else b.missing.push(`${c.name} (class)`);
+    if (el) {
+      b.ch.classes.push({ classId: el.id, level: c.level });
+      b.matched.push(`${el.name} (class)`);
+    } else b.missing.push(`${c.name} (class)`);
   }
   if (val("race") && !b.setSpecies(val("race"))) b.missing.push(`${val("race")} (species)`);
   // "Dark Elf (Drow)" is the Drow subrace in the older content; the match ignores the parenthesis, so try both parts.
@@ -1505,8 +2063,20 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
     const inner = /\((.*?)\)/.exec(sub)?.[1];
     for (const n of [sub, inner ?? ""]) if (n) b.want(["Sub Race", "Race Variant", "Race", "Racial Trait"], n, "subrace or lineage");
   }
-  const bg = findByName(reg, ["Background"], val("background"), b.edition) ?? findByName(reg, ["Background"], val("background").replace(/^variant\s+/i, "").replace(/\s*\(.*\)\s*$/, ""), b.edition);
-  if (bg) { b.ch.background = bg.id; b.matched.push(`${bg.name} (background)`); } else if (val("background")) b.missing.push(`${val("background")} (background)`);
+  const bg =
+    findByName(reg, ["Background"], val("background"), b.edition) ??
+    findByName(
+      reg,
+      ["Background"],
+      val("background")
+        .replace(/^variant\s+/i, "")
+        .replace(/\s*\(.*\)\s*$/, ""),
+      b.edition,
+    );
+  if (bg) {
+    b.ch.background = bg.id;
+    b.matched.push(`${bg.name} (background)`);
+  } else if (val("background")) b.missing.push(`${val("background")} (background)`);
   if (val("subclass")) b.want(["Archetype"], val("subclass"), "subclass");
   if (val("background")) b.customBackground();
 
@@ -1523,30 +2093,53 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
         const extra = /\((a|always|sc|subclass|domain|innate|feat|race|species|item|background)\b/i.test(f.spellname);
         if (f.spellprepared !== undefined) b.preparedKnown = true;
         if ((f.spellprepared === "1" || f.spellprepared === "on") && !extra) b.prepared.add(normalize(spell));
-      }
-      else if (section === "inventory" && f.itemname) {
+      } else if (section === "inventory" && f.itemname) {
         // Roll20 only saves the equipped box when it was changed from its default (ticked), so an item with no value
         // counts as worn when it is a weapon with an attack or armor that gives AC.
         const mods = f.itemmodifiers ?? "";
-        const worn = f.equipped !== undefined ? f.equipped === "1" || f.equipped === "on" : f.hasattack === "1" || /Item Type:[^,]*(Armor|Shield)/i.test(mods);
+        const worn =
+          f.equipped !== undefined
+            ? f.equipped === "1" || f.equipped === "on"
+            : f.hasattack === "1" || /Item Type:[^,]*(Armor|Shield)/i.test(mods);
         const magic = Number(/\b(?:AC|Attack(?: Bonus)?|Damage(?: Bonus)?)\s*\+(\d)/i.exec(mods)?.[1]) || 0;
         // Bonuses the sheet applies from this item ("Spell Attack +2, Spell DC +2"): a content item that needs
         // attunement is attuned, so its own rules apply; a custom item's bonuses become custom bonuses.
         const bonuses = itemBonuses(mods);
         const active = bonuses.length > 0 && f.equipped !== "0";
         b.addItem(f.itemname, Number(f.itemcount) || 1, worn || active, active, { magic, bonuses: active ? bonuses : [] });
-      }
-      else if (section === "traits" && f.name && /^feat$/i.test(f.source ?? "")) b.want(FEATURE_TYPES, f.name, "feat");
+      } else if (section === "traits" && f.name && /^feat$/i.test(f.source ?? "")) b.want(FEATURE_TYPES, f.name, "feat");
     }
   }
 
   // What the sheet says the character is proficient in, to settle the open choices.
   const on = (k: string) => !["", "0"].includes(val(k));
-  const SKILLS = ["acrobatics", "animal_handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight_of_hand", "stealth", "survival"];
+  const SKILLS = [
+    "acrobatics",
+    "animal_handling",
+    "arcana",
+    "athletics",
+    "deception",
+    "history",
+    "insight",
+    "intimidation",
+    "investigation",
+    "medicine",
+    "nature",
+    "perception",
+    "performance",
+    "persuasion",
+    "religion",
+    "sleight_of_hand",
+    "stealth",
+    "survival",
+  ];
   for (const k of SKILLS) {
     const name = k.replace(/_/g, " ");
     if (on(`${k}_prof`)) b.hints.skills.add(name);
-    if (val(`${k}_type`) === "2") { b.hints.expertise.add(name); b.hints.skills.add(name); }
+    if (val(`${k}_type`) === "2") {
+      b.hints.expertise.add(name);
+      b.hints.skills.add(name);
+    }
   }
   for (const a of ABILITY_IDS) if (on(`${a}_save_prof`)) b.hints.saves.add(a);
   // The proficiency rows: the type is only saved when it is not the default, LANGUAGE, and one row can hold several
@@ -1555,8 +2148,16 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
     const type = (f.prof_type ?? "").toUpperCase();
     const name = f.name ?? "";
     if (!type || type === "LANGUAGE") b.addLanguage(name);
-    else if (type === "ARMOR") for (const a of name.split(/[,;]/)) { const t = a.trim().toLowerCase(); if (t) b.hints.armor.add(/^all/.test(t) ? "light medium heavy" : t); }
-    else if (type === "WEAPON") for (const w of name.split(/[,;]/)) { const t = w.trim().toLowerCase(); if (/^(simple|martial)/.test(t)) b.hints.weapons.add(t.split(" ")[0]); }
+    else if (type === "ARMOR")
+      for (const a of name.split(/[,;]/)) {
+        const t = a.trim().toLowerCase();
+        if (t) b.hints.armor.add(/^all/.test(t) ? "light medium heavy" : t);
+      }
+    else if (type === "WEAPON")
+      for (const w of name.split(/[,;]/)) {
+        const t = w.trim().toLowerCase();
+        if (/^(simple|martial)/.test(t)) b.hints.weapons.add(t.split(" ")[0]);
+      }
     else if (/tools?|supplies|kit|set|utensils|instrument/i.test(name)) b.hints.tools.add(name.trim().toLowerCase());
   }
   if ([...b.hints.armor].some((a) => a.includes("light medium heavy"))) for (const a of ["light", "medium", "heavy"]) b.hints.armor.add(a);
@@ -1585,15 +2186,26 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   info.ideals = val("ideals");
   info.bonds = val("bonds");
   info.flaws = val("flaws");
-  const bio = String(entry.bio ?? entry.blobBio ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const bio = String(entry.bio ?? entry.blobBio ?? "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (bio) info.backstory = bio.slice(0, 3000);
   const xp = Number(val("xp"));
   if (Number.isFinite(xp) && xp > 0) b.ch.xp = xp;
   const hpMax = Number(flat.get("hp")?.max);
   // The sheet's spell DC and attack modifiers add up its items' bonuses and anything typed in by hand. What the items
   // do not explain was typed in (a table ruling, a homebrew effect) and becomes a custom bonus.
-  const itemSum = (stat: string) => [...(rows.get("inventory")?.values() ?? [])].filter((f) => f.equipped !== "0").flatMap((f) => itemBonuses(f.itemmodifiers ?? "")).filter((x) => x.stat === stat).reduce((t, x) => t + x.value, 0);
-  for (const [attr, stat, label] of [["spell_dc_mod", "spellcasting:dc", "Spell save DC"], ["spell_attack_mod", "spellcasting:attack", "Spell attack"]] as const) {
+  const itemSum = (stat: string) =>
+    [...(rows.get("inventory")?.values() ?? [])]
+      .filter((f) => f.equipped !== "0")
+      .flatMap((f) => itemBonuses(f.itemmodifiers ?? ""))
+      .filter((x) => x.stat === stat)
+      .reduce((t, x) => t + x.value, 0);
+  for (const [attr, stat, label] of [
+    ["spell_dc_mod", "spellcasting:dc", "Spell save DC"],
+    ["spell_attack_mod", "spellcasting:attack", "Spell attack"],
+  ] as const) {
     // A modifier the file does not store says nothing (it is not 0).
     if (val(attr) === "") continue;
     const typed = (Number(val(attr)) || 0) - itemSum(stat);
@@ -1602,13 +2214,21 @@ export function importRoll20(data: Json, reg: ARegistry): ForeignImport {
   // AC modifier rows switched on in the Roll20 sheet (a table ruling, a homebrew effect) become custom bonuses.
   for (const f of rows.get("acmod")?.values() ?? []) {
     const v = Number(f.global_ac_val);
-    if (f.global_ac_active_flag === "1" && Number.isFinite(v) && v !== 0) b.ch.customStats.push({ id: uid(), stat: "ac:misc", value: v, note: `${f.global_ac_name || "AC modifier"} (from the Roll20 sheet)` });
+    if (f.global_ac_active_flag === "1" && Number.isFinite(v) && v !== 0)
+      b.ch.customStats.push({ id: uid(), stat: "ac:misc", value: v, note: `${f.global_ac_name || "AC modifier"} (from the Roll20 sheet)` });
   }
   // The sheet's own results, to compare with Soul Forge's. Roll20 saves them as the sheet last worked them out.
-  const n = (k: string) => { const v = Number(String(flat.get(k)?.current ?? "").replace(/^\+/, "")); return String(flat.get(k)?.current ?? "").trim() !== "" && Number.isFinite(v) ? v : undefined; };
+  const n = (k: string) => {
+    const v = Number(String(flat.get(k)?.current ?? "").replace(/^\+/, ""));
+    return String(flat.get(k)?.current ?? "").trim() !== "" && Number.isFinite(v) ? v : undefined;
+  };
   const numbers: FileNumbers = {
-    ac: n("ac"), hpMax: Number.isFinite(hpMax) && hpMax > 0 ? hpMax : undefined, proficiency: n("pb"),
-    spellDc: n("spell_save_dc"), spellAttack: n("spell_attack_bonus"), passivePerception: n("passive_wisdom"),
+    ac: n("ac"),
+    hpMax: Number.isFinite(hpMax) && hpMax > 0 ? hpMax : undefined,
+    proficiency: n("pb"),
+    spellDc: n("spell_save_dc"),
+    spellAttack: n("spell_attack_bonus"),
+    passivePerception: n("passive_wisdom"),
     saves: Object.fromEntries(ABILITY_IDS.map((a) => [a, n(`${a}_save_bonus`)]).filter(([, v]) => v !== undefined)),
     skills: Object.fromEntries(SKILLS.map((k) => [k.replace(/_/g, " "), n(`${k}_bonus`)]).filter(([, v]) => v !== undefined)),
   };
@@ -1629,10 +2249,21 @@ export function isFastCharacterText(text: string): boolean {
  * Heightened Spell).
  */
 const FC_SPELLING: Record<string, string> = {
-  duelling: "Dueling", cthonic: "Chthonic", drudic: "Druidic", thamaturge: "Thaumaturge",
-  "heighten spell": "Heightened Spell", "quicken spell": "Quickened Spell", "extend spell": "Extended Spell", "twin spell": "Twinned Spell", "empower spell": "Empowered Spell",
+  duelling: "Dueling",
+  cthonic: "Chthonic",
+  drudic: "Druidic",
+  thamaturge: "Thaumaturge",
+  "heighten spell": "Heightened Spell",
+  "quicken spell": "Quickened Spell",
+  "extend spell": "Extended Spell",
+  "twin spell": "Twinned Spell",
+  "empower spell": "Empowered Spell",
 };
-const fcSpell = (s: string) => s.replace(/\b(duelling|cthonic|drudic|thamaturge|(?:heighten|quicken|extend|twin|empower) spell)\b/gi, (w) => FC_SPELLING[w.toLowerCase()] ?? w);
+const fcSpell = (s: string) =>
+  s.replace(
+    /\b(duelling|cthonic|drudic|thamaturge|(?:heighten|quicken|extend|twin|empower) spell)\b/gi,
+    (w) => FC_SPELLING[w.toLowerCase()] ?? w,
+  );
 
 /**
  * A FastCharacter sheet (the text format of fastcharacter.com's 2024 generator, saved as text or HTML text). It
@@ -1642,8 +2273,17 @@ const fcSpell = (s: string) => s.replace(/\b(duelling|cthonic|drudic|thamaturge|
 export function importFastCharacter(text: string, reg: ARegistry): ForeignImport {
   const b = new Importer(reg);
   b.edition = /PHB 2024/.test(text) ? "2024" : "2014";
-  const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
-  const field = (label: string) => fcSpell(lines.find((l) => l.startsWith(`${label}:`))?.slice(label.length + 1).trim() ?? "");
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const field = (label: string) =>
+    fcSpell(
+      lines
+        .find((l) => l.startsWith(`${label}:`))
+        ?.slice(label.length + 1)
+        .trim() ?? "",
+    );
   b.ch.name = field("Name");
   b.ch.info.alignment = field("Alignment");
   const xp = Number(field("Experience").replace(/[^\d]/g, ""));
@@ -1654,8 +2294,10 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
   const featureNames = new Set<string>();
   if (cl) {
     const cls = classByFeatures(reg, cl[1], featureNames, b.edition);
-    if (cls) { b.ch.classes.push({ classId: cls.id, level: Math.min(20, Number(cl[2])) }); b.matched.push(`${cls.name} (class)`); }
-    else b.missing.push(`${cl[1]} (class)`);
+    if (cls) {
+      b.ch.classes.push({ classId: cls.id, level: Math.min(20, Number(cl[2])) });
+      b.matched.push(`${cls.name} (class)`);
+    } else b.missing.push(`${cl[1]} (class)`);
     if (cl[3]) b.want(["Archetype"], cl[3], "subclass");
   }
   // Species: "Orc", "Wood Elf", "Tiefling (Abyssal)", "Goliath (Hill Giant Ancestry)", "Dragonborn (Red Dragon Ancestry)".
@@ -1667,7 +2309,13 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
   if (sp && !b.setSpecies(sp)) b.missing.push(`${sp} (species)`);
   const bgName = field("Background");
   const bg = findByName(reg, ["Background"], bgName, b.edition);
-  if (bg) { b.ch.background = bg.id; b.matched.push(`${bg.name} (background)`); } else if (bgName) { b.missing.push(`${bgName} (background)`); b.customBackground(); }
+  if (bg) {
+    b.ch.background = bg.id;
+    b.matched.push(`${bg.name} (background)`);
+  } else if (bgName) {
+    b.missing.push(`${bgName} (background)`);
+    b.customBackground();
+  }
 
   // Ability scores ("Strength 10") and the numbers FastCharacter worked out.
   const scores: Partial<Record<AbilityId, number>> = {};
@@ -1679,7 +2327,14 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
     let m = /^(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) (\d+)$/.exec(l);
     if (m) scores[m[1].toLowerCase() as AbilityId] = Number(m[2]);
     m = /^([+-]\d+) \.\.\. (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) Saving Throws( \*)?$/.exec(l);
-    if (m) { const a = m[2].toLowerCase() as AbilityId; saves[a] = Number(m[1]); if (m[3]) { saveProficient.push(a); b.hints.saves.add(a); } }
+    if (m) {
+      const a = m[2].toLowerCase() as AbilityId;
+      saves[a] = Number(m[1]);
+      if (m[3]) {
+        saveProficient.push(a);
+        b.hints.saves.add(a);
+      }
+    }
     m = /^([+-]\d+) \.\.\. (.+?) Skill\s*(\*{1,2})?$/.exec(l);
     if (m) {
       const k = m[2].toLowerCase();
@@ -1689,32 +2344,74 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
       if (m[3]?.length === 2) b.hints.expertise.add(k);
     }
   }
-  const num = (re: RegExp) => { for (const l of lines) { const m = re.exec(l); if (m) return Number(m[1].replace(/,/g, "")); } return undefined; };
+  const num = (re: RegExp) => {
+    for (const l of lines) {
+      const m = re.exec(l);
+      if (m) return Number(m[1].replace(/,/g, ""));
+    }
+    return undefined;
+  };
 
   // Feats: "Lucky Feat [PHB 2024, p. 201]: ..." and the fighting style, "Fighting Style: Duelling [PHB 2024, p. 209]".
   // The sheet repeats a feature's line where it is used (a fighting style under the feats and the class); each feat
   // counts once. A style without a page reference ("Fighting Style: Protection. Use reaction...") is one too.
   const featsSeen = new Set<string>();
-  const feat = (types: string[], name: string) => { const k = normalize(name); if (featsSeen.has(k)) return; featsSeen.add(k); b.want(types, name, "feat"); };
+  const feat = (types: string[], name: string) => {
+    const k = normalize(name);
+    if (featsSeen.has(k)) return;
+    featsSeen.add(k);
+    b.want(types, name, "feat");
+  };
   for (const l of lines) {
     let m = /^(.+?) Feat \[/.exec(l);
     if (m) feat(["Feat"], fcSpell(m[1]));
     m = /^Fighting Style: ([A-Za-z' -]+?)\s*[.[:]/.exec(l);
     if (m) feat(["Feat", "Class Feature", "Archetype Feature"], fcSpell(m[1]));
     m = /^• Weapon Mastery \(([^)]+)\)$/.exec(l);
-    if (m && !/\d+ weapons/.test(m[1])) for (const w of m[1].split(",")) b.hints.masteries.add(w.trim().toLowerCase().replace(/[^a-z]/g, ""));
+    if (m && !/\d+ weapons/.test(m[1]))
+      for (const w of m[1].split(","))
+        b.hints.masteries.add(
+          w
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z]/g, ""),
+        );
     // Class and species features by name ("• Primal Order (Warden)"): they settle the choices that offer them.
     m = /^• ([^(:]+?)(?: \(([^)]*)\))?$/.exec(l);
-    if (m) { b.addName(fcSpell(m[1])); if (m[2] && !/\d/.test(m[2])) b.addName(fcSpell(m[2])); }
+    if (m) {
+      b.addName(fcSpell(m[1]));
+      if (m[2] && !/\d/.test(m[2])) b.addName(fcSpell(m[2]));
+    }
     // "• Divine Order: Thaumaturge (...)" names the option taken; "• Hunter's Prey: Colossus Slayer (...) or Horde
     // Breaker (...)" only lists the options, so it settles nothing.
     m = /^• ([^(:]+?): ([^(]+?)(?: \(.*)?$/.exec(l);
     if (m && !/\bor\b/.test(l.replace(/\([^)]*\)/g, ""))) b.addName(fcSpell(`${m[1]}: ${m[2]}`));
   }
   // Trainings and languages, as the sheet lists them.
-  const list = (label: string) => fcSpell(lines.find((l) => l.startsWith(`• ${label}:`))?.slice(label.length + 3).trim() ?? "").split(",").map((x) => x.trim()).filter(Boolean);
-  for (const t of list("Tools")) b.hints.tools.add(t.replace(/^gaming set \((.+)\)$/i, "$1").replace(/^musical instrument \((.+)\)$/i, "$1").toLowerCase());
-  for (const a of list("Armor")) b.hints.armor.add(a.toLowerCase().replace(/ armor$/, "").replace(/^shields$/, "shield"));
+  const list = (label: string) =>
+    fcSpell(
+      lines
+        .find((l) => l.startsWith(`• ${label}:`))
+        ?.slice(label.length + 3)
+        .trim() ?? "",
+    )
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+  for (const t of list("Tools"))
+    b.hints.tools.add(
+      t
+        .replace(/^gaming set \((.+)\)$/i, "$1")
+        .replace(/^musical instrument \((.+)\)$/i, "$1")
+        .toLowerCase(),
+    );
+  for (const a of list("Armor"))
+    b.hints.armor.add(
+      a
+        .toLowerCase()
+        .replace(/ armor$/, "")
+        .replace(/^shields$/, "shield"),
+    );
   for (const w of list("Weapons")) b.hints.weapons.add(w.toLowerCase().split(" ")[0]);
   const languages = list("Languages");
   for (const l of languages) b.addLanguage(l);
@@ -1725,7 +2422,8 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
     const m = /\b[Kk]now (?:the )?(.+?) cantrips?\b(?:, and can cast\s+(.+?) once\b)?/.exec(l);
     if (!m) continue;
     const from = /^(.+?)\s*(?:\[|:)/.exec(l)?.[1].replace(/\s*\(.*$/, "");
-    for (const name of [...m[1].split(/,\s*|\s+and\s+/), ...(m[2] ? m[2].split(/\s+and\s+/) : [])].map((x) => x.trim()).filter(Boolean)) b.want(["Spell"], fcSpell(name), "spell", [], from, undefined, true);
+    for (const name of [...m[1].split(/,\s*|\s+and\s+/), ...(m[2] ? m[2].split(/\s+and\s+/) : [])].map((x) => x.trim()).filter(Boolean))
+      b.want(["Spell"], fcSpell(name), "spell", [], from, undefined, true);
   }
 
   // A cantrip a species trait gives, named in the trait ("• Elven Lineage (Prestidigitation cantrip; ...)", "• Celestial
@@ -1760,38 +2458,78 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
 
   // Equipment: the armor worn is equipped; carried gear and magic items are carried, attuned when marked "(a)".
   const worn = /^Armor Class \d+ \.\.\. Armor worn: (.+)$/.exec(lines.find((l) => /^Armor Class \d+ \.\.\./.test(l)) ?? "")?.[1] ?? "";
-  for (const w of worn.split(",").map((x) => x.trim()).filter((x) => x && !/^none\b/i.test(x))) b.addItem(w.replace(/^wooden /, "").replace(/\bmagical\s+/i, "").replace(/\bchainmail\b/i, "chain mail"), 1, true, false);
+  for (const w of worn
+    .split(",")
+    .map((x) => x.trim())
+    .filter((x) => x && !/^none\b/i.test(x)))
+    b.addItem(
+      w
+        .replace(/^wooden /, "")
+        .replace(/\bmagical\s+/i, "")
+        .replace(/\bchainmail\b/i, "chain mail"),
+      1,
+      true,
+      false,
+    );
   const gear = /^Carried Gear[^:]*:\s*(.+)$/.exec(lines.find((l) => l.startsWith("Carried Gear")) ?? "")?.[1] ?? "";
   // Commas inside brackets belong to a pack's contents; the load note at the end is not an item.
-  let depth = 0, cur = "";
+  let depth = 0,
+    cur = "";
   const items: string[] = [];
   for (const ch of gear.replace(/\(This load.*$/, "")) {
     if (ch === "(") depth++;
     if (ch === ")") depth--;
-    if (ch === "," && depth === 0) { items.push(cur.trim()); cur = ""; } else cur += ch;
+    if (ch === "," && depth === 0) {
+      items.push(cur.trim());
+      cur = "";
+    } else cur += ch;
   }
   if (cur.trim()) items.push(cur.trim().replace(/\.$/, ""));
   const wornNames = new Set(worn.split(",").map((x) => normalize(x.replace(/^wooden /, ""))));
   for (const it of items) {
     // A pack's contents in brackets go; a count in brackets stays for the item reader ("ammunition: arrows (20)").
-    const clean = it.replace(/\s*\((?!\d+\)$)[^)]*\)\s*$/, "").replace(/^(?:set of)\s+/i, "").trim();
+    const clean = it
+      .replace(/\s*\((?!\d+\)$)[^)]*\)\s*$/, "")
+      .replace(/^(?:set of)\s+/i, "")
+      .trim();
     const qty = 1;
     if (!clean || wornNames.has(normalize(clean))) continue;
     const pair = /^(.+?) and (\d+ .+)$/.exec(clean);
-    if (pair) { b.addItem(pair[1], qty, false, false); b.addItem(pair[2], 1, false, false); continue; }
+    if (pair) {
+      b.addItem(pair[1], qty, false, false);
+      b.addItem(pair[2], 1, false, false);
+      continue;
+    }
     b.addItem(clean, qty, false, false);
   }
   let inMagic = false;
   for (const l of lines) {
-    if (/^Magic Items/.test(l)) { inMagic = true; continue; }
+    if (/^Magic Items/.test(l)) {
+      inMagic = true;
+      continue;
+    }
     if (inMagic && !l.startsWith("•")) inMagic = false;
     if (!inMagic) continue;
     const name = l.replace(/^•\s*/, "");
     const attuned = /\(a\)$/.test(name);
-    b.addItem(name.replace(/\s*\(a\)$/, "").replace(/\s*\([^)]*\)$/, "").replace(/\bmagic\s+/i, ""), 1, attuned, attuned);
+    b.addItem(
+      name
+        .replace(/\s*\(a\)$/, "")
+        .replace(/\s*\([^)]*\)$/, "")
+        .replace(/\bmagic\s+/i, ""),
+      1,
+      attuned,
+      attuned,
+    );
   }
   // Coins: "32,505 gold pieces (gp);".
-  for (const [k, word] of [["gp", "gold"], ["sp", "silver"], ["cp", "copper"], ["ep", "electrum"], ["pp", "platinum"]] as const) {
+  for (const [k, word] of [
+    ["gp", "gold"],
+    ["sp", "silver"],
+    ["cp", "copper"],
+    ["ep", "electrum"],
+    ["pp", "platinum"],
+  ] as const) {
     const v = num(new RegExp(`^([\\d,]+) ${word} pieces`));
     if (v) b.ch.coins[k] = v;
   }
@@ -1805,10 +2543,16 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
     passivePerception: num(/^(\d+) \.\.\. Passive Perception$/),
     initiative: num(/^([+-]\d+) \.\.\. Initiative Modifier$/),
     speed: num(/^(\d+) ft\. Speed \.\.\./),
-    saves, skills, skillLevels, saveProficient,
+    saves,
+    skills,
+    skillLevels,
+    saveProficient,
     languages: languages.filter((l) => !/^any/i.test(l)),
     tools: list("Tools").map((t) => t.replace(/^gaming set \((.+)\)$/i, "$1").replace(/^musical instrument \((.+)\)$/i, "$1")),
-    attacks: lines.map((l) => /^(.+?)\. (?:Melee|Ranged|Melee or Ranged) Weapon Attack: ([+-]\d+) to hit/.exec(l)).filter(Boolean).map((m) => ({ name: m![1], bonus: Number(m![2]) })),
+    attacks: lines
+      .map((l) => /^(.+?)\. (?:Melee|Ranged|Melee or Ranged) Weapon Attack: ([+-]\d+) to hit/.exec(l))
+      .filter(Boolean)
+      .map((m) => ({ name: m![1], bonus: Number(m![2]) })),
   };
   return b.finish(scores, { numbers });
 }

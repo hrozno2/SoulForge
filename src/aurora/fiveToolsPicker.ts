@@ -31,8 +31,26 @@ export interface Entry {
   raw: J;
 }
 
-const PAGES: Record<string, Kind> = { spells: "spell", items: "item", feats: "feat", races: "race", backgrounds: "background", bestiary: "monster", classes: "class", optionalfeatures: "optionalfeature" };
-const KEYS: Record<Kind, string[]> = { spell: ["spell"], item: ["item", "baseitem"], feat: ["feat"], race: ["race"], background: ["background"], monster: ["monster"], class: ["class"], optionalfeature: ["optionalfeature"] };
+const PAGES: Record<string, Kind> = {
+  spells: "spell",
+  items: "item",
+  feats: "feat",
+  races: "race",
+  backgrounds: "background",
+  bestiary: "monster",
+  classes: "class",
+  optionalfeatures: "optionalfeature",
+};
+const KEYS: Record<Kind, string[]> = {
+  spell: ["spell"],
+  item: ["item", "baseitem"],
+  feat: ["feat"],
+  race: ["race"],
+  background: ["background"],
+  monster: ["monster"],
+  class: ["class"],
+  optionalfeature: ["optionalfeature"],
+};
 
 export interface ParsedLink {
   kind: Kind;
@@ -48,7 +66,12 @@ export function parseLink(raw: string): ParsedLink | "unsupported" | "list" | nu
   } catch {
     return null;
   }
-  const page = u.pathname.split("/").pop()?.replace(/\.html$/i, "").toLowerCase() ?? "";
+  const page =
+    u.pathname
+      .split("/")
+      .pop()
+      ?.replace(/\.html$/i, "")
+      .toLowerCase() ?? "";
   const hash = decodeURIComponent(u.hash.replace(/^#/, ""));
   const first = hash.split(",")[0];
   const cut = first.lastIndexOf("_");
@@ -64,7 +87,17 @@ const jget = async (base: string, path: string): Promise<J> => JSON.parse(await 
 
 function entriesOf(kind: Kind, json: J): Entry[] {
   const out: Entry[] = [];
-  for (const key of KEYS[kind]) for (const raw of json[key] ?? []) if (raw?.name && raw.source) out.push({ kind, name: raw.name, source: raw.source, level: kind === "spell" ? raw.level : undefined, key, raw: kind === "class" ? { ...json, class: [raw] } : raw });
+  for (const key of KEYS[kind])
+    for (const raw of json[key] ?? [])
+      if (raw?.name && raw.source)
+        out.push({
+          kind,
+          name: raw.name,
+          source: raw.source,
+          level: kind === "spell" ? raw.level : undefined,
+          key,
+          raw: kind === "class" ? { ...json, class: [raw] } : raw,
+        });
   return out;
 }
 
@@ -85,23 +118,30 @@ async function filesFor(base: string, kind: Kind): Promise<{ path: string; sourc
 }
 
 /** Loads every entry of a category. Optionally only from one book (matched case-insensitively). */
-export async function loadCategory(base: string, kind: Kind, onProgress?: (done: number, total: number) => void, onlySource?: string): Promise<Entry[]> {
+export async function loadCategory(
+  base: string,
+  kind: Kind,
+  onProgress?: (done: number, total: number) => void,
+  onlySource?: string,
+): Promise<Entry[]> {
   let files = await filesFor(base, kind);
   if (onlySource && kind !== "class") files = files.filter((f) => !f.source || f.source.toLowerCase() === onlySource.toLowerCase());
   const out: Entry[] = [];
   let done = 0;
   const queue = [...files];
-  await Promise.all(Array.from({ length: 6 }, async () => {
-    while (queue.length) {
-      const f = queue.shift()!;
-      try {
-        out.push(...entriesOf(kind, await jget(base, f.path)));
-      } catch {
-        /* a missing optional file is skipped */
+  await Promise.all(
+    Array.from({ length: 6 }, async () => {
+      while (queue.length) {
+        const f = queue.shift()!;
+        try {
+          out.push(...entriesOf(kind, await jget(base, f.path)));
+        } catch {
+          /* a missing optional file is skipped */
+        }
+        onProgress?.(++done, files.length);
       }
-      onProgress?.(++done, files.length);
-    }
-  }));
+    }),
+  );
   return out;
 }
 
@@ -116,7 +156,9 @@ export async function resolveLinks(base: string, links: string[]): Promise<{ fou
       continue;
     }
     if (p === "list") {
-      problems.push(`That link points at a whole list, not one entry. On 5e.tools click an entry's name first, then copy the address: ${l.slice(0, 60)}`);
+      problems.push(
+        `That link points at a whole list, not one entry. On 5e.tools click an entry's name first, then copy the address: ${l.slice(0, 60)}`,
+      );
       continue;
     }
     if (p === "unsupported") {
@@ -152,7 +194,18 @@ export async function savePicks(base: string, entries: Entry[]): Promise<{ cfg: 
         // The whole class file: the class, its subclasses and every feature.
         for (const k of ["class", "subclass", "classFeature", "subclassFeature"]) {
           const b = (stored[k] ??= []) as J[];
-          for (const x of (e.raw[k] ?? []) as J[]) if (!b.some((y) => y.name === x.name && y.source === x.source && y.level === x.level && y.className === x.className && y.subclassShortName === x.subclassShortName)) b.push(x);
+          for (const x of (e.raw[k] ?? []) as J[])
+            if (
+              !b.some(
+                (y) =>
+                  y.name === x.name &&
+                  y.source === x.source &&
+                  y.level === x.level &&
+                  y.className === x.className &&
+                  y.subclassShortName === x.subclassShortName,
+              )
+            )
+              b.push(x);
         }
         added++;
         continue;
@@ -169,7 +222,10 @@ export async function savePicks(base: string, entries: Entry[]): Promise<{ cfg: 
       if (kind === "race") {
         const all = (await jget(base, "races.json")).subrace as J[] | undefined;
         const have = (stored.subrace ??= []) as J[];
-        for (const e of mine) for (const s of all ?? []) if (s.raceName === e.name && s.raceSource === e.source && !have.some((x) => x.name === s.name && x.source === s.source)) have.push(s);
+        for (const e of mine)
+          for (const s of all ?? [])
+            if (s.raceName === e.name && s.raceSource === e.source && !have.some((x) => x.name === s.name && x.source === s.source))
+              have.push(s);
       }
     }
     if (Object.keys(stored).length) files.set(PICK_FILE(kind), JSON.stringify(stored));
@@ -184,7 +240,12 @@ export async function savePicks(base: string, entries: Entry[]): Promise<{ cfg: 
       return undefined;
     }
   };
-  for (const path of ["books.json", ...(wanted.has("spell") || files.has(PICK_FILE("spell")) ? ["spells/sources.json"] : []), ...(files.has(PICK_FILE("item")) ? ["items-base.json"] : []), ...(files.has(PICK_FILE("class")) ? ["spells/sources.json", "optionalfeatures.json"] : [])]) {
+  for (const path of [
+    "books.json",
+    ...(wanted.has("spell") || files.has(PICK_FILE("spell")) ? ["spells/sources.json"] : []),
+    ...(files.has(PICK_FILE("item")) ? ["items-base.json"] : []),
+    ...(files.has(PICK_FILE("class")) ? ["spells/sources.json", "optionalfeatures.json"] : []),
+  ]) {
     const t = await support(path);
     if (t) files.set(path, t);
   }

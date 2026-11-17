@@ -18,9 +18,27 @@ const TIPS: Record<string, { title: string; items: string[] }> = {
       "Under Ability Scores, the Custom column takes your own modifiers.",
     ],
   },
-  magic: { title: "Magic", items: ["Spells filter by level, school, class, components, concentration and ritual.", "Prepared and known spells show on the Play tab by level."] },
-  equipment: { title: "Equipment", items: ["Starting equipment buttons add the class, background and pack gear in one click.", "Equip and attune from the list; armor class updates by itself."] },
-  manage: { title: "Manage", items: ["Level, hit points, details, custom bonuses and companions live here.", "Custom bonuses add to any stat without editing content."] },
+  magic: {
+    title: "Magic",
+    items: [
+      "Spells filter by level, school, class, components, concentration and ritual.",
+      "Prepared and known spells show on the Play tab by level.",
+    ],
+  },
+  equipment: {
+    title: "Equipment",
+    items: [
+      "Starting equipment buttons add the class, background and pack gear in one click.",
+      "Equip and attune from the list; armor class updates by itself.",
+    ],
+  },
+  manage: {
+    title: "Manage",
+    items: [
+      "Level, hit points, details, custom bonuses and companions live here.",
+      "Custom bonuses add to any stat without editing content.",
+    ],
+  },
   play: {
     title: "Play",
     items: [
@@ -57,11 +75,23 @@ export function HelpButton({ tab }: { tab: string }) {
   const t = TIPS[tab] ?? TIPS.start;
   return (
     <span className="help noprint">
-      <button className="help-btn" aria-label="Tips for this tab" aria-expanded={open} title="Tips for this tab" onClick={() => setOpen(!open)}>?</button>
+      <button
+        className="help-btn"
+        aria-label="Tips for this tab"
+        aria-expanded={open}
+        title="Tips for this tab"
+        onClick={() => setOpen(!open)}
+      >
+        ?
+      </button>
       {open && (
         <div className="help-pop" role="note">
           <b>{t.title}</b>
-          <ul>{t.items.map((i) => <li key={i}>{i}</li>)}</ul>
+          <ul>
+            {t.items.map((i) => (
+              <li key={i}>{i}</li>
+            ))}
+          </ul>
           <small className="muted">Full guide: docs/guide.md in the repository.</small>
         </div>
       )}
@@ -83,7 +113,20 @@ export function Hint({ id, children }: { id: string; children: ReactNode }) {
   return (
     <p className="hint noprint">
       <span>{children}</span>
-      <button aria-label="Dismiss tip" title="Dismiss" onClick={() => { setGone(true); try { localStorage.setItem(k, "1"); } catch { /* ignore */ } }}>×</button>
+      <button
+        aria-label="Dismiss tip"
+        title="Dismiss"
+        onClick={() => {
+          setGone(true);
+          try {
+            localStorage.setItem(k, "1");
+          } catch {
+            /* ignore */
+          }
+        }}
+      >
+        ×
+      </button>
     </p>
   );
 }

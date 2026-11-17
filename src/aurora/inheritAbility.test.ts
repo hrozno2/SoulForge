@@ -9,7 +9,13 @@ const C = process.env.SOULFORGE_RULES;
 describe.skipIf(!C)("inherit spellcasting ability", () => {
   it("casts a feat's spells with the ability the feat raised", () => {
     const reg = loadTestContent(C!);
-    const feat = reg.ofType("Feat").find((e) => e.spellcasting?.ability?.toLowerCase() === "inherit" && e.rules.some((r) => r.kind === "select" && r.type === "Ability Score Improvement"));
+    const feat = reg
+      .ofType("Feat")
+      .find(
+        (e) =>
+          e.spellcasting?.ability?.toLowerCase() === "inherit" &&
+          e.rules.some((r) => r.kind === "select" && r.type === "Ability Score Improvement"),
+      );
     expect(feat, "a feat with an inherited spellcasting ability and its own increase").toBeTruthy();
     let ch = newCharacter();
     ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_FIGHTER", level: 4 }];

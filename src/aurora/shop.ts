@@ -26,7 +26,13 @@ const asCp = (c: { value: string; attrs?: Record<string, string> } | undefined) 
 };
 
 /** Magic item values by rarity, in copper (the 2024 Dungeon Master's Guide; an artifact has none). */
-export const RARITY_CP: Record<string, number> = { common: 10000, uncommon: 40000, rare: 400000, "very rare": 4000000, legendary: 20000000 };
+export const RARITY_CP: Record<string, number> = {
+  common: 10000,
+  uncommon: 40000,
+  rare: 400000,
+  "very rare": 4000000,
+  legendary: 20000000,
+};
 
 /**
  * An item's price in copper ("5" gp, "1,500" gp, "2" sp), or undefined when it has none. With `rarity`, a magic item
@@ -36,7 +42,13 @@ export const RARITY_CP: Record<string, number> = { common: 10000, uncommon: 4000
 export function priceCp(el: AElement | undefined, rarity = false): number | undefined {
   const own = asCp(el?.setters.cost);
   if (own !== undefined || !rarity || !el) return own;
-  const r = RARITY_CP[(el.setters.rarity?.value ?? "").toLowerCase().replace(/\s*\(.*$/, "").trim()];
+  const r =
+    RARITY_CP[
+      (el.setters.rarity?.value ?? "")
+        .toLowerCase()
+        .replace(/\s*\(.*$/, "")
+        .trim()
+    ];
   if (!r) return undefined;
   return (asCp(el.setters["base cost"]) ?? 0) + (el.setters.consumable?.value === "true" ? r / 2 : r);
 }
@@ -50,7 +62,10 @@ export const purseCp = (c: Coinage) => SMALL_FIRST.reduce((n, k) => n + (c[k] ||
 export function asCoins(cp: number): Coinage {
   const out: Coinage = { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
   let left = Math.max(0, Math.round(cp));
-  for (const k of CHANGE) { out[k] = Math.floor(left / COPPER[k]); left -= out[k] * COPPER[k]; }
+  for (const k of CHANGE) {
+    out[k] = Math.floor(left / COPPER[k]);
+    left -= out[k] * COPPER[k];
+  }
   return out;
 }
 
@@ -66,7 +81,10 @@ export function pay(purse: Coinage, cost: number): Coinage | undefined {
   const left = { ...purse };
   let given = 0;
   for (const k of SMALL_FIRST) {
-    while (left[k] > 0 && given < cost) { left[k]--; given += COPPER[k]; }
+    while (left[k] > 0 && given < cost) {
+      left[k]--;
+      given += COPPER[k];
+    }
     if (given >= cost) break;
   }
   return add(left, asCoins(given - cost));
@@ -108,14 +126,18 @@ export function sell(ch: Character, uid: string, el: AElement | undefined, qty =
  */
 export function formatCp(cp: number): string {
   let left = Math.max(0, Math.round(cp));
-  const gp = Math.floor(left / 100); left -= gp * 100;
-  const sp = Math.floor(left / 10); const c = left - sp * 10;
+  const gp = Math.floor(left / 100);
+  left -= gp * 100;
+  const sp = Math.floor(left / 10);
+  const c = left - sp * 10;
   const parts = [gp ? `${gp.toLocaleString("en-US")} gp` : "", sp ? `${sp} sp` : "", c ? `${c} cp` : ""].filter(Boolean);
   return parts.join(" ") || "0 gp";
 }
 
 /** The coins a purse holds, largest first ("2 pp 73 gp 4 sp"). */
 export function formatCoins(c: Coinage): string {
-  const parts = (["pp", "gp", "ep", "sp", "cp"] as (keyof Coinage)[]).filter((k) => c[k]).map((k) => `${c[k].toLocaleString("en-US")} ${k}`);
+  const parts = (["pp", "gp", "ep", "sp", "cp"] as (keyof Coinage)[])
+    .filter((k) => c[k])
+    .map((k) => `${c[k].toLocaleString("en-US")} ${k}`);
   return parts.join(" ") || "no coins";
 }

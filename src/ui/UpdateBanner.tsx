@@ -22,8 +22,7 @@ export function UpdateBanner({ found, status, busy, install, dismiss }: Props) {
       {found ? (
         <>
           <span>
-            Version {found.version} is available.{" "}
-            {!canSelfUpdate(found.kind) && (PACKAGE_HINT[found.kind] ?? "")}
+            Version {found.version} is available. {!canSelfUpdate(found.kind) && (PACKAGE_HINT[found.kind] ?? "")}
           </span>
           {canSelfUpdate(found.kind) ? (
             <button className="primary" disabled={busy} onClick={install}>
@@ -35,7 +34,11 @@ export function UpdateBanner({ found, status, busy, install, dismiss }: Props) {
         </>
       ) : null}
       {status && <span className="muted">{status}</span>}
-      {status && !busy && dismiss && <button aria-label="Dismiss" title="Dismiss" onClick={dismiss}>×</button>}
+      {status && !busy && dismiss && (
+        <button aria-label="Dismiss" title="Dismiss" onClick={dismiss}>
+          ×
+        </button>
+      )}
     </div>
   );
 }

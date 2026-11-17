@@ -27,10 +27,7 @@ writeFileSync("src-tauri/Cargo.toml", cargo.replace(/^version = ".*"$/m, `versio
 // Keep Cargo.lock in step for the app's own entry.
 try {
   const lock = readFileSync("src-tauri/Cargo.lock", "utf8");
-  writeFileSync(
-    "src-tauri/Cargo.lock",
-    lock.replace(/(name = "charforge"\nversion = )"[^"]*"/, `$1"${version}"`),
-  );
+  writeFileSync("src-tauri/Cargo.lock", lock.replace(/(name = "charforge"\nversion = )"[^"]*"/, `$1"${version}"`));
 } catch {
   /* no lock file yet */
 }

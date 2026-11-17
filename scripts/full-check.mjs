@@ -19,22 +19,30 @@ const count = countAt >= 0 ? Number(args[countAt + 1]) || 10000 : 10000;
 const out = join(CACHE, "runs", `full-${new Date().toISOString().replace(/[:.]/g, "-")}`);
 mkdirSync(out, { recursive: true });
 
-const run = (name, cmd, cmdArgs, env = {}) => new Promise((done) => {
-  const started = Date.now();
-  process.stdout.write(`  ${name}...`);
-  const p = spawn(cmd, cmdArgs, { env: { ...process.env, SOULFORGE_RULES: CACHE, ...env }, stdio: ["ignore", "pipe", "pipe"] });
-  let log = "";
-  p.stdout.on("data", (d) => (log += d));
-  p.stderr.on("data", (d) => (log += d));
-  p.on("close", (code) => {
-    writeFileSync(join(out, `${name.replace(/[^\w-]+/g, "_")}.log`), log);
-    const mins = ((Date.now() - started) / 60000).toFixed(1);
-    // The lines the tests print about themselves (counts, gates), for the summary.
-    const facts = log.split("\n").filter((l) => /^(DIFF characters|DETERMINISM|EDITIONS|AURORA|PARITY|FASTCHAR|FIELDS|STATS|elements \d)|\d+ characters, \d+ with findings|Rules check (FAILED|passed)/.test(l.trim())).map((l) => l.trim().slice(0, 300));
-    console.log(` ${code === 0 ? "passed" : "FAILED"} (${mins} min)`);
-    done({ name, ok: code === 0, mins, facts });
+const run = (name, cmd, cmdArgs, env = {}) =>
+  new Promise((done) => {
+    const started = Date.now();
+    process.stdout.write(`  ${name}...`);
+    const p = spawn(cmd, cmdArgs, { env: { ...process.env, SOULFORGE_RULES: CACHE, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+    let log = "";
+    p.stdout.on("data", (d) => (log += d));
+    p.stderr.on("data", (d) => (log += d));
+    p.on("close", (code) => {
+      writeFileSync(join(out, `${name.replace(/[^\w-]+/g, "_")}.log`), log);
+      const mins = ((Date.now() - started) / 60000).toFixed(1);
+      // The lines the tests print about themselves (counts, gates), for the summary.
+      const facts = log
+        .split("\n")
+        .filter((l) =>
+          /^(DIFF characters|DETERMINISM|EDITIONS|AURORA|PARITY|FASTCHAR|FIELDS|STATS|elements \d)|\d+ characters, \d+ with findings|Rules check (FAILED|passed)/.test(
+            l.trim(),
+          ),
+        )
+        .map((l) => l.trim().slice(0, 300));
+      console.log(` ${code === 0 ? "passed" : "FAILED"} (${mins} min)`);
+      done({ name, ok: code === 0, mins, facts });
+    });
   });
-});
 
 console.log(`Full check, seed ${seed}. Files: ${out}`);
 const steps = [];
@@ -43,25 +51,62 @@ steps.push(await run("loader gates", "npx", ["vitest", "run", "src/engine/load.t
 steps.push(await run("rules check", "node", ["scripts/rules-check.mjs", seed]));
 const bigOut = join(out, "big");
 mkdirSync(bigOut, { recursive: true });
-steps.push(await run(`${count} random characters`, "npx", ["vitest", "run", "src/aurora/rules.suite.test.ts", "-t", "a big batch|writes the report", "--silent=false"], { RULES_SEED: seed, RULES_BIG: String(count), RULES_NOPDF: "1", RULES_OUT: bigOut, RULES_RUN: "full-big" }));
+steps.push(
+  await run(
+    `${count} random characters`,
+    "npx",
+    ["vitest", "run", "src/aurora/rules.suite.test.ts", "-t", "a big batch|writes the report", "--silent=false"],
+    { RULES_SEED: seed, RULES_BIG: String(count), RULES_NOPDF: "1", RULES_OUT: bigOut, RULES_RUN: "full-big" },
+  ),
+);
 const bigReport = join(bigOut, "report.md");
 if (existsSync(bigReport)) steps[steps.length - 1].facts.push(...readFileSync(bigReport, "utf8").split("\n").slice(2, 12).filter(Boolean));
-for (const [name, tier, file] of [["edition gate", "editions", "src/engine/editions.test.ts"], ["against Aurora", "aurora", "src/engine/aurora.test.ts"], ["Aurora against 5e.tools", "parity", "src/engine/parity.test.ts"], ["5e.tools with and without Aurora", "parity-effect", "src/engine/parityEffect.test.ts"], ["the SRD bundle", "srd-bundle", "src/aurora/srdBundle.test.ts"], ["against the SRD", "srd-api", "src/engine/srdApi.test.ts"], ["every source", "sources", "src/engine/sources.test.ts"], ["saved characters", "diff", "src/engine/timeline.diff.test.ts src/engine/determinism.test.ts"], ["FastCharacter", "fastchar", "src/aurora/fastchar.test.ts"]]) {
+for (const [name, tier, file] of [
+  ["edition gate", "editions", "src/engine/editions.test.ts"],
+  ["against Aurora", "aurora", "src/engine/aurora.test.ts"],
+  ["Aurora against 5e.tools", "parity", "src/engine/parity.test.ts"],
+  ["5e.tools with and without Aurora", "parity-effect", "src/engine/parityEffect.test.ts"],
+  ["the SRD bundle", "srd-bundle", "src/aurora/srdBundle.test.ts"],
+  ["against the SRD", "srd-api", "src/engine/srdApi.test.ts"],
+  ["every source", "sources", "src/engine/sources.test.ts"],
+  ["saved characters", "diff", "src/engine/timeline.diff.test.ts src/engine/determinism.test.ts"],
+  ["FastCharacter", "fastchar", "src/aurora/fastchar.test.ts"],
+]) {
   steps.push(await run(name, "npx", ["vitest", "run", ...file.split(" "), "--silent=false"], { RULES_TIER: tier }));
 }
 
 // Every content set, not only Aurora's: 5e.tools (what the release moves to) gets the same big batch; the built-in rules are
 // small, so a share of it covers them. The sweep touches every element of every set.
-steps.push(await run("every element of every content set", "npx", ["vitest", "run", "src/engine/coverage.test.ts", "--silent=false"], { RULES_TIER: "sweep" }));
-for (const [set, share] of [["5etools", 1], ["srd", 0.1]]) {
+steps.push(
+  await run("every element of every content set", "npx", ["vitest", "run", "src/engine/coverage.test.ts", "--silent=false"], {
+    RULES_TIER: "sweep",
+  }),
+);
+for (const [set, share] of [
+  ["5etools", 1],
+  ["srd", 0.1],
+]) {
   steps.push(await run(`rules check on ${set}`, "node", ["scripts/rules-check.mjs", seed], { RULES_CONTENT: set, RULES_PDF_LIMIT: "2" }));
   const dir = join(out, `big-${set}`);
   mkdirSync(dir, { recursive: true });
-  steps.push(await run(`${Math.round(count * share)} random characters on ${set}`, "npx", ["vitest", "run", "src/aurora/rules.suite.test.ts", "-t", "a big batch|writes the report"], { RULES_CONTENT: set, RULES_BIG: String(Math.round(count * share)), RULES_NOPDF: "1", RULES_SEED: seed, RULES_OUT: dir }));
+  steps.push(
+    await run(
+      `${Math.round(count * share)} random characters on ${set}`,
+      "npx",
+      ["vitest", "run", "src/aurora/rules.suite.test.ts", "-t", "a big batch|writes the report"],
+      { RULES_CONTENT: set, RULES_BIG: String(Math.round(count * share)), RULES_NOPDF: "1", RULES_SEED: seed, RULES_OUT: dir },
+    ),
+  );
 }
 
 const ok = steps.every((s) => s.ok);
-const summary = [`# Full check, ${new Date().toISOString().slice(0, 16).replace("T", " ")}`, "", `Seed ${seed}. ${ok ? "Everything passed." : "Something failed: see the step and its log."}`, "", ...steps.flatMap((s) => [`## ${s.ok ? "Passed" : "FAILED"}: ${s.name} (${s.mins} min)`, ...s.facts.map((f) => `- ${f}`), ""])];
+const summary = [
+  `# Full check, ${new Date().toISOString().slice(0, 16).replace("T", " ")}`,
+  "",
+  `Seed ${seed}. ${ok ? "Everything passed." : "Something failed: see the step and its log."}`,
+  "",
+  ...steps.flatMap((s) => [`## ${s.ok ? "Passed" : "FAILED"}: ${s.name} (${s.mins} min)`, ...s.facts.map((f) => `- ${f}`), ""]),
+];
 writeFileSync(join(out, "summary.md"), summary.join("\n"));
 console.log(`\n${summary.join("\n")}`);
 process.exit(ok ? 0 : 1);

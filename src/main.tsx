@@ -42,7 +42,10 @@ document.addEventListener("auxclick", (e) => {
 
 startLogbook();
 // The log file on the desktop (A2.7): this session's errors and warnings, kept past a crash or restart.
-void import("@tauri-apps/api/app").then(({ getVersion }) => getVersion()).then((v) => startLogFile(v)).catch(() => undefined);
+void import("@tauri-apps/api/app")
+  .then(({ getVersion }) => getVersion())
+  .then((v) => startLogFile(v))
+  .catch(() => undefined);
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ErrorBoundary scope="The app" whole>

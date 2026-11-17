@@ -11,7 +11,10 @@ const APP_VERSION = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev
  * `scope` says what failed, in the message and the log. The whole-app boundary offers to start without the open
  * character (it stays in the library); a screen's boundary offers to try again, and is reset by its `key`.
  */
-export class ErrorBoundary extends Component<{ scope: string; whole?: boolean; children: ReactNode }, { error: Error | null; copied: boolean }> {
+export class ErrorBoundary extends Component<
+  { scope: string; whole?: boolean; children: ReactNode },
+  { error: Error | null; copied: boolean }
+> {
   state = { error: null as Error | null, copied: false };
 
   static getDerivedStateFromError(error: Error) {
@@ -19,7 +22,10 @@ export class ErrorBoundary extends Component<{ scope: string; whole?: boolean; c
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    logEvent("crash", `${this.props.scope}: ${error?.message ?? error}${info.componentStack ? ` |${info.componentStack.split("\n").slice(0, 6).join(" |")}` : ""}`);
+    logEvent(
+      "crash",
+      `${this.props.scope}: ${error?.message ?? error}${info.componentStack ? ` |${info.componentStack.split("\n").slice(0, 6).join(" |")}` : ""}`,
+    );
   }
 
   private details(): string {
@@ -31,7 +37,12 @@ export class ErrorBoundary extends Component<{ scope: string; whole?: boolean; c
     const { error, copied } = this.state;
     if (!error) return this.props.children;
     const copy = async () => {
-      try { await navigator.clipboard.writeText(this.details()); this.setState({ copied: true }); } catch { /* shown below to select by hand */ }
+      try {
+        await navigator.clipboard.writeText(this.details());
+        this.setState({ copied: true });
+      } catch {
+        /* shown below to select by hand */
+      }
     };
     return (
       <div className="crash" role="alert">
@@ -39,11 +50,20 @@ export class ErrorBoundary extends Component<{ scope: string; whole?: boolean; c
         <p>This is a problem drawing the screen. Your saved characters are not changed by it.</p>
         <p className="crash-what">{String(error?.message ?? error)}</p>
         <div className="row">
-          <button className="primary" onClick={() => this.setState({ error: null })}>Try again</button>
+          <button className="primary" onClick={() => this.setState({ error: null })}>
+            Try again
+          </button>
           {this.props.whole && (
             <button
               title="Opens Soul Forge with no character open. The character stays in your library on Home."
-              onClick={() => { try { localStorage.removeItem(CURRENT_CHARACTER_KEY); } catch { /* storage can be unavailable */ } window.location.reload(); }}
+              onClick={() => {
+                try {
+                  localStorage.removeItem(CURRENT_CHARACTER_KEY);
+                } catch {
+                  /* storage can be unavailable */
+                }
+                window.location.reload();
+              }}
             >
               Start without the open character
             </button>

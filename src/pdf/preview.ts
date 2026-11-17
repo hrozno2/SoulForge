@@ -14,7 +14,9 @@ async function pdfjs() {
 }
 
 /** Starts loading pdf.js ahead of a preview, while the sheet is still being filled (C7.8). */
-export function warmPdf(): void { void pdfjs(); }
+export function warmPdf(): void {
+  void pdfjs();
+}
 
 export interface PdfPages {
   count: number;

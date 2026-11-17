@@ -16,19 +16,38 @@ export function Fold({ open, children, className = "" }: { open: boolean; childr
   useEffect(() => {
     if (open) {
       setMounted(true);
-      if (reduced()) { setShut(false); setSettled(true); return; }
+      if (reduced()) {
+        setShut(false);
+        setSettled(true);
+        return;
+      }
       let t = 0;
-      const f = requestAnimationFrame(() => requestAnimationFrame(() => { setShut(false); t = window.setTimeout(() => setSettled(true), MS); }));
-      return () => { cancelAnimationFrame(f); window.clearTimeout(t); };
+      const f = requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          setShut(false);
+          t = window.setTimeout(() => setSettled(true), MS);
+        }),
+      );
+      return () => {
+        cancelAnimationFrame(f);
+        window.clearTimeout(t);
+      };
     }
     setSettled(false);
     setShut(true);
-    if (reduced()) { setMounted(false); return; }
+    if (reduced()) {
+      setMounted(false);
+      return;
+    }
     const t = window.setTimeout(() => setMounted(false), MS);
     return () => window.clearTimeout(t);
   }, [open]);
   if (!mounted) return null;
-  return <div className={`fold ${shut ? "shut" : ""} ${settled ? "settled" : ""} ${className}`}><div className="fold-inner">{children}</div></div>;
+  return (
+    <div className={`fold ${shut ? "shut" : ""} ${settled ? "settled" : ""} ${className}`}>
+      <div className="fold-inner">{children}</div>
+    </div>
+  );
 }
 
 /** Scrolls an element's top into view after a fold, smoothly unless motion is reduced. */
@@ -36,7 +55,8 @@ export function useScrollOnFold<T extends HTMLElement>(folded: boolean) {
   const ref = useRef<T>(null);
   const was = useRef(folded);
   useEffect(() => {
-    if (folded && !was.current) window.setTimeout(() => ref.current?.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "nearest" }), MS);
+    if (folded && !was.current)
+      window.setTimeout(() => ref.current?.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "nearest" }), MS);
     was.current = folded;
   }, [folded]);
   return ref;

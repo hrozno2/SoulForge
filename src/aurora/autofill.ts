@@ -11,17 +11,27 @@ import { repeatedPicks } from "./rulesCheck";
  * Fills every open choice with the first sensible option. Used for random characters and tests.
  * `prefer` can steer picks, for example by element name.
  */
-export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: string, optionName: string) => number = () => 0, allow: (el: import("./types").AElement) => boolean = () => true): Character {
+export function autoFill(
+  ch: Character,
+  reg: ARegistry,
+  prefer: (slotName: string, optionName: string) => number = () => 0,
+  allow: (el: import("./types").AElement) => boolean = () => true,
+): Character {
   let cur = ch;
   // Picks that made an earlier choice illegal (2014 Alert at level 4 after 2024 Alert at level 5), not tried again.
   const bad = new Set<string>();
   // A pick that makes an earlier choice illegal, or opens a choice with no legal option left (Resilient for a
   // monk who already has every saving throw), or that makes an earlier pick a repeat (the Survivalist feat after
   // Expertise in Survival), is a dead end.
-  const blockedCount = (r: ReturnType<typeof resolve>) => r.slots.reduce((n, s) => {
-    const dead = !s.rule.optional && s.chosen.length < s.rule.number && s.options.length > 0 && s.options.every((o) => s.chosen.includes(o.id) || s.blocked.has(o.id) || r.ids.has(o.id));
-    return n + s.chosen.filter((id) => s.blocked.has(id)).length + (dead ? 1 : 0) + repeatedPicks(r, s).length;
-  }, 0);
+  const blockedCount = (r: ReturnType<typeof resolve>) =>
+    r.slots.reduce((n, s) => {
+      const dead =
+        !s.rule.optional &&
+        s.chosen.length < s.rule.number &&
+        s.options.length > 0 &&
+        s.options.every((o) => s.chosen.includes(o.id) || s.blocked.has(o.id) || r.ids.has(o.id));
+      return n + s.chosen.filter((id) => s.blocked.has(id)).length + (dead ? 1 : 0) + repeatedPicks(r, s).length;
+    }, 0);
   // Level by level, the way a player builds: origin and level 1 first, then each level's new choices, judged against
   // the character at that level. Each pick then only touches the level being built (the timeline reuses the levels
   // below it), and no choice is filled with something only a later level allows.
@@ -64,7 +74,9 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
       const always = new Set([...line.granted.map((g) => g.id), ...line.spells.filter((p) => p.granted).map((p) => p.id)]);
       const have = (prepared[line.name] ?? []).filter((id) => !always.has(id));
       if (have.length >= line.prepareMax) continue;
-      const pool = preparePool(r, line).filter((e) => !always.has(e.id) && !have.includes(e.id) && allow(e)).sort((a, b) => prefer(`Prepared (${line.name})`, b.name) - prefer(`Prepared (${line.name})`, a.name));
+      const pool = preparePool(r, line)
+        .filter((e) => !always.has(e.id) && !have.includes(e.id) && allow(e))
+        .sort((a, b) => prefer(`Prepared (${line.name})`, b.name) - prefer(`Prepared (${line.name})`, a.name));
       prepared = { ...prepared, [line.name]: [...have, ...pool.slice(0, line.prepareMax - have.length).map((e) => e.id)] };
       changed = true;
     }
@@ -72,37 +84,47 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
   }
 
   function fillLevel(start: Character, n: number): Character {
-  let cur = start;
-  for (let i = 0; i < 600; i++) {
-    const r = resolve(atLevel(cur, n), reg);
-    const open = r.slots.find((s) => !s.defaulted && stillToChoose(s, r));
-    if (!open) break;
-    const taken = new Set(open.chosen);
-    // Not what the character already has, under any provider's id.
-    const hadConcepts = new Set(r.active.map((a) => conceptOf(a.el)).filter(Boolean));
-    const had = (o: (typeof open.options)[number]) => r.ids.has(o.id) || (!!conceptOf(o) && hadConcepts.has(conceptOf(o)));
-    const free = open.options.filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !o.comingSoon && !had(o) && !bad.has(`${open.key} ${o.id}`));
-    // Options from books the player shows come first; the others only when nothing else fits.
-    const shown = free.filter(allow);
-    // How many later choices need an option: the most needed first, then the caller's preference (random builds).
-    const wanted = (o: { id: string }) => Math.max(needed.get(o.id) ?? 0, needed.get(conceptOf(o as never) ?? "") ?? 0);
-    const score = new Map(free.map((o) => [o.id, prefer(open.rule.name, o.name)]));
-    // A language choice takes one of the Standard Languages before a rare or a setting's own (the choice offers every
-    // language, since a DM may allow any).
-    const standard = (o: (typeof free)[number]) => (o.type === "Language" && o.supports.includes("standard") ? 1 : 0);
-    const candidates = (shown.length ? shown : free)
-      .sort((a, b) => wanted(b) - wanted(a) || Number(score.get(b.id)! >= 100) - Number(score.get(a.id)! >= 100) || standard(b) - standard(a) || score.get(b.id)! - score.get(a.id)!);
-    // If every allowed option leads to a dead end somewhere else, the best allowed one is still better than none;
-    // an option the rules rule out is never picked (with none allowed, stillToChoose leaves the choice alone).
-    // Last resort, in order: any legal option the character does not have yet, then any legal option at all.
-    const legal = open.options.filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !o.comingSoon);
-    const pick = candidates[0] ?? legal.find((o) => !had(o)) ?? legal[0];
-    if (!pick) break;
-    const next = { ...cur, selections: { ...cur.selections, [open.key]: [...open.chosen, pick.id] } };
-    if (candidates.length > 1 && blockedCount(resolve(atLevel(next, n), reg)) > blockedCount(r)) { bad.add(`${open.key} ${pick.id}`); continue; }
-    cur = next;
-  }
-  return cur;
+    let cur = start;
+    for (let i = 0; i < 600; i++) {
+      const r = resolve(atLevel(cur, n), reg);
+      const open = r.slots.find((s) => !s.defaulted && stillToChoose(s, r));
+      if (!open) break;
+      const taken = new Set(open.chosen);
+      // Not what the character already has, under any provider's id.
+      const hadConcepts = new Set(r.active.map((a) => conceptOf(a.el)).filter(Boolean));
+      const had = (o: (typeof open.options)[number]) => r.ids.has(o.id) || (!!conceptOf(o) && hadConcepts.has(conceptOf(o)));
+      const free = open.options.filter(
+        (o) => !taken.has(o.id) && !open.blocked.has(o.id) && !o.comingSoon && !had(o) && !bad.has(`${open.key} ${o.id}`),
+      );
+      // Options from books the player shows come first; the others only when nothing else fits.
+      const shown = free.filter(allow);
+      // How many later choices need an option: the most needed first, then the caller's preference (random builds).
+      const wanted = (o: { id: string }) => Math.max(needed.get(o.id) ?? 0, needed.get(conceptOf(o as never) ?? "") ?? 0);
+      const score = new Map(free.map((o) => [o.id, prefer(open.rule.name, o.name)]));
+      // A language choice takes one of the Standard Languages before a rare or a setting's own (the choice offers every
+      // language, since a DM may allow any).
+      const standard = (o: (typeof free)[number]) => (o.type === "Language" && o.supports.includes("standard") ? 1 : 0);
+      const candidates = (shown.length ? shown : free).sort(
+        (a, b) =>
+          wanted(b) - wanted(a) ||
+          Number(score.get(b.id)! >= 100) - Number(score.get(a.id)! >= 100) ||
+          standard(b) - standard(a) ||
+          score.get(b.id)! - score.get(a.id)!,
+      );
+      // If every allowed option leads to a dead end somewhere else, the best allowed one is still better than none;
+      // an option the rules rule out is never picked (with none allowed, stillToChoose leaves the choice alone).
+      // Last resort, in order: any legal option the character does not have yet, then any legal option at all.
+      const legal = open.options.filter((o) => !taken.has(o.id) && !open.blocked.has(o.id) && !o.comingSoon);
+      const pick = candidates[0] ?? legal.find((o) => !had(o)) ?? legal[0];
+      if (!pick) break;
+      const next = { ...cur, selections: { ...cur.selections, [open.key]: [...open.chosen, pick.id] } };
+      if (candidates.length > 1 && blockedCount(resolve(atLevel(next, n), reg)) > blockedCount(r)) {
+        bad.add(`${open.key} ${pick.id}`);
+        continue;
+      }
+      cur = next;
+    }
+    return cur;
   }
 }
 
@@ -112,7 +134,11 @@ export function autoFill(ch: Character, reg: ARegistry, prefer: (slotName: strin
  */
 function demanded(r: ReturnType<typeof resolve>, reg: ARegistry): Map<string, number> {
   const out = new Map<string, number>();
-  const bump = (k: string, seenHere: Set<string>) => { if (seenHere.has(k)) return; seenHere.add(k); out.set(k, (out.get(k) ?? 0) + 1); };
+  const bump = (k: string, seenHere: Set<string>) => {
+    if (seenHere.has(k)) return;
+    seenHere.add(k);
+    out.set(k, (out.get(k) ?? 0) + 1);
+  };
   const seen = new Set<string>();
   const roots = [r.character.race, r.character.background, ...r.character.classes.map((c) => c.classId)].filter(Boolean) as string[];
   const visit = (id: string, depth: number) => {

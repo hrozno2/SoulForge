@@ -21,16 +21,28 @@ describe.skipIf(!C)("multiclass spellcasting", () => {
   const reg = C ? loadTestContent(C) : undefined!;
   const ref: RefClass[] = C ? JSON.parse(readFileSync(join(C, "rules-ref.json"), "utf8")) : [];
   const CASTERS: [string, string?][] = [
-    ["Bard"], ["Cleric"], ["Druid"], ["Sorcerer"], ["Wizard"], ["Warlock"], ["Paladin"], ["Ranger"],
-    ["Fighter", "Eldritch Knight"], ["Rogue", "Arcane Trickster"],
+    ["Bard"],
+    ["Cleric"],
+    ["Druid"],
+    ["Sorcerer"],
+    ["Wizard"],
+    ["Warlock"],
+    ["Paladin"],
+    ["Ranger"],
+    ["Fighter", "Eldritch Knight"],
+    ["Rogue", "Arcane Trickster"],
   ];
-  const ids = (prefix: string) => CASTERS.map(([cls, sub]) => ({ cls: reg.ofType("Class").find((c) => c.name === cls && c.id.startsWith(prefix)), sub }))
-    .filter((x) => x.cls).concat(prefix === "ID_WOTC_PHB_" ? [{ cls: reg.get("ID_WOTC_TCOE_CLASS_ARTIFICER"), sub: undefined }] : []);
+  const ids = (prefix: string) =>
+    CASTERS.map(([cls, sub]) => ({ cls: reg.ofType("Class").find((c) => c.name === cls && c.id.startsWith(prefix)), sub }))
+      .filter((x) => x.cls)
+      .concat(prefix === "ID_WOTC_PHB_" ? [{ cls: reg.get("ID_WOTC_TCOE_CLASS_ARTIFICER"), sub: undefined }] : []);
   const withSub = (ch: Character, subName?: string) => {
     if (!subName) return ch;
     for (let i = 0; i < 2; i++) {
       const r = resolve(ch, reg);
-      const s = r.slots.find((x) => x.rule.type === "Archetype" && x.chosen.length < x.rule.number && x.options.some((o) => o.name === subName));
+      const s = r.slots.find(
+        (x) => x.rule.type === "Archetype" && x.chosen.length < x.rule.number && x.options.some((o) => o.name === subName),
+      );
       if (!s) break;
       ch = { ...ch, selections: { ...ch.selections, [s.key]: [s.options.find((o) => o.name === subName)!.id] } };
     }
@@ -43,20 +55,33 @@ describe.skipIf(!C)("multiclass spellcasting", () => {
       const bad: string[] = [];
       let n = 0;
       let multi = 0;
-      for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) for (const [a, b] of [[3, 2], [5, 4], [9, 7]]) {
-        let ch = newCharacter();
-        ch.classes = [{ classId: list[i].cls!.id, level: a }, { classId: list[j].cls!.id, level: b }];
-        for (const k of ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const) ch.abilityBase[k] = 14;
-        ch = withSub(withSub(ch, list[i].sub), list[j].sub);
-        ch = autoFill(ch, reg, () => 0.5);
-        ch = withSub(withSub(ch, list[i].sub), list[j].sub);
-        const r = resolve(ch, reg);
-        const sh = buildSheet(r);
-        if (sh.casting.length >= 2) multi++;
-        const found = checkCharacter(r, sh, ref).filter((f) => SPELL_RULES.test(f.rule));
-        n++;
-        for (const f of found) bad.push(`${list[i].cls!.name}${list[i].sub ? ` (${list[i].sub})` : ""} ${a} / ${list[j].cls!.name}${list[j].sub ? ` (${list[j].sub})` : ""} ${b}: ${f.rule}: ${f.detail}`);
-      }
+      for (let i = 0; i < list.length; i++)
+        for (let j = i + 1; j < list.length; j++)
+          for (const [a, b] of [
+            [3, 2],
+            [5, 4],
+            [9, 7],
+          ]) {
+            let ch = newCharacter();
+            ch.classes = [
+              { classId: list[i].cls!.id, level: a },
+              { classId: list[j].cls!.id, level: b },
+            ];
+            for (const k of ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const)
+              ch.abilityBase[k] = 14;
+            ch = withSub(withSub(ch, list[i].sub), list[j].sub);
+            ch = autoFill(ch, reg, () => 0.5);
+            ch = withSub(withSub(ch, list[i].sub), list[j].sub);
+            const r = resolve(ch, reg);
+            const sh = buildSheet(r);
+            if (sh.casting.length >= 2) multi++;
+            const found = checkCharacter(r, sh, ref).filter((f) => SPELL_RULES.test(f.rule));
+            n++;
+            for (const f of found)
+              bad.push(
+                `${list[i].cls!.name}${list[i].sub ? ` (${list[i].sub})` : ""} ${a} / ${list[j].cls!.name}${list[j].sub ? ` (${list[j].sub})` : ""} ${b}: ${f.rule}: ${f.detail}`,
+              );
+          }
       expect(n).toBeGreaterThan(80);
       // Not a pass by default: most pairs really are two casters at once.
       expect(multi).toBeGreaterThan(n * 0.6);

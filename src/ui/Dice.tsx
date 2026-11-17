@@ -31,7 +31,14 @@ export function parseDice(expr: string): { terms: { sign: 1 | -1; count: number;
     const sign: 1 | -1 = p.startsWith("-") ? -1 : 1;
     const body = p.replace(/^[+-]/, "");
     const m = body.match(/^(\d*)d(\d+)(?:kh(\d+))?$/);
-    if (m) terms.push({ sign, count: m[1] ? parseInt(m[1], 10) : 1, sides: parseInt(m[2], 10), flat: 0, ...(m[3] ? { keep: parseInt(m[3], 10) } : {}) });
+    if (m)
+      terms.push({
+        sign,
+        count: m[1] ? parseInt(m[1], 10) : 1,
+        sides: parseInt(m[2], 10),
+        flat: 0,
+        ...(m[3] ? { keep: parseInt(m[3], 10) } : {}),
+      });
     else if (/^\d+$/.test(body)) terms.push({ sign, count: 0, sides: 0, flat: parseInt(body, 10) });
     else return null;
   }
@@ -50,7 +57,14 @@ export function rollExpression(expr: string, label = "", rng: () => number = Mat
       if (t.count > 200 || t.sides > 1000) return null;
       const r = Array.from({ length: t.count }, () => 1 + Math.floor(rng() * t.sides));
       // Keeping the highest few: the lowest dice drop (the first of equal ones).
-      const dropped = t.keep !== undefined && t.keep < r.length ? r.map((v, i) => [v, i]).sort((a, b) => a[0] - b[0] || b[1] - a[1]).slice(0, r.length - t.keep).map(([, i]) => i) : [];
+      const dropped =
+        t.keep !== undefined && t.keep < r.length
+          ? r
+              .map((v, i) => [v, i])
+              .sort((a, b) => a[0] - b[0] || b[1] - a[1])
+              .slice(0, r.length - t.keep)
+              .map(([, i]) => i)
+          : [];
       const sum = r.reduce((a, b, i) => a + (dropped.includes(i) ? 0 : b), 0);
       rolls.push(...r);
       total += t.sign * sum;
@@ -132,11 +146,17 @@ export function setRollContext(c: { conditions: string[]; exhaustion: number }):
 /** Normal / Advantage / Disadvantage switch for d20 rolls. Lives on the sheet. */
 export function RollModeSwitch() {
   const m = useRollMode();
-  const opts: [RollMode, string][] = [["dis", "Disadvantage"], ["normal", "Normal"], ["adv", "Advantage"]];
+  const opts: [RollMode, string][] = [
+    ["dis", "Disadvantage"],
+    ["normal", "Normal"],
+    ["adv", "Advantage"],
+  ];
   return (
     <div className="rollmode" role="group" aria-label="Roll mode for d20 rolls">
       {opts.map(([k, t]) => (
-        <button key={k} className={`${k} ${m === k ? "on" : ""}`} aria-pressed={m === k} onClick={() => setRollMode(k)}>{t}</button>
+        <button key={k} className={`${k} ${m === k ? "on" : ""}`} aria-pressed={m === k} onClick={() => setRollMode(k)}>
+          {t}
+        </button>
       ))}
     </div>
   );
@@ -157,19 +177,23 @@ export function DieIcon({ sides, label, size = 34 }: { sides: number; label?: st
     <svg className="die-icon" width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
       <path d={SHAPES[sides] ?? SHAPES[20]} />
       {sides === 20 && <path className="inner" d="M20 2 L5 29 M20 2 L35 29 M5 11 L35 11 M5 29 L35 29" />}
-      <text x="20" y="25" textAnchor="middle">{label ?? sides}</text>
+      <text x="20" y="25" textAnchor="middle">
+        {label ?? sides}
+      </text>
     </svg>
   );
 }
 
 /** The sum written out: "16 + 2 = 18", with several dice of a kind in brackets. */
 export function rollMath(r: RollResult): string {
-  const parts = r.terms.filter((t) => t.sides > 0 || t.sum !== 0).map((t, i) => {
-    const kept = t.rolls.filter((_, j) => !t.dropped?.includes(j));
-    const body = t.sides ? (kept.length > 1 ? `(${kept.join(" + ")})` : String(kept[0] ?? 0)) : String(Math.abs(t.sum));
-    const neg = t.sign < 0;
-    return i === 0 ? `${neg ? "−" : ""}${body}` : `${neg ? "−" : "+"} ${body}`;
-  });
+  const parts = r.terms
+    .filter((t) => t.sides > 0 || t.sum !== 0)
+    .map((t, i) => {
+      const kept = t.rolls.filter((_, j) => !t.dropped?.includes(j));
+      const body = t.sides ? (kept.length > 1 ? `(${kept.join(" + ")})` : String(kept[0] ?? 0)) : String(Math.abs(t.sum));
+      const neg = t.sign < 0;
+      return i === 0 ? `${neg ? "−" : ""}${body}` : `${neg ? "−" : "+"} ${body}`;
+    });
   return `${parts.join(" ")} = ${r.total}`;
 }
 
@@ -183,13 +207,31 @@ function RollBody({ r, dim }: { r: RollResult; dim?: boolean }) {
       <div className="roll-dice">
         {dice.map((t, i) => (
           <span key={i} className="roll-group" title={`${t.rolls.length}d${t.sides}`}>
-            <small>{t.sign < 0 ? "−" : ""}{t.rolls.length}d{t.sides}</small>
-            {t.rolls.map((v, j) => <span key={j} className={t.dropped?.includes(j) ? "chip dropped" : v === t.sides ? "chip max" : v === 1 ? "chip min" : "chip"} title={t.dropped?.includes(j) ? "Dropped" : undefined}>{v}</span>)}
+            <small>
+              {t.sign < 0 ? "−" : ""}
+              {t.rolls.length}d{t.sides}
+            </small>
+            {t.rolls.map((v, j) => (
+              <span
+                key={j}
+                className={t.dropped?.includes(j) ? "chip dropped" : v === t.sides ? "chip max" : v === 1 ? "chip min" : "chip"}
+                title={t.dropped?.includes(j) ? "Dropped" : undefined}
+              >
+                {v}
+              </span>
+            ))}
           </span>
         ))}
-        {flat !== 0 && <span className="roll-group"><small>bonus</small><span className="chip flat">{flat > 0 ? `+${flat}` : `−${-flat}`}</span></span>}
+        {flat !== 0 && (
+          <span className="roll-group">
+            <small>bonus</small>
+            <span className="chip flat">{flat > 0 ? `+${flat}` : `−${-flat}`}</span>
+          </span>
+        )}
       </div>
-      <div className="roll-math" aria-label="The sum">{rollMath(r)}</div>
+      <div className="roll-math" aria-label="The sum">
+        {rollMath(r)}
+      </div>
       <div className="roll-total">{r.total}</div>
     </div>
   );
@@ -205,8 +247,16 @@ function RollCard({ r }: { r: RollResult }) {
         <RollBody r={r} />
         {r.other && <RollBody r={r.other} dim />}
       </div>
-      {r.dc && <div className={r.dc.success ? "roll-dc ok" : "roll-dc bad"}>vs DC {r.dc.value}: {r.dc.success ? "success" : "fail"}</div>}
-      {r.notes?.map((n, i) => <small key={i} className="roll-note">{n}</small>)}
+      {r.dc && (
+        <div className={r.dc.success ? "roll-dc ok" : "roll-dc bad"}>
+          vs DC {r.dc.value}: {r.dc.success ? "success" : "fail"}
+        </div>
+      )}
+      {r.notes?.map((n, i) => (
+        <small key={i} className="roll-note">
+          {n}
+        </small>
+      ))}
     </div>
   );
 }
@@ -225,15 +275,23 @@ export function DicePanel() {
     const expression = fx && fx.penalty ? `${clean}${fx.penalty}` : e;
     const notes = fx ? [...fx.notes] : [];
     // The switch on the sheet and the conditions together decide advantage: any of each cancel out.
-    const finalMode = isD20 ? combine((mode === "adv" ? 1 : 0) + (fx?.mode === "adv" ? 1 : 0), (mode === "dis" ? 1 : 0) + (fx?.mode === "dis" ? 1 : 0)) : "none";
+    const finalMode = isD20
+      ? combine((mode === "adv" ? 1 : 0) + (fx?.mode === "adv" ? 1 : 0), (mode === "dis" ? 1 : 0) + (fx?.mode === "dis" ? 1 : 0))
+      : "none";
     const r = rollExpression(expression, label);
     if (!r) return null;
     let out: RollResult = r;
     if (isD20 && finalMode !== "none") {
       const r2 = rollExpression(expression, label);
       if (r2) {
-        const keep = finalMode === "adv" ? (r2.total > r.total ? r2 : r) : (r2.total < r.total ? r2 : r);
-        out = { ...keep, label: `${label ? label + " " : ""}(${finalMode === "adv" ? "advantage" : "disadvantage"})`, detail: `${keep.detail}, other ${keep === r ? r2.total : r.total}`, dropped: (keep === r ? r2 : r).rolls[0], other: keep === r ? r2 : r };
+        const keep = finalMode === "adv" ? (r2.total > r.total ? r2 : r) : r2.total < r.total ? r2 : r;
+        out = {
+          ...keep,
+          label: `${label ? label + " " : ""}(${finalMode === "adv" ? "advantage" : "disadvantage"})`,
+          detail: `${keep.detail}, other ${keep === r ? r2.total : r.total}`,
+          dropped: (keep === r ? r2 : r).rolls[0],
+          other: keep === r ? r2 : r,
+        };
       }
     }
     if (fx?.autoFail) {
@@ -265,7 +323,11 @@ export function DicePanel() {
       {open && (
         <div className="dice-panel">
           <div className="dice-result" aria-live="polite">
-            {last ? <RollCard r={last} /> : <span className="muted">Click dice to add them, then Roll. Or click a bonus on the sheet.</span>}
+            {last ? (
+              <RollCard r={last} />
+            ) : (
+              <span className="muted">Click dice to add them, then Roll. Or click a bonus on the sheet.</span>
+            )}
           </div>
           <div className="dice-shapes">
             {[4, 6, 8, 10, 12, 20, 100].map((n) => {
@@ -276,7 +338,10 @@ export function DicePanel() {
                   className={c ? "die-btn has" : "die-btn"}
                   title={`Add a d${n}. Right-click or Shift-click removes one.`}
                   onClick={(e) => setExpr((x) => changePool(x, n, e.shiftKey ? -1 : 1))}
-                  onContextMenu={(e) => { e.preventDefault(); setExpr((x) => changePool(x, n, -1)); }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setExpr((x) => changePool(x, n, -1));
+                  }}
                 >
                   <DieIcon sides={n} label={n === 100 ? "%" : String(n)} />
                   {c > 0 && <span className="die-count">{c}</span>}
@@ -284,12 +349,34 @@ export function DicePanel() {
               );
             })}
           </div>
-          <form className="row dice-form" onSubmit={(e) => { e.preventDefault(); if (expr.trim()) { roll(expr); setExpr(""); } }}>
-            <button type="button" title="Subtract 1" onClick={() => setExpr((x) => changePool(x, 0, -1))}>−1</button>
-            <button type="button" title="Add 1" onClick={() => setExpr((x) => changePool(x, 0, 1))}>+1</button>
-            <input value={expr} onChange={(e) => setExpr(e.target.value)} placeholder="Click dice, or type 2d6+3" aria-label="Dice to roll" />
-            <button type="button" onClick={() => setExpr("")} disabled={!expr}>Clear</button>
-            <button className="primary" type="submit" disabled={!expr.trim()}>Roll</button>
+          <form
+            className="row dice-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (expr.trim()) {
+                roll(expr);
+                setExpr("");
+              }
+            }}
+          >
+            <button type="button" title="Subtract 1" onClick={() => setExpr((x) => changePool(x, 0, -1))}>
+              −1
+            </button>
+            <button type="button" title="Add 1" onClick={() => setExpr((x) => changePool(x, 0, 1))}>
+              +1
+            </button>
+            <input
+              value={expr}
+              onChange={(e) => setExpr(e.target.value)}
+              placeholder="Click dice, or type 2d6+3"
+              aria-label="Dice to roll"
+            />
+            <button type="button" onClick={() => setExpr("")} disabled={!expr}>
+              Clear
+            </button>
+            <button className="primary" type="submit" disabled={!expr.trim()}>
+              Roll
+            </button>
           </form>
           {m !== "normal" && <small className="muted">d20 rolls use {m === "adv" ? "advantage" : "disadvantage"}</small>}
           <button className="log-toggle" aria-expanded={logOpen} onClick={() => setLogOpen(!logOpen)}>
@@ -298,7 +385,13 @@ export function DicePanel() {
           {logOpen && (
             <ul className="history">
               {history.map((h, i) => (
-                <li key={i}><b>{h.total}</b> <span className="muted">{h.label ? `${h.label} ` : ""}{h.expr} {h.detail}</span></li>
+                <li key={i}>
+                  <b>{h.total}</b>{" "}
+                  <span className="muted">
+                    {h.label ? `${h.label} ` : ""}
+                    {h.expr} {h.detail}
+                  </span>
+                </li>
               ))}
               {!history.length && <li className="muted">No rolls yet.</li>}
             </ul>
@@ -306,7 +399,14 @@ export function DicePanel() {
         </div>
       )}
       <button className="primary dice-toggle" onClick={() => (open ? close() : setOpen(true))}>
-        {open ? "Close dice" : <><DiceBag size={26} /><span>Dice</span></>}
+        {open ? (
+          "Close dice"
+        ) : (
+          <>
+            <DiceBag size={26} />
+            <span>Dice</span>
+          </>
+        )}
       </button>
     </div>
   );

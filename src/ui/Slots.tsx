@@ -28,7 +28,15 @@ export function ownership(r: Resolved, el: AElement, thisSlot: string | string[]
   const a = r.active.find((x) => x.el.id === el.id);
   const from = a?.from ? r.reg.get(a.from)?.name : undefined;
   const ch = r.character;
-  const rootId = !a ? "" : a.root === "race" ? ch.race ?? "" : a.root === "background" ? ch.background ?? "" : a.root.startsWith("class:") ? a.root.slice(6) : "";
+  const rootId = !a
+    ? ""
+    : a.root === "race"
+      ? (ch.race ?? "")
+      : a.root === "background"
+        ? (ch.background ?? "")
+        : a.root.startsWith("class:")
+          ? a.root.slice(6)
+          : "";
   const root = rootId ? r.reg.get(rootId)?.name : undefined;
   if (from && root && root !== from) return `Granted by ${from} (${root}).`;
   if (from || root) return `Granted by ${from ?? root}.`;
@@ -42,7 +50,17 @@ export function setSelection(set: SetCharacter, key: string, ids: string[]): voi
 /** Several identical choices (two spells at level 1, two more at 3, and so on) shown as one. */
 export type MergedSlot = SelectSlot & { members?: SelectSlot[] };
 
-const signature = (s: SelectSlot) => [s.owner.id, s.rule.type, s.rule.name, s.rule.supports ?? "", s.rule.spellcasting ?? "", s.rule.optional ? 1 : 0, s.declined ? 1 : 0, s.listItems ? "list" : ""].join("|");
+const signature = (s: SelectSlot) =>
+  [
+    s.owner.id,
+    s.rule.type,
+    s.rule.name,
+    s.rule.supports ?? "",
+    s.rule.spellcasting ?? "",
+    s.rule.optional ? 1 : 0,
+    s.declined ? 1 : 0,
+    s.listItems ? "list" : "",
+  ].join("|");
 
 export function mergeSlots(slots: SelectSlot[]): MergedSlot[] {
   const groups = new Map<string, SelectSlot[]>();
@@ -79,7 +97,11 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
       ...c,
       declined: take ? (c.declined ?? []).filter((k) => !keys.includes(k)) : [...new Set([...(c.declined ?? []), ...keys])],
       taken: take ? [...new Set([...(c.taken ?? []), ...keys])] : (c.taken ?? []).filter((k) => !keys.includes(k)),
-      selections: take ? (only ? { ...c.selections, [keys[0]]: [only] } : c.selections) : { ...c.selections, ...Object.fromEntries(keys.map((k) => [k, []])) },
+      selections: take
+        ? only
+          ? { ...c.selections, [keys[0]]: [only] }
+          : c.selections
+        : { ...c.selections, ...Object.fromEntries(keys.map((k) => [k, []])) },
     }));
     setOpen(take && !only);
   };
@@ -103,14 +125,20 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
         if (seen.has(p) || !fits(id, p)) continue;
         seen.add(p);
         const other = at.get(p);
-        if (other === undefined || tryPick(other, seen)) { at.set(p, id); return true; }
+        if (other === undefined || tryPick(other, seen)) {
+          at.set(p, id);
+          return true;
+        }
       }
       return false;
     };
     const placedAll = next.every((id) => tryPick(id, new Set()));
     const parts = slot.members.map(() => [] as string[]);
     if (placedAll) for (const [p, id] of [...at].sort((a, b) => a[0] - b[0])) parts[places[p]].push(id);
-    else next.forEach((id, i) => { if (i < places.length) parts[places[i]].push(id); });
+    else
+      next.forEach((id, i) => {
+        if (i < places.length) parts[places[i]].push(id);
+      });
     set((c) => ({ ...c, selections: { ...c.selections, ...Object.fromEntries(slot.members!.map((m, i) => [m.key, parts[i]])) } }));
   };
   const toggle = (el: AElement) => {
@@ -128,19 +156,30 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
     commit(chosen.map((c) => (c === from.id ? to.id : c)));
   };
   const toggleItem = (id: string) => {
-    const next = chosen.includes(id) ? chosen.filter((c) => c !== id) : rule.number === 1 ? [id] : chosen.length < rule.number ? [...chosen, id] : chosen;
+    const next = chosen.includes(id)
+      ? chosen.filter((c) => c !== id)
+      : rule.number === 1
+        ? [id]
+        : chosen.length < rule.number
+          ? [...chosen, id]
+          : chosen;
     commit(next);
   };
   // The override: when the choice's own filter, its requirements or the content filters leave nothing (or not what
   // the player needs), the whole list of that kind is offered. The rules check still flags a pick the rules forbid.
   const [all, setAll] = useState(false);
-  const nothingLeft = !slot.listItems && (slot.options.length === 0 || slot.options.every((o) => slot.blocked.has(o.id) && !chosen.includes(o.id)));
+  const nothingLeft =
+    !slot.listItems && (slot.options.length === 0 || slot.options.every((o) => slot.blocked.has(o.id) && !chosen.includes(o.id)));
   const pool = all ? r.reg.ofType(rule.type).filter((e) => !e.compendiumHidden || chosen.includes(e.id)) : slot.options;
-  const chosenNames = slot.listItems ? chosen.map((id) => slot.listItems!.find((i) => i.id === id)?.text ?? id) : chosen.map((id) => r.reg.get(id)?.name ?? id);
+  const chosenNames = slot.listItems
+    ? chosen.map((id) => slot.listItems!.find((i) => i.id === id)?.text ?? id)
+    : chosen.map((id) => r.reg.get(id)?.name ?? id);
   const need = rule.number;
   const type = rule.type;
-  const reason = (el: AElement): string | undefined => (slot.blocked.has(el.id) ? slot.whyBlocked?.(el.id) ?? "requirements not met" : undefined);
-  const owned = (el: AElement): string | undefined => (chosen.includes(el.id) ? undefined : ownership(r, el, slot.members ? slot.members.map((m) => m.key) : slot.key));
+  const reason = (el: AElement): string | undefined =>
+    slot.blocked.has(el.id) ? (slot.whyBlocked?.(el.id) ?? "requirements not met") : undefined;
+  const owned = (el: AElement): string | undefined =>
+    chosen.includes(el.id) ? undefined : ownership(r, el, slot.members ? slot.members.map((m) => m.key) : slot.key);
 
   // A table (a 2014 background's personality traits, ideals, bonds and flaws) can be rolled on: a die per pick,
   // shown in the dice log, a repeat rolled again.
@@ -148,25 +187,61 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
     const items = slot.listItems;
     if (!items?.length) return;
     const picked: string[] = [];
-    const one = () => requestRoll(`${rule.name}: d${items.length}`, `1d${items.length}`, (res) => {
-      const it = items[Math.max(0, Math.min(items.length - 1, res.total - 1))];
-      if (!picked.includes(it.id)) picked.push(it.id);
-      if (picked.length < Math.min(rule.number, items.length)) one();
-      else commit(picked);
-    });
+    const one = () =>
+      requestRoll(`${rule.name}: d${items.length}`, `1d${items.length}`, (res) => {
+        const it = items[Math.max(0, Math.min(items.length - 1, res.total - 1))];
+        if (!picked.includes(it.id)) picked.push(it.id);
+        if (picked.length < Math.min(rule.number, items.length)) one();
+        else commit(picked);
+      });
     one();
   };
   // A choice that folds after its last pick slides shut and brings its head into view, so the next choice is seen.
   const headRef = useScrollOnFold<HTMLDivElement>(full && !open);
   return (
-    <div ref={headRef} className={`slot ${full ? "done" : "todo"} ${slot.listItems ? "has-roll" : ""} ${canSkip ? "has-take" : ""} ${declined ? "declined" : ""}`}>
-      {canSkip && <input type="checkbox" className="slot-take" checked={!declined} title={declined ? "Not taken (optional): tick to take it" : "Untick to not take it"} aria-label={`Take ${rule.name}`} onChange={(e) => setTaking(e.target.checked)} />}
-      {slot.listItems && slot.listItems.length > 1 && <button className="slot-roll" title={`Roll on the table (d${slot.listItems.length})`} aria-label={`Roll ${rule.name}`} onClick={rollTable}><D20 size={16} /></button>}
+    <div
+      ref={headRef}
+      className={`slot ${full ? "done" : "todo"} ${slot.listItems ? "has-roll" : ""} ${canSkip ? "has-take" : ""} ${declined ? "declined" : ""}`}
+    >
+      {canSkip && (
+        <input
+          type="checkbox"
+          className="slot-take"
+          checked={!declined}
+          title={declined ? "Not taken (optional): tick to take it" : "Untick to not take it"}
+          aria-label={`Take ${rule.name}`}
+          onChange={(e) => setTaking(e.target.checked)}
+        />
+      )}
+      {slot.listItems && slot.listItems.length > 1 && (
+        <button
+          className="slot-roll"
+          title={`Roll on the table (d${slot.listItems.length})`}
+          aria-label={`Roll ${rule.name}`}
+          onClick={rollTable}
+        >
+          <D20 size={16} />
+        </button>
+      )}
       <button className="slot-head" onClick={() => !declined && setOpen(!open)}>
         <span className="slot-title">
           <span className="slot-name">{rule.name}</span>
-          {!declined && <span className={`slot-count ${full ? "full" : ""}`} title={`${chosen.length} of ${need} chosen`}>{chosen.length}/{need}</span>}
-          <span className="slot-need">{declined ? "not taken" : slot.listItems ? "optional" : full ? "done" : need === 1 ? "choose 1" : `choose ${need - chosen.length} more (${need} total)`}</span>
+          {!declined && (
+            <span className={`slot-count ${full ? "full" : ""}`} title={`${chosen.length} of ${need} chosen`}>
+              {chosen.length}/{need}
+            </span>
+          )}
+          <span className="slot-need">
+            {declined
+              ? "not taken"
+              : slot.listItems
+                ? "optional"
+                : full
+                  ? "done"
+                  : need === 1
+                    ? "choose 1"
+                    : `choose ${need - chosen.length} more (${need} total)`}
+          </span>
         </span>
         <span className="slot-chosen">
           {chosenNames.join(" · ")}
@@ -193,17 +268,46 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
             <p className="muted">Nothing matches this choice in the loaded content.</p>
           ) : (
             <>
-              {all && <p className="notice slot-override-note">Showing every {type.toLowerCase()} in the loaded content, without this choice's own filter or your book filters. The rules check flags a pick the rules do not allow here.</p>}
-              {!all && nothingLeft && <p className="notice slot-override-note">Nothing here can be chosen right now. If that is wrong (a filter or the content hides what you need), show the whole list.</p>}
-              <Browse items={pool} type={type} chosen={chosen} onPick={toggle} onSwap={swap} onHover={onDetail} disabledReason={all ? undefined : reason} ownedBy={owned} defaultView={type === "Spell" ? "cards" : "list"} allowCards={!["Language", "Proficiency", "Ability Score Improvement", "Companion"].includes(type)} perPage={60} showAll={all} need={slot.rule.number} />
+              {all && (
+                <p className="notice slot-override-note">
+                  Showing every {type.toLowerCase()} in the loaded content, without this choice's own filter or your book filters. The rules
+                  check flags a pick the rules do not allow here.
+                </p>
+              )}
+              {!all && nothingLeft && (
+                <p className="notice slot-override-note">
+                  Nothing here can be chosen right now. If that is wrong (a filter or the content hides what you need), show the whole list.
+                </p>
+              )}
+              <Browse
+                items={pool}
+                type={type}
+                chosen={chosen}
+                onPick={toggle}
+                onSwap={swap}
+                onHover={onDetail}
+                disabledReason={all ? undefined : reason}
+                ownedBy={owned}
+                defaultView={type === "Spell" ? "cards" : "list"}
+                allowCards={!["Language", "Proficiency", "Ability Score Improvement", "Companion"].includes(type)}
+                perPage={60}
+                showAll={all}
+                need={slot.rule.number}
+              />
             </>
           )}
           {!slot.listItems && (
-            <button className={`ghost slot-override ${nothingLeft && !all ? "urgent" : ""}`} title="Show every element of this kind, ignoring this choice's filter and the content filters" onClick={() => setAll(!all)}>
+            <button
+              className={`ghost slot-override ${nothingLeft && !all ? "urgent" : ""}`}
+              title="Show every element of this kind, ignoring this choice's filter and the content filters"
+              onClick={() => setAll(!all)}
+            >
               {all ? "Back to the matching options" : "Show the whole list"}
             </button>
           )}
-          <button className="ghost slot-done" onClick={() => setOpen(false)}>Done</button>
+          <button className="ghost slot-done" onClick={() => setOpen(false)}>
+            Done
+          </button>
         </div>
       </Fold>
     </div>
@@ -221,7 +325,21 @@ export function fixedChoice(s: SelectSlot): boolean {
   return takeable.length === 1 && s.chosen.length === 1 && s.chosen[0] === takeable[0].id;
 }
 
-export function SlotList({ slots: given, r, set, onDetail, empty, merge = true }: { slots: SelectSlot[]; r: Resolved; set: SetCharacter; onDetail: (e: AElement) => void; empty?: string; merge?: boolean }) {
+export function SlotList({
+  slots: given,
+  r,
+  set,
+  onDetail,
+  empty,
+  merge = true,
+}: {
+  slots: SelectSlot[];
+  r: Resolved;
+  set: SetCharacter;
+  onDetail: (e: AElement) => void;
+  empty?: string;
+  merge?: boolean;
+}) {
   const merged: MergedSlot[] = merge ? mergeSlots(given) : given;
   // Ability score increases are drawn as one check-box grid each (improvements.ts); the choices a grid fills are not
   // listed again.
@@ -234,7 +352,11 @@ export function SlotList({ slots: given, r, set, onDetail, empty, merge = true }
     <div className="slot-list">
       {slots.map((s) => (
         <div key={s.key} data-slot={s.key}>
-          {gridAt.has(s.key) ? <ImprovementGrid grid={gridAt.get(s.key)!} r={r} set={set} /> : <Slot slot={s} r={r} set={set} onDetail={onDetail} />}
+          {gridAt.has(s.key) ? (
+            <ImprovementGrid grid={gridAt.get(s.key)!} r={r} set={set} />
+          ) : (
+            <Slot slot={s} r={r} set={set} onDetail={onDetail} />
+          )}
         </div>
       ))}
     </div>
@@ -242,7 +364,9 @@ export function SlotList({ slots: given, r, set, onDetail, empty, merge = true }
 }
 
 /** Which Build sub-tab a choice belongs on, following the layout of the original builder. */
-export function tabOfSlot(s: SelectSlot): "race" | "class" | "background" | "abilities" | "languages" | "proficiencies" | "feats" | "magic" | "other" {
+export function tabOfSlot(
+  s: SelectSlot,
+): "race" | "class" | "background" | "abilities" | "languages" | "proficiencies" | "feats" | "magic" | "other" {
   const t = s.rule.type;
   if (t === "Ability Score Improvement") return "abilities";
   if (t === "Language") return "languages";
@@ -266,8 +390,22 @@ export function PersonalitySwitch({ r, set }: { r: Resolved; set: SetCharacter }
   const on = lists.some((s) => !s.declined);
   return (
     <label className="personality-switch">
-      <input type="checkbox" checked={on} onChange={(e) => set((c) => ({ ...c, declined: e.target.checked ? (c.declined ?? []).filter((k) => !keys.includes(k)) : [...new Set([...(c.declined ?? []), ...keys])] }))} />
-      <span><b>Personality traits, ideals, bonds and flaws</b> <small className="muted">2014 rules; the 2024 rules have none. Untick to leave all four out.</small></span>
+      <input
+        type="checkbox"
+        checked={on}
+        onChange={(e) =>
+          set((c) => ({
+            ...c,
+            declined: e.target.checked
+              ? (c.declined ?? []).filter((k) => !keys.includes(k))
+              : [...new Set([...(c.declined ?? []), ...keys])],
+          }))
+        }
+      />
+      <span>
+        <b>Personality traits, ideals, bonds and flaws</b>{" "}
+        <small className="muted">2014 rules; the 2024 rules have none. Untick to leave all four out.</small>
+      </span>
     </label>
   );
 }

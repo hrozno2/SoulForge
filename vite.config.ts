@@ -15,7 +15,11 @@ function testContent(): Plugin {
   const root = resolve(process.env.SOULFORGE_RULES ?? join(homedir(), ".soulforge-test"));
   const walk = (d: string, ext: string, out: string[] = []): string[] => {
     if (!existsSync(d)) return out;
-    for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) walk(p, ext, out); else if (p.endsWith(ext)) out.push(p); }
+    for (const f of readdirSync(d)) {
+      const p = join(d, f);
+      if (statSync(p).isDirectory()) walk(p, ext, out);
+      else if (p.endsWith(ext)) out.push(p);
+    }
     return out;
   };
   return {
@@ -26,7 +30,9 @@ function testContent(): Plugin {
         const url = new URL(req.url ?? "/", "http://x");
         if (url.pathname === "/list") {
           const aurora = walk(join(root, "elements-master"), ".xml").map((p) => relative(root, p));
-          const fivetools = walk(join(root, "5etools-data"), ".json").map((p) => relative(join(root, "5etools-data"), p)).filter((p) => !/index\.json$/.test(p) && !p.startsWith("bestiary"));
+          const fivetools = walk(join(root, "5etools-data"), ".json")
+            .map((p) => relative(join(root, "5etools-data"), p))
+            .filter((p) => !/index\.json$/.test(p) && !p.startsWith("bestiary"));
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ aurora, fivetools }));
           return;
@@ -35,7 +41,11 @@ function testContent(): Plugin {
           const want = url.searchParams.get("p") ?? "";
           const base = url.searchParams.get("set") === "5etools" ? join(root, "5etools-data") : root;
           const full = resolve(base, want);
-          if (!full.startsWith(base + sep) || !existsSync(full)) { res.statusCode = 404; res.end(); return; }
+          if (!full.startsWith(base + sep) || !existsSync(full)) {
+            res.statusCode = 404;
+            res.end();
+            return;
+          }
           res.setHeader("Content-Type", "text/plain; charset=utf-8");
           res.end(readFileSync(full, "utf8"));
           return;
@@ -67,7 +77,11 @@ function converterId(): string {
     hash.update(text);
     for (const m of text.matchAll(/from\s+"(\.{1,2}\/[^"]+)"/g)) {
       const base = resolve(dirname(f), m[1]);
-      for (const cand of [base, `${base}.ts`, `${base}.tsx`, join(base, "index.ts")]) if (existsSync(cand) && statSync(cand).isFile()) { queue.push(cand); break; }
+      for (const cand of [base, `${base}.ts`, `${base}.tsx`, join(base, "index.ts")])
+        if (existsSync(cand) && statSync(cand).isFile()) {
+          queue.push(cand);
+          break;
+        }
     }
   }
   return hash.digest("hex").slice(0, 16);

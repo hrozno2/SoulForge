@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { canLower, canRaise, clampBase, costOf, normalizeRules, spent, STANDARD_RULES } from "./pointBuy";
 import type { AbilityId } from "./character";
 
-const all = (n: number) => ({ strength: n, dexterity: n, constitution: n, intelligence: n, wisdom: n, charisma: n }) as Record<AbilityId, number>;
+const all = (n: number) =>
+  ({ strength: n, dexterity: n, constitution: n, intelligence: n, wisdom: n, charisma: n }) as Record<AbilityId, number>;
 
 describe("point buy", () => {
   it("uses the standard table: 27 points, 8 to 15", () => {

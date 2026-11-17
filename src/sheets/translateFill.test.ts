@@ -3,12 +3,37 @@ import type { FillData } from "./data";
 import { translateFill } from "./translateFill";
 
 const base = {
-  name: "Čeněk", className: "Wizard", species: "High Elf", background: "Sage", subclass: "Abjuration",
-  backstory: "Raised in a tower.", languages: "Common, Elvish", alignment: "Neutral Good",
-  traits: ["Fey Ancestry: Advantage on saving throws against being charmed."], feats: [], classFeatures: ["Arcane Recovery"],
+  name: "Čeněk",
+  className: "Wizard",
+  species: "High Elf",
+  background: "Sage",
+  subclass: "Abjuration",
+  backstory: "Raised in a tower.",
+  languages: "Common, Elvish",
+  alignment: "Neutral Good",
+  traits: ["Fey Ancestry: Advantage on saving throws against being charmed."],
+  feats: [],
+  classFeatures: ["Arcane Recovery"],
   weapons: [{ name: "Dagger", bonus: "+6", damage: "1d4+3 piercing", notes: "finesse, light" }],
-  spells: [{ level: "0", name: "Fire Bolt", school: "Evocation", time: "1 action", range: "120 feet", duration: "Instantaneous", concentration: false, ritual: false, v: true, s: true, m: false, notes: "" }],
-  tools: "Calligrapher's supplies", coins: { cp: "0", sp: "0", ep: "0", gp: "25", pp: "0" }, ac: 13,
+  spells: [
+    {
+      level: "0",
+      name: "Fire Bolt",
+      school: "Evocation",
+      time: "1 action",
+      range: "120 feet",
+      duration: "Instantaneous",
+      concentration: false,
+      ritual: false,
+      v: true,
+      s: true,
+      m: false,
+      notes: "",
+    },
+  ],
+  tools: "Calligrapher's supplies",
+  coins: { cp: "0", sp: "0", ep: "0", gp: "25", pp: "0" },
+  ac: 13,
 } as unknown as FillData;
 
 describe("translating sheet values", () => {
@@ -18,7 +43,10 @@ describe("translating sheet values", () => {
     const out = await translateFill(base, {
       target: "fr",
       keepNames: false,
-      translator: async (texts) => { sent.push(...texts); return texts.map((t) => `<${t}>`); },
+      translator: async (texts) => {
+        sent.push(...texts);
+        return texts.map((t) => `<${t}>`);
+      },
       cache: { get: async (k) => store.get(k), put: async (k, v) => void store.set(k, v) },
     });
     expect(out.traits[0]).toMatch(/^<Fey Ancestry/);
@@ -36,7 +64,12 @@ describe("translating sheet values", () => {
   });
 
   it("keeps the names of spells, weapons, items and features when asked, and translates what they say", async () => {
-    const withGear = { ...base, weaponsText: "2 Quarterstaff", otherGear: "Robe\nBackpack", classFeatures: ["Potent Cantrip: When you cast a cantrip, half damage on a save."] } as unknown as FillData;
+    const withGear = {
+      ...base,
+      weaponsText: "2 Quarterstaff",
+      otherGear: "Robe\nBackpack",
+      classFeatures: ["Potent Cantrip: When you cast a cantrip, half damage on a save."],
+    } as unknown as FillData;
     const out = await translateFill(withGear, {
       target: "sk",
       keepNames: true,
@@ -54,13 +87,20 @@ describe("translating sheet values", () => {
   });
 
   it("translates a name that is in the glossary even when names are kept, and never sends it", async () => {
-    const withGear = { ...base, weaponsText: "2 Quarterstaff\nTorch", classFeatures: ["Arcane Recovery: Regain slots."] } as unknown as FillData;
+    const withGear = {
+      ...base,
+      weaponsText: "2 Quarterstaff\nTorch",
+      classFeatures: ["Arcane Recovery: Regain slots."],
+    } as unknown as FillData;
     const sent: string[] = [];
     const out = await translateFill(withGear, {
       target: "sk",
       keepNames: true,
       glossary: { quarterstaff: "Palica", dagger: "Dýka", "arcane recovery": "Arkánna obnova" },
-      translator: async (texts) => { sent.push(...texts); return texts.map((t) => `<${t}>`); },
+      translator: async (texts) => {
+        sent.push(...texts);
+        return texts.map((t) => `<${t}>`);
+      },
       cache: { get: async () => undefined, put: async () => undefined },
     });
     expect(out.weaponsText).toBe("2 Palica\nTorch");
@@ -72,13 +112,21 @@ describe("translating sheet values", () => {
 
 describe("feature entries", () => {
   it("translate the text, keep the group the sheets sort by", async () => {
-    const d = { ...base, featureList: [{ group: "Class features", name: "Arcane Recovery", usage: "1/Long Rest", text: "Recover spell slots." }] } as unknown as FillData;
+    const d = {
+      ...base,
+      featureList: [{ group: "Class features", name: "Arcane Recovery", usage: "1/Long Rest", text: "Recover spell slots." }],
+    } as unknown as FillData;
     const out = await translateFill(d, {
       target: "de",
       keepNames: true,
       translator: async (texts) => texts.map((t) => `<${t}>`),
       cache: { get: async () => undefined, put: async () => undefined },
     });
-    expect(out.featureList[0]).toEqual({ group: "Class features", name: "Arcane Recovery", usage: "<1/Long Rest>", text: "<Recover spell slots.>" });
+    expect(out.featureList[0]).toEqual({
+      group: "Class features",
+      name: "Arcane Recovery",
+      usage: "<1/Long Rest>",
+      text: "<Recover spell slots.>",
+    });
   });
 });

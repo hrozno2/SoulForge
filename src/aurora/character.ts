@@ -177,7 +177,14 @@ export interface PlayState {
   /** What the character is concentrating on, if anything. */
   concentration?: string;
   /** Active wild shape form, if any. Damage lands here first. */
-  wildShape?: { name: string; hp: number; maxHp: number; kind?: "wildshape" | "polymorph" | "truepoly" | "other"; creatureId?: string; ownHp?: boolean };
+  wildShape?: {
+    name: string;
+    hp: number;
+    maxHp: number;
+    kind?: "wildshape" | "polymorph" | "truepoly" | "other";
+    creatureId?: string;
+    ownHp?: boolean;
+  };
   /** Current hit points of companions and mounts, keyed by their uid or element id. */
   companionHp?: Record<string, number>;
   deathSaves: { success: number; fail: number };
@@ -340,8 +347,7 @@ export const uid = (): string => Math.random().toString(36).slice(2, 10) + Date.
 
 /** XP thresholds for levels 1 to 20 (index 0 is level 1). */
 export const XP_TABLE = [
-  0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000,
-  305000, 355000,
+  0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000,
 ];
 
 export const xpToLevel = (xp: number): number => {
@@ -352,7 +358,6 @@ export const xpToLevel = (xp: number): number => {
 
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 
-
 /** Fills in anything a saved or imported character is missing, so older files keep working as fields are added. */
 export function normalizeCharacter(raw: Partial<Character>): Character {
   return sanitizeCharacter(raw).character;
@@ -361,9 +366,28 @@ export function normalizeCharacter(raw: Partial<Character>): Character {
 type Obj = Record<string, unknown>;
 
 /** One thing a damaged file had wrong: the part of the character, and what exactly was wrong and what was done. */
-export interface Damage { part: string; detail: string }
+export interface Damage {
+  part: string;
+  detail: string;
+}
 /** Field names as a player would say them. */
-const PART: Record<string, string> = { race: "species", background: "background", declined: "choices turned down", taken: "optional choices taken", equipmentAdded: "starting equipment", grantedItemsAdded: "items from features", importReport: "import notes", movedFrom: "the move's record", portrait: "portrait", checkedWith: "version check", abilityBases: "ability scores by method", pointBuy: "point buy rules", hpRollLog: "hit point roll log", equipmentLedger: "starting equipment", attackEdits: "attack edits" };
+const PART: Record<string, string> = {
+  race: "species",
+  background: "background",
+  declined: "choices turned down",
+  taken: "optional choices taken",
+  equipmentAdded: "starting equipment",
+  grantedItemsAdded: "items from features",
+  importReport: "import notes",
+  movedFrom: "the move's record",
+  portrait: "portrait",
+  checkedWith: "version check",
+  abilityBases: "ability scores by method",
+  pointBuy: "point buy rules",
+  hpRollLog: "hit point roll log",
+  equipmentLedger: "starting equipment",
+  attackEdits: "attack edits",
+};
 const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -374,7 +398,10 @@ const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFin
  * crashing a screen later. `repaired` names what was put right. Fields this version does not know are kept (a newer
  * version's data must survive being opened here). A file from a newer format is refused.
  */
-export function sanitizeCharacter(raw: unknown, nameOf?: (id: string) => string | undefined): { character: Character; repaired: string[]; damage: Damage[] } {
+export function sanitizeCharacter(
+  raw: unknown,
+  nameOf?: (id: string) => string | undefined,
+): { character: Character; repaired: string[]; damage: Damage[] } {
   const base = newCharacter();
   const repaired: string[] = [];
   const damage: Damage[] = [];
@@ -385,35 +412,65 @@ export function sanitizeCharacter(raw: unknown, nameOf?: (id: string) => string 
     if (damage.length < 200 && !damage.some((d) => d.part === what && d.detail === text)) damage.push({ part: what, detail: text });
   };
   const nm = (id: string) => nameOf?.(id) ?? id;
-  const show = (v: unknown) => { const t = typeof v === "string" ? `"${v}"` : JSON.stringify(v) ?? String(v); return t.length > 40 ? `${t.slice(0, 40)}…` : t; };
+  const show = (v: unknown) => {
+    const t = typeof v === "string" ? `"${v}"` : (JSON.stringify(v) ?? String(v));
+    return t.length > 40 ? `${t.slice(0, 40)}…` : t;
+  };
   const o: Obj = isObj(raw) ? raw : {};
   if (!isObj(raw)) fix("the file is not a character", "nothing in it could be read; this is an empty character");
   if (isNum(o.version) && o.version > 2) throw new Error("This character was saved by a newer Soul Forge. Update Soul Forge to open it.");
 
-  const str = (v: unknown, d: string, what: string, label = what) => (typeof v === "string" ? v : (v !== undefined && fix(what, `${label} was ${show(v)}, not text; now ${d ? `"${d}"` : "empty"}`), d));
-  const optStr = (key: string) => { if (o[key] !== undefined && typeof o[key] !== "string") { fix(PART[key] ?? key, `was ${show(o[key])}, not text; removed`); return undefined; } return o[key] as string | undefined; };
+  const str = (v: unknown, d: string, what: string, label = what) =>
+    typeof v === "string" ? v : (v !== undefined && fix(what, `${label} was ${show(v)}, not text; now ${d ? `"${d}"` : "empty"}`), d);
+  const optStr = (key: string) => {
+    if (o[key] !== undefined && typeof o[key] !== "string") {
+      fix(PART[key] ?? key, `was ${show(o[key])}, not text; removed`);
+      return undefined;
+    }
+    return o[key] as string | undefined;
+  };
   const num = (v: unknown, d: number, what: string, min = -Infinity, max = Infinity, label = what) => {
-    if (!isNum(v)) { if (v !== undefined) fix(what, `${label} was ${show(v)}, not a number; set to ${d}`); return d; }
-    if (v < min || v > max) { const to = Math.min(max, Math.max(min, v)); fix(what, `${label} was ${v}, outside ${min === -Infinity ? "" : `${min} `}to${max === Infinity ? " any" : ` ${max}`}; set to ${to}`); return to; }
+    if (!isNum(v)) {
+      if (v !== undefined) fix(what, `${label} was ${show(v)}, not a number; set to ${d}`);
+      return d;
+    }
+    if (v < min || v > max) {
+      const to = Math.min(max, Math.max(min, v));
+      fix(what, `${label} was ${v}, outside ${min === -Infinity ? "" : `${min} `}to${max === Infinity ? " any" : ` ${max}`}; set to ${to}`);
+      return to;
+    }
     return v;
   };
   const strings = (v: unknown, what: string): string[] => {
     if (v === undefined) return [];
-    if (!Array.isArray(v)) { fix(what, `was ${show(v)}, not a list; now empty`); return []; }
+    if (!Array.isArray(v)) {
+      fix(what, `was ${show(v)}, not a list; now empty`);
+      return [];
+    }
     const bad = v.filter((x) => typeof x !== "string");
-    if (bad.length) fix(what, `${bad.length} of ${v.length} entries were not text and were removed (${bad.slice(0, 3).map(show).join(", ")})`);
+    if (bad.length)
+      fix(what, `${bad.length} of ${v.length} entries were not text and were removed (${bad.slice(0, 3).map(show).join(", ")})`);
     return v.filter((x): x is string => typeof x === "string");
   };
   const optStrings = (key: string) => (o[key] === undefined ? undefined : strings(o[key], PART[key] ?? key));
-  const record = <T>(v: unknown, what: string, value: (x: unknown) => T | undefined, label: (key: string) => string = (k) => k): Record<string, T> => {
+  const record = <T>(
+    v: unknown,
+    what: string,
+    value: (x: unknown) => T | undefined,
+    label: (key: string) => string = (k) => k,
+  ): Record<string, T> => {
     if (v === undefined) return {};
-    if (!isObj(v)) { fix(what, `was ${show(v)}; everything in it is gone`); return {}; }
+    if (!isObj(v)) {
+      fix(what, `was ${show(v)}; everything in it is gone`);
+      return {};
+    }
     const out: Record<string, T> = {};
     for (const [k, x] of Object.entries(v)) {
       const y = value(x);
       if (y === undefined) fix(what, `${label(k)}: was ${show(x)}; removed`);
       else {
-        if (Array.isArray(x) && Array.isArray(y) && y.length < x.length) fix(what, `${label(k)}: ${x.length - y.length} of ${x.length} entries were unreadable and removed`);
+        if (Array.isArray(x) && Array.isArray(y) && y.length < x.length)
+          fix(what, `${label(k)}: ${x.length - y.length} of ${x.length} entries were unreadable and removed`);
         out[k] = y;
       }
     }
@@ -423,45 +480,88 @@ export function sanitizeCharacter(raw: unknown, nameOf?: (id: string) => string 
   const finite = (x: unknown) => (isNum(x) ? x : undefined);
   const objects = (v: unknown, what: string): Obj[] => {
     if (v === undefined) return [];
-    if (!Array.isArray(v)) { fix(what, `was ${show(v)}, not a list; now empty`); return []; }
+    if (!Array.isArray(v)) {
+      fix(what, `was ${show(v)}, not a list; now empty`);
+      return [];
+    }
     const bad = v.filter((x) => !isObj(x));
-    if (bad.length) fix(what, `${bad.length} of ${v.length} entries could not be read and were removed (${bad.slice(0, 3).map(show).join(", ")})`);
+    if (bad.length)
+      fix(what, `${bad.length} of ${v.length} entries could not be read and were removed (${bad.slice(0, 3).map(show).join(", ")})`);
     return v.filter(isObj);
   };
-  const optObj = (key: string) => { if (o[key] !== undefined && !isObj(o[key])) { fix(PART[key] ?? key, `was ${show(o[key])}; removed`); return undefined; } return o[key]; };
+  const optObj = (key: string) => {
+    if (o[key] !== undefined && !isObj(o[key])) {
+      fix(PART[key] ?? key, `was ${show(o[key])}; removed`);
+      return undefined;
+    }
+    return o[key];
+  };
 
   const kept = (list: Obj[], ok: (x: Obj) => boolean, what: string) => {
     const out = list.filter(ok);
-    if (out.length < list.length) fix(what, `${list.length - out.length} of ${list.length} entries were incomplete and were removed (${list.filter((x) => !ok(x)).slice(0, 3).map((x) => (typeof x.name === "string" && x.name) || show(x)).join(", ")})`);
+    if (out.length < list.length)
+      fix(
+        what,
+        `${list.length - out.length} of ${list.length} entries were incomplete and were removed (${list
+          .filter((x) => !ok(x))
+          .slice(0, 3)
+          .map((x) => (typeof x.name === "string" && x.name) || show(x))
+          .join(", ")})`,
+      );
     return out;
   };
-  const itemName = (it: Obj) => (typeof it.label === "string" && it.label) || (typeof it.id === "string" && it.id && nm(it.id)) || (isObj(it.custom) && typeof it.custom.name === "string" && it.custom.name) || "an item";
+  const itemName = (it: Obj) =>
+    (typeof it.label === "string" && it.label) ||
+    (typeof it.id === "string" && it.id && nm(it.id)) ||
+    (isObj(it.custom) && typeof it.custom.name === "string" && it.custom.name) ||
+    "an item";
 
   // Classes: a known id and a whole level from 1 to 20; twenty levels in all.
   let levels = 0;
   const classes: ClassLevel[] = [];
   for (const c of objects(o.classes, "classes")) {
-    if (typeof c.classId !== "string" || !c.classId) { fix("classes", `a class entry named no class (${show(c.classId)}) and was removed${isNum(c.level) ? `; it had ${c.level} levels` : ""}`); continue; }
+    if (typeof c.classId !== "string" || !c.classId) {
+      fix(
+        "classes",
+        `a class entry named no class (${show(c.classId)}) and was removed${isNum(c.level) ? `; it had ${c.level} levels` : ""}`,
+      );
+      continue;
+    }
     let level = isNum(c.level) ? Math.round(c.level) : 1;
     const room = 20 - levels;
-    if (room < 1) { fix("class levels", `${nm(c.classId)} was removed: the classes before it already have 20 levels`); continue; }
+    if (room < 1) {
+      fix("class levels", `${nm(c.classId)} was removed: the classes before it already have 20 levels`);
+      continue;
+    }
     const to = Math.min(room, Math.max(1, level));
-    if (!isNum(c.level) || level !== c.level || to !== level) fix("class levels", `${nm(c.classId)}: level was ${show(c.level)}; set to ${to}`);
+    if (!isNum(c.level) || level !== c.level || to !== level)
+      fix("class levels", `${nm(c.classId)}: level was ${show(c.level)}; set to ${to}`);
     level = to;
     levels += level;
     classes.push({ ...c, classId: c.classId, level } as ClassLevel);
   }
 
-  const abilityIn = isObj(o.abilityBase) ? o.abilityBase : (o.abilityBase !== undefined && fix("ability scores", `were ${show(o.abilityBase)}; all six are back at ${base.abilityBase.strength}`), {});
+  const abilityIn = isObj(o.abilityBase)
+    ? o.abilityBase
+    : (o.abilityBase !== undefined &&
+        fix("ability scores", `were ${show(o.abilityBase)}; all six are back at ${base.abilityBase.strength}`),
+      {});
   const abilityBase = { ...base.abilityBase };
   for (const a of ABILITY_IDS) abilityBase[a] = Math.round(num(abilityIn[a], base.abilityBase[a], "ability scores", 1, 30, cap(a)));
 
-  const playIn: Obj = isObj(o.play) ? o.play : (o.play !== undefined && fix("play state", `was ${show(o.play)}; hit points, slots and uses spent are back at full`), {});
+  const playIn: Obj = isObj(o.play)
+    ? o.play
+    : (o.play !== undefined && fix("play state", `was ${show(o.play)}; hit points, slots and uses spent are back at full`), {});
   const deathIn: Obj = isObj(playIn.deathSaves) ? playIn.deathSaves : {};
   const play: PlayState = {
     ...base.play,
     ...playIn,
-    hp: playIn.hp === null || playIn.hp === undefined ? null : isNum(playIn.hp) ? playIn.hp : (fix("hit points", `current hit points were ${show(playIn.hp)}; back at full`), null),
+    hp:
+      playIn.hp === null || playIn.hp === undefined
+        ? null
+        : isNum(playIn.hp)
+          ? playIn.hp
+          : (fix("hit points", `current hit points were ${show(playIn.hp)}; back at full`), null),
     tempHp: num(playIn.tempHp, 0, "temporary hit points", 0),
     inspiration: !!playIn.inspiration,
     slotsUsed: record(playIn.slotsUsed, "spell slots used", finite, (k) => `level ${k}`),
@@ -471,11 +571,17 @@ export function sanitizeCharacter(raw: unknown, nameOf?: (id: string) => string 
     featureUses: record(playIn.featureUses, "feature uses", finite, nm),
   };
   if (playIn.exhaustion !== undefined) play.exhaustion = num(playIn.exhaustion, 0, "exhaustion", 0, 10);
-  if (playIn.wildShape !== undefined && !isObj(playIn.wildShape)) { fix("wild shape"); delete play.wildShape; }
+  if (playIn.wildShape !== undefined && !isObj(playIn.wildShape)) {
+    fix("wild shape");
+    delete play.wildShape;
+  }
   if (playIn.pactUsed !== undefined) play.pactUsed = num(playIn.pactUsed, 0, "pact slots used", 0);
   if (playIn.hitDiceByDie !== undefined) play.hitDiceByDie = record(playIn.hitDiceByDie, "hit dice used", finite);
   if (playIn.companionHp !== undefined) play.companionHp = record(playIn.companionHp, "companion hit points", finite);
-  if (playIn.concentration !== undefined && typeof playIn.concentration !== "string") { fix("concentration"); delete play.concentration; }
+  if (playIn.concentration !== undefined && typeof playIn.concentration !== "string") {
+    fix("concentration");
+    delete play.concentration;
+  }
 
   const infoIn: Obj = isObj(o.info) ? o.info : (o.info !== undefined && fix("details", `were ${show(o.info)}; now empty`), {});
   const info = { ...base.info, ...infoIn } as CharacterInfo;
@@ -488,7 +594,10 @@ export function sanitizeCharacter(raw: unknown, nameOf?: (id: string) => string 
   const inventory = objects(o.inventory, "inventory").map((it) => ({
     ...it,
     uid: typeof it.uid === "string" && it.uid ? it.uid : (fix("inventory", `${itemName(it)}: had no entry number; given a new one`), uid()),
-    id: typeof it.id === "string" ? it.id : (fix("inventory", `${itemName(it)}: what item it is (${show(it.id)}) could not be read; it is kept as a nameless entry`), ""),
+    id:
+      typeof it.id === "string"
+        ? it.id
+        : (fix("inventory", `${itemName(it)}: what item it is (${show(it.id)}) could not be read; it is kept as a nameless entry`), ""),
     qty: num(it.qty, 1, "inventory", 0, Infinity, `${itemName(it)}: quantity`),
     equipped: !!it.equipped,
     attuned: !!it.attuned,
@@ -506,41 +615,87 @@ export function sanitizeCharacter(raw: unknown, nameOf?: (id: string) => string 
     background: optStr("background"),
     classes,
     abilityBase,
-    abilityMethod: o.abilityMethod === "standard" || o.abilityMethod === "manual" || o.abilityMethod === "pointbuy" ? o.abilityMethod : (o.abilityMethod !== undefined && fix("ability score method", `was ${show(o.abilityMethod)}; set to ${base.abilityMethod}`), base.abilityMethod),
-    selections: record(o.selections, "choices", idList, (k) => { const [owner, rule] = k.split("|"); return `${nm(owner)}${rule !== undefined && /^\d+$/.test(rule) ? `, choice ${Number(rule) + 1}` : ""}`; }),
+    abilityMethod:
+      o.abilityMethod === "standard" || o.abilityMethod === "manual" || o.abilityMethod === "pointbuy"
+        ? o.abilityMethod
+        : (o.abilityMethod !== undefined && fix("ability score method", `was ${show(o.abilityMethod)}; set to ${base.abilityMethod}`),
+          base.abilityMethod),
+    selections: record(o.selections, "choices", idList, (k) => {
+      const [owner, rule] = k.split("|");
+      return `${nm(owner)}${rule !== undefined && /^\d+$/.test(rule) ? `, choice ${Number(rule) + 1}` : ""}`;
+    }),
     options: strings(o.options, "options"),
     extras: strings(o.extras, "added content"),
     sources: strings(o.sources, "books"),
-    customStats: kept(objects(o.customStats, "custom bonuses"), (c) => typeof c.stat === "string" && isNum(c.value), "custom bonuses").map((c) => ({ ...c, id: typeof c.id === "string" ? c.id : uid() })) as Character["customStats"],
+    customStats: kept(objects(o.customStats, "custom bonuses"), (c) => typeof c.stat === "string" && isNum(c.value), "custom bonuses").map(
+      (c) => ({ ...c, id: typeof c.id === "string" ? c.id : uid() }),
+    ) as Character["customStats"],
     hpMode: o.hpMode === "roll" ? "roll" : "average",
-    hpRolls: record(o.hpRolls, "hit point rolls", (x) => (isNum(x) && x >= 1 ? Math.round(x) : undefined), (k) => `level ${k}`),
+    hpRolls: record(
+      o.hpRolls,
+      "hit point rolls",
+      (x) => (isNum(x) && x >= 1 ? Math.round(x) : undefined),
+      (k) => `level ${k}`,
+    ),
     prepared: record(o.prepared, "prepared spells", idList),
     inventory,
     coins,
     attacks: objects(o.attacks, "attacks") as unknown as CustomAttack[],
-    companions: kept(objects(o.companions, "companions"), (c) => typeof c.name === "string", "companions").map((c) => ({ ...c, uid: typeof c.uid === "string" ? c.uid : uid(), id: typeof c.id === "string" ? c.id : "" })) as CompanionEntry[],
-    resources: kept(objects(o.resources, "counters"), (x) => typeof x.name === "string" && isNum(x.current) && isNum(x.max), "counters") as unknown as Resource[],
+    companions: kept(objects(o.companions, "companions"), (c) => typeof c.name === "string", "companions").map((c) => ({
+      ...c,
+      uid: typeof c.uid === "string" ? c.uid : uid(),
+      id: typeof c.id === "string" ? c.id : "",
+    })) as CompanionEntry[],
+    resources: kept(
+      objects(o.resources, "counters"),
+      (x) => typeof x.name === "string" && isNum(x.current) && isNum(x.max),
+      "counters",
+    ) as unknown as Resource[],
     info,
     play,
   };
   // Optional fields: kept when well formed, dropped (and named) when not.
-  for (const key of ["declined", "taken", "equipmentAdded", "grantedItemsAdded"] as const) { const v = optStrings(key); if (v === undefined) delete character[key]; else character[key] = v; }
-  for (const key of ["importReport", "repairReport", "movedFrom", "portrait", "checkedWith"] as const) { const v = optStr(key); if (v === undefined) delete character[key]; else character[key] = v; }
-  for (const key of ["abilityBases", "pointBuy", "hpRollLog", "equipmentLedger", "attackEdits"] as const) if (optObj(key) === undefined) delete character[key];
+  for (const key of ["declined", "taken", "equipmentAdded", "grantedItemsAdded"] as const) {
+    const v = optStrings(key);
+    if (v === undefined) delete character[key];
+    else character[key] = v;
+  }
+  for (const key of ["importReport", "repairReport", "movedFrom", "portrait", "checkedWith"] as const) {
+    const v = optStr(key);
+    if (v === undefined) delete character[key];
+    else character[key] = v;
+  }
+  for (const key of ["abilityBases", "pointBuy", "hpRollLog", "equipmentLedger", "attackEdits"] as const)
+    if (optObj(key) === undefined) delete character[key];
   for (const key of ["journal", "favorites"] as const) if (o[key] !== undefined) (character as unknown as Obj)[key] = objects(o[key], key);
-  if (o.priceMultiplier !== undefined && !(isNum(o.priceMultiplier) && o.priceMultiplier > 0)) { fix("price multiplier", `was ${show(o.priceMultiplier)}; back to normal prices`); delete character.priceMultiplier; }
+  if (o.priceMultiplier !== undefined && !(isNum(o.priceMultiplier) && o.priceMultiplier > 0)) {
+    fix("price multiplier", `was ${show(o.priceMultiplier)}; back to normal prices`);
+    delete character.priceMultiplier;
+  }
   return { character, repaired, damage };
 }
 
 /** Where each damaged part is put right, for the report. */
 const REDO: [RegExp, string][] = [
-  [/^(choices|choices turned down|optional choices taken|options)$/, "On Build these choices are open again (marked as still to choose). Make them again there."],
+  [
+    /^(choices|choices turned down|optional choices taken|options)$/,
+    "On Build these choices are open again (marked as still to choose). Make them again there.",
+  ],
   [/^(classes|class levels|species|background)$/, "Check your species, background, classes and levels on Build."],
-  [/^(ability scores|ability score method|ability scores by method|point buy rules)$/, "Set your ability scores again on Build, Abilities."],
+  [
+    /^(ability scores|ability score method|ability scores by method|point buy rules)$/,
+    "Set your ability scores again on Build, Abilities.",
+  ],
   [/^(hit point rolls|hit point roll log)$/, "Enter your hit point rolls again in the hit point dialog (click the hit points)."],
   [/^prepared spells$/, "Prepare your spells again on Magic."],
-  [/^(inventory|coins|starting equipment|items from features|attack edits|attacks|price multiplier)$/, "Check your gear, coins and attacks on Equipment."],
-  [/^(play state|hit points|temporary hit points|spell slots used|pact slots used|hit dice used|conditions|death saves|feature uses|exhaustion|wild shape|companion hit points|concentration)$/, "Set what is spent again on Play."],
+  [
+    /^(inventory|coins|starting equipment|items from features|attack edits|attacks|price multiplier)$/,
+    "Check your gear, coins and attacks on Equipment.",
+  ],
+  [
+    /^(play state|hit points|temporary hit points|spell slots used|pact slots used|hit dice used|conditions|death saves|feature uses|exhaustion|wild shape|companion hit points|concentration)$/,
+    "Set what is spent again on Play.",
+  ],
   [/^(name|player name|notes|details|portrait|journal|experience)$/, "Fill these in again in the character's details."],
   [/^(added content|custom bonuses|companions|counters|books|favorites)$/, "Add these again on Manage."],
 ];
@@ -552,12 +707,19 @@ const REDO: [RegExp, string][] = [
 export function repairReportText(damage: Damage[], file = "", when = new Date()): string {
   if (!damage.length) return "";
   const parts = [...new Set(damage.map((d) => d.part))];
-  const lines = [`Repair report${file ? `: ${file}` : ""}, ${when.toLocaleDateString()}`, `${parts.length === 1 ? "One part" : `${parts.length} parts`} of this character could not be read. Everything else is as it was saved.`, ""];
+  const lines = [
+    `Repair report${file ? `: ${file}` : ""}, ${when.toLocaleDateString()}`,
+    `${parts.length === 1 ? "One part" : `${parts.length} parts`} of this character could not be read. Everything else is as it was saved.`,
+    "",
+  ];
   const said = new Set<string>();
   for (const part of parts) {
     lines.push(`${cap(part)}:`, ...damage.filter((d) => d.part === part).map((d) => `- ${d.detail}`));
     const redo = REDO.find(([re]) => re.test(part))?.[1];
-    if (redo && !said.has(redo)) { said.add(redo); lines.push(`To put right: ${redo}`); }
+    if (redo && !said.has(redo)) {
+      said.add(redo);
+      lines.push(`To put right: ${redo}`);
+    }
     lines.push("");
   }
   return lines.join("\n").trim();
@@ -567,7 +729,12 @@ export function repairReportText(damage: Damage[], file = "", when = new Date())
  * A character read from a file or the library, with the report of anything damaged kept on it. An earlier report
  * stays in front of nothing: the newer one goes first.
  */
-export function openCharacter(raw: unknown, file = "", nameOf?: (id: string) => string | undefined, when = new Date()): { character: Character; repaired: string[] } {
+export function openCharacter(
+  raw: unknown,
+  file = "",
+  nameOf?: (id: string) => string | undefined,
+  when = new Date(),
+): { character: Character; repaired: string[] } {
   const { character, repaired, damage } = sanitizeCharacter(raw, nameOf);
   if (!damage.length) return { character, repaired };
   const text = repairReportText(damage, file, when);

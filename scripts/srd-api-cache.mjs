@@ -24,7 +24,14 @@ async function get(path) {
 async function pool(items, n, fn) {
   const out = [];
   let k = 0;
-  await Promise.all(Array.from({ length: n }, async () => { while (k < items.length) { const i = k++; out[i] = await fn(items[i]); } }));
+  await Promise.all(
+    Array.from({ length: n }, async () => {
+      while (k < items.length) {
+        const i = k++;
+        out[i] = await fn(items[i]);
+      }
+    }),
+  );
   return out;
 }
 
@@ -45,6 +52,13 @@ for (const edition of ["2014", "2024"]) {
     writeFileSync(join(dir, `${res}.json`), JSON.stringify(rows.filter(Boolean), null, 1));
     counts[res] = rows.filter(Boolean).length;
   }
-  writeFileSync(join(dir, "_meta.json"), JSON.stringify({ host: HOST, edition, fetched: new Date().toISOString(), licence: "data under the Open Gaming License 1.0a; test use only", counts }, null, 1));
+  writeFileSync(
+    join(dir, "_meta.json"),
+    JSON.stringify(
+      { host: HOST, edition, fetched: new Date().toISOString(), licence: "data under the Open Gaming License 1.0a; test use only", counts },
+      null,
+      1,
+    ),
+  );
   console.log(edition, JSON.stringify(counts));
 }

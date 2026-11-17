@@ -25,24 +25,42 @@ export function ConfirmHost() {
   const [p, setP] = useState<Pending | null>(null);
   useEffect(() => {
     show = setP;
-    return () => { show = null; };
+    return () => {
+      show = null;
+    };
   }, []);
   useEffect(() => {
     if (!p) return;
-    const key = (e: KeyboardEvent) => { if (e.key === "Escape") close(false); if (e.key === "Enter") close(true); };
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close(false);
+      if (e.key === "Enter") close(true);
+    };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   });
   if (!p) return null;
-  const close = (ok: boolean) => { p.resolve(ok); setP(null); };
+  const close = (ok: boolean) => {
+    p.resolve(ok);
+    setP(null);
+  };
   return (
     <div className="modal-back" onClick={() => close(false)}>
-      <div className="modal-page themed confirm-box" role="alertdialog" aria-modal="true" aria-label={p.title} onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-page themed confirm-box"
+        role="alertdialog"
+        aria-modal="true"
+        aria-label={p.title}
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2>{p.title}</h2>
         {p.message && <p>{p.message}</p>}
         <div className="row confirm-actions">
-          <button autoFocus onClick={() => close(false)}>Cancel</button>
-          <button className="danger" onClick={() => close(true)}>{p.confirmLabel ?? "Delete"}</button>
+          <button autoFocus onClick={() => close(false)}>
+            Cancel
+          </button>
+          <button className="danger" onClick={() => close(true)}>
+            {p.confirmLabel ?? "Delete"}
+          </button>
         </div>
       </div>
     </div>

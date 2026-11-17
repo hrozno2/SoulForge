@@ -7,19 +7,58 @@ export interface TipGroup {
 }
 
 const BY_CLASS: Record<string, string[]> = {
-  barbarian: ["Rage before you are hit, not after. It also resists most weapon damage, which makes it the best defence you have.", "Reckless attacks give enemies advantage against you. Use them when you are healthy or when the fight must end fast."],
-  bard: ["Hand out Bardic Inspiration at the start of a scene, and keep one die for yourself.", "Your cantrips and Vicious Mockery-style options keep you useful when slots run low. Save high slots for spells that change the fight."],
-  cleric: ["Healing in combat is rarely the best use of an action. Heal people who are at 0 HP, and spend other turns on buffs, control and damage.", "Check your domain features and Channel Divinity at the start of each fight."],
-  druid: ["Wild Shape is a pool of extra hit points as well as a disguise. Use it when you need a safe tank or a scout.", "Concentration spells are your strongest tools. Stay out of reach so you keep them."],
-  fighter: ["Action Surge gives you a second action, not a second attack action only. Spells, dashes and potions count.", "Second Wind is a bonus action. Use it early in a fight, since it comes back on a short rest."],
-  monk: ["Ki points come back on a short rest. Spend them freely, and ask for a short rest when the party is low.", "Move before and after you attack. Stunning Strike is strongest against one big enemy."],
-  paladin: ["Divine Smite works on a hit you already made, so you can decide after you see the roll. Smiting on a critical hit is the best use.", "Your aura only works when you are close. Stay near the people it protects."],
-  ranger: ["Know your favoured foes and terrain. Tell the table what you want to track and forage for during travel.", "Concentration on Hunter's Mark is worth it in long fights. Move it when its target drops."],
-  rogue: ["Sneak Attack needs advantage or an ally next to the target, once per turn. It can also trigger on someone else's turn with a reaction attack.", "Cunning Action lets you disengage or hide as a bonus action. Fight, then step out of reach."],
-  sorcerer: ["Metamagic costs sorcery points that come back on a long rest. Plan a few uses per day rather than spending them all early.", "You know few spells. Choose ones that stay useful at every level."],
-  warlock: ["Pact slots come back on a short rest. Ask for one whenever the party can take it.", "Eldritch Blast is your best attack at every level. Invocations that improve it are strong picks."],
-  wizard: ["Your spellbook holds more spells than you can prepare. Change the prepared list after each long rest to match what you expect to face.", "Ritual casting lets you cast some spells without a slot if you take ten extra minutes."],
-  artificer: ["Infusions and your tools do a lot of work out of combat. Keep a list of what you have infused.", "Your spell list is built for support and utility. Look at what the party lacks."],
+  barbarian: [
+    "Rage before you are hit, not after. It also resists most weapon damage, which makes it the best defence you have.",
+    "Reckless attacks give enemies advantage against you. Use them when you are healthy or when the fight must end fast.",
+  ],
+  bard: [
+    "Hand out Bardic Inspiration at the start of a scene, and keep one die for yourself.",
+    "Your cantrips and Vicious Mockery-style options keep you useful when slots run low. Save high slots for spells that change the fight.",
+  ],
+  cleric: [
+    "Healing in combat is rarely the best use of an action. Heal people who are at 0 HP, and spend other turns on buffs, control and damage.",
+    "Check your domain features and Channel Divinity at the start of each fight.",
+  ],
+  druid: [
+    "Wild Shape is a pool of extra hit points as well as a disguise. Use it when you need a safe tank or a scout.",
+    "Concentration spells are your strongest tools. Stay out of reach so you keep them.",
+  ],
+  fighter: [
+    "Action Surge gives you a second action, not a second attack action only. Spells, dashes and potions count.",
+    "Second Wind is a bonus action. Use it early in a fight, since it comes back on a short rest.",
+  ],
+  monk: [
+    "Ki points come back on a short rest. Spend them freely, and ask for a short rest when the party is low.",
+    "Move before and after you attack. Stunning Strike is strongest against one big enemy.",
+  ],
+  paladin: [
+    "Divine Smite works on a hit you already made, so you can decide after you see the roll. Smiting on a critical hit is the best use.",
+    "Your aura only works when you are close. Stay near the people it protects.",
+  ],
+  ranger: [
+    "Know your favoured foes and terrain. Tell the table what you want to track and forage for during travel.",
+    "Concentration on Hunter's Mark is worth it in long fights. Move it when its target drops.",
+  ],
+  rogue: [
+    "Sneak Attack needs advantage or an ally next to the target, once per turn. It can also trigger on someone else's turn with a reaction attack.",
+    "Cunning Action lets you disengage or hide as a bonus action. Fight, then step out of reach.",
+  ],
+  sorcerer: [
+    "Metamagic costs sorcery points that come back on a long rest. Plan a few uses per day rather than spending them all early.",
+    "You know few spells. Choose ones that stay useful at every level.",
+  ],
+  warlock: [
+    "Pact slots come back on a short rest. Ask for one whenever the party can take it.",
+    "Eldritch Blast is your best attack at every level. Invocations that improve it are strong picks.",
+  ],
+  wizard: [
+    "Your spellbook holds more spells than you can prepare. Change the prepared list after each long rest to match what you expect to face.",
+    "Ritual casting lets you cast some spells without a slot if you take ten extra minutes.",
+  ],
+  artificer: [
+    "Infusions and your tools do a lot of work out of combat. Keep a list of what you have infused.",
+    "Your spell list is built for support and utility. Look at what the party lacks.",
+  ],
 };
 
 const GENERAL: TipGroup[] = [

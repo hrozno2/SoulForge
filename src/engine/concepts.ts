@@ -6,11 +6,34 @@
 
 export const ABILITIES = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const;
 export type Ability = (typeof ABILITIES)[number];
-export const ABILITY_KEY: Record<Ability, string> = { strength: "str", dexterity: "dex", constitution: "con", intelligence: "int", wisdom: "wis", charisma: "cha" };
+export const ABILITY_KEY: Record<Ability, string> = {
+  strength: "str",
+  dexterity: "dex",
+  constitution: "con",
+  intelligence: "int",
+  wisdom: "wis",
+  charisma: "cha",
+};
 
 export const SKILLS = [
-  "acrobatics", "animal handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation",
-  "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight of hand", "stealth", "survival",
+  "acrobatics",
+  "animal handling",
+  "arcana",
+  "athletics",
+  "deception",
+  "history",
+  "insight",
+  "intimidation",
+  "investigation",
+  "medicine",
+  "nature",
+  "perception",
+  "performance",
+  "persuasion",
+  "religion",
+  "sleight of hand",
+  "stealth",
+  "survival",
 ] as const;
 
 /** Lower case, markup removed ("{@item Dagger|phb}" -> "dagger"), curly quotes straightened, spaces single. */
@@ -23,14 +46,22 @@ export function plain(s: string): string {
     .toLowerCase();
 }
 
-export const slugOf = (s: string) => plain(s).replace(/'/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+export const slugOf = (s: string) =>
+  plain(s)
+    .replace(/'/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 
 /**
  * A name for matching, whoever wrote it: lower case, apostrophes dropped without a gap, everything else not a letter
  * or digit one space. "Melfs Acid Arrow", "Melf's Acid Arrow" and "Melf’s Acid Arrow" are one key. Everything that
  * matches names from outside (importers, side data) goes through this, so no matcher has its own rules.
  */
-export const nameKey = (s: string) => plain(s).replace(/'/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+export const nameKey = (s: string) =>
+  plain(s)
+    .replace(/'/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 
 const SKILL_BY_SQUASHED = new Map(SKILLS.map((s) => [s.replace(/\s+/g, ""), s]));
 const skillOf = (s: string) => SKILL_BY_SQUASHED.get(plain(s).replace(/[^a-z]/g, ""));

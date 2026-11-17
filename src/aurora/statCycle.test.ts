@@ -3,7 +3,11 @@ import { StatBook, type StatInputs } from "./stats";
 
 const inputs: StatInputs = {
   abilityBase: { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 },
-  totalLevel: 1, classLevels: {}, attunedCount: 0, spellAbility: {}, baseHp: () => 0,
+  totalLevel: 1,
+  classLevels: {},
+  attunedCount: 0,
+  spellAbility: {},
+  baseHp: () => 0,
 };
 const book = () => {
   const b = new StatBook(inputs);
@@ -21,8 +25,15 @@ const book = () => {
 describe("statistics that refer to each other", () => {
   it("give the same values whichever is asked first", () => {
     const first = book();
-    const a1 = first.get("a"), b1 = first.get("b"), c1 = first.get("c");
-    for (const order of [["c", "b", "a"], ["b", "a", "c"], ["b", "c", "a"], ["a", "c", "b"]]) {
+    const a1 = first.get("a"),
+      b1 = first.get("b"),
+      c1 = first.get("c");
+    for (const order of [
+      ["c", "b", "a"],
+      ["b", "a", "c"],
+      ["b", "c", "a"],
+      ["a", "c", "b"],
+    ]) {
       const other = book();
       const got: Record<string, number> = {};
       for (const n of order) got[n] = other.get(n);

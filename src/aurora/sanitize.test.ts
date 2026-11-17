@@ -40,7 +40,14 @@ describe("reading a character from a file or the library (the audit's S6)", () =
   it("leaves a sound character exactly as it is", () => {
     const rng = seeded(7);
     for (let i = 0; i < 40; i++) {
-      const ch = normalizeCharacter(randomCharacter(reg, 1 + Math.floor(rng() * 20), { legacy: true, playtest: false, unusual: true, scifi: false, modern: false }, rng));
+      const ch = normalizeCharacter(
+        randomCharacter(
+          reg,
+          1 + Math.floor(rng() * 20),
+          { legacy: true, playtest: false, unusual: true, scifi: false, modern: false },
+          rng,
+        ),
+      );
       const again = sanitizeCharacter(JSON.parse(JSON.stringify(ch)));
       expect(again.repaired).toEqual([]);
       expect(again.character).toEqual(JSON.parse(JSON.stringify(ch)));
@@ -65,7 +72,13 @@ describe("reading a character from a file or the library (the audit's S6)", () =
   });
 
   it("names what it put right", () => {
-    const { character, repaired } = sanitizeCharacter({ ...newCharacter(), options: null, classes: [{ classId: "A", level: 500 }, { classId: "B", level: 3 }, "Fighter"], selections: [], coins: { gp: "many" } });
+    const { character, repaired } = sanitizeCharacter({
+      ...newCharacter(),
+      options: null,
+      classes: [{ classId: "A", level: 500 }, { classId: "B", level: 3 }, "Fighter"],
+      selections: [],
+      coins: { gp: "many" },
+    });
     expect(character.options).toEqual([]);
     expect(character.classes).toEqual([{ classId: "A", level: 20 }]);
     expect(character.selections).toEqual({});
@@ -148,7 +161,11 @@ describe("the repair report of a damaged character", () => {
     for (let i = 0; i < 300; i++) {
       // A junk version number can read as a newer format, which is refused, not repaired.
       let out;
-      try { out = sanitizeCharacter(damage(newCharacter(), rng)); } catch { continue; }
+      try {
+        out = sanitizeCharacter(damage(newCharacter(), rng));
+      } catch {
+        continue;
+      }
       const { repaired, damage: found } = out;
       expect(new Set(found.map((d) => d.part))).toEqual(new Set(repaired));
       for (const d of found) expect(d.detail.length).toBeGreaterThan(5);

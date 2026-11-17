@@ -15,24 +15,86 @@ import type { AElement, ARule } from "./types";
 
 type J = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-const ABIL: Record<string, string> = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" };
-const SKILL: Record<string, string> = {
-  acr: "acrobatics", ani: "animal handling", arc: "arcana", ath: "athletics", dec: "deception", his: "history", ins: "insight", itm: "intimidation",
-  inv: "investigation", med: "medicine", nat: "nature", prc: "perception", prf: "performance", per: "persuasion", rel: "religion", slt: "sleight of hand",
-  ste: "stealth", sur: "survival",
+const ABIL: Record<string, string> = {
+  str: "strength",
+  dex: "dexterity",
+  con: "constitution",
+  int: "intelligence",
+  wis: "wisdom",
+  cha: "charisma",
 };
-const SKILL_ABILITY: Record<string, string> = { acrobatics: "dex", "animal handling": "wis", arcana: "int", athletics: "str", deception: "cha", history: "int", insight: "wis", intimidation: "cha", investigation: "int", medicine: "wis", nature: "int", perception: "wis", performance: "cha", persuasion: "cha", religion: "int", "sleight of hand": "dex", stealth: "dex", survival: "wis" };
-const slug = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "");
+const SKILL: Record<string, string> = {
+  acr: "acrobatics",
+  ani: "animal handling",
+  arc: "arcana",
+  ath: "athletics",
+  dec: "deception",
+  his: "history",
+  ins: "insight",
+  itm: "intimidation",
+  inv: "investigation",
+  med: "medicine",
+  nat: "nature",
+  prc: "perception",
+  prf: "performance",
+  per: "persuasion",
+  rel: "religion",
+  slt: "sleight of hand",
+  ste: "stealth",
+  sur: "survival",
+};
+const SKILL_ABILITY: Record<string, string> = {
+  acrobatics: "dex",
+  "animal handling": "wis",
+  arcana: "int",
+  athletics: "str",
+  deception: "cha",
+  history: "int",
+  insight: "wis",
+  intimidation: "cha",
+  investigation: "int",
+  medicine: "wis",
+  nature: "int",
+  perception: "wis",
+  performance: "cha",
+  persuasion: "cha",
+  religion: "int",
+  "sleight of hand": "dex",
+  stealth: "dex",
+  survival: "wis",
+};
+const slug = (s: string) =>
+  s
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
 
 /** Paths that are not character mechanics this sheet keeps: rolls with advantage, light, item data, text. */
 export const DISPLAY_PATHS: RegExp[] = [
-  /\.roll\.mode$/, /^token\./, /^name$/, /^macro\./, /^flags\./, /^system\.description\./, /^system\.(properties|damage|range|type|attunement|magicalBonus|mastery|uses|activation|target|duration|weight|price|rarity|equipped|identified|quantity|armor|strength|stealth|attack|level|school|materials|components|preparation|source|hd|spellcasting|capacity|container|consume|recharge|formula|ability|actionType|chatFlavor|critical|save|summons|enchant|identifier|activities|crewed|cover)\b/,
+  /\.roll\.mode$/,
+  /^token\./,
+  /^name$/,
+  /^macro\./,
+  /^flags\./,
+  /^system\.description\./,
+  /^system\.(properties|damage|range|type|attunement|magicalBonus|mastery|uses|activation|target|duration|weight|price|rarity|equipped|identified|quantity|armor|strength|stealth|attack|level|school|materials|components|preparation|source|hd|spellcasting|capacity|container|consume|recharge|formula|ability|actionType|chatFlavor|critical|save|summons|enchant|identifier|activities|crewed|cover)\b/,
   /^system\.attributes\.(hp\.tempmax|death|concentration|exhaustion|attunement\.max|encumbrance|ac\.(armor|min|flat|shield|cover))\b/,
   /^system\.traits\.(dm|da|dr\.bypasses|di\.bypasses|dr\.custom|di\.custom|ci\.custom|size|weaponProf\.mastery|languages\.custom|languages\.communication)\b/,
-  /^system\.attributes\.movement\.(hover|units|ignoredDifficultTerrain|bonus|speed)$/, /^system\.details\./, /^system\.attributes\.(prof|bonus|hp\.max|init\.total)$/, /^system\.attributes\.senses\.(special|units)$/, /^system\.bonuses\.(heal|abilities\.skill)/, /^system\.scale\./, /^activities\[/,
+  /^system\.attributes\.movement\.(hover|units|ignoredDifficultTerrain|bonus|speed)$/,
+  /^system\.details\./,
+  /^system\.attributes\.(prof|bonus|hp\.max|init\.total)$/,
+  /^system\.attributes\.senses\.(special|units)$/,
+  /^system\.bonuses\.(heal|abilities\.skill)/,
+  /^system\.scale\./,
+  /^activities\[/,
 ];
 
-export interface FoundryReport { applied: number; unmatched: string[]; unknownPaths: Map<string, number>; untranslatable: Map<string, number> }
+export interface FoundryReport {
+  applied: number;
+  unmatched: string[];
+  unknownPaths: Map<string, number>;
+  untranslatable: Map<string, number>;
+}
 export const lastFoundryReport: FoundryReport = { applied: 0, unmatched: [], unknownPaths: new Map(), untranslatable: new Map() };
 
 /**
@@ -41,9 +103,17 @@ export const lastFoundryReport: FoundryReport = { applied: 0, unmatched: [], unk
  * "@scale.<owner>.<identifier>" (".number", ".faces" for dice). Each becomes a formula on the owner's level that steps
  * at the levels the scale lists, so it needs no state: min(1, max(0, L - k + 1)) is 1 from level k on.
  */
-export interface Scale { level: string; steps: { at: number; value: number; faces?: number }[]; type: string }
+export interface Scale {
+  level: string;
+  steps: { at: number; value: number; faces?: number }[];
+  type: string;
+}
 export const SCALES = new Map<string, Scale>();
-const kebab = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const kebab = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 
 function collectScales(files: [string, J][]): void {
   SCALES.clear();
@@ -61,8 +131,14 @@ function collectScales(files: [string, J][]): void {
           const id = a.configuration.identifier || kebab(a.title ?? "");
           const key = `${owner}.${id}`;
           if (SCALES.has(key)) continue;
-          const steps = Object.entries(a.configuration.scale as J).map(([at, v]: [string, J]) => ({ at: Math.max(1, Number(at)), value: Number(v.value ?? v.number ?? v.n ?? 1), faces: v.faces ?? v.die }))
-            .filter((x) => !Number.isNaN(x.at)).sort((x, y) => x.at - y.at);
+          const steps = Object.entries(a.configuration.scale as J)
+            .map(([at, v]: [string, J]) => ({
+              at: Math.max(1, Number(at)),
+              value: Number(v.value ?? v.number ?? v.n ?? 1),
+              faces: v.faces ?? v.die,
+            }))
+            .filter((x) => !Number.isNaN(x.at))
+            .sort((x, y) => x.at - y.at);
           SCALES.set(key, { level, steps, type: String(a.configuration.type ?? "number") });
         }
       }
@@ -110,7 +186,9 @@ export function translateFormula(v: unknown): string | undefined {
   if (typeof v === "number") return String(v);
   if (typeof v === "boolean") return v ? "1" : "0";
   // A leading sign ("+ 10", Mobile's speed in Plutonium's data) is the change's own direction, not part of the number.
-  let s = String(v ?? "").trim().replace(/^\+\s*/, "");
+  let s = String(v ?? "")
+    .trim()
+    .replace(/^\+\s*/, "");
   if (!s) return undefined;
   let bad = false;
   s = s.replace(/@[\w.]+/g, (t) => {
@@ -152,12 +230,29 @@ function changeRules(key: string, mode: string, value: unknown, out: AElement[])
   let m: RegExpExecArray | null;
   const val = v();
   // Newer dnd5e paths for the same things: damage bonuses, sense ranges, tool proficiency.
-  if ((m = /^system\.rolls\.damage\.(mwak|rwak|msak|rsak)\.bonus$/.exec(key))) return changeRules(`system.bonuses.${m[1]}.damage`, mode, value, out);
+  if ((m = /^system\.rolls\.damage\.(mwak|rwak|msak|rsak)\.bonus$/.exec(key)))
+    return changeRules(`system.bonuses.${m[1]}.damage`, mode, value, out);
   // dnd5e 5's speeds ("system.attributes.movement.speeds.fly") for the older "system.attributes.movement.fly".
-  if ((m = /^system\.attributes\.movement\.speeds\.(walk|fly|swim|climb|burrow)$/.exec(key))) return changeRules(`system.attributes.movement.${m[1]}`, mode, value, out);
-  if ((m = /^system\.attributes\.senses\.ranges\.(\w+)$/.exec(key))) return changeRules(`system.attributes.senses.${m[1]}`, mode, value, out);
+  if ((m = /^system\.attributes\.movement\.speeds\.(walk|fly|swim|climb|burrow)$/.exec(key)))
+    return changeRules(`system.attributes.movement.${m[1]}`, mode, value, out);
+  if ((m = /^system\.attributes\.senses\.ranges\.(\w+)$/.exec(key)))
+    return changeRules(`system.attributes.senses.${m[1]}`, mode, value, out);
   if ((m = /^system\.tools\.(\w+)(?:\.value)?$/.exec(key))) {
-    const TOOL: Record<string, string> = { mason: "mason's tools", brewer: "brewer's supplies", smith: "smith's tools", thief: "thieves' tools", herb: "herbalism kit", alchemist: "alchemist's supplies", carpenter: "carpenter's tools", cook: "cook's utensils", tinker: "tinker's tools", disg: "disguise kit", forg: "forgery kit", pois: "poisoner's kit", navg: "navigator's tools" };
+    const TOOL: Record<string, string> = {
+      mason: "mason's tools",
+      brewer: "brewer's supplies",
+      smith: "smith's tools",
+      thief: "thieves' tools",
+      herb: "herbalism kit",
+      alchemist: "alchemist's supplies",
+      carpenter: "carpenter's tools",
+      cook: "cook's utensils",
+      tinker: "tinker's tools",
+      disg: "disguise kit",
+      forg: "forgery kit",
+      pois: "poisoner's kit",
+      navg: "navigator's tools",
+    };
     const t = TOOL[m[1]];
     return t && Number(value) > 0 ? [{ kind: "grant", type: "Proficiency", id: `ID_5ET_TOOL_${slug(t)}` }] : "display";
   }
@@ -165,7 +260,16 @@ function changeRules(key: string, mode: string, value: unknown, out: AElement[])
   if (key === "system.attributes.ac.bonus" && val) return [stat("ac:misc", val)];
   if (key === "system.attributes.ac.calc") {
     const f = String(value);
-    const formula = f === "unarmoredMonk" ? "10 + {dexterity:modifier} + {wisdom:modifier}" : f === "unarmoredBarb" ? "10 + {dexterity:modifier} + {constitution:modifier}" : f === "draconic" ? "13 + {dexterity:modifier}" : f === "mage" ? "13 + {dexterity:modifier}" : undefined;
+    const formula =
+      f === "unarmoredMonk"
+        ? "10 + {dexterity:modifier} + {wisdom:modifier}"
+        : f === "unarmoredBarb"
+          ? "10 + {dexterity:modifier} + {constitution:modifier}"
+          : f === "draconic"
+            ? "13 + {dexterity:modifier}"
+            : f === "mage"
+              ? "13 + {dexterity:modifier}"
+              : undefined;
     return formula ? [stat("ac:calculation", formula, "calculation")] : "display"; // "custom" comes with system.attributes.ac.formula
   }
   if (key === "system.attributes.ac.formula" && val) return [stat("ac:calculation", val, "calculation")];
@@ -183,7 +287,19 @@ function changeRules(key: string, mode: string, value: unknown, out: AElement[])
     const rules: ARule[] = [stat(`${m[1]}:range`, val, `${m[1]} range`)];
     if (range) {
       const vid = `ID_5ET_SENSE_${slug(m[1])}_${range}`;
-      if (!out.some((o) => o.id === vid)) out.push({ id: vid, name: `${m[1].charAt(0).toUpperCase()}${m[1].slice(1)} (${range} ft.)`, type: "Vision", source: "5etools", supports: [], description: "", compendiumHidden: true, setters: {}, rules: [], origin: "5etools" });
+      if (!out.some((o) => o.id === vid))
+        out.push({
+          id: vid,
+          name: `${m[1].charAt(0).toUpperCase()}${m[1].slice(1)} (${range} ft.)`,
+          type: "Vision",
+          source: "5etools",
+          supports: [],
+          description: "",
+          compendiumHidden: true,
+          setters: {},
+          rules: [],
+          origin: "5etools",
+        });
       rules.push({ kind: "grant", type: "Vision", id: vid });
     }
     return rules;
@@ -194,18 +310,23 @@ function changeRules(key: string, mode: string, value: unknown, out: AElement[])
   }
   if ((m = /^system\.abilities\.(\w+)\.bonuses\.(save|check)$/.exec(key)) && ABIL[m[1]] && val) {
     if (m[2] === "save") return [stat(`${ABIL[m[1]]}:save:misc`, val)];
-    return Object.entries(SKILL_ABILITY).filter(([, a]) => a === m![1]).map(([sk]) => stat(`${sk}:misc`, val));
+    return Object.entries(SKILL_ABILITY)
+      .filter(([, a]) => a === m![1])
+      .map(([sk]) => stat(`${sk}:misc`, val));
   }
-  if ((m = /^system\.abilities\.(\w+)\.proficient$/.exec(key)) && ABIL[m[1]]) return Number(value) > 0 ? [{ kind: "grant", type: "Proficiency", id: `ID_5ET_SAVE_${slug(ABIL[m[1]])}` }] : "display";
+  if ((m = /^system\.abilities\.(\w+)\.proficient$/.exec(key)) && ABIL[m[1]])
+    return Number(value) > 0 ? [{ kind: "grant", type: "Proficiency", id: `ID_5ET_SAVE_${slug(ABIL[m[1]])}` }] : "display";
   if (key === "system.bonuses.abilities.save" && val) return Object.values(ABIL).map((a) => stat(`${a}:save:misc`, val));
-  if (key === "system.bonuses.abilities.check" && val) return [...Object.keys(SKILL_ABILITY).map((sk) => stat(`${sk}:misc`, val)), stat("initiative", val)];
+  if (key === "system.bonuses.abilities.check" && val)
+    return [...Object.keys(SKILL_ABILITY).map((sk) => stat(`${sk}:misc`, val)), stat("initiative", val)];
   if ((m = /^system\.skills\.(\w+)\.value$/.exec(key)) && SKILL[m[1]]) {
     const n = Number(value);
     if (n >= 2) return [{ kind: "grant", type: "Proficiency", id: `ID_5ET_EXPERTISE_${slug(SKILL[m[1]])}` }];
     if (n >= 1) return [{ kind: "grant", type: "Proficiency", id: `ID_5ET_SKILL_${slug(SKILL[m[1]])}` }];
     return "display";
   }
-  if ((m = /^system\.skills\.(\w+)\.bonuses\.(check|passive)$/.exec(key)) && SKILL[m[1]] && val) return [stat(m[2] === "passive" ? `${SKILL[m[1]]}:passive` : `${SKILL[m[1]]}:misc`, val)];
+  if ((m = /^system\.skills\.(\w+)\.bonuses\.(check|passive)$/.exec(key)) && SKILL[m[1]] && val)
+    return [stat(m[2] === "passive" ? `${SKILL[m[1]]}:passive` : `${SKILL[m[1]]}:misc`, val)];
   if ((m = /^system\.bonuses\.(mwak|rwak|msak|rsak)\.(attack|damage)$/.exec(key)) && val) {
     if (m[1] === "rsak") return "display"; // the same bonus as msak: one spell attack line
     // A die ("+ 1d8" to spell damage) is no flat bonus: it stays in the feature's text, not in a number.
@@ -215,7 +336,8 @@ function changeRules(key: string, mode: string, value: unknown, out: AElement[])
   if (key === "system.bonuses.spell.dc" && val) return [stat("spellcasting:dc", val)];
   if (key === "attributes.senses.darkvision") return changeRules("system.attributes.senses.darkvision", mode, value, out);
   if (key === "system.attributes.movement.multiplier") return "display";
-  if ((m = /^system\.traits\.(dr|di|dv|ci)$/.exec(key))) return changeRules(`system.traits.${m[1]}.value`, mode, (value as J)?.value ?? value, out);
+  if ((m = /^system\.traits\.(dr|di|dv|ci)$/.exec(key)))
+    return changeRules(`system.traits.${m[1]}.value`, mode, (value as J)?.value ?? value, out);
   if ((m = /^system\.traits\.(dr|di|dv|ci)\.value$/.exec(key))) {
     const kind = { dr: "DAMAGE_RESISTANCE", di: "DAMAGE_IMMUNITY", dv: "DAMAGE_VULNERABILITY", ci: "CONDITION_IMMUNITY" }[m[1]]!;
     const list = (Array.isArray(value) ? value : String(value).split(/[,;]/)).map((x) => String(x).trim()).filter(Boolean);
@@ -227,7 +349,19 @@ function changeRules(key: string, mode: string, value: unknown, out: AElement[])
   }
   if ((m = /^system\.traits\.(armorProf|weaponProf)\.value$/.exec(key))) {
     const list = (Array.isArray(value) ? value : String(value).split(/[,;]/)).map((x) => String(x).trim()).filter(Boolean);
-    const ids = list.map((x) => ({ lgt: "ID_5ET_PROF_ARMOR_LIGHT", med: "ID_5ET_PROF_ARMOR_MEDIUM", hvy: "ID_5ET_PROF_ARMOR_HEAVY", shl: "ID_5ET_PROF_ARMOR_SHIELD", sim: "ID_5ET_PROF_WEAPON_SIMPLE", mar: "ID_5ET_PROF_WEAPON_MARTIAL" })[x]).filter(Boolean) as string[];
+    const ids = list
+      .map(
+        (x) =>
+          ({
+            lgt: "ID_5ET_PROF_ARMOR_LIGHT",
+            med: "ID_5ET_PROF_ARMOR_MEDIUM",
+            hvy: "ID_5ET_PROF_ARMOR_HEAVY",
+            shl: "ID_5ET_PROF_ARMOR_SHIELD",
+            sim: "ID_5ET_PROF_WEAPON_SIMPLE",
+            mar: "ID_5ET_PROF_WEAPON_MARTIAL",
+          })[x],
+      )
+      .filter(Boolean) as string[];
     return ids.length ? ids.map((id) => ({ kind: "grant", type: "Proficiency", id }) as ARule) : "display";
   }
   return undefined;
@@ -236,16 +370,35 @@ function changeRules(key: string, mode: string, value: unknown, out: AElement[])
 /** The element ids a Foundry entry describes, by the converter's own id rules (ftId). */
 function targetIds(kind: string, e: J, ftId: (k: string, n: string, s: string, x?: string) => string): string[] {
   switch (kind) {
-    case "feat": return [ftId("FEAT", e.name, e.source)];
+    case "feat":
+      return [ftId("FEAT", e.name, e.source)];
     // "Dragonborn (Black)" is a version of the Dragonborn, under its own id.
-    case "race": { const v = /^(.+?) \((.+)\)$/.exec(e.name); return v ? [ftId("RACEVERSION", `${v[1]} ${v[2]}`, e.source), ftId("RACEVERSION", `${v[1]} ${e.name}`, e.source), ftId("SUBRACE", `${v[1]} ${v[2]}`, e.source), ftId("SUBRACE", `${v[2]} ${v[1]}`, e.source), ftId("RACE", e.name, e.source)] : [ftId("RACE", e.name, e.source)]; }
-    case "raceFeature": return e.raceName ? [`${ftId("RACE", e.raceName, e.raceSource ?? e.source)}_T_${slug(e.name)}`] : [];
-    case "classFeature": return [ftId("CF", `${e.className} ${e.name}`, e.source, String(e.level))];
+    case "race": {
+      const v = /^(.+?) \((.+)\)$/.exec(e.name);
+      return v
+        ? [
+            ftId("RACEVERSION", `${v[1]} ${v[2]}`, e.source),
+            ftId("RACEVERSION", `${v[1]} ${e.name}`, e.source),
+            ftId("SUBRACE", `${v[1]} ${v[2]}`, e.source),
+            ftId("SUBRACE", `${v[2]} ${v[1]}`, e.source),
+            ftId("RACE", e.name, e.source),
+          ]
+        : [ftId("RACE", e.name, e.source)];
+    }
+    case "raceFeature":
+      return e.raceName ? [`${ftId("RACE", e.raceName, e.raceSource ?? e.source)}_T_${slug(e.name)}`] : [];
+    case "classFeature":
+      return [ftId("CF", `${e.className} ${e.name}`, e.source, String(e.level))];
     // The converter adds the feature's header number to its level ("3" and header 1 give "_31").
-    case "subclassFeature": return ["", "1", "2", "3", "4"].map((h) => ftId("SF", `${e.subclassShortName} ${e.name}`, e.source, `${e.level}${h}`));
-    case "optionalfeature": return [ftId("OPT", e.name, e.source)];
-    case "item": case "baseitem": return [ftId("ITEM", e.name, e.source)];
-    default: return [];
+    case "subclassFeature":
+      return ["", "1", "2", "3", "4"].map((h) => ftId("SF", `${e.subclassShortName} ${e.name}`, e.source, `${e.level}${h}`));
+    case "optionalfeature":
+      return [ftId("OPT", e.name, e.source)];
+    case "item":
+    case "baseitem":
+      return [ftId("ITEM", e.name, e.source)];
+    default:
+      return [];
   }
 }
 
@@ -261,24 +414,35 @@ function setBy(el: AElement, byId: Map<string, AElement>): Set<string> {
  * Applies the Foundry files (path to parsed JSON) to the converted elements. `ftId` is the converter's id function.
  * Returns the report (also kept in lastFoundryReport for the tests).
  */
-export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: string, n: string, s: string, x?: string) => string, entryRules?: (data: J, el: AElement) => ARule[]): FoundryReport {
+export function applyFoundry(
+  files: [string, J][],
+  out: AElement[],
+  ftId: (k: string, n: string, s: string, x?: string) => string,
+  entryRules?: (data: J, el: AElement) => ARule[],
+): FoundryReport {
   const report: FoundryReport = { applied: 0, unmatched: [], unknownPaths: new Map(), untranslatable: new Map() };
   collectScales(files);
   const byId = new Map(out.map((e) => [e.id, e]));
   // Each class keeps its own scales (Known Forms, Wild Shape CR) for the engine's passes to read.
-  for (const [, json] of files) for (const c of ((json?.class as J[]) ?? [])) {
-    const el = byId.get(ftId("CLASS", c.name, c.source));
-    if (!el) continue;
-    for (const [key, sc] of SCALES) if (key.startsWith(`${kebab(c.name)}.`) && sc.level === `{level:${c.name.toLowerCase()}}`) (el.scales ??= {})[key.slice(kebab(c.name).length + 1)] = sc.steps.map((x) => ({ at: x.at, value: x.value }));
-  }
+  for (const [, json] of files)
+    for (const c of (json?.class as J[]) ?? []) {
+      const el = byId.get(ftId("CLASS", c.name, c.source));
+      if (!el) continue;
+      for (const [key, sc] of SCALES)
+        if (key.startsWith(`${kebab(c.name)}.`) && sc.level === `{level:${c.name.toLowerCase()}}`)
+          (el.scales ??= {})[key.slice(kebab(c.name).length + 1)] = sc.steps.map((x) => ({ at: x.at, value: x.value }));
+    }
   for (const [, json] of files) {
     for (const [kind, list] of Object.entries(json ?? {})) {
       if (!Array.isArray(list) || kind === "spell" || kind === "class" || kind === "subclass" || kind === "action") continue;
       for (const e of list as J[]) {
         const ids = targetIds(kind, e, ftId);
-        let targets = ids.flatMap((id) => [...out.filter((o) => o.id === id || o.id.startsWith(`${id}_`) && /_\d+$/.test(o.id))]);
+        let targets = ids.flatMap((id) => [...out.filter((o) => o.id === id || (o.id.startsWith(`${id}_`) && /_\d+$/.test(o.id)))]);
         // A generic magic variant ("Flame Tongue"): every item built from it.
-        if (kind === "magicvariant") targets = out.filter((o) => o.supports.includes(`5et variant ${String(e.name).toLowerCase()}|${String(e.source ?? "").toLowerCase()}`));
+        if (kind === "magicvariant")
+          targets = out.filter((o) =>
+            o.supports.includes(`5et variant ${String(e.name).toLowerCase()}|${String(e.source ?? "").toLowerCase()}`),
+          );
         // A species trait: the trait of that name within the species, as Plutonium finds it. "Goblin (Zendikar; Grotag
         // Tribe)" is tried whole, then as "Goblin (Zendikar)", then as the base "Goblin", always in the trait's book.
         if (!targets.length && kind === "raceFeature" && e.raceName) {
@@ -288,14 +452,19 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
           const book = slug(String(e.raceSource ?? e.source));
           for (const words of tries) {
             const keys = words.map(slug);
-            targets = out.filter((o) => o.id.endsWith(`_T_${slug(e.name)}`) && o.id.includes(`_${book}_`) && keys.every((k) => o.id.includes(k)));
+            targets = out.filter(
+              (o) => o.id.endsWith(`_T_${slug(e.name)}`) && o.id.includes(`_${book}_`) && keys.every((k) => o.id.includes(k)),
+            );
             if (targets.length) break;
           }
           // A subrace from another book ("Dragonborn (Draconblood; Black)", EGW) keeps its species' own trait, which
           // that species' entry already gives: nothing left to apply.
           if (!targets.length && m && out.some((o) => o.id.endsWith(`_T_${slug(e.name)}`) && o.id.includes(`_${slug(m[1])}_`))) continue;
         }
-        if (!targets.length) { if (ids.length || kind === "magicvariant") report.unmatched.push(`${kind} ${e.name} (${e.source})`); continue; }
+        if (!targets.length) {
+          if (ids.length || kind === "magicvariant") report.unmatched.push(`${kind} ${e.name} (${e.source})`);
+          continue;
+        }
         for (const el of targets) {
           const already = setBy(el, byId);
           const added: ARule[] = [];
@@ -303,13 +472,19 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
           // of Knowledge: two languages and two of four skills). Plutonium copies them onto the entity and reads them
           // like its own, so they go through the converter's readers. What the element already has stays single.
           if (e.entryData && entryRules) {
-            const same = (a: ARule, b: ARule) => (a.kind === "grant" && b.kind === "grant" && a.id === b.id) || (a.kind === "select" && b.kind === "select" && a.type === b.type && a.supports === b.supports);
+            const same = (a: ARule, b: ARule) =>
+              (a.kind === "grant" && b.kind === "grant" && a.id === b.id) ||
+              (a.kind === "select" && b.kind === "select" && a.type === b.type && a.supports === b.supports);
             for (const rule of entryRules(e.entryData as J, el)) if (!el.rules.some((x) => same(x, rule))) added.push(rule);
           }
           // Effects an activity lists are applied when that activity is used (a reaction, an action), as Foundry and
           // Plutonium apply them; only one marked always on (transfer) is carried by the character. Defensive Duelist's
           // Parry, a reaction, added the Proficiency Bonus to armor class at all times (found 2026-11-13).
-          const onUse = new Set(((e.activities as J[]) ?? []).flatMap((a) => ((a.effects as J[]) ?? []).map((x) => String(x?.foundryId ?? x?._id ?? ""))).filter(Boolean));
+          const onUse = new Set(
+            ((e.activities as J[]) ?? [])
+              .flatMap((a) => ((a.effects as J[]) ?? []).map((x) => String(x?.foundryId ?? x?._id ?? "")))
+              .filter(Boolean),
+          );
           for (const eff of (e.effects as J[]) ?? []) {
             if (onUse.has(String(eff.foundryId ?? eff._id ?? "")) && eff.transfer !== true) continue;
             // Applied when used, not always on. An enchantment goes on an item, and alternatives are listed side by side
@@ -337,8 +512,16 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
           for (const a of (e.activities as J[]) ?? []) {
             if (a.type === "attack" && kind !== "item" && kind !== "magicvariant" && kind !== "baseitem") {
               const part = ((a.damage?.parts as J[]) ?? [])[0];
-              const base = { name: a.name || e.name, damageType: ((part?.types as string[]) ?? [])[0] ?? "", ability: a.attack?.ability ? String(a.attack.ability) : "", ranged: a.attack?.type?.value === "ranged" };
-              if (part?.denomination) { attacks.push({ ...base, die: `${part.number ?? 1}d${part.denomination}` }); continue; }
+              const base = {
+                name: a.name || e.name,
+                damageType: ((part?.types as string[]) ?? [])[0] ?? "",
+                ability: a.attack?.ability ? String(a.attack.ability) : "",
+                ranged: a.attack?.type?.value === "ranged",
+              };
+              if (part?.denomination) {
+                attacks.push({ ...base, die: `${part.number ?? 1}d${part.denomination}` });
+                continue;
+              }
               // A die that grows with level, written as a scale value ("@scale.monk.die + @mod", "(@scale.x.y)d8"):
               // its count and size as formulas on the owner's level, worked out on the sheet.
               const dieFormula = scaleDie(String(part?.custom?.formula ?? ""));
@@ -348,17 +531,29 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
             // becomes the feature's companion, a choice when there are several. Named here, found by name and book
             // in any loaded content once everything is in (registry.ts resolveCreatureRefs).
             if (a.type === "summon" && !el.rules.some((x) => (x.kind === "grant" || x.kind === "select") && x.type === "Companion")) {
-              const refs = ((a.profiles as J[]) ?? []).map((p) => /@creature\[([^\]|]+)(?:\|([^\]]*))?\]/i.exec(String(p.uuid ?? ""))).filter((m): m is RegExpExecArray => !!m).map((m) => `CREATUREREF:${m[1].trim().toLowerCase()}|${(m[2] ?? "").trim().toLowerCase()}`);
+              const refs = ((a.profiles as J[]) ?? [])
+                .map((p) => /@creature\[([^\]|]+)(?:\|([^\]]*))?\]/i.exec(String(p.uuid ?? "")))
+                .filter((m): m is RegExpExecArray => !!m)
+                .map((m) => `CREATUREREF:${m[1].trim().toLowerCase()}|${(m[2] ?? "").trim().toLowerCase()}`);
               const uniq = [...new Set(refs)];
               if (uniq.length === 1) added.push({ kind: "grant", type: "Companion", id: uniq[0] } as ARule);
               // Several: an optional choice (the Beast Master's beast; a spell-like summon such as Phantasmal Creatures'
               // spirits is temporary, and its creatures may not be loaded), never one the character must make.
-              else if (uniq.length > 1) added.push({ kind: "select", type: "Companion", name: `${e.name}: companion`, supports: uniq.join("|"), number: 1, optional: true } as ARule);
+              else if (uniq.length > 1)
+                added.push({
+                  kind: "select",
+                  type: "Companion",
+                  name: `${e.name}: companion`,
+                  supports: uniq.join("|"),
+                  number: 1,
+                  optional: true,
+                } as ARule);
             }
             if (a.type === "save") {
               const abil = String(a.save?.dc?.calculation ?? "");
               const featureStat = `${e.name.toLowerCase().replace(/\s*\(.*\)\s*$/, "")}:dc`;
-              if (ABIL[abil] && !already.has(featureStat)) added.push(stat(featureStat, `8 + {proficiency} + {${ABIL[abil]}:modifier}`, "foundry dc"));
+              if (ABIL[abil] && !already.has(featureStat))
+                added.push(stat(featureStat, `8 + {proficiency} + {${ABIL[abil]}:modifier}`, "foundry dc"));
             }
           }
           if (attacks.length) el.attacks = [...(el.attacks ?? []), ...attacks];
@@ -375,7 +570,10 @@ export function applyFoundry(files: [string, J][], out: AElement[], ftId: (k: st
             el.sheet = { ...(el.sheet ?? { display: true, descriptions: [] }), usage: `{{${name}}}/${period}` };
             usage = true;
           }
-          if (added.length || attacks.length || usage) { el.rules = [...el.rules, ...added]; report.applied++; }
+          if (added.length || attacks.length || usage) {
+            el.rules = [...el.rules, ...added];
+            report.applied++;
+          }
         }
       }
     }

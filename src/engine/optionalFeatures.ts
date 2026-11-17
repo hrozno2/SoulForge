@@ -11,7 +11,9 @@ import { isModern } from "../aurora/edition";
 
 export function optionalFeatureChoices(byId: Map<string, AElement>): number {
   const classes = new Map<string, AElement[]>();
-  for (const el of byId.values()) if (el.type === "Class" && el.origin !== "5etools" && !isModern(el)) (classes.get(el.name.toLowerCase()) ?? classes.set(el.name.toLowerCase(), []).get(el.name.toLowerCase())!).push(el);
+  for (const el of byId.values())
+    if (el.type === "Class" && el.origin !== "5etools" && !isModern(el))
+      (classes.get(el.name.toLowerCase()) ?? classes.set(el.name.toLowerCase(), []).get(el.name.toLowerCase())!).push(el);
   let added = 0;
   for (const item of byId.values()) {
     if (!/optional class features/i.test(item.setters.category?.value ?? "")) continue;

@@ -28,7 +28,10 @@ describe.skipIf(!C)("summoned companions", () => {
     for (const cls of smiths) {
       const r = withSub(cls.id, 3, /^battle smith$/i);
       if (!r) continue;
-      expect(r.active.some((a) => a.el.type === "Companion" && /steel defender/i.test(a.el.name)), cls.id).toBe(true);
+      expect(
+        r.active.some((a) => a.el.type === "Companion" && /steel defender/i.test(a.el.name)),
+        cls.id,
+      ).toBe(true);
     }
   }, 600000);
 

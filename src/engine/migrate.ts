@@ -62,13 +62,19 @@ export function fiveToolsTwins(reg: ARegistry): (id: string) => string | undefin
   for (const e of reg.all()) {
     if (!isFive(e)) continue;
     const v = e.type === "Feat" ? /^(.+?) \(([^)]+)\)$/.exec(e.name) : null;
-    if (v) { const k = nameKey(v[1]); (versioned.get(k) ?? versioned.set(k, []).get(k)!).push(e); }
+    if (v) {
+      const k = nameKey(v[1]);
+      (versioned.get(k) ?? versioned.set(k, []).get(k)!).push(e);
+    }
     if (!byTwin.has(twinKey(e))) byTwin.set(twinKey(e), e.id);
     const c = conceptOf(e);
     if (c && !byConcept.has(c)) byConcept.set(c, e.id);
     const k = `${e.type}|${nameKey(e.name)}`;
     (byName.get(k) ?? byName.set(k, []).get(k)!).push(e);
-    if (GEAR.test(e.type)) { const g = `gear|${nameKey(e.name)}`; (byName.get(g) ?? byName.set(g, []).get(g)!).push(e); }
+    if (GEAR.test(e.type)) {
+      const g = `gear|${nameKey(e.name)}`;
+      (byName.get(g) ?? byName.set(g, []).get(g)!).push(e);
+    }
   }
   const memo = new Map<string, string | undefined>();
   return (id: string) => {
@@ -89,7 +95,8 @@ export function fiveToolsTwins(reg: ARegistry): (id: string) => string | undefin
         const same = [...(byName.get(`${el.type}|${nameKey(el.name)}`) ?? []), ...gear];
         hit = (same.find((e) => e.edition && e.edition === el.edition) ?? same[0])?.id;
         // The elemental languages folded into Primordial (2024; the converter points them there too): Aquan is Primordial.
-        if (!hit && el.type === "Language" && /^(aquan|auran|ignan|terran)$/i.test(el.name.trim())) hit = byName.get(`Language|${nameKey("Primordial")}`)?.[0]?.id;
+        if (!hit && el.type === "Language" && /^(aquan|auran|ignan|terran)$/i.test(el.name.trim()))
+          hit = byName.get(`Language|${nameKey("Primordial")}`)?.[0]?.id;
       }
     }
     // A feat its own edition holds only as versions (2014 Magic Initiate, Ritual Caster) is not the other edition's
@@ -97,7 +104,8 @@ export function fiveToolsTwins(reg: ARegistry): (id: string) => string | undefin
     // feat, a 2014 character's Magic Initiate landed in another level's choice and its own was filled anew.
     if (hit && el && el.type === "Feat" && el.edition) {
       const h = reg.get(hit);
-      if (h && h.edition && h.edition !== el.edition && (versioned.get(nameKey(el.name)) ?? []).some((v) => v.edition === el.edition)) hit = undefined;
+      if (h && h.edition && h.edition !== el.edition && (versioned.get(nameKey(el.name)) ?? []).some((v) => v.edition === el.edition))
+        hit = undefined;
     }
     memo.set(id, hit);
     return hit;
@@ -114,7 +122,18 @@ function shapeOf(name: string): string {
 
 const ABILITY = /\b(strength|dexterity|constitution|intelligence|wisdom|charisma)\b/i;
 /** Player's Handbook, Draconic Ancestry table (both editions): each dragon's damage type. */
-const DRAGON_DAMAGE: Record<string, string> = { black: "acid", copper: "acid", blue: "lightning", bronze: "lightning", brass: "fire", gold: "fire", red: "fire", green: "poison", silver: "cold", white: "cold" };
+const DRAGON_DAMAGE: Record<string, string> = {
+  black: "acid",
+  copper: "acid",
+  blue: "lightning",
+  bronze: "lightning",
+  brass: "fire",
+  gold: "fire",
+  red: "fire",
+  green: "poison",
+  silver: "cold",
+  white: "cold",
+};
 
 /** `ch` built on `from` (both providers) moved onto `to` (5e.tools without Aurora). */
 export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry): Migration {
@@ -140,12 +159,31 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // picks: the two providers build them differently, so they are filled below to give the old scores.
   const old = resolve(ch, from);
   const target = buildSheet(old).abilities.map((a) => a.score);
-  type Pick = { id: string; name: string; owner: string; ownerName: string; ownerType: string; ruleType: string; choice: string; ability: boolean; spell: boolean; casting?: string; concept?: string; at: number };
+  type Pick = {
+    id: string;
+    name: string;
+    owner: string;
+    ownerName: string;
+    ownerType: string;
+    ruleType: string;
+    choice: string;
+    ability: boolean;
+    spell: boolean;
+    casting?: string;
+    concept?: string;
+    at: number;
+  };
   const pool: Pick[] = [];
   const lists: { owner: string; name: string; values: string[] }[] = [];
-  const isAbility = (name: string, type: string) => type === "Ability Score Improvement" || /^ability score (improvement|increase)/i.test(name) || (ABILITY.test(name) && /\+\d|increase|improvement/i.test(name));
+  const isAbility = (name: string, type: string) =>
+    type === "Ability Score Improvement" ||
+    /^ability score (improvement|increase)/i.test(name) ||
+    (ABILITY.test(name) && /\+\d|increase|improvement/i.test(name));
   for (const s of old.slots) {
-    if (s.rule.type === "List") { if (s.chosen.length) lists.push({ owner: map(s.owner.id, false)!, name: s.rule.name, values: s.chosen }); continue; }
+    if (s.rule.type === "List") {
+      if (s.chosen.length) lists.push({ owner: map(s.owner.id, false)!, name: s.rule.name, values: s.chosen });
+      continue;
+    }
     for (const id of s.chosen) {
       const el = from.get(id);
       // Aurora's structure, not a pick of the player's: "Feat" under an improvement (the feat itself is the next pick).
@@ -156,7 +194,20 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       // By what the pick is, not by its choice's name: Aurora's "Ability Score Improvement (Barbarian 4)" holds feats.
       const ability = el?.type !== "Feat" && (s.rule.type === "Ability Score Improvement" || isAbility(el?.name ?? "", el?.type ?? ""));
       const t = ability ? id : map(id, false);
-      pool.push({ id: t ?? id, name: el?.name ?? id, owner: map(s.owner.id, false)!, ownerName: nameKey(s.owner.name), ownerType: s.owner.type, ruleType: s.rule.type, choice: s.rule.name, ability, spell: el?.type === "Spell", casting: s.rule.spellcasting, concept: el ? conceptOf(el) : undefined, at: s.at ?? 0 });
+      pool.push({
+        id: t ?? id,
+        name: el?.name ?? id,
+        owner: map(s.owner.id, false)!,
+        ownerName: nameKey(s.owner.name),
+        ownerType: s.owner.type,
+        ruleType: s.rule.type,
+        choice: s.rule.name,
+        ability,
+        spell: el?.type === "Spell",
+        casting: s.rule.spellcasting,
+        concept: el ? conceptOf(el) : undefined,
+        at: s.at ?? 0,
+      });
     }
   }
   const picks = pool.filter((p) => !p.ability);
@@ -177,8 +228,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     play: {
       ...ch.play,
       featureUses: Object.fromEntries(Object.entries(ch.play?.featureUses ?? {}).map(([k, v]) => [from.get(k) ? map(k, false)! : k, v])),
-      ...(ch.play?.companionHp ? { companionHp: Object.fromEntries(Object.entries(ch.play.companionHp).map(([k, v]) => [from.get(k) ? map(k, false)! : k, v])) } : {}),
-      ...(ch.play?.wildShape?.creatureId ? { wildShape: { ...ch.play.wildShape, creatureId: map(ch.play.wildShape.creatureId, false) } } : {}),
+      ...(ch.play?.companionHp
+        ? { companionHp: Object.fromEntries(Object.entries(ch.play.companionHp).map(([k, v]) => [from.get(k) ? map(k, false)! : k, v])) }
+        : {}),
+      ...(ch.play?.wildShape?.creatureId
+        ? { wildShape: { ...ch.play.wildShape, creatureId: map(ch.play.wildShape.creatureId, false) } }
+        : {}),
     },
     selections: {},
     declined: [],
@@ -201,12 +256,17 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
         // The class's subclass choice, by the class it belongs to (the two contents name its owner differently:
         // Aurora's "Level 3: Cleric Subclass", 5e.tools' Cleric).
         const root = s.root.startsWith("class:") ? `class:${map(s.root.slice(6), false)}` : s.root;
-        const slot = r.slots.find((x) => x.rule.type === "Archetype" && x.root === root && x.options.some((o) => nameKey(o.name) === nameKey(el.name)));
+        const slot = r.slots.find(
+          (x) => x.rule.type === "Archetype" && x.root === root && x.options.some((o) => nameKey(o.name) === nameKey(el.name)),
+        );
         if (!slot || slot.options.some((o) => o.id === t)) continue;
         const newer = slot.options.find((o) => nameKey(o.name) === nameKey(el.name))!;
         // The same subclass from the same book is 5e.tools' copy for the other version of the class (Circle of Stars
         // for the 2014 and the 2024 Druid): no decision, the class's own copy.
-        if (newer.source === el.source) { next.selections[slot.key] = [newer.id]; continue; }
+        if (newer.source === el.source) {
+          next.selections[slot.key] = [newer.id];
+          continue;
+        }
         next.selections[slot.key] = [t];
         decisions.push({ key: slot.key, older: t, newer: newer.id, what: `${el.name}: ${el.source} as built, or ${newer.source}` });
       }
@@ -222,12 +282,16 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     // A spell stays with its spellcasting: a Warlock's spells known are not a Sorcerer's.
     // The owner's own choice takes it whatever each provider calls the casting (Blessed Warrior's cantrips: Aurora says
     // the Paladin's, 5e.tools Blessed Warrior's).
-    if (p.spell && p.casting && s.rule.spellcasting && p.casting.toLowerCase() !== s.rule.spellcasting.toLowerCase() && !ownerOf(s, p)) return undefined;
+    if (p.spell && p.casting && s.rule.spellcasting && p.casting.toLowerCase() !== s.rule.spellcasting.toLowerCase() && !ownerOf(s, p))
+      return undefined;
     // `anyway`: the player's pick that 5e.tools' rules rule out (Polearm Master at 4th level without Strength or
     // Dexterity 13, which Aurora's copy did not ask) is kept, marked against the rules as any such pick is.
     // An option that is another concept is never the pick: the skill Perception is not "Perception (expertise)" (a
     // Rogue's skill went to its Expertise choice, its real expertise was lost and the skill's place filled anew).
-    const open = (anyway ? s.options : s.options.filter((o) => !s.blocked.has(o.id))).filter((o) => { const oc = p.concept ? conceptOf(o) : undefined; return !oc || oc === p.concept; });
+    const open = (anyway ? s.options : s.options.filter((o) => !s.blocked.has(o.id))).filter((o) => {
+      const oc = p.concept ? conceptOf(o) : undefined;
+      return !oc || oc === p.concept;
+    });
     const byId = open.find((o) => o.id === p.id);
     if (byId) return byId.id;
     // A feat 5e.tools has as the very same feat (name and book) is that feat or nothing: its other edition's version
@@ -235,7 +299,8 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     // taking it changed the scores. The choice's own rules may rule the old one out; it is then kept as it was
     // (`anyway`: the engine keeps a pick a choice no longer offers and marks it).
     const self = to.get(p.id);
-    if (self?.type === "Feat" && s.rule.type === "Feat") return anyway && to.find(s.rule.type, "").some((o) => o.id === self.id) ? self.id : undefined;
+    if (self?.type === "Feat" && s.rule.type === "Feat")
+      return anyway && to.find(s.rule.type, "").some((o) => o.id === self.id) ? self.id : undefined;
     const n = nameKey(p.name);
     // The same concept, whoever names it: Aurora's "Skill Expertise (Acrobatics)" Class Feature is 5e.tools' expertise.
     const c = p.concept;
@@ -262,22 +327,46 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     // Only a pick that is an ability's bare name does (Fey Touched's "Intelligence" is its "+1 Intelligence").
     if (s.rule.type === "Ability Score Improvement") {
       if (!/^(strength|dexterity|constitution|intelligence|wisdom|charisma)$/.test(n)) return undefined;
-      const hit = open.filter((o) => new RegExp(`^\\+\\d ${n}$`).test(nameKey(o.name).replace(/^(\d)/, "+$1")) || nameKey(o.name) === `1 ${n}` || nameKey(o.name) === `2 ${n}`);
+      const hit = open.filter(
+        (o) =>
+          new RegExp(`^\\+\\d ${n}$`).test(nameKey(o.name).replace(/^(\d)/, "+$1")) ||
+          nameKey(o.name) === `1 ${n}` ||
+          nameKey(o.name) === `2 ${n}`,
+      );
       return hit.length === 1 ? hit[0].id : undefined;
     }
     // A near name, when only one option has it: "Rock Gnome" is "Rock Gnome Lineage", "Wisdom" is "+1 Wisdom";
     // "Resilient (Strength)" is "Saving throw proficiency (Strength)" by what the brackets name. Never across kinds:
     // the spell Light is not the feat Light Bringer (it took a Cleric's 4th-level feat).
-    const same = (o: (typeof open)[number]) => !kind || o.type === kind || (kind !== "Spell" && kind !== "Feat" && o.type !== "Spell" && o.type !== "Feat");
-    const one = (xs: typeof open) => { const ys = xs.filter(same); return ys.length === 1 ? ys[0].id : undefined; };
+    const same = (o: (typeof open)[number]) =>
+      !kind || o.type === kind || (kind !== "Spell" && kind !== "Feat" && o.type !== "Spell" && o.type !== "Feat");
+    const one = (xs: typeof open) => {
+      const ys = xs.filter(same);
+      return ys.length === 1 ? ys[0].id : undefined;
+    };
     const inName = n.length > 3 ? one(open.filter((o) => ` ${nameKey(o.name)} `.includes(` ${n} `))) : undefined;
     if (inName) return inName;
     // The distinctive words, when only one option has them all: Aurora's "Underdark Circle" (Circle Spells) is
     // 5e.tools' "Circle of the Land: Underdark"; words both owners' names and the choice's name share say nothing.
-    const common = new Set([...nameKey(`${s.owner.name} ${p.ownerName} ${s.rule.name} ${p.choice}`).split(" "), "the", "of", "a", "an", "and", "spells", "spell", "circle"]);
+    const common = new Set([
+      ...nameKey(`${s.owner.name} ${p.ownerName} ${s.rule.name} ${p.choice}`).split(" "),
+      "the",
+      "of",
+      "a",
+      "an",
+      "and",
+      "spells",
+      "spell",
+      "circle",
+    ]);
     const own = n.split(" ").filter((w) => w.length > 2 && !common.has(w));
     if (own.length) {
-      const hits = open.filter((o) => { const ws = new Set(nameKey(o.name).split(" ")); return own.every((w) => ws.has(w)); }).filter(same);
+      const hits = open
+        .filter((o) => {
+          const ws = new Set(nameKey(o.name).split(" "));
+          return own.every((w) => ws.has(w));
+        })
+        .filter(same);
       // Numbered versions of one option ("Strixhaven Initiate: Witherbloom 1", "... 2"): each grants its own set (a pair
       // of the college's cantrips). The one whose grants are most of the old character's picks; before, two hits meant
       // none and the auto-fill picked another college.
@@ -285,7 +374,8 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       if (hits.length === 1) return hits[0].id;
       if (hits.length > 1 && hits.every((o) => base(o) === base(hits[0]))) {
         const picked = new Set(pool.map((q) => nameKey(q.name)));
-        const score = (o: (typeof open)[number]) => o.rules.filter((x) => x.kind === "grant" && x.id && picked.has(nameKey(to.get(x.id)?.name ?? ""))).length;
+        const score = (o: (typeof open)[number]) =>
+          o.rules.filter((x) => x.kind === "grant" && x.id && picked.has(nameKey(to.get(x.id)?.name ?? ""))).length;
         return [...hits].sort((x, y) => score(y) - score(x))[0].id;
       }
     }
@@ -294,14 +384,21 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const br = /\(([^)]+)\)\s*$/.exec(p.name)?.[1];
     // A dragon's colour is its damage type where 5e.tools asks the type: "Draconic Ancestry (Bronze)" is "Lightning".
     const dragon = br ? DRAGON_DAMAGE[nameKey(br)] : undefined;
-    if (dragon && /dragon|draconic/i.test(`${p.name} ${p.choice} ${s.owner.name}`)) { const hit = one(open.filter((o) => new RegExp(`\\b${dragon}\\b`).test(nameKey(o.name)))); if (hit) return hit; }
+    if (dragon && /dragon|draconic/i.test(`${p.name} ${p.choice} ${s.owner.name}`)) {
+      const hit = one(open.filter((o) => new RegExp(`\\b${dragon}\\b`).test(nameKey(o.name))));
+      if (hit) return hit;
+    }
     // The pick's whole name in an option's brackets: Resilient's "Constitution" is "Saving throw proficiency
     // (Constitution)".
     const inBrackets = one(open.filter((o) => nameKey(/\(([^)]+)\)\s*$/.exec(o.name)?.[1] ?? "") === n));
     if (inBrackets) return inBrackets;
     if (!br) return undefined;
     const b = nameKey(br);
-    return one(open.filter((o) => nameKey(/\(([^)]+)\)\s*$/.exec(o.name)?.[1] ?? "") === b)) ?? one(open.filter((o) => nameKey(o.name) === b)) ?? (b.length > 3 ? one(open.filter((o) => ` ${nameKey(o.name)} `.includes(` ${b} `))) : undefined);
+    return (
+      one(open.filter((o) => nameKey(/\(([^)]+)\)\s*$/.exec(o.name)?.[1] ?? "") === b)) ??
+      one(open.filter((o) => nameKey(o.name) === b)) ??
+      (b.length > 3 ? one(open.filter((o) => ` ${nameKey(o.name)} `.includes(` ${b} `))) : undefined)
+    );
   };
   const room = (s: Slot) => s.rule.type !== "List" && (next.selections[s.key]?.length ?? 0) < s.rule.number;
   // The owner's picks go first, to a fixed point (an invocation chosen opens its own feat choice, which its feat
@@ -315,31 +412,51 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     for (const s of r.slots) {
       if (s.rule.type !== "List" || next.selections[s.key]?.length) continue;
       const l = lists.findIndex((x) => x.owner === s.owner.id && x.name === s.rule.name);
-      if (l >= 0) { next.selections[s.key] = lists[l].values; lists.splice(l, 1); placed = true; }
+      if (l >= 0) {
+        next.selections[s.key] = lists[l].values;
+        lists.splice(l, 1);
+        placed = true;
+      }
     }
     // A maximum matching of picks to the places choices have (Kuhn's algorithm, as the importer matches trainings):
     // greedy order let 1st-level spells fill the spellbook's last places, leaving its 9th-level picks nowhere.
     const rooms = r.slots.filter(room);
-    const places: { s: Slot; id?: string }[] = rooms.flatMap((x) => Array.from({ length: x.rule.number - (next.selections[x.key]?.length ?? 0) }, () => ({ s: x })));
+    const places: { s: Slot; id?: string }[] = rooms.flatMap((x) =>
+      Array.from({ length: x.rule.number - (next.selections[x.key]?.length ?? 0) }, () => ({ s: x })),
+    );
     // Every allowed edge at once, the preferred first (owner and level, owner, level, then a pick the rules now rule
     // out kept at its own level, then anywhere): augmenting paths may move an earlier pick to make room for another.
     // The highest spell level a casting has slots for, on the finished character.
-    const maxLevel = (casting: string) => { let n = 0; for (let k = 1; k <= 9; k++) if (r.stats.get(`${casting.toLowerCase()}:spellcasting:slots:${k}`) > 0) n = k; return Math.max(n, r.stats.get(`${casting.toLowerCase()}:spellcasting:slot`) || 0); };
+    const maxLevel = (casting: string) => {
+      let n = 0;
+      for (let k = 1; k <= 9; k++) if (r.stats.get(`${casting.toLowerCase()}:spellcasting:slots:${k}`) > 0) n = k;
+      return Math.max(n, r.stats.get(`${casting.toLowerCase()}:spellcasting:slot`) || 0);
+    };
     const rank = (pl: { s: Slot }, p: Pick): { rank: number; id: string } | undefined => {
-      const own = ownerOf(pl.s, p), lvl = p.at === pl.s.at;
+      const own = ownerOf(pl.s, p),
+        lvl = p.at === pl.s.at;
       // A spell the finished character can cast, in its own casting's choice whose level does not offer it yet: Aurora
       // lets a Wizard's 1st-level spellbook choice hold 2nd-level spells (the spellbook as a whole is legal at 3rd
       // level). Unplaced, they were wrongly prepared outside the spellbook and the places filled with other spells.
       const sp = to.get(p.id);
-      if (p.spell && sp?.type === "Spell" && pl.s.rule.type === "Spell" && p.casting && pl.s.rule.spellcasting?.toLowerCase() === p.casting.toLowerCase() && !pl.s.options.some((o) => o.id === p.id)) {
+      if (
+        p.spell &&
+        sp?.type === "Spell" &&
+        pl.s.rule.type === "Spell" &&
+        p.casting &&
+        pl.s.rule.spellcasting?.toLowerCase() === p.casting.toLowerCase() &&
+        !pl.s.options.some((o) => o.id === p.id)
+      ) {
         const level = Number(sp.setters.level?.value ?? 0);
         const sameKind = (level === 0) === /cantrip/i.test(pl.s.rule.name);
-        if (level > 0 && sameKind && level <= maxLevel(p.casting) && fits({ ...pl.s, options: [...pl.s.options, sp] } as Slot, p)) return { rank: 3, id: p.id };
+        if (level > 0 && sameKind && level <= maxLevel(p.casting) && fits({ ...pl.s, options: [...pl.s.options, sp] } as Slot, p))
+          return { rank: 3, id: p.id };
       }
       const ok = fits(pl.s, p);
       // A feat goes only to its owner's choice or its own level's: an old pick whose choice 5e.tools no longer asks
       // (a background feat it now gives outright) must not take another level's feat (it pushed Spell Sniper out).
-      if (ok && !own && !lvl && from.get(p.id)?.type === "Feat" || ok && !own && !lvl && to.get(p.id)?.type === "Feat") return undefined;
+      if ((ok && !own && !lvl && from.get(p.id)?.type === "Feat") || (ok && !own && !lvl && to.get(p.id)?.type === "Feat"))
+        return undefined;
       if (ok) return { rank: own && lvl ? 0 : own ? 1 : lvl ? 2 : 4, id: ok };
       // Kept against the rules, at its own level: in its own owner's choice before another owner's (the Pact of the
       // Tome's Magic Stone, a repeat of the Warlock's own, took the Warlock's cantrip place and pushed the rest on).
@@ -350,34 +467,59 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     // A pick whose owner is itself a pick still waiting (the Tome's cantrips before Pact of the Tome is placed) waits for
     // it: placed at once, the Tome's Magic Stone took the Warlock's own cantrip place before the Tome's choice existed.
     const activeNames = new Set(r.active.map((a) => nameKey(a.el.name)));
-    const waiting = (p: Pick) => waitForOwner && !activeNames.has(p.ownerName) && picks.some((q) => q !== p && nameKey(q.name) === p.ownerName);
-    const edges = picks.map((p) => waiting(p) ? [] : places.map((pl, j) => ({ j, ...(rank(pl, p) ?? { rank: 9, id: "" }) })).filter((e) => e.id && !(next.selections[places[e.j].s.key] ?? []).includes(e.id)).sort((x, y) => x.rank - y.rank));
+    const waiting = (p: Pick) =>
+      waitForOwner && !activeNames.has(p.ownerName) && picks.some((q) => q !== p && nameKey(q.name) === p.ownerName);
+    const edges = picks.map((p) =>
+      waiting(p)
+        ? []
+        : places
+            .map((pl, j) => ({ j, ...(rank(pl, p) ?? { rank: 9, id: "" }) }))
+            .filter((e) => e.id && !(next.selections[places[e.j].s.key] ?? []).includes(e.id))
+            .sort((x, y) => x.rank - y.rank),
+    );
     const owner = new Array<number>(places.length).fill(-1);
     const take = (i: number, seen: Set<number>): boolean => {
       for (const e of edges[i]) {
         if (seen.has(e.j)) continue;
         seen.add(e.j);
-        if (owner[e.j] < 0 || take(owner[e.j], seen)) { owner[e.j] = i; places[e.j].id = e.id; return true; }
+        if (owner[e.j] < 0 || take(owner[e.j], seen)) {
+          owner[e.j] = i;
+          places[e.j].id = e.id;
+          return true;
+        }
       }
       return false;
     };
     // The picks with the best places first, so a pick on its own owner's choice keeps it against one from elsewhere.
-    const byRank = picks.map((_, i) => i).filter((i) => edges[i].length).sort((x, y) => edges[x][0].rank - edges[y][0].rank);
+    const byRank = picks
+      .map((_, i) => i)
+      .filter((i) => edges[i].length)
+      .sort((x, y) => edges[x][0].rank - edges[y][0].rank);
     for (const i of byRank) take(i, new Set());
     const used = new Set<number>();
     // A feat is had once (an element counts once): taken in one place per round. A repeatable one (the 2024 Ability
     // Score Improvement) has copies, and the next round offers the next copy; given the same copy in four places at
     // once, three improvements and their increases were lost.
-    const featTaken = new Set(Object.values(next.selections).flat().filter((x) => to.get(x)?.type === "Feat"));
+    const featTaken = new Set(
+      Object.values(next.selections)
+        .flat()
+        .filter((x) => to.get(x)?.type === "Feat"),
+    );
     for (let j = 0; j < places.length; j++) {
       const i = owner[j];
       if (i < 0) continue;
       const have = (next.selections[places[j].s.key] ??= []);
       // One choice holds an option once: a second place of the same choice wanting the same id is left.
       if (have.includes(places[j].id!)) continue;
-      if (to.get(places[j].id!)?.type === "Feat") { if (featTaken.has(places[j].id!)) continue; featTaken.add(places[j].id!); }
+      if (to.get(places[j].id!)?.type === "Feat") {
+        if (featTaken.has(places[j].id!)) continue;
+        featTaken.add(places[j].id!);
+      }
       have.push(places[j].id!);
-      if (process.env.MIGRATE_TRACE) (globalThis as { __trace?: string[] }).__trace?.push(`TRACE place ${picks[i].name} (at ${picks[i].at}, owner ${picks[i].ownerName}) -> ${places[j].s.rule.name} [${places[j].s.at}] = ${to.get(places[j].id!)?.name} rank ${edges[i].find((e) => e.j === j)?.rank}`);
+      if (process.env.MIGRATE_TRACE)
+        (globalThis as { __trace?: string[] }).__trace?.push(
+          `TRACE place ${picks[i].name} (at ${picks[i].at}, owner ${picks[i].ownerName}) -> ${places[j].s.rule.name} [${places[j].s.at}] = ${to.get(places[j].id!)?.name} rank ${edges[i].find((e) => e.j === j)?.rank}`,
+        );
       used.add(i);
       placed = true;
     }
@@ -399,7 +541,8 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   const gap = (c: Character) => buildSheet(resolve(c, to)).abilities.reduce((n, a, i) => n + Math.abs(target[i] - a.score), 0);
   // The options of a choice that raise scores or say how: all of an Ability Score Improvement choice's, else those so
   // named (the 2014 "Ability Score Improvement or feat" choice's improvement among its feats).
-  const raising = (s: Slot) => s.options.filter((o) => !s.blocked.has(o.id) && (s.rule.type === "Ability Score Improvement" || isAbility(o.name, o.type)));
+  const raising = (s: Slot) =>
+    s.options.filter((o) => !s.blocked.has(o.id) && (s.rule.type === "Ability Score Improvement" || isAbility(o.name, o.type)));
   const abilityish = (s: Slot) => !s.rule.optional && room(s) && raising(s).length > 0;
   const best = (c: Character, s: Slot, depth: number): { id: string; gap: number } | undefined => {
     let out: { id: string; gap: number } | undefined;
@@ -419,7 +562,8 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       }
       const g = gap(t);
       // On a tie, the old pick's own pattern: "+1, +1, +1" is "+1 to three different scores", not "+2 and +1".
-      if (!out || g < out.gap || (g === out.gap && sameShape(o.name) && !sameShape(from.get(out.id)?.name ?? to.get(out.id)?.name ?? ""))) out = { id: o.id, gap: g };
+      if (!out || g < out.gap || (g === out.gap && sameShape(o.name) && !sameShape(from.get(out.id)?.name ?? to.get(out.id)?.name ?? "")))
+        out = { id: o.id, gap: g };
     }
     return out;
   };
@@ -432,10 +576,18 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // Crusher's "+1 Strength"; the species' "+2 Constitution, +1 Charisma" is that, not whatever sum comes nearest (the
   // nearest sum gave a Genasi +2 Strength because Crusher could then give Constitution). Each old increase is used
   // once, by the same owner's choice (a feat's) or the same level's (an origin's, a class improvement's).
-  const increases = pool.filter((p) => p.ability).map((p) => ({ p, ability: ABILITY.exec(p.name)?.[1].toLowerCase() ?? "", left: Number(/\+\s*(\d)/.exec(p.name)?.[1] ?? /\+\s*(\d)/.exec(p.choice)?.[1] ?? 1) })).filter((x) => x.ability);
+  const increases = pool
+    .filter((p) => p.ability)
+    .map((p) => ({
+      p,
+      ability: ABILITY.exec(p.name)?.[1].toLowerCase() ?? "",
+      left: Number(/\+\s*(\d)/.exec(p.name)?.[1] ?? /\+\s*(\d)/.exec(p.choice)?.[1] ?? 1),
+    }))
+    .filter((x) => x.ability);
   const totalsOf = (name: string): Map<string, number> => {
     const out = new Map<string, number>();
-    for (const m of name.matchAll(/\+\s*(\d)\s+(strength|dexterity|constitution|intelligence|wisdom|charisma)\b/gi)) out.set(m[2].toLowerCase(), (out.get(m[2].toLowerCase()) ?? 0) + Number(m[1]));
+    for (const m of name.matchAll(/\+\s*(\d)\s+(strength|dexterity|constitution|intelligence|wisdom|charisma)\b/gi))
+      out.set(m[2].toLowerCase(), (out.get(m[2].toLowerCase()) ?? 0) + Number(m[1]));
     return out;
   };
   const matchScores = () => {
@@ -445,7 +597,13 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       for (const s of r.slots) {
         if (!abilityish(s)) continue;
         const featOwned = s.owner.type === "Feat";
-        const mine = increases.filter((x) => x.left > 0 && (featOwned ? x.p.ownerType === "Feat" && x.p.ownerName === nameKey(s.owner.name) : x.p.ownerType !== "Feat" && (x.p.at <= 1) === ((s.at ?? 0) <= 1) && ((s.at ?? 0) <= 1 || x.p.at === s.at)));
+        const mine = increases.filter(
+          (x) =>
+            x.left > 0 &&
+            (featOwned
+              ? x.p.ownerType === "Feat" && x.p.ownerName === nameKey(s.owner.name)
+              : x.p.ownerType !== "Feat" && x.p.at <= 1 === (s.at ?? 0) <= 1 && ((s.at ?? 0) <= 1 || x.p.at === s.at)),
+        );
         if (!mine.length) continue;
         const have = (a: string) => mine.filter((x) => x.ability === a).reduce((n, x) => n + x.left, 0);
         let bestO: { id: string; t: Map<string, number>; sum: number } | undefined;
@@ -460,7 +618,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
         for (const [a, n] of bestO.t) {
           let need = n;
           // A whole old increase of exactly this size first, then parts of larger ones.
-          for (const x of [...mine.filter((y) => y.ability === a)].sort((x, y) => Number(y.left === n) - Number(x.left === n))) { const take = Math.min(need, x.left); x.left -= take; need -= take; if (!need) break; }
+          for (const x of [...mine.filter((y) => y.ability === a)].sort((x, y) => Number(y.left === n) - Number(x.left === n))) {
+            const take = Math.min(need, x.left);
+            x.left -= take;
+            need -= take;
+            if (!need) break;
+          }
         }
         next.selections[s.key] = [...(next.selections[s.key] ?? []), bestO.id];
         done = true;
@@ -470,16 +633,19 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     }
   };
   const fillScores = (only?: (s: Slot) => boolean) => {
-  const skipped = new Set<string>();
-  matchScores();
-  for (let round = 0; round < 40 && gap(next) > 0; round++) {
-    const s = resolve(next, to).slots.find((x) => !skipped.has(x.key) && abilityish(x) && (!only || only(x)));
-    if (!s) break;
-    const b = best(next, s, 3);
-    if (!b || b.gap >= gap(next)) { skipped.add(s.key); continue; }
-    next.selections[s.key] = [...(next.selections[s.key] ?? []), b.id];
+    const skipped = new Set<string>();
     matchScores();
-  }
+    for (let round = 0; round < 40 && gap(next) > 0; round++) {
+      const s = resolve(next, to).slots.find((x) => !skipped.has(x.key) && abilityish(x) && (!only || only(x)));
+      if (!s) break;
+      const b = best(next, s, 3);
+      if (!b || b.gap >= gap(next)) {
+        skipped.add(s.key);
+        continue;
+      }
+      next.selections[s.key] = [...(next.selections[s.key] ?? []), b.id];
+      matchScores();
+    }
   };
 
   // The species', background's and feats' own increases first, so a feat's score requirement holds when it is
@@ -491,17 +657,26 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       const r = resolve(next, to);
       let done = false;
       for (const s of r.slots.filter((x) => room(x) && !x.rule.optional && x.rule.type === "Training Option" && x.options.length <= 8)) {
-        let bestId: string | undefined, bestN = 0;
+        let bestId: string | undefined,
+          bestN = 0;
         for (const o of s.options.filter((x) => !s.blocked.has(x.id))) {
           const t: Character = { ...next, selections: { ...next.selections, [s.key]: [...(next.selections[s.key] ?? []), o.id] } };
           const after = resolve(t, to);
           const opened = after.slots.filter((x) => !r.slots.some((y) => y.key === x.key));
           // Picks its own choices would take, and picks it simply gives (the Rogue's "and thieves' tools" expertise).
-          const gives = (p: Pick) => !!p.concept && after.active.some((a) => conceptOf(a.el) === p.concept) && !r.active.some((a) => conceptOf(a.el) === p.concept);
+          const gives = (p: Pick) =>
+            !!p.concept && after.active.some((a) => conceptOf(a.el) === p.concept) && !r.active.some((a) => conceptOf(a.el) === p.concept);
           const n = picks.filter((p) => opened.some((x) => fits(x, p)) || gives(p)).length;
-          if (n > bestN) { bestN = n; bestId = o.id; }
+          if (n > bestN) {
+            bestN = n;
+            bestId = o.id;
+          }
         }
-        if (bestId) { next.selections[s.key] = [...(next.selections[s.key] ?? []), bestId]; done = true; break; }
+        if (bestId) {
+          next.selections[s.key] = [...(next.selections[s.key] ?? []), bestId];
+          done = true;
+          break;
+        }
       }
       if (!done) break;
       place();
@@ -512,7 +687,11 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   fillScores((x) => x.rule.type === "Ability Score Improvement");
   place();
   // A subrace 5e.tools asks where Aurora's copy had none (the Human's, the Dragonborn's): the plain one.
-  for (const s of resolve(next, to).slots) if (room(s) && /sub ?race/i.test(s.rule.type + s.rule.name)) { const plain = s.options.find((o) => /\(standard\)$/i.test(o.name)); if (plain) next.selections[s.key] = [plain.id]; }
+  for (const s of resolve(next, to).slots)
+    if (room(s) && /sub ?race/i.test(s.rule.type + s.rule.name)) {
+      const plain = s.options.find((o) => /\(standard\)$/i.test(o.name));
+      if (plain) next.selections[s.key] = [plain.id];
+    }
   place();
   fillSets();
   fillScores();
@@ -530,7 +709,10 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       if (!entry?.prepare) continue;
       const list = (next.prepared[entry.name] ??= []);
       const sp = to.get(p.id)?.type === "Spell" ? p.id : to.ofType("Spell").find((e) => nameKey(e.name) === nameKey(p.name))?.id;
-      if (sp && !list.includes(sp)) { list.push(sp); picks.splice(i--, 1); }
+      if (sp && !list.includes(sp)) {
+        list.push(sp);
+        picks.splice(i--, 1);
+      }
     }
   }
 
@@ -562,7 +744,8 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const isCantripSlot = (x: Slot) => /cantrip/i.test(x.rule.name) || /,\s*0\s*$/.test(x.rule.supports ?? "");
     const takes = (x: Slot, p: Pick, el: AElement): number => {
       if (x.rule.type === "List" || x.rule.type !== el.type || !room(x) || (next.selections[x.key] ?? []).includes(el.id)) return -1;
-      const own = ownerOf(x, p), lvl = p.at === (x.at ?? 0);
+      const own = ownerOf(x, p),
+        lvl = p.at === (x.at ?? 0);
       if (el.type === "Spell") {
         if ((Number(el.setters.level?.value ?? 0) === 0) !== isCantripSlot(x)) return -1;
         if (p.casting && x.rule.spellcasting && p.casting.toLowerCase() !== x.rule.spellcasting.toLowerCase() && !own) return -1;
@@ -578,10 +761,21 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       const el = to.get(p.id);
       if (!el || !KEEPABLE.test(el.type)) continue;
       const r = resolve(next, to);
-      if (r.ids.has(el.id)) { picks.splice(i--, 1); continue; }
-      const best = r.slots.map((x) => ({ x, rank: takes(x, p, el) })).filter((y) => y.rank >= 0).sort((a, b) => a.rank - b.rank)[0];
-      if (best) { next.selections[best.x.key] = [...(next.selections[best.x.key] ?? []), el.id]; kept.push(`${el.name} (in ${best.x.rule.name})`); }
-      else { if (!next.extras.includes(el.id)) next.extras = [...next.extras, el.id]; kept.push(`${el.name} (as a manual addition)`); }
+      if (r.ids.has(el.id)) {
+        picks.splice(i--, 1);
+        continue;
+      }
+      const best = r.slots
+        .map((x) => ({ x, rank: takes(x, p, el) }))
+        .filter((y) => y.rank >= 0)
+        .sort((a, b) => a.rank - b.rank)[0];
+      if (best) {
+        next.selections[best.x.key] = [...(next.selections[best.x.key] ?? []), el.id];
+        kept.push(`${el.name} (in ${best.x.rule.name})`);
+      } else {
+        if (!next.extras.includes(el.id)) next.extras = [...next.extras, el.id];
+        kept.push(`${el.name} (as a manual addition)`);
+      }
       picks.splice(i--, 1);
     }
   }
@@ -593,9 +787,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // What the player had left open stays open: a choice the old character had not made (two spells not yet learned, a
   // skill not chosen) is the player's to make, not the auto-fill's. Counted by kind: a spell choice by its casting,
   // anything else by its owner's name (the two providers' choices are not one to one).
-  const kindOf = (x: Slot) => (x.rule.type === "Spell" ? `Spell|${(x.rule.spellcasting ?? "").toLowerCase()}` : `${x.rule.type}|${nameKey(x.owner.name)}`);
+  const kindOf = (x: Slot) =>
+    x.rule.type === "Spell" ? `Spell|${(x.rule.spellcasting ?? "").toLowerCase()}` : `${x.rule.type}|${nameKey(x.owner.name)}`;
   const leftOpen = new Map<string, number>();
-  for (const x of old.slots) if (!x.rule.optional && x.rule.type !== "List" && new Set(x.chosen).size < x.rule.number) leftOpen.set(kindOf(x), (leftOpen.get(kindOf(x)) ?? 0) + x.rule.number - new Set(x.chosen).size);
+  for (const x of old.slots)
+    if (!x.rule.optional && x.rule.type !== "List" && new Set(x.chosen).size < x.rule.number)
+      leftOpen.set(kindOf(x), (leftOpen.get(kindOf(x)) ?? 0) + x.rule.number - new Set(x.chosen).size);
   // A pick with no 5e.tools version (a tool from Unearthed Arcana, an instrument only Aurora lists) leaves its place
   // open too: filled, the character gained a skill it never had in place of the tool it lost.
   for (const p of picks) {
@@ -608,17 +805,18 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // (5e.tools grants what Aurora had the player pick) is picked again as before.
   const oldPicks = new Map<string, number>();
   // By name, and by what a name's brackets name: Aurora's "Blessings of Knowledge (Religion)" is Religion again.
-  for (const s of old.slots) for (const id of s.chosen) {
-    const n = from.get(id)?.name ?? id;
-    const keys = new Set([nameKey(n), ...[...n.matchAll(/\(([^)]+)\)/g)].map((m) => nameKey(m[1]))]);
-    for (const k of keys) oldPicks.set(k, (oldPicks.get(k) ?? 0) + 1);
-  }
+  for (const s of old.slots)
+    for (const id of s.chosen) {
+      const n = from.get(id)?.name ?? id;
+      const keys = new Set([nameKey(n), ...[...n.matchAll(/\(([^)]+)\)/g)].map((m) => nameKey(m[1]))]);
+      for (const k of keys) oldPicks.set(k, (oldPicks.get(k) ?? 0) + 1);
+    }
   const nameOf = (id: string) => to.get(id)?.name ?? from.get(id)?.name ?? id;
   for (const x of beforeFill.slots) {
     if (x.rule.type === "List") continue;
     const repeats = x.chosen.length > 0 && repeatedPicks(beforeFill, x).length > 0;
     // The player's picks, and the auto-fill's only for the places left (a spellbook short of two spells).
-    let mine = repeats ? (filledCh0.selections[x.key] ?? []).filter((id) => x.chosen.includes(id)) : next.selections[x.key] ?? x.chosen;
+    let mine = repeats ? (filledCh0.selections[x.key] ?? []).filter((id) => x.chosen.includes(id)) : (next.selections[x.key] ?? x.chosen);
     if (repeats) {
       const here = filledCh0.selections[x.key] ?? [];
       const removed = x.chosen.filter((id) => !here.includes(id));
@@ -626,7 +824,16 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       const own = removed.filter((id) => (oldPicks.get(nameKey(nameOf(id))) ?? 0) >= 2);
       if (own.length) {
         mine = [...x.chosen];
-        own.forEach((id, i) => { if (added[i]) decisions.push({ kind: "repeat", key: x.key, older: id, newer: added[i], what: `${x.rule.name}: ${nameOf(id)} twice, or ${nameOf(added[i])}` }); });
+        own.forEach((id, i) => {
+          if (added[i])
+            decisions.push({
+              kind: "repeat",
+              key: x.key,
+              older: id,
+              newer: added[i],
+              what: `${x.rule.name}: ${nameOf(id)} twice, or ${nameOf(added[i])}`,
+            });
+        });
       }
     }
     const room = Math.max(0, x.rule.number - mine.length);
@@ -637,11 +844,16 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     if (!filledCh.selections[x.key].length) delete filledCh.selections[x.key];
   }
   const filledR = resolve(filledCh, to);
-  const filled = filledR.slots.flatMap((x) => x.chosen.filter((id) => !beforeFill.slots.find((y) => y.key === x.key)?.chosen.includes(id)).map((id) => `${x.rule.name}: ${to.get(id)?.name ?? id}`));
+  const filled = filledR.slots.flatMap((x) =>
+    x.chosen
+      .filter((id) => !beforeFill.slots.find((y) => y.key === x.key)?.chosen.includes(id))
+      .map((id) => `${x.rule.name}: ${to.get(id)?.name ?? id}`),
+  );
   // The prepared spells stay the player's: the auto-fill prepares up to the limit, which gave a moved character
   // spells it never had. Only a casting the old character had nothing prepared for, and now must prepare, is filled.
   const preparedNow = { ...next.prepared };
-  for (const [k, v] of Object.entries(filledCh.prepared ?? {})) if (!Object.keys(ch.prepared ?? {}).length && !(preparedNow[k]?.length)) preparedNow[k] = v;
+  for (const [k, v] of Object.entries(filledCh.prepared ?? {}))
+    if (!Object.keys(ch.prepared ?? {}).length && !preparedNow[k]?.length) preparedNow[k] = v;
   Object.assign(next, { selections: filledCh.selections, prepared: preparedNow });
   // A pick the rebuilt character has anyway (5e.tools grants what Aurora asked) has its place.
   const final = resolve(next, to);
@@ -649,8 +861,20 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // "Channel Divinity: Divine Spark" is "Divine Spark" where 5e.tools grants it.
   const had = (n: string) => names.has(nameKey(n)) || names.has(nameKey(n.replace(/^[^:]+:\s*/, "")));
   const unplaced = picks.filter((p) => !final.ids.has(p.id) && !had(p.name)).map((p) => ({ id: p.id, name: p.name, choice: p.choice }));
-  const open = final.slots.filter((x) => room(x) && !x.rule.optional && x.options.length).map((x) => `${x.owner.name}: ${x.rule.name} [${x.options.slice(0, 4).map((o) => o.name).join("; ")}${x.options.length > 4 ? "; …" : ""}]`);
-  const againstRules = final.slots.flatMap((x) => x.chosen.filter((id) => x.blocked.has(id)).map((id) => `${x.rule.name}: ${to.get(id)?.name ?? id} (${x.whyBlocked?.(id) ?? "against the rules"})`));
+  const open = final.slots
+    .filter((x) => room(x) && !x.rule.optional && x.options.length)
+    .map(
+      (x) =>
+        `${x.owner.name}: ${x.rule.name} [${x.options
+          .slice(0, 4)
+          .map((o) => o.name)
+          .join("; ")}${x.options.length > 4 ? "; …" : ""}]`,
+    );
+  const againstRules = final.slots.flatMap((x) =>
+    x.chosen
+      .filter((id) => x.blocked.has(id))
+      .map((id) => `${x.rule.name}: ${to.get(id)?.name ?? id} (${x.whyBlocked?.(id) ?? "against the rules"})`),
+  );
   if (decisions.length) next.moveDecisions = decisions;
   return { ch: next, moved, noTwin: [...noTwin.values()], unplaced, open, againstRules, filled, kept, decisions };
 }

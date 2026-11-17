@@ -61,7 +61,11 @@ export function ThemePicker() {
   return (
     <span className="theme noprint">
       <select value={id} onChange={(e) => setId(e.target.value)} title={THEMES[id]?.note ?? "Theme"} aria-label="Theme">
-        {Object.entries(THEMES).map(([k, t]) => <option key={k} value={k}>{t.label}</option>)}
+        {Object.entries(THEMES).map(([k, t]) => (
+          <option key={k} value={k}>
+            {t.label}
+          </option>
+        ))}
       </select>
     </span>
   );

@@ -22,7 +22,12 @@ const ED = new WeakMap<object, Ed>();
 export function editionOfElement(e: Pick<AElement, "id" | "source" | "type">): Ed {
   let v = ED.get(e);
   if (v === undefined) {
-    v = filterNeutral(e.type, e.source) || /^(Grants|Information|Rule|Item|Weapon|Armor)$/.test(e.type) ? "none" : isModern(e) ? "2024" : "2014";
+    v =
+      filterNeutral(e.type, e.source) || /^(Grants|Information|Rule|Item|Weapon|Armor)$/.test(e.type)
+        ? "none"
+        : isModern(e)
+          ? "2024"
+          : "2014";
     ED.set(e, v);
   }
   return v;
@@ -39,7 +44,8 @@ export function choiceEdition(owner: AElement, root: string, ch: Character, reg:
   const fromRoot = el ? editionOfElement(el) : "none";
   // A 2014 background taken with the 2024 rules (backgroundOptions.ts) chooses under them: its origin feat is a 2024
   // one, and its own 2014 options stay (a 2024 choice keeps options that have no 2024 version).
-  if (root === "background" && fromRoot === "2014" && Object.values(ch.selections).some((ids) => ids.includes(BACKGROUND_2024_ID))) return "2024";
+  if (root === "background" && fromRoot === "2014" && Object.values(ch.selections).some((ids) => ids.includes(BACKGROUND_2024_ID)))
+    return "2024";
   // A 2024 element taken under a 2014 background (Aurora's "Origin Feat" variant feature, written for 2014
   // backgrounds) makes its own choices under its rules: the origin feat is a 2024 one.
   if (root === "background" && fromRoot === "2014" && editionOfElement(owner) === "2024") return "2024";
@@ -52,7 +58,13 @@ export function choiceEdition(owner: AElement, root: string, ch: Character, reg:
  */
 export const offeredAcrossEditions = (o: AElement) => o.type === "Background Feature";
 
-const versionName = (n: string) => n.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s*\((?:20\d\d|legacy|2014|2024)\)\s*$/, "").replace(/\s+/g, " ").trim();
+const versionName = (n: string) =>
+  n
+    .toLowerCase()
+    .replace(/[’‘`]/g, "'")
+    .replace(/\s*\((?:20\d\d|legacy|2014|2024)\)\s*$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 /** The options a choice of edition `ed` offers, and the picks already made that the rule leaves out. */
 export function byEdition<T extends AElement>(options: T[], ed: Ed, chosen: string[]): { options: T[]; outOfEdition: Set<string> } {
@@ -64,7 +76,10 @@ export function byEdition<T extends AElement>(options: T[], ed: Ed, chosen: stri
     if (oe === "none" || oe === ed) return true;
     if (offeredAcrossEditions(o)) return true;
     const ok = !inEdition.has(`${o.type}|${versionName(o.name)}`) && ed === "2024";
-    if (!ok && chosen.includes(o.id)) { outOfEdition.add(o.id); return true; }
+    if (!ok && chosen.includes(o.id)) {
+      outOfEdition.add(o.id);
+      return true;
+    }
     return ok;
   });
   return { options: keep, outOfEdition };
@@ -83,8 +98,17 @@ export function applyEditionPolicy(byId: Map<string, AElement>): string[] {
   const changed: string[] = [];
   for (const el of byId.values()) {
     if (!SPECIES_TYPES.test(el.type) || editionOfElement(el) !== "2024") continue;
-    const rules = el.rules.filter((r) => !((r.kind === "select" && r.type === "Ability Score Improvement") || (r.kind === "stat" && ABILITY_STATS.has(r.name.toLowerCase()))));
-    if (rules.length !== el.rules.length) { el.rules = rules; changed.push(el.id); }
+    const rules = el.rules.filter(
+      (r) =>
+        !(
+          (r.kind === "select" && r.type === "Ability Score Improvement") ||
+          (r.kind === "stat" && ABILITY_STATS.has(r.name.toLowerCase()))
+        ),
+    );
+    if (rules.length !== el.rules.length) {
+      el.rules = rules;
+      changed.push(el.id);
+    }
   }
   return changed;
 }

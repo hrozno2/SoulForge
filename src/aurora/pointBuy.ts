@@ -26,7 +26,8 @@ function suggested(score: number, known: (s: number) => number | undefined): num
 
 /** Fills in and tidies rules so every score from lowest to highest has a cost. */
 export function normalizeRules(raw?: Partial<PointBuyRules>): PointBuyRules {
-  const clamp = (n: unknown, lo: number, hi: number, d: number) => (Number.isFinite(Number(n)) ? Math.max(lo, Math.min(hi, Math.round(Number(n)))) : d);
+  const clamp = (n: unknown, lo: number, hi: number, d: number) =>
+    Number.isFinite(Number(n)) ? Math.max(lo, Math.min(hi, Math.round(Number(n)))) : d;
   const min = clamp(raw?.min, SCORE_FLOOR, SCORE_CEILING, 8);
   const max = Math.max(min, clamp(raw?.max, SCORE_FLOOR, SCORE_CEILING, 15));
   const budget = clamp(raw?.budget, 0, 999, 27);
@@ -35,7 +36,14 @@ export function normalizeRules(raw?: Partial<PointBuyRules>): PointBuyRules {
   const get = (s: number) => costs[s];
   for (let s = min; s <= max; s++) {
     const given = raw?.costs?.[s];
-    costs[s] = Number.isFinite(Number(given)) && given !== undefined ? Math.round(Number(given)) : s === min && min >= 8 ? 0 : s < 8 ? 0 : suggested(s, get);
+    costs[s] =
+      Number.isFinite(Number(given)) && given !== undefined
+        ? Math.round(Number(given))
+        : s === min && min >= 8
+          ? 0
+          : s < 8
+            ? 0
+            : suggested(s, get);
   }
   if (raw?.costs === undefined || raw.costs[min] === undefined) {
     // Below 8 the suggestion is a refund relative to the standard 8: work down from 8 if it is in range.

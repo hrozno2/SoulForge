@@ -12,7 +12,18 @@ describe("logbook", () => {
     const before = logLines().length;
     expect(timed("engine", "fast thing", () => 42, 1000)).toBe(42);
     expect(logLines().length).toBe(before);
-    timed("engine", "slow thing", () => { const end = performance.now() + 5; while (performance.now() < end) { /* busy */ } }, 1, () => "detail");
+    timed(
+      "engine",
+      "slow thing",
+      () => {
+        const end = performance.now() + 5;
+        while (performance.now() < end) {
+          /* busy */
+        }
+      },
+      1,
+      () => "detail",
+    );
     expect(logLines().at(-1)).toMatch(/engine slow: slow thing took \d+ ms \(detail\)$/);
   });
 });

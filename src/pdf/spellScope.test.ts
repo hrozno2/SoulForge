@@ -18,19 +18,35 @@ describe.skipIf(!C)("spell table and spell cards", () => {
     const reg = loadTestContent(C!);
     const filters = { legacy: true, playtest: false, unusual: true, scifi: false };
     let seed = 7;
-    const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const rng = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     let casters = 0;
-    for (const cls of ["ID_WOTC_PHB24_CLASS_CLERIC", "ID_WOTC_PHB24_CLASS_DRUID", "ID_WOTC_PHB24_CLASS_WIZARD", "ID_CLASS_CLERIC", "ID_CLASS_WIZARD", "ID_WOTC_PHB24_CLASS_BARD"]) {
+    for (const cls of [
+      "ID_WOTC_PHB24_CLASS_CLERIC",
+      "ID_WOTC_PHB24_CLASS_DRUID",
+      "ID_WOTC_PHB24_CLASS_WIZARD",
+      "ID_CLASS_CLERIC",
+      "ID_CLASS_WIZARD",
+      "ID_WOTC_PHB24_CLASS_BARD",
+    ]) {
       if (!reg.get(cls)) continue;
       const r = resolve(randomCharacter(reg, 7, filters, rng, { classId: cls }), reg);
       const sh = buildSheet(r);
       if (!sh.casting.length) continue;
       casters++;
-      for (const [scope, all] of [["prepared", false], ["all", true]] as const) {
+      for (const [scope, all] of [
+        ["prepared", false],
+        ["all", true],
+      ] as const) {
         const table = new Set(buildFillData(r, sh, { allSpells: all }).spells.map((s) => key(s.name)));
         const cards = new Set(cardSources(r, sh, scope).spells.map((e) => key(e.name)));
-        expect([...cards].filter((n) => !table.has(n)), `${reg.get(cls)!.name} ${scope}: cards not in the table`).toEqual([]);
-        expect([...table].filter((n) => !cards.has(n)), `${reg.get(cls)!.name} ${scope}: table not on cards`).toEqual([]);
+        expect(
+          [...cards].filter((n) => !table.has(n)),
+          `${reg.get(cls)!.name} ${scope}: cards not in the table`,
+        ).toEqual([]);
+        expect(
+          [...table].filter((n) => !cards.has(n)),
+          `${reg.get(cls)!.name} ${scope}: table not on cards`,
+        ).toEqual([]);
       }
     }
     expect(casters).toBeGreaterThan(3);

@@ -64,7 +64,12 @@ export async function crawlIndex(
   const parsed = parseIndexXml(await fetchText(url), xml);
   const node: IndexNode = {
     url,
-    name: parsed.name || url.split("/").pop()!.replace(/\.index$/, ""),
+    name:
+      parsed.name ||
+      url
+        .split("/")
+        .pop()!
+        .replace(/\.index$/, ""),
     description: parsed.description,
     version: parsed.version,
     files: [],
@@ -146,7 +151,8 @@ export async function syncFiles(opts: {
 
   for (const idx of enabled) {
     const stale = opts.force || opts.previousVersions[idx.url] !== idx.version;
-    if (stale && opts.previousVersions[idx.url] !== undefined && opts.previousVersions[idx.url] !== idx.version) result.changed.push(idx.url);
+    if (stale && opts.previousVersions[idx.url] !== undefined && opts.previousVersions[idx.url] !== idx.version)
+      result.changed.push(idx.url);
     for (const f of idx.files) {
       wanted.add(f);
       if (stale || (await opts.cache.get(f)) === undefined) todo.push(f);
@@ -155,7 +161,8 @@ export async function syncFiles(opts: {
     result.versions[idx.url] = idx.version;
   }
   // Keep the version memory of switched-off indexes so re-enabling one does not look like an update.
-  for (const idx of all) if (!(idx.url in result.versions) && idx.url in opts.previousVersions) result.versions[idx.url] = opts.previousVersions[idx.url];
+  for (const idx of all)
+    if (!(idx.url in result.versions) && idx.url in opts.previousVersions) result.versions[idx.url] = opts.previousVersions[idx.url];
   const listed = new Set(all.flatMap((i) => i.files));
 
   let done = 0;

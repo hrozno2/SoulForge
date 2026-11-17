@@ -6,11 +6,28 @@ import { ABILITY_IDS, newCharacter, type AbilityId, type Character } from "./cha
 import { BookIndex, hiddenBy, type ContentFilters } from "./books";
 import type { ARegistry } from "./registry";
 import type { AElement } from "./types";
-import { ItemIndex, addToInventory, anyWeaponKind, resolveChosenTools, autoEquip, ledgerOf, startingPlans, variantItems, weaponChoices } from "./startingEquipment";
+import {
+  ItemIndex,
+  addToInventory,
+  anyWeaponKind,
+  resolveChosenTools,
+  autoEquip,
+  ledgerOf,
+  startingPlans,
+  variantItems,
+  weaponChoices,
+} from "./startingEquipment";
 import { isModern as modern } from "./edition";
 import { BACKGROUND_2024_ID } from "../engine/backgroundOptions";
 
-const SHORT: Record<string, AbilityId> = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" };
+const SHORT: Record<string, AbilityId> = {
+  str: "strength",
+  dex: "dexterity",
+  con: "constitution",
+  int: "intelligence",
+  wis: "wisdom",
+  cha: "charisma",
+};
 
 /** The abilities a class leans on, most important first: its multiclass prerequisite, then its saving throws, then Constitution and Dexterity. */
 export function classPriorities(cls: AElement): AbilityId[] {
@@ -47,10 +64,16 @@ export interface RandomForce {
   prefer?: string[];
 }
 
-export function randomCharacter(reg: ARegistry, level: number, filters: ContentFilters, rng: () => number = Math.random, force: RandomForce = {}): Character {
+export function randomCharacter(
+  reg: ARegistry,
+  level: number,
+  filters: ContentFilters,
+  rng: () => number = Math.random,
+  force: RandomForce = {},
+): Character {
   const books = new BookIndex(reg);
   const shown = (e: AElement) => !e.compendiumHidden && !hiddenBy(books.info(e.source), e.source, filters, e.type);
-  const pick = <T,>(a: T[]): T | undefined => a[Math.floor(rng() * a.length)];
+  const pick = <T>(a: T[]): T | undefined => a[Math.floor(rng() * a.length)];
   const pool = (type: string) => {
     // "Custom Background" and "Custom Lineage" are build-your-own templates, not something to roll.
     const all = reg.ofType(type).filter((e) => !e.compendiumHidden && !e.comingSoon && !/^custom\b/i.test(e.name));
@@ -68,11 +91,19 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
   c.race = force.raceId ?? pick(sameEdition("Race"))?.id;
   // A 2024 species gives no ability increase, so its background is a 2024 one (where the increases are).
   const race = c.race ? reg.get(c.race) : undefined;
-  c.background = force.backgroundId ?? pick(race && modern(race) ? pool("Background").filter((b) => modern(b)) : sameEdition("Background"))?.id;
+  c.background =
+    force.backgroundId ?? pick(race && modern(race) ? pool("Background").filter((b) => modern(b)) : sameEdition("Background"))?.id;
   const total = Math.max(1, Math.min(20, Math.floor(level) || 1));
   const second = force.multiclass && force.multiclass.level < total ? reg.get(force.multiclass.classId) : undefined;
   const moreLv = (force.more ?? []).reduce((t, m) => t + m.level, 0);
-  if (cls) c.classes = second ? [{ classId: cls.id, level: total - force.multiclass!.level - moreLv }, { classId: second.id, level: force.multiclass!.level }, ...(force.more ?? [])] : [{ classId: cls.id, level: total }];
+  if (cls)
+    c.classes = second
+      ? [
+          { classId: cls.id, level: total - force.multiclass!.level - moreLv },
+          { classId: second.id, level: force.multiclass!.level },
+          ...(force.more ?? []),
+        ]
+      : [{ classId: cls.id, level: total }];
   c.options = force.options ?? [];
   c.abilityMethod = "standard";
   // The second class's prerequisite abilities come right after the first class's main one, so both reach 13.
@@ -86,10 +117,12 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
   const bgEl = c.background ? reg.get(c.background) : undefined;
   if (race && bgEl && modern(race) && !modern(bgEl)) {
     const pkg = resolve(c, reg).slots.find((s) => s.root === "background" && s.options.some((o) => o.id === BACKGROUND_2024_ID));
-    if (pkg && !pkg.blocked.has(BACKGROUND_2024_ID)) c = { ...c, taken: [...(c.taken ?? []), pkg.key], selections: { ...c.selections, [pkg.key]: [BACKGROUND_2024_ID] } };
+    if (pkg && !pkg.blocked.has(BACKGROUND_2024_ID))
+      c = { ...c, taken: [...(c.taken ?? []), pkg.key], selections: { ...c.selections, [pkg.key]: [BACKGROUND_2024_ID] } };
   }
   const wanted = (force.prefer ?? []).map((x) => x.toLowerCase());
-  const preferFn = (_slot: string, option: string) => (wanted.some((w) => option.toLowerCase() === w || option.toLowerCase().startsWith(`${w} (`)) ? 100 : rng());
+  const preferFn = (_slot: string, option: string) =>
+    wanted.some((w) => option.toLowerCase() === w || option.toLowerCase().startsWith(`${w} (`)) ? 100 : rng();
   c = autoFill(c, reg, preferFn, shown);
   // Starting equipment: the first option of the class and of the background, worn and wielded.
   const idx = new ItemIndex(reg);
@@ -100,20 +133,28 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
     // Not the 2014 rolled gold (it needs the dice tray; a random character takes gear).
     const pool = plan.variants.filter((x) => !x.goldRoll);
     const withGear = pool.filter((x) => x.fixed.length + x.choices.length > 0 && !/^\s*\d+\s*gp\s*$/i.test(x.label));
-    const v = force.randomGear && pool.length > 1 ? pool[Math.floor(rng() * pool.length)] : withGear[0] ?? pool[0];
+    const v = force.randomGear && pool.length > 1 ? pool[Math.floor(rng() * pool.length)] : (withGear[0] ?? pool[0]);
     if (!v) continue;
     const picks = v.choices.map((g) => Math.floor(rng() * g.options.length));
     const weapons: Record<string, string> = {};
-    v.choices.forEach((g, gi) => (g.options[picks[gi]] ?? []).forEach((ref, ri) => {
-      const kind = anyWeaponKind(ref.text);
-      const list = kind ? weaponChoices(reg, kind).filter((w) => !/\b(net|blowgun|lance)\b/i.test(w.name)) : [];
-      const pickW = list.length ? (list.find((w) => modern(w) === modern(cls)) && list.filter((w) => modern(w) === modern(cls))) || list : [];
-      if (pickW.length) weapons[`${gi}:${picks[gi]}:${ri}`] = pickW[Math.floor(rng() * pickW.length)].id;
-    }));
+    v.choices.forEach((g, gi) =>
+      (g.options[picks[gi]] ?? []).forEach((ref, ri) => {
+        const kind = anyWeaponKind(ref.text);
+        const list = kind ? weaponChoices(reg, kind).filter((w) => !/\b(net|blowgun|lance)\b/i.test(w.name)) : [];
+        const pickW = list.length
+          ? (list.find((w) => modern(w) === modern(cls)) && list.filter((w) => modern(w) === modern(cls))) || list
+          : [];
+        if (pickW.length) weapons[`${gi}:${picks[gi]}:${ri}`] = pickW[Math.floor(rng() * pickW.length)].id;
+      }),
+    );
     const items = resolveChosenTools(variantItems(v, picks, idx, prefer, true, weapons), resolve(c, reg).ids, reg, prefer);
     const label = `${plan.title}, ${v.label.toLowerCase()}`;
     c = addToInventory(c, items, v.gp);
-    c = { ...c, equipmentAdded: [...(c.equipmentAdded ?? []), label], equipmentLedger: { ...(c.equipmentLedger ?? {}), [label]: ledgerOf(items, v.gp) } };
+    c = {
+      ...c,
+      equipmentAdded: [...(c.equipmentAdded ?? []), label],
+      equipmentLedger: { ...(c.equipmentLedger ?? {}), [label]: ledgerOf(items, v.gp) },
+    };
   }
   c = autoEquip(c, reg);
   // Prepared casters start with a full set of prepared spells.
@@ -132,10 +173,16 @@ export function randomCharacter(reg: ARegistry, level: number, filters: ContentF
     const rolls: Record<string, number> = {};
     const log: NonNullable<typeof c.hpRollLog> = {};
     let n = 0;
-    for (const k of c.classes) for (let i = 0; i < k.level; i++) {
-      n++;
-      if (n > 1) { const die = hitDieOf(reg.get(k.classId)) || 8; const v = 1 + Math.floor(rng() * die); rolls[String(n)] = v; log[String(n)] = { value: v, die, by: "app" }; }
-    }
+    for (const k of c.classes)
+      for (let i = 0; i < k.level; i++) {
+        n++;
+        if (n > 1) {
+          const die = hitDieOf(reg.get(k.classId)) || 8;
+          const v = 1 + Math.floor(rng() * die);
+          rolls[String(n)] = v;
+          log[String(n)] = { value: v, die, by: "app" };
+        }
+      }
     c = { ...c, hpMode: "roll", hpRolls: rolls, hpRollLog: log };
   }
   c.name = "Random adventurer";

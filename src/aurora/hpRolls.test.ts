@@ -17,7 +17,15 @@ describe("hit point rolls", () => {
   });
 
   it("checks only Soul Forge's rolls: their average against the dice, faces counted, anything out of range", () => {
-    const c = { ...newCharacter(), hpRollLog: { "2": { value: 1, die: 8, by: "app" as const }, "3": { value: 8, die: 8, by: "app" as const }, "4": { value: 12, die: 8, by: "app" as const }, "5": { value: 6, die: 10, by: "player" as const } } };
+    const c = {
+      ...newCharacter(),
+      hpRollLog: {
+        "2": { value: 1, die: 8, by: "app" as const },
+        "3": { value: 8, die: 8, by: "app" as const },
+        "4": { value: 12, die: 8, by: "app" as const },
+        "5": { value: 6, die: 10, by: "player" as const },
+      },
+    };
     const a = rollAudit([c]);
     expect(a.count).toBe(3);
     expect(a.expected).toBe(4.5);

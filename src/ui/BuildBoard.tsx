@@ -41,7 +41,13 @@ type Back = { kind: Kind; mode: "new" | "edit"; snap: Character; from: DOMRect |
 /** One thing still to choose, and where it is chosen. */
 type LeftItem = { kind: Kind; text: string; list: boolean; act?: () => void; label?: string };
 type Kind = BoardKind;
-const TITLE: Record<Kind, string> = { race: "Species", class: "Class", background: "Background", magic: "Spells and magic", equipment: "Equipment" };
+const TITLE: Record<Kind, string> = {
+  race: "Species",
+  class: "Class",
+  background: "Background",
+  magic: "Spells and magic",
+  equipment: "Equipment",
+};
 const ASK: Record<Kind, string> = {
   race: "Who are your ancestors? What languages do they speak?",
   class: "What are your vocation, special talents and favoured tactics?",
@@ -49,7 +55,13 @@ const ASK: Record<Kind, string> = {
   magic: "Which spells and incantations can you cast?",
   equipment: "What weapons, armor and gear do you carry?",
 };
-const ICON: Record<Kind, (p: { size?: number }) => React.ReactNode> = { race: Head, class: Sword, background: Scroll, magic: Wand, equipment: Pack };
+const ICON: Record<Kind, (p: { size?: number }) => React.ReactNode> = {
+  race: Head,
+  class: Sword,
+  background: Scroll,
+  magic: Wand,
+  equipment: Pack,
+};
 /** Each space's colour before anything is in it (and the spellbook's and backpack's always). */
 const HUE: Record<Kind, number> = { race: 150, class: 8, background: 260, magic: 275, equipment: 30 };
 const ORDER: Kind[] = ["race", "class", "background", "magic", "equipment"];
@@ -64,7 +76,11 @@ function fly(from: DOMRect | null, label: string, kind: Kind) {
   let target = document.querySelector<HTMLElement>(`[data-tile="${kind}"]`);
   const hidden = !target || !target.offsetParent;
   if (!target || !target.offsetParent) return;
-  const glow = (el: HTMLElement, cls = "board-filled-anim") => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+  const glow = (el: HTMLElement, cls = "board-filled-anim") => {
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+  };
   if (reduced()) return glow(target);
   if (!hidden && (kind === "race" || kind === "class" || kind === "background")) return epicFly(from, label, kind, target);
   if (!from) return glow(target);
@@ -79,10 +95,17 @@ function fly(from: DOMRect | null, label: string, kind: Kind) {
   const dx = to.left + to.width / 2 - (from.left + from.width / 2);
   const dy = to.top + to.height / 2 - (from.top + from.height / 2);
   const anim = ghost.animate(
-    [{ transform: "translate(0,0) scale(1)", opacity: 1 }, { transform: `translate(${dx * 0.6}px, ${dy * 0.6 - 40}px) scale(1.08)`, opacity: 1, offset: 0.6 }, { transform: `translate(${dx}px, ${dy}px) scale(.6)`, opacity: 0 }],
+    [
+      { transform: "translate(0,0) scale(1)", opacity: 1 },
+      { transform: `translate(${dx * 0.6}px, ${dy * 0.6 - 40}px) scale(1.08)`, opacity: 1, offset: 0.6 },
+      { transform: `translate(${dx}px, ${dy}px) scale(.6)`, opacity: 0 },
+    ],
     { duration: 520, easing: "cubic-bezier(.4,.1,.3,1)" },
   );
-  anim.onfinish = () => { ghost.remove(); glow(target!); };
+  anim.onfinish = () => {
+    ghost.remove();
+    glow(target!);
+  };
 }
 
 // ---- Landing effects, one per class (Hearthstone-style: the card lands with weight, then its class's flourish) ----
@@ -91,16 +114,41 @@ function fly(from: DOMRect | null, label: string, kind: Kind) {
 const HEAVY = /barbarian|fighter|paladin/i;
 
 /** One particle: a small element that flies from (x, y) by (dx, dy), turning and fading. */
-function particle(cls: string, x: number, y: number, dx: number, dy: number, o: { color?: string; text?: string; size?: number; turn?: number; duration?: number; delay?: number; scaleTo?: number } = {}) {
+function particle(
+  cls: string,
+  x: number,
+  y: number,
+  dx: number,
+  dy: number,
+  o: { color?: string; text?: string; size?: number; turn?: number; duration?: number; delay?: number; scaleTo?: number } = {},
+) {
   const e = document.createElement("div");
   e.className = `fx ${cls}`;
   if (o.text) e.textContent = o.text;
-  Object.assign(e.style, { left: `${x}px`, top: `${y}px`, ...(o.color ? { color: o.color, background: cls === "fx-spark" || cls === "fx-dot" ? o.color : "" } : {}), ...(o.size ? { fontSize: `${o.size}px`, width: cls === "fx-dot" || cls === "fx-smoke" ? `${o.size}px` : "", height: cls === "fx-dot" || cls === "fx-smoke" ? `${o.size}px` : "" } : {}) });
+  Object.assign(e.style, {
+    left: `${x}px`,
+    top: `${y}px`,
+    ...(o.color ? { color: o.color, background: cls === "fx-spark" || cls === "fx-dot" ? o.color : "" } : {}),
+    ...(o.size
+      ? {
+          fontSize: `${o.size}px`,
+          width: cls === "fx-dot" || cls === "fx-smoke" ? `${o.size}px` : "",
+          height: cls === "fx-dot" || cls === "fx-smoke" ? `${o.size}px` : "",
+        }
+      : {}),
+  });
   const ang = (Math.atan2(dy, dx) * 180) / Math.PI;
   const turn0 = cls === "fx-spark" ? ang : 0;
   document.body.appendChild(e);
   e.animate(
-    [{ transform: `translate(-50%,-50%) rotate(${turn0}deg) scale(1)`, opacity: 0 }, { opacity: 1, offset: 0.12 }, { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${turn0 + (o.turn ?? 0)}deg) scale(${o.scaleTo ?? 0.4})`, opacity: 0 }],
+    [
+      { transform: `translate(-50%,-50%) rotate(${turn0}deg) scale(1)`, opacity: 0 },
+      { opacity: 1, offset: 0.12 },
+      {
+        transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${turn0 + (o.turn ?? 0)}deg) scale(${o.scaleTo ?? 0.4})`,
+        opacity: 0,
+      },
+    ],
     { duration: o.duration ?? 560, delay: o.delay ?? 0, easing: "cubic-bezier(.15,.7,.3,1)" },
   ).onfinish = () => e.remove();
 }
@@ -109,16 +157,32 @@ const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
 /** Sparks flying out from the middle, fast and straight (steel, rage, gears). */
 function sparks(cx: number, cy: number, colors: string[], n = 22, reach = 140) {
-  for (let k = 0; k < n; k++) { const a = rnd(0, Math.PI * 2), d = rnd(reach * 0.4, reach); particle("fx-spark", cx, cy, Math.cos(a) * d, Math.sin(a) * d, { color: colors[k % colors.length], duration: rnd(260, 480) }); }
+  for (let k = 0; k < n; k++) {
+    const a = rnd(0, Math.PI * 2),
+      d = rnd(reach * 0.4, reach);
+    particle("fx-spark", cx, cy, Math.cos(a) * d, Math.sin(a) * d, { color: colors[k % colors.length], duration: rnd(260, 480) });
+  }
 }
 
 /** A bright line across the card (a blade's slash). */
 function slash(to: DOMRect, color: string, angle = -28) {
   const e = document.createElement("div");
   e.className = "fx fx-slash";
-  Object.assign(e.style, { left: `${to.left + to.width / 2}px`, top: `${to.top + to.height / 2}px`, width: `${to.width * 1.3}px`, background: `linear-gradient(90deg, transparent, ${color}, #fff, ${color}, transparent)` });
+  Object.assign(e.style, {
+    left: `${to.left + to.width / 2}px`,
+    top: `${to.top + to.height / 2}px`,
+    width: `${to.width * 1.3}px`,
+    background: `linear-gradient(90deg, transparent, ${color}, #fff, ${color}, transparent)`,
+  });
   document.body.appendChild(e);
-  e.animate([{ transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(0)`, opacity: 1 }, { transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(1)`, opacity: 1, offset: 0.35 }, { transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(1.05)`, opacity: 0 }], { duration: 360, easing: "ease-out" }).onfinish = () => e.remove();
+  e.animate(
+    [
+      { transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(0)`, opacity: 1 },
+      { transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(1)`, opacity: 1, offset: 0.35 },
+      { transform: `translate(-50%,-50%) rotate(${angle}deg) scaleX(1.05)`, opacity: 0 },
+    ],
+    { duration: 360, easing: "ease-out" },
+  ).onfinish = () => e.remove();
 }
 
 /** Expanding rings (ki, rage). */
@@ -126,9 +190,22 @@ function rings(cx: number, cy: number, color: string, n = 3, size = 160) {
   for (let k = 0; k < n; k++) {
     const e = document.createElement("div");
     e.className = "fx fx-ring";
-    Object.assign(e.style, { left: `${cx}px`, top: `${cy}px`, width: `${size}px`, height: `${size}px`, borderColor: color, boxShadow: `0 0 18px ${color}` });
+    Object.assign(e.style, {
+      left: `${cx}px`,
+      top: `${cy}px`,
+      width: `${size}px`,
+      height: `${size}px`,
+      borderColor: color,
+      boxShadow: `0 0 18px ${color}`,
+    });
     document.body.appendChild(e);
-    e.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 0.9 }, { transform: "translate(-50%,-50%) scale(2.4)", opacity: 0 }], { duration: 460, delay: k * 80, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => e.remove();
+    e.animate(
+      [
+        { transform: "translate(-50%,-50%) scale(.2)", opacity: 0.9 },
+        { transform: "translate(-50%,-50%) scale(2.4)", opacity: 0 },
+      ],
+      { duration: 460, delay: k * 80, easing: "cubic-bezier(.2,.7,.3,1)" },
+    ).onfinish = () => e.remove();
   }
 }
 
@@ -136,18 +213,44 @@ function rings(cx: number, cy: number, color: string, n = 3, size = 160) {
 function beam(to: DOMRect, color: string) {
   const e = document.createElement("div");
   e.className = "fx fx-beam";
-  Object.assign(e.style, { left: `${to.left + to.width / 2}px`, top: `${to.top + to.height / 2}px`, width: `${to.width * 0.7}px`, height: `${to.height * 2.4}px`, background: `linear-gradient(180deg, transparent, ${color} 40%, #fff 55%, ${color} 70%, transparent)` });
+  Object.assign(e.style, {
+    left: `${to.left + to.width / 2}px`,
+    top: `${to.top + to.height / 2}px`,
+    width: `${to.width * 0.7}px`,
+    height: `${to.height * 2.4}px`,
+    background: `linear-gradient(180deg, transparent, ${color} 40%, #fff 55%, ${color} 70%, transparent)`,
+  });
   document.body.appendChild(e);
-  e.animate([{ transform: "translate(-50%,-70%) scaleX(.1)", opacity: 0 }, { transform: "translate(-50%,-55%) scaleX(1)", opacity: 0.85, offset: 0.3 }, { transform: "translate(-50%,-50%) scaleX(.6)", opacity: 0 }], { duration: 650, easing: "ease-out" }).onfinish = () => e.remove();
+  e.animate(
+    [
+      { transform: "translate(-50%,-70%) scaleX(.1)", opacity: 0 },
+      { transform: "translate(-50%,-55%) scaleX(1)", opacity: 0.85, offset: 0.3 },
+      { transform: "translate(-50%,-50%) scaleX(.6)", opacity: 0 },
+    ],
+    { duration: 650, easing: "ease-out" },
+  ).onfinish = () => e.remove();
 }
 
 /** Rays turning around the card's middle (holy light). */
 function rays(cx: number, cy: number, color: string, size: number) {
   const e = document.createElement("div");
   e.className = "fx fx-rays";
-  Object.assign(e.style, { left: `${cx}px`, top: `${cy}px`, width: `${size}px`, height: `${size}px`, background: `repeating-conic-gradient(${color} 0 6deg, transparent 6deg 22deg)` });
+  Object.assign(e.style, {
+    left: `${cx}px`,
+    top: `${cy}px`,
+    width: `${size}px`,
+    height: `${size}px`,
+    background: `repeating-conic-gradient(${color} 0 6deg, transparent 6deg 22deg)`,
+  });
   document.body.appendChild(e);
-  e.animate([{ transform: "translate(-50%,-50%) rotate(0deg) scale(.3)", opacity: 0 }, { opacity: 0.7, offset: 0.25 }, { transform: "translate(-50%,-50%) rotate(40deg) scale(1.2)", opacity: 0 }], { duration: 760, easing: "ease-out" }).onfinish = () => e.remove();
+  e.animate(
+    [
+      { transform: "translate(-50%,-50%) rotate(0deg) scale(.3)", opacity: 0 },
+      { opacity: 0.7, offset: 0.25 },
+      { transform: "translate(-50%,-50%) rotate(40deg) scale(1.2)", opacity: 0 },
+    ],
+    { duration: 760, easing: "ease-out" },
+  ).onfinish = () => e.remove();
 }
 
 /** Forked lightning striking the card from above. */
@@ -155,76 +258,185 @@ function lightning(to: DOMRect, color: string) {
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
   svg.setAttribute("class", "fx fx-bolt");
-  const w = to.width, h = to.height * 1.6;
+  const w = to.width,
+    h = to.height * 1.6;
   Object.assign(svg.style, { left: `${to.left}px`, top: `${to.top - to.height * 0.6}px`, width: `${w}px`, height: `${h}px` });
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  const bolt = (x0: number, spread: number) => { let x = x0, d = `M${x} 0`; for (let y = h / 8; y <= h * 0.85; y += h / 8) { x += rnd(-spread, spread); d += ` L${x.toFixed(1)} ${y.toFixed(1)}`; } return d; };
-  svg.innerHTML = [bolt(w * 0.5, w * 0.12), bolt(w * rnd(0.3, 0.45), w * 0.1), bolt(w * rnd(0.55, 0.7), w * 0.1)].map((d, k) => `<path d="${d}" stroke="${k ? color : "#fff"}" stroke-width="${k ? 2 : 3.2}" fill="none" stroke-linejoin="round"/>`).join("");
+  const bolt = (x0: number, spread: number) => {
+    let x = x0,
+      d = `M${x} 0`;
+    for (let y = h / 8; y <= h * 0.85; y += h / 8) {
+      x += rnd(-spread, spread);
+      d += ` L${x.toFixed(1)} ${y.toFixed(1)}`;
+    }
+    return d;
+  };
+  svg.innerHTML = [bolt(w * 0.5, w * 0.12), bolt(w * rnd(0.3, 0.45), w * 0.1), bolt(w * rnd(0.55, 0.7), w * 0.1)]
+    .map((d, k) => `<path d="${d}" stroke="${k ? color : "#fff"}" stroke-width="${k ? 2 : 3.2}" fill="none" stroke-linejoin="round"/>`)
+    .join("");
   svg.style.filter = `drop-shadow(0 0 6px ${color}) drop-shadow(0 0 14px ${color})`;
   document.body.appendChild(svg);
-  svg.animate([{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 0.2, offset: 0.2 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }], { duration: 420, easing: "linear" }).onfinish = () => svg.remove();
+  svg.animate([{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 0.2, offset: 0.2 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }], {
+    duration: 420,
+    easing: "linear",
+  }).onfinish = () => svg.remove();
 }
 
 /** Things drifting up (leaves, notes, smoke, embers). */
-function drift(to: DOMRect, cls: string, n: number, o: { colors?: string[]; texts?: string[]; size?: [number, number]; rise?: number; duration?: [number, number] } = {}) {
+function drift(
+  to: DOMRect,
+  cls: string,
+  n: number,
+  o: { colors?: string[]; texts?: string[]; size?: [number, number]; rise?: number; duration?: [number, number] } = {},
+) {
   for (let k = 0; k < n; k++) {
-    const x = to.left + rnd(0.1, 0.9) * to.width, y = to.top + rnd(0.45, 1) * to.height;
-    particle(cls, x, y, rnd(-50, 50), -rnd(60, o.rise ?? 150), { color: o.colors?.[k % o.colors.length], text: o.texts?.[k % o.texts.length], size: o.size ? rnd(o.size[0], o.size[1]) : undefined, turn: rnd(-160, 160), duration: rnd(...(o.duration ?? [700, 1100])), delay: rnd(0, 150), scaleTo: cls === "fx-smoke" ? 2.2 : 0.5 });
+    const x = to.left + rnd(0.1, 0.9) * to.width,
+      y = to.top + rnd(0.45, 1) * to.height;
+    particle(cls, x, y, rnd(-50, 50), -rnd(60, o.rise ?? 150), {
+      color: o.colors?.[k % o.colors.length],
+      text: o.texts?.[k % o.texts.length],
+      size: o.size ? rnd(o.size[0], o.size[1]) : undefined,
+      turn: rnd(-160, 160),
+      duration: rnd(...(o.duration ?? [700, 1100])),
+      delay: rnd(0, 150),
+      scaleTo: cls === "fx-smoke" ? 2.2 : 0.5,
+    });
   }
 }
 
 /** The arcane circle that draws itself around the card (wizards, species, backgrounds). */
 function sigil(to: DOMRect, color: string) {
-  const cx = to.left + to.width / 2, cy = to.top + to.height / 2;
+  const cx = to.left + to.width / 2,
+    cy = to.top + to.height / 2;
   const size = Math.max(to.width, to.height) * 1.15;
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
   svg.setAttribute("class", "board-sigil");
   svg.setAttribute("viewBox", "-50 -50 100 100");
-  Object.assign(svg.style, { left: `${cx - size / 2}px`, top: `${cy - size / 2}px`, width: `${size}px`, height: `${size}px`, stroke: color });
-  const tick = Array.from({ length: 12 }, (_, k) => { const a = (k * Math.PI) / 6; return `M${(44 * Math.cos(a)).toFixed(1)} ${(44 * Math.sin(a)).toFixed(1)} L${(40 * Math.cos(a)).toFixed(1)} ${(40 * Math.sin(a)).toFixed(1)}`; }).join(" ");
-  const star = Array.from({ length: 6 }, (_, k) => { const a = (k * Math.PI) / 3 - Math.PI / 2; return `${(34 * Math.cos(a)).toFixed(1)},${(34 * Math.sin(a)).toFixed(1)}`; });
+  Object.assign(svg.style, {
+    left: `${cx - size / 2}px`,
+    top: `${cy - size / 2}px`,
+    width: `${size}px`,
+    height: `${size}px`,
+    stroke: color,
+  });
+  const tick = Array.from({ length: 12 }, (_, k) => {
+    const a = (k * Math.PI) / 6;
+    return `M${(44 * Math.cos(a)).toFixed(1)} ${(44 * Math.sin(a)).toFixed(1)} L${(40 * Math.cos(a)).toFixed(1)} ${(40 * Math.sin(a)).toFixed(1)}`;
+  }).join(" ");
+  const star = Array.from({ length: 6 }, (_, k) => {
+    const a = (k * Math.PI) / 3 - Math.PI / 2;
+    return `${(34 * Math.cos(a)).toFixed(1)},${(34 * Math.sin(a)).toFixed(1)}`;
+  });
   svg.innerHTML = `<circle r="47" pathLength="1"/><circle r="38" pathLength="1"/><path d="${tick}" pathLength="1"/><polygon points="${star[0]} ${star[2]} ${star[4]}" pathLength="1"/><polygon points="${star[1]} ${star[3]} ${star[5]}" pathLength="1"/>`;
   document.body.appendChild(svg);
-  svg.animate([{ transform: "rotate(-20deg) scale(.92)", opacity: 0 }, { transform: "rotate(0deg) scale(1)", opacity: 1, offset: 0.35 }, { transform: "rotate(12deg) scale(1.04)", opacity: 0 }], { duration: 950, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => svg.remove();
+  svg.animate(
+    [
+      { transform: "rotate(-20deg) scale(.92)", opacity: 0 },
+      { transform: "rotate(0deg) scale(1)", opacity: 1, offset: 0.35 },
+      { transform: "rotate(12deg) scale(1.04)", opacity: 0 },
+    ],
+    { duration: 950, easing: "cubic-bezier(.2,.7,.3,1)" },
+  ).onfinish = () => svg.remove();
 }
 
 /** A bright flash over the card the moment it lands. */
 function flash(to: DOMRect) {
   const e = document.createElement("div");
   e.className = "fx fx-flash";
-  Object.assign(e.style, { left: `${to.left + to.width / 2}px`, top: `${to.top + to.height / 2}px`, width: `${to.width * 1.1}px`, height: `${to.height * 1.1}px` });
+  Object.assign(e.style, {
+    left: `${to.left + to.width / 2}px`,
+    top: `${to.top + to.height / 2}px`,
+    width: `${to.width * 1.1}px`,
+    height: `${to.height * 1.1}px`,
+  });
   document.body.appendChild(e);
-  e.animate([{ transform: "translate(-50%,-50%) scale(.9)", opacity: 0.95 }, { transform: "translate(-50%,-50%) scale(1.15)", opacity: 0 }], { duration: 320, easing: "ease-out" }).onfinish = () => e.remove();
+  e.animate(
+    [
+      { transform: "translate(-50%,-50%) scale(.9)", opacity: 0.95 },
+      { transform: "translate(-50%,-50%) scale(1.15)", opacity: 0 },
+    ],
+    { duration: 320, easing: "ease-out" },
+  ).onfinish = () => e.remove();
 }
 
 /** A low ring of dust spreading from under a card that has just landed. */
 function dust(to: DOMRect) {
   const e = document.createElement("div");
   e.className = "fx fx-dust";
-  Object.assign(e.style, { left: `${to.left + to.width / 2}px`, top: `${to.top + to.height - 6}px`, width: `${to.width}px`, height: `${to.width * 0.22}px` });
+  Object.assign(e.style, {
+    left: `${to.left + to.width / 2}px`,
+    top: `${to.top + to.height - 6}px`,
+    width: `${to.width}px`,
+    height: `${to.width * 0.22}px`,
+  });
   document.body.appendChild(e);
-  e.animate([{ transform: "translate(-50%,-50%) scale(.6)", opacity: 0.8 }, { transform: "translate(-50%,-50%) scale(1.5)", opacity: 0 }], { duration: 450, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => e.remove();
+  e.animate(
+    [
+      { transform: "translate(-50%,-50%) scale(.6)", opacity: 0.8 },
+      { transform: "translate(-50%,-50%) scale(1.5)", opacity: 0 },
+    ],
+    { duration: 450, easing: "cubic-bezier(.2,.7,.3,1)" },
+  ).onfinish = () => e.remove();
 }
 
 /** The flourish when a card lands in its space; `name` is the class, or empty for a species or background. */
 function land(name: string, to: DOMRect, target: HTMLElement) {
-  const cx = to.left + to.width / 2, cy = to.top + to.height / 2;
+  const cx = to.left + to.width / 2,
+    cy = to.top + to.height / 2;
   const n = name.toLowerCase();
-  if (/barbarian/.test(n)) { rings(cx, cy, "#e0412c", 2, 140); sparks(cx, cy, ["#ff5a36", "#ffb347", "#c81e1e"], 30, 170); }
-  else if (/fighter/.test(n)) { slash(to, "#ffb347"); sparks(cx, cy, ["#ffd27a", "#ff7a2e", "#fff"], 24, 150); }
-  else if (/paladin/.test(n)) { beam(to, "#ffd36a"); sparks(cx, cy, ["#ffe7a3", "#fff"], 16, 120); }
-  else if (/ranger/.test(n)) { for (let k = 0; k < 3; k++) particle("fx-arrow", to.left - 120 - k * 30, cy - 30 + k * 30, to.width * 0.55 + 120, rnd(-6, 6), { duration: 260, delay: k * 60, scaleTo: 1 }); drift(to, "fx-leaf", 10, { colors: ["#6aa84f", "#8fbf4a", "#4e7a32"] }); }
-  else if (/rogue/.test(n)) { drift(to, "fx-smoke", 12, { colors: ["#1b1b24", "#2c2a3a"], size: [30, 60], rise: 60, duration: [500, 800] }); slash(to, "#8b7bd8", 32); }
-  else if (/monk/.test(n)) { rings(cx, cy, "#9fd8ff", 3, 150); drift(to, "fx-dot", 10, { colors: ["#cfeeff", "#7cc4ff"], size: [4, 7] }); }
-  else if (/cleric/.test(n)) { rays(cx, cy, "rgba(255, 236, 170, .9)", Math.max(to.width, to.height) * 1.6); drift(to, "fx-dot", 12, { colors: ["#fff7d1", "#ffe08a"], size: [3, 6] }); }
-  else if (/druid/.test(n)) { drift(to, "fx-leaf", 18, { colors: ["#5f9e3a", "#8cc152", "#3f7a2a", "#e3c35a"], rise: 190 }); rings(cx, cy, "#7fbf5a", 1, 170); }
-  else if (/wizard/.test(n)) { sigil(to, "#8fc3ff"); drift(to, "fx-dot", 10, { colors: ["#bfe0ff", "#6ea8ff"], size: [3, 6] }); }
-  else if (/sorcerer/.test(n)) { lightning(to, "#9d7bff"); sparks(cx, cy, ["#c9b6ff", "#7b5bff", "#fff"], 18, 130); }
-  else if (/warlock/.test(n)) { drift(to, "fx-smoke", 14, { colors: ["#3b1f5a", "#1f5a3b", "#5a1f4f"], size: [30, 64], rise: 110, duration: [650, 950] }); sparks(cx, cy, ["#7dff9a", "#c27dff"], 14, 110); }
-  else if (/bard/.test(n)) { drift(to, "fx-note", 12, { colors: ["#ffd36a", "#ff8ad8", "#8ad8ff", "#b4ff8a"], texts: ["♪", "♫", "♩", "♬"], size: [16, 26], rise: 170 }); }
-  else if (/artificer/.test(n)) { drift(to, "fx-gear", 7, { colors: ["#d9a441", "#b0b8c0"], texts: ["⚙"], size: [18, 30], rise: 110 }); sparks(cx, cy, ["#ffb347", "#ffe08a"], 16, 120); }
-  else { sigil(to, "#ffd98a"); drift(to, "fx-dot", 9, { colors: ["#ffcf7a"], size: [3, 5] }); }
+  if (/barbarian/.test(n)) {
+    rings(cx, cy, "#e0412c", 2, 140);
+    sparks(cx, cy, ["#ff5a36", "#ffb347", "#c81e1e"], 30, 170);
+  } else if (/fighter/.test(n)) {
+    slash(to, "#ffb347");
+    sparks(cx, cy, ["#ffd27a", "#ff7a2e", "#fff"], 24, 150);
+  } else if (/paladin/.test(n)) {
+    beam(to, "#ffd36a");
+    sparks(cx, cy, ["#ffe7a3", "#fff"], 16, 120);
+  } else if (/ranger/.test(n)) {
+    for (let k = 0; k < 3; k++)
+      particle("fx-arrow", to.left - 120 - k * 30, cy - 30 + k * 30, to.width * 0.55 + 120, rnd(-6, 6), {
+        duration: 260,
+        delay: k * 60,
+        scaleTo: 1,
+      });
+    drift(to, "fx-leaf", 10, { colors: ["#6aa84f", "#8fbf4a", "#4e7a32"] });
+  } else if (/rogue/.test(n)) {
+    drift(to, "fx-smoke", 12, { colors: ["#1b1b24", "#2c2a3a"], size: [30, 60], rise: 60, duration: [500, 800] });
+    slash(to, "#8b7bd8", 32);
+  } else if (/monk/.test(n)) {
+    rings(cx, cy, "#9fd8ff", 3, 150);
+    drift(to, "fx-dot", 10, { colors: ["#cfeeff", "#7cc4ff"], size: [4, 7] });
+  } else if (/cleric/.test(n)) {
+    rays(cx, cy, "rgba(255, 236, 170, .9)", Math.max(to.width, to.height) * 1.6);
+    drift(to, "fx-dot", 12, { colors: ["#fff7d1", "#ffe08a"], size: [3, 6] });
+  } else if (/druid/.test(n)) {
+    drift(to, "fx-leaf", 18, { colors: ["#5f9e3a", "#8cc152", "#3f7a2a", "#e3c35a"], rise: 190 });
+    rings(cx, cy, "#7fbf5a", 1, 170);
+  } else if (/wizard/.test(n)) {
+    sigil(to, "#8fc3ff");
+    drift(to, "fx-dot", 10, { colors: ["#bfe0ff", "#6ea8ff"], size: [3, 6] });
+  } else if (/sorcerer/.test(n)) {
+    lightning(to, "#9d7bff");
+    sparks(cx, cy, ["#c9b6ff", "#7b5bff", "#fff"], 18, 130);
+  } else if (/warlock/.test(n)) {
+    drift(to, "fx-smoke", 14, { colors: ["#3b1f5a", "#1f5a3b", "#5a1f4f"], size: [30, 64], rise: 110, duration: [650, 950] });
+    sparks(cx, cy, ["#7dff9a", "#c27dff"], 14, 110);
+  } else if (/bard/.test(n)) {
+    drift(to, "fx-note", 12, {
+      colors: ["#ffd36a", "#ff8ad8", "#8ad8ff", "#b4ff8a"],
+      texts: ["♪", "♫", "♩", "♬"],
+      size: [16, 26],
+      rise: 170,
+    });
+  } else if (/artificer/.test(n)) {
+    drift(to, "fx-gear", 7, { colors: ["#d9a441", "#b0b8c0"], texts: ["⚙"], size: [18, 30], rise: 110 });
+    sparks(cx, cy, ["#ffb347", "#ffe08a"], 16, 120);
+  } else {
+    sigil(to, "#ffd98a");
+    drift(to, "fx-dot", 9, { colors: ["#ffcf7a"], size: [3, 5] });
+  }
   // Every landing flashes bright on the card and kicks up a ring of dust under it.
   flash(to);
   dust(to);
@@ -233,7 +445,8 @@ function land(name: string, to: DOMRect, target: HTMLElement) {
 
 /** Where a turned-over card sits: the middle of the window. Matches .card-back in the styles. */
 function backRect(): DOMRect {
-  const w = Math.min(680, window.innerWidth * 0.92), h = Math.min(window.innerHeight * 0.82, 680);
+  const w = Math.min(680, window.innerWidth * 0.92),
+    h = Math.min(window.innerHeight * 0.82, 680);
   return new DOMRect((window.innerWidth - w) / 2, (window.innerHeight - h) / 2, w, h);
 }
 
@@ -247,7 +460,14 @@ function flyToBack(from: DOMRect | null, label: string, kind: Kind, to: DOMRect,
   card.querySelector("small")!.textContent = TITLE[kind];
   card.querySelector("b")!.textContent = label;
   document.body.appendChild(card);
-  const at = (x: number, y: number, w: number, h: number, font: number, turn: number): Keyframe => ({ left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, fontSize: `${font}px`, transform: `perspective(1200px) rotateY(${turn}deg)` });
+  const at = (x: number, y: number, w: number, h: number, font: number, turn: number): Keyframe => ({
+    left: `${x}px`,
+    top: `${y}px`,
+    width: `${w}px`,
+    height: `${h}px`,
+    fontSize: `${font}px`,
+    transform: `perspective(1200px) rotateY(${turn}deg)`,
+  });
   const h0 = Math.max(start.height, 34);
   card.animate(
     [
@@ -257,7 +477,10 @@ function flyToBack(from: DOMRect | null, label: string, kind: Kind, to: DOMRect,
       { ...at(to.left, to.top, to.width, to.height, 34, 90), opacity: 1, offset: 1 },
     ],
     { duration: 560, easing: "cubic-bezier(.3,.7,.3,1)", fill: "forwards" },
-  ).onfinish = () => { card.remove(); done(); };
+  ).onfinish = () => {
+    card.remove();
+    done();
+  };
 }
 
 /** × on a new pick: the card shrinks back toward the list it came from. */
@@ -272,7 +495,14 @@ function flyHome(from: DOMRect, to: DOMRect, label: string, kind: Kind) {
   card.animate(
     [
       { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px`, fontSize: "30px", opacity: 1 },
-      { left: `${to.left}px`, top: `${to.top}px`, width: `${to.width}px`, height: `${Math.max(to.height, 30)}px`, fontSize: "13px", opacity: 0 },
+      {
+        left: `${to.left}px`,
+        top: `${to.top}px`,
+        width: `${to.width}px`,
+        height: `${Math.max(to.height, 30)}px`,
+        fontSize: "13px",
+        opacity: 0,
+      },
     ],
     { duration: 380, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" },
   ).onfinish = () => card.remove();
@@ -294,22 +524,42 @@ function epicFly(from: DOMRect | null, label: string, kind: Kind, target: HTMLEl
   card.innerHTML = `<small></small><b></b>`;
   card.querySelector("small")!.textContent = TITLE[kind];
   card.querySelector("b")!.textContent = label;
-  Object.assign(card.style, { left: `${start.left}px`, top: `${start.top}px`, width: `${start.width}px`, height: `${Math.max(start.height, 34)}px` });
+  Object.assign(card.style, {
+    left: `${start.left}px`,
+    top: `${start.top}px`,
+    width: `${start.width}px`,
+    height: `${Math.max(start.height, 34)}px`,
+  });
   document.body.appendChild(card);
   // The card's real size and position change (not a stretch), so the name stays in proportion.
   const h0 = Math.max(start.height, 34);
-  const box = (x: number, y: number, w: number, h: number, font: number, turn: number, tilt: number, extra: Keyframe = {}): Keyframe =>
-    ({ left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, fontSize: `${font}px`, transform: `perspective(900px) rotateY(${turn}deg) rotateZ(${tilt}deg)`, ...extra });
+  const box = (x: number, y: number, w: number, h: number, font: number, turn: number, tilt: number, extra: Keyframe = {}): Keyframe => ({
+    left: `${x}px`,
+    top: `${y}px`,
+    width: `${w}px`,
+    height: `${h}px`,
+    fontSize: `${font}px`,
+    transform: `perspective(900px) rotateY(${turn}deg) rotateZ(${tilt}deg)`,
+    ...extra,
+  });
   // Hearthstone-style: the card lifts toward you as it travels, hangs just above its space a little larger, then
   // slams down into it.
-  const midX = start.left + (to.left - start.left) * 0.5, midY = Math.min(start.top, to.top) - 50;
+  const midX = start.left + (to.left - start.left) * 0.5,
+    midY = Math.min(start.top, to.top) - 50;
   const big = 1.12;
   const anim = card.animate(
     [
       { ...box(start.left, start.top, start.width, h0, 14, 0, 0), opacity: 0, offset: 0 },
       { ...box(start.left, start.top - 10, start.width, h0, 14, 0, -2), opacity: 1, offset: 0.12 },
-      { ...box(midX - (to.width * (big - 1)) / 2, midY, ((start.width + to.width) / 2) * 1.05, ((h0 + to.height) / 2) * 1.05, 22, 0, 2), offset: 0.5 },
-      { ...box(to.left - (to.width * (big - 1)) / 2, to.top - (to.height * (big - 1)) / 2 - 18, to.width * big, to.height * big, 30, 0, 0), offset: 0.8, easing: "cubic-bezier(.55,0,1,.45)" },
+      {
+        ...box(midX - (to.width * (big - 1)) / 2, midY, ((start.width + to.width) / 2) * 1.05, ((h0 + to.height) / 2) * 1.05, 22, 0, 2),
+        offset: 0.5,
+      },
+      {
+        ...box(to.left - (to.width * (big - 1)) / 2, to.top - (to.height * (big - 1)) / 2 - 18, to.width * big, to.height * big, 30, 0, 0),
+        offset: 0.8,
+        easing: "cubic-bezier(.55,0,1,.45)",
+      },
       { ...box(to.left, to.top, to.width, to.height, 28, 0, 0), opacity: 1, offset: 1 },
     ],
     { duration: 620, easing: "cubic-bezier(.22,.8,.24,1)", fill: "forwards" },
@@ -343,9 +593,20 @@ function SpellBook({ f }: { f: number }) {
   return (
     <svg className="board-book" viewBox="0 0 120 120" role="img" aria-label={`Spellbook ${Math.round(f * 100)}% full`}>
       <defs>
-        <linearGradient id="sbCover" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#9b4632" /><stop offset=".6" stopColor="#7a3022" /><stop offset="1" stopColor="#4f1c14" /></linearGradient>
-        <linearGradient id="sbPages" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#f3e2b4" /><stop offset="1" stopColor="#c9a86a" /></linearGradient>
-        <linearGradient id="sbBrass" x1="0" x2="1"><stop offset="0" stopColor="#f6dc94" /><stop offset=".5" stopColor="#c8963c" /><stop offset="1" stopColor="#8a6020" /></linearGradient>
+        <linearGradient id="sbCover" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stopColor="#9b4632" />
+          <stop offset=".6" stopColor="#7a3022" />
+          <stop offset="1" stopColor="#4f1c14" />
+        </linearGradient>
+        <linearGradient id="sbPages" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="#f3e2b4" />
+          <stop offset="1" stopColor="#c9a86a" />
+        </linearGradient>
+        <linearGradient id="sbBrass" x1="0" x2="1">
+          <stop offset="0" stopColor="#f6dc94" />
+          <stop offset=".5" stopColor="#c8963c" />
+          <stop offset="1" stopColor="#8a6020" />
+        </linearGradient>
       </defs>
       <ellipse cx="60" cy="104" rx="50" ry="9" fill="#000" opacity=".32" />
       {/* back cover */}
@@ -355,13 +616,17 @@ function SpellBook({ f }: { f: number }) {
       <g transform="translate(10 92) skewY(10)">
         <g className="board-book-block" style={{ transform: `scaleY(${t})` }}>
           <rect x="0" y={-H} width="68" height={H} fill="url(#sbPages)" stroke="#9c7b45" strokeWidth=".6" />
-          {Array.from({ length: 8 }, (_, k) => <path key={k} d={`M0 ${(-H * (k + 1)) / 9} h68`} stroke="#b8975e" strokeWidth=".45" />)}
+          {Array.from({ length: 8 }, (_, k) => (
+            <path key={k} d={`M0 ${(-H * (k + 1)) / 9} h68`} stroke="#b8975e" strokeWidth=".45" />
+          ))}
         </g>
       </g>
       <g transform="translate(78 104) skewY(-36.87)">
         <g className="board-book-block" style={{ transform: `scaleY(${t})` }}>
           <rect x="0" y={-H} width="32" height={H} fill="#e6cf98" stroke="#9c7b45" strokeWidth=".6" />
-          {Array.from({ length: 8 }, (_, k) => <path key={k} d={`M0 ${(-H * (k + 1)) / 9} h32`} stroke="#b8975e" strokeWidth=".45" />)}
+          {Array.from({ length: 8 }, (_, k) => (
+            <path key={k} d={`M0 ${(-H * (k + 1)) / 9} h32`} stroke="#b8975e" strokeWidth=".45" />
+          ))}
         </g>
       </g>
       {/* ribbons from the pages */}
@@ -375,7 +640,10 @@ function SpellBook({ f }: { f: number }) {
         <path d="M22 90.5 L74 99 L97 82.4 L46 74 Z" fill="none" stroke="#3b130d" strokeWidth=".6" strokeDasharray="1.5 1.5" opacity=".7" />
         {/* two straps across the cover, over the front edge */}
         {[0.3, 0.68].map((k) => {
-          const x0 = 10 + 32 * k, y0 = 92 - 24 * k, x1 = 78 + 32 * k, y1 = 104 - 24 * k;
+          const x0 = 10 + 32 * k,
+            y0 = 92 - 24 * k,
+            x1 = 78 + 32 * k,
+            y1 = 104 - 24 * k;
           return (
             <g key={k}>
               <path d={`M${x0 - 3} ${y0 + 1} L${x1 - 3} ${y1 + 1} L${x1 + 3} ${y1 - 2} L${x0 + 3} ${y0 - 2} Z`} fill="#3d2414" />
@@ -398,7 +666,15 @@ function SpellBook({ f }: { f: number }) {
           <path d="M14 66 l4 6 l-3 3 l5 7" fill="none" stroke="#8fd0ff" strokeWidth="1.4" strokeLinejoin="round" />
           <path d="M100 52 l-3 7 l4 2 l-3 8" fill="none" stroke="#8fd0ff" strokeWidth="1.4" strokeLinejoin="round" />
           <path d="M66 98 l4 4 l-2 4 l5 4" fill="none" stroke="#8fd0ff" strokeWidth="1.2" strokeLinejoin="round" />
-          <path className="board-book-smoke" d="M80 44 q-6 -8 2 -14 q8 -6 0 -14" fill="none" stroke="#cfcfd6" strokeWidth="2.4" strokeLinecap="round" opacity=".5" />
+          <path
+            className="board-book-smoke"
+            d="M80 44 q-6 -8 2 -14 q8 -6 0 -14"
+            fill="none"
+            stroke="#cfcfd6"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            opacity=".5"
+          />
         </g>
       )}
     </svg>
@@ -418,7 +694,12 @@ function StartingGear() {
     <svg className="board-pack" viewBox="0 0 120 120" role="img" aria-label="Starting gear">
       <ellipse cx="60" cy="104" rx="44" ry="6" fill="#0005" />
       {/* bundle */}
-      <path d="M30 60c0-8 8-14 22-14s22 6 22 14v26c0 6-10 10-22 10s-22-4-22-10z" fill="hsl(30 35% 32%)" stroke="var(--gold)" strokeWidth="2" />
+      <path
+        d="M30 60c0-8 8-14 22-14s22 6 22 14v26c0 6-10 10-22 10s-22-4-22-10z"
+        fill="hsl(30 35% 32%)"
+        stroke="var(--gold)"
+        strokeWidth="2"
+      />
       <path d="M30 70c8 5 36 5 44 0M52 46v50" stroke="var(--gold2)" strokeWidth="3" fill="none" />
       {/* rope */}
       <circle cx="88" cy="84" r="14" fill="none" stroke="hsl(40 45% 55%)" strokeWidth="5" />
@@ -452,9 +733,13 @@ function Purse() {
       <rect x="42" y="55" width="6" height="7" rx="1.5" fill="hsl(130 40% 45%)" />
       <rect x="74" y="54" width="7" height="8" rx="1.5" fill="hsl(280 35% 55%)" />
       {/* awning */}
-      {stripes.map((i) => <path key={i} d={`M${14 + i * 15.33} 30h15.33l-2 14h-11.33z`} fill={i % 2 ? "hsl(42 70% 82%)" : "hsl(355 60% 42%)"} />)}
+      {stripes.map((i) => (
+        <path key={i} d={`M${14 + i * 15.33} 30h15.33l-2 14h-11.33z`} fill={i % 2 ? "hsl(42 70% 82%)" : "hsl(355 60% 42%)"} />
+      ))}
       <path d="M14 30h92" stroke="var(--gold)" strokeWidth="2.5" />
-      {stripes.map((i) => <path key={`s${i}`} d={`M${16 + i * 15.33} 44q5.67 6 11.33 0`} fill={i % 2 ? "hsl(42 70% 82%)" : "hsl(355 60% 42%)"} />)}
+      {stripes.map((i) => (
+        <path key={`s${i}`} d={`M${16 + i * 15.33} 44q5.67 6 11.33 0`} fill={i % 2 ? "hsl(42 70% 82%)" : "hsl(355 60% 42%)"} />
+      ))}
       <path d="M22 30L60 14L98 30" fill="none" stroke="hsl(28 35% 28%)" strokeWidth="4" strokeLinejoin="round" />
       {/* hanging sign with a coin */}
       <path d="M53 46v6M67 46v6" stroke="var(--gold2)" strokeWidth="1.2" />
@@ -480,28 +765,85 @@ function Purse() {
 function Backpack({ f }: { f: number }) {
   const has = (at: number) => f > 0 && f >= at - 1e-9;
   const brass = "url(#bpBrass)";
-  const buckle = (x: number, y: number, w = 7, h = 6) => <><rect x={x - w / 2} y={y - h / 2} width={w} height={h} rx="1.2" fill="none" stroke={brass} strokeWidth="1.6" /><path d={`M${x} ${y - h / 2} v${h}`} stroke={brass} strokeWidth="1" /></>;
+  const buckle = (x: number, y: number, w = 7, h = 6) => (
+    <>
+      <rect x={x - w / 2} y={y - h / 2} width={w} height={h} rx="1.2" fill="none" stroke={brass} strokeWidth="1.6" />
+      <path d={`M${x} ${y - h / 2} v${h}`} stroke={brass} strokeWidth="1" />
+    </>
+  );
   return (
     <svg className="board-pack" viewBox="0 0 120 120" role="img" aria-label={`Backpack ${Math.round(f * 100)}% full`}>
       <defs>
-        <linearGradient id="bpLeather" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#8f6440" /><stop offset=".55" stopColor="#6e4a2c" /><stop offset="1" stopColor="#4a2f1a" /></linearGradient>
-        <linearGradient id="bpDark" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#6b4529" /><stop offset="1" stopColor="#3e2716" /></linearGradient>
-        <linearGradient id="bpBrass" x1="0" x2="1"><stop offset="0" stopColor="#f2d58a" /><stop offset=".5" stopColor="#c4923c" /><stop offset="1" stopColor="#86601f" /></linearGradient>
-        <linearGradient id="bpRoll" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#7d9450" /><stop offset="1" stopColor="#4a5c2c" /></linearGradient>
-        <pattern id="bpBraid" width="6" height="5" patternUnits="userSpaceOnUse"><rect width="6" height="5" fill="#c9a454" /><path d="M0 0 L3 2.5 L6 0 M0 5 L3 2.5 L6 5" stroke="#8a6a2a" strokeWidth=".8" fill="none" /></pattern>
+        <linearGradient id="bpLeather" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stopColor="#8f6440" />
+          <stop offset=".55" stopColor="#6e4a2c" />
+          <stop offset="1" stopColor="#4a2f1a" />
+        </linearGradient>
+        <linearGradient id="bpDark" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="#6b4529" />
+          <stop offset="1" stopColor="#3e2716" />
+        </linearGradient>
+        <linearGradient id="bpBrass" x1="0" x2="1">
+          <stop offset="0" stopColor="#f2d58a" />
+          <stop offset=".5" stopColor="#c4923c" />
+          <stop offset="1" stopColor="#86601f" />
+        </linearGradient>
+        <linearGradient id="bpRoll" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="#7d9450" />
+          <stop offset="1" stopColor="#4a5c2c" />
+        </linearGradient>
+        <pattern id="bpBraid" width="6" height="5" patternUnits="userSpaceOnUse">
+          <rect width="6" height="5" fill="#c9a454" />
+          <path d="M0 0 L3 2.5 L6 0 M0 5 L3 2.5 L6 5" stroke="#8a6a2a" strokeWidth=".8" fill="none" />
+        </pattern>
       </defs>
       <ellipse cx="58" cy="112" rx="34" ry="5" fill="#000" opacity=".32" />
       <g className="board-pack-body" style={{ transform: `scale(${0.94 + f * 0.06})` }}>
         {/* the shoulder strap behind, hanging to the right */}
         <path d="M80 36 q24 4 22 40 q-1 20 -6 30" fill="none" stroke="#5a3a1e" strokeWidth="5" strokeLinecap="round" />
         {/* behind the bag: the sword, the herbs, the rope */}
-        {has(0.55) && <g className="board-item"><path d="M34 60 L24 22" stroke="#c7ced6" strokeWidth="3.2" strokeLinecap="round" /><path d="M18 27 L30 23.5" stroke={brass} strokeWidth="3" strokeLinecap="round" /><path d="M24 22 L21.8 13" stroke="#3b2412" strokeWidth="3.4" strokeLinecap="round" /><circle cx="21.5" cy="11.8" r="2.4" fill={brass} /></g>}
-        {has(0.7) && <g className="board-item"><path d="M24 78 q-10 -6 -14 -2 q6 2 8 6 z" fill="#3f7a35" /><path d="M24 82 q-12 2 -14 8 q8 -2 12 -4 z" fill="#2f6a2a" /><circle cx="13" cy="79" r="2.4" fill="#e07a9a" /><circle cx="15" cy="86" r="2" fill="#e07a9a" /></g>}
-        {has(0.25) && <g className="board-item"><ellipse cx="22" cy="62" rx="8" ry="10" fill="none" stroke="#d9c79a" strokeWidth="3" /><ellipse cx="22" cy="62" rx="4.5" ry="6.5" fill="none" stroke="#b9a676" strokeWidth="2.4" /></g>}
+        {has(0.55) && (
+          <g className="board-item">
+            <path d="M34 60 L24 22" stroke="#c7ced6" strokeWidth="3.2" strokeLinecap="round" />
+            <path d="M18 27 L30 23.5" stroke={brass} strokeWidth="3" strokeLinecap="round" />
+            <path d="M24 22 L21.8 13" stroke="#3b2412" strokeWidth="3.4" strokeLinecap="round" />
+            <circle cx="21.5" cy="11.8" r="2.4" fill={brass} />
+          </g>
+        )}
+        {has(0.7) && (
+          <g className="board-item">
+            <path d="M24 78 q-10 -6 -14 -2 q6 2 8 6 z" fill="#3f7a35" />
+            <path d="M24 82 q-12 2 -14 8 q8 -2 12 -4 z" fill="#2f6a2a" />
+            <circle cx="13" cy="79" r="2.4" fill="#e07a9a" />
+            <circle cx="15" cy="86" r="2" fill="#e07a9a" />
+          </g>
+        )}
+        {has(0.25) && (
+          <g className="board-item">
+            <ellipse cx="22" cy="62" rx="8" ry="10" fill="none" stroke="#d9c79a" strokeWidth="3" />
+            <ellipse cx="22" cy="62" rx="4.5" ry="6.5" fill="none" stroke="#b9a676" strokeWidth="2.4" />
+          </g>
+        )}
         {/* the bedroll buckled on top */}
-        {has(0.4) && <g className="board-item"><rect x="26" y="14" width="64" height="18" rx="9" fill="url(#bpRoll)" stroke="#2c331c" strokeWidth="1.2" /><path d="M30 20 q30 3 56 0" fill="none" stroke="#a2b479" strokeWidth=".9" opacity=".6" /><circle cx="88" cy="23" r="7" fill="#5f7144" stroke="#2c331c" strokeWidth="1" /><path d="M88 23 m-4 0 a4 4 0 1 1 4 4 a2.5 2.5 0 1 1 -2 -2.5" fill="none" stroke="#3a4625" strokeWidth="1" /><rect x="40" y="12" width="5" height="22" rx="1.2" fill="#4a2c16" /><rect x="70" y="12" width="5" height="22" rx="1.2" fill="#4a2c16" />{buckle(42.5, 30)}{buckle(72.5, 30)}</g>}
+        {has(0.4) && (
+          <g className="board-item">
+            <rect x="26" y="14" width="64" height="18" rx="9" fill="url(#bpRoll)" stroke="#2c331c" strokeWidth="1.2" />
+            <path d="M30 20 q30 3 56 0" fill="none" stroke="#a2b479" strokeWidth=".9" opacity=".6" />
+            <circle cx="88" cy="23" r="7" fill="#5f7144" stroke="#2c331c" strokeWidth="1" />
+            <path d="M88 23 m-4 0 a4 4 0 1 1 4 4 a2.5 2.5 0 1 1 -2 -2.5" fill="none" stroke="#3a4625" strokeWidth="1" />
+            <rect x="40" y="12" width="5" height="22" rx="1.2" fill="#4a2c16" />
+            <rect x="70" y="12" width="5" height="22" rx="1.2" fill="#4a2c16" />
+            {buckle(42.5, 30)}
+            {buckle(72.5, 30)}
+          </g>
+        )}
         {/* the body: tall, rounded at the top */}
-        <path d="M30 40 q2 -10 28 -10 q26 0 28 10 l4 58 q0 10 -12 10 h-40 q-12 0 -12 -10 z" fill="url(#bpLeather)" stroke="#2b1a0c" strokeWidth="1.6" />
+        <path
+          d="M30 40 q2 -10 28 -10 q26 0 28 10 l4 58 q0 10 -12 10 h-40 q-12 0 -12 -10 z"
+          fill="url(#bpLeather)"
+          stroke="#2b1a0c"
+          strokeWidth="1.6"
+        />
         {/* the two braided bands down the front */}
         <path d="M44 36 v68" stroke="url(#bpBraid)" strokeWidth="5" />
         <path d="M72 36 v68" stroke="url(#bpBraid)" strokeWidth="5" />
@@ -511,7 +853,32 @@ function Backpack({ f }: { f: number }) {
         <path d="M58 64 v8" stroke="#3b2412" strokeWidth="5" />
         {buckle(58, 70, 8, 7)}
         {/* papers out of the lower pocket */}
-        {has(0.1) && <g className="board-item"><rect x="38" y="70" width="13" height="16" rx="1" fill="#efe3c4" stroke="#9a8256" strokeWidth=".7" transform="rotate(-10 44 78)" /><rect x="47" y="68" width="13" height="18" rx="1" fill="#f8efd6" stroke="#9a8256" strokeWidth=".7" transform="rotate(6 53 77)" /></g>}
+        {has(0.1) && (
+          <g className="board-item">
+            <rect
+              x="38"
+              y="70"
+              width="13"
+              height="16"
+              rx="1"
+              fill="#efe3c4"
+              stroke="#9a8256"
+              strokeWidth=".7"
+              transform="rotate(-10 44 78)"
+            />
+            <rect
+              x="47"
+              y="68"
+              width="13"
+              height="18"
+              rx="1"
+              fill="#f8efd6"
+              stroke="#9a8256"
+              strokeWidth=".7"
+              transform="rotate(6 53 77)"
+            />
+          </g>
+        )}
         {/* the deep lower pocket with its flap and buckle */}
         <path d="M30 80 h56 l1 18 q0 8 -9 8 h-40 q-9 0 -9 -8 z" fill="url(#bpLeather)" stroke="#2b1a0c" strokeWidth="1.3" />
         <path d="M30 80 h56 v6 q-28 8 -56 0 z" fill="url(#bpDark)" stroke="#a83a2a" strokeWidth="1.3" />
@@ -519,8 +886,28 @@ function Backpack({ f }: { f: number }) {
         {buckle(58, 93, 7, 6)}
         {/* the side sleeve with a scroll, and the pouch hanging from it */}
         <path d="M86 46 l8 2 l2 30 l-8 2 z" fill="url(#bpDark)" stroke="#2b1a0c" strokeWidth="1.1" />
-        {has(0.85) && <g className="board-item"><rect x="86" y="30" width="9" height="20" rx="4.5" fill="#ece3cf" stroke="#9a8a6a" strokeWidth=".8" transform="rotate(8 90 40)" /><path d="M86 33 a4.5 2 0 0 0 9 0" fill="none" stroke="#9a8a6a" strokeWidth=".7" transform="rotate(8 90 40)" /></g>}
-        {has(1) && <g className="board-item"><path d="M90 78 q-8 2 -8 12 q0 10 9 10 q9 0 9 -10 q0 -10 -8 -12 z" fill="#5c86a6" stroke="#2c4458" strokeWidth="1" /><path d="M86 79 q4 -4 8 0" fill="none" stroke="#3b2412" strokeWidth="1.4" /></g>}
+        {has(0.85) && (
+          <g className="board-item">
+            <rect
+              x="86"
+              y="30"
+              width="9"
+              height="20"
+              rx="4.5"
+              fill="#ece3cf"
+              stroke="#9a8a6a"
+              strokeWidth=".8"
+              transform="rotate(8 90 40)"
+            />
+            <path d="M86 33 a4.5 2 0 0 0 9 0" fill="none" stroke="#9a8a6a" strokeWidth=".7" transform="rotate(8 90 40)" />
+          </g>
+        )}
+        {has(1) && (
+          <g className="board-item">
+            <path d="M90 78 q-8 2 -8 12 q0 10 9 10 q9 0 9 -10 q0 -10 -8 -12 z" fill="#5c86a6" stroke="#2c4458" strokeWidth="1" />
+            <path d="M86 79 q4 -4 8 0" fill="none" stroke="#3b2412" strokeWidth="1.4" />
+          </g>
+        )}
         <path d="M36 104 q22 3 44 0" fill="none" stroke="#e7c98f" strokeWidth=".7" strokeDasharray="2 1.6" opacity=".5" />
       </g>
     </svg>
@@ -544,45 +931,147 @@ function useNarrow(): boolean {
  * A score's number. Normally a click turns it into a box to type in; with `onRoll` (manual scores) the number shows a
  * die on hover and a click rolls it, and typing a digit on it still lets you enter a number.
  */
-function EditNum({ value, onSet, min, max, label, onRoll }: { value: number; onSet: (n: number) => void; min: number; max: number; label: string; onRoll?: () => void }) {
+function EditNum({
+  value,
+  onSet,
+  min,
+  max,
+  label,
+  onRoll,
+}: {
+  value: number;
+  onSet: (n: number) => void;
+  min: number;
+  max: number;
+  label: string;
+  onRoll?: () => void;
+}) {
   const [edit, setEdit] = useState<string | null>(null);
   if (edit === null && onRoll) {
     return (
-      <button className="board-num rolls" title="Click to roll 4d6 and drop the lowest (shown in the dice log). Type a number to set it." aria-label={`${label} base score ${value}. Click to roll, or type a number`} onClick={onRoll} onKeyDown={(e) => { if (/^[0-9]$/.test(e.key)) { e.preventDefault(); setEdit(e.key); } }}>
-        <span className="board-num-value">{value}</span><span className="board-num-die" aria-hidden="true"><D20 size={16} /></span>
+      <button
+        className="board-num rolls"
+        title="Click to roll 4d6 and drop the lowest (shown in the dice log). Type a number to set it."
+        aria-label={`${label} base score ${value}. Click to roll, or type a number`}
+        onClick={onRoll}
+        onKeyDown={(e) => {
+          if (/^[0-9]$/.test(e.key)) {
+            e.preventDefault();
+            setEdit(e.key);
+          }
+        }}
+      >
+        <span className="board-num-value">{value}</span>
+        <span className="board-num-die" aria-hidden="true">
+          <D20 size={16} />
+        </span>
       </button>
     );
   }
-  if (edit === null) return <button className="board-num" title="Click to type a number" aria-label={`${label} base score ${value}, click to type`} onClick={() => setEdit(String(value))}>{value}</button>;
-  const done = () => { const n = Number(edit); if (edit.trim() && Number.isFinite(n)) onSet(Math.max(min, Math.min(max, Math.round(n)))); setEdit(null); };
-  return <input className="board-num-in" autoFocus type="number" aria-label={`${label} base score`} value={edit} min={min} max={max} onChange={(e) => setEdit(e.target.value)} onBlur={done} onKeyDown={(e) => { if (e.key === "Enter") done(); if (e.key === "Escape") setEdit(null); }} />;
+  if (edit === null)
+    return (
+      <button
+        className="board-num"
+        title="Click to type a number"
+        aria-label={`${label} base score ${value}, click to type`}
+        onClick={() => setEdit(String(value))}
+      >
+        {value}
+      </button>
+    );
+  const done = () => {
+    const n = Number(edit);
+    if (edit.trim() && Number.isFinite(n)) onSet(Math.max(min, Math.min(max, Math.round(n))));
+    setEdit(null);
+  };
+  return (
+    <input
+      className="board-num-in"
+      autoFocus
+      type="number"
+      aria-label={`${label} base score`}
+      value={edit}
+      min={min}
+      max={max}
+      onChange={(e) => setEdit(e.target.value)}
+      onBlur={done}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") done();
+        if (e.key === "Escape") setEdit(null);
+      }}
+    />
+  );
 }
 
 function PointBuyRules({ ch, set, onClose }: { ch: Character; set: SetCharacter; onClose: () => void }) {
   const rules = normalizeRules(ch.pointBuy);
-  const setRules = (p: Partial<typeof rules>) => set((c) => {
-    const next = normalizeRules({ ...normalizeRules(c.pointBuy), ...p, costs: { ...normalizeRules(c.pointBuy).costs, ...(p.costs ?? {}) } });
-    return { ...c, pointBuy: next, abilityBase: clampBase(next, c.abilityBase) };
-  });
+  const setRules = (p: Partial<typeof rules>) =>
+    set((c) => {
+      const next = normalizeRules({
+        ...normalizeRules(c.pointBuy),
+        ...p,
+        costs: { ...normalizeRules(c.pointBuy).costs, ...(p.costs ?? {}) },
+      });
+      return { ...c, pointBuy: next, abilityBase: clampBase(next, c.abilityBase) };
+    });
   // On the page itself, so the sticky panel it is opened from cannot hide it.
   return createPortal(
     <div className="modal-back" onClick={onClose}>
       <div className="modal-page themed board-modal" role="dialog" aria-label="Point buy rules" onClick={(e) => e.stopPropagation()}>
-        <button className="board-x" aria-label="Close" onClick={onClose}>×</button>
+        <button className="board-x" aria-label="Close" onClick={onClose}>
+          ×
+        </button>
         <h2>Point buy rules</h2>
         <div className="row">
-          <label>Points to spend <input type="number" min={0} max={999} value={rules.budget} onChange={(e) => setRules({ budget: Number(e.target.value) })} /></label>
-          <label>Lowest score <input type="number" min={1} max={30} value={rules.min} onChange={(e) => setRules({ min: Number(e.target.value) })} /></label>
-          <label>Highest score <input type="number" min={1} max={30} value={rules.max} onChange={(e) => setRules({ max: Number(e.target.value) })} /></label>
+          <label>
+            Points to spend{" "}
+            <input type="number" min={0} max={999} value={rules.budget} onChange={(e) => setRules({ budget: Number(e.target.value) })} />
+          </label>
+          <label>
+            Lowest score{" "}
+            <input type="number" min={1} max={30} value={rules.min} onChange={(e) => setRules({ min: Number(e.target.value) })} />
+          </label>
+          <label>
+            Highest score{" "}
+            <input type="number" min={1} max={30} value={rules.max} onChange={(e) => setRules({ max: Number(e.target.value) })} />
+          </label>
         </div>
         <table className="pb-costs">
-          <thead><tr><th>Score</th>{Array.from({ length: rules.max - rules.min + 1 }, (_, i) => <th key={i}>{rules.min + i}</th>)}</tr></thead>
-          <tbody><tr><td>Total cost</td>{Array.from({ length: rules.max - rules.min + 1 }, (_, i) => { const sc = rules.min + i; return <td key={sc}><input type="number" aria-label={`Cost of ${sc}`} value={rules.costs[sc]} onChange={(e) => setRules({ costs: { [sc]: Number(e.target.value) } })} /></td>; })}</tr></tbody>
+          <thead>
+            <tr>
+              <th>Score</th>
+              {Array.from({ length: rules.max - rules.min + 1 }, (_, i) => (
+                <th key={i}>{rules.min + i}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Total cost</td>
+              {Array.from({ length: rules.max - rules.min + 1 }, (_, i) => {
+                const sc = rules.min + i;
+                return (
+                  <td key={sc}>
+                    <input
+                      type="number"
+                      aria-label={`Cost of ${sc}`}
+                      value={rules.costs[sc]}
+                      onChange={(e) => setRules({ costs: { [sc]: Number(e.target.value) } })}
+                    />
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
         </table>
         <p className="muted">The cost is the total a score costs from nothing. The standard table is 27 points over 8 to 15.</p>
         <div className="row">
-          <button onClick={() => set((c) => ({ ...c, pointBuy: undefined, abilityBase: clampBase(STANDARD_RULES, c.abilityBase) }))}>Standard rules</button>
-          <button className="primary" onClick={onClose}>Done</button>
+          <button onClick={() => set((c) => ({ ...c, pointBuy: undefined, abilityBase: clampBase(STANDARD_RULES, c.abilityBase) }))}>
+            Standard rules
+          </button>
+          <button className="primary" onClick={onClose}>
+            Done
+          </button>
         </div>
       </div>
     </div>,
@@ -600,37 +1089,77 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
   const [over, setOver] = useState<AbilityId | null>(null);
   const method = ch.abilityMethod;
   const setBase = (a: AbilityId, v: number) => set((c) => ({ ...c, abilityBase: { ...c.abilityBase, [a]: v } }));
-  const swap = (a: AbilityId, b: AbilityId) => a !== b && set((c) => ({ ...c, abilityBase: { ...c.abilityBase, [a]: c.abilityBase[b], [b]: c.abilityBase[a] } }));
+  const swap = (a: AbilityId, b: AbilityId) =>
+    a !== b && set((c) => ({ ...c, abilityBase: { ...c.abilityBase, [a]: c.abilityBase[b], [b]: c.abilityBase[a] } }));
   // Each method keeps its own numbers: switching away and back picks up where they were.
   const setMethod = (m: Character["abilityMethod"]) =>
-    set((c) => (m === c.abilityMethod ? c : {
-      ...c,
-      abilityMethod: m,
-      abilityBases: { ...c.abilityBases, [c.abilityMethod]: c.abilityBase },
-      abilityBase: c.abilityBases?.[m] ? c.abilityBases[m]! : m === "pointbuy" ? (() => { const lo = normalizeRules(c.pointBuy).min; return { strength: lo, dexterity: lo, constitution: lo, intelligence: lo, wisdom: lo, charisma: lo }; })()
-        : m === "standard" ? (STANDARD_ARRAY.every((n) => Object.values(c.abilityBase).includes(n)) ? c.abilityBase : { strength: 15, dexterity: 14, constitution: 13, intelligence: 12, wisdom: 10, charisma: 8 })
-        : c.abilityBase,
-    }));
+    set((c) =>
+      m === c.abilityMethod
+        ? c
+        : {
+            ...c,
+            abilityMethod: m,
+            abilityBases: { ...c.abilityBases, [c.abilityMethod]: c.abilityBase },
+            abilityBase: c.abilityBases?.[m]
+              ? c.abilityBases[m]!
+              : m === "pointbuy"
+                ? (() => {
+                    const lo = normalizeRules(c.pointBuy).min;
+                    return { strength: lo, dexterity: lo, constitution: lo, intelligence: lo, wisdom: lo, charisma: lo };
+                  })()
+                : m === "standard"
+                  ? STANDARD_ARRAY.every((n) => Object.values(c.abilityBase).includes(n))
+                    ? c.abilityBase
+                    : { strength: 15, dexterity: 14, constitution: 13, intelligence: 12, wisdom: 10, charisma: 8 }
+                  : c.abilityBase,
+          },
+    );
   const roll = (a: AbilityId) => requestRoll(`${ABILITY_LABEL[a]}: 4d6, the lowest die dropped`, "4d6kh3", (res) => setBase(a, res.total));
-  const bonusText = (a: AbilityId) => r.stats.contributions(a).filter((x) => !x.inline).map((b) => `${b.value.startsWith("-") ? "" : "+"}${b.value} ${b.from}`).join(", ");
+  const bonusText = (a: AbilityId) =>
+    r.stats
+      .contributions(a)
+      .filter((x) => !x.inline)
+      .map((b) => `${b.value.startsWith("-") ? "" : "+"}${b.value} ${b.from}`)
+      .join(", ");
   const mime = "application/x-sf-score";
   // The main abilities of each class (its card tag, such as "Str and Cha"), outlined in that class's colour.
-  const SHORT: Record<string, AbilityId> = { str: "strength", dex: "dexterity", con: "constitution", int: "intelligence", wis: "wisdom", cha: "charisma" };
+  const SHORT: Record<string, AbilityId> = {
+    str: "strength",
+    dex: "dexterity",
+    con: "constitution",
+    int: "intelligence",
+    wis: "wisdom",
+    cha: "charisma",
+  };
   const primary = new Map<AbilityId, { cls: string; hue: number }>();
   for (const k of ch.classes) {
     const name = r.reg.get(k.classId)?.name ?? "";
     const tag = CLASS_TAGS[name]?.[1] ?? "";
-    for (const word of tag.toLowerCase().split(/\W+/)) { const a = SHORT[word.slice(0, 3)]; if (a && !primary.has(a)) primary.set(a, { cls: name, hue: hueOf(name) }); }
+    for (const word of tag.toLowerCase().split(/\W+/)) {
+      const a = SHORT[word.slice(0, 3)];
+      if (a && !primary.has(a)) primary.set(a, { cls: name, hue: hueOf(name) });
+    }
   }
   return (
     <section className="board-scores" aria-label="Ability scores">
       <div className="seg board-method" role="group" aria-label="How scores are made">
         {(["pointbuy", "standard", "manual"] as const).map((m) => (
-          <button key={m} className={method === m ? "on" : ""} onClick={() => setMethod(m)}>{m === "pointbuy" ? "Point buy" : m === "standard" ? "Standard array" : "Manual"}</button>
+          <button key={m} className={method === m ? "on" : ""} onClick={() => setMethod(m)}>
+            {m === "pointbuy" ? "Point buy" : m === "standard" ? "Standard array" : "Manual"}
+          </button>
         ))}
       </div>
       <p className="board-method-note">
-        {method === "pointbuy" && <><span className={spent > rules.budget ? "warn" : ""}><b>{rules.budget - spent}</b> of {rules.budget} points left</span><button className="linkish" onClick={() => setRulesOpen(true)}>Custom rules{JSON.stringify(rules) === JSON.stringify(STANDARD_RULES) ? "" : " (on)"}</button></>}
+        {method === "pointbuy" && (
+          <>
+            <span className={spent > rules.budget ? "warn" : ""}>
+              <b>{rules.budget - spent}</b> of {rules.budget} points left
+            </span>
+            <button className="linkish" onClick={() => setRulesOpen(true)}>
+              Custom rules{JSON.stringify(rules) === JSON.stringify(STANDARD_RULES) ? "" : " (on)"}
+            </button>
+          </>
+        )}
         {method === "standard" && <span>Drag a number onto another score to swap them, or click two in turn.</span>}
         {method === "manual" && <span>Click a score to roll 4d6 and drop the lowest, or type a number on it.</span>}
       </p>
@@ -643,26 +1172,91 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
             <div
               key={a}
               className={`board-score ${over === a ? "over" : ""} ${held === a ? "held" : ""} ${primary.has(a) ? "primary" : ""}`}
-                            title={[`${ABILITY_LABEL[a]}: base ${base}`, primary.has(a) ? `A main ability of the ${primary.get(a)!.cls}` : "", bonusText(a), `save ${signed(line.save)}${line.saveProficient ? " (proficient)" : ""}`].filter(Boolean).join("\n")}
-              onDragOver={method === "standard" ? (e) => { if (e.dataTransfer.types.includes(mime)) { e.preventDefault(); setOver(a); } } : undefined}
+              title={[
+                `${ABILITY_LABEL[a]}: base ${base}`,
+                primary.has(a) ? `A main ability of the ${primary.get(a)!.cls}` : "",
+                bonusText(a),
+                `save ${signed(line.save)}${line.saveProficient ? " (proficient)" : ""}`,
+              ]
+                .filter(Boolean)
+                .join("\n")}
+              onDragOver={
+                method === "standard"
+                  ? (e) => {
+                      if (e.dataTransfer.types.includes(mime)) {
+                        e.preventDefault();
+                        setOver(a);
+                      }
+                    }
+                  : undefined
+              }
               onDragLeave={() => setOver(null)}
-              onDrop={method === "standard" ? (e) => { e.preventDefault(); setOver(null); const from = e.dataTransfer.getData(mime) as AbilityId; if (from) swap(from, a); } : undefined}
+              onDrop={
+                method === "standard"
+                  ? (e) => {
+                      e.preventDefault();
+                      setOver(null);
+                      const from = e.dataTransfer.getData(mime) as AbilityId;
+                      if (from) swap(from, a);
+                    }
+                  : undefined
+              }
             >
-              <small>{ABILITY_LABEL[a].slice(0, 3).toUpperCase()}{line.saveProficient && <span className="board-saveprof" title="Proficient in this saving throw">save</span>}</small>
+              <small>
+                {ABILITY_LABEL[a].slice(0, 3).toUpperCase()}
+                {line.saveProficient && (
+                  <span className="board-saveprof" title="Proficient in this saving throw">
+                    save
+                  </span>
+                )}
+              </small>
               <b className="board-total">{line.score}</b>
               <span className="board-mod">{signed(line.mod)}</span>
               <div className="board-base">
                 {method === "standard" ? (
                   <button
-                    className="board-chip" draggable aria-label={`${ABILITY_LABEL[a]} has ${base}. Click, then click another score to swap.`}
-                    onDragStart={(e) => { e.dataTransfer.setData(mime, a); e.dataTransfer.effectAllowed = "move"; }}
-                    onClick={() => { if (held && held !== a) { swap(held, a); setHeld(null); } else setHeld(held === a ? null : a); }}
-                  >{base}</button>
+                    className="board-chip"
+                    draggable
+                    aria-label={`${ABILITY_LABEL[a]} has ${base}. Click, then click another score to swap.`}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData(mime, a);
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onClick={() => {
+                      if (held && held !== a) {
+                        swap(held, a);
+                        setHeld(null);
+                      } else setHeld(held === a ? null : a);
+                    }}
+                  >
+                    {base}
+                  </button>
                 ) : (
                   <>
-                    <button className="board-step" aria-label={`Lower ${ABILITY_LABEL[a]}`} disabled={method === "pointbuy" ? !canLower(rules, ch.abilityBase, a) : base <= 1} onClick={() => setBase(a, base - 1)}>−</button>
-                    <EditNum value={base} label={ABILITY_LABEL[a]} min={method === "pointbuy" ? rules.min : 1} max={method === "pointbuy" ? rules.max : 30} onSet={(n) => setBase(a, n)} onRoll={method === "manual" ? () => roll(a) : undefined} />
-                    <button className="board-step" aria-label={`Raise ${ABILITY_LABEL[a]}`} disabled={method === "pointbuy" ? !canRaise(rules, ch.abilityBase, a) : base >= 30} onClick={() => setBase(a, base + 1)}>+</button>
+                    <button
+                      className="board-step"
+                      aria-label={`Lower ${ABILITY_LABEL[a]}`}
+                      disabled={method === "pointbuy" ? !canLower(rules, ch.abilityBase, a) : base <= 1}
+                      onClick={() => setBase(a, base - 1)}
+                    >
+                      −
+                    </button>
+                    <EditNum
+                      value={base}
+                      label={ABILITY_LABEL[a]}
+                      min={method === "pointbuy" ? rules.min : 1}
+                      max={method === "pointbuy" ? rules.max : 30}
+                      onSet={(n) => setBase(a, n)}
+                      onRoll={method === "manual" ? () => roll(a) : undefined}
+                    />
+                    <button
+                      className="board-step"
+                      aria-label={`Raise ${ABILITY_LABEL[a]}`}
+                      disabled={method === "pointbuy" ? !canRaise(rules, ch.abilityBase, a) : base >= 30}
+                      onClick={() => setBase(a, base + 1)}
+                    >
+                      +
+                    </button>
                   </>
                 )}
               </div>
@@ -671,7 +1265,9 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
           );
         })}
       </div>
-      {method === "standard" && new Set(ABILITY_IDS.map((a) => ch.abilityBase[a])).size < 6 && <p className="warn">Each number of the standard array can be used once.</p>}
+      {method === "standard" && new Set(ABILITY_IDS.map((a) => ch.abilityBase[a])).size < 6 && (
+        <p className="warn">Each number of the standard array can be used once.</p>
+      )}
       {rulesOpen && <PointBuyRules ch={ch} set={set} onClose={() => setRulesOpen(false)} />}
     </section>
   );
@@ -682,17 +1278,42 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
  * current one highlighted, scrolling sideways when they do not fit. On the board's summary card: only the current book,
  * with the others unfolding above it on hover or focus, so the card keeps its look. A click switches to that book.
  */
-function SourcePicker({ g, activeId, onPick, strip = false }: { g: Group; activeId: string; onPick: (el: AElement) => void; strip?: boolean }) {
+function SourcePicker({
+  g,
+  activeId,
+  onPick,
+  strip = false,
+}: {
+  g: Group;
+  activeId: string;
+  onPick: (el: AElement) => void;
+  strip?: boolean;
+}) {
   const active = g.variants.find((v) => v.el.id === activeId) ?? g.best;
   const byDate = [...g.variants].sort((a, b) => (a.book.release ?? 0) - (b.book.release ?? 0) || a.el.source.localeCompare(b.el.source));
   const year = (r?: number) => (r ? String(Math.floor(r / 10000)) : "");
   const title = (v: typeof active) => `${v.book.name || v.el.source}${v.book.release ? `, ${formatRelease(v.book.release)}` : ""}`;
-  const label = (v: typeof active) => <><b>{v.book.abbr ?? v.el.source}</b><small>{year(v.book.release)}</small><KindTag v={v} /></>;
+  const label = (v: typeof active) => (
+    <>
+      <b>{v.book.abbr ?? v.el.source}</b>
+      <small>{year(v.book.release)}</small>
+      <KindTag v={v} />
+    </>
+  );
   if (strip) {
     return (
       <div className="src-strip" role="group" aria-label="Book">
         {byDate.map((v) => (
-          <button key={v.el.id} className={v === active ? "on" : ""} aria-pressed={v === active} title={title(v)} disabled={v.el.comingSoon && v !== active} onClick={() => v !== active && onPick(v.el)}>{label(v)}</button>
+          <button
+            key={v.el.id}
+            className={v === active ? "on" : ""}
+            aria-pressed={v === active}
+            title={title(v)}
+            disabled={v.el.comingSoon && v !== active}
+            onClick={() => v !== active && onPick(v.el)}
+          >
+            {label(v)}
+          </button>
         ))}
       </div>
     );
@@ -702,10 +1323,25 @@ function SourcePicker({ g, activeId, onPick, strip = false }: { g: Group; active
     <div className={`src-pick ${others.length ? "has-more" : ""}`}>
       {others.length > 0 && (
         <div className="src-more" role="group" aria-label="Other books">
-          {others.map((v) => <button key={v.el.id} title={title(v)} disabled={v.el.comingSoon} onClick={() => onPick(v.el)}>{label(v)}</button>)}
+          {others.map((v) => (
+            <button key={v.el.id} title={title(v)} disabled={v.el.comingSoon} onClick={() => onPick(v.el)}>
+              {label(v)}
+            </button>
+          ))}
         </div>
       )}
-      <button className="src-current" title={others.length ? `${title(active)}. Hover for other books.` : title(active)} aria-haspopup={others.length ? "true" : undefined}>{label(active)}{others.length > 0 && <span className="src-more-mark" aria-hidden="true">+</span>}</button>
+      <button
+        className="src-current"
+        title={others.length ? `${title(active)}. Hover for other books.` : title(active)}
+        aria-haspopup={others.length ? "true" : undefined}
+      >
+        {label(active)}
+        {others.length > 0 && (
+          <span className="src-more-mark" aria-hidden="true">
+            +
+          </span>
+        )}
+      </button>
     </div>
   );
 }
@@ -714,9 +1350,19 @@ function SourcePicker({ g, activeId, onPick, strip = false }: { g: Group; active
  * The class card's body: one tab per class (C4, Chris 2026-10-28). The starting class's tab is the card's own; each
  * further class is a "Multiclass" tab with its own look, holding that class's choices, training and features.
  */
-function ClassTabs({ r, ch, set, ownSlots }: { r: Resolved; ch: Character; set: SetCharacter; ownSlots: (root: (root: string) => boolean) => Resolved["slots"] }) {
+function ClassTabs({
+  r,
+  ch,
+  set,
+  ownSlots,
+}: {
+  r: Resolved;
+  ch: Character;
+  set: SetCharacter;
+  ownSlots: (root: (root: string) => boolean) => Resolved["slots"];
+}) {
   const [active, setActive] = useState(ch.classes[0]?.classId ?? "");
-  const cur = ch.classes.some((c) => c.classId === active) ? active : ch.classes[0]?.classId ?? "";
+  const cur = ch.classes.some((c) => c.classId === active) ? active : (ch.classes[0]?.classId ?? "");
   const i = ch.classes.findIndex((c) => c.classId === cur);
   const extra = ownSlots((root) => root === `class:${cur}`).filter((s) => tabOfSlot(s) !== "class");
   return (
@@ -724,16 +1370,29 @@ function ClassTabs({ r, ch, set, ownSlots }: { r: Resolved; ch: Character; set: 
       {ch.classes.length > 1 && (
         <nav className="class-tabs" role="tablist" aria-label="Classes">
           {ch.classes.map((c, n) => (
-            <button key={c.classId} role="tab" aria-selected={c.classId === cur} className={`class-tab ${n > 0 ? "multiclass" : ""} ${c.classId === cur ? "on" : ""}`} onClick={() => setActive(c.classId)}>
+            <button
+              key={c.classId}
+              role="tab"
+              aria-selected={c.classId === cur}
+              className={`class-tab ${n > 0 ? "multiclass" : ""} ${c.classId === cur ? "on" : ""}`}
+              onClick={() => setActive(c.classId)}
+            >
               <small>{n === 0 ? "Starting class" : "Multiclass"}</small>
-              <b>{r.reg.get(c.classId)?.name ?? c.classId} {c.level}</b>
+              <b>
+                {r.reg.get(c.classId)?.name ?? c.classId} {c.level}
+              </b>
             </button>
           ))}
         </nav>
       )}
       <div className={`class-tab-body ${i > 0 ? "multiclass" : ""}`}>
         <ClassPanel r={r} ch={ch} set={set} onDetail={() => undefined} picker={false} compact only={cur} />
-        {extra.length > 0 && <><h3>{r.reg.get(cur)?.name} training and feats</h3><SlotList slots={extra} r={r} set={set} onDetail={() => undefined} /></>}
+        {extra.length > 0 && (
+          <>
+            <h3>{r.reg.get(cur)?.name} training and feats</h3>
+            <SlotList slots={extra} r={r} set={set} onDetail={() => undefined} />
+          </>
+        )}
         <PassiveFeatures r={r} root={(root) => root === `class:${cur}`} />
       </div>
     </>
@@ -751,105 +1410,254 @@ function PortraitCard({ r, ch, set }: { r: Resolved; ch: Character; set: SetChar
   const [crop, setCrop] = useState<File | null>(null);
   const [hpOpen, setHpOpen] = useState(false);
   // The choice checker's "Hit points" line opens the dialog (C7.10).
-  useEffect(() => { const on = () => setHpOpen(true); window.addEventListener("cf-hp", on); return () => window.removeEventListener("cf-hp", on); }, []);
+  useEffect(() => {
+    const on = () => setHpOpen(true);
+    window.addEventListener("cf-hp", on);
+    return () => window.removeEventListener("cf-hp", on);
+  }, []);
   const race = ch.race ? r.reg.get(ch.race)?.name : "";
-  const what = [race, ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join(" / ")].filter(Boolean).join(" · ");
-  const pick = (url: string) => { set((c) => ({ ...c, portrait: url })); setOpen(false); };
+  const what = [race, ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join(" / ")]
+    .filter(Boolean)
+    .join(" · ");
+  const pick = (url: string) => {
+    set((c) => ({ ...c, portrait: url }));
+    setOpen(false);
+  };
   return (
     <div className="board-who">
-      <button className="board-arch" onClick={() => setOpen(true)} title={ch.portrait ? "Change the portrait" : "Add a portrait"} aria-label={ch.portrait ? "Change the portrait" : "Add a portrait"}>
-        {ch.portrait ? <img src={ch.portrait} alt="" /> : <span className="board-arch-empty"><Head size={44} /><small>Add portrait</small></span>}
+      <button
+        className="board-arch"
+        onClick={() => setOpen(true)}
+        title={ch.portrait ? "Change the portrait" : "Add a portrait"}
+        aria-label={ch.portrait ? "Change the portrait" : "Add a portrait"}
+      >
+        {ch.portrait ? (
+          <img src={ch.portrait} alt="" />
+        ) : (
+          <span className="board-arch-empty">
+            <Head size={44} />
+            <small>Add portrait</small>
+          </span>
+        )}
       </button>
       <div className="board-who-text">
-        <TextInput className="board-name" placeholder="Character name" aria-label="Character name" value={ch.name} onCommit={(v) => set((c) => ({ ...c, name: v }))} />
+        <TextInput
+          className="board-name"
+          placeholder="Character name"
+          aria-label="Character name"
+          value={ch.name}
+          onCommit={(v) => set((c) => ({ ...c, name: v }))}
+        />
         <span className="board-who-what">
           <small>{what || "Nothing chosen yet"}</small>
-          <button className="board-details" title="Alignment, personality, backstory, notes and the rest" onClick={() => window.dispatchEvent(new CustomEvent("cf-details"))}>
-            <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg> Details
+          <button
+            className="board-details"
+            title="Alignment, personality, backstory, notes and the rest"
+            onClick={() => window.dispatchEvent(new CustomEvent("cf-details"))}
+          >
+            <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+              <path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+            </svg>{" "}
+            Details
           </button>
         </span>
         {sh.hp > 0 && (
           <div className="board-bars">
             {hpConfigured(ch) ? (
-              <button type="button" className="board-bar hp" title={`Hit points ${hp} of ${sh.hp}${ch.play.tempHp ? `, ${ch.play.tempHp} temporary` : ""}. Click for the hit point rolls.`} onClick={() => setHpOpen(true)}>
-                <span style={{ width: `${(100 * hp) / sh.hp}%` }} /><b>HP {hp}/{sh.hp}{ch.play.tempHp ? ` +${ch.play.tempHp}` : ""}</b>
+              <button
+                type="button"
+                className="board-bar hp"
+                title={`Hit points ${hp} of ${sh.hp}${ch.play.tempHp ? `, ${ch.play.tempHp} temporary` : ""}. Click for the hit point rolls.`}
+                onClick={() => setHpOpen(true)}
+              >
+                <span style={{ width: `${(100 * hp) / sh.hp}%` }} />
+                <b>
+                  HP {hp}/{sh.hp}
+                  {ch.play.tempHp ? ` +${ch.play.tempHp}` : ""}
+                </b>
               </button>
             ) : (
               // Gold, asking to be set up, until the player picks fixed or rolled hit points (C7.10).
-              <button type="button" className="board-bar hp configure" title="Choose fixed or rolled hit points" onClick={() => setHpOpen(true)}>
-                <span style={{ width: "100%" }} /><b>HP {sh.hp} · Configure</b>
+              <button
+                type="button"
+                className="board-bar hp configure"
+                title="Choose fixed or rolled hit points"
+                onClick={() => setHpOpen(true)}
+              >
+                <span style={{ width: "100%" }} />
+                <b>HP {sh.hp} · Configure</b>
               </button>
             )}
             {dice > 0 && (
               <div className="board-bar hd" title={`Hit dice ${diceLeft} of ${dice} (${dieNames})`}>
-                <span style={{ width: `${(100 * diceLeft) / dice}%` }} /><b>Hit dice {diceLeft}/{dice} {dieNames}</b>
+                <span style={{ width: `${(100 * diceLeft) / dice}%` }} />
+                <b>
+                  Hit dice {diceLeft}/{dice} {dieNames}
+                </b>
               </div>
             )}
           </div>
         )}
       </div>
-      {open && createPortal(
-        <div className="modal-back" onClick={() => setOpen(false)}>
-          <div className="modal-page themed board-modal" role="dialog" aria-label="Portrait" onClick={(e) => e.stopPropagation()}>
-            <button className="board-x" aria-label="Close" onClick={() => setOpen(false)}>×</button>
-            <h2>Portrait</h2>
-            <div className="row">
-              {ch.portrait && <img className="portrait small" src={ch.portrait} alt="Portrait" />}
-              <label>Your own image: <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f && f.type.startsWith("image/")) { setCrop(f); setOpen(false); } }} /></label>
-              {ch.portrait && <button onClick={() => { set((c) => ({ ...c, portrait: undefined })); setOpen(false); }}>Remove</button>}
+      {open &&
+        createPortal(
+          <div className="modal-back" onClick={() => setOpen(false)}>
+            <div className="modal-page themed board-modal" role="dialog" aria-label="Portrait" onClick={(e) => e.stopPropagation()}>
+              <button className="board-x" aria-label="Close" onClick={() => setOpen(false)}>
+                ×
+              </button>
+              <h2>Portrait</h2>
+              <div className="row">
+                {ch.portrait && <img className="portrait small" src={ch.portrait} alt="Portrait" />}
+                <label>
+                  Your own image:{" "}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (f && f.type.startsWith("image/")) {
+                        setCrop(f);
+                        setOpen(false);
+                      }
+                    }}
+                  />
+                </label>
+                {ch.portrait && (
+                  <button
+                    onClick={() => {
+                      set((c) => ({ ...c, portrait: undefined }));
+                      setOpen(false);
+                    }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <PortraitPicker onPick={pick} />
             </div>
-            <PortraitPicker onPick={pick} />
-          </div>
-        </div>,
-        document.body,
+          </div>,
+          document.body,
+        )}
+      {crop && (
+        <PortraitCropper
+          file={crop}
+          onCancel={() => setCrop(null)}
+          onDone={(url) => {
+            pick(url);
+            setCrop(null);
+          }}
+        />
       )}
-      {crop && <PortraitCropper file={crop} onCancel={() => setCrop(null)} onDone={(url) => { pick(url); setCrop(null); }} />}
       {hpOpen && <HpRollsDialog r={r} ch={ch} set={set} onClose={() => setHpOpen(false)} />}
     </div>
   );
 }
 
 /** The right column: scores first, then the numbers, the open score increases and what the character is trained in. */
-function StatsPanel({ r, ch, set, onIncreases, onMouseLeave }: { r: Resolved; ch: Character; set: SetCharacter; onIncreases: (root: string) => void; onMouseLeave?: () => void }) {
+function StatsPanel({
+  r,
+  ch,
+  set,
+  onIncreases,
+  onMouseLeave,
+}: {
+  r: Resolved;
+  ch: Character;
+  set: SetCharacter;
+  onIncreases: (root: string) => void;
+  onMouseLeave?: () => void;
+}) {
   const sh = useMemo(() => buildSheet(r), [r]);
-  const tiles: [string, string][] = [["HP", String(sh.hp)], ["AC", String(sh.ac.value)], ["Init", signed(sh.initiative)], ["Speed", `${sh.speed} ft`], ["Prof", signed(sh.proficiency)]];
+  const tiles: [string, string][] = [
+    ["HP", String(sh.hp)],
+    ["AC", String(sh.ac.value)],
+    ["Init", signed(sh.initiative)],
+    ["Speed", `${sh.speed} ft`],
+    ["Prof", signed(sh.proficiency)],
+  ];
   const increases = r.slots.filter((s) => tabOfSlot(s) === "abilities");
   const openIncreases = increases.filter((s) => stillToChoose(s, r)).length;
-  const defenses = [...sh.defenses.resistances.map((d) => `Resists ${d}`), ...sh.defenses.immunities.map((d) => `Immune to ${d}`), ...sh.defenses.vulnerabilities.map((d) => `Vulnerable to ${d}`)];
-  const section = (title: string, items: string[]) => items.length > 0 && (
-    <details className="board-sec">
-      <summary>{title} <small>{items.length}</small></summary>
-      <div className="chips">{items.map((i, n) => <span key={`${n}-${i}`} className="chip">{i}</span>)}</div>
-    </details>
-  );
+  const defenses = [
+    ...sh.defenses.resistances.map((d) => `Resists ${d}`),
+    ...sh.defenses.immunities.map((d) => `Immune to ${d}`),
+    ...sh.defenses.vulnerabilities.map((d) => `Vulnerable to ${d}`),
+  ];
+  const section = (title: string, items: string[]) =>
+    items.length > 0 && (
+      <details className="board-sec">
+        <summary>
+          {title} <small>{items.length}</small>
+        </summary>
+        <div className="chips">
+          {items.map((i, n) => (
+            <span key={`${n}-${i}`} className="chip">
+              {i}
+            </span>
+          ))}
+        </div>
+      </details>
+    );
   const custom = (a: AbilityId) => ch.customStats.find((c) => c.stat === a && c.id.startsWith("ability-"))?.value ?? 0;
-  const setCustom = (a: AbilityId, v: number) => set((c) => {
-    const rest = c.customStats.filter((x) => !(x.stat === a && x.id.startsWith("ability-")));
-    return { ...c, customStats: v ? [...rest, { id: `ability-${a}`, stat: a, value: v, note: "Custom bonus" }] : rest };
-  });
+  const setCustom = (a: AbilityId, v: number) =>
+    set((c) => {
+      const rest = c.customStats.filter((x) => !(x.stat === a && x.id.startsWith("ability-")));
+      return { ...c, customStats: v ? [...rest, { id: `ability-${a}`, stat: a, value: v, note: "Custom bonus" }] : rest };
+    });
   return (
     <aside className="board-stats" aria-label="Scores and training" onMouseLeave={onMouseLeave}>
       <PortraitCard r={r} ch={ch} set={set} />
       <Scores r={r} ch={ch} set={set} />
-      <div className="board-tiles">{tiles.map(([k, v]) => <div key={k} className="board-tile"><small>{k}</small><b>{v}</b></div>)}</div>
+      <div className="board-tiles">
+        {tiles.map(([k, v]) => (
+          <div key={k} className="board-tile">
+            <small>{k}</small>
+            <b>{v}</b>
+          </div>
+        ))}
+      </div>
       {openIncreases > 0 && (
         <p className="board-incr">
-          <span className="warn">{openIncreases} score {openIncreases === 1 ? "increase" : "increases"} to choose</span>
-          <button className="pick-select" onClick={() => onIncreases(increases.find((s) => stillToChoose(s, r))!.root)}>Choose</button>
+          <span className="warn">
+            {openIncreases} score {openIncreases === 1 ? "increase" : "increases"} to choose
+          </span>
+          <button className="pick-select" onClick={() => onIncreases(increases.find((s) => stillToChoose(s, r))!.root)}>
+            Choose
+          </button>
         </p>
       )}
       {section("Senses", [...sh.vision, `Passive Perception ${sh.passivePerception}`])}
-      {section("Saving throws", sh.abilities.filter((a) => a.saveProficient).map((a) => `${ABILITY_LABEL[a.id]} ${signed(a.save)}`))}
-      {section("Skills", sh.skills.filter((s) => s.level !== "none").map((s) => `${s.name} ${signed(s.bonus)}${s.level === "expertise" ? " (expertise)" : ""}`))}
+      {section(
+        "Saving throws",
+        sh.abilities.filter((a) => a.saveProficient).map((a) => `${ABILITY_LABEL[a.id]} ${signed(a.save)}`),
+      )}
+      {section(
+        "Skills",
+        sh.skills
+          .filter((s) => s.level !== "none")
+          .map((s) => `${s.name} ${signed(s.bonus)}${s.level === "expertise" ? " (expertise)" : ""}`),
+      )}
       {section("Languages", sh.proficiencies.languages)}
       {section("Armor and weapons", [...sh.proficiencies.armor, ...sh.proficiencies.weapons])}
-      {section("Tools", sh.proficiencies.tools.map((t) => t.replace(/^Tool Proficiency \((.*)\)$/, "$1")))}
-      {section("Feats", r.active.filter((a) => a.el.type === "Feat").map((a) => a.el.name))}
+      {section(
+        "Tools",
+        sh.proficiencies.tools.map((t) => t.replace(/^Tool Proficiency \((.*)\)$/, "$1")),
+      )}
+      {section(
+        "Feats",
+        r.active.filter((a) => a.el.type === "Feat").map((a) => a.el.name),
+      )}
       {section("Defenses", defenses)}
       <details className="board-sec">
         <summary>Custom score bonuses</summary>
         <div className="board-custom">
-          {ABILITY_IDS.map((a) => <label key={a}>{ABILITY_LABEL[a].slice(0, 3)} <input type="number" value={custom(a) || ""} placeholder="0" onChange={(e) => setCustom(a, Number(e.target.value) || 0)} /></label>)}
+          {ABILITY_IDS.map((a) => (
+            <label key={a}>
+              {ABILITY_LABEL[a].slice(0, 3)}{" "}
+              <input type="number" value={custom(a) || ""} placeholder="0" onChange={(e) => setCustom(a, Number(e.target.value) || 0)} />
+            </label>
+          ))}
         </div>
       </details>
     </aside>
@@ -882,7 +1690,16 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   // In the Bag of Holding it is out too: its slot stays an outline until it is taken out and applied. (Bagged, the
   // slot showed the card as if it had been slotted in: Chris, 2026-11-12.)
   const cardOut = (kind: string) => !!floating?.windows.some((w) => w.kind === "card" && w.ref === kind);
-  const cardTitle = (kind: Kind) => (kind === "class" ? ch.classes.map((c) => r.reg.get(c.classId)?.name ?? "?").join(" / ") || "Class" : kind === "race" ? chosenEl.race?.name ?? "Species" : kind === "background" ? chosenEl.background?.name ?? "Background" : kind === "magic" ? "Your spells" : "Your inventory");
+  const cardTitle = (kind: Kind) =>
+    kind === "class"
+      ? ch.classes.map((c) => r.reg.get(c.classId)?.name ?? "?").join(" / ") || "Class"
+      : kind === "race"
+        ? (chosenEl.race?.name ?? "Species")
+        : kind === "background"
+          ? (chosenEl.background?.name ?? "Background")
+          : kind === "magic"
+            ? "Your spells"
+            : "Your inventory";
   // What a space held before a new pick, while its window is open: its × (take back) restores it.
   const [fresh, setFresh] = useState<Partial<Record<Kind, Character>>>({});
   useEffect(() => {
@@ -895,7 +1712,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     if (reduced()) return;
     for (const kind of applied) {
       const tile = document.querySelector<HTMLElement>(`[data-tile="${kind}"]`);
-      const label = kind === "class" ? r.reg.get(ch.classes[ch.classes.length - 1]?.classId ?? "")?.name ?? "" : "";
+      const label = kind === "class" ? (r.reg.get(ch.classes[ch.classes.length - 1]?.classId ?? "")?.name ?? "") : "";
       if (tile && tile.offsetParent) slotIn(label, kind, tile);
     }
   }, [floating?.windows]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -903,7 +1720,11 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     const snap = fresh[kind];
     if (!snap) return;
     set(() => snap);
-    setFresh((f) => { const n = { ...f }; delete n[kind]; return n; });
+    setFresh((f) => {
+      const n = { ...f };
+      delete n[kind];
+      return n;
+    });
     floating?.close(windowId);
     // Back to the list it came from, open beside the cards.
     setOpen(kind);
@@ -934,13 +1755,22 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     if (b.mode === "new" && core.includes(b.kind)) setOpen(core.find((k) => k !== b.kind && !filled[k]) ?? null);
     const tileEl = document.querySelector<HTMLElement>(`[data-tile="${b.kind}"]`);
     if (b.mode === "new" && tileEl && !reduced()) {
-      if (narrow) { setFlyHide(true); window.setTimeout(() => setFlyHide(false), 900); }
+      if (narrow) {
+        setFlyHide(true);
+        window.setTimeout(() => setFlyHide(false), 900);
+      }
       epicFly(rect, b.name, b.kind, tileEl);
-    } else if (tileEl) { tileEl.classList.remove("board-filled-anim"); void tileEl.offsetWidth; tileEl.classList.add("board-filled-anim"); }
+    } else if (tileEl) {
+      tileEl.classList.remove("board-filled-anim");
+      void tileEl.offsetWidth;
+      tileEl.classList.add("board-filled-anim");
+    }
   };
   useEffect(() => {
     if (!back) return;
-    const key = (e: KeyboardEvent) => { if (e.key === "Escape") finish(true); };
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") finish(true);
+    };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   });
@@ -949,8 +1779,16 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
    * click closes the list, and on a narrow window the panel with it, so no empty panel stays over the cards (C1.1).
    */
   const toggleList = (kind: Kind) => {
-    if (narrow && side !== "left") { setOpen(kind); setSide("left"); return; }
-    if (open === kind) { setOpen(null); if (narrow) setSide(null); return; }
+    if (narrow && side !== "left") {
+      setOpen(kind);
+      setSide("left");
+      return;
+    }
+    if (open === kind) {
+      setOpen(null);
+      if (narrow) setSide(null);
+      return;
+    }
     setOpen(kind);
   };
   /** Change on the class card: the next class picked replaces the starting class instead of adding a multiclass. */
@@ -959,13 +1797,31 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const lastName = useRef("");
   const sheet = useMemo(() => buildSheet(r), [r]);
 
-  const visible = (items: AElement[]) => items.filter((e) => !e.compendiumHidden && !hiddenBy(books.info(e.source), e.source, { legacy: prefs.showLegacy, playtest: prefs.showPlaytest, unusual: prefs.showUnusual, scifi: prefs.showSciFi, modern: prefs.showModern }, e.type, e.supports));
+  const visible = (items: AElement[]) =>
+    items.filter(
+      (e) =>
+        !e.compendiumHidden &&
+        !hiddenBy(
+          books.info(e.source),
+          e.source,
+          {
+            legacy: prefs.showLegacy,
+            playtest: prefs.showPlaytest,
+            unusual: prefs.showUnusual,
+            scifi: prefs.showSciFi,
+            modern: prefs.showModern,
+          },
+          e.type,
+          e.supports,
+        ),
+    );
   const races = r.reg.ofType("Race");
   const classes = r.reg.ofType("Class").filter((c) => !c.compendiumHidden);
   const backgrounds = r.reg.ofType("Background");
   const items = useMemo(() => ITEM_KINDS.flatMap((t) => r.reg.ofType(t)).filter((e) => !e.compendiumHidden), [r.reg]);
   const have = new Set(ch.classes.map((c) => c.classId));
-  const classLock = (c: AElement) => (!ch.classes.length || have.has(c.id) ? undefined : totalLevel(ch) >= 20 ? "Level 20 is the maximum" : multiclassLock(r, c));
+  const classLock = (c: AElement) =>
+    !ch.classes.length || have.has(c.id) ? undefined : totalLevel(ch) >= 20 ? "Level 20 is the maximum" : multiclassLock(r, c);
 
   // Where a click in a list came from, so the name can fly from there.
   useEffect(() => {
@@ -1013,14 +1869,19 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
       const snap = back && back.mode === "new" && back.kind === kind ? back.snap : ch;
       const b: Back = { kind, mode: "new", snap, from, name: el.name, phase: reduced() ? "open" : "flying" };
       setBack(b);
-      if (!reduced()) flyToBack(from, el.name, kind, backRect(), () => setBack((cur) => (cur && cur.phase === "flying" ? { ...cur, phase: "open" } : cur)));
+      if (!reduced())
+        flyToBack(from, el.name, kind, backRect(), () =>
+          setBack((cur) => (cur && cur.phase === "flying" ? { ...cur, phase: "open" } : cur)),
+        );
       return;
     }
     fly(from, el.name, kind);
   };
   const pick = (kind: Kind) => (el: AElement) => place(kind, el, lastRow.current);
   const random = (kind: Kind) => {
-    const pool = visible(kind === "race" ? races : kind === "class" ? classes.filter((c) => !classLock(c) && !have.has(c.id)) : backgrounds);
+    const pool = visible(
+      kind === "race" ? races : kind === "class" ? classes.filter((c) => !classLock(c) && !have.has(c.id)) : backgrounds,
+    );
     const el = pool[Math.floor(Math.random() * pool.length)];
     if (el) place(kind, el, null);
   };
@@ -1029,11 +1890,24 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const switchVersion = (kind: Kind, from: AElement, to: AElement) => {
     if (kind === "race") set((c) => ({ ...c, race: to.id }));
     else if (kind === "background") set((c) => ({ ...c, background: to.id }));
-    else if (kind === "class") set((c) => ({ ...c, classes: c.classes.map((k) => (k.classId === from.id ? { ...k, classId: to.id } : k)) }));
+    else if (kind === "class")
+      set((c) => ({ ...c, classes: c.classes.map((k) => (k.classId === from.id ? { ...k, classId: to.id } : k)) }));
   };
-  const clear = (kind: Kind) => set((c) => (kind === "race" ? { ...c, race: undefined } : kind === "background" ? { ...c, background: undefined } : kind === "class" ? { ...c, classes: [] } : c));
+  const clear = (kind: Kind) =>
+    set((c) =>
+      kind === "race"
+        ? { ...c, race: undefined }
+        : kind === "background"
+          ? { ...c, background: undefined }
+          : kind === "class"
+            ? { ...c, classes: [] }
+            : c,
+    );
 
-  const chosenEl: Record<"race" | "background", AElement | undefined> = { race: ch.race ? r.reg.get(ch.race) : undefined, background: ch.background ? r.reg.get(ch.background) : undefined };
+  const chosenEl: Record<"race" | "background", AElement | undefined> = {
+    race: ch.race ? r.reg.get(ch.race) : undefined,
+    background: ch.background ? r.reg.get(ch.background) : undefined,
+  };
   const firstClass = ch.classes[0] ? r.reg.get(ch.classes[0].classId) : undefined;
   const caster = sheet.casting.length > 0 || r.slots.some((s) => tabOfSlot(s) === "magic");
   const prepares = sheet.casting.some((l) => l.prepare);
@@ -1058,28 +1932,59 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   // The book thickens with the spells learned, the lasting choices; today's preparation is counted beside it, so a
   // higher score that lets more spells be prepared never makes the book thinner (C7.18, Maine Dockers).
   const spellFill = learnNeed ? learnHave / learnNeed : prepNeed ? prepHave / prepNeed : 0;
-  const spellLine = !spellNeed ? "No spells to choose yet" : [learnNeed ? `${learnHave} of ${learnNeed} learned` : "", prepNeed ? `${prepHave} of ${prepNeed} prepared` : ""].filter(Boolean).join(" · ");
+  const spellLine = !spellNeed
+    ? "No spells to choose yet"
+    : [learnNeed ? `${learnHave} of ${learnNeed} learned` : "", prepNeed ? `${prepHave} of ${prepNeed} prepared` : ""]
+        .filter(Boolean)
+        .join(" · ");
   const plans = useMemo(() => startingPlans(ch, r.reg), [ch, r.reg]);
   const packFill = useMemo(() => packFillOf(ch, plans), [ch, plans]);
-  const filled: Record<Kind, boolean> = { race: !!chosenEl.race, class: !!firstClass, background: !!chosenEl.background, magic: spellCount > 0, equipment: ch.inventory.length > 0 };
+  const filled: Record<Kind, boolean> = {
+    race: !!chosenEl.race,
+    class: !!firstClass,
+    background: !!chosenEl.background,
+    magic: spellCount > 0,
+    equipment: ch.inventory.length > 0,
+  };
   // What is left, for the status panel. The prepare and hit point lines go to their own places.
-  const leftItems: LeftItem[] = openChoices(r, sheet).map((it) => ({ ...it, act: it.target === "prepare" ? () => { openBack("magic"); setBackView("prepare"); } : it.target === "hp" ? () => window.dispatchEvent(new CustomEvent("cf-hp")) : undefined }));
+  const leftItems: LeftItem[] = openChoices(r, sheet).map((it) => ({
+    ...it,
+    act:
+      it.target === "prepare"
+        ? () => {
+            openBack("magic");
+            setBackView("prepare");
+          }
+        : it.target === "hp"
+          ? () => window.dispatchEvent(new CustomEvent("cf-hp"))
+          : undefined,
+  }));
   const choicesLeft = `${leftItems.length} ${leftItems.length === 1 ? "choice" : "choices"} left`;
   const rulesCheck = useRulesCheck(r);
   // Each space's count of what is left: every choice its species, class or background asks for (languages,
   // skills, feats and score increases included), and the spells still to pick.
-  const todo = Object.fromEntries(ORDER.map((k) => [k, leftItems.filter((it) => it.kind === k && k !== "equipment" && !it.act).length])) as Record<Kind, number>;
+  const todo = Object.fromEntries(
+    ORDER.map((k) => [k, leftItems.filter((it) => it.kind === k && k !== "equipment" && !it.act).length]),
+  ) as Record<Kind, number>;
 
   // Choices that belong to each space: everything its species, class or background asks except spells (under magic).
   const ownSlots = (test: (root: string) => boolean) => r.slots.filter((s) => test(s.root) && tabOfSlot(s) !== "magic");
-  const otherSlots = r.slots.filter((s) => s.root !== "race" && s.root !== "background" && !s.root.startsWith("class:") && tabOfSlot(s) !== "magic");
+  const otherSlots = r.slots.filter(
+    (s) => s.root !== "race" && s.root !== "background" && !s.root.startsWith("class:") && tabOfSlot(s) !== "magic",
+  );
 
   const drop = (kind: Kind) => {
     const types = DROP_TYPES[kind];
     if (!types) return {};
     const mimes = types.map(dragMime);
     return {
-      onDragOver: (e: React.DragEvent) => { if (mimes.some((m) => e.dataTransfer.types.includes(m))) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setDropOver(kind); } },
+      onDragOver: (e: React.DragEvent) => {
+        if (mimes.some((m) => e.dataTransfer.types.includes(m))) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+          setDropOver(kind);
+        }
+      },
       onDragLeave: () => setDropOver(null),
       onDrop: (e: React.DragEvent) => {
         e.preventDefault();
@@ -1094,34 +1999,98 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   };
 
   const libList: Record<Kind, React.ReactNode> = {
-    race: <Browse items={races} type="Race" chosen={ch.race ? [ch.race] : []} onPick={pick("race")} onSwap={(_, to) => pick("race")(to)} defaultView="cards" mini viewKey="board.Race" perPage={300} draggable />,
+    race: (
+      <Browse
+        items={races}
+        type="Race"
+        chosen={ch.race ? [ch.race] : []}
+        onPick={pick("race")}
+        onSwap={(_, to) => pick("race")(to)}
+        defaultView="cards"
+        mini
+        viewKey="board.Race"
+        perPage={300}
+        draggable
+      />
+    ),
     class: (
       <>
-        <Browse items={classes} type="Class" chosen={ch.classes.map((c) => c.classId)} onPick={pick("class")} defaultView="cards" mini viewKey="board.Class" perPage={300} draggable disabledReason={ch.classes.length && !replacing ? classLock : undefined}
-          barExtra={ch.classes.length > 0 && (
-            <div className="board-class-mode">
-              <span className="seg" role="group" aria-label="What a pick does">
-                <button className={replacing ? "on" : ""} onClick={() => setReplacing(true)}>Change base class</button>
-                <button className={!replacing ? "on" : ""} onClick={() => setReplacing(false)}>Add multiclass</button>
-              </span>
-              <small className="muted">{replacing ? `A pick replaces ${r.reg.get(ch.classes[0].classId)?.name ?? "the base class"}, keeping its level.` : "A pick adds a class at level 1."}</small>
-            </div>
-          )} />
+        <Browse
+          items={classes}
+          type="Class"
+          chosen={ch.classes.map((c) => c.classId)}
+          onPick={pick("class")}
+          defaultView="cards"
+          mini
+          viewKey="board.Class"
+          perPage={300}
+          draggable
+          disabledReason={ch.classes.length && !replacing ? classLock : undefined}
+          barExtra={
+            ch.classes.length > 0 && (
+              <div className="board-class-mode">
+                <span className="seg" role="group" aria-label="What a pick does">
+                  <button className={replacing ? "on" : ""} onClick={() => setReplacing(true)}>
+                    Change base class
+                  </button>
+                  <button className={!replacing ? "on" : ""} onClick={() => setReplacing(false)}>
+                    Add multiclass
+                  </button>
+                </span>
+                <small className="muted">
+                  {replacing
+                    ? `A pick replaces ${r.reg.get(ch.classes[0].classId)?.name ?? "the base class"}, keeping its level.`
+                    : "A pick adds a class at level 1."}
+                </small>
+              </div>
+            )
+          }
+        />
       </>
     ),
-    background: <Browse items={backgrounds} type="Background" chosen={ch.background ? [ch.background] : []} onPick={pick("background")} onSwap={(_, to) => pick("background")(to)} defaultView="cards" mini viewKey="board.Background" perPage={300} draggable />,
-    magic: caster ? <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} prepareElsewhere /> : <p className="muted pad">No spellcasting yet. It appears when a class, species or feat grants it.</p>,
+    background: (
+      <Browse
+        items={backgrounds}
+        type="Background"
+        chosen={ch.background ? [ch.background] : []}
+        onPick={pick("background")}
+        onSwap={(_, to) => pick("background")(to)}
+        defaultView="cards"
+        mini
+        viewKey="board.Background"
+        perPage={300}
+        draggable
+      />
+    ),
+    magic: caster ? (
+      <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} prepareElsewhere />
+    ) : (
+      <p className="muted pad">No spellcasting yet. It appears when a class, species or feat grants it.</p>
+    ),
     equipment: (
       <>
         <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="adding" />
         <h3 className="board-lib-sub">All items</h3>
-        <Browse items={items} type="Item" chosen={[]} onPick={pick("equipment")} defaultView="list" allowCards={false} perPage={80} draggable pickLabel={() => "Add"} />
+        <Browse
+          items={items}
+          type="Item"
+          chosen={[]}
+          onPick={pick("equipment")}
+          defaultView="list"
+          allowCards={false}
+          perPage={80}
+          draggable
+          pickLabel={() => "Add"}
+        />
       </>
     ),
   };
   const libValue: Record<Kind, string> = {
-    race: chosenEl.race?.name ?? "", class: ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join(" / "), background: chosenEl.background?.name ?? "",
-    magic: spellCount ? `${spellCount} spells` : "", equipment: ch.inventory.length ? `${ch.inventory.length} items` : "",
+    race: chosenEl.race?.name ?? "",
+    class: ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join(" / "),
+    background: chosenEl.background?.name ?? "",
+    magic: spellCount ? `${spellCount} spells` : "",
+    equipment: ch.inventory.length ? `${ch.inventory.length} items` : "",
   };
 
   // A plain render function (not a component), so the spaces are not remade on every change.
@@ -1131,26 +2100,62 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     const el = kind === "race" ? chosenEl.race : kind === "background" ? chosenEl.background : kind === "class" ? firstClass : undefined;
     // The spellbook is greyed out while there is nothing to learn or prepare (Chris 2026-10-29), granted spells or not.
     const disabled = kind === "magic" && (!caster || spellNeed === 0);
-    const name = kind === "class" && ch.classes.length ? ch.classes.map((c) => r.reg.get(c.classId)?.name ?? c.classId).join(" / ") : el?.name ?? (kind === "magic" ? "Spellbook" : kind === "equipment" ? "Backpack" : "");
+    const name =
+      kind === "class" && ch.classes.length
+        ? ch.classes.map((c) => r.reg.get(c.classId)?.name ?? c.classId).join(" / ")
+        : (el?.name ?? (kind === "magic" ? "Spellbook" : kind === "equipment" ? "Backpack" : ""));
     // A chosen species, class or background shows as its full card, the same as the cards in the lists.
     if (el && (kind === "race" || kind === "class" || kind === "background")) {
       const label = (
         <>
-          {kind === "class" ? `Level ${totalLevel(ch)}${ch.classes.length > 1 ? ` · ${ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join(" / ")}` : ""}` : `Your ${TITLE[kind].toLowerCase()}`}
+          {kind === "class"
+            ? `Level ${totalLevel(ch)}${ch.classes.length > 1 ? ` · ${ch.classes.map((c) => `${r.reg.get(c.classId)?.name ?? c.classId} ${c.level}`).join(" / ")}` : ""}`
+            : `Your ${TITLE[kind].toLowerCase()}`}
         </>
       );
       return (
-        <div key={kind} data-tile={kind} className={`board-space board-${kind} filled has-card ${cardOut(kind) ? "card-out" : ""} ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""}`} onClick={() => openBack(kind)} {...drop(kind)}>
+        <div
+          key={kind}
+          data-tile={kind}
+          className={`board-space board-${kind} filled has-card ${cardOut(kind) ? "card-out" : ""} ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""}`}
+          onClick={() => openBack(kind)}
+          {...drop(kind)}
+        >
           {/* Learn more and Remove sit in the card's corner, so the card keeps its room for the text. */}
           <div className="board-corner" onClick={(e) => e.stopPropagation()}>
-            {todo[kind] > 0 && <button className="board-todo-pill" title="Choices still to make here" onClick={() => setFocus(kind)}>{todo[kind]} to choose</button>}
-            <button className="board-ico" title="Learn more" aria-label={`Learn more about ${el.name}`} onClick={() => learn(el)}>i</button>
-            <button className="board-ico" title="Remove" aria-label={`Remove ${el.name}`} onClick={() => (kind === "class" ? set((c) => ({ ...c, classes: c.classes.slice(1) })) : clear(kind))}>×</button>
+            {todo[kind] > 0 && (
+              <button className="board-todo-pill" title="Choices still to make here" onClick={() => setFocus(kind)}>
+                {todo[kind]} to choose
+              </button>
+            )}
+            <button className="board-ico" title="Learn more" aria-label={`Learn more about ${el.name}`} onClick={() => learn(el)}>
+              i
+            </button>
+            <button
+              className="board-ico"
+              title="Remove"
+              aria-label={`Remove ${el.name}`}
+              onClick={() => (kind === "class" ? set((c) => ({ ...c, classes: c.classes.slice(1) })) : clear(kind))}
+            >
+              ×
+            </button>
           </div>
           <ChosenBanner el={el} label={label}>
             <span className="board-card-actions" onClick={(e) => e.stopPropagation()}>
-              {(() => { const g = groupOf(el); return g && <SourcePicker g={g} activeId={el.id} onPick={(to) => switchVersion(kind, el, to)} />; })()}
-              <button className={`pick-select ${isOpen ? "is-on" : ""}`} onClick={() => { if (kind === "class") setReplacing(false); toggleList(kind); setFocus(kind); }}>{kind === "class" ? "Edit" : "Change"}</button>
+              {(() => {
+                const g = groupOf(el);
+                return g && <SourcePicker g={g} activeId={el.id} onPick={(to) => switchVersion(kind, el, to)} />;
+              })()}
+              <button
+                className={`pick-select ${isOpen ? "is-on" : ""}`}
+                onClick={() => {
+                  if (kind === "class") setReplacing(false);
+                  toggleList(kind);
+                  setFocus(kind);
+                }}
+              >
+                {kind === "class" ? "Edit" : "Change"}
+              </button>
             </span>
           </ChosenBanner>
         </div>
@@ -1162,38 +2167,111 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         data-tile={kind}
         className={`board-space board-${kind} ${filled[kind] ? "filled" : "empty"} ${cardOut(kind) ? "card-out" : ""} ${focus === kind ? "focused" : ""} ${dropOver === kind ? "drop-over" : ""} ${disabled ? "disabled" : ""}`}
         data-accepts={(DROP_TYPES[kind] ?? []).map(dragMime).join(" ")}
-        onClick={() => { if (disabled) return; if (kind === "magic" || kind === "equipment") openBack(kind); else toggleList(kind); }}
+        onClick={() => {
+          if (disabled) return;
+          if (kind === "magic" || kind === "equipment") openBack(kind);
+          else toggleList(kind);
+        }}
         {...drop(kind)}
       >
-        {filled[kind] && todo[kind] > 0 && <div className="board-corner"><span className="board-todo-pill">{todo[kind]} to choose</span></div>}
+        {filled[kind] && todo[kind] > 0 && (
+          <div className="board-corner">
+            <span className="board-todo-pill">{todo[kind]} to choose</span>
+          </div>
+        )}
         <div className="pick-card board-frame" data-glyph="" style={{ ["--hue" as string]: el ? hueOf(el.name) : HUE[kind] }}>
-        {kind === "magic" ? <span className="board-art board-art-live"><SpellBook f={spellFill} /></span>
-          : kind === "equipment" ? <span className="board-art board-art-live"><Backpack f={packFill} /></span>
-          : <span className="board-art" aria-hidden="true">{el && hasClassIcon(el.name) ? <ClassIcon name={el.name} size={150} /> : <Icon size={120} />}</span>}
-        <div className="board-space-text">
-          {filled[kind] ? (
-            <>
-              <small className="board-kicker">{kind === "class" ? `Level ${totalLevel(ch)}` : TITLE[kind]}</small>
-              <h3>{name}</h3>
-              {kind === "class" && el && CLASS_TAGS[el.name] && <div className="pick-tags">{CLASS_TAGS[el.name].map((t) => <span key={t}>{t}</span>)}</div>}
-              {el && <p className="board-blurb">{blurb(el.description, 120)}</p>}
-              {kind === "magic" && <p className="board-blurb">{spellLine}</p>}
-              {kind === "equipment" && <p className="board-blurb">{ch.inventory.length} {ch.inventory.length === 1 ? "item" : "items"}{plans.length > 0 ? (packFill >= 1 ? " · packed for the road" : ` · starting gear ${plans.filter((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))).length} of ${plans.length}`) : ""}</p>}
-            </>
+          {kind === "magic" ? (
+            <span className="board-art board-art-live">
+              <SpellBook f={spellFill} />
+            </span>
+          ) : kind === "equipment" ? (
+            <span className="board-art board-art-live">
+              <Backpack f={packFill} />
+            </span>
           ) : (
-            <>
-              <small className="board-kicker">Choose</small>
-              <h3>{TITLE[kind]}</h3>
-              <p className="board-blurb">{disabled ? (caster ? "No spells to choose." : "No spellcasting yet.") : ASK[kind]}</p>
-            </>
+            <span className="board-art" aria-hidden="true">
+              {el && hasClassIcon(el.name) ? <ClassIcon name={el.name} size={150} /> : <Icon size={120} />}
+            </span>
           )}
-        </div>
-        <div className="board-space-actions" onClick={(e) => e.stopPropagation()}>
-          {el && <button className="ghost" onClick={() => learn(el)}>Learn more</button>}
-          {!filled[kind] && ["race", "class", "background"].includes(kind) && <button className="board-dice" title={`Random ${TITLE[kind].toLowerCase()}`} aria-label={`Random ${TITLE[kind].toLowerCase()}`} onClick={() => random(kind)}><D20 size={16} /></button>}
-          {filled[kind] && ["race", "background"].includes(kind) && <button className="ghost" onClick={() => clear(kind)}>Remove</button>}
-          {!disabled && <button className={`board-see ${isOpen ? "on" : ""}`} onClick={() => { if (kind === "magic" || kind === "equipment") openBack(kind); else { toggleList(kind); setFocus(kind); } }}>{filled[kind] ? (kind === "class" ? "Add a class" : kind === "equipment" ? "Add items" : kind === "magic" ? (spellNeed && spellHave >= spellNeed ? "Change spells" : "Choose spells") : "Change") : "See options"}</button>}
-        </div>
+          <div className="board-space-text">
+            {filled[kind] ? (
+              <>
+                <small className="board-kicker">{kind === "class" ? `Level ${totalLevel(ch)}` : TITLE[kind]}</small>
+                <h3>{name}</h3>
+                {kind === "class" && el && CLASS_TAGS[el.name] && (
+                  <div className="pick-tags">
+                    {CLASS_TAGS[el.name].map((t) => (
+                      <span key={t}>{t}</span>
+                    ))}
+                  </div>
+                )}
+                {el && <p className="board-blurb">{blurb(el.description, 120)}</p>}
+                {kind === "magic" && <p className="board-blurb">{spellLine}</p>}
+                {kind === "equipment" && (
+                  <p className="board-blurb">
+                    {ch.inventory.length} {ch.inventory.length === 1 ? "item" : "items"}
+                    {plans.length > 0
+                      ? packFill >= 1
+                        ? " · packed for the road"
+                        : ` · starting gear ${plans.filter((p) => (ch.equipmentAdded ?? []).some((l) => l.startsWith(`${p.title}, `))).length} of ${plans.length}`
+                      : ""}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <small className="board-kicker">Choose</small>
+                <h3>{TITLE[kind]}</h3>
+                <p className="board-blurb">{disabled ? (caster ? "No spells to choose." : "No spellcasting yet.") : ASK[kind]}</p>
+              </>
+            )}
+          </div>
+          <div className="board-space-actions" onClick={(e) => e.stopPropagation()}>
+            {el && (
+              <button className="ghost" onClick={() => learn(el)}>
+                Learn more
+              </button>
+            )}
+            {!filled[kind] && ["race", "class", "background"].includes(kind) && (
+              <button
+                className="board-dice"
+                title={`Random ${TITLE[kind].toLowerCase()}`}
+                aria-label={`Random ${TITLE[kind].toLowerCase()}`}
+                onClick={() => random(kind)}
+              >
+                <D20 size={16} />
+              </button>
+            )}
+            {filled[kind] && ["race", "background"].includes(kind) && (
+              <button className="ghost" onClick={() => clear(kind)}>
+                Remove
+              </button>
+            )}
+            {!disabled && (
+              <button
+                className={`board-see ${isOpen ? "on" : ""}`}
+                onClick={() => {
+                  if (kind === "magic" || kind === "equipment") openBack(kind);
+                  else {
+                    toggleList(kind);
+                    setFocus(kind);
+                  }
+                }}
+              >
+                {filled[kind]
+                  ? kind === "class"
+                    ? "Add a class"
+                    : kind === "equipment"
+                      ? "Add items"
+                      : kind === "magic"
+                        ? spellNeed && spellHave >= spellNeed
+                          ? "Change spells"
+                          : "Choose spells"
+                        : "Change"
+                  : "See options"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1201,9 +2279,22 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
 
   /** Takes you to one thing still to choose: its list opens (spells, or a missing pick) and its space is shown. */
   const goTo = (it: { kind: Kind; list: boolean }) => {
-    if (it.list) { setOpen(it.kind); setFocus(it.kind); setSide("left"); }
-    else { setSide(null); openBack(it.kind); }
-    window.setTimeout(() => (it.list ? document.querySelector(".board-acc.open") : document.querySelector(".board-focus"))?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+    if (it.list) {
+      setOpen(it.kind);
+      setFocus(it.kind);
+      setSide("left");
+    } else {
+      setSide(null);
+      openBack(it.kind);
+    }
+    window.setTimeout(
+      () =>
+        (it.list ? document.querySelector(".board-acc.open") : document.querySelector(".board-focus"))?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        }),
+      80,
+    );
   };
   /**
    * The open card's book: switching it changes the card to that version, and its choices with it. Shown wherever a
@@ -1213,85 +2304,198 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     const el = kind === "class" ? firstClass : kind === "race" ? chosenEl.race : kind === "background" ? chosenEl.background : undefined;
     const g = el ? groupOf(el) : undefined;
     return el && g && g.variants.length > 1 ? (
-      <div className="card-back-source"><small>Source</small><SourcePicker strip g={g} activeId={el.id} onPick={(to) => switchVersion(kind, el, to)} /></div>
+      <div className="card-back-source">
+        <small>Source</small>
+        <SourcePicker strip g={g} activeId={el.id} onPick={(to) => switchVersion(kind, el, to)} />
+      </div>
     ) : null;
   };
   /** A card's back: the choices its species, class or background asks for, the spells, or the inventory. */
   const choicesFor = (kind: Kind) => (
     <>
-          {kind === "race" && (chosenEl.race ? <><SlotList slots={ownSlots((root) => root === "race")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your species." /><PassiveFeatures r={r} root={(root) => root === "race"} /></> : <p className="muted">Choose a species from the list on the left, or drag one onto its space.</p>)}
-          {kind === "class" && (ch.classes.length ? (
-            <ClassTabs r={r} ch={ch} set={set} ownSlots={ownSlots} />
-          ) : <p className="muted">Choose a class from the list on the left, or drag one onto its space. Adding another class later makes a multiclass.</p>)}
-          {kind === "background" && (chosenEl.background ? <><PersonalitySwitch r={r} set={set} /><SlotList slots={ownSlots((root) => root === "background")} r={r} set={set} onDetail={() => undefined} empty="Nothing more to choose for your background." /><PassiveFeatures r={r} root={(root) => root === "background"} /></> : <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>)}
-          {kind === "magic" && (caster ? (
-            <>
-              {/* The book, then two tabs under it as the backpack has (Chris 2026-10-29): the spells learned, and the spells
+      {kind === "race" &&
+        (chosenEl.race ? (
+          <>
+            <SlotList
+              slots={ownSlots((root) => root === "race")}
+              r={r}
+              set={set}
+              onDetail={() => undefined}
+              empty="Nothing more to choose for your species."
+            />
+            <PassiveFeatures r={r} root={(root) => root === "race"} />
+          </>
+        ) : (
+          <p className="muted">Choose a species from the list on the left, or drag one onto its space.</p>
+        ))}
+      {kind === "class" &&
+        (ch.classes.length ? (
+          <ClassTabs r={r} ch={ch} set={set} ownSlots={ownSlots} />
+        ) : (
+          <p className="muted">
+            Choose a class from the list on the left, or drag one onto its space. Adding another class later makes a multiclass.
+          </p>
+        ))}
+      {kind === "background" &&
+        (chosenEl.background ? (
+          <>
+            <PersonalitySwitch r={r} set={set} />
+            <SlotList
+              slots={ownSlots((root) => root === "background")}
+              r={r}
+              set={set}
+              onDetail={() => undefined}
+              empty="Nothing more to choose for your background."
+            />
+            <PassiveFeatures r={r} root={(root) => root === "background"} />
+          </>
+        ) : (
+          <p className="muted">Choose a background from the list on the left, or drag one onto its space.</p>
+        ))}
+      {kind === "magic" &&
+        (caster ? (
+          <>
+            {/* The book, then two tabs under it as the backpack has (Chris 2026-10-29): the spells learned, and the spells
                   prepared, each with its count; the Prepared tab says each class's own count, as each class prepares
                   by its own level and ability (a multiclass Artificer 3/3 · Cleric 0/5, not one sum). */}
-              <div className="card-back-art spell-art">
-                <SpellBook f={spellFill} />
-                {prepares && (
-                  <div className="spell-tabs" role="tablist" aria-label="Spells">
-                    <button role="tab" aria-selected={backView !== "prepare"} className={`spell-tab ${backView !== "prepare" ? "on" : ""} ${learnHave >= learnNeed ? "full" : "todo"}`} onClick={() => setBackView(null)}>
-                      <b>Learned</b><small>{learnHave}/{learnNeed}</small>
-                    </button>
-                    <button role="tab" aria-selected={backView === "prepare"} className={`spell-tab prep ${backView === "prepare" ? "on" : ""} ${prepHave >= prepNeed ? "full" : "todo"}`} onClick={() => setBackView("prepare")}>
-                      <b>Prepared</b><small>{prepHave}/{prepNeed}</small>
-                      {preparing.length > 1 && <small className="spell-tab-each">{preparing.map((c) => `${c.name} ${preparedOf(c)}/${prepareTarget(r, c)}`).join(" · ")}</small>}
-                    </button>
-                  </div>
-                )}
-              </div>
-              {backView === "prepare" && prepares ? <PrepareSpells r={r} ch={ch} set={set} onDetail={() => undefined} /> : (
-                <>
-                  <p className="muted card-back-count">{spellLine}</p>
-                  <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} prepareElsewhere={prepares} />
-                </>
+            <div className="card-back-art spell-art">
+              <SpellBook f={spellFill} />
+              {prepares && (
+                <div className="spell-tabs" role="tablist" aria-label="Spells">
+                  <button
+                    role="tab"
+                    aria-selected={backView !== "prepare"}
+                    className={`spell-tab ${backView !== "prepare" ? "on" : ""} ${learnHave >= learnNeed ? "full" : "todo"}`}
+                    onClick={() => setBackView(null)}
+                  >
+                    <b>Learned</b>
+                    <small>
+                      {learnHave}/{learnNeed}
+                    </small>
+                  </button>
+                  <button
+                    role="tab"
+                    aria-selected={backView === "prepare"}
+                    className={`spell-tab prep ${backView === "prepare" ? "on" : ""} ${prepHave >= prepNeed ? "full" : "todo"}`}
+                    onClick={() => setBackView("prepare")}
+                  >
+                    <b>Prepared</b>
+                    <small>
+                      {prepHave}/{prepNeed}
+                    </small>
+                    {preparing.length > 1 && (
+                      <small className="spell-tab-each">
+                        {preparing.map((c) => `${c.name} ${preparedOf(c)}/${prepareTarget(r, c)}`).join(" · ")}
+                      </small>
+                    )}
+                  </button>
+                </div>
               )}
-            </>
-          ) : <p className="muted">This character does not cast spells yet.</p>)}
-          {kind === "equipment" && (
-            <>
-              {/* Three views, always all three in sight (C6.1: a remembered "Inventory" or "Shop" hid the starting gear with
+            </div>
+            {backView === "prepare" && prepares ? (
+              <PrepareSpells r={r} ch={ch} set={set} onDetail={() => undefined} />
+            ) : (
+              <>
+                <p className="muted card-back-count">{spellLine}</p>
+                <MagicTab r={r} ch={ch} set={set} onDetail={() => undefined} prepareElsewhere={prepares} />
+              </>
+            )}
+          </>
+        ) : (
+          <p className="muted">This character does not cast spells yet.</p>
+        ))}
+      {kind === "equipment" && (
+        <>
+          {/* Three views, always all three in sight (C6.1: a remembered "Inventory" or "Shop" hid the starting gear with
                   no way back): starting gear and adding items, the inventory, the shop. */}
-              <div className="card-back-art" role="tablist" aria-label="Backpack">
-                <button role="tab" className={`card-back-toggle ${backView !== "inventory" && backView !== "shop" ? "on" : ""}`} aria-selected={backView !== "inventory" && backView !== "shop"} title="Starting equipment, adventuring packs and any item to add" onClick={() => setBackView(null)}>
-                  <StartingGear /><small>Starting gear</small>
-                </button>
-                <button role="tab" className={`card-back-toggle ${backView === "inventory" ? "on" : ""}`} aria-selected={backView === "inventory"} title="What the character carries" onClick={() => setBackView("inventory")}>
-                  <span className="inv-pack"><Backpack f={packFill} /></span><small>Inventory</small>
-                </button>
-                <button role="tab" className={`card-back-toggle ${backView === "shop" ? "on" : ""}`} aria-selected={backView === "shop"} title="Buy items with your coins, sell from the inventory" onClick={() => setBackView("shop")}>
-                  <Purse /><small>Shop</small>
-                </button>
-              </div>
-              {backView === "shop" && <Shop r={r} ch={ch} set={set} />}
-              {backView !== "inventory" && backView !== "shop" && (
-                <>
-                  <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="adding" />
-                  <h3 className="board-lib-sub">All items</h3>
-                  <Browse items={items} type="Item" chosen={[]} onPick={(el) => addItem(set, el)} defaultView="cards" mini viewKey="board.Item" perPage={60} pickLabel={() => "Add"} />
-                </>
-              )}
-              <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="inventory" />
+          <div className="card-back-art" role="tablist" aria-label="Backpack">
+            <button
+              role="tab"
+              className={`card-back-toggle ${backView !== "inventory" && backView !== "shop" ? "on" : ""}`}
+              aria-selected={backView !== "inventory" && backView !== "shop"}
+              title="Starting equipment, adventuring packs and any item to add"
+              onClick={() => setBackView(null)}
+            >
+              <StartingGear />
+              <small>Starting gear</small>
+            </button>
+            <button
+              role="tab"
+              className={`card-back-toggle ${backView === "inventory" ? "on" : ""}`}
+              aria-selected={backView === "inventory"}
+              title="What the character carries"
+              onClick={() => setBackView("inventory")}
+            >
+              <span className="inv-pack">
+                <Backpack f={packFill} />
+              </span>
+              <small>Inventory</small>
+            </button>
+            <button
+              role="tab"
+              className={`card-back-toggle ${backView === "shop" ? "on" : ""}`}
+              aria-selected={backView === "shop"}
+              title="Buy items with your coins, sell from the inventory"
+              onClick={() => setBackView("shop")}
+            >
+              <Purse />
+              <small>Shop</small>
+            </button>
+          </div>
+          {backView === "shop" && <Shop r={r} ch={ch} set={set} />}
+          {backView !== "inventory" && backView !== "shop" && (
+            <>
+              <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="adding" />
+              <h3 className="board-lib-sub">All items</h3>
+              <Browse
+                items={items}
+                type="Item"
+                chosen={[]}
+                onPick={(el) => addItem(set, el)}
+                defaultView="cards"
+                mini
+                viewKey="board.Item"
+                perPage={60}
+                pickLabel={() => "Add"}
+              />
             </>
           )}
+          <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="inventory" />
+        </>
+      )}
     </>
   );
   const scoresLeft = r.slots.filter((s) => tabOfSlot(s) === "abilities" && stillToChoose(s, r)).length;
   // A side panel closes when the mouse leaves it, except while a big choice is landing.
-  const leave = (which: "left" | "right") => () => { if (narrow && !flyHide && !back && side === which) setSide(null); };
+  const leave = (which: "left" | "right") => () => {
+    if (narrow && !flyHide && !back && side === which) setSide(null);
+  };
   return (
     <div className={`board ${side ? `side-${side}` : ""} ${flyHide || back ? "fly-hide" : ""}`}>
-      <button className="board-handle left" aria-label="Show the lists" aria-expanded={side === "left"} onClick={() => setSide(side === "left" ? null : "left")}>
-        <span className="board-handle-plus">+</span><span className="board-handle-label">Lists</span>
+      <button
+        className="board-handle left"
+        aria-label="Show the lists"
+        aria-expanded={side === "left"}
+        onClick={() => setSide(side === "left" ? null : "left")}
+      >
+        <span className="board-handle-plus">+</span>
+        <span className="board-handle-label">Lists</span>
         {leftItems.length > 0 && <span className="board-acc-badge">{leftItems.length}</span>}
         {/* The panel is inside this drawer in a narrow window: a rule problem must still show from outside it. */}
-        {rulesCheck.rules.length > 0 && <span className="board-acc-badge bad" aria-label={`${rulesCheck.rules.length} against the rules`}>!</span>}
+        {rulesCheck.rules.length > 0 && (
+          <span className="board-acc-badge bad" aria-label={`${rulesCheck.rules.length} against the rules`}>
+            !
+          </span>
+        )}
       </button>
-      <button className="board-handle right" aria-label="Show the scores" aria-expanded={side === "right"} onClick={() => setSide(side === "right" ? null : "right")}>
-        <span className="board-handle-plus">+</span><span className="board-handle-label">Scores</span>
+      <button
+        className="board-handle right"
+        aria-label="Show the scores"
+        aria-expanded={side === "right"}
+        onClick={() => setSide(side === "right" ? null : "right")}
+      >
+        <span className="board-handle-plus">+</span>
+        <span className="board-handle-label">Scores</span>
         {scoresLeft > 0 && <span className="board-acc-badge">{scoresLeft}</span>}
       </button>
       <nav className="board-lib" aria-label="Lists" onMouseLeave={leave("left")}>
@@ -1302,15 +2506,32 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           {!leftItems.length ? (
             <>
               <p className="ok">✓ Every choice is made. Export your sheet when you are ready.</p>
-              {open === null && detailsBlank(ch) && <p className="muted details-default">The character's details are at their defaults (blank). <button className="ghost" onClick={() => window.dispatchEvent(new CustomEvent("cf-details"))}>Add details</button></p>}
+              {open === null && detailsBlank(ch) && (
+                <p className="muted details-default">
+                  The character's details are at their defaults (blank).{" "}
+                  <button className="ghost" onClick={() => window.dispatchEvent(new CustomEvent("cf-details"))}>
+                    Add details
+                  </button>
+                </p>
+              )}
             </>
           ) : open !== null ? (
-            <button className="board-status-more" onClick={() => setOpen(null)}>{choicesLeft}<span className="chev">▾</span></button>
+            <button className="board-status-more" onClick={() => setOpen(null)}>
+              {choicesLeft}
+              <span className="chev">▾</span>
+            </button>
           ) : (
             <>
               <h3>{choicesLeft}</h3>
               <ul>
-                {leftItems.map((it, i) => <li key={i}><button onClick={() => (it.act ? it.act() : goTo(it))}><span className="board-left-kind">{it.label ?? TITLE[it.kind]}</span><span>{it.text}</span></button></li>)}
+                {leftItems.map((it, i) => (
+                  <li key={i}>
+                    <button onClick={() => (it.act ? it.act() : goTo(it))}>
+                      <span className="board-left-kind">{it.label ?? TITLE[it.kind]}</span>
+                      <span>{it.text}</span>
+                    </button>
+                  </li>
+                ))}
               </ul>
             </>
           )}
@@ -1321,12 +2542,19 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           return (
             <section key={kind} className={`board-acc ${isOpen ? "open" : ""}`}>
               <button className="board-acc-head" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : kind)}>
-                <span className="board-acc-icon"><Icon size={22} /></span>
-                <span className="board-acc-title">{TITLE[kind]}<small>{libValue[kind] || (kind === "magic" && !caster ? "none yet" : "not chosen")}</small></span>
+                <span className="board-acc-icon">
+                  <Icon size={22} />
+                </span>
+                <span className="board-acc-title">
+                  {TITLE[kind]}
+                  <small>{libValue[kind] || (kind === "magic" && !caster ? "none yet" : "not chosen")}</small>
+                </span>
                 {filled[kind] && !todo[kind] ? <span className="board-acc-done">✓</span> : null}
                 <span className="board-acc-chev">▸</span>
               </button>
-              <div className="board-acc-body"><div className="board-acc-inner">{isOpen && libList[kind]}</div></div>
+              <div className="board-acc-body">
+                <div className="board-acc-inner">{isOpen && libList[kind]}</div>
+              </div>
             </section>
           );
         })}
@@ -1337,49 +2565,99 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           <div>
             <small>Ready, set,</small>
             <h2>Start your story...</h2>
-            <p className="muted">Your character is a species, a class and a background. Click an entry in a list or drag it onto its space.</p>
+            <p className="muted">
+              Your character is a species, a class and a background. Click an entry in a list or drag it onto its space.
+            </p>
           </div>
         </header>
-        <div className="board-spaces">
-          {ORDER.map(tile)}
-        </div>
+        <div className="board-spaces">{ORDER.map(tile)}</div>
         {otherSlots.length > 0 && (
           <div className="board-focus">
             <h3 className="board-focus-title">Other choices</h3>
             <SlotList slots={otherSlots} r={r} set={set} onDetail={() => undefined} />
           </div>
         )}
-        {back && back.phase === "open" && createPortal(
-          <div className="card-back-veil">
-            <div className={`card-back ${back.mode}`} role="dialog" aria-label={`${TITLE[back.kind]} choices`} style={{ ["--hue" as string]: HUE[back.kind] }}>
-              <header className="card-back-head">
-                <div>
-                  <small>{TITLE[back.kind]}</small>
-                  <h2>{back.kind === "class" ? firstClass?.name : back.kind === "race" ? chosenEl.race?.name : back.kind === "background" ? chosenEl.background?.name : back.kind === "magic" ? "Your spells" : "Your inventory"}</h2>
-                </div>
-                {sourceStrip(back.kind)}
-                <div className="card-back-ctl">
-                  <button className="primary" onClick={() => finish(true)}>Done</button>
-                  <button className="board-ico" title={back.mode === "new" ? "Put it back" : "Undo the changes"} aria-label={back.mode === "new" ? "Put it back" : "Undo the changes"} onClick={() => finish(false)}>×</button>
-                </div>
-              </header>
-              <div className="card-back-body">{choicesFor(back.kind)}</div>
-            </div>
-          </div>,
-          document.body,
-        )}
+        {back &&
+          back.phase === "open" &&
+          createPortal(
+            <div className="card-back-veil">
+              <div
+                className={`card-back ${back.mode}`}
+                role="dialog"
+                aria-label={`${TITLE[back.kind]} choices`}
+                style={{ ["--hue" as string]: HUE[back.kind] }}
+              >
+                <header className="card-back-head">
+                  <div>
+                    <small>{TITLE[back.kind]}</small>
+                    <h2>
+                      {back.kind === "class"
+                        ? firstClass?.name
+                        : back.kind === "race"
+                          ? chosenEl.race?.name
+                          : back.kind === "background"
+                            ? chosenEl.background?.name
+                            : back.kind === "magic"
+                              ? "Your spells"
+                              : "Your inventory"}
+                    </h2>
+                  </div>
+                  {sourceStrip(back.kind)}
+                  <div className="card-back-ctl">
+                    <button className="primary" onClick={() => finish(true)}>
+                      Done
+                    </button>
+                    <button
+                      className="board-ico"
+                      title={back.mode === "new" ? "Put it back" : "Undo the changes"}
+                      aria-label={back.mode === "new" ? "Put it back" : "Undo the changes"}
+                      onClick={() => finish(false)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </header>
+                <div className="card-back-body">{choicesFor(back.kind)}</div>
+              </div>
+            </div>,
+            document.body,
+          )}
       </section>
 
       {/* The card windows (C4): each open card's choices, the same as its back, in a floating window. */}
-      {floating && floating.windows.filter((w) => w.kind === "card" && !w.bagged && ["race", "class", "background", "magic", "equipment"].includes(w.ref)).map((w) => createPortal(
-        <WindowFrame key={w.id} w={{ ...w, title: cardTitle(w.ref as Kind) }} api={floating} done kicker={TITLE[w.ref as Kind]} hue={HUE[w.ref as Kind]} onCancel={fresh[w.ref as Kind] ? () => putBack(w.ref as Kind, w.id) : undefined} className={`card-window card-window-${w.ref}`}>
-          <div className="card-back-body" style={{ ["--hue" as string]: HUE[w.ref as Kind] }}>
-            {sourceStrip(w.ref as Kind)}{choicesFor(w.ref as Kind)}
-          </div>
-        </WindowFrame>,
-        document.body,
-      ))}
-      <StatsPanel onMouseLeave={leave("right")} r={r} ch={ch} set={set} onIncreases={(root) => { setSide(null); openBack(root === "race" ? "race" : root === "background" ? "background" : "class"); }} />
+      {floating &&
+        floating.windows
+          .filter((w) => w.kind === "card" && !w.bagged && ["race", "class", "background", "magic", "equipment"].includes(w.ref))
+          .map((w) =>
+            createPortal(
+              <WindowFrame
+                key={w.id}
+                w={{ ...w, title: cardTitle(w.ref as Kind) }}
+                api={floating}
+                done
+                kicker={TITLE[w.ref as Kind]}
+                hue={HUE[w.ref as Kind]}
+                onCancel={fresh[w.ref as Kind] ? () => putBack(w.ref as Kind, w.id) : undefined}
+                className={`card-window card-window-${w.ref}`}
+              >
+                <div className="card-back-body" style={{ ["--hue" as string]: HUE[w.ref as Kind] }}>
+                  {sourceStrip(w.ref as Kind)}
+                  {choicesFor(w.ref as Kind)}
+                </div>
+              </WindowFrame>,
+              document.body,
+            ),
+          )}
+      <StatsPanel
+        onMouseLeave={leave("right")}
+        r={r}
+        ch={ch}
+        set={set}
+        onIncreases={(root) => {
+          setSide(null);
+          openBack(root === "race" ? "race" : root === "background" ? "background" : "class");
+        }}
+      />
     </div>
   );
 }

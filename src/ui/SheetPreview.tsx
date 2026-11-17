@@ -11,16 +11,32 @@ export function SheetPreview({ bytes, note }: { bytes: Uint8Array | null; note?:
 
   useEffect(() => {
     let live = true;
-    if (!bytes) { setPages(null); setImg(""); return; }
+    if (!bytes) {
+      setPages(null);
+      setImg("");
+      return;
+    }
     setBusy(true);
-    openPdf(bytes).then((p) => {
-      if (!live) { p.destroy(); return; }
-      holder.current?.destroy();
-      holder.current = p;
-      setPages(p);
-      setAt((a) => Math.min(a, p.count - 1));
-    }).catch(() => { if (live) { setPages(null); setBusy(false); } });
-    return () => { live = false; };
+    openPdf(bytes)
+      .then((p) => {
+        if (!live) {
+          p.destroy();
+          return;
+        }
+        holder.current?.destroy();
+        holder.current = p;
+        setPages(p);
+        setAt((a) => Math.min(a, p.count - 1));
+      })
+      .catch(() => {
+        if (live) {
+          setPages(null);
+          setBusy(false);
+        }
+      });
+    return () => {
+      live = false;
+    };
   }, [bytes]);
 
   useEffect(() => () => holder.current?.destroy(), []);
@@ -29,8 +45,18 @@ export function SheetPreview({ bytes, note }: { bytes: Uint8Array | null; note?:
     let live = true;
     if (!pages) return;
     setBusy(true);
-    pages.page(at, 560).then((url) => { if (live) { setImg(url); setBusy(false); } }).catch(() => live && setBusy(false));
-    return () => { live = false; };
+    pages
+      .page(at, 560)
+      .then((url) => {
+        if (live) {
+          setImg(url);
+          setBusy(false);
+        }
+      })
+      .catch(() => live && setBusy(false));
+    return () => {
+      live = false;
+    };
   }, [pages, at]);
 
   if (!bytes) return note ? <p className="notice">{note}</p> : <p className="muted">Preparing a preview...</p>;
@@ -42,9 +68,15 @@ export function SheetPreview({ bytes, note }: { bytes: Uint8Array | null; note?:
         {busy && img && <span className="sheet-preview-busy">...</span>}
       </div>
       <div className="row sheet-preview-nav">
-        <button onClick={() => setAt((a) => Math.max(0, a - 1))} disabled={at === 0} aria-label="Previous page">◀ Previous</button>
-        <span>Page {at + 1} of {n}</span>
-        <button onClick={() => setAt((a) => Math.min(n - 1, a + 1))} disabled={at >= n - 1} aria-label="Next page">Next ▶</button>
+        <button onClick={() => setAt((a) => Math.max(0, a - 1))} disabled={at === 0} aria-label="Previous page">
+          ◀ Previous
+        </button>
+        <span>
+          Page {at + 1} of {n}
+        </span>
+        <button onClick={() => setAt((a) => Math.min(n - 1, a + 1))} disabled={at >= n - 1} aria-label="Next page">
+          Next ▶
+        </button>
       </div>
       <p className="muted small-text">A preview of your character on this sheet. The saved file uses your chosen language and extras.</p>
     </div>

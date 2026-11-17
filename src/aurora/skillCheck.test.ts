@@ -20,15 +20,24 @@ describe("expertise needs the proficiency", () => {
       let ch: Character = { ...newCharacter(), classes: [{ classId: rogue.id, level: 1 }] };
       let r = resolve(ch, reg);
       const skills = r.slots.find((s) => s.owner.id === rogue.id && /skill/i.test(s.rule.name) && s.rule.number >= 4)!;
-      const picked = skills.options.filter((o) => !skills.blocked.has(o.id)).slice(0, skills.rule.number).map((o) => o.id);
+      const picked = skills.options
+        .filter((o) => !skills.blocked.has(o.id))
+        .slice(0, skills.rule.number)
+        .map((o) => o.id);
       ch = { ...ch, selections: { ...ch.selections, [skills.key]: picked } };
       r = resolve(ch, reg);
       // The 2014 Rogue first chooses between two skills, or one skill and thieves' tools.
       const sets = r.slots.find((s) => s.rule.type === "Training Option" && /expertise/i.test(s.rule.name));
-      if (sets) { ch = { ...ch, selections: { ...ch.selections, [sets.key]: [sets.options[0].id] } }; r = resolve(ch, reg); }
+      if (sets) {
+        ch = { ...ch, selections: { ...ch.selections, [sets.key]: [sets.options[0].id] } };
+        r = resolve(ch, reg);
+      }
       const expertise = r.slots.find((s) => s.rule.supports.includes("5et expertise"))!;
       expect(expertise, "the Rogue's expertise choice").toBeTruthy();
-      const open = expertise.options.filter((o) => !expertise.blocked.has(o.id)).map((o) => o.name.replace(/ \(expertise\)$/i, "").toLowerCase()).sort();
+      const open = expertise.options
+        .filter((o) => !expertise.blocked.has(o.id))
+        .map((o) => o.name.replace(/ \(expertise\)$/i, "").toLowerCase())
+        .sort();
       const have = picked.map((id) => reg.get(id)!.name.toLowerCase()).sort();
       // Exactly the skills picked (a Rogue has no other skill here: no species or background).
       expect(open).toEqual(have);
@@ -50,7 +59,15 @@ describe("the bundled rules keep what 5e.tools states as side data", () => {
 
 describe("the rules check judges skill and save bonuses itself", () => {
   const fighter = cls("Fighter", "2014");
-  const r = resolve({ ...newCharacter(), classes: [{ classId: fighter.id, level: 5 }], abilityMethod: "manual", abilityBase: { strength: 16, dexterity: 12, constitution: 14, intelligence: 10, wisdom: 8, charisma: 10 } }, reg);
+  const r = resolve(
+    {
+      ...newCharacter(),
+      classes: [{ classId: fighter.id, level: 5 }],
+      abilityMethod: "manual",
+      abilityBase: { strength: 16, dexterity: 12, constitution: 14, intelligence: 10, wisdom: 8, charisma: 10 },
+    },
+    reg,
+  );
   const sheet = buildSheet(r);
   const rules = (sh: typeof sheet) => checkCharacter(r, sh, []).map((f) => f.rule);
 

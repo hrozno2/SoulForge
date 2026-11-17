@@ -15,10 +15,22 @@ import { loadContentSet } from "../engine/testContent";
 describe("an older species with a 2024 background", () => {
   const reg = loadContentSet("", "srd");
   const of = (type: string, name: string, edition: string) => reg.ofType(type).find((e) => e.name === name && e.source.includes(edition))!;
-  const build = (race: string, bg: string): Character => autoFill({ ...newCharacter(), race, background: bg, classes: [{ classId: of("Class", "Fighter", "2024").id, level: 1 }], abilityMethod: "manual", abilityBase: { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 } }, reg);
+  const build = (race: string, bg: string): Character =>
+    autoFill(
+      {
+        ...newCharacter(),
+        race,
+        background: bg,
+        classes: [{ classId: of("Class", "Fighter", "2024").id, level: 1 }],
+        abilityMethod: "manual",
+        abilityBase: { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 },
+      },
+      reg,
+    );
 
   it("takes its increases from the background alone: three points, none from the species", () => {
-    const dwarf = of("Race", "Dwarf", "2014"), acolyte = of("Background", "Acolyte", "2024");
+    const dwarf = of("Race", "Dwarf", "2014"),
+      acolyte = of("Background", "Acolyte", "2024");
     expect(dwarf && acolyte).toBeTruthy();
     const r = resolve(build(dwarf.id, acolyte.id), reg);
     const sh = buildSheet(r);
@@ -29,7 +41,8 @@ describe("an older species with a 2024 background", () => {
   });
 
   it("keeps its own increases with a 2014 background", () => {
-    const dwarf = of("Race", "Dwarf", "2014"), acolyte = of("Background", "Acolyte", "2014");
+    const dwarf = of("Race", "Dwarf", "2014"),
+      acolyte = of("Background", "Acolyte", "2014");
     const sh = buildSheet(resolve(build(dwarf.id, acolyte.id), reg));
     expect(sh.abilities[2].score).toBeGreaterThanOrEqual(12);
   });

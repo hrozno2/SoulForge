@@ -171,14 +171,19 @@ export class StatBook {
     // Saving throws.
     const save = name.match(/^(strength|dexterity|constitution|intelligence|wisdom|charisma):save$/);
     if (save)
-      return this.get(`${save[1]}:modifier`) + this.aggregate(`${name}:proficiency`) + this.aggregate(`${name}:misc`) + this.aggregate(name);
+      return (
+        this.get(`${save[1]}:modifier`) + this.aggregate(`${name}:proficiency`) + this.aggregate(`${name}:misc`) + this.aggregate(name)
+      );
 
     // Skills.
     const passive = name.match(/^(.+):passive$/);
     if (passive && passive[1] in SKILL_ABILITY) return 10 + this.get(passive[1]) + this.aggregate(name);
     if (name in SKILL_ABILITY) {
       return (
-        this.get(`${SKILL_ABILITY[name]}:modifier`) + this.aggregate(`${name}:proficiency`) + this.aggregate(`${name}:misc`) + this.aggregate(name)
+        this.get(`${SKILL_ABILITY[name]}:modifier`) +
+        this.aggregate(`${name}:proficiency`) +
+        this.aggregate(`${name}:misc`) +
+        this.aggregate(name)
       );
     }
 
@@ -186,13 +191,21 @@ export class StatBook {
 
     // Movement.
     // "innate speed:misc" is how Aurora content raises a speed (Fast Movement, Unarmored Movement: +10 ft).
-    if (name === "speed") return this.get("innate speed") + this.aggregate("innate speed:misc") + this.aggregate("speed:misc") + this.aggregate(name);
+    if (name === "speed")
+      return this.get("innate speed") + this.aggregate("innate speed:misc") + this.aggregate("speed:misc") + this.aggregate(name);
     const sp = name.match(/^speed:(climb|fly|swim|burrow)$/);
-    if (sp) return this.get(`innate speed:${sp[1]}`) + (this.get(`innate speed:${sp[1]}`) > 0 ? this.aggregate(`innate speed:${sp[1]}:misc`) : 0) + this.aggregate(`${name}:misc`) + this.aggregate(name);
+    if (sp)
+      return (
+        this.get(`innate speed:${sp[1]}`) +
+        (this.get(`innate speed:${sp[1]}`) > 0 ? this.aggregate(`innate speed:${sp[1]}:misc`) : 0) +
+        this.aggregate(`${name}:misc`) +
+        this.aggregate(name)
+      );
 
     if (name === "hp") return inp.baseHp(this.get("constitution:modifier")) + this.aggregate("hp");
     // Content gives either the new total ("up to four magic items", bonus "base") or a step on top of the usual three.
-    if (name === "attunement:max") return (this.contribs.get(name)?.some((c) => c.bonus === "base" && !c.inline) ? 0 : 3) + this.aggregate(name);
+    if (name === "attunement:max")
+      return (this.contribs.get(name)?.some((c) => c.bonus === "base" && !c.inline) ? 0 : 3) + this.aggregate(name);
     if (name === "attunement:current") return inp.attunedCount;
 
     // Spellcasting save DC, attack bonus and ability modifier, per spellcasting entry.
@@ -248,30 +261,57 @@ export function evalFormula(src: string, stat: (name: string) => number): number
   const atom = (): number => {
     const t = take();
     if (t === undefined) return 0;
-    if (t === "(") { const v = sum(); take(); return v; }
+    if (t === "(") {
+      const v = sum();
+      take();
+      return v;
+    }
     if (t === "-") return -atom();
     if (t === "+") return atom();
     if (/^\{/.test(t)) return stat(t.slice(1, -1).trim().toLowerCase());
     if (/^(floor|ceil|min|max|abs)$/i.test(t)) {
       take(); // (
       const args = [sum()];
-      while (peek() === ",") { take(); args.push(sum()); }
+      while (peek() === ",") {
+        take();
+        args.push(sum());
+      }
       take(); // )
       const f = t.toLowerCase();
-      return f === "floor" ? Math.floor(args[0]) : f === "ceil" ? Math.ceil(args[0]) : f === "abs" ? Math.abs(args[0]) : f === "min" ? Math.min(...args) : Math.max(...args);
+      return f === "floor"
+        ? Math.floor(args[0])
+        : f === "ceil"
+          ? Math.ceil(args[0])
+          : f === "abs"
+            ? Math.abs(args[0])
+            : f === "min"
+              ? Math.min(...args)
+              : Math.max(...args);
     }
     const n = Number(t);
     return Number.isNaN(n) ? 0 : n;
   };
   const product = (): number => {
     let v = atom();
-    while (peek() === "*" || peek() === "/") { const op = take(); const r = atom(); v = op === "*" ? v * r : r === 0 ? 0 : v / r; }
+    while (peek() === "*" || peek() === "/") {
+      const op = take();
+      const r = atom();
+      v = op === "*" ? v * r : r === 0 ? 0 : v / r;
+    }
     return v;
   };
   const sum = (): number => {
     let v = product();
-    while (peek() === "+" || peek() === "-") { const op = take(); const r = product(); v = op === "+" ? v + r : v - r; }
+    while (peek() === "+" || peek() === "-") {
+      const op = take();
+      const r = product();
+      v = op === "+" ? v + r : v - r;
+    }
     return v;
   };
-  try { return sum(); } catch { return 0; }
+  try {
+    return sum();
+  } catch {
+    return 0;
+  }
 }

@@ -19,23 +19,52 @@ export function HpRollsDialog({ r, ch, set, onClose }: { r: Resolved; ch: Charac
   const total = r.stats.get("hp");
   const other = total - fromDice;
   const audit = rollAudit([ch]);
-  const roll = (level: number, die: number) => requestRoll(`Hit points, level ${level}`, `1d${die}`, (res) => set((c) => withHpRoll(c, level, res.total, "app", die)));
+  const roll = (level: number, die: number) =>
+    requestRoll(`Hit points, level ${level}`, `1d${die}`, (res) => set((c) => withHpRoll(c, level, res.total, "app", die)));
   return createPortal(
     <div className="modal-back" role="dialog" aria-label="Hit points" onClick={onClose}>
       <div className="modal-page themed hp-rolls" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
-        <h2>Hit points <small className="muted">maximum {total}</small></h2>
-        {!hpConfigured(ch) && <p className="notice">Choose how your hit points grow: a fixed amount each level (the average of the die), or rolled.</p>}
+        <button className="modal-close" onClick={onClose} aria-label="Close">
+          ×
+        </button>
+        <h2>
+          Hit points <small className="muted">maximum {total}</small>
+        </h2>
+        {!hpConfigured(ch) && (
+          <p className="notice">Choose how your hit points grow: a fixed amount each level (the average of the die), or rolled.</p>
+        )}
         <div className="row">
           {(["average", "roll"] as const).map((m) => (
-            <button key={m} className={hpConfigured(ch) && ch.hpMode === m ? "pill active" : "pill"} aria-pressed={ch.hpChosen ? ch.hpMode === m : undefined} onClick={() => set((c) => ({ ...c, hpMode: m, hpChosen: true }))}>{m === "average" ? "Fixed (average)" : "Rolled"}</button>
+            <button
+              key={m}
+              className={hpConfigured(ch) && ch.hpMode === m ? "pill active" : "pill"}
+              aria-pressed={ch.hpChosen ? ch.hpMode === m : undefined}
+              onClick={() => set((c) => ({ ...c, hpMode: m, hpChosen: true }))}
+            >
+              {m === "average" ? "Fixed (average)" : "Rolled"}
+            </button>
           ))}
           {ch.hpMode === "roll" && lines.some((l) => l.level > 1 && l.how === "average") && (
-            <button className="primary" onClick={() => lines.filter((l) => l.level > 1 && l.how === "average").forEach((l) => roll(l.level, l.die))}>Roll the rest</button>
+            <button
+              className="primary"
+              onClick={() => lines.filter((l) => l.level > 1 && l.how === "average").forEach((l) => roll(l.level, l.die))}
+            >
+              Roll the rest
+            </button>
           )}
         </div>
         <table className="hp-table">
-          <thead><tr><th>Level</th><th>Class</th><th>Die</th><th>Gives</th><th>Con</th><th>How</th><th /></tr></thead>
+          <thead>
+            <tr>
+              <th>Level</th>
+              <th>Class</th>
+              <th>Die</th>
+              <th>Gives</th>
+              <th>Con</th>
+              <th>How</th>
+              <th />
+            </tr>
+          </thead>
           <tbody>
             {lines.map((l) => (
               <tr key={l.level}>
@@ -43,34 +72,63 @@ export function HpRollsDialog({ r, ch, set, onClose }: { r: Resolved; ch: Charac
                 <td>{l.className}</td>
                 <td>d{l.die}</td>
                 <td>
-                  {l.level === 1 || ch.hpMode !== "roll" ? <b>{l.value}</b> : (
-                    <input type="number" min={1} max={l.die} value={ch.hpRolls[String(l.level)] ?? ""} placeholder={String(l.value)} aria-label={`Roll for level ${l.level}`}
-                      onChange={(e) => set((c) => withHpRoll(c, l.level, Number(e.target.value) || undefined, "player", l.die))} />
+                  {l.level === 1 || ch.hpMode !== "roll" ? (
+                    <b>{l.value}</b>
+                  ) : (
+                    <input
+                      type="number"
+                      min={1}
+                      max={l.die}
+                      value={ch.hpRolls[String(l.level)] ?? ""}
+                      placeholder={String(l.value)}
+                      aria-label={`Roll for level ${l.level}`}
+                      onChange={(e) => set((c) => withHpRoll(c, l.level, Number(e.target.value) || undefined, "player", l.die))}
+                    />
                   )}
                 </td>
                 <td>{signed(l.con)}</td>
                 <td className="muted">{l.how}</td>
-                <td>{l.level > 1 && ch.hpMode === "roll" && <button className="ghost" onClick={() => roll(l.level, l.die)}>Roll</button>}</td>
+                <td>
+                  {l.level > 1 && ch.hpMode === "roll" && (
+                    <button className="ghost" onClick={() => roll(l.level, l.die)}>
+                      Roll
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
         <p className="muted">
-          Dice and Constitution give {fromDice}{other ? `; features and items add ${signed(other)} (Tough, Dwarven Toughness, a Draconic Sorcerer's resilience...)` : ""}: maximum {total}.
+          Dice and Constitution give {fromDice}
+          {other ? `; features and items add ${signed(other)} (Tough, Dwarven Toughness, a Draconic Sorcerer's resilience...)` : ""}:
+          maximum {total}.
         </p>
         <h3>Check of Soul Forge's rolls</h3>
-        {audit.count === 0 ? <p className="muted">Soul Forge has made no rolls for this character yet; rolls you type in are not part of the check.</p> : (
+        {audit.count === 0 ? (
+          <p className="muted">Soul Forge has made no rolls for this character yet; rolls you type in are not part of the check.</p>
+        ) : (
           <>
             <p>
-              {audit.count} {audit.count === 1 ? "roll" : "rolls"}, averaging <b>{audit.mean.toFixed(2)}</b> where the same dice average {audit.expected.toFixed(2)}.
+              {audit.count} {audit.count === 1 ? "roll" : "rolls"}, averaging <b>{audit.mean.toFixed(2)}</b> where the same dice average{" "}
+              {audit.expected.toFixed(2)}.
               {audit.outOfRange ? <b className="warn"> {audit.outOfRange} outside the die's range.</b> : " All within the die's range."}
             </p>
             <div className="hp-faces">
               {Object.entries(audit.faces).map(([die, counts]) => (
-                <div key={die}><small>d{die}</small>{counts.map((n, i) => <span key={i} title={`${i + 1}: ${n}`} style={{ height: `${4 + n * 10}px` }}>{i + 1}</span>)}</div>
+                <div key={die}>
+                  <small>d{die}</small>
+                  {counts.map((n, i) => (
+                    <span key={i} title={`${i + 1}: ${n}`} style={{ height: `${4 + n * 10}px` }}>
+                      {i + 1}
+                    </span>
+                  ))}
+                </div>
               ))}
             </div>
-            <p className="muted">One character's rolls are few; the average evens out over many. Each face of a fair die comes up about as often as the others.</p>
+            <p className="muted">
+              One character's rolls are few; the average evens out over many. Each face of a fair die comes up about as often as the others.
+            </p>
           </>
         )}
       </div>

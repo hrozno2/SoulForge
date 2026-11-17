@@ -36,8 +36,18 @@ export interface EquipVariant {
  * the roll itself; 5e.tools classes carry it ("starting gold", from `goldAlternative`), as Plutonium reads it.
  */
 const WEALTH_2014: Record<string, string> = {
-  barbarian: "2d4 × 10", bard: "5d4 × 10", cleric: "5d4 × 10", druid: "2d4 × 10", fighter: "5d4 × 10", monk: "5d4",
-  paladin: "5d4 × 10", ranger: "5d4 × 10", rogue: "4d4 × 10", sorcerer: "3d4 × 10", warlock: "4d4 × 10", wizard: "4d4 × 10",
+  barbarian: "2d4 × 10",
+  bard: "5d4 × 10",
+  cleric: "5d4 × 10",
+  druid: "2d4 × 10",
+  fighter: "5d4 × 10",
+  monk: "5d4",
+  paladin: "5d4 × 10",
+  ranger: "5d4 × 10",
+  rogue: "4d4 × 10",
+  sorcerer: "3d4 × 10",
+  warlock: "4d4 × 10",
+  wizard: "4d4 × 10",
   artificer: "5d4 × 10",
 };
 
@@ -66,7 +76,13 @@ export interface ResolvedItem {
 
 // ---------------------------------------------------------------- text helpers
 
-const stripTags = (h: string) => h.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+const stripTags = (h: string) =>
+  h
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
 
 /** Split at commas and the words "and"/"or" that are not inside parentheses. */
 export function splitTop(text: string, words: string[] = ["and"]): string[] {
@@ -98,11 +114,28 @@ export function splitTop(text: string, words: string[] = ["and"]): string[] {
   return out.map((s) => s.replace(/^\s*(and|or)\s+/i, "").trim()).filter(Boolean);
 }
 
-const NUM_WORDS: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+const NUM_WORDS: Record<string, number> = {
+  a: 1,
+  an: 1,
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+};
 
 /** "2 daggers", "an explorer's pack", "20 arrows" into text and quantity. */
 function toRef(raw: string): ItemRef | undefined {
-  let t = raw.replace(/\((if|only if)[^)]*\)/gi, "").replace(/\s+/g, " ").trim().replace(/[.;]$/, "");
+  let t = raw
+    .replace(/\((if|only if)[^)]*\)/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[.;]$/, "");
   if (!t) return undefined;
   let qty = 1;
   const m = t.match(/^(\d+)\s+(.*)$/);
@@ -167,7 +200,10 @@ function lettersVariants(text: string): { label: string; refs: ItemRef[]; gp: nu
   const parts = body.split(/\(([A-Z])\)\s*/).slice(1);
   const out: { label: string; refs: ItemRef[]; gp: number }[] = [];
   for (let i = 0; i + 1 < parts.length; i += 2) {
-    const clean = parts[i + 1].replace(/[;]?\s*(or|and)?\s*$/i, "").replace(/;\s*$/, "").trim();
+    const clean = parts[i + 1]
+      .replace(/[;]?\s*(or|and)?\s*$/i, "")
+      .replace(/;\s*$/, "")
+      .trim();
     const parsed = parseItems(clean);
     out.push({ label: parts[i], ...parsed });
   }
@@ -180,7 +216,14 @@ function groupVariant(items: string[]): EquipVariant {
     // Options are marked "(a)", "(b)": in italics in most books, as plain text in some (the 2014 Wizard and Druid).
     const marked = li.replace(/(?:<i>\s*)?\(([a-c])\)(?:\s*<\/i>)?/gi, "\u0001$1\u0002");
     if (marked.includes("\u0001")) {
-      const opts = marked.split(/\u0001[a-z]\u0002/).map((s) => stripTags(s).replace(/,?\s*(or)?\s*$/i, "").trim()).filter(Boolean);
+      const opts = marked
+        .split(/\u0001[a-z]\u0002/)
+        .map((s) =>
+          stripTags(s)
+            .replace(/,?\s*(or)?\s*$/i, "")
+            .trim(),
+        )
+        .filter(Boolean);
       v.choices.push({ options: opts.map((o) => parseItems(o).refs) });
     } else {
       const p = parseItems(stripTags(li));
@@ -244,15 +287,37 @@ export function startingPlans(ch: Character, reg: ARegistry): EquipPlan[] {
 // ---------------------------------------------------------------- matching names to items
 
 const ITEM_TYPES = ["Item", "Weapon", "Armor", "Magic Item"];
-const norm = (s: string) => s.toLowerCase().replace(/[’`]/g, "'").replace(/\(.*?\)/g, " ").replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
-const normKeep = (s: string) => s.toLowerCase().replace(/[’`]/g, "'").replace(/[^a-z0-9'() ]+/g, " ").replace(/\s+/g, " ").trim();
-const singular = (s: string) => s.split(" ").map((w) => w.replace(/ies$/, "y").replace(/(ch|sh|x|ss)es$/, "$1").replace(/([^s'])s$/, "$1")).join(" ");
+const norm = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[’`]/g, "'")
+    .replace(/\(.*?\)/g, " ")
+    .replace(/[^a-z0-9' ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+const normKeep = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[’`]/g, "'")
+    .replace(/[^a-z0-9'() ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+const singular = (s: string) =>
+  s
+    .split(" ")
+    .map((w) =>
+      w
+        .replace(/ies$/, "y")
+        .replace(/(ch|sh|x|ss)es$/, "$1")
+        .replace(/([^s'])s$/, "$1"),
+    )
+    .join(" ");
 
 const SYNONYMS: Record<string, string[]> = {
   "holy symbol": ["Amulet", "Emblem", "Reliquary", "Holy Symbol"],
   "arcane focus": ["Arcane Focus", "Crystal", "Orb", "Rod", "Staff", "Wand"],
   "druidic focus": ["Druidic Focus", "Sprig of Mistletoe", "Totem", "Wooden Staff", "Yew Wand"],
-  "spellbook": ["Spellbook", "Book (spellbook)"],
+  spellbook: ["Spellbook", "Book (spellbook)"],
   "component pouch": ["Component Pouch"],
   "belt pouch": ["Pouch"],
   "common clothes": ["Clothes, Common", "Common Clothes"],
@@ -261,14 +326,14 @@ const SYNONYMS: Record<string, string[]> = {
   "set of common clothes": ["Clothes, Common"],
   "set of fine clothes": ["Clothes, Fine"],
   "set of traveler's clothes": ["Clothes, Traveler's"],
-  "rations": ["Rations (1 day)", "Rations"],
+  rations: ["Rations (1 day)", "Rations"],
   "hempen rope": ["Rope, Hempen (50 feet)", "Rope"],
   "50 feet of hempen rope": ["Rope, Hempen (50 feet)"],
-  "rope": ["Rope, Hempen (50 feet)", "Rope"],
-  "torch": ["Torch"],
-  "bolts": ["Crossbow Bolts (20)", "Bolts (20)", "Crossbow Bolts"],
-  "arrows": ["Arrows (20)", "Arrows"],
-  "quiver": ["Quiver"],
+  rope: ["Rope, Hempen (50 feet)", "Rope"],
+  torch: ["Torch"],
+  bolts: ["Crossbow Bolts (20)", "Bolts (20)", "Crossbow Bolts"],
+  arrows: ["Arrows (20)", "Arrows"],
+  quiver: ["Quiver"],
   "thieves' tools": ["Thieves' Tools", "Thieves' tools"],
   "healer's kit": ["Healer's Kit"],
   "potion of healing": ["Potion of Healing"],
@@ -276,8 +341,8 @@ const SYNONYMS: Record<string, string[]> = {
   // Renamed in the 2024 Dungeon Master's Guide.
   "efficient quiver": ["Quiver of Ehlonna"],
   "iron bands": ["Iron Bands of Bilarro"],
-  "robes": ["Robes"],
-  "book": ["Book"],
+  robes: ["Robes"],
+  book: ["Book"],
 };
 
 export class ItemIndex {
@@ -287,7 +352,11 @@ export class ItemIndex {
     for (const t of ITEM_TYPES) {
       for (const e of reg.ofType(t)) {
         if (e.compendiumHidden && !/pack|clothes|pouch/i.test(e.name)) continue;
-        for (const [map, key] of [[this.byName, norm(e.name)], [this.byName, singular(norm(e.name))], [this.byKeep, normKeep(e.name)]] as const) {
+        for (const [map, key] of [
+          [this.byName, norm(e.name)],
+          [this.byName, singular(norm(e.name))],
+          [this.byKeep, normKeep(e.name)],
+        ] as const) {
           (map.get(key) ?? map.set(key, []).get(key)!).push(e);
         }
       }
@@ -296,7 +365,8 @@ export class ItemIndex {
 
   private pick(list: AElement[] | undefined, prefer: string): AElement | undefined {
     if (!list?.length) return undefined;
-    const rank = (e: AElement) => (e.source === prefer ? 0 : 2) + (e.type === "Magic Item" ? 3 : 0) + (/^Background Equipment|^Class Equipment/.test(e.name) ? 5 : 0);
+    const rank = (e: AElement) =>
+      (e.source === prefer ? 0 : 2) + (e.type === "Magic Item" ? 3 : 0) + (/^Background Equipment|^Class Equipment/.test(e.name) ? 5 : 0);
     return [...list].sort((a, b) => rank(a) - rank(b))[0];
   }
 
@@ -304,10 +374,15 @@ export class ItemIndex {
   find(text: string, prefer = ""): AElement | undefined {
     const keep = normKeep(text);
     const n = norm(text);
-    const tries: (AElement | undefined)[] = [this.pick(this.byKeep.get(keep), prefer), this.pick(this.byName.get(n), prefer), this.pick(this.byName.get(singular(n)), prefer)];
+    const tries: (AElement | undefined)[] = [
+      this.pick(this.byKeep.get(keep), prefer),
+      this.pick(this.byName.get(n), prefer),
+      this.pick(this.byName.get(singular(n)), prefer),
+    ];
     // Older books name armor "Leather" where the class list says "leather armor".
     if (/ armor$/.test(n)) tries.push(this.pick(this.byName.get(n.replace(/ armor$/, "")), prefer));
-    for (const syn of SYNONYMS[n] ?? SYNONYMS[singular(n)] ?? []) tries.push(this.pick(this.byKeep.get(normKeep(syn)), prefer), this.pick(this.byName.get(norm(syn)), prefer));
+    for (const syn of SYNONYMS[n] ?? SYNONYMS[singular(n)] ?? [])
+      tries.push(this.pick(this.byKeep.get(normKeep(syn)), prefer), this.pick(this.byName.get(norm(syn)), prefer));
     return tries.find(Boolean);
   }
 
@@ -319,7 +394,10 @@ export class ItemIndex {
 /** "any simple weapon", "any martial melee weapon": which kind of weapon the player may pick. */
 export function anyWeaponKind(text: string): { category: "simple" | "martial"; reach?: "melee" | "ranged" } | undefined {
   // "any martial weapon", "a martial weapon", "two martial weapons", "a simple melee weapon"
-  const m = text.toLowerCase().replace(/^(any|a|an|one|two)\s+/, "").match(/^(simple|martial)( melee| ranged)? weapons?\b/);
+  const m = text
+    .toLowerCase()
+    .replace(/^(any|a|an|one|two)\s+/, "")
+    .match(/^(simple|martial)( melee| ranged)? weapons?\b/);
   return m ? { category: m[1] as "simple" | "martial", reach: m[2] ? (m[2].trim() as "melee" | "ranged") : undefined } : undefined;
 }
 
@@ -330,7 +408,14 @@ export function weaponChoices(reg: ARegistry, kind: { category: "simple" | "mart
     // Mundane weapons only (Chris 2026-10-29: "+3" weapons were offered): nothing with a rarity or a "+1" in its name,
     // nothing hidden, no firearms or futuristic gear (their own content filters).
     const rarity = (w.setters.rarity?.value ?? "").toLowerCase();
-    if (w.compendiumHidden || (rarity && !/^(none|mundane)/.test(rarity)) || /(^|\s)\+\d/.test(w.name) || w.supports.includes("scifi") || w.supports.includes("modern")) continue;
+    if (
+      w.compendiumHidden ||
+      (rarity && !/^(none|mundane)/.test(rarity)) ||
+      /(^|\s)\+\d/.test(w.name) ||
+      w.supports.includes("scifi") ||
+      w.supports.includes("modern")
+    )
+      continue;
     const tags = `${w.supports.join(" ")} ${w.setters.proficiency?.value ?? ""}`.toLowerCase();
     if (!tags.includes(kind.category)) continue;
     const ranged = /ranged/.test(tags);
@@ -344,10 +429,18 @@ export function weaponChoices(reg: ARegistry, kind: { category: "simple" | "mart
 
 /** Turn a reference into an item plus a quantity, using bundle sizes like "Arrows (20)". */
 /** The focus groups gear can name without saying which (C7.7): the player picks one, as Aurora groups them. */
-export const FOCUS_KINDS: Record<"arcane" | "druidic" | "holy", string> = { arcane: "Arcane Focus", druidic: "Druidic Focus", holy: "Holy Symbol" };
+export const FOCUS_KINDS: Record<"arcane" | "druidic" | "holy", string> = {
+  arcane: "Arcane Focus",
+  druidic: "Druidic Focus",
+  holy: "Holy Symbol",
+};
 const focusKindOf = (text: string) => {
-  const t = text.trim().toLowerCase().replace(/^(?:an?|any|one|worn)\s+/, "").replace(/\s+of your choice$/, "");
-  return (Object.entries(FOCUS_KINDS).find(([, g]) => g.toLowerCase() === t)?.[0]) as keyof typeof FOCUS_KINDS | undefined;
+  const t = text
+    .trim()
+    .toLowerCase()
+    .replace(/^(?:an?|any|one|worn)\s+/, "")
+    .replace(/\s+of your choice$/, "");
+  return Object.entries(FOCUS_KINDS).find(([, g]) => g.toLowerCase() === t)?.[0] as keyof typeof FOCUS_KINDS | undefined;
 };
 
 export function resolveRef(ref: ItemRef, idx: ItemIndex, prefer: string, picked?: string): ResolvedItem {
@@ -362,14 +455,17 @@ export function resolveRef(ref: ItemRef, idx: ItemIndex, prefer: string, picked?
     if (el) return { el, name: el.name, qty: ref.qty };
   }
   // "wooden shield", "a worn holy symbol": the item is the last words without the description in front.
-  const el = idx.find(ref.text, prefer) ?? (/^(wooden|worn|small|simple|common|fine)\s+/i.test(ref.text) ? idx.find(ref.text.replace(/^\S+\s+/, ""), prefer) : undefined);
+  const el =
+    idx.find(ref.text, prefer) ??
+    (/^(wooden|worn|small|simple|common|fine)\s+/i.test(ref.text) ? idx.find(ref.text.replace(/^\S+\s+/, ""), prefer) : undefined);
   if (!el) {
     // Keep names short; the long form ("a trophy (a dagger, a broken blade...)") goes in the note.
     const short = ref.text.replace(/\s*\(.*$/, "").trim() || ref.text;
     return { name: short.replace(/^./, (c) => c.toUpperCase()), qty: ref.qty, note: ref.text !== short ? ref.text : undefined };
   }
   const bundle = el.name.match(/\((\d+)\)\s*$/);
-  if (bundle && ref.qty >= parseInt(bundle[1], 10) && ref.qty % parseInt(bundle[1], 10) === 0 && !/^\d+$/.test(ref.text)) return { el, name: el.name, qty: ref.qty / parseInt(bundle[1], 10) };
+  if (bundle && ref.qty >= parseInt(bundle[1], 10) && ref.qty % parseInt(bundle[1], 10) === 0 && !/^\d+$/.test(ref.text))
+    return { el, name: el.name, qty: ref.qty / parseInt(bundle[1], 10) };
   return { el, name: el.name, qty: ref.qty };
 }
 
@@ -389,7 +485,14 @@ export function expandPack(el: AElement, reg: ARegistry, qty = 1, depth = 0): Re
 }
 
 /** All items a variant gives, with chosen options for older style groups. */
-export function variantItems(v: EquipVariant, picks: number[], idx: ItemIndex, prefer: string, openPacks: boolean, weaponPicks: Record<string, string> = {}): ResolvedItem[] {
+export function variantItems(
+  v: EquipVariant,
+  picks: number[],
+  idx: ItemIndex,
+  prefer: string,
+  openPacks: boolean,
+  weaponPicks: Record<string, string> = {},
+): ResolvedItem[] {
   const out: ResolvedItem[] = [];
   const reg = idx.registry;
   const add = (r: ResolvedItem) => {
@@ -401,7 +504,12 @@ export function variantItems(v: EquipVariant, picks: number[], idx: ItemIndex, p
     // The ready-made pack can leave something out (armor, for one); anything the text lists that it lacks is added.
     // The same item from another book ("Clothes, Traveler's" in the pack, "Traveler's Clothes" from 5e.tools) counts
     // as the one in the pack: by id, or by its words in any order.
-    const words = (n: string) => norm(n).split(/[\s,]+/).filter(Boolean).sort().join(" ");
+    const words = (n: string) =>
+      norm(n)
+        .split(/[\s,]+/)
+        .filter(Boolean)
+        .sort()
+        .join(" ");
     const have = new Set(out.flatMap((i) => (i.el ? [i.el.id, words(i.el.name)] : [words(i.name)])));
     const isIn = (x: ResolvedItem) => !!x.el && (have.has(x.el.id) || have.has(words(x.el.name)));
     for (const ref of v.fixed) {
@@ -429,7 +537,15 @@ export function addToInventory(ch: Character, items: ResolvedItem[], gp = 0): Ch
       stack.qty += it.qty;
       continue;
     }
-    inv.push({ uid: uid(), id: it.el?.id ?? "", qty: it.qty, equipped: false, attuned: false, custom: it.el ? undefined : { name: it.name, description: it.note }, ...(it.pending && !it.el ? { pending: it.pending } : {}) });
+    inv.push({
+      uid: uid(),
+      id: it.el?.id ?? "",
+      qty: it.qty,
+      equipped: false,
+      attuned: false,
+      custom: it.el ? undefined : { name: it.name, description: it.note },
+      ...(it.pending && !it.el ? { pending: it.pending } : {}),
+    });
   }
   return { ...ch, inventory: inv, coins: { ...ch.coins, gp: ch.coins.gp + gp } };
 }
@@ -462,7 +578,13 @@ export function removeAdded(ch: Character, labels: string[]): Character {
   }
   const ledger = { ...(ch.equipmentLedger ?? {}) };
   for (const l of labels) delete ledger[l];
-  return { ...ch, inventory: inv, coins: { ...ch.coins, gp: Math.max(0, gp) }, equipmentLedger: ledger, equipmentAdded: (ch.equipmentAdded ?? []).filter((x) => !labels.includes(x)) };
+  return {
+    ...ch,
+    inventory: inv,
+    coins: { ...ch.coins, gp: Math.max(0, gp) },
+    equipmentLedger: ledger,
+    equipmentAdded: (ch.equipmentAdded ?? []).filter((x) => !labels.includes(x)),
+  };
 }
 
 /** Wear the first armor and shield, and wield weapons while there are hands free, when nothing is equipped yet. */
@@ -518,9 +640,43 @@ export function adventuringPacks(reg: ARegistry, prefer: string): AElement[] {
 }
 
 const COMMON = [
-  "Backpack", "Bedroll", "Blanket", "Candle", "Crowbar", "Grappling Hook", "Hammer", "Healer's Kit", "Lantern, Hooded", "Mess Kit", "Oil (flask)", "Pouch", "Rations (1 day)",
-  "Rope, Hempen (50 feet)", "Tinderbox", "Torch", "Waterskin", "Potion of Healing", "Thieves' Tools", "Component Pouch", "Arcane Focus", "Holy Symbol", "Spellbook", "Shield",
-  "Light Crossbow", "Crossbow Bolts (20)", "Arrows (20)", "Quiver", "Quarterstaff", "Dagger", "Shortsword", "Longsword", "Shortbow", "Handaxe", "Javelin", "Leather Armor", "Chain Mail",
+  "Backpack",
+  "Bedroll",
+  "Blanket",
+  "Candle",
+  "Crowbar",
+  "Grappling Hook",
+  "Hammer",
+  "Healer's Kit",
+  "Lantern, Hooded",
+  "Mess Kit",
+  "Oil (flask)",
+  "Pouch",
+  "Rations (1 day)",
+  "Rope, Hempen (50 feet)",
+  "Tinderbox",
+  "Torch",
+  "Waterskin",
+  "Potion of Healing",
+  "Thieves' Tools",
+  "Component Pouch",
+  "Arcane Focus",
+  "Holy Symbol",
+  "Spellbook",
+  "Shield",
+  "Light Crossbow",
+  "Crossbow Bolts (20)",
+  "Arrows (20)",
+  "Quiver",
+  "Quarterstaff",
+  "Dagger",
+  "Shortsword",
+  "Longsword",
+  "Shortbow",
+  "Handaxe",
+  "Javelin",
+  "Leather Armor",
+  "Chain Mail",
 ];
 
 /** The usual odds and ends a player adds, limited to what the loaded content has. */
@@ -556,8 +712,14 @@ export function genericOptions(reg: ARegistry, kind: GenericKind, prefer = ""): 
   const idx = new ItemIndex(reg);
   const out = new Map<string, AElement>();
   if (kind === "artisanOrInstrument") return [...genericOptions(reg, "artisan", prefer), ...genericOptions(reg, "instrument", prefer)];
-  for (const n of TOOL_KINDS[kind] ?? []) { const el = idx.find(n, prefer); if (el) out.set(el.name.toLowerCase(), el); }
-  if (kind === "instrument") for (const el of reg.ofType("Item")) if (/musical instrument/i.test(el.setters.category?.value ?? "") && !el.compendiumHidden && !out.has(el.name.toLowerCase())) out.set(el.name.toLowerCase(), el);
+  for (const n of TOOL_KINDS[kind] ?? []) {
+    const el = idx.find(n, prefer);
+    if (el) out.set(el.name.toLowerCase(), el);
+  }
+  if (kind === "instrument")
+    for (const el of reg.ofType("Item"))
+      if (/musical instrument/i.test(el.setters.category?.value ?? "") && !el.compendiumHidden && !out.has(el.name.toLowerCase()))
+        out.set(el.name.toLowerCase(), el);
   // A focus group: every item filed in it, one per name, the preferred book's copy first.
   if (kind === "arcane" || kind === "druidic" || kind === "holy") {
     for (const el of reg.ofType("Item")) {
@@ -583,7 +745,10 @@ export function settlePending(items: ResolvedItem[], picks: Record<number, strin
 
 /** ...and in the inventory after it was added: the open item becomes the chosen one. */
 export function choosePending(ch: Character, uid: string, id: string): Character {
-  return { ...ch, inventory: ch.inventory.map((i) => (i.uid === uid && i.pending ? { ...i, id, custom: undefined, pending: undefined } : i)) };
+  return {
+    ...ch,
+    inventory: ch.inventory.map((i) => (i.uid === uid && i.pending ? { ...i, id, custom: undefined, pending: undefined } : i)),
+  };
 }
 
 /**
@@ -609,7 +774,17 @@ export function resolveChosenTools(items: ResolvedItem[], activeIds: Iterable<st
     // "Artisan's Tools or Musical Instrument chosen for the tool proficiency above" (the 2024 Monk) names two kinds:
     // whichever of them was taken, else a pick from both (it read as an instrument only before).
     const both = /artisan/i.test(it.name) && /musical instrument/i.test(it.name);
-    const kind = both ? "artisanOrInstrument" : /gaming set/i.test(it.name) ? "gaming" : /musical instrument/i.test(it.name) ? "instrument" : /artisan/i.test(it.name) ? "artisan" : /\btools?\b.*\b(choose|choice)\b.*\bproficien/i.test(it.name) ? "any" : undefined;
+    const kind = both
+      ? "artisanOrInstrument"
+      : /gaming set/i.test(it.name)
+        ? "gaming"
+        : /musical instrument/i.test(it.name)
+          ? "instrument"
+          : /artisan/i.test(it.name)
+            ? "artisan"
+            : /\btools?\b.*\b(choose|choice)\b.*\bproficien/i.test(it.name)
+              ? "any"
+              : undefined;
     if (kind === "any") chosen.any = [...chosen.gaming, ...chosen.instrument, ...chosen.artisan];
     if (kind === "artisanOrInstrument") chosen.artisanOrInstrument = [...chosen.artisan, ...chosen.instrument];
     const pick = kind ? chosen[kind][used[kind] ?? 0] : undefined;

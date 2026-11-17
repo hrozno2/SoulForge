@@ -21,7 +21,9 @@ describe.skipIf(!C)("optional choices in the content", () => {
   const reg = C ? loadTestContent(C) : undefined!;
 
   it("asks a Variant Human for its increase, skill and feat", () => {
-    const ch = newCharacter(); ch.race = "ID_RACE_HUMAN"; ch.classes = [{ classId: "ID_WOTC_PHB_CLASS_FIGHTER", level: 1 }];
+    const ch = newCharacter();
+    ch.race = "ID_RACE_HUMAN";
+    ch.classes = [{ classId: "ID_WOTC_PHB_CLASS_FIGHTER", level: 1 }];
     let r = resolve(ch, reg);
     const v = r.slots.find((s) => s.rule.type === "Race Variant")!;
     ch.selections[v.key] = [v.options.find((o) => /variant/i.test(o.name))!.id];
@@ -29,11 +31,18 @@ describe.skipIf(!C)("optional choices in the content", () => {
     r = resolve(ch, reg);
     const own = r.slots.filter((s) => s.owner.type === "Race Variant");
     expect(own.length).toBeGreaterThanOrEqual(3);
-    for (const s of own) { expect(s.declined, s.rule.name).toBeFalsy(); expect(stillToChoose(s), s.rule.name).toBe(true); }
+    for (const s of own) {
+      expect(s.declined, s.rule.name).toBeFalsy();
+      expect(stillToChoose(s), s.rule.name).toBe(true);
+    }
   }, 600000);
 
   it("requires the Armorer's Armor Model", () => {
-    const bad = reg.all().flatMap((e) => e.rules.filter((r) => r.kind === "select" && /armor model/i.test(r.name) && r.optional).map((r) => `${e.id}: ${r.name}`));
+    const bad = reg
+      .all()
+      .flatMap((e) =>
+        e.rules.filter((r) => r.kind === "select" && /armor model/i.test(r.name) && r.optional).map((r) => `${e.id}: ${r.name}`),
+      );
     expect(bad).toEqual([]);
   }, 600000);
 });

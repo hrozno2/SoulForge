@@ -28,11 +28,21 @@ export function hash(s: string): string {
 export function loadContent(reg: ARegistry): Content {
   const all = reg.all();
   const keyOf = new Map<string, string>();
-  const report: LoadReport = { elements: 0, bySource: { aurora: 0, "5etools": 0 }, merged: 0, sharedConcepts: [], unmappedConcepts: [], danglingRefs: [], repeatedChoices: 0 };
+  const report: LoadReport = {
+    elements: 0,
+    bySource: { aurora: 0, "5etools": 0 },
+    merged: 0,
+    sharedConcepts: [],
+    unmappedConcepts: [],
+    danglingRefs: [],
+    repeatedChoices: 0,
+  };
 
   // 1. Canonical keys. A concept element is keyed by its concept; the first source to provide it is the primary
   //    (Aurora before 5e.tools, then by id, so the result never depends on load order).
-  const sorted = [...all].sort((a, b) => (originOf(a) === originOf(b) ? (a.id < b.id ? -1 : a.id > b.id ? 1 : 0) : originOf(a) === "aurora" ? -1 : 1));
+  const sorted = [...all].sort((a, b) =>
+    originOf(a) === originOf(b) ? (a.id < b.id ? -1 : a.id > b.id ? 1 : 0) : originOf(a) === "aurora" ? -1 : 1,
+  );
   const conceptOrigins = new Map<string, Set<Origin>>();
   for (const e of sorted) {
     const concept = CONCEPT_TYPES.has(e.type) ? conceptOf(e) : undefined;
@@ -40,7 +50,10 @@ export function loadContent(reg: ARegistry): Content {
     keyOf.set(e.id, concept ?? e.id);
     if (concept) (conceptOrigins.get(concept) ?? conceptOrigins.set(concept, new Set()).get(concept)!).add(originOf(e));
   }
-  report.sharedConcepts = [...conceptOrigins].filter(([, o]) => o.size > 1).map(([k]) => k).sort();
+  report.sharedConcepts = [...conceptOrigins]
+    .filter(([, o]) => o.size > 1)
+    .map(([k]) => k)
+    .sort();
 
   // 2. Elements, with references rewritten to canonical keys.
   const elements = new Map<string, IRElement>();
@@ -68,26 +81,62 @@ export function loadContent(reg: ARegistry): Content {
       if (r.kind === "grant") {
         const target = ref(e.id, r.id, `grant ${r.type}`);
         const concept = target.includes(":") && !target.startsWith("ID_") ? target : undefined;
-        effects.push(concept
-          ? { kind: "concept", key: concept, level: r.level, when: r.requirements }
-          : { kind: "grant", element: target, elementType: r.type, level: r.level, when: r.requirements, spellcasting: r.spellcasting, prepared: r.prepared });
+        effects.push(
+          concept
+            ? { kind: "concept", key: concept, level: r.level, when: r.requirements }
+            : {
+                kind: "grant",
+                element: target,
+                elementType: r.type,
+                level: r.level,
+                when: r.requirements,
+                spellcasting: r.spellcasting,
+                prepared: r.prepared,
+              },
+        );
       } else if (r.kind === "stat") {
-        effects.push({ kind: "stat", name: r.name.toLowerCase(), value: r.value, bonus: r.bonus, level: r.level, when: r.requirements, equipped: r.equipped });
+        effects.push({
+          kind: "stat",
+          name: r.name.toLowerCase(),
+          value: r.value,
+          bonus: r.bonus,
+          level: r.level,
+          when: r.requirements,
+          equipped: r.equipped,
+        });
       } else {
         const print = `${r.type}\u0000${r.name}\u0000${r.supports}\u0000${r.level ?? ""}\u0000${r.number}`;
         const n = seen.get(print) ?? 0;
         seen.set(print, n + 1);
         if (n > 0) report.repeatedChoices++;
         choices.push({
-          key: `${key}#${hash(print)}${n ? `.${n + 1}` : ""}`, legacyKey: `${e.id}|${index}`,
-          type: r.type, name: r.name, filter: r.supports, count: r.number, level: r.level, optional: !!r.optional,
-          default: r.default ? ref(e.id, r.default, `default of ${r.name}`) : undefined, when: r.requirements, spellcasting: r.spellcasting, items: r.items,
+          key: `${key}#${hash(print)}${n ? `.${n + 1}` : ""}`,
+          legacyKey: `${e.id}|${index}`,
+          type: r.type,
+          name: r.name,
+          filter: r.supports,
+          count: r.number,
+          level: r.level,
+          optional: !!r.optional,
+          default: r.default ? ref(e.id, r.default, `default of ${r.name}`) : undefined,
+          when: r.requirements,
+          spellcasting: r.spellcasting,
+          items: r.items,
         });
       }
     });
     elements.set(key, {
-      key, type: e.type, name: e.name, edition: isModern(e) ? "2024" : "2014", sources: [source],
-      concept: key !== e.id ? key : undefined, effects, choices, requires: e.requirements, supports: e.supports, hidden: e.compendiumHidden,
+      key,
+      type: e.type,
+      name: e.name,
+      edition: isModern(e) ? "2024" : "2014",
+      sources: [source],
+      concept: key !== e.id ? key : undefined,
+      effects,
+      choices,
+      requires: e.requirements,
+      supports: e.supports,
+      hidden: e.compendiumHidden,
     });
   }
   report.elements = elements.size;

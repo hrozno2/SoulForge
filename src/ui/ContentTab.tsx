@@ -40,10 +40,19 @@ function Tree({ node, source, content, depth }: { node: IndexNode; source: Sourc
   return (
     <div className="tree-node" style={{ marginLeft: depth ? 16 : 0 }}>
       <div className="check">
-        {node.children.length > 0 ? <button className="more tiny" onClick={() => setOpen(!open)}>{open ? "▾" : "▸"}</button> : <span style={{ width: 22 }} />}
+        {node.children.length > 0 ? (
+          <button className="more tiny" onClick={() => setOpen(!open)}>
+            {open ? "▾" : "▸"}
+          </button>
+        ) : (
+          <span style={{ width: 22 }} />
+        )}
         <label className="check">
           <input type="checkbox" checked={!off} disabled={content.busy} onChange={() => content.toggleIndex(source.url, node.url)} />
-          {node.name} <small className="muted">{total(node)} files · v{node.version}</small>
+          {node.name}{" "}
+          <small className="muted">
+            {total(node)} files · v{node.version}
+          </small>
         </label>
       </div>
       {open && !off && node.children.map((c) => <Tree key={c.url} node={c} source={source} content={content} depth={depth + 1} />)}
@@ -64,12 +73,25 @@ function Compendium({ content, onDetail }: { content: ContentState; onDetail: (e
         <input style={{ flex: 1 }} placeholder="Search by name" value={q} onChange={(e) => setQ(e.target.value)} />
         <select aria-label="Filter by type" value={type} onChange={(e) => setType(e.target.value)}>
           <option value="">All types</option>
-          {types.map((t) => <option key={t} value={t}>{t}</option>)}
+          {types.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
         </select>
       </div>
       <ul className="options boxed">
         {results.map((e) => (
-          <li key={e.id}><button onMouseEnter={() => onDetail(e)} onClick={() => onDetail(e)}><span className="tick" /><span className="opt-name">{e.name}</span><span className="opt-meta">{e.type}</span><span className="opt-src" title={e.source}>{e.source}</span></button></li>
+          <li key={e.id}>
+            <button onMouseEnter={() => onDetail(e)} onClick={() => onDetail(e)}>
+              <span className="tick" />
+              <span className="opt-name">{e.name}</span>
+              <span className="opt-meta">{e.type}</span>
+              <span className="opt-src" title={e.source}>
+                {e.source}
+              </span>
+            </button>
+          </li>
         ))}
       </ul>
     </section>
@@ -81,18 +103,25 @@ function Sources({ r, set }: { r: Resolved; set: SetCharacter }) {
   const ch = r.character;
   const names = useMemo(() => {
     const seen = new Map<string, number>();
-    for (const t of ["Race", "Class", "Background", "Feat", "Spell", "Archetype"]) for (const e of r.reg.ofType(t)) if (e.source) seen.set(e.source, (seen.get(e.source) ?? 0) + 1);
+    for (const t of ["Race", "Class", "Background", "Feat", "Spell", "Archetype"])
+      for (const e of r.reg.ofType(t)) if (e.source) seen.set(e.source, (seen.get(e.source) ?? 0) + 1);
     return [...seen.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [r.reg]);
   const on = new Set(ch.sources);
   return (
     <section className="card">
       <h2>Books for {ch.name || "this character"}</h2>
-      <p className="muted">Limit this character's choices in the builder to specific books. Leave everything unticked to allow all content.</p>
+      <p className="muted">
+        Limit this character's choices in the builder to specific books. Leave everything unticked to allow all content.
+      </p>
       <div className="source-grid">
         {names.map(([n, count]) => (
           <label key={n} className="check">
-            <input type="checkbox" checked={on.has(n)} onChange={() => set((c) => ({ ...c, sources: on.has(n) ? c.sources.filter((x) => x !== n) : [...c.sources, n] }))} />
+            <input
+              type="checkbox"
+              checked={on.has(n)}
+              onChange={() => set((c) => ({ ...c, sources: on.has(n) ? c.sources.filter((x) => x !== n) : [...c.sources, n] }))}
+            />
             {n} <small className="muted">{count}</small>
           </label>
         ))}
@@ -102,7 +131,17 @@ function Sources({ r, set }: { r: Resolved; set: SetCharacter }) {
   );
 }
 
-export function ContentTab({ content, onDetail, r, set }: { content: ContentState; onDetail: (e: AElement) => void; r?: Resolved; set?: SetCharacter }) {
+export function ContentTab({
+  content,
+  onDetail,
+  r,
+  set,
+}: {
+  content: ContentState;
+  onDetail: (e: AElement) => void;
+  r?: Resolved;
+  set?: SetCharacter;
+}) {
   const [link, setLink] = useState(DEFAULT_LINK);
   const [xmlName, setXmlName] = useState("My homebrew");
   const [xml, setXml] = useState(TEMPLATE);
@@ -139,8 +178,24 @@ export function ContentTab({ content, onDetail, r, set }: { content: ContentStat
       const name = list.length === 1 ? list[0].name.replace(/\.(zip|xml)$/i, "") : `${list.length} files`;
       const root = `local://${name}`;
       for (const f of files) await idbFileCache.put(`${root}/${f.path}`, f.xml, root);
-      const node: IndexNode = { url: root, name, description: "Imported from this computer", version: "local", files: files.map((f) => `${root}/${f.path}`), children: [] };
-      await content.addLocal({ url: root, name, kind: "local", tree: node, disabled: [], versions: {}, lastChecked: Date.now(), fileCount: files.length });
+      const node: IndexNode = {
+        url: root,
+        name,
+        description: "Imported from this computer",
+        version: "local",
+        files: files.map((f) => `${root}/${f.path}`),
+        children: [],
+      };
+      await content.addLocal({
+        url: root,
+        name,
+        kind: "local",
+        tree: node,
+        disabled: [],
+        versions: {},
+        lastChecked: Date.now(),
+        fileCount: files.length,
+      });
       setMsg(`Imported ${files.length} files.`);
     } catch (e) {
       setMsg(`Could not import: ${(e as Error).message}`);
@@ -160,7 +215,9 @@ export function ContentTab({ content, onDetail, r, set }: { content: ContentStat
       await ftStore(url.replace(/^https?:\/\//, "").replace(/\/+$/, ""), files, url);
       if (failed.length) setFtMsg((m) => `${m} ${failed.length} optional files were not found.`);
     } catch (e) {
-      setFtMsg(`Could not fetch from that address: ${(e as Error).message}. If it blocks apps, download the data folder and use Import files instead.`);
+      setFtMsg(
+        `Could not fetch from that address: ${(e as Error).message}. If it blocks apps, download the data folder and use Import files instead.`,
+      );
     } finally {
       setFtBusy(false);
     }
@@ -188,8 +245,24 @@ export function ContentTab({ content, onDetail, r, set }: { content: ContentStat
       const { parseElementsXml, browserXml } = await import("../aurora/parse");
       const parsed = parseElementsXml(xml, browserXml());
       await idbFileCache.put(`${root}/content.xml`, xml, root);
-      const node: IndexNode = { url: root, name: `Custom: ${name}`, description: "", version: "local", files: [`${root}/content.xml`], children: [] };
-      await content.addLocal({ url: root, name: `Custom: ${name}`, kind: "local", tree: node, disabled: [], versions: {}, lastChecked: Date.now(), fileCount: 1 });
+      const node: IndexNode = {
+        url: root,
+        name: `Custom: ${name}`,
+        description: "",
+        version: "local",
+        files: [`${root}/content.xml`],
+        children: [],
+      };
+      await content.addLocal({
+        url: root,
+        name: `Custom: ${name}`,
+        kind: "local",
+        tree: node,
+        disabled: [],
+        versions: {},
+        lastChecked: Date.now(),
+        fileCount: 1,
+      });
       setMsg(`Saved ${parsed.elements.length} elements.`);
     } catch (e) {
       setMsg(`That XML is not valid: ${(e as Error).message}`);
@@ -201,11 +274,14 @@ export function ContentTab({ content, onDetail, r, set }: { content: ContentStat
       <section className="card">
         <h2>Content links</h2>
         <p className="muted">
-          Add the address of an Aurora index file. Soul Forge downloads everything it lists, keeps a copy for offline use, and checks for new versions each time it starts.
+          Add the address of an Aurora index file. Soul Forge downloads everything it lists, keeps a copy for offline use, and checks for
+          new versions each time it starts.
         </p>
         <div className="row">
           <input style={{ flex: 1 }} value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://.../something.index" />
-          <button className="primary" disabled={content.busy} onClick={() => content.addLink(link)}>Add link</button>
+          <button className="primary" disabled={content.busy} onClick={() => content.addLink(link)}>
+            Add link
+          </button>
         </div>
         <div className="row">
           <button onClick={() => openExternal("https://github.com/AuroraLegacy/elements")}>AuroraLegacy elements repo</button>
@@ -214,22 +290,51 @@ export function ContentTab({ content, onDetail, r, set }: { content: ContentStat
         {content.busy && (
           <div className="progress">
             <div style={{ width: `${pct}%` }} />
-            <span>{content.status || "Working..."} {content.progress ? `${content.progress.done}/${content.progress.total}` : ""}</span>
+            <span>
+              {content.status || "Working..."} {content.progress ? `${content.progress.done}/${content.progress.total}` : ""}
+            </span>
           </div>
         )}
         {!content.busy && content.status && <p className="notice">{content.status}</p>}
-        {content.errors.length > 0 && <details><summary className="warn">{content.errors.length} files could not be read</summary>{content.errors.slice(0, 20).map((e) => <p key={e} className="muted">{e}</p>)}</details>}
+        {content.errors.length > 0 && (
+          <details>
+            <summary className="warn">{content.errors.length} files could not be read</summary>
+            {content.errors.slice(0, 20).map((e) => (
+              <p key={e} className="muted">
+                {e}
+              </p>
+            ))}
+          </details>
+        )}
       </section>
 
       {content.sources.map((s) => (
         <section className="card" key={s.url}>
           <h2>{s.name}</h2>
-          <p className="muted">{s.kind === "link" ? s.url : "Stored on this computer"}<br />{s.fileCount} files enabled · checked {ago(s.lastChecked)}</p>
+          <p className="muted">
+            {s.kind === "link" ? s.url : "Stored on this computer"}
+            <br />
+            {s.fileCount} files enabled · checked {ago(s.lastChecked)}
+          </p>
           <div className="row">
-            {s.format === "5etools" && s.baseUrl && <button disabled={ftBusy || content.busy} onClick={() => ftFetch(s.baseUrl!)}>Refresh from address</button>}
-            {s.kind === "link" && <button disabled={content.busy} onClick={() => content.update(s.url)}>Check for updates</button>}
-            {s.kind === "link" && <button disabled={content.busy} onClick={() => content.update(s.url, true)}>Download everything again</button>}
-            <button disabled={content.busy} onClick={() => content.remove(s.url)}>Remove</button>
+            {s.format === "5etools" && s.baseUrl && (
+              <button disabled={ftBusy || content.busy} onClick={() => ftFetch(s.baseUrl!)}>
+                Refresh from address
+              </button>
+            )}
+            {s.kind === "link" && (
+              <button disabled={content.busy} onClick={() => content.update(s.url)}>
+                Check for updates
+              </button>
+            )}
+            {s.kind === "link" && (
+              <button disabled={content.busy} onClick={() => content.update(s.url, true)}>
+                Download everything again
+              </button>
+            )}
+            <button disabled={content.busy} onClick={() => content.remove(s.url)}>
+              Remove
+            </button>
           </div>
           {s.tree && <Tree node={s.tree} source={s} content={content} depth={0} />}
         </section>
@@ -238,21 +343,47 @@ export function ContentTab({ content, onDetail, r, set }: { content: ContentStat
       <section className="card">
         <h2>5etools data (works with Plutonium)</h2>
         <p className="muted">
-          Reads the JSON data that 5e.tools and the Plutonium Foundry module use: species, classes and subclasses, backgrounds, feats, spells, items and creatures.
-          5e.tools itself sits behind a bot check, so an app cannot fetch from it. Use the data folder of a copy you are entitled to use: a folder on this computer, a ZIP of it, or
-          an address that serves the folder (for example your own 5etools install).
+          Reads the JSON data that 5e.tools and the Plutonium Foundry module use: species, classes and subclasses, backgrounds, feats,
+          spells, items and creatures. 5e.tools itself sits behind a bot check, so an app cannot fetch from it. Use the data folder of a
+          copy you are entitled to use: a folder on this computer, a ZIP of it, or an address that serves the folder (for example your own
+          5etools install).
         </p>
         <FiveToolsImport content={content} baseUrl={ftUrl} setBaseUrl={setFtUrl} />
         <h3>Or fetch the whole data folder</h3>
         <div className="row">
           <input style={{ flex: 1 }} value={ftUrl} onChange={(e) => setFtUrl(e.target.value)} placeholder="https://your-server/data" />
-          <button className="primary" disabled={ftBusy || !ftUrl.trim()} onClick={() => ftFetch(ftUrl)}>Fetch from address</button>
+          <button className="primary" disabled={ftBusy || !ftUrl.trim()} onClick={() => ftFetch(ftUrl)}>
+            Fetch from address
+          </button>
         </div>
         <div className="row">
-          <label>Data folder or ZIP: <input type="file" accept=".json,.zip" multiple {...{ webkitdirectory: "" }} onChange={(e) => { void ftImport(e.target.files); e.target.value = ""; }} /></label>
+          <label>
+            Data folder or ZIP:{" "}
+            <input
+              type="file"
+              accept=".json,.zip"
+              multiple
+              {...{ webkitdirectory: "" }}
+              onChange={(e) => {
+                void ftImport(e.target.files);
+                e.target.value = "";
+              }}
+            />
+          </label>
         </div>
         <div className="row">
-          <label>Or pick files: <input type="file" accept=".json,.zip" multiple onChange={(e) => { void ftImport(e.target.files); e.target.value = ""; }} /></label>
+          <label>
+            Or pick files:{" "}
+            <input
+              type="file"
+              accept=".json,.zip"
+              multiple
+              onChange={(e) => {
+                void ftImport(e.target.files);
+                e.target.value = "";
+              }}
+            />
+          </label>
         </div>
         <p className="muted">Homebrew exported from 5etools or Plutonium works too: import its .json file.</p>
         {ftMsg && <p className="notice">{ftMsg}</p>}
@@ -261,17 +392,49 @@ export function ContentTab({ content, onDetail, r, set }: { content: ContentStat
       <section className="card">
         <h2>Import files</h2>
         <p className="muted">A downloaded ZIP of an elements repository, or loose .xml element files.</p>
-        <input ref={fileRef} aria-label="Choose element files or a ZIP" type="file" accept=".zip,.xml" multiple onChange={(e) => { void importFiles(e.target.files); e.target.value = ""; }} />
+        <input
+          ref={fileRef}
+          aria-label="Choose element files or a ZIP"
+          type="file"
+          accept=".zip,.xml"
+          multiple
+          onChange={(e) => {
+            void importFiles(e.target.files);
+            e.target.value = "";
+          }}
+        />
         {msg && <p className="notice">{msg}</p>}
       </section>
 
-      <HomebrewBuilder content={content} classNames={content.reg.ofType("Class").map((c) => c.name).filter((n, i, a) => a.indexOf(n) === i).sort()} />
+      <HomebrewBuilder
+        content={content}
+        classNames={content.reg
+          .ofType("Class")
+          .map((c) => c.name)
+          .filter((n, i, a) => a.indexOf(n) === i)
+          .sort()}
+      />
 
       <section className="card">
         <h2>Write your own content</h2>
-        <p className="muted">Homebrew uses the same element format as the official content: grants, selections and stat rules. See the Aurora documentation for the format.</p>
-        <div className="row"><input value={xmlName} onChange={(e) => setXmlName(e.target.value)} placeholder="Name" /><button className="primary" onClick={saveCustom}>Save content</button></div>
-        <textarea className="code" aria-label="Element XML" rows={14} value={xml} onChange={(e) => setXml(e.target.value)} spellCheck={false} />
+        <p className="muted">
+          Homebrew uses the same element format as the official content: grants, selections and stat rules. See the Aurora documentation for
+          the format.
+        </p>
+        <div className="row">
+          <input value={xmlName} onChange={(e) => setXmlName(e.target.value)} placeholder="Name" />
+          <button className="primary" onClick={saveCustom}>
+            Save content
+          </button>
+        </div>
+        <textarea
+          className="code"
+          aria-label="Element XML"
+          rows={14}
+          value={xml}
+          onChange={(e) => setXml(e.target.value)}
+          spellCheck={false}
+        />
       </section>
 
       <Compendium content={content} onDetail={onDetail} />

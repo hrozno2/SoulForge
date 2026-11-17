@@ -41,7 +41,9 @@ export async function ensureCache() {
     console.log(`Downloading the AuroraLegacy content at ${pin.aurora.slice(0, 7)}...`);
     const zip = join(CACHE, "elements.zip");
     writeFileSync(zip, Buffer.from(await (await get(`https://github.com/AuroraLegacy/elements/archive/${pin.aurora}.zip`)).arrayBuffer()));
-    execSync(`rm -rf "${elements}" "${join(CACHE, `elements-${pin.aurora}`)}" && unzip -q "${zip}" -d "${CACHE}" && mv "${join(CACHE, `elements-${pin.aurora}`)}" "${elements}"`);
+    execSync(
+      `rm -rf "${elements}" "${join(CACHE, `elements-${pin.aurora}`)}" && unzip -q "${zip}" -d "${CACHE}" && mv "${join(CACHE, `elements-${pin.aurora}`)}" "${elements}"`,
+    );
     writeFileSync(marker, pin.aurora);
   }
   const ref = join(CACHE, "rules-ref.json");
@@ -54,13 +56,21 @@ export async function ensureCache() {
   const spells = join(CACHE, "spell-lists.json");
   if (refresh || !existsSync(spells)) {
     console.log("Downloading the 5e.tools spell lists...");
-    writeFileSync(spells, Buffer.from(await (await get("https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/spells/sources.json")).arrayBuffer()));
+    writeFileSync(
+      spells,
+      Buffer.from(
+        await (await get("https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/spells/sources.json")).arrayBuffer(),
+      ),
+    );
   }
   // The 5e.tools feats with their prerequisites (test-only reference, for the feat prerequisite probe).
   const featsRef = join(CACHE, "feats-ref.json");
   if (refresh || !existsSync(featsRef)) {
     console.log("Downloading the 5e.tools feats...");
-    writeFileSync(featsRef, Buffer.from(await (await get("https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/feats.json")).arrayBuffer()));
+    writeFileSync(
+      featsRef,
+      Buffer.from(await (await get("https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/feats.json")).arrayBuffer()),
+    );
   }
   // Blank sheets for the export checks, from their makers' own addresses (the same links the app offers).
   const sheets = join(CACHE, "sheets");
@@ -74,8 +84,13 @@ export async function ensureCache() {
   }
   if (refresh || !existsSync(join(sheets, "2014-3pages.pdf"))) {
     const zip = join(sheets, "2014.zip");
-    writeFileSync(zip, Buffer.from(await (await get("https://media.dndbeyond.com/compendium-images/marketing/5e_charactersheets.zip")).arrayBuffer()));
-    execSync(`cd "${sheets}" && rm -rf z && mkdir z && unzip -q -o "${zip}" -d z && cp "$(find z -name 'CharacterSheet_3Pgs*' | head -1)" 2014-3pages.pdf && rm -rf z`);
+    writeFileSync(
+      zip,
+      Buffer.from(await (await get("https://media.dndbeyond.com/compendium-images/marketing/5e_charactersheets.zip")).arrayBuffer()),
+    );
+    execSync(
+      `cd "${sheets}" && rm -rf z && mkdir z && unzip -q -o "${zip}" -d z && cp "$(find z -name 'CharacterSheet_3Pgs*' | head -1)" 2014-3pages.pdf && rm -rf z`,
+    );
   }
   return { elements, ref, sheets };
 }

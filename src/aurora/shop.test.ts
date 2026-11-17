@@ -5,7 +5,15 @@ import { asCoins, buy, formatCp, pay, priceCp, purseCp, sell } from "./shop";
 import type { AElement } from "./types";
 
 const item = (value: string, currency = "gp") =>
-  ({ id: `ID_TEST_${value}_${currency}`, name: "Thing", type: "Item", source: "Test", supports: [], description: "", setters: { cost: { value, attrs: { currency } } } }) as unknown as AElement;
+  ({
+    id: `ID_TEST_${value}_${currency}`,
+    name: "Thing",
+    type: "Item",
+    source: "Test",
+    supports: [],
+    description: "",
+    setters: { cost: { value, attrs: { currency } } },
+  }) as unknown as AElement;
 
 describe("shop", () => {
   it("reads prices in copper", () => {
@@ -46,7 +54,15 @@ describe("shop", () => {
 
 describe("rarity prices", () => {
   const magic = (rarity: string, extra: Record<string, unknown> = {}) =>
-    ({ id: "ID_TEST_MAGIC", name: "Magic", type: "Magic Item", source: "Test", supports: [], description: "", setters: { rarity: { value: rarity, attrs: {} }, ...extra } }) as unknown as AElement;
+    ({
+      id: "ID_TEST_MAGIC",
+      name: "Magic",
+      type: "Magic Item",
+      source: "Test",
+      supports: [],
+      description: "",
+      setters: { rarity: { value: rarity, attrs: {} }, ...extra },
+    }) as unknown as AElement;
   it("prices a magic item without a price by rarity only when the character uses rarity prices", () => {
     const sword = magic("Uncommon", { "base cost": { value: "15", attrs: { currency: "gp" } } });
     expect(priceCp(sword)).toBeUndefined();

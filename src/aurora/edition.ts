@@ -28,7 +28,10 @@ export const RULES_2024 = 20240917;
 export function stampEditions(elements: Iterable<AElement>, releaseOf: (source: string) => number | undefined): void {
   for (const el of elements) {
     if (el.edition) continue;
-    if (MODERN_ID.test(el.id) || MODERN_SOURCE.test(el.source ?? "")) { el.edition = "2024"; continue; }
+    if (MODERN_ID.test(el.id) || MODERN_SOURCE.test(el.source ?? "")) {
+      el.edition = "2024";
+      continue;
+    }
     const rel = releaseOf(el.source ?? "");
     if (rel) el.edition = rel >= RULES_2024 ? "2024" : "2014";
   }

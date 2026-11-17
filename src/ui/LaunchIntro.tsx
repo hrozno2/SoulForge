@@ -17,7 +17,9 @@ import { createPortal } from "react-dom";
 let played = false;
 let dropWaiting = false;
 let markReady: () => void = () => undefined;
-const ready = new Promise<void>((done) => { markReady = done; });
+const ready = new Promise<void>((done) => {
+  markReady = done;
+});
 
 const reduced = () => document.documentElement.classList.contains("reduce-motion");
 
@@ -55,19 +57,26 @@ function dropCards(): boolean {
     const r = card.getBoundingClientRect();
     if (r.top > window.innerHeight || r.width === 0) return; // below the fold: nothing to see
     const unit = r.width / (card.offsetWidth || r.width); // screen pixels per CSS pixel of the card
-    const dx = (from.x - (r.left + r.width / 2)) / unit, dy = (from.y - (r.top + r.height / 2)) / unit;
+    const dx = (from.x - (r.left + r.width / 2)) / unit,
+      dy = (from.y - (r.top + r.height / 2)) / unit;
     card.dataset.rarity = rarityOf(Number(card.dataset.level) || 0);
     card.classList.add("loot-drop");
     const tilt = (i % 2 ? 1 : -1) * (8 + (i % 3) * 4);
     card.animate(
       [
         { transform: `translate(${dx}px, ${dy}px) scale(.25) rotateY(180deg) rotate(${tilt}deg)`, opacity: 0, offset: 0 },
-        { transform: `translate(${dx * 0.4}px, ${dy * 0.4 - 60}px) scale(.9) rotateY(90deg) rotate(${tilt / 2}deg)`, opacity: 1, offset: 0.55 },
+        {
+          transform: `translate(${dx * 0.4}px, ${dy * 0.4 - 60}px) scale(.9) rotateY(90deg) rotate(${tilt / 2}deg)`,
+          opacity: 1,
+          offset: 0.55,
+        },
         { transform: "translate(0, -6px) scale(1.04) rotateY(0deg) rotate(0deg)", offset: 0.85 },
         { transform: "none", opacity: 1, offset: 1 },
       ],
       { duration: 720, delay: i * 80, easing: "cubic-bezier(.2,.8,.25,1)", fill: "backwards" },
-    ).onfinish = () => { window.setTimeout(() => card.classList.remove("loot-drop"), 900); };
+    ).onfinish = () => {
+      window.setTimeout(() => card.classList.remove("loot-drop"), 900);
+    };
   });
   return true;
 }
@@ -81,14 +90,24 @@ export function dropCardsIfWaiting(): void {
 export function LaunchIntro({ onDone }: { onDone?: () => void }) {
   const [phase, setPhase] = useState<"shimmer" | "burst" | "out" | "done">(() => (played || reduced() ? "done" : "shimmer"));
   const [prog, setProg] = useState(progress);
-  useEffect(() => { progressListeners.add(setProg); return () => { progressListeners.delete(setProg); }; }, []);
-  useEffect(() => { if (phase === "done") onDone?.(); }, [phase, onDone]);
+  useEffect(() => {
+    progressListeners.add(setProg);
+    return () => {
+      progressListeners.delete(setProg);
+    };
+  }, []);
+  useEffect(() => {
+    if (phase === "done") onDone?.();
+  }, [phase, onDone]);
   useEffect(() => {
     if (phase === "done") return;
     played = true;
     let stop = false;
     const timers: number[] = [];
-    const skip = () => { stop = true; setPhase("done"); };
+    const skip = () => {
+      stop = true;
+      setPhase("done");
+    };
     window.addEventListener("pointerdown", skip, { once: true });
     // At least the drop and a moment of shimmer; at most 6 s, so the app is in use within the launch budget even on
     // the one slow launch after an update or a new import (the content then finishes behind the open home screen).
@@ -99,13 +118,26 @@ export function LaunchIntro({ onDone }: { onDone?: () => void }) {
       const pack = document.querySelector(".launch-pack")?.getBoundingClientRect();
       burstAt = pack ? { x: pack.left + pack.width / 2, y: pack.top + pack.height / 2 } : null;
       setPhase("burst");
-      timers.push(window.setTimeout(() => {
-        if (!dropCards()) { dropWaiting = true; timers.push(window.setTimeout(() => { dropWaiting = false; }, 4000)); }
-        setPhase("out");
-      }, 300));
+      timers.push(
+        window.setTimeout(() => {
+          if (!dropCards()) {
+            dropWaiting = true;
+            timers.push(
+              window.setTimeout(() => {
+                dropWaiting = false;
+              }, 4000),
+            );
+          }
+          setPhase("out");
+        }, 300),
+      );
       timers.push(window.setTimeout(() => setPhase("done"), 950));
     });
-    return () => { stop = true; window.removeEventListener("pointerdown", skip); timers.forEach((t) => window.clearTimeout(t)); };
+    return () => {
+      stop = true;
+      window.removeEventListener("pointerdown", skip);
+      timers.forEach((t) => window.clearTimeout(t));
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   if (phase === "done") return null;
@@ -116,25 +148,51 @@ export function LaunchIntro({ onDone }: { onDone?: () => void }) {
         <div className="launch-pack-glow" />
         <svg viewBox="0 0 200 280" className="launch-pack-art">
           <defs>
-            <linearGradient id="lp-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3a2416" /><stop offset="1" stopColor="#140c08" /></linearGradient>
-            <linearGradient id="lp-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#f1d98f" /><stop offset="1" stopColor="#b8903a" /></linearGradient>
-            <linearGradient id="lp-flame" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor="#8e1119" /><stop offset=".55" stopColor="#e03a2f" /><stop offset="1" stopColor="#ffb347" /></linearGradient>
+            <linearGradient id="lp-body" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#3a2416" />
+              <stop offset="1" stopColor="#140c08" />
+            </linearGradient>
+            <linearGradient id="lp-gold" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#f1d98f" />
+              <stop offset="1" stopColor="#b8903a" />
+            </linearGradient>
+            <linearGradient id="lp-flame" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0" stopColor="#8e1119" />
+              <stop offset=".55" stopColor="#e03a2f" />
+              <stop offset="1" stopColor="#ffb347" />
+            </linearGradient>
           </defs>
           <path d="M18 22 Q100 6 182 22 L188 262 Q100 276 12 262 Z" fill="url(#lp-body)" stroke="url(#lp-gold)" strokeWidth="5" />
           <path d="M14 46 Q100 32 186 46" fill="none" stroke="url(#lp-gold)" strokeWidth="3" opacity=".8" />
           <path d="M12 238 Q100 252 188 238" fill="none" stroke="url(#lp-gold)" strokeWidth="3" opacity=".8" />
           <g transform="translate(100 140) scale(.42) translate(-256 -256)">
             <path d="M256 54 429 154v204L256 458 83 358V154z" fill="none" stroke="url(#lp-gold)" strokeWidth="14" strokeLinejoin="round" />
-            <path d="M256 128c14 52 70 82 70 150 0 44-31 78-70 78s-70-34-70-78c0-34 18-52 32-72 4 22 14 34 26 38-8-40 0-82 12-116z" fill="url(#lp-flame)" />
-            <path d="M256 236c8 26 34 40 34 72 0 22-15 38-34 38s-34-16-34-38c0-18 10-28 18-40 2 12 8 18 14 20-4-20-2-36 2-52z" fill="#ffd9a0" opacity=".85" />
+            <path
+              d="M256 128c14 52 70 82 70 150 0 44-31 78-70 78s-70-34-70-78c0-34 18-52 32-72 4 22 14 34 26 38-8-40 0-82 12-116z"
+              fill="url(#lp-flame)"
+            />
+            <path
+              d="M256 236c8 26 34 40 34 72 0 22-15 38-34 38s-34-16-34-38c0-18 10-28 18-40 2 12 8 18 14 20-4-20-2-36 2-52z"
+              fill="#ffd9a0"
+              opacity=".85"
+            />
             <path d="M196 368h120l-10 24H206z" fill="url(#lp-gold)" />
           </g>
         </svg>
         <div className="launch-pack-shine" />
       </div>
       <div className="launch-flash" />
-      <div className={`launch-progress ${prog.busy ? "now" : ""}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(prog.value * 100)} aria-label={prog.label}>
-        <div className={`launch-bar ${prog.busy ? "busy" : ""}`}><span style={{ transform: `scaleX(${Math.max(0.03, prog.value)})` }} /></div>
+      <div
+        className={`launch-progress ${prog.busy ? "now" : ""}`}
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(prog.value * 100)}
+        aria-label={prog.label}
+      >
+        <div className={`launch-bar ${prog.busy ? "busy" : ""}`}>
+          <span style={{ transform: `scaleX(${Math.max(0.03, prog.value)})` }} />
+        </div>
         <small>{prog.label}</small>
       </div>
     </div>,

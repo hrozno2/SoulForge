@@ -161,7 +161,10 @@ describe("engine", () => {
 
   it("uses multiclass requirements: a second class skips first-class proficiencies", () => {
     const ch = base();
-    ch.classes = [{ classId: "ID_CLASS_WIZARD", level: 1 }, { classId: "ID_CLASS_FIGHTER", level: 1 }];
+    ch.classes = [
+      { classId: "ID_CLASS_WIZARD", level: 1 },
+      { classId: "ID_CLASS_FIGHTER", level: 1 },
+    ];
     const res = resolve(ch, r);
     expect(res.ids.has("ID_PROF_SAVE_STR")).toBe(false);
     expect(res.ids.has("ID_INTERNAL_GRANT_MULTICLASS")).toBe(true);
@@ -198,7 +201,9 @@ describe("content links", () => {
     "https://x/root.index": `<index><info><name>Root</name><update version="1"/></info><files><file name="a.index" url="https://x/a.index"/><file name="b.index" url="https://x/b.index"/></files></index>`,
     "https://x/a.index": `<index><info><name>A</name><update version="1"/></info><files><file name="a1.xml" url="https://x/a1.xml"/></files></index>`,
     "https://x/b.index": `<index><info><name>B</name><update version="1"/></info><files><file name="b1.xml" url="https://x/b1.xml"/><file name="b2.xml" url="https://x/b2.xml"/></files></index>`,
-    "https://x/a1.xml": "A1", "https://x/b1.xml": "B1", "https://x/b2.xml": "B2",
+    "https://x/a1.xml": "A1",
+    "https://x/b1.xml": "B1",
+    "https://x/b2.xml": "B2",
   };
   const calls: string[] = [];
   const fetchText = async (u: string) => {

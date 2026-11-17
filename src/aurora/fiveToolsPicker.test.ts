@@ -3,7 +3,11 @@ import { parseLink } from "./fiveToolsPicker";
 
 describe("5e.tools links", () => {
   it("reads a spell link with filters", () => {
-    expect(parseLink("https://5e.tools/spells.html#hunter%20sense_grimhollowpg24,flstlevel:0=1,flstclass:druid=1")).toEqual({ kind: "spell", name: "hunter sense", source: "grimhollowpg24" });
+    expect(parseLink("https://5e.tools/spells.html#hunter%20sense_grimhollowpg24,flstlevel:0=1,flstclass:druid=1")).toEqual({
+      kind: "spell",
+      name: "hunter sense",
+      source: "grimhollowpg24",
+    });
   });
   it("reads item, feat and bestiary pages", () => {
     expect(parseLink("https://5e.tools/items.html#longsword_phb")).toEqual({ kind: "item", name: "longsword", source: "phb" });

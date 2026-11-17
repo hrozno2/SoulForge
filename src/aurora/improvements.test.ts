@@ -9,7 +9,12 @@ const C = process.env.SOULFORGE_RULES;
 
 describe.skipIf(!C)("ability score increase grids", () => {
   const reg = C ? loadTestContent(C) : undefined!;
-  const base = (f: (c: Character) => void) => { const ch = newCharacter(); ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_FIGHTER", level: 1 }]; f(ch); return ch; };
+  const base = (f: (c: Character) => void) => {
+    const ch = newCharacter();
+    ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_FIGHTER", level: 1 }];
+    f(ch);
+    return ch;
+  };
   const pickMode = (ch: Character, label: RegExp) => {
     const g = findGrids(resolve(ch, reg), resolve(ch, reg).slots).find((x) => x.modes.some((m) => label.test(m.label)))!;
     const m = g.modes.find((x) => label.test(x.label))!;
@@ -17,7 +22,9 @@ describe.skipIf(!C)("ability score increase grids", () => {
   };
 
   it("gives the 2024 Ability Score Improvement feat a +2 column and a +1 +1 mode", () => {
-    const ch = base((c) => { c.extras = ["ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT"]; });
+    const ch = base((c) => {
+      c.extras = ["ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT"];
+    });
     const before = resolve(ch, reg).stats.get("strength");
     const { ch: c2, mode } = pickMode(ch, /^\+2 to one/);
     const c3 = { ...c2, selections: { ...c2.selections, ...tickBox(c2, mode, 0, 0, "strength") } };
@@ -25,9 +32,15 @@ describe.skipIf(!C)("ability score increase grids", () => {
   }, 600000);
 
   it("makes one grid of a 5e.tools background's +2 and +1 choices, with different abilities", () => {
-    const ch = base((c) => { c.race = "ID_WOTC_PHB24_RACE_DRAGONBORN"; c.background = "ID_5ET_BG_RHW_MIST_WANDERER"; });
+    const ch = base((c) => {
+      c.race = "ID_WOTC_PHB24_RACE_DRAGONBORN";
+      c.background = "ID_5ET_BG_RHW_MIST_WANDERER";
+    });
     const r = resolve(ch, reg);
-    const g = findGrids(r, r.slots.filter((s) => s.root === "background"));
+    const g = findGrids(
+      r,
+      r.slots.filter((s) => s.root === "background"),
+    );
     const grid = g.find((x) => x.modes[0]?.columns.length === 2);
     expect(grid?.modes[0].columns.map((c) => c.amount)).toEqual([2, 1]);
     const m = grid!.modes[0];
@@ -38,14 +51,26 @@ describe.skipIf(!C)("ability score increase grids", () => {
   }, 600000);
 
   it("draws the Aurora 2024 Sage's and the Custom Background's increases as grids", () => {
-    const sage = resolve(base((c) => { c.background = "ID_WOTC_PHB24_BACKGROUND_SAGE"; }), reg);
+    const sage = resolve(
+      base((c) => {
+        c.background = "ID_WOTC_PHB24_BACKGROUND_SAGE";
+      }),
+      reg,
+    );
     expect(findGrids(sage, sage.slots).some((g) => g.modes.length >= 2)).toBe(true);
-    const custom = resolve(base((c) => { c.background = "ID_WOTC_DMG24_BACKGROUND_CUSTOM"; }), reg);
+    const custom = resolve(
+      base((c) => {
+        c.background = "ID_WOTC_DMG24_BACKGROUND_CUSTOM";
+      }),
+      reg,
+    );
     expect(findGrids(custom, custom.slots).some((g) => g.sets && g.sets.options.length >= 10)).toBe(true);
   }, 600000);
 
   it("takes a Custom Background's three abilities from the ticks, no combination picked first (C7.11)", () => {
-    const ch = base((c) => { c.background = "ID_WOTC_DMG24_BACKGROUND_CUSTOM"; });
+    const ch = base((c) => {
+      c.background = "ID_WOTC_DMG24_BACKGROUND_CUSTOM";
+    });
     const r = resolve(ch, reg);
     const g = findGrids(r, r.slots).find((x) => x.sets?.each?.length)!;
     expect(new Set(g.sets!.each!.flatMap((w) => [...w.abilities])).size).toBe(6);
@@ -94,7 +119,9 @@ describe.skipIf(!C)("ability score increase grids", () => {
     ch.background = "ID_BACKGROUND_ACOLYTE";
     const opt = resolve(ch, reg).slots.find((s) => s.root === "background" && /2024 rules/i.test(s.rule.name))!;
     ch = { ...ch, taken: [opt.key], selections: { [opt.key]: [opt.options[0].id] } };
-    const combo = resolve(ch, reg).slots.find((s) => s.root === "background" && s.rule.type === "Ability Score Improvement" && s.options.length > 1)!;
+    const combo = resolve(ch, reg).slots.find(
+      (s) => s.root === "background" && s.rule.type === "Ability Score Improvement" && s.options.length > 1,
+    )!;
     const strDexCon = combo.options.find((o) => /strength.*dexterity.*constitution/i.test(o.name)) ?? combo.options[0];
     ch = { ...ch, selections: { ...ch.selections, [combo.key]: [strDexCon.id] } };
     const r = resolve(ch, reg);
@@ -104,8 +131,15 @@ describe.skipIf(!C)("ability score increase grids", () => {
     const base = (a: "strength" | "dexterity" | "constitution") => r.stats.get(a);
     const a = resolve({ ...ch, selections: { ...ch.selections, ...unifiedSelections(u, "strength", ["dexterity"]) } }, reg);
     expect([a.stats.get("strength") - base("strength"), a.stats.get("dexterity") - base("dexterity")]).toEqual([2, 1]);
-    const b = resolve({ ...ch, selections: { ...ch.selections, ...unifiedSelections(u, undefined, ["strength", "dexterity", "constitution"]) } }, reg);
-    expect([b.stats.get("strength") - base("strength"), b.stats.get("dexterity") - base("dexterity"), b.stats.get("constitution") - base("constitution")]).toEqual([1, 1, 1]);
+    const b = resolve(
+      { ...ch, selections: { ...ch.selections, ...unifiedSelections(u, undefined, ["strength", "dexterity", "constitution"]) } },
+      reg,
+    );
+    expect([
+      b.stats.get("strength") - base("strength"),
+      b.stats.get("dexterity") - base("dexterity"),
+      b.stats.get("constitution") - base("constitution"),
+    ]).toEqual([1, 1, 1]);
   }, 600000);
 
   it("ticks the same ability twice for +2 in the Ability Score Improvement feat's two +1 columns", () => {

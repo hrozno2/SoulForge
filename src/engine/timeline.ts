@@ -76,7 +76,11 @@ function settle(ch: Character, reg: ARegistry, seed: Pass | null, findings: stri
  * apart from its choices, on the level before it, and on the choices that level read; a change at level 10 leaves
  * levels 1 to 9 untouched. Entries are per content registry.
  */
-interface Cached { used: [string, string][]; pass: Pass; findings: string[] }
+interface Cached {
+  used: [string, string][];
+  pass: Pass;
+  findings: string[];
+}
 const CACHE = new WeakMap<ARegistry, Map<string, Cached[]>>();
 const CACHE_LIMIT = 400;
 
@@ -108,12 +112,16 @@ function settleCached(chN: Character, reg: ARegistry, seed: Pass | null, finding
 const TWIN = new WeakMap<object, string>();
 export const twinKey = (e: { type: string; name: string; source: string }) => {
   let k = TWIN.get(e);
-  if (k === undefined) TWIN.set(e, (k = `${e.type}|${e.name.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s+/g, " ").trim()}|${bookKey(e.source ?? "")}`));
+  if (k === undefined)
+    TWIN.set(e, (k = `${e.type}|${e.name.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s+/g, " ").trim()}|${bookKey(e.source ?? "")}`));
   return k;
 };
 
 /** Options without the second provider's copy of an element the primary provider has (Aurora's, then 5e.tools'). */
-function primaryOptions<T extends { id: string; type: string; name: string; source: string; origin?: string }>(options: T[], chosen: string[]): T[] {
+function primaryOptions<T extends { id: string; type: string; name: string; source: string; origin?: string }>(
+  options: T[],
+  chosen: string[],
+): T[] {
   if (!options.some((e) => e.origin === "5etools")) return options;
   const primary = new Set(options.filter((e) => e.origin !== "5etools").map(twinKey));
   return options.filter((e) => e.origin !== "5etools" || chosen.includes(e.id) || !primary.has(twinKey(e)));
@@ -121,7 +129,14 @@ function primaryOptions<T extends { id: string; type: string; name: string; sour
 
 /** The kept options per registry and (kind, filter, edition, books): they do not depend on the character's picks. */
 const OPTIONS = new WeakMap<ARegistry, Map<string, { kept: AElement[]; keptIds: Set<string>; primary: Set<string> }>>();
-function optionsFor(reg: ARegistry, type: string, filter: string, ed: string, books: string, build: () => { kept: AElement[]; primary: Set<string> }) {
+function optionsFor(
+  reg: ARegistry,
+  type: string,
+  filter: string,
+  ed: string,
+  books: string,
+  build: () => { kept: AElement[]; primary: Set<string> },
+) {
   const byReg = OPTIONS.get(reg) ?? OPTIONS.set(reg, new Map()).get(reg)!;
   const key = `${type}\u0000${filter}\u0000${ed}\u0000${books}`;
   let hit = byReg.get(key);
@@ -156,8 +171,11 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
   // Feats had, by twin key and provider: the same feat from the other provider counts as had, but a provider's own
   // copies of one feat (Aurora's Ability Score Improvement, _2, _3, taken again by design) do not block each other.
   const featsHad = new Map<string, Set<boolean>>();
-  for (const a of final.active) if (a.el.type === "Feat") (featsHad.get(twinKey(a.el)) ?? featsHad.set(twinKey(a.el), new Set()).get(twinKey(a.el))!).add(a.el.origin === "5etools");
-  const hadAsTwin = (e: { type: string; name: string; source: string; origin?: string }) => featsHad.get(twinKey(e))?.has(e.origin !== "5etools") ?? false;
+  for (const a of final.active)
+    if (a.el.type === "Feat")
+      (featsHad.get(twinKey(a.el)) ?? featsHad.set(twinKey(a.el), new Set()).get(twinKey(a.el))!).add(a.el.origin === "5etools");
+  const hadAsTwin = (e: { type: string; name: string; source: string; origin?: string }) =>
+    featsHad.get(twinKey(e))?.has(e.origin !== "5etools") ?? false;
   const shared = sharedSlotLevel(final);
   const slots: SelectSlot[] = final.rawSlots.map((s) => {
     if (s.rule.type === "List") return { ...s, options: [], blocked: new Set<string>(), filter: "", listItems: s.rule.items ?? [] };
@@ -193,15 +211,36 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     // Each option is judged as itself: "Draconic, unless you have Draconic" is not blocked by this pick of it.
     for (const e of options) {
       if (!e.requirements) continue;
-      if (!meets(e.requirements, ctx.as?.(e.id) ?? ctx) && !(nowCtx && meets(e.requirements, nowCtx.as?.(e.id) ?? nowCtx))) { blocked.add(e.id); const c = ctx.as?.(e.id) ?? ctx; const req = e.requirements; why.set(e.id, () => explainUnmet(req, c, (x) => reg.get(x)?.name) ?? "requirements not met"); }
+      if (!meets(e.requirements, ctx.as?.(e.id) ?? ctx) && !(nowCtx && meets(e.requirements, nowCtx.as?.(e.id) ?? nowCtx))) {
+        blocked.add(e.id);
+        const c = ctx.as?.(e.id) ?? ctx;
+        const req = e.requirements;
+        why.set(e.id, () => explainUnmet(req, c, (x) => reg.get(x)?.name) ?? "requirements not met");
+      }
     }
     // A feat the character has from another choice or grant, at any level, is not offered again.
     // The same feat from the other provider counts as had too.
     // A feat the rules let a character take again (5e.tools "repeatable") stays open.
-    if (s.rule.type === "Feat") for (const e of options) if ((final.ids.has(e.id) || hadAsTwin(e) || final.active.some((a) => a.el.type === "Feat" && a.el.id !== e.id && a.el.name === e.name && a.el.source !== e.source)) && !s.chosen.includes(e.id) && e.setters["allow duplicate"]?.value !== "true") { blocked.add(e.id); why.set(e.id, "you already have this feat"); }
+    if (s.rule.type === "Feat")
+      for (const e of options)
+        if (
+          (final.ids.has(e.id) ||
+            hadAsTwin(e) ||
+            final.active.some((a) => a.el.type === "Feat" && a.el.id !== e.id && a.el.name === e.name && a.el.source !== e.source)) &&
+          !s.chosen.includes(e.id) &&
+          e.setters["allow duplicate"]?.value !== "true"
+        ) {
+          blocked.add(e.id);
+          why.set(e.id, "you already have this feat");
+        }
     // A training option the character already has from another choice is not offered again (Simic Hybrid's 5th-level
     // enhancement offers the 1st-level ones too: "one of the options you didn't take").
-    if (s.rule.type === "Training Option") for (const e of options) if (final.ids.has(e.id) && !s.chosen.includes(e.id)) { blocked.add(e.id); why.set(e.id, "you already have this"); }
+    if (s.rule.type === "Training Option")
+      for (const e of options)
+        if (final.ids.has(e.id) && !s.chosen.includes(e.id)) {
+          blocked.add(e.id);
+          why.set(e.id, "you already have this");
+        }
     // Repeat copies (Aurora's Skilled and Skilled_2, its several Replicate Magic Item infusions, one name each): one
     // copy is offered at a time, the first the character can take and does not have; chosen ones stay.
     const byKey = new Map<string, typeof options>();
@@ -220,26 +259,36 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
       for (const e of sameProvider) if (!s.chosen.includes(e.id) && e !== keep) dropped.add(e.id);
     }
     if (dropped.size) options = options.filter((e) => !dropped.has(e.id));
-    const whyBlocked = (id: string) => { const w = why.get(id); return typeof w === "function" ? w() : w; };
+    const whyBlocked = (id: string) => {
+      const w = why.get(id);
+      return typeof w === "function" ? w() : w;
+    };
     return { ...s, options, blocked, whyBlocked, filter };
   });
 
   // One improvement is one choice with several slots (+2 to one ability, +1 to another): an ability taken in one slot
   // is not offered in its sibling slots, so the increases land on different abilities (the check-box grid's rule).
   const asiGroups = new Map<string, typeof slots>();
-  for (const s of slots) if (s.rule.type === "Ability Score Improvement" && /^5et asi one\b/i.test(s.rule.supports)) {
-    const k = `${s.owner.id}|${s.root}|${s.ownerLevel}`;
-    (asiGroups.get(k) ?? asiGroups.set(k, []).get(k)!).push(s);
-  }
+  for (const s of slots)
+    if (s.rule.type === "Ability Score Improvement" && /^5et asi one\b/i.test(s.rule.supports)) {
+      const k = `${s.owner.id}|${s.root}|${s.ownerLevel}`;
+      (asiGroups.get(k) ?? asiGroups.set(k, []).get(k)!).push(s);
+    }
   const abilityOf = (id: string) => /^ID_5ET_ASIONE_\d_(\w+)$/.exec(id)?.[1];
   for (const group of asiGroups.values()) {
     if (group.length < 2) continue;
     for (const s of group) {
-      const taken = new Set(group.filter((o) => o !== s).flatMap((o) => o.chosen.map(abilityOf)).filter(Boolean));
+      const taken = new Set(
+        group
+          .filter((o) => o !== s)
+          .flatMap((o) => o.chosen.map(abilityOf))
+          .filter(Boolean),
+      );
       if (!taken.size) continue;
       const prev = s.whyBlocked;
       for (const o of s.options) if (taken.has(abilityOf(o.id)) && !s.chosen.includes(o.id)) s.blocked.add(o.id);
-      s.whyBlocked = (id) => (taken.has(abilityOf(id)) && !s.chosen.includes(id) ? "already raised by the other increase of this choice" : prev?.(id));
+      s.whyBlocked = (id) =>
+        taken.has(abilityOf(id)) && !s.chosen.includes(id) ? "already raised by the other increase of this choice" : prev?.(id);
     }
   }
 
@@ -248,5 +297,15 @@ export function resolveTimeline(ch: Character, reg: ARegistry): TimelineResolved
     const el = reg.get(c.classId);
     if (el) classLevels[lc(el.name)] = (classLevels[lc(el.name)] ?? 0) + c.level;
   }
-  return { ...final, warnings: [...final.warnings, ...findings], character: ch, slots, totalLevel: total, classLevels, reg, timeline, findings };
+  return {
+    ...final,
+    warnings: [...final.warnings, ...findings],
+    character: ch,
+    slots,
+    totalLevel: total,
+    classLevels,
+    reg,
+    timeline,
+    findings,
+  };
 }

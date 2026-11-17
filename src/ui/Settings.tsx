@@ -40,7 +40,22 @@ export interface AppSettings {
 }
 
 const KEY = "charforge.settings";
-const DEFAULTS: AppSettings = { scale: 100, compact: false, reduceMotion: false, paper: "a4", autoBackup: true, language: "en", showLegacy: true, showPlaytest: true, showUnusual: true, showSciFi: false, showModern: false, allSpells: false, buildLayout: "board", hideTestTools: false };
+const DEFAULTS: AppSettings = {
+  scale: 100,
+  compact: false,
+  reduceMotion: false,
+  paper: "a4",
+  autoBackup: true,
+  language: "en",
+  showLegacy: true,
+  showPlaytest: true,
+  showUnusual: true,
+  showSciFi: false,
+  showModern: false,
+  allSpells: false,
+  buildLayout: "board",
+  hideTestTools: false,
+};
 
 function read(): AppSettings {
   try {
@@ -109,14 +124,24 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
   }, [onClose]);
   const [msg, setMsg] = useState("");
   const [gpu, setGpu] = useState({ applies: false, on: false });
-  useEffect(() => { void gpuStatus().then(setGpu); }, []);
+  useEffect(() => {
+    void gpuStatus().then(setGpu);
+  }, []);
   const [dates, setDates] = useState<string[]>([]);
-  useEffect(() => { void backupStore.dates().then(setDates); }, []);
+  useEffect(() => {
+    void backupStore.dates().then(setDates);
+  }, []);
   // The desktop app also keeps the daily backups as files (src/diskBackup.ts): where they are, to find or copy them.
   const [folder, setFolder] = useState("");
-  useEffect(() => { void backupFolder().then(setFolder); }, []);
+  useEffect(() => {
+    void backupFolder().then(setFolder);
+  }, []);
   const showFolder = async () => {
-    try { await (await import("@tauri-apps/plugin-opener")).revealItemInDir(folder); } catch (e) { setMsg(`Could not open the folder: ${(e as Error).message}`); }
+    try {
+      await (await import("@tauri-apps/plugin-opener")).revealItemInDir(folder);
+    } catch (e) {
+      setMsg(`Could not open the folder: ${(e as Error).message}`);
+    }
   };
   const backUp = async () => setMsg(await exportLibrary());
   const restoreFrom = async (text: string) => {
@@ -132,7 +157,10 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
       const input = document.createElement("input");
       input.type = "file";
       input.accept = ".json";
-      input.onchange = async () => { const f = input.files?.[0]; if (f) await restoreFrom(await f.text()); };
+      input.onchange = async () => {
+        const f = input.files?.[0];
+        if (f) await restoreFrom(await f.text());
+      };
       input.click();
     } else if (files[0]) await restoreFrom(await files[0].text());
   };
@@ -146,83 +174,179 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
   return (
     <div className="modal-back over-all" role="dialog" aria-label="Settings" onClick={onClose}>
       <div className="modal-page themed settings" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" aria-label="Close" onClick={onClose}>×</button>
+        <button className="modal-close" aria-label="Close" onClick={onClose}>
+          ×
+        </button>
         <h2>{t("Settings")}</h2>
         <div className="set-row bug-row">
-          <span><b>Something wrong?</b><small className="muted"> Checks the current character against the rules and gathers what a bug report needs, for you to send to GitHub or save</small></span>
-          <button onClick={() => { onClose(); window.dispatchEvent(new Event("cf-report-bug")); }}>Report a bug...</button>
+          <span>
+            <b>Something wrong?</b>
+            <small className="muted">
+              {" "}
+              Checks the current character against the rules and gathers what a bug report needs, for you to send to GitHub or save
+            </small>
+          </span>
+          <button
+            onClick={() => {
+              onClose();
+              window.dispatchEvent(new Event("cf-report-bug"));
+            }}
+          >
+            Report a bug...
+          </button>
         </div>
         <label className="set-row">
-          <span><b>{t("Language")}</b><small className="muted"> Buttons and menus. Rules text keeps its own language.</small></span>
-          <select aria-label="Language" value={s.language} onChange={(e) => updateSettings({ language: e.target.value as Lang })}>{LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}</select>
+          <span>
+            <b>{t("Language")}</b>
+            <small className="muted"> Buttons and menus. Rules text keeps its own language.</small>
+          </span>
+          <select aria-label="Language" value={s.language} onChange={(e) => updateSettings({ language: e.target.value as Lang })}>
+            {LANGUAGES.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.label}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="set-row">
-          <span><b>{t("Interface size")}</b><small className="muted"> Ctrl or Cmd with + and − works too</small></span>
+          <span>
+            <b>{t("Interface size")}</b>
+            <small className="muted"> Ctrl or Cmd with + and − works too</small>
+          </span>
           <span className="set-ctl">
-            <input type="range" min={70} max={150} step={5} value={s.scale} onChange={(e) => updateSettings({ scale: Number(e.target.value) })} aria-label="Interface size" />
+            <input
+              type="range"
+              min={70}
+              max={150}
+              step={5}
+              value={s.scale}
+              onChange={(e) => updateSettings({ scale: Number(e.target.value) })}
+              aria-label="Interface size"
+            />
             <output>{s.scale}%</output>
-            <button onClick={() => updateSettings({ scale: 100 })} disabled={s.scale === 100}>Reset</button>
+            <button onClick={() => updateSettings({ scale: 100 })} disabled={s.scale === 100}>
+              Reset
+            </button>
           </span>
         </label>
         <label className="set-row">
-          <span><b>Compact layout</b><small className="muted"> Tighter spacing, more on screen</small></span>
+          <span>
+            <b>Compact layout</b>
+            <small className="muted"> Tighter spacing, more on screen</small>
+          </span>
           <input type="checkbox" checked={s.compact} onChange={(e) => updateSettings({ compact: e.target.checked })} />
         </label>
         <label className="set-row">
-          <span><b>Reduce motion</b><small className="muted"> Turns off animations and transitions</small></span>
+          <span>
+            <b>Reduce motion</b>
+            <small className="muted"> Turns off animations and transitions</small>
+          </span>
           <input type="checkbox" checked={s.reduceMotion} onChange={(e) => updateSettings({ reduceMotion: e.target.checked })} />
         </label>
         <label className="set-row">
-          <span><b>Calmer colours</b><small className="muted"> Cards, ribbons and the Play header in quieter tones</small></span>
+          <span>
+            <b>Calmer colours</b>
+            <small className="muted"> Cards, ribbons and the Play header in quieter tones</small>
+          </span>
           <input type="checkbox" checked={!!s.calmColors} onChange={(e) => updateSettings({ calmColors: e.target.checked })} />
         </label>
         <div className="set-row">
-          <span><b>Build layout</b><small className="muted"> The board, or the older tabs (with Magic and Equipment as their own tabs)</small></span>
+          <span>
+            <b>Build layout</b>
+            <small className="muted"> The board, or the older tabs (with Magic and Equipment as their own tabs)</small>
+          </span>
           <span className="set-ctl">
-            {(["board", "tabs"] as const).map((l) => <button key={l} className={s.buildLayout === l ? "pill active" : "pill"} onClick={() => updateSettings({ buildLayout: l })}>{l === "board" ? "Board" : "Tabs"}</button>)}
+            {(["board", "tabs"] as const).map((l) => (
+              <button key={l} className={s.buildLayout === l ? "pill active" : "pill"} onClick={() => updateSettings({ buildLayout: l })}>
+                {l === "board" ? "Board" : "Tabs"}
+              </button>
+            ))}
           </span>
         </div>
         <div className="set-row">
-          <span><b>Paper size for PDFs</b></span>
+          <span>
+            <b>Paper size for PDFs</b>
+          </span>
           <span className="set-ctl">
-            {(["a4", "letter"] as const).map((p) => <button key={p} className={s.paper === p ? "pill active" : "pill"} onClick={() => updateSettings({ paper: p })}>{p === "a4" ? "A4" : "Letter"}</button>)}
+            {(["a4", "letter"] as const).map((p) => (
+              <button key={p} className={s.paper === p ? "pill active" : "pill"} onClick={() => updateSettings({ paper: p })}>
+                {p === "a4" ? "A4" : "Letter"}
+              </button>
+            ))}
           </span>
         </div>
         <fieldset className="set-group">
           <legend>Content shown in lists</legend>
-          <p className="muted set-explain">These filters apply everywhere you pick something: species, classes, backgrounds, every choice, spells, items and the shop. They only hide; the content stays loaded and characters that use it keep working. A choice is never left unable to be completed: when the filters would leave too few options, it shows all of them. Each list's own Filters button narrows that list further.</p>
+          <p className="muted set-explain">
+            These filters apply everywhere you pick something: species, classes, backgrounds, every choice, spells, items and the shop. They
+            only hide; the content stays loaded and characters that use it keep working. A choice is never left unable to be completed: when
+            the filters would leave too few options, it shows all of them. Each list's own Filters button narrows that list further.
+          </p>
           <label className="set-row">
-            <span><b>2014 rules</b><small className="muted"> Species, classes, spells and items from before the 2024 books</small></span>
+            <span>
+              <b>2014 rules</b>
+              <small className="muted"> Species, classes, spells and items from before the 2024 books</small>
+            </span>
             <input type="checkbox" checked={s.showLegacy} onChange={(e) => updateSettings({ showLegacy: e.target.checked })} />
           </label>
           <label className="set-row">
-            <span><b>Unearthed Arcana and playtest</b><small className="muted"> Draft material that may change</small></span>
+            <span>
+              <b>Unearthed Arcana and playtest</b>
+              <small className="muted"> Draft material that may change</small>
+            </span>
             <input type="checkbox" checked={s.showPlaytest} onChange={(e) => updateSettings({ showPlaytest: e.target.checked })} />
           </label>
           <label className="set-row">
-            <span><b>Settings and other sources</b><small className="muted"> Eberron, Ravnica, Theros and other worlds, plus third party and homebrew books</small></span>
+            <span>
+              <b>Settings and other sources</b>
+              <small className="muted"> Eberron, Ravnica, Theros and other worlds, plus third party and homebrew books</small>
+            </span>
             <input type="checkbox" checked={s.showUnusual} onChange={(e) => updateSettings({ showUnusual: e.target.checked })} />
           </label>
           <label className="set-row">
-            <span><b>Sci-fi technology</b><small className="muted"> Futuristic gear: laser and antimatter guns, powered armor</small></span>
+            <span>
+              <b>Sci-fi technology</b>
+              <small className="muted"> Futuristic gear: laser and antimatter guns, powered armor</small>
+            </span>
             <input type="checkbox" checked={s.showSciFi} onChange={(e) => updateSettings({ showSciFi: e.target.checked })} />
           </label>
           <label className="set-row">
-            <span><b>Modern technology</b><small className="muted"> Renaissance and modern gear: pistols, revolvers, muskets, rifles, shotguns, modern vehicles</small></span>
+            <span>
+              <b>Modern technology</b>
+              <small className="muted"> Renaissance and modern gear: pistols, revolvers, muskets, rifles, shotguns, modern vehicles</small>
+            </span>
             <input type="checkbox" checked={s.showModern} onChange={(e) => updateSettings({ showModern: e.target.checked })} />
           </label>
           <p className="muted">What you already picked stays visible even when its book is hidden here.</p>
         </fieldset>
         {__TEST_FLAVOR__ && (
           <label className="set-row">
-            <span><b>Show the test controls</b><small className="muted"> The test build's bar at the top; off makes it look like the released app</small></span>
+            <span>
+              <b>Show the test controls</b>
+              <small className="muted"> The test build's bar at the top; off makes it look like the released app</small>
+            </span>
             <input type="checkbox" checked={!s.hideTestTools} onChange={(e) => updateSettings({ hideTestTools: !e.target.checked })} />
           </label>
         )}
         {gpu.applies && (
           <label className="set-row">
-            <span><b>Fast drawing on NVIDIA</b><small className="muted"> Experimental: keeps WebKit's GPU path, which older NVIDIA drivers crash on. Takes effect at the next start; if that start fails to draw, it turns itself off.</small></span>
-            <input type="checkbox" checked={gpu.on} onChange={async (e) => { const on = e.target.checked; await setGpuFast(on); setGpu((g) => ({ ...g, on })); }} />
+            <span>
+              <b>Fast drawing on NVIDIA</b>
+              <small className="muted">
+                {" "}
+                Experimental: keeps WebKit's GPU path, which older NVIDIA drivers crash on. Takes effect at the next start; if that start
+                fails to draw, it turns itself off.
+              </small>
+            </span>
+            <input
+              type="checkbox"
+              checked={gpu.on}
+              onChange={async (e) => {
+                const on = e.target.checked;
+                await setGpuFast(on);
+                setGpu((g) => ({ ...g, on }));
+              }}
+            />
           </label>
         )}
         <fieldset className="set-about">
@@ -232,37 +356,74 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           <p className="muted">{SRD_ATTRIBUTION["5.2"]}</p>
         </fieldset>
         <div className="set-row">
-          <span><b>Backups</b><small className="muted"> Every character in one file</small></span>
+          <span>
+            <b>Backups</b>
+            <small className="muted"> Every character in one file</small>
+          </span>
           <span className="set-ctl">
             <button onClick={backUp}>Back up all characters</button>
             <button onClick={restoreFile}>Restore...</button>
           </span>
         </div>
         <label className="set-row">
-          <span><b>Automatic daily backup</b><small className="muted"> Keeps the last 7 days on this computer</small></span>
+          <span>
+            <b>Automatic daily backup</b>
+            <small className="muted"> Keeps the last 7 days on this computer</small>
+          </span>
           <input type="checkbox" checked={s.autoBackup} onChange={(e) => updateSettings({ autoBackup: e.target.checked })} />
         </label>
         {folder && s.autoBackup && (
           <div className="set-row">
-            <span><b>Backup files</b><small className="muted"> The last 14 days as files, kept apart from the app's own storage: {folder}</small></span>
-            <span className="set-ctl"><button onClick={() => void showFolder()}>Show folder</button></span>
+            <span>
+              <b>Backup files</b>
+              <small className="muted"> The last 14 days as files, kept apart from the app's own storage: {folder}</small>
+            </span>
+            <span className="set-ctl">
+              <button onClick={() => void showFolder()}>Show folder</button>
+            </span>
           </div>
         )}
         {dates.length > 0 && (
           <div className="set-row">
-            <span><b>Restore from a day</b></span>
-            <select aria-label="Automatic backups" defaultValue="" onChange={async (e) => { const d = e.target.value; e.target.value = ""; if (d) { const t = await backupStore.get(d); if (t) await restoreFrom(t); } }}>
+            <span>
+              <b>Restore from a day</b>
+            </span>
+            <select
+              aria-label="Automatic backups"
+              defaultValue=""
+              onChange={async (e) => {
+                const d = e.target.value;
+                e.target.value = "";
+                if (d) {
+                  const t = await backupStore.get(d);
+                  if (t) await restoreFrom(t);
+                }
+              }}
+            >
               <option value="">Choose a day...</option>
-              {dates.map((d) => <option key={d} value={d}>{d}</option>)}
+              {dates.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
             </select>
           </div>
         )}
-        {msg && <p className="notice" role="status">{msg}</p>}
+        {msg && (
+          <p className="notice" role="status">
+            {msg}
+          </p>
+        )}
         <div className="set-row">
-          <span><b>Tips</b><small className="muted"> Bring back hints you dismissed</small></span>
+          <span>
+            <b>Tips</b>
+            <small className="muted"> Bring back hints you dismissed</small>
+          </span>
           <button onClick={resetHints}>Show tips again</button>
         </div>
-        <p className="muted small-text credits">{SCHOOL_CREDIT}. {CONDITION_CREDIT}. {CLASS_ICON_CREDIT}. Stock portraits are credited in public/portraits/CREDITS.md.</p>
+        <p className="muted small-text credits">
+          {SCHOOL_CREDIT}. {CONDITION_CREDIT}. {CLASS_ICON_CREDIT}. Stock portraits are credited in public/portraits/CREDITS.md.
+        </p>
       </div>
     </div>
   );

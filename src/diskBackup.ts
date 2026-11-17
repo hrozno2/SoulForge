@@ -13,11 +13,21 @@ export async function appDataDisk(): Promise<BackupDisk | null> {
   if (!inTauri()) return null;
   const m = await import("@tauri-apps/plugin-fs");
   const dir = { baseDir: m.BaseDirectory.AppData };
-  const ready = async () => { if (!(await m.exists(FOLDER, dir))) await m.mkdir(FOLDER, { ...dir, recursive: true }); };
+  const ready = async () => {
+    if (!(await m.exists(FOLDER, dir))) await m.mkdir(FOLDER, { ...dir, recursive: true });
+  };
   return {
-    async write(name, text) { await ready(); await m.writeTextFile(`${FOLDER}/${name}`, text, dir); },
-    async names() { await ready(); return (await m.readDir(FOLDER, dir)).filter((e) => e.isFile).map((e) => e.name); },
-    async remove(name) { await m.remove(`${FOLDER}/${name}`, dir); },
+    async write(name, text) {
+      await ready();
+      await m.writeTextFile(`${FOLDER}/${name}`, text, dir);
+    },
+    async names() {
+      await ready();
+      return (await m.readDir(FOLDER, dir)).filter((e) => e.isFile).map((e) => e.name);
+    },
+    async remove(name) {
+      await m.remove(`${FOLDER}/${name}`, dir);
+    },
   };
 }
 

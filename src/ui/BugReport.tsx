@@ -37,10 +37,20 @@ const LABEL: Record<Part, string> = {
 export function BugReport({ r, sources, onClose }: { r: Resolved; sources: SourceConfig[]; onClose: () => void }) {
   const [what, setWhat] = useState("");
   const [system, setSystem] = useState("");
-  const [on, setOn] = useState<Record<Part, boolean>>({ what: true, rules: true, system: true, log: true, previous: true, content: true, character: true });
+  const [on, setOn] = useState<Record<Part, boolean>>({
+    what: true,
+    rules: true,
+    system: true,
+    log: true,
+    previous: true,
+    content: true,
+    character: true,
+  });
   // The last session's log file (desktop): what went wrong before a crash or restart.
   const [previous, setPrevious] = useState("");
-  useEffect(() => { void previousLog().then((t) => setPrevious(redact(t.split("\n").slice(-200).join("\n")))); }, []);
+  useEffect(() => {
+    void previousLog().then((t) => setPrevious(redact(t.split("\n").slice(-200).join("\n"))));
+  }, []);
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
@@ -52,7 +62,10 @@ export function BugReport({ r, sources, onClose }: { r: Resolved; sources: Sourc
   // The system: the app version and the platform, and on the desktop what the app's own process can see.
   useEffect(() => {
     void (async () => {
-      const lines = [`user agent: ${navigator.userAgent}`, `screen: ${window.screen.width}x${window.screen.height} @${window.devicePixelRatio}x`];
+      const lines = [
+        `user agent: ${navigator.userAgent}`,
+        `screen: ${window.screen.width}x${window.screen.height} @${window.devicePixelRatio}x`,
+      ];
       if (inTauri()) {
         try {
           const [{ getVersion }, { invoke }] = await Promise.all([import("@tauri-apps/api/app"), import("@tauri-apps/api/core")]);
@@ -79,10 +92,13 @@ export function BugReport({ r, sources, onClose }: { r: Resolved; sources: Sourc
   const charName = r.character.name || "Unnamed character";
   const summary = useMemo(() => {
     const ch = r.character;
-    const name = (id?: string) => (id ? r.reg.get(id)?.name ?? id : "");
+    const name = (id?: string) => (id ? (r.reg.get(id)?.name ?? id) : "");
     return `${charName}: ${[name(ch.race), name(ch.background), ch.classes.map((c) => `${name(c.classId)} ${c.level}`).join(" / ")].filter(Boolean).join(", ")}`;
   }, [r, charName]);
-  const characterJson = useMemo(() => redact(JSON.stringify({ ...r.character, portrait: r.character.portrait ? "(portrait left out)" : undefined }, null, 2)), [r]);
+  const characterJson = useMemo(
+    () => redact(JSON.stringify({ ...r.character, portrait: r.character.portrait ? "(portrait left out)" : undefined }, null, 2)),
+    [r],
+  );
   const log = redact(logLines().join("\n")) || "Nothing logged.";
   const content = redact(sources.map((s) => `- ${s.name}: ${s.url}`).join("\n")) || "No content links.";
 
@@ -94,10 +110,11 @@ export function BugReport({ r, sources, onClose }: { r: Resolved; sources: Sourc
     ...(previous ? [["previous", previous] as [Part, string]] : []),
     ["content", content],
   ];
-  const body = (withCharacter: boolean) => [
-    ...sections.filter(([k]) => on[k]).map(([k, v]) => `### ${LABEL[k]}\n${k === "what" ? v : "```\n" + v + "\n```"}`),
-    ...(on.character && withCharacter ? [`### ${LABEL.character}\n\`\`\`json\n${characterJson}\n\`\`\``] : []),
-  ].join("\n\n");
+  const body = (withCharacter: boolean) =>
+    [
+      ...sections.filter(([k]) => on[k]).map(([k, v]) => `### ${LABEL[k]}\n${k === "what" ? v : "```\n" + v + "\n```"}`),
+      ...(on.character && withCharacter ? [`### ${LABEL.character}\n\`\`\`json\n${characterJson}\n\`\`\``] : []),
+    ].join("\n\n");
 
   const title = `Bug: ${what.trim().split("\n")[0].slice(0, 80) || `problem with ${charName}`}`;
   const openIssue = async () => {
@@ -110,34 +127,64 @@ export function BugReport({ r, sources, onClose }: { r: Resolved; sources: Sourc
   };
   const save = async () => {
     const text = `# ${title}\n\n${body(true)}\n`;
-    const ok = await saveFile(`soul-forge-bug-report-${new Date().toISOString().slice(0, 10)}.md`, new TextEncoder().encode(text), "text/markdown");
+    const ok = await saveFile(
+      `soul-forge-bug-report-${new Date().toISOString().slice(0, 10)}.md`,
+      new TextEncoder().encode(text),
+      "text/markdown",
+    );
     if (ok) setMsg("Saved the report. You can attach it to a GitHub issue or send it on.");
   };
 
   return (
     <div className="modal-back" onClick={onClose}>
       <div className="modal-page themed bug-report" role="dialog" aria-label="Report a bug" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" aria-label="Close" onClick={onClose}>×</button>
+        <button className="modal-close" aria-label="Close" onClick={onClose}>
+          ×
+        </button>
         <h2>Report a bug</h2>
-        <p className="muted">Everything below is what would be sent. Untick a part to leave it out. Nothing is sent until you open the GitHub issue or save the file yourself. Your home folder is replaced with ~ and no settings or keys are included.</p>
+        <p className="muted">
+          Everything below is what would be sent. Untick a part to leave it out. Nothing is sent until you open the GitHub issue or save the
+          file yourself. Your home folder is replaced with ~ and no settings or keys are included.
+        </p>
         <label className="bug-what">
           <b>What went wrong?</b>
-          <textarea rows={4} value={what} placeholder="What you did, what you expected, and what happened instead." onChange={(e) => setWhat(e.target.value)} />
+          <textarea
+            rows={4}
+            value={what}
+            placeholder="What you did, what you expected, and what happened instead."
+            onChange={(e) => setWhat(e.target.value)}
+          />
         </label>
-        {sections.filter(([k]) => k !== "what").map(([k, v]) => (
-          <details key={k} className="bug-part" open={k === "rules"}>
-            <summary><label onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={on[k]} onChange={(e) => setOn({ ...on, [k]: e.target.checked })} /> {LABEL[k]}</label></summary>
-            <pre>{v}</pre>
-          </details>
-        ))}
+        {sections
+          .filter(([k]) => k !== "what")
+          .map(([k, v]) => (
+            <details key={k} className="bug-part" open={k === "rules"}>
+              <summary>
+                <label onClick={(e) => e.stopPropagation()}>
+                  <input type="checkbox" checked={on[k]} onChange={(e) => setOn({ ...on, [k]: e.target.checked })} /> {LABEL[k]}
+                </label>
+              </summary>
+              <pre>{v}</pre>
+            </details>
+          ))}
         <details className="bug-part">
-          <summary><label onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={on.character} onChange={(e) => setOn({ ...on, character: e.target.checked })} /> {LABEL.character}: {charName}</label></summary>
-          <pre>{characterJson.slice(0, 4000)}{characterJson.length > 4000 ? "\n..." : ""}</pre>
+          <summary>
+            <label onClick={(e) => e.stopPropagation()}>
+              <input type="checkbox" checked={on.character} onChange={(e) => setOn({ ...on, character: e.target.checked })} />{" "}
+              {LABEL.character}: {charName}
+            </label>
+          </summary>
+          <pre>
+            {characterJson.slice(0, 4000)}
+            {characterJson.length > 4000 ? "\n..." : ""}
+          </pre>
         </details>
         {msg && <p className="notice">{msg}</p>}
         <div className="row bug-actions">
           <button onClick={save}>Save report to file</button>
-          <button className="primary" onClick={openIssue}>Open a GitHub issue</button>
+          <button className="primary" onClick={openIssue}>
+            Open a GitHub issue
+          </button>
         </div>
       </div>
     </div>

@@ -9,7 +9,13 @@ describe.skipIf(!process.env.SOULFORGE_RULES)("weapon choices", () => {
     for (const category of ["simple", "martial"] as const) {
       const list = weaponChoices(reg, { category });
       expect(list.length).toBeGreaterThan(8);
-      expect(list.filter((w) => /\+\d/.test(w.name) || /^(staff|sword|dagger|mace|axe|bow) of /i.test(w.name) || (w.setters.rarity?.value ?? "").trim()).map((w) => w.name)).toEqual([]);
+      expect(
+        list
+          .filter(
+            (w) => /\+\d/.test(w.name) || /^(staff|sword|dagger|mace|axe|bow) of /i.test(w.name) || (w.setters.rarity?.value ?? "").trim(),
+          )
+          .map((w) => w.name),
+      ).toEqual([]);
     }
   }, 600000);
 });

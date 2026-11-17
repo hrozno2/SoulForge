@@ -15,10 +15,15 @@ describe.skipIf(!C)("+2 to one ability", () => {
     const bad: string[] = [];
     for (const el of reg.all()) {
       if (!/\bby 2,? or\b[^.]*\bby 1\b/i.test(el.description.replace(/<[^>]+>/g, " "))) continue;
-      for (const r of el.rules) if (r.kind === "select" && r.type === "Ability Score Improvement" && r.number === 2) {
-        const opts = reg.all().filter((e) => e.type === r.type && e.supports.length && reg.find(r.type, r.supports).includes(e));
-        if (opts.length && opts.every((o) => o.rules.length === 1 && o.rules[0].kind === "stat" && (o.rules[0] as { value: string }).value === "1")) bad.push(`${el.name} [${el.id}]: ${r.name}`);
-      }
+      for (const r of el.rules)
+        if (r.kind === "select" && r.type === "Ability Score Improvement" && r.number === 2) {
+          const opts = reg.all().filter((e) => e.type === r.type && e.supports.length && reg.find(r.type, r.supports).includes(e));
+          if (
+            opts.length &&
+            opts.every((o) => o.rules.length === 1 && o.rules[0].kind === "stat" && (o.rules[0] as { value: string }).value === "1")
+          )
+            bad.push(`${el.name} [${el.id}]: ${r.name}`);
+        }
     }
     expect(bad).toEqual([]);
   }, 600000);
@@ -34,7 +39,8 @@ describe.skipIf(!C)("+2 to one ability", () => {
       const before = r.stats.get("strength");
       const outer = r.slots.find((s) => s.owner.id === feat)!;
       // Whichever option leads to a choice offering +2 Strength (the providers name them differently).
-      const strength2 = (o: { rules: { kind: string; name?: string; value?: string }[] }) => o.rules.some((x) => x.kind === "stat" && x.name === "strength" && x.value === "2");
+      const strength2 = (o: { rules: { kind: string; name?: string; value?: string }[] }) =>
+        o.rules.some((x) => x.kind === "stat" && x.name === "strength" && x.value === "2");
       let done = false;
       for (const opt of outer.options) {
         const next = { ...ch, selections: { ...ch.selections, [outer.key]: [opt.id] } };
@@ -55,7 +61,12 @@ describe.skipIf(!C)("+2 to one ability", () => {
     ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_FIGHTER", level: 1 }];
     ch.extras = [feat];
     const key = resolve(ch, reg).slots.find((s) => s.owner.id === el.id)!.key;
-    const old = { ...ch, selections: { [key]: ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_STRENGTH", "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_DEXTERITY"] } };
+    const old = {
+      ...ch,
+      selections: {
+        [key]: ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_STRENGTH", "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_DEXTERITY"],
+      },
+    };
     const r = resolve(old, reg);
     expect(r.stats.get("strength")).toBe(resolve(ch, reg).stats.get("strength") + 1);
     expect(r.stats.get("dexterity")).toBe(resolve(ch, reg).stats.get("dexterity") + 1);
@@ -67,7 +78,15 @@ describe.skipIf(!C)("+2 to one ability", () => {
     const ch = newCharacter();
     ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_FIGHTER", level: 1 }];
     ch.extras = [feat];
-    const old = { ...ch, selections: { [`${feat}|0`]: ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_CONSTITUTION", "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_INTELLIGENCE"] } };
+    const old = {
+      ...ch,
+      selections: {
+        [`${feat}|0`]: [
+          "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_CONSTITUTION",
+          "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_INTELLIGENCE",
+        ],
+      },
+    };
     const r = resolve(old, reg);
     expect(r.stats.get("constitution")).toBe(resolve(ch, reg).stats.get("constitution") + 1);
     expect(r.stats.get("intelligence")).toBe(resolve(ch, reg).stats.get("intelligence") + 1);

@@ -48,7 +48,10 @@ export function useContent(): ContentState {
     try {
       // Soul Forge Test's 5e.tools-only switch: Aurora's sources stay on disk and in the list, but are not read.
       const read = __TEST_FLAVOR__ && getSettings().fiveToolsOnly ? list.filter((s) => s.format !== "aurora") : list;
-      const { reg: next, errors: errs } = await buildRegistry(read, undefined, (d, t, step) => { setProgress({ phase: "files", done: d, total: t }); launchProgress(t ? d / t : 1, step ?? `Reading content (${d} of ${t} files)`, !!step); });
+      const { reg: next, errors: errs } = await buildRegistry(read, undefined, (d, t, step) => {
+        setProgress({ phase: "files", done: d, total: t });
+        launchProgress(t ? d / t : 1, step ?? `Reading content (${d} of ${t} files)`, !!step);
+      });
       setReg(next);
       setErrors(errs);
       setStatus("");
@@ -77,7 +80,13 @@ export function useContent(): ContentState {
         setSources(list);
         if (res.downloaded > 0 || force) await rebuild(list);
         const note = res.failed.length ? ` ${res.failed.length} files could not be fetched.` : "";
-        setStatus(res.downloaded > 0 ? `${cfg.name}: updated ${res.downloaded} files.${note}` : quietWhenCurrent ? "" : `${cfg.name} is up to date.${note}`);
+        setStatus(
+          res.downloaded > 0
+            ? `${cfg.name}: updated ${res.downloaded} files.${note}`
+            : quietWhenCurrent
+              ? ""
+              : `${cfg.name} is up to date.${note}`,
+        );
       } catch (e) {
         setStatus(`Could not update ${cfg.name}: ${(e as Error).message}. Using the saved copy.`);
       } finally {

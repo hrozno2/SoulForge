@@ -14,7 +14,10 @@ describe("hit points", () => {
     expect(s.hp).toBe(17);
   });
   it("keeps the form while it has hit points left", () => {
-    expect(applyDamage({ hp: 20, tempHp: 0, wildShape: { name: "Wolf", hp: 11, maxHp: 11 } }, 4)).toMatchObject({ hp: 20, wildShape: { hp: 7 } });
+    expect(applyDamage({ hp: 20, tempHp: 0, wildShape: { name: "Wolf", hp: 11, maxHp: 11 } }, 4)).toMatchObject({
+      hp: 20,
+      wildShape: { hp: 7 },
+    });
   });
   it("heals the form while shaped, the character otherwise", () => {
     expect(applyHealing({ hp: 5, tempHp: 0, wildShape: { name: "Wolf", hp: 2, maxHp: 11 } }, 20, 30).wildShape?.hp).toBe(11);

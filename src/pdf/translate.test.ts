@@ -5,7 +5,15 @@ describe("translation services", () => {
   it("uses the free Google endpoint, joins sentence segments, and keeps the order", async () => {
     const fake = (async (_url: string, init: RequestInit) => {
       const q = decodeURIComponent(String(init.body).replace(/^q=/, ""));
-      return new Response(JSON.stringify([[[`<${q.slice(0, 3)}`, q], [">", ""]]]), { status: 200 });
+      return new Response(
+        JSON.stringify([
+          [
+            [`<${q.slice(0, 3)}`, q],
+            [">", ""],
+          ],
+        ]),
+        { status: 200 },
+      );
     }) as unknown as typeof fetch;
     const out = await makeTranslator({ provider: "gfree", url: "", key: "" }, fake)(["Alpha", "Bravo", "Charlie", "Delta"], "fr");
     expect(out).toEqual(["<Alp>", "<Bra>", "<Cha>", "<Del>"]);
@@ -81,7 +89,8 @@ describe("translation services", () => {
   });
 
   it("DeepL: says so when the allowance is used up or the key is refused", async () => {
-    const make = (status: number) => makeTranslator({ provider: "deepl", key: "k", url: "" }, (async () => new Response("{}", { status })) as unknown as typeof fetch);
+    const make = (status: number) =>
+      makeTranslator({ provider: "deepl", key: "k", url: "" }, (async () => new Response("{}", { status })) as unknown as typeof fetch);
     await expect(make(456)(["a"], "de")).rejects.toThrow(/allowance/);
     await expect(make(403)(["a"], "de")).rejects.toThrow(/key/);
   });
@@ -92,7 +101,9 @@ describe("DeepSeek translation", () => {
     let sent: { headers: Record<string, string>; body: { messages: { role: string; content: string }[] } } | undefined;
     const fake = (async (_url: string, init: RequestInit) => {
       sent = { headers: init.headers as Record<string, string>, body: JSON.parse(String(init.body)) };
-      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ t: ["Pobočný meč", "Lukostreľba"] }) } }] }), { status: 200 });
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ t: ["Pobočný meč", "Lukostreľba"] }) } }] }), {
+        status: 200,
+      });
     }) as unknown as typeof fetch;
     const tr = makeTranslator({ provider: "deepseek", key: "sk-test", url: "" }, fake, { Shortsword: "Krátky meč" });
     expect(await tr(["Shortsword", "Archery"], "sk")).toEqual(["Pobočný meč", "Lukostreľba"]);
@@ -101,7 +112,8 @@ describe("DeepSeek translation", () => {
     expect(JSON.parse(sent!.body.messages[1].content)).toEqual(["Shortsword", "Archery"]);
   });
   it("says so when the answer does not match what was sent", async () => {
-    const fake = (async () => new Response(JSON.stringify({ choices: [{ message: { content: '{"t":["one"]}' } }] }), { status: 200 })) as unknown as typeof fetch;
+    const fake = (async () =>
+      new Response(JSON.stringify({ choices: [{ message: { content: '{"t":["one"]}' } }] }), { status: 200 })) as unknown as typeof fetch;
     await expect(makeTranslator({ provider: "deepseek", key: "k", url: "" }, fake)(["a", "b"], "de")).rejects.toThrow(/did not match/);
   });
 });

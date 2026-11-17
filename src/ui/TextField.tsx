@@ -16,10 +16,16 @@ function useCommitted(value: string, commit: (v: string) => void) {
   commitRef.current = commit;
   const flush = () => {
     clearTimeout(timer.current);
-    if (pending.current !== null) { const v = pending.current; pending.current = null; commitRef.current(v); }
+    if (pending.current !== null) {
+      const v = pending.current;
+      pending.current = null;
+      commitRef.current(v);
+    }
   };
   // Text changed elsewhere (another field for the same thing, an import, undo) shows here unless typing is under way.
-  useEffect(() => { if (pending.current === null) setText(value); }, [value]);
+  useEffect(() => {
+    if (pending.current === null) setText(value);
+  }, [value]);
   useEffect(() => flush, []); // eslint-disable-line react-hooks/exhaustive-deps
   const change = (v: string) => {
     setText(v);
@@ -32,12 +38,42 @@ function useCommitted(value: string, commit: (v: string) => void) {
 
 type Common = { value: string; onCommit: (v: string) => void };
 
-export function TextInput({ value, onCommit, onBlur, ...rest }: Common & Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) {
+export function TextInput({
+  value,
+  onCommit,
+  onBlur,
+  ...rest
+}: Common & Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) {
   const f = useCommitted(value, onCommit);
-  return <input {...rest} value={f.text} onChange={(e) => f.change(e.target.value)} onBlur={(e) => { f.flush(); onBlur?.(e); }} />;
+  return (
+    <input
+      {...rest}
+      value={f.text}
+      onChange={(e) => f.change(e.target.value)}
+      onBlur={(e) => {
+        f.flush();
+        onBlur?.(e);
+      }}
+    />
+  );
 }
 
-export function TextArea({ value, onCommit, onBlur, ...rest }: Common & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange">) {
+export function TextArea({
+  value,
+  onCommit,
+  onBlur,
+  ...rest
+}: Common & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange">) {
   const f = useCommitted(value, onCommit);
-  return <textarea {...rest} value={f.text} onChange={(e) => f.change(e.target.value)} onBlur={(e) => { f.flush(); onBlur?.(e); }} />;
+  return (
+    <textarea
+      {...rest}
+      value={f.text}
+      onChange={(e) => f.change(e.target.value)}
+      onBlur={(e) => {
+        f.flush();
+        onBlur?.(e);
+      }}
+    />
+  );
 }

@@ -3,9 +3,24 @@ import { expect, test } from "@playwright/test";
 import { addTestContent, closeFresh, randomCharacter, tab } from "./helpers";
 
 // Creation paths not covered elsewhere (C5.5): multiclass, preparing spells, the Foundry round trip, the settings.
-test.use({ viewport: { width: 1600, height: 900 }, storageState: { cookies: [], origins: [{ origin: "http://localhost:4173", localStorage: [{ name: "charforge.tutorial", value: "never" }, { name: "charforge.settings", value: JSON.stringify({ buildLayout: "board" }) }] }] } });
+test.use({
+  viewport: { width: 1600, height: 900 },
+  storageState: {
+    cookies: [],
+    origins: [
+      {
+        origin: "http://localhost:4173",
+        localStorage: [
+          { name: "charforge.tutorial", value: "never" },
+          { name: "charforge.settings", value: JSON.stringify({ buildLayout: "board" }) },
+        ],
+      },
+    ],
+  },
+});
 
-const saved = (page: import("@playwright/test").Page) => page.evaluate(() => JSON.parse(localStorage.getItem("charforge.current.v2") ?? "{}").ch);
+const saved = (page: import("@playwright/test").Page) =>
+  page.evaluate(() => JSON.parse(localStorage.getItem("charforge.current.v2") ?? "{}").ch);
 
 test("a level up can take a level in a new class (multiclass)", async ({ page }) => {
   await addTestContent(page);
@@ -77,7 +92,11 @@ test("a caster who prepares picks today's spells on the spellbook", async ({ pag
   await expect(count).toHaveCount(1);
   // The spellbook's printing is an export setting (C7.9), not a switch on the spellbook.
   await expect(page.locator(".card-window .spell-scope")).toHaveCount(0);
-  await page.locator(".card-window").getByRole("button", { name: /^Done with / }).first().click();
+  await page
+    .locator(".card-window")
+    .getByRole("button", { name: /^Done with / })
+    .first()
+    .click();
   await tab(page, "Export");
   await page.getByRole("button", { name: "Export PDF..." }).click();
   const whole = page.getByLabel("Print the entire spellbook");
@@ -106,7 +125,10 @@ test("a character exported for Foundry comes back through the importer", async (
 
 test("settings: compact layout, reduce motion and the build layout take effect", async ({ page }) => {
   await page.goto("/");
-  const open = async () => { await page.getByRole("button", { name: /^menu/i }).click(); await page.getByRole("button", { name: /^Settings/ }).click(); };
+  const open = async () => {
+    await page.getByRole("button", { name: /^menu/i }).click();
+    await page.getByRole("button", { name: /^Settings/ }).click();
+  };
   await open();
   const row = (name: string) => page.locator(".set-row", { hasText: name }).locator("input[type=checkbox]");
   await row("Compact layout").check();
@@ -153,18 +175,25 @@ test("the spellbook stays in view while the spells scroll (C6.6)", async ({ page
   // The window flies out of its slot first (C6.4): measure once it has landed.
   await win.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
   const top0 = (await art.boundingBox())!.y;
-  await win.locator(".float-body").evaluate((b) => { b.scrollTop = 400; });
+  await win.locator(".float-body").evaluate((b) => {
+    b.scrollTop = 400;
+  });
   await page.waitForTimeout(100);
   const scrolled = await win.locator(".float-body").evaluate((b) => b.scrollTop);
   expect(scrolled).toBeGreaterThan(0);
   expect(Math.abs((await art.boundingBox())!.y - top0)).toBeLessThan(20);
   // The whole class: nothing sticky in any window sits inside a second scroll box (it would stick to that instead).
   await page.locator("[data-tile=equipment]").click();
-  const caught = await page.evaluate(() => [...document.querySelectorAll(".float-body *")].filter((el) => getComputedStyle(el).position === "sticky").flatMap((el) => {
-    const out: string[] = [];
-    for (let e = el.parentElement; e && !e.classList.contains("float-body"); e = e.parentElement) if (getComputedStyle(e).overflowY !== "visible") out.push(`${el.className} inside ${e.className}`);
-    return out;
-  }));
+  const caught = await page.evaluate(() =>
+    [...document.querySelectorAll(".float-body *")]
+      .filter((el) => getComputedStyle(el).position === "sticky")
+      .flatMap((el) => {
+        const out: string[] = [];
+        for (let e = el.parentElement; e && !e.classList.contains("float-body"); e = e.parentElement)
+          if (getComputedStyle(e).overflowY !== "visible") out.push(`${el.className} inside ${e.className}`);
+        return out;
+      }),
+  );
   expect(caught).toEqual([]);
 });
 
@@ -188,7 +217,10 @@ test("Manage's options keep their \"i\" in the option's line (C7.6)", async ({ p
   await addTestContent(page);
   await page.getByRole("button", { name: /new character/i }).click();
   await tab(page, "Manage");
-  const row = page.locator("ul.options li").filter({ has: page.locator("button.learn") }).first();
+  const row = page
+    .locator("ul.options li")
+    .filter({ has: page.locator("button.learn") })
+    .first();
   await expect(row).toHaveCount(1);
   const main = (await row.locator("button:not(.learn)").boundingBox())!;
   const info = (await row.locator("button.learn").boundingBox())!;
@@ -221,7 +253,10 @@ test("hit points ask to be configured until fixed or rolled is chosen (C7.10)", 
   await expect(bar).toContainText("Configure");
   // The choice checker lists it, and its line opens the dialog.
   // A list may still be open, which folds the panel's choices to one line.
-  await page.locator(".board-status-more").click({ timeout: 2000 }).catch(() => undefined);
+  await page
+    .locator(".board-status-more")
+    .click({ timeout: 2000 })
+    .catch(() => undefined);
   await page.locator(".board-status li button", { hasText: "Hit points" }).click();
   const dialog = page.getByRole("dialog", { name: "Hit points" });
   await expect(dialog).toBeVisible();

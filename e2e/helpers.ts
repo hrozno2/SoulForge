@@ -10,7 +10,12 @@ export async function serveFixtures(page: Page): Promise<void> {
     const path = new URL(route.request().url()).pathname.replace(/^\//, "");
     try {
       const body = readFileSync(join("fixtures", path === "demo.index" ? "demo.index" : path));
-      await route.fulfill({ status: 200, contentType: path.endsWith(".xml") || path.endsWith(".index") ? "application/xml" : "text/plain", body, headers: { "access-control-allow-origin": "*" } });
+      await route.fulfill({
+        status: 200,
+        contentType: path.endsWith(".xml") || path.endsWith(".index") ? "application/xml" : "text/plain",
+        body,
+        headers: { "access-control-allow-origin": "*" },
+      });
     } catch {
       await route.fulfill({ status: 404, body: "not found" });
     }
@@ -36,7 +41,10 @@ export async function tab(page: Page, name: string): Promise<void> {
   for (let i = 0; i < (await groups.count()); i++) {
     await groups.nth(i).click();
     const item = page.getByRole("menuitem", { name: re });
-    if (await item.count()) { await item.first().click(); return; }
+    if (await item.count()) {
+      await item.first().click();
+      return;
+    }
     await page.keyboard.press("Escape");
   }
   await nav.getByRole("button", { name: re }).first().click();
@@ -45,12 +53,18 @@ export async function tab(page: Page, name: string): Promise<void> {
 /** Adds the test content through the Content tab and waits for it to load. */
 export async function addTestContent(page: Page, opts: { keepSrd?: boolean } = {}): Promise<void> {
   // Tests of the fixture rules see only them; a random character from the built-in rules would be a different class.
-  if (!opts.keepSrd) await page.route("**/srd/*.json", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ elements: [] }) }));
+  if (!opts.keepSrd)
+    await page.route("**/srd/*.json", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ elements: [] }) }),
+    );
   await serveFixtures(page);
   await page.goto("/");
   await tab(page, "Content");
   await page.getByPlaceholder("https://.../something.index").fill(`${HOST}demo.index`);
-  await page.getByRole("button", { name: /add link/i }).first().click();
+  await page
+    .getByRole("button", { name: /add link/i })
+    .first()
+    .click();
   await tab(page, "Home");
   await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 30_000 });
   // The registry builds after the files arrive.
@@ -67,7 +81,12 @@ export async function randomCharacter(page: Page, level = 3): Promise<void> {
 /** A new pick opens its card window (Apply or ×): Apply keeps it and closes the window, so the board is free again. */
 export async function closeFresh(page: Page): Promise<void> {
   const win = page.locator(".float-window", { has: page.getByRole("button", { name: /^Apply / }) }).first();
-  if (await win.waitFor({ timeout: 3000 }).then(() => true, () => false)) {
+  if (
+    await win.waitFor({ timeout: 3000 }).then(
+      () => true,
+      () => false,
+    )
+  ) {
     await win.getByRole("button", { name: /^Apply / }).click();
     await win.waitFor({ state: "detached", timeout: 3000 }).catch(() => undefined);
   }

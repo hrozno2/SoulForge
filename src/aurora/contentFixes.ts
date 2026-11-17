@@ -69,11 +69,24 @@ export const GRANTS_ADD: Record<string, { type: string; id: string; requirements
   ID_WOTC_ERLW_CLASS_FEATURE_ARTIFICER_SPELLCASTING: [{ type: "Grants", id: "ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE" }],
   ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_SPELLCASTING: [{ type: "Grants", id: "ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE" }],
   ID_WOTC_UA_CLASS_FEATURE_ARTIFICER_SPELLCASTING: [{ type: "Grants", id: "ID_INTERNAL_GRANTS_SPELLCASTING_FEATURE" }],
-  ID_WOTC_PHB24_CLASS_DRUID: [{ type: "Proficiency", id: "ID_PROFICIENCY_TOOL_PROFICIENCY_HERBALISM_KIT", requirements: "!ID_WOTC_PHB24_MULTICLASS_DRUID" }],
+  ID_WOTC_PHB24_CLASS_DRUID: [
+    { type: "Proficiency", id: "ID_PROFICIENCY_TOOL_PROFICIENCY_HERBALISM_KIT", requirements: "!ID_WOTC_PHB24_MULTICLASS_DRUID" },
+  ],
   // Gunner (TCE p.80) grants proficiency with firearms outright. The content grants the DMG's firearms group, which
   // only applies with the DMG's optional Firearms rule switched on (right for the Eberron Artificer, whose firearms are
   // the DM's call), so a Gunner was proficient with none. Found by the class audit (src/aurora/classAudit.test.ts).
-  ID_WOTC_TCOE_FEAT_GUNNER: ["RENAISSANCE_FIREARMS_PISTOL", "RENAISSANCE_FIREARMS_MUSKET", "MODERN_FIREARMS_PISTOL_AUTOMATIC", "MODERN_FIREARMS_REVOLVER", "MODERN_FIREARMS_RIFLE_HUNTING", "MODERN_FIREARMS_RIFLE_AUTOMATIC", "MODERN_FIREARMS_SHOTGUN", "FUTURISTIC_FIREARMS_LASER_PISTOL", "FUTURISTIC_FIREARMS_ANTIMATTER_RIFLE", "FUTURISTIC_FIREARMS_LASER_RIFLE"].map((w) => ({ type: "Proficiency", id: `ID_WOTC_DMG_PROFICIENCY_WEAPON_${w}` })),
+  ID_WOTC_TCOE_FEAT_GUNNER: [
+    "RENAISSANCE_FIREARMS_PISTOL",
+    "RENAISSANCE_FIREARMS_MUSKET",
+    "MODERN_FIREARMS_PISTOL_AUTOMATIC",
+    "MODERN_FIREARMS_REVOLVER",
+    "MODERN_FIREARMS_RIFLE_HUNTING",
+    "MODERN_FIREARMS_RIFLE_AUTOMATIC",
+    "MODERN_FIREARMS_SHOTGUN",
+    "FUTURISTIC_FIREARMS_LASER_PISTOL",
+    "FUTURISTIC_FIREARMS_ANTIMATTER_RIFLE",
+    "FUTURISTIC_FIREARMS_LASER_RIFLE",
+  ].map((w) => ({ type: "Proficiency", id: `ID_WOTC_DMG_PROFICIENCY_WEAPON_${w}` })),
 };
 
 /**
@@ -97,16 +110,24 @@ const fixReq = (req: string | undefined) => (req ? req.replace(/ID_[A-Z0-9_]+/g,
 export function applyContentFixes(el: AElement): void {
   el.requirements = fixReq(el.requirements);
   // Mistyped IDs in grants too (a damage vulnerability spelled "VULNERAILITY").
-  if (el.rules.some((r) => r.kind === "grant" && ID_TYPOS[r.id])) el.rules = el.rules.map((r) => (r.kind === "grant" && ID_TYPOS[r.id] ? { ...r, id: ID_TYPOS[r.id] } : r));
+  if (el.rules.some((r) => r.kind === "grant" && ID_TYPOS[r.id]))
+    el.rules = el.rules.map((r) => (r.kind === "grant" && ID_TYPOS[r.id] ? { ...r, id: ID_TYPOS[r.id] } : r));
   if (REQUIREMENTS_SET[el.id]) el.requirements = REQUIREMENTS_SET[el.id];
   for (const [from, to] of TEXT_FIXES[el.id] ?? []) {
     el.description = el.description.split(from).join(to);
     // The sheet's own copies of the text (one per level) get the same fix.
-    if (el.sheet?.descriptions) el.sheet = { ...el.sheet, descriptions: el.sheet.descriptions.map((d) => (d.text ? { ...d, text: d.text.split(from).join(to) } : d)) };
+    if (el.sheet?.descriptions)
+      el.sheet = {
+        ...el.sheet,
+        descriptions: el.sheet.descriptions.map((d) => (d.text ? { ...d, text: d.text.split(from).join(to) } : d)),
+      };
   }
-  for (const [name, from, to] of STAT_FIXES[el.id] ?? []) el.rules = el.rules.map((r) => (r.kind === "stat" && r.name === name && r.value === from ? { ...r, value: to } : r));
-  for (const [from, to] of GRANTS_REPLACE[el.id] ?? []) el.rules = el.rules.map((r) => (r.kind === "grant" && r.id === from ? { ...r, id: to } : r));
-  for (const g of GRANTS_ADD[el.id] ?? []) if (!el.rules.some((r) => r.kind === "grant" && r.id === g.id)) el.rules = [...el.rules, { kind: "grant", ...g }];
+  for (const [name, from, to] of STAT_FIXES[el.id] ?? [])
+    el.rules = el.rules.map((r) => (r.kind === "stat" && r.name === name && r.value === from ? { ...r, value: to } : r));
+  for (const [from, to] of GRANTS_REPLACE[el.id] ?? [])
+    el.rules = el.rules.map((r) => (r.kind === "grant" && r.id === from ? { ...r, id: to } : r));
+  for (const g of GRANTS_ADD[el.id] ?? [])
+    if (!el.rules.some((r) => r.kind === "grant" && r.id === g.id)) el.rules = [...el.rules, { kind: "grant", ...g }];
   const add = SPELL_LIST_ADD[el.id];
   if (add) el.supports = [...el.supports, ...add.filter((c) => !el.supports.includes(c))];
   el.rules = el.rules.map((r) => ("requirements" in r && r.requirements ? { ...r, requirements: fixReq(r.requirements) } : r));
@@ -114,9 +135,25 @@ export function applyContentFixes(el: AElement): void {
   // kinds grant each weapon's own training one by one, from a list that misses weapons from later books (the Hoopak:
   // a Fighter was untrained with it, found by the rules check 2026-11-11). Each weapon now also accepts its kind's
   // training. Firearms stay by name: the Dungeon Master's Guide leaves training with them to the table.
-  if (el.type === "Weapon" && el.setters.proficiency?.value && !el.id.startsWith("ID_5ET_") && !el.supports.some((t) => /WEAPON_CATEGORY_FIREARM/i.test(t))) {
-    const kind = el.supports.some((t) => /WEAPON_CATEGORY_MARTIAL/i.test(t)) ? "MARTIAL" : el.supports.some((t) => /WEAPON_CATEGORY_SIMPLE/i.test(t)) ? "SIMPLE" : "";
+  if (
+    el.type === "Weapon" &&
+    el.setters.proficiency?.value &&
+    !el.id.startsWith("ID_5ET_") &&
+    !el.supports.some((t) => /WEAPON_CATEGORY_FIREARM/i.test(t))
+  ) {
+    const kind = el.supports.some((t) => /WEAPON_CATEGORY_MARTIAL/i.test(t))
+      ? "MARTIAL"
+      : el.supports.some((t) => /WEAPON_CATEGORY_SIMPLE/i.test(t))
+        ? "SIMPLE"
+        : "";
     const id = `ID_PROFICIENCY_WEAPON_PROFICIENCY_${kind}_WEAPONS`;
-    if (kind && !el.setters.proficiency.value.split(",").map((x) => x.trim()).includes(id)) el.setters = { ...el.setters, proficiency: { ...el.setters.proficiency, value: `${el.setters.proficiency.value},${id}` } };
+    if (
+      kind &&
+      !el.setters.proficiency.value
+        .split(",")
+        .map((x) => x.trim())
+        .includes(id)
+    )
+      el.setters = { ...el.setters, proficiency: { ...el.setters.proficiency, value: `${el.setters.proficiency.value},${id}` } };
   }
 }

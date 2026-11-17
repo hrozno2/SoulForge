@@ -6,9 +6,11 @@ import type { FontData } from "./exportPdf";
 let fonts: Promise<FontData> | undefined;
 /** Fetched once per session (C7.8: every preview fetched them again). A failed fetch is tried again next time. */
 export async function loadFonts(): Promise<FontData> {
-  fonts ??= Promise.all([
-    fetch(regularUrl).then((r) => r.arrayBuffer()),
-    fetch(boldUrl).then((r) => r.arrayBuffer()),
-  ]).then(([regular, bold]) => ({ regular, bold }));
-  return fonts.catch((e) => { fonts = undefined; throw e; });
+  fonts ??= Promise.all([fetch(regularUrl).then((r) => r.arrayBuffer()), fetch(boldUrl).then((r) => r.arrayBuffer())]).then(
+    ([regular, bold]) => ({ regular, bold }),
+  );
+  return fonts.catch((e) => {
+    fonts = undefined;
+    throw e;
+  });
 }

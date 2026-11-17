@@ -48,7 +48,13 @@ export async function restoreBackup(file: BackupFile, mode: "merge" | "replace" 
       out.kept++;
       continue;
     }
-    const rec: CharacterRecord = { id: c.id, name: c.name, summary: c.summary, updated: mode === "replace" ? Date.now() : c.updated, data: normalizeCharacter(c.data) };
+    const rec: CharacterRecord = {
+      id: c.id,
+      name: c.name,
+      summary: c.summary,
+      updated: mode === "replace" ? Date.now() : c.updated,
+      data: normalizeCharacter(c.data),
+    };
     await saveCharacterRecord(rec);
     if (existing) out.updated++;
     else out.added++;
@@ -57,7 +63,8 @@ export async function restoreBackup(file: BackupFile, mode: "merge" | "replace" 
 }
 
 /** The local date: a backup made at half past midnight belongs to today, not to UTC's yesterday. */
-export const localDate = (d = new Date()): string => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+export const localDate = (d = new Date()): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const today = () => localDate();
 export const KEEP_BACKUPS = 7;
 /** Files kept on disk: two weeks, since they are the copy that outlives the app's database. */
@@ -77,7 +84,11 @@ const DISK_NAME = /^soul-forge-backup-\d{4}-\d{2}-\d{2}\.json$/;
  * dropped. With a disk, today's backup is also written there as a file (and the oldest files beyond two weeks
  * removed); a disk that fails does not fail the backup, its error is handed to `onDiskError`.
  */
-export async function runAutoBackup(enabled: boolean, disk?: BackupDisk | null, onDiskError?: (e: unknown) => void): Promise<string | null> {
+export async function runAutoBackup(
+  enabled: boolean,
+  disk?: BackupDisk | null,
+  onDiskError?: (e: unknown) => void,
+): Promise<string | null> {
   if (!enabled) return null;
   const date = today();
   let json = await backupStore.get(date);

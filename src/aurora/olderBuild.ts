@@ -35,7 +35,15 @@ export function misalignments(r: Resolved, findings: Finding[]): Finding[] {
   const stale = picksNoLongerOffered(r);
   // "Choice: Pick" pairs the stale lines already name; the rules check's "does not meet its requirements" for the same
   // pick says it again.
-  const named = new Set(stale.flatMap((f) => { const [choice, rest] = f.detail.split(/: (.*)/s); return (rest ?? "").replace(/\s*\(now ruled out\)/g, "").split(/[;,]\s*/).map((p) => `${choice}: ${p.trim()}`); }));
+  const named = new Set(
+    stale.flatMap((f) => {
+      const [choice, rest] = f.detail.split(/: (.*)/s);
+      return (rest ?? "")
+        .replace(/\s*\(now ruled out\)/g, "")
+        .split(/[;,]\s*/)
+        .map((p) => `${choice}: ${p.trim()}`);
+    }),
+  );
   const said = (f: Finding) => /does not meet its requirements/.test(f.rule) && named.has(f.detail.trim());
   return [...stale, ...findings.filter((f) => !OPEN_CHOICE.test(f.rule) && !said(f))].filter((f) => {
     const k = `${f.rule}|${f.detail}`;

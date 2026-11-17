@@ -12,7 +12,9 @@ const C = process.env.SOULFORGE_RULES;
 describe.skipIf(!C)("chosen spellcasting ability", () => {
   it("lets a Magic Initiate (Cleric) cast with Wisdom", () => {
     const reg = loadTestContent(C!);
-    const feat = reg.ofType("Feat").find((f) => f.name === "Magic Initiate (Cleric)" && f.id.startsWith("ID_5ET_") && /2024/.test(f.source));
+    const feat = reg
+      .ofType("Feat")
+      .find((f) => f.name === "Magic Initiate (Cleric)" && f.id.startsWith("ID_5ET_") && /2024/.test(f.source));
     expect(feat, "5e.tools 2024 Magic Initiate (Cleric)").toBeTruthy();
     const ch = newCharacter();
     ch.classes = [{ classId: "ID_WOTC_PHB24_CLASS_FIGHTER", level: 1 }];

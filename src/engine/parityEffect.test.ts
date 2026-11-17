@@ -22,64 +22,94 @@ function diff(a: unknown, b: unknown, path: string, out: { path: string; alone: 
   if (JSON.stringify(a) === JSON.stringify(b)) return;
   if (Array.isArray(a) && Array.isArray(b)) {
     const key = (x: unknown) => (x && typeof x === "object" && "name" in x ? String((x as { name: unknown }).name) : JSON.stringify(x));
-    const am = new Map(a.map((x) => [key(x), x])), bm = new Map(b.map((x) => [key(x), x]));
-    for (const [k, x] of am) { if (bm.has(k)) diff(x, bm.get(k), `${path}[]`, out); else out.push({ path: `${path}[] only alone`, alone: k, both: undefined }); }
+    const am = new Map(a.map((x) => [key(x), x])),
+      bm = new Map(b.map((x) => [key(x), x]));
+    for (const [k, x] of am) {
+      if (bm.has(k)) diff(x, bm.get(k), `${path}[]`, out);
+      else out.push({ path: `${path}[] only alone`, alone: k, both: undefined });
+    }
     for (const k of bm.keys()) if (!am.has(k)) out.push({ path: `${path}[] only with Aurora`, alone: undefined, both: k });
     return;
   }
   if (a && b && typeof a === "object" && typeof b === "object") {
-    for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) diff((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k], `${path}.${k}`, out);
+    for (const k of new Set([...Object.keys(a), ...Object.keys(b)]))
+      diff((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k], `${path}.${k}`, out);
     return;
   }
   out.push({ path, alone: a, both: b });
 }
 
-it.skipIf(!C || process.env.RULES_TIER !== "parity-effect")("what Aurora changes on 5e.tools characters", () => {
-  const dir = join(C!, "5etools-data");
-  const json: Record<string, unknown> = {};
-  for (const f of walkDir(dir, ".json")) { const rel = relative(dir, f); if (!/index\.json$/.test(rel) && !rel.startsWith("bestiary")) json[rel] = JSON.parse(readFileSync(f, "utf8")); }
-  const alone = new ARegistry();
-  alone.addElements(convertFiveTools({ files: json as never }));
-  alone.build();
-  const both = loadTestContent(C!);
-  let seed = 23;
-  const rng = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const N = Number(process.env.PARITY_EFFECT_N ?? 500);
-  const paths = new Map<string, { n: number; samples: string[] }>();
-  let same = 0, crashed = 0, hints = 0;
-  // Every difference that is not a DC note, in full: the samples below keep only six per path.
-  const real: string[] = [];
-  for (let i = 0; i < N; i++) {
-    try {
-      const ch = randomCharacter(alone, 1 + (i % 20), {} as never, rng);
-      const out: { path: string; alone: unknown; both: unknown }[] = [];
-      diff(buildSheet(resolve(ch, alone)), buildSheet(resolve(ch, both)), "sheet", out);
-      // A DC or damage note beside a feature's text is Aurora's own ("Martial Arts... (DC 15)", "(damage +8)"): counted
-      // apart, it changes no number.
-      const isHint = (d: { path: string; alone: unknown; both: unknown }) => /features\[\]\.text$/.test(d.path) && String(d.both).replace(/\s*\((?:DC \d+|damage [+-]\d+)\)/g, "") === String(d.alone);
-      if (out.some(isHint)) hints++;
-      if (!out.filter((d) => !isHint(d)).length) same++;
-      const who0 = ch.classes.map((c) => `${alone.get(c.classId)?.name} ${c.level}`).join("/");
-      for (const d of out.filter((x) => !isHint(x))) { const [a, b] = [String(JSON.stringify(d.alone)), String(JSON.stringify(d.both))]; let at = 0; while (at < a.length && a[at] === b[at]) at++; real.push(`${who0} ${ch.race ? alone.get(ch.race)?.name : ""}: ${d.path}: ${a.slice(Math.max(0, at - 40), at + 80)} -> ${b.slice(Math.max(0, at - 40), at + 80)}`); }
-      const who = ch.classes.map((c) => `${alone.get(c.classId)?.name} ${c.level}`).join("/");
-      for (const d of out) {
-        const e = paths.get(d.path) ?? { n: 0, samples: [] };
-        e.n++;
-        // Long text: from where the two start to differ.
-        const [a, b] = [String(JSON.stringify(d.alone)), String(JSON.stringify(d.both))];
-        let at = 0;
-        while (at < a.length && a[at] === b[at]) at++;
-        if (e.samples.length < 6) e.samples.push(`${who}: ${a.slice(Math.max(0, at - 20), at + 70)} -> ${b.slice(Math.max(0, at - 20), at + 70)}`);
-        paths.set(d.path, e);
+it.skipIf(!C || process.env.RULES_TIER !== "parity-effect")(
+  "what Aurora changes on 5e.tools characters",
+  () => {
+    const dir = join(C!, "5etools-data");
+    const json: Record<string, unknown> = {};
+    for (const f of walkDir(dir, ".json")) {
+      const rel = relative(dir, f);
+      if (!/index\.json$/.test(rel) && !rel.startsWith("bestiary")) json[rel] = JSON.parse(readFileSync(f, "utf8"));
+    }
+    const alone = new ARegistry();
+    alone.addElements(convertFiveTools({ files: json as never }));
+    alone.build();
+    const both = loadTestContent(C!);
+    let seed = 23;
+    const rng = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const N = Number(process.env.PARITY_EFFECT_N ?? 500);
+    const paths = new Map<string, { n: number; samples: string[] }>();
+    let same = 0,
+      crashed = 0,
+      hints = 0;
+    // Every difference that is not a DC note, in full: the samples below keep only six per path.
+    const real: string[] = [];
+    for (let i = 0; i < N; i++) {
+      try {
+        const ch = randomCharacter(alone, 1 + (i % 20), {} as never, rng);
+        const out: { path: string; alone: unknown; both: unknown }[] = [];
+        diff(buildSheet(resolve(ch, alone)), buildSheet(resolve(ch, both)), "sheet", out);
+        // A DC or damage note beside a feature's text is Aurora's own ("Martial Arts... (DC 15)", "(damage +8)"): counted
+        // apart, it changes no number.
+        const isHint = (d: { path: string; alone: unknown; both: unknown }) =>
+          /features\[\]\.text$/.test(d.path) && String(d.both).replace(/\s*\((?:DC \d+|damage [+-]\d+)\)/g, "") === String(d.alone);
+        if (out.some(isHint)) hints++;
+        if (!out.filter((d) => !isHint(d)).length) same++;
+        const who0 = ch.classes.map((c) => `${alone.get(c.classId)?.name} ${c.level}`).join("/");
+        for (const d of out.filter((x) => !isHint(x))) {
+          const [a, b] = [String(JSON.stringify(d.alone)), String(JSON.stringify(d.both))];
+          let at = 0;
+          while (at < a.length && a[at] === b[at]) at++;
+          real.push(
+            `${who0} ${ch.race ? alone.get(ch.race)?.name : ""}: ${d.path}: ${a.slice(Math.max(0, at - 40), at + 80)} -> ${b.slice(Math.max(0, at - 40), at + 80)}`,
+          );
+        }
+        const who = ch.classes.map((c) => `${alone.get(c.classId)?.name} ${c.level}`).join("/");
+        for (const d of out) {
+          const e = paths.get(d.path) ?? { n: 0, samples: [] };
+          e.n++;
+          // Long text: from where the two start to differ.
+          const [a, b] = [String(JSON.stringify(d.alone)), String(JSON.stringify(d.both))];
+          let at = 0;
+          while (at < a.length && a[at] === b[at]) at++;
+          if (e.samples.length < 6)
+            e.samples.push(`${who}: ${a.slice(Math.max(0, at - 20), at + 70)} -> ${b.slice(Math.max(0, at - 20), at + 70)}`);
+          paths.set(d.path, e);
+        }
+      } catch {
+        crashed++;
       }
-    } catch { crashed++; }
-  }
-  const lines = [`# What Aurora changes on 5e.tools characters`, "", `${N} characters, ${same} with the same sheet, ${hints} of them differing in a DC note only, ${crashed} failed to build.`, ""];
-  if (real.length) lines.push(`## Not a DC note (${real.length})`, ...real.map((x) => `- ${x}`), "");
-  for (const [p, e] of [...paths].sort((a, b) => b[1].n - a[1].n)) lines.push(`## ${p} (${e.n})`, ...e.samples.map((s) => `- ${s}`), "");
-  writeFileSync(join(C!, "engine", "parity-effect.md"), lines.join("\n"));
-  console.log(`PARITY same sheet with and without Aurora: ${same} of ${N}`);
-  // May only go up (Stage D4). The seed is fixed, so a drop is a mechanic lost, not luck.
-  expect(crashed).toBe(0);
-  if (N === 500) expect(same).toBeGreaterThanOrEqual(FLOOR);
-}, 1800000);
+    }
+    const lines = [
+      `# What Aurora changes on 5e.tools characters`,
+      "",
+      `${N} characters, ${same} with the same sheet, ${hints} of them differing in a DC note only, ${crashed} failed to build.`,
+      "",
+    ];
+    if (real.length) lines.push(`## Not a DC note (${real.length})`, ...real.map((x) => `- ${x}`), "");
+    for (const [p, e] of [...paths].sort((a, b) => b[1].n - a[1].n)) lines.push(`## ${p} (${e.n})`, ...e.samples.map((s) => `- ${s}`), "");
+    writeFileSync(join(C!, "engine", "parity-effect.md"), lines.join("\n"));
+    console.log(`PARITY same sheet with and without Aurora: ${same} of ${N}`);
+    // May only go up (Stage D4). The seed is fixed, so a drop is a mechanic lost, not luck.
+    expect(crashed).toBe(0);
+    if (N === 500) expect(same).toBeGreaterThanOrEqual(FLOOR);
+  },
+  1800000,
+);

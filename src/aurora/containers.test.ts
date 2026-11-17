@@ -2,7 +2,18 @@ import { describe, expect, it } from "vitest";
 import { isContainer } from "./containers";
 import type { AElement } from "./types";
 
-const item = (description: string, extra: Partial<AElement> = {}): AElement => ({ id: "X", name: "X", type: "Item", source: "", supports: [], description, compendiumHidden: false, setters: {}, rules: [], ...extra });
+const item = (description: string, extra: Partial<AElement> = {}): AElement => ({
+  id: "X",
+  name: "X",
+  type: "Item",
+  source: "",
+  supports: [],
+  description,
+  compendiumHidden: false,
+  setters: {},
+  rules: [],
+  ...extra,
+});
 
 describe("containers", () => {
   it("knows a container by what it holds, or by 5e.tools' mark", () => {

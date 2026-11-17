@@ -34,7 +34,9 @@ export function useRulesCheck(r: Resolved): RulesCheckResult {
   useEffect(() => {
     const off = onRulesRef(() => setRef(rulesRef()));
     if (official) void ensureRulesRef();
-    return () => { off(); };
+    return () => {
+      off();
+    };
   }, [official]);
   return useMemo(() => {
     if (!r.character.classes.length) return { rules: [], content: [], full: !!ref };
@@ -50,10 +52,26 @@ export function useRulesCheck(r: Resolved): RulesCheckResult {
     const sig = found.map((f) => `${f.rule}: ${f.detail}`).join(" | ");
     if (sig !== lastFindings) {
       lastFindings = sig;
-      if (found.length) logEvent("rules", `${found.length} findings for ${r.character.name || "a character"}: ${found.slice(0, 6).map((f) => `${f.rule}: ${f.detail}`).join(" | ")}${found.length > 6 ? " ..." : ""}`);
+      if (found.length)
+        logEvent(
+          "rules",
+          `${found.length} findings for ${r.character.name || "a character"}: ${found
+            .slice(0, 6)
+            .map((f) => `${f.rule}: ${f.detail}`)
+            .join(" | ")}${found.length > 6 ? " ..." : ""}`,
+        );
     }
-    const kept = found.filter((f) => !OPEN_CHOICE.test(f.rule) && !(!official && /^Class not in the rules reference$/.test(f.rule)) && !(ref === null && /^Class not in the rules reference$/.test(f.rule)));
-    return { rules: kept.filter((f) => !CONTENT.test(f.rule)), content: kept.filter((f) => CONTENT.test(f.rule)), full: !!ref || !official };
+    const kept = found.filter(
+      (f) =>
+        !OPEN_CHOICE.test(f.rule) &&
+        !(!official && /^Class not in the rules reference$/.test(f.rule)) &&
+        !(ref === null && /^Class not in the rules reference$/.test(f.rule)),
+    );
+    return {
+      rules: kept.filter((f) => !CONTENT.test(f.rule)),
+      content: kept.filter((f) => CONTENT.test(f.rule)),
+      full: !!ref || !official,
+    };
   }, [r, ref, official]);
 }
 
@@ -71,14 +89,26 @@ export function RulesCheckView({ r, res }: { r: Resolved; res: RulesCheckResult 
     <section className={`rules-check ${res.rules.length ? "bad" : res.content.length ? "warn" : "ok"}`} aria-label="Rules check">
       <button className="rules-check-head" aria-expanded={n ? open : undefined} onClick={() => n && setOpen(!open)}>
         <b>Rules check</b>
-        <span>{n === 0 ? "Follows the rules" : `${res.rules.length ? `${res.rules.length} against the rules` : ""}${res.rules.length && res.content.length ? ", " : ""}${res.content.length ? `${res.content.length} content problem${res.content.length > 1 ? "s" : ""}` : ""}`}</span>
+        <span>
+          {n === 0
+            ? "Follows the rules"
+            : `${res.rules.length ? `${res.rules.length} against the rules` : ""}${res.rules.length && res.content.length ? ", " : ""}${res.content.length ? `${res.content.length} content problem${res.content.length > 1 ? "s" : ""}` : ""}`}
+        </span>
         {!res.full && <small className="muted">class tables not checked yet (the rules reference downloads with content)</small>}
         {n > 0 && <span className="chev">{open ? "▴" : "▾"}</span>}
       </button>
       {open && n > 0 && (
         <ul>
-          {res.rules.map((f, i) => <li key={`r${i}`}><b>{f.rule}:</b> {f.detail}</li>)}
-          {res.content.map((f, i) => <li key={`c${i}`} className="muted"><b>{f.rule}:</b> {f.detail}</li>)}
+          {res.rules.map((f, i) => (
+            <li key={`r${i}`}>
+              <b>{f.rule}:</b> {f.detail}
+            </li>
+          ))}
+          {res.content.map((f, i) => (
+            <li key={`c${i}`} className="muted">
+              <b>{f.rule}:</b> {f.detail}
+            </li>
+          ))}
         </ul>
       )}
     </section>
@@ -103,7 +133,12 @@ export function ExportRulesNote({ r }: { r: Resolved }) {
   if (!res.rules.length) return null;
   return (
     <p className="rules-export-note noprint" role="note">
-      <b>Rules check:</b> {res.rules.length} {res.rules.length === 1 ? "thing breaks" : "things break"} the rules ({res.rules.slice(0, 2).map((f) => f.rule.toLowerCase()).join("; ")}{res.rules.length > 2 ? "; ..." : ""}). The sheets show the character as it is; the details are on Build.
+      <b>Rules check:</b> {res.rules.length} {res.rules.length === 1 ? "thing breaks" : "things break"} the rules (
+      {res.rules
+        .slice(0, 2)
+        .map((f) => f.rule.toLowerCase())
+        .join("; ")}
+      {res.rules.length > 2 ? "; ..." : ""}). The sheets show the character as it is; the details are on Build.
     </p>
   );
 }
@@ -121,17 +156,29 @@ export function OlderBuildNotice({ r, set }: { r: Resolved; set: (fn: (c: Charac
     if (ready && !items.length) set((c) => markChecked(c, APP_VERSION));
   }, [ready, items.length, set]);
   useEffect(() => {
-    if (ready && items.length) logEvent("older-build", `${r.character.name || "a character"} from ${r.character.checkedWith ?? "an older version"}: ${items.length} not aligned`);
+    if (ready && items.length)
+      logEvent(
+        "older-build",
+        `${r.character.name || "a character"} from ${r.character.checkedWith ?? "an older version"}: ${items.length} not aligned`,
+      );
   }, [ready, items.length]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!ready || !items.length) return null;
   return (
     <section className="older-build" role="status" aria-label="Changes since this character was saved">
       <p>
-        <b>{r.character.name || "This character"} was saved {r.character.checkedWith ? `in Soul Forge ${r.character.checkedWith}` : "by an older Soul Forge"}.</b>{" "}
-        {items.length === 1 ? "One thing no longer lines up" : `${items.length} things no longer line up`} with this version's content and rules:
+        <b>
+          {r.character.name || "This character"} was saved{" "}
+          {r.character.checkedWith ? `in Soul Forge ${r.character.checkedWith}` : "by an older Soul Forge"}.
+        </b>{" "}
+        {items.length === 1 ? "One thing no longer lines up" : `${items.length} things no longer line up`} with this version's content and
+        rules:
       </p>
       <ul>
-        {items.slice(0, 12).map((f, i) => <li key={i}><b>{f.rule}:</b> {f.detail}</li>)}
+        {items.slice(0, 12).map((f, i) => (
+          <li key={i}>
+            <b>{f.rule}:</b> {f.detail}
+          </li>
+        ))}
         {items.length > 12 && <li className="muted">and {items.length - 12} more (the rules check on Build lists them)</li>}
       </ul>
       <button onClick={() => set((c) => markChecked(c, APP_VERSION))}>Got it</button>

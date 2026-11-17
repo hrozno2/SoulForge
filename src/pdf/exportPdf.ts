@@ -146,9 +146,17 @@ interface CardData {
 function spellCard(e: AElement): CardData {
   const m = (k: string) => e.setters[k]?.value;
   const level = Number(m("level") ?? 0);
-  const comps = [m("hasVerbalComponent") === "true" && "V", m("hasSomaticComponent") === "true" && "S", m("hasMaterialComponent") === "true" && "M"].filter(Boolean).join(", ");
+  const comps = [
+    m("hasVerbalComponent") === "true" && "V",
+    m("hasSomaticComponent") === "true" && "S",
+    m("hasMaterialComponent") === "true" && "M",
+  ]
+    .filter(Boolean)
+    .join(", ");
   const tags = [m("isConcentration") === "true" && "Concentration", m("isRitual") === "true" && "Ritual"].filter(Boolean).join(", ");
-  const subtitle = [level === 0 ? `${m("school") ?? ""} Cantrip`.trim() : `Level ${level} ${m("school") ?? ""}`.trim(), tags].filter(Boolean).join(" - ");
+  const subtitle = [level === 0 ? `${m("school") ?? ""} Cantrip`.trim() : `Level ${level} ${m("school") ?? ""}`.trim(), tags]
+    .filter(Boolean)
+    .join(" - ");
   const stats: [string, string][] = [];
   if (m("time")) stats.push(["Casting Time", m("time")!]);
   if (m("range")) stats.push(["Range", m("range")!]);
@@ -232,7 +240,10 @@ function drawTips(pdf: PDFDocument, f: Fonts, r: Resolved, sh: SheetData, size: 
   let page = pdf.addPage([W, H]);
   let y = H - M;
   const head = (t: string, big = false) => {
-    if (y < M + 40) { page = pdf.addPage([W, H]); y = H - M; }
+    if (y < M + 40) {
+      page = pdf.addPage([W, H]);
+      y = H - M;
+    }
     page.drawText(clean(t), { x: M, y: y - (big ? 18 : 12), font: f.b, size: big ? 20 : 12, color: ACCENT });
     y -= big ? 26 : 20;
     page.drawLine({ start: { x: M, y: y + 2 }, end: { x: W - M, y: y + 2 }, thickness: big ? 1.4 : 0.6, color: LINE });
@@ -243,7 +254,10 @@ function drawTips(pdf: PDFDocument, f: Fonts, r: Resolved, sh: SheetData, size: 
     head(g.title);
     for (const it of g.items) {
       const lines = wrap(it, f.r, 9.5, colW - 14);
-      if (y - lines.length * 12.5 < M) { page = pdf.addPage([W, H]); y = H - M; }
+      if (y - lines.length * 12.5 < M) {
+        page = pdf.addPage([W, H]);
+        y = H - M;
+      }
       page.drawText("\u2022", { x: M + 2, y: y - 9.5, font: f.b, size: 10, color: ACCENT });
       lines.forEach((l, i) => page.drawText(l, { x: M + 14, y: y - 9.5 - i * 12.5, font: f.r, size: 9.5, color: INK }));
       y -= lines.length * 12.5 + 4;
@@ -257,17 +271,30 @@ function drawTips(pdf: PDFDocument, f: Fonts, r: Resolved, sh: SheetData, size: 
 export function cardSources(r: Resolved, sh: SheetData, scope: SpellScope) {
   const spellIds = new Set<string>();
   for (const c of sh.casting) for (const p of scope === "all" ? everySpellOf(r, c) : readySpells(c)) spellIds.add(p.id);
-  const spells = [...spellIds].map((id) => r.reg.get(id)).filter((e): e is AElement => !!e)
+  const spells = [...spellIds]
+    .map((id) => r.reg.get(id))
+    .filter((e): e is AElement => !!e)
     .sort((a, b) => Number(a.setters.level?.value ?? 0) - Number(b.setters.level?.value ?? 0) || a.name.localeCompare(b.name));
-  const items = r.character.inventory.map((i) => ({ el: i.id ? r.reg.get(i.id) : undefined, qty: i.qty })).filter((x): x is { el: AElement; qty: number } => !!x.el);
+  const items = r.character.inventory
+    .map((i) => ({ el: i.id ? r.reg.get(i.id) : undefined, qty: i.qty }))
+    .filter((x): x is { el: AElement; qty: number } => !!x.el);
   // Every feature kind but the background's (its feature is the background card's text), from the sheet's one list.
-  const features = sh.features.filter((x) => featureTypesOf("Species traits", "Class features", "Subclass features", "Feats").includes(x.type));
+  const features = sh.features.filter((x) =>
+    featureTypesOf("Species traits", "Class features", "Subclass features", "Feats").includes(x.type),
+  );
   // Forms: the beasts picked in Wild Shape's choices; companions: the rest the character has (granted or added).
-  const formIds = new Set(r.slots.filter((s) => s.rule.type === "Companion" && /\bws beast\b/.test(s.rule.supports ?? "")).flatMap((s) => s.chosen));
-  const companionIds = new Set([...r.active.filter((a) => a.el.type === "Companion" && !formIds.has(a.el.id)).map((a) => a.el.id), ...r.character.companions.map((c) => c.id)]);
+  const formIds = new Set(
+    r.slots.filter((s) => s.rule.type === "Companion" && /\bws beast\b/.test(s.rule.supports ?? "")).flatMap((s) => s.chosen),
+  );
+  const companionIds = new Set([
+    ...r.active.filter((a) => a.el.type === "Companion" && !formIds.has(a.el.id)).map((a) => a.el.id),
+    ...r.character.companions.map((c) => c.id),
+  ]);
   const el = (id: string) => r.reg.get(id);
-  const forms = [...[...formIds].map((id) => ({ el: el(id), kind: "wild shape" as const })), ...[...companionIds].map((id) => ({ el: el(id), kind: "companion" as const }))]
-    .filter((x): x is { el: AElement; kind: "wild shape" | "companion" } => !!x.el);
+  const forms = [
+    ...[...formIds].map((id) => ({ el: el(id), kind: "wild shape" as const })),
+    ...[...companionIds].map((id) => ({ el: el(id), kind: "companion" as const })),
+  ].filter((x): x is { el: AElement; kind: "wild shape" | "companion" } => !!x.el);
   return { spells, items, features, forms };
 }
 
@@ -275,8 +302,15 @@ export function cardSources(r: Resolved, sh: SheetData, scope: SpellScope) {
 function formCard(r: Resolved, el: AElement, kind: FormKind): CardData {
   const b = formStats(r, el, kind);
   const sg = (n: number) => (n >= 0 ? `+${n}` : String(n));
-  const abil = Object.entries(b.abilities).map(([k, v]) => [k.slice(0, 3).toUpperCase(), `${v} (${sg(Math.floor((v - 10) / 2))})`] as [string, string]);
-  const skills = b.skills.filter((k) => k.bonus !== 0).sort((x, y) => y.bonus - x.bonus).slice(0, 8).map((k) => `${k.name.replace(/\b\w/g, (c) => c.toUpperCase())} ${sg(k.bonus)}`).join(", ");
+  const abil = Object.entries(b.abilities).map(
+    ([k, v]) => [k.slice(0, 3).toUpperCase(), `${v} (${sg(Math.floor((v - 10) / 2))})`] as [string, string],
+  );
+  const skills = b.skills
+    .filter((k) => k.bonus !== 0)
+    .sort((x, y) => y.bonus - x.bonus)
+    .slice(0, 8)
+    .map((k) => `${k.name.replace(/\b\w/g, (c) => c.toUpperCase())} ${sg(k.bonus)}`)
+    .join(", ");
   return {
     title: el.name,
     subtitle: kind === "wild shape" ? `Wild Shape form (${b.rules} rules)` : "Companion",
@@ -291,7 +325,10 @@ export async function buildPdf(r: Resolved, sh: SheetData, opts: PdfOptions, fon
   const t0 = performance.now();
   try {
     const bytes = await buildPdfTranslated(r, sh, opts, fonts);
-    logEvent("export", `Soul Forge PDF for ${r.character.name || "a character"}: ${[opts.sheet && "sheet", opts.spellCards && "spell cards", opts.itemCards && "item cards", opts.featureCards && "feature cards", opts.formCards !== false && "form cards", opts.tips && "tips"].filter(Boolean).join(", ")}${opts.translate ? `, translated to ${opts.translate.target}` : ""}; ${Math.round(bytes.length / 1024)} KB in ${Math.round(performance.now() - t0)} ms`);
+    logEvent(
+      "export",
+      `Soul Forge PDF for ${r.character.name || "a character"}: ${[opts.sheet && "sheet", opts.spellCards && "spell cards", opts.itemCards && "item cards", opts.featureCards && "feature cards", opts.formCards !== false && "form cards", opts.tips && "tips"].filter(Boolean).join(", ")}${opts.translate ? `, translated to ${opts.translate.target}` : ""}; ${Math.round(bytes.length / 1024)} KB in ${Math.round(performance.now() - t0)} ms`,
+    );
     return bytes;
   } catch (e) {
     logEvent("export", `Soul Forge PDF failed: ${(e as Error).message}`);
@@ -310,7 +347,10 @@ async function buildPdfTranslated(r: Resolved, sh: SheetData, opts: PdfOptions, 
     const src = cardSources(r, sh, opts.spellCardScope);
     for (const e of [...src.spells, ...src.items.map((i) => i.el)]) keep.add(e.name);
     for (const f of src.features) keep.add(f.name);
-    for (const i of r.character.inventory) { const n = i.id ? r.reg.get(i.id)?.name : i.custom?.name; if (n) keep.add(n); }
+    for (const i of r.character.inventory) {
+      const n = i.id ? r.reg.get(i.id)?.name : i.custom?.name;
+      if (n) keep.add(n);
+    }
   }
   TR = (x) => {
     if ((t.glossary && lookup(t.glossary, x)) || translatable(x, keep)) seen.add(x);
@@ -343,7 +383,16 @@ async function buildPdfOnce(r: Resolved, sh: SheetData, opts: PdfOptions, fonts:
   const cards: CardData[] = [];
   if (opts.spellCards) cards.push(...src.spells.map(spellCard));
   if (opts.itemCards) cards.push(...src.items.map((x) => itemCard(x.el, x.qty)));
-  if (opts.featureCards) cards.push(...src.features.map((x) => ({ title: x.name, subtitle: x.type, stats: x.usage ? ([["Uses", x.usage]] as [string, string][]) : [], body: x.text, kind: "" })));
+  if (opts.featureCards)
+    cards.push(
+      ...src.features.map((x) => ({
+        title: x.name,
+        subtitle: x.type,
+        stats: x.usage ? ([["Uses", x.usage]] as [string, string][]) : [],
+        body: x.text,
+        kind: "",
+      })),
+    );
   if (opts.formCards !== false) cards.push(...src.forms.map((x) => formCard(r, x.el, x.kind)));
   if (cards.length) drawCards(pdf, f, cards, size);
   if (opts.tips) drawTips(pdf, f, r, sh, size);
@@ -352,7 +401,11 @@ async function buildPdfOnce(r: Resolved, sh: SheetData, opts: PdfOptions, fonts:
   return pdf.save();
 }
 
-export function cardCounts(r: Resolved, sh: SheetData, scope: SpellScope): { spells: number; items: number; features: number; forms: number } {
+export function cardCounts(
+  r: Resolved,
+  sh: SheetData,
+  scope: SpellScope,
+): { spells: number; items: number; features: number; forms: number } {
   const s = cardSources(r, sh, scope);
   return { spells: s.spells.length, items: s.items.length, features: s.features.length, forms: s.forms.length };
 }

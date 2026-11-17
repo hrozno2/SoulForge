@@ -26,33 +26,36 @@ export function useUpdater() {
     timer.current = setTimeout(() => setStatus(""), ms);
   }, []);
 
-  const check = useCallback(async (manual: boolean) => {
-    // The test build installs next to the released app; an update would replace it with the release.
-    if (__TEST_FLAVOR__) {
-      if (manual) flash("The test build does not update itself. Rebuild it with npm run test-app.");
-      return;
-    }
-    if (!inTauri()) {
-      if (manual) flash("Updates apply to the installed desktop app.");
-      return;
-    }
-    try {
-      const [{ check: checkUpdate }, { invoke }] = await Promise.all([
-        import("@tauri-apps/plugin-updater"),
-        import("@tauri-apps/api/core"),
-      ]);
-      const kind = await invoke<InstallKind>("install_kind");
-      const update = await checkUpdate();
-      if (update) setFound({ version: update.version, kind, update });
-      else if (manual) {
-        const { getVersion } = await import("@tauri-apps/api/app");
-        flash(`You are on the latest version (${await getVersion()}).`);
+  const check = useCallback(
+    async (manual: boolean) => {
+      // The test build installs next to the released app; an update would replace it with the release.
+      if (__TEST_FLAVOR__) {
+        if (manual) flash("The test build does not update itself. Rebuild it with npm run test-app.");
+        return;
       }
-    } catch (e) {
-      // Offline or no release yet: stay quiet unless the person asked.
-      if (manual) flash(`Could not check for updates: ${String(e)}`, 12000);
-    }
-  }, [flash]);
+      if (!inTauri()) {
+        if (manual) flash("Updates apply to the installed desktop app.");
+        return;
+      }
+      try {
+        const [{ check: checkUpdate }, { invoke }] = await Promise.all([
+          import("@tauri-apps/plugin-updater"),
+          import("@tauri-apps/api/core"),
+        ]);
+        const kind = await invoke<InstallKind>("install_kind");
+        const update = await checkUpdate();
+        if (update) setFound({ version: update.version, kind, update });
+        else if (manual) {
+          const { getVersion } = await import("@tauri-apps/api/app");
+          flash(`You are on the latest version (${await getVersion()}).`);
+        }
+      } catch (e) {
+        // Offline or no release yet: stay quiet unless the person asked.
+        if (manual) flash(`Could not check for updates: ${String(e)}`, 12000);
+      }
+    },
+    [flash],
+  );
 
   // Check shortly after launch so startup stays fast.
   useEffect(() => {
@@ -83,6 +86,9 @@ export function useUpdater() {
     }
   }, [found]);
 
-  const dismiss = useCallback(() => { clearTimeout(timer.current); setStatus(""); }, []);
+  const dismiss = useCallback(() => {
+    clearTimeout(timer.current);
+    setStatus("");
+  }, []);
   return { found, status, busy, check, install, dismiss };
 }

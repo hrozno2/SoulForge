@@ -4,8 +4,25 @@ import { ABILITY_IDS } from "../aurora/character";
 import { Html } from "./Html";
 
 /** Kinds of element that are a feature the player reads (senses, traits, class and background features, feats). */
-const FEATURE_TYPES = new Set(["Vision", "Racial Trait", "Class Feature", "Archetype Feature", "Background Feature", "Feat", "Feat Feature", "Optional Feature", "Class Feature Option"]);
-const LABEL: Record<string, string> = { strength: "Strength", dexterity: "Dexterity", constitution: "Constitution", intelligence: "Intelligence", wisdom: "Wisdom", charisma: "Charisma" };
+const FEATURE_TYPES = new Set([
+  "Vision",
+  "Racial Trait",
+  "Class Feature",
+  "Archetype Feature",
+  "Background Feature",
+  "Feat",
+  "Feat Feature",
+  "Optional Feature",
+  "Class Feature Option",
+]);
+const LABEL: Record<string, string> = {
+  strength: "Strength",
+  dexterity: "Dexterity",
+  constitution: "Constitution",
+  intelligence: "Intelligence",
+  wisdom: "Wisdom",
+  charisma: "Charisma",
+};
 
 /**
  * What a part of the build gives without a choice (a species' Darkvision, a background's feature, a class's
@@ -27,12 +44,13 @@ export function PassiveFeatures({ r, root }: { r: Resolved; root: (root: string)
     return true;
   });
   const increases = new Map<string, number>();
-  for (const a of mine) for (const rule of a.el.rules) {
-    if (rule.kind !== "stat" || !(ABILITY_IDS as readonly string[]).includes(rule.name.toLowerCase())) continue;
-    if (rule.level !== undefined && rule.level > a.ownerLevel) continue;
-    const v = Number(rule.value);
-    if (Number.isFinite(v) && v) increases.set(rule.name.toLowerCase(), (increases.get(rule.name.toLowerCase()) ?? 0) + v);
-  }
+  for (const a of mine)
+    for (const rule of a.el.rules) {
+      if (rule.kind !== "stat" || !(ABILITY_IDS as readonly string[]).includes(rule.name.toLowerCase())) continue;
+      if (rule.level !== undefined && rule.level > a.ownerLevel) continue;
+      const v = Number(rule.value);
+      if (Number.isFinite(v) && v) increases.set(rule.name.toLowerCase(), (increases.get(rule.name.toLowerCase()) ?? 0) + v);
+    }
   if (!features.length && !increases.size) return null;
   return (
     <section className="passive-features">

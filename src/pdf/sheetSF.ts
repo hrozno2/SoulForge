@@ -36,12 +36,22 @@ class Sheet {
   page!: PDFPage;
   readonly pw: number;
   readonly ph: number;
-  constructor(private pdf: PDFDocument, readonly f: Fonts, size: readonly [number, number], readonly tx: (s: string) => string, private who: string) {
+  constructor(
+    private pdf: PDFDocument,
+    readonly f: Fonts,
+    size: readonly [number, number],
+    readonly tx: (s: string) => string,
+    private who: string,
+  ) {
     [this.pw, this.ph] = size;
   }
 
-  get W() { return this.pw - 2 * M; }
-  get bottom() { return this.ph - M; }
+  get W() {
+    return this.pw - 2 * M;
+  }
+  get bottom() {
+    return this.ph - M;
+  }
 
   newPage(label?: string): number {
     this.page = this.pdf.addPage([this.pw, this.ph]);
@@ -54,7 +64,9 @@ class Sheet {
     return M;
   }
 
-  private Y(top: number) { return this.ph - top; }
+  private Y(top: number) {
+    return this.ph - top;
+  }
 
   fit(s: string, font: PDFFont, size: number, maxW: number): { t: string; size: number } {
     let t = this.tx(s);
@@ -68,7 +80,12 @@ class Sheet {
   }
 
   /** One line of text at a baseline given from the page top. Shrinks to fit maxW. */
-  text(s: string, x: number, base: number, o: { size?: number; bold?: boolean; color?: ReturnType<typeof rgb>; align?: "left" | "center" | "right"; maxW?: number } = {}): void {
+  text(
+    s: string,
+    x: number,
+    base: number,
+    o: { size?: number; bold?: boolean; color?: ReturnType<typeof rgb>; align?: "left" | "center" | "right"; maxW?: number } = {},
+  ): void {
     if (!s) return;
     const font = o.bold ? this.f.b : this.f.r;
     const { t, size } = o.maxW ? this.fit(s, font, o.size ?? 8.5, o.maxW) : { t: this.tx(s), size: o.size ?? 8.5 };
@@ -81,8 +98,22 @@ class Sheet {
     this.page.drawLine({ start: { x: x1, y: this.Y(t1) }, end: { x: x2, y: this.Y(t2) }, thickness: w, color });
   }
 
-  rect(x: number, top: number, w: number, h: number, o: { fill?: ReturnType<typeof rgb>; border?: ReturnType<typeof rgb>; bw?: number } = {}): void {
-    this.page.drawRectangle({ x, y: this.Y(top + h), width: w, height: h, color: o.fill, borderColor: o.border, borderWidth: o.border ? o.bw ?? 0.8 : 0 });
+  rect(
+    x: number,
+    top: number,
+    w: number,
+    h: number,
+    o: { fill?: ReturnType<typeof rgb>; border?: ReturnType<typeof rgb>; bw?: number } = {},
+  ): void {
+    this.page.drawRectangle({
+      x,
+      y: this.Y(top + h),
+      width: w,
+      height: h,
+      color: o.fill,
+      borderColor: o.border,
+      borderWidth: o.border ? (o.bw ?? 0.8) : 0,
+    });
   }
 
   /** A framed block with a title band. Returns the top of its inside. */
@@ -103,7 +134,13 @@ class Sheet {
   }
 
   diamond(cx: number, cy: number, r: number, filled = false): void {
-    this.page.drawSvgPath(`M 0 ${-r} L ${r} 0 L 0 ${r} L ${-r} 0 Z`, { x: cx, y: this.Y(cy), borderColor: INK, borderWidth: 0.8, color: filled ? INK : undefined });
+    this.page.drawSvgPath(`M 0 ${-r} L ${r} 0 L 0 ${r} L ${-r} 0 Z`, {
+      x: cx,
+      y: this.Y(cy),
+      borderColor: INK,
+      borderWidth: 0.8,
+      color: filled ? INK : undefined,
+    });
   }
 
   dot(cx: number, cy: number, r: number, filled: boolean, ring = false): void {
@@ -186,7 +223,6 @@ function drawFlow(sh: Sheet, lines: Flow[], x: number, top: number, w: number, b
   return lines.slice(i);
 }
 
-
 // ---------------------------------------------------------------- page 1 (the play page)
 //
 // The layout follows the DLDM "5E24" sheet's first page, in Soul Forge's own drawing: a header with who the character
@@ -199,14 +235,18 @@ function abilityBlock(sh: Sheet, d: FillData, a: (typeof ABILITIES)[number], x: 
   const ab = d.abilities[a.id as keyof FillData["abilities"]];
   const rows: [string, string, boolean, boolean, boolean][] = [["Saving throw", ab.save, ab.saveProf, false, true]];
   if (a.id === "dexterity") rows.push(["Initiative", d.initiative, false, false, true]);
-  for (const s of a.skills) { const k = d.skills[s] ?? { bonus: "+0", prof: false, expert: false }; rows.push([title(s), k.bonus, k.prof, k.expert, false]); }
+  for (const s of a.skills) {
+    const k = d.skills[s] ?? { bonus: "+0", prof: false, expert: false };
+    rows.push([title(s), k.bonus, k.prof, k.expert, false]);
+  }
   const rh = 11.2;
   const h = 15 + 34 + rows.length * rh + 4;
   sh.rect(x, top, w, h, { fill: PANEL, border: GILT });
   sh.rect(x, top, w, 15, { fill: BAND, border: GILT });
   sh.text(a.name.toUpperCase(), x + w / 2, top + 10.5, { size: 7.4, bold: true, color: ACCENT, align: "center" });
   // Modifier in a ring, score in a tab beside it.
-  const cx = x + 22, cy = top + 15 + 17;
+  const cx = x + 22,
+    cy = top + 15 + 17;
   sh.page.drawCircle({ x: cx, y: sh.ph - cy, size: 14, borderColor: GILT, borderWidth: 1.2, color: rgb(1, 1, 1) });
   sh.text(ab.mod, cx, cy + 5, { size: 13, bold: true, align: "center" });
   sh.rect(x + 40, cy - 9, w - 46, 18, { fill: rgb(1, 1, 1), border: GILT, bw: 0.6 });
@@ -225,9 +265,23 @@ function abilityBlock(sh: Sheet, d: FillData, a: (typeof ABILITIES)[number], x: 
 }
 
 /** A box of flowing feature text (title band, one or two columns). Returns the lines that did not fit. */
-function featureBox(sh: Sheet, name: string, items: { head?: string; lead?: string; body: string }[], x: number, top: number, w: number, h: number, columns: 1 | 2, sub?: string): Flow[] {
+function featureBox(
+  sh: Sheet,
+  name: string,
+  items: { head?: string; lead?: string; body: string }[],
+  x: number,
+  top: number,
+  w: number,
+  h: number,
+  columns: 1 | 2,
+  sub?: string,
+): Flow[] {
   let inside = sh.panel(x, top, w, h, name);
-  if (sub) { sh.text(sub, x + 9, inside + 4, { size: 7, color: MUTED, maxW: w - 18 }); sh.line(x + 6, inside + 7, x + w - 6, inside + 7, RULE, 0.35); inside += 10; }
+  if (sub) {
+    sh.text(sub, x + 9, inside + 4, { size: 7, color: MUTED, maxW: w - 18 });
+    sh.line(x + 6, inside + 7, x + w - 6, inside + 7, RULE, 0.35);
+    inside += 10;
+  }
   const colW = columns === 2 ? (w - 12) / 2 : w;
   const lines = flowLines(sh, items, colW - 16, 7.4);
   const left = drawFlow(sh, lines, x + 8, inside, colW - 16, top + h - 5, 7.4);
@@ -243,7 +297,9 @@ function page1(sh: Sheet, d: FillData): Flow[] {
 
   // Header: identity, level and XP, armor class, hit points, hit dice, death saves.
   const hh = 70;
-  const idW = Math.round(W * 0.4), lvW = 48, acW = 50;
+  const idW = Math.round(W * 0.4),
+    lvW = 48,
+    acW = 50;
   const hpW = W - idW - lvW - acW - g * 3;
   sh.rect(M, top, idW, hh, { fill: PANEL, border: GILT });
   const nameX = d.portrait ? M + 64 : M + 8;
@@ -275,7 +331,8 @@ function page1(sh: Sheet, d: FillData): Flow[] {
   x += acW + g;
   // Hit points, hit dice and death saves share one frame, in three parts.
   sh.rect(x, top, hpW, hh, { fill: PANEL, border: GILT });
-  const hpPart = hpW * 0.5, hdPart = hpW * 0.24;
+  const hpPart = hpW * 0.5,
+    hdPart = hpW * 0.24;
   sh.text("HIT POINTS", x + hpPart / 2, top + 11, { size: 6.4, bold: true, color: ACCENT, align: "center" });
   sh.text(String(d.hpCurrent), x + hpPart * 0.3, top + 40, { size: 18, bold: true, align: "center" });
   sh.line(x + 6, top + 50, x + hpPart * 0.6 - 4, top + 50, RULE, 0.5);
@@ -306,7 +363,8 @@ function page1(sh: Sheet, d: FillData): Flow[] {
 
   // Left: two columns of abilities. Proficiency bonus and Heroic Inspiration head the first.
   const cw = 92;
-  const ax = M, bx = M + cw + g;
+  const ax = M,
+    bx = M + cw + g;
   sh.rect(ax, top, cw, 46, { fill: PANEL, border: GILT });
   sh.text("PROFICIENCY BONUS", ax + cw / 2, top + 10, { size: 5.8, bold: true, color: ACCENT, align: "center" });
   sh.text(d.profBonus, ax + cw / 2, top + 28, { size: 15, bold: true, align: "center" });
@@ -324,27 +382,44 @@ function page1(sh: Sheet, d: FillData): Flow[] {
   let cy2 = tIn + 6;
   sh.text("ARMOR", M + 6, cy2 + 2, { size: 5.4, bold: true, color: MUTED });
   let cx2 = M + 36;
-  for (const [lab, on] of [["Light", d.armorTraining.light], ["Medium", d.armorTraining.medium], ["Heavy", d.armorTraining.heavy], ["Shields", d.armorTraining.shield]] as const) {
-    sh.diamond(cx2 + 3, cy2, 3, on); sh.text(lab, cx2 + 8, cy2 + 2.6, { size: 6.6 }); cx2 += lab.length > 5 ? 36 : 30;
+  for (const [lab, on] of [
+    ["Light", d.armorTraining.light],
+    ["Medium", d.armorTraining.medium],
+    ["Heavy", d.armorTraining.heavy],
+    ["Shields", d.armorTraining.shield],
+  ] as const) {
+    sh.diamond(cx2 + 3, cy2, 3, on);
+    sh.text(lab, cx2 + 8, cy2 + 2.6, { size: 6.6 });
+    cx2 += lab.length > 5 ? 36 : 30;
   }
   cy2 += 12;
   sh.text("WEAPONS", M + 6, cy2 + 2, { size: 5.4, bold: true, color: MUTED });
   cx2 = M + 36;
-  for (const [lab, on] of [["Simple", d.weaponTraining.simple], ["Martial", d.weaponTraining.martial], ["Improvised", d.weaponTraining.improvised]] as const) {
-    sh.diamond(cx2 + 3, cy2, 3, on); sh.text(lab, cx2 + 8, cy2 + 2.6, { size: 6.6 }); cx2 += 42;
+  for (const [lab, on] of [
+    ["Simple", d.weaponTraining.simple],
+    ["Martial", d.weaponTraining.martial],
+    ["Improvised", d.weaponTraining.improvised],
+  ] as const) {
+    sh.diamond(cx2 + 3, cy2, 3, on);
+    sh.text(lab, cx2 + 8, cy2 + 2.6, { size: 6.6 });
+    cx2 += 42;
   }
   cy2 += 8;
   const tItems: { head?: string; lead?: string; body: string }[] = [
-    { head: "Tools and other weapons", body: "" }, { body: [d.toolsOnly, d.weaponsOther].filter(Boolean).join("; ") || "None" },
-    { head: "Languages", body: "" }, { body: d.languages || "Common" },
+    { head: "Tools and other weapons", body: "" },
+    { body: [d.toolsOnly, d.weaponsOther].filter(Boolean).join("; ") || "None" },
+    { head: "Languages", body: "" },
+    { body: d.languages || "Common" },
   ];
   if (d.defenses) tItems.push({ head: "Resistances and immunities", body: "" }, { body: d.defenses });
   const tRest = drawFlow(sh, flowLines(sh, tItems, leftW - 14, 7.2), M + 7, cy2, leftW - 14, sh.bottom - 5, 7.2);
 
   // Right: speed, conditions and exhaustion; attacks; class features; species traits and feats.
-  const rx = M + leftW + g, rw = W - leftW - g;
+  const rx = M + leftW + g,
+    rw = W - leftW - g;
   let ry = top;
-  const spW = 64, exW = 58;
+  const spW = 64,
+    exW = 58;
   sh.rect(rx, ry, spW, 46, { fill: PANEL, border: GILT });
   sh.text("SPEED", rx + spW / 2, ry + 10, { size: 6.2, bold: true, color: ACCENT, align: "center" });
   sh.text(d.speed ? `${d.speed} ft` : "", rx + spW / 2, ry + 29, { size: 13, bold: true, align: "center", maxW: spW - 6 });
@@ -365,7 +440,9 @@ function page1(sh: Sheet, d: FillData): Flow[] {
   const ah = 21 + 10 + nW * 13 + 4;
   let iy = sh.panel(rx, ry, rw, ah, "Weapons and damage cantrips");
   const cols = [rx + 8, rx + rw * 0.4, rx + rw * 0.56, rx + rw * 0.78];
-  ["Name", "Atk bonus / DC", "Damage and type", "Notes"].forEach((h, i) => sh.text(h, cols[i], iy + 5, { size: 5.8, bold: true, color: MUTED }));
+  ["Name", "Atk bonus / DC", "Damage and type", "Notes"].forEach((h, i) =>
+    sh.text(h, cols[i], iy + 5, { size: 5.8, bold: true, color: MUTED }),
+  );
   iy += 8;
   for (let i = 0; i < nW; i++) {
     const w = d.weapons[i];
@@ -388,12 +465,24 @@ function page1(sh: Sheet, d: FillData): Flow[] {
   const restClass = featureBox(sh, "Class features", byGroup("Class features"), rx, ry, rw, cfH, 2);
   ry += cfH + g;
   const halfW = (rw - g) / 2;
-  const restSpecies = featureBox(sh, "Species traits", byGroup("Species traits"), rx, ry, halfW, bottomH, 1, [d.size && `Size: ${d.size}`, d.darkvision && `Darkvision: ${d.darkvision}`].filter(Boolean).join("     "));
+  const restSpecies = featureBox(
+    sh,
+    "Species traits",
+    byGroup("Species traits"),
+    rx,
+    ry,
+    halfW,
+    bottomH,
+    1,
+    [d.size && `Size: ${d.size}`, d.darkvision && `Darkvision: ${d.darkvision}`].filter(Boolean).join("     "),
+  );
   const restFeats = featureBox(sh, "Feats", byGroup("Feats"), rx + halfW + g, ry, halfW, bottomH, 1);
 
   // What did not fit continues on the next pages, under its own heading.
   const cont: Flow[] = [];
-  const add = (head: string, rest: Flow[]) => { if (rest.length) cont.push({ text: head.toUpperCase(), head: true, gap: cont.length ? 5 : 0 }, ...rest); };
+  const add = (head: string, rest: Flow[]) => {
+    if (rest.length) cont.push({ text: head.toUpperCase(), head: true, gap: cont.length ? 5 : 0 }, ...rest);
+  };
   add("Class features, continued", restClass);
   add("Species traits, continued", restSpecies);
   add("Feats, continued", restFeats);
@@ -430,16 +519,32 @@ const flagX = (start: number) => [start + 3, start + 12, start + 24, start + 32,
 function spellHeader(sh: Sheet, x: number, top: number, w: number): number[] {
   const cs = [x + 6, x + 26, x + w * 0.46, x + w * 0.55, x + w * 0.64, x + w * 0.64 + 52];
   ["Level", "Name", "Time", "Range"].forEach((h, i) => sh.text(h, cs[i], top + 7, { size: 5.8, bold: true, color: MUTED }));
-  ["C", "R", "V", "S", "M"].forEach((h, i) => sh.text(h, flagX(cs[4])[i], top + 7, { size: 5.8, bold: true, color: MUTED, align: "center" }));
+  ["C", "R", "V", "S", "M"].forEach((h, i) =>
+    sh.text(h, flagX(cs[4])[i], top + 7, { size: 5.8, bold: true, color: MUTED, align: "center" }),
+  );
   sh.text("Notes", cs[5], top + 7, { size: 5.8, bold: true, color: MUTED });
   sh.line(x + 4, top + 10, x + w - 4, top + 10, GILT, 0.5);
   return cs;
 }
 
-function spellRow(sh: Sheet, sp: FillData["spells"][number] | undefined, cs: number[], x: number, top: number, w: number, rh: number): void {
+function spellRow(
+  sh: Sheet,
+  sp: FillData["spells"][number] | undefined,
+  cs: number[],
+  x: number,
+  top: number,
+  w: number,
+  rh: number,
+): void {
   sh.line(x + 4, top + rh, x + w - 4, top + rh, RULE, 0.35);
   // Concentration, ritual and the components as diamonds, filled where they apply.
-  const flags: [boolean, string][] = [[!!sp?.concentration, "C"], [!!sp?.ritual, "R"], [!!sp?.v, "V"], [!!sp?.s, "S"], [!!sp?.m, "M"]];
+  const flags: [boolean, string][] = [
+    [!!sp?.concentration, "C"],
+    [!!sp?.ritual, "R"],
+    [!!sp?.v, "V"],
+    [!!sp?.s, "S"],
+    [!!sp?.m, "M"],
+  ];
   flags.forEach(([on], i) => sh.diamond(flagX(cs[4])[i], top + rh / 2, 2.4, on));
   if (!sp) return;
   sh.text(sp.level === "0" ? "C" : sp.level, cs[0] + 6, top + rh - 3.5, { size: 7.4, bold: true, align: "center" });
@@ -451,18 +556,25 @@ function spellRow(sh: Sheet, sp: FillData["spells"][number] | undefined, cs: num
 
 function page2(sh: Sheet, d: FillData, portrait?: Portrait): Flow[] {
   let top = sh.newPage();
-  const W = sh.W, g = 5;
-  const rcW = 150, rcX = M + W - rcW;
+  const W = sh.W,
+    g = 5;
+  const rcW = 150,
+    rcX = M + W - rcW;
   const lw = W - rcW - g;
   const c = d.casting;
 
   // Spellcasting ability, modifier, save DC, attack bonus
-  const scW = 150, scH = 76;
+  const scW = 150,
+    scH = 76;
   sh.rect(M, top, scW, scH, { fill: PANEL, border: GILT });
   sh.text(c?.ability ?? "", M + 8, top + 13, { size: 9, bold: true, maxW: scW - 16 });
   sh.line(M + 6, top + 16, M + scW - 6, top + 16, RULE, 0.5);
   sh.text("SPELLCASTING ABILITY", M + 8, top + 22, { size: 4.8, bold: true, color: MUTED });
-  [["Spellcasting modifier", c?.mod ?? ""], ["Spell save DC", c?.dc ?? ""], ["Spell attack bonus", c?.attack ?? ""]].forEach(([l, v], i) => {
+  [
+    ["Spellcasting modifier", c?.mod ?? ""],
+    ["Spell save DC", c?.dc ?? ""],
+    ["Spell attack bonus", c?.attack ?? ""],
+  ].forEach(([l, v], i) => {
     const y = top + 27 + i * 16;
     sh.rect(M + 6, y, 34, 14, { fill: rgb(1, 1, 1), border: GILT, bw: 0.6 });
     sh.text(v, M + 23, y + 10.5, { size: 9.5, bold: true, align: "center" });
@@ -470,11 +582,13 @@ function page2(sh: Sheet, d: FillData, portrait?: Portrait): Flow[] {
   });
 
   // Spell slots: levels 1 to 9 in three columns, total and expended
-  const ssX = M + scW + g, ssW = lw - scW - g;
+  const ssX = M + scW + g,
+    ssW = lw - scW - g;
   const ssIn = sh.panel(ssX, top, ssW, scH, "Spell slots");
   const colW = (ssW - 12) / 3;
   for (let i = 0; i < 9; i++) {
-    const cx = ssX + 6 + Math.floor(i / 3) * colW, cy = ssIn + 6 + (i % 3) * 16;
+    const cx = ssX + 6 + Math.floor(i / 3) * colW,
+      cy = ssIn + 6 + (i % 3) * 16;
     const total = c?.slots[i] ?? 0;
     sh.text(`LEVEL ${i + 1}`, cx, cy + 4, { size: 5.2, bold: true, color: MUTED });
     sh.text(total ? String(total) : "", cx + 30, cy + 4.5, { size: 8, bold: true, align: "center" });
@@ -493,7 +607,10 @@ function page2(sh: Sheet, d: FillData, portrait?: Portrait): Flow[] {
   const cs = spellHeader(sh, M, lIn - 4, lw);
   let sy = lIn + 8;
   const rowsFit = Math.floor((ly + listH - 4 - sy) / rh);
-  for (let i = 0; i < rowsFit; i++) { spellRow(sh, d.spells[i], cs, M, sy, lw, rh); sy += rh; }
+  for (let i = 0; i < rowsFit; i++) {
+    spellRow(sh, d.spells[i], cs, M, sy, lw, rh);
+    sy += rh;
+  }
   const spellRest = d.spells.slice(rowsFit);
   ly += listH + g;
 
@@ -557,11 +674,16 @@ function page2(sh: Sheet, d: FillData, portrait?: Portrait): Flow[] {
     const cs2 = spellHeader(sh, M, inside - 4, W);
     t = inside + 8;
     const n = Math.floor((sh.bottom - 4 - t) / rh);
-    for (let i = 0; i < n; i++) { spellRow(sh, rest[i], cs2, M, t, W, rh); t += rh; }
+    for (let i = 0; i < n; i++) {
+      spellRow(sh, rest[i], cs2, M, t, W, rh);
+      t += rh;
+    }
     rest = rest.slice(n);
   }
   const cont: Flow[] = [];
-  const add = (head: string, r: Flow[]) => { if (r.length) cont.push({ text: head.toUpperCase(), head: true, gap: cont.length ? 5 : 0 }, ...r); };
+  const add = (head: string, r: Flow[]) => {
+    if (r.length) cont.push({ text: head.toUpperCase(), head: true, gap: cont.length ? 5 : 0 }, ...r);
+  };
   add("Equipment, continued", gearRest);
   add("Backstory and personality, continued", storyRest);
   return cont;
@@ -572,7 +694,13 @@ function page2(sh: Sheet, d: FillData, portrait?: Portrait): Flow[] {
  * anything that did not fit (features first, then spells, equipment and story). Returns how many lines were left out
  * (always 0: everything continues).
  */
-export async function drawSoulForgeSheet(pdf: PDFDocument, f: Fonts, d: FillData, size: readonly [number, number], tx: (s: string) => string = (s) => s): Promise<number> {
+export async function drawSoulForgeSheet(
+  pdf: PDFDocument,
+  f: Fonts,
+  d: FillData,
+  size: readonly [number, number],
+  tx: (s: string) => string = (s) => s,
+): Promise<number> {
   const sh = new Sheet(pdf, f, size, tx, d.name || "Character");
   let img: Awaited<ReturnType<PDFDocument["embedPng"]>> | undefined;
   if (d.portrait) {
@@ -589,14 +717,26 @@ export async function drawSoulForgeSheet(pdf: PDFDocument, f: Fonts, d: FillData
     // A small portrait at the left of the identity block.
     const first = pdf.getPage(pdf.getPageCount() - 1);
     const s = Math.min(52 / img.width, 62 / img.height);
-    first.drawImage(img, { x: M + 6 + (52 - img.width * s) / 2, y: size[1] - (M + 4) - img.height * s, width: img.width * s, height: img.height * s });
+    first.drawImage(img, {
+      x: M + 6 + (52 - img.width * s) / 2,
+      y: size[1] - (M + 4) - img.height * s,
+      width: img.width * s,
+      height: img.height * s,
+    });
   }
-  const portrait: Portrait | undefined = img ? {
-    draw: (x, top, w, h) => {
-      const s = Math.min(w / img!.width, h / img!.height);
-      sh.page.drawImage(img!, { x: x + (w - img!.width * s) / 2, y: sh.ph - top - img!.height * s, width: img!.width * s, height: img!.height * s });
-    },
-  } : undefined;
+  const portrait: Portrait | undefined = img
+    ? {
+        draw: (x, top, w, h) => {
+          const s = Math.min(w / img!.width, h / img!.height);
+          sh.page.drawImage(img!, {
+            x: x + (w - img!.width * s) / 2,
+            y: sh.ph - top - img!.height * s,
+            width: img!.width * s,
+            height: img!.height * s,
+          });
+        },
+      }
+    : undefined;
   const rest2 = page2(sh, d, portrait);
   const more = [...rest1, ...rest2];
   if (more.length) continueFlow(sh, more, "Additional features and notes");

@@ -1,6 +1,34 @@
 import { useMemo } from "react";
 
-const ALLOWED = new Set(["P", "DIV", "SPAN", "B", "I", "EM", "STRONG", "U", "UL", "OL", "LI", "H1", "H2", "H3", "H4", "H5", "BR", "TABLE", "THEAD", "TBODY", "TR", "TD", "TH", "CENTER", "SUP", "SUB", "A"]);
+const ALLOWED = new Set([
+  "P",
+  "DIV",
+  "SPAN",
+  "B",
+  "I",
+  "EM",
+  "STRONG",
+  "U",
+  "UL",
+  "OL",
+  "LI",
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "BR",
+  "TABLE",
+  "THEAD",
+  "TBODY",
+  "TR",
+  "TD",
+  "TH",
+  "CENTER",
+  "SUP",
+  "SUB",
+  "A",
+]);
 
 const DROP_WITH_CONTENT = new Set(["SCRIPT", "STYLE", "TEMPLATE", "NOSCRIPT", "IFRAME", "OBJECT", "EMBED", "SVG", "MATH", "HEAD", "TITLE"]);
 const KEEP_ATTRS = new Set(["class", "colspan", "rowspan"]);
@@ -9,7 +37,8 @@ const KEEP_ATTRS = new Set(["class", "colspan", "rowspan"]);
  * these are kept: with any class allowed, a content file could wear the app's own ("modal-back" covers the window)
  * and draw over the interface (docs/AUDIT-2026-11-10.md, X2).
  */
-const CONTENT_CLASS = /^(?:indent|left|right|center|reference|unstyled|flavor|feature|caption|sidebar|statblock|mb|emphasis|class-features|col-\d{1,2})$/;
+const CONTENT_CLASS =
+  /^(?:indent|left|right|center|reference|unstyled|flavor|feature|caption|sidebar|statblock|mb|emphasis|class-features|col-\d{1,2})$/;
 
 /**
  * Content files carry basic HTML. This builds a fresh tree from the allowed tags only, so nothing that can run
@@ -30,7 +59,13 @@ export function sanitize(html: string): string {
           const clone = out.createElement(tag.toLowerCase());
           for (const a of Array.from(el.attributes)) {
             if (!KEEP_ATTRS.has(a.name)) continue;
-            const value = a.name === "class" ? a.value.split(/\s+/).filter((c) => CONTENT_CLASS.test(c)).join(" ") : a.value;
+            const value =
+              a.name === "class"
+                ? a.value
+                    .split(/\s+/)
+                    .filter((c) => CONTENT_CLASS.test(c))
+                    .join(" ")
+                : a.value;
             if (value) clone.setAttribute(a.name, value);
           }
           copy(el, clone);

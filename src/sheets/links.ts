@@ -31,38 +31,42 @@ export interface SheetDownload {
   files: { url: string; file: string }[];
 }
 
-
-
 export const OFFICIAL_DOWNLOADS: SheetDownload[] = [
   {
     id: "2024-dldm",
     label: "2024 sheet, fillable (DLDM, 5 pages)",
     by: "DLtheDM",
     note: "A fillable 2024 sheet: two page 1 styles, two page 2 styles and a spell list page. Fields stay editable.",
-    files: [{
-      url: "https://drive.usercontent.google.com/download?id=120ePGYWD6NmExoEefO1wSOQA_gMhqaqy&export=download",
-      file: "DLDM - 5E24 CHARACTER SHEET - 5pg - Updated Form Fields.pdf",
-    }],
+    files: [
+      {
+        url: "https://drive.usercontent.google.com/download?id=120ePGYWD6NmExoEefO1wSOQA_gMhqaqy&export=download",
+        file: "DLDM - 5E24 CHARACTER SHEET - 5pg - Updated Form Fields.pdf",
+      },
+    ],
   },
   {
     id: "2024-print",
     label: "Official 2024 sheet (print)",
     by: "Wizards of the Coast",
     note: "2 pages. This copy has no form fields, so the text is written onto the page. A fillable copy of the same sheet works too if you load it.",
-    files: [{
-      url: "https://media.dndbeyond.com/compendium-images/phb/downloads/DnD_2024_Character-Sheet.pdf",
-      file: "DnD_2024_Character-Sheet.pdf",
-    }],
+    files: [
+      {
+        url: "https://media.dndbeyond.com/compendium-images/phb/downloads/DnD_2024_Character-Sheet.pdf",
+        file: "DnD_2024_Character-Sheet.pdf",
+      },
+    ],
   },
   {
     id: "2014-all",
     label: "All the classic 2014 sheets",
     by: "Wizards of the Coast",
     note: "The whole official set: fillable and print versions, the alternative layouts, the spellcasting and details pages.",
-    files: [{
-      url: "https://media.dndbeyond.com/compendium-images/marketing/5e_charactersheets.zip",
-      file: "5e_charactersheets.zip",
-    }],
+    files: [
+      {
+        url: "https://media.dndbeyond.com/compendium-images/marketing/5e_charactersheets.zip",
+        file: "5e_charactersheets.zip",
+      },
+    ],
   },
   {
     id: "dldm-companions",
@@ -70,11 +74,22 @@ export const OFFICIAL_DOWNLOADS: SheetDownload[] = [
     by: "DLtheDM",
     note: "Familiar, Paladin Mount, Beastmaster Ranger and Drakewarden Ranger companion sheets.",
     files: [
-      { url: "https://drive.usercontent.google.com/download?id=1Ixz6HQA-xGRIIAQS_eKca76AtMZubU86&export=download", file: "DLDM - 5E14 - Companion Sheet - Familiar.pdf" },
-      { url: "https://drive.usercontent.google.com/download?id=1lE48RMvEqq8wqyeIaV542W0sxKWE0Dvg&export=download", file: "DLDM - 5E14 - Companion Sheet - Paladin Mount.pdf" },
-      { url: "https://drive.usercontent.google.com/download?id=1TxcJiL_6En9Bvho8Jfx6-2Yqz6p9n9WQ&export=download", file: "DLDM - 5E14 - Companion Sheet - Beastmaster Ranger.pdf" },
-      { url: "https://drive.usercontent.google.com/download?id=14A6ZhYwGuerxuI84l3Gs-aaowaRdE26O&export=download", file: "DLDM - 5E14 - Companion Sheet - Drakewarden Ranger.pdf" },
+      {
+        url: "https://drive.usercontent.google.com/download?id=1Ixz6HQA-xGRIIAQS_eKca76AtMZubU86&export=download",
+        file: "DLDM - 5E14 - Companion Sheet - Familiar.pdf",
+      },
+      {
+        url: "https://drive.usercontent.google.com/download?id=1lE48RMvEqq8wqyeIaV542W0sxKWE0Dvg&export=download",
+        file: "DLDM - 5E14 - Companion Sheet - Paladin Mount.pdf",
+      },
+      {
+        url: "https://drive.usercontent.google.com/download?id=1TxcJiL_6En9Bvho8Jfx6-2Yqz6p9n9WQ&export=download",
+        file: "DLDM - 5E14 - Companion Sheet - Beastmaster Ranger.pdf",
+      },
+      {
+        url: "https://drive.usercontent.google.com/download?id=14A6ZhYwGuerxuI84l3Gs-aaowaRdE26O&export=download",
+        file: "DLDM - 5E14 - Companion Sheet - Drakewarden Ranger.pdf",
+      },
     ],
   },
 ];
-

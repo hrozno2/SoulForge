@@ -2,7 +2,21 @@ import { expect, test } from "@playwright/test";
 import { addTestContent, randomCharacter, tab } from "./helpers";
 
 // Choices in the Build tab's list layout (the board's card backs use the same component, src/ui/Slots.tsx).
-test.use({ viewport: { width: 1600, height: 900 }, storageState: { cookies: [], origins: [{ origin: "http://localhost:4173", localStorage: [{ name: "charforge.tutorial", value: "never" }, { name: "charforge.settings", value: JSON.stringify({ buildLayout: "tabs" }) }] }] } });
+test.use({
+  viewport: { width: 1600, height: 900 },
+  storageState: {
+    cookies: [],
+    origins: [
+      {
+        origin: "http://localhost:4173",
+        localStorage: [
+          { name: "charforge.tutorial", value: "never" },
+          { name: "charforge.settings", value: JSON.stringify({ buildLayout: "tabs" }) },
+        ],
+      },
+    ],
+  },
+});
 
 test("deselecting never folds a choice; picking folds it (C1.2)", async ({ page }) => {
   await addTestContent(page);

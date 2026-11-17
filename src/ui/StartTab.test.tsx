@@ -6,7 +6,15 @@ import { describe, expect, it, vi } from "vitest";
 import { newCharacter } from "../aurora/character";
 
 vi.mock("../aurora/storage", () => ({
-  listCharacters: async () => [{ id: "a", name: "Ora", summary: "", updated: Date.now(), data: { ...newCharacter(), name: "Ora", classes: [{ classId: "ID_X_CLASS", level: 3 }] } }],
+  listCharacters: async () => [
+    {
+      id: "a",
+      name: "Ora",
+      summary: "",
+      updated: Date.now(),
+      data: { ...newCharacter(), name: "Ora", classes: [{ classId: "ID_X_CLASS", level: 3 }] },
+    },
+  ],
   deleteCharacterRecord: async () => undefined,
 }));
 
@@ -17,12 +25,26 @@ describe("Home cards", () => {
     const el = document.createElement("div");
     document.body.append(el);
     const root = createRoot(el);
-    const props = { currentId: "", onOpen: () => undefined, onNew: () => undefined, onRandom: () => undefined, sourceCount: 1, goContent: () => undefined, onImportForeign: async () => "" };
-    await act(async () => { root.render(<StartTab {...props} contentReady={false} />); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    const props = {
+      currentId: "",
+      onOpen: () => undefined,
+      onNew: () => undefined,
+      onRandom: () => undefined,
+      sourceCount: 1,
+      goContent: () => undefined,
+      onImportForeign: async () => "",
+    };
+    await act(async () => {
+      root.render(<StartTab {...props} contentReady={false} />);
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
     expect(el.querySelectorAll(".char-card")).toHaveLength(0);
     expect(el.textContent).toContain("Loading your characters");
-    await act(async () => { root.render(<StartTab {...props} contentReady />); });
+    await act(async () => {
+      root.render(<StartTab {...props} contentReady />);
+    });
     expect(el.querySelectorAll(".char-card")).toHaveLength(1);
     act(() => root.unmount());
   });
@@ -37,9 +59,21 @@ describe("Home cards", () => {
     const el = document.createElement("div");
     document.body.append(el);
     const root = createRoot(el);
-    const props = { currentId: "", onOpen: () => undefined, onNew: () => undefined, onRandom: () => undefined, sourceCount: 1, goContent: () => undefined, onImportForeign: async () => "" };
-    await act(async () => { root.render(<StartTab {...props} contentReady reg={reg} />); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    const props = {
+      currentId: "",
+      onOpen: () => undefined,
+      onNew: () => undefined,
+      onRandom: () => undefined,
+      sourceCount: 1,
+      goContent: () => undefined,
+      onImportForeign: async () => "",
+    };
+    await act(async () => {
+      root.render(<StartTab {...props} contentReady reg={reg} />);
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
     const card = el.querySelector(".char-card")!;
     expect(card.textContent).toContain("Needs content that is not loaded");
     expect(card.querySelector(".char-card-stats")).toBeNull();

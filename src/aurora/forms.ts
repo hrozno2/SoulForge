@@ -36,7 +36,19 @@ export interface FormBlock {
 const mod = (score: number) => Math.floor((score - 10) / 2);
 const num = (v: string | undefined) => Number(/-?\d+/.exec(v ?? "")?.[0] ?? 0);
 
-const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twice: 2 };
+const WORDS: Record<string, number> = {
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  twice: 2,
+};
 
 /**
  * A companion's AC or hit points written as a formula over the character ("5 + five times your Ranger level",
@@ -48,17 +60,25 @@ export function companionFormula(text: string | undefined, r: Resolved, beast: A
   if (!text || !/\byour\b|\bPB\b/i.test(text)) return undefined;
   const sh = buildSheet(r);
   const levelOf = (name?: string) => {
-    if (!name || /^this class$/i.test(name)) return r.character.classes.find((c) => c.classId === fromClass)?.level ?? r.character.classes[0]?.level ?? 0;
+    if (!name || /^this class$/i.test(name))
+      return r.character.classes.find((c) => c.classId === fromClass)?.level ?? r.character.classes[0]?.level ?? 0;
     return r.character.classes.find((c) => (r.reg.get(c.classId)?.name ?? "").toLowerCase() === name.toLowerCase())?.level ?? 0;
   };
-  const body = text.replace(/\([^)]*\)/g, " ").replace(/^\s*equal(?: to)?\s*/i, "").replace(/[’]/g, "'");
+  const body = text
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/^\s*equal(?: to)?\s*/i, "")
+    .replace(/[’]/g, "'");
   let total = 0;
-  for (const raw of body.split("+").map((t) => t.trim()).filter(Boolean)) {
+  for (const raw of body
+    .split("+")
+    .map((t) => t.trim())
+    .filter(Boolean)) {
     const t = raw.toLowerCase();
     let m: RegExpExecArray | null;
     if ((m = /^(\d+)$/.exec(t))) total += Number(m[1]);
     else if (t === "pb") total += sh.proficiency;
-    else if ((m = /^(\w+) times your (?:(\w+) level|level in (this class))$/.exec(t))) total += (WORDS[m[1]] ?? (Number(m[1]) || 0)) * levelOf(m[2] ?? m[3]);
+    else if ((m = /^(\w+) times your (?:(\w+) level|level in (this class))$/.exec(t)))
+      total += (WORDS[m[1]] ?? (Number(m[1]) || 0)) * levelOf(m[2] ?? m[3]);
     else if ((m = /^your (?:(\w+) level|level in (this class))$/.exec(t))) total += levelOf(m[1] ?? m[2]);
     else if ((m = /^your (\w+) modifier$/.exec(t))) total += sh.abilities.find((a) => a.id === m![1])?.mod ?? 0;
     else if ((m = /^the .+'s (\w+) modifier$/.exec(t))) total += mod(num(beast.setters[m[1]]?.value) || 10);
@@ -78,16 +98,26 @@ export function formStats(r: Resolved, beast: AElement, kind: FormKind): FormBlo
   const beastScore = (a: Ability) => num(set[a]?.value) || 10;
   const own = (a: Ability) => sh.abilities.find((x) => x.id === a)!;
   const keepsMind = kind === "wild shape";
-  const abilities = Object.fromEntries(ABILITIES.map((a) => [a, keepsMind && /^(intelligence|wisdom|charisma)$/.test(a) ? own(a).score : beastScore(a)])) as Record<Ability, number>;
+  const abilities = Object.fromEntries(
+    ABILITIES.map((a) => [a, keepsMind && /^(intelligence|wisdom|charisma)$/.test(a) ? own(a).score : beastScore(a)]),
+  ) as Record<Ability, number>;
   if (keepsMind) notes.push("Intelligence, Wisdom and Charisma are yours.");
 
   // Saves and skills: the beast's, or for Wild Shape the better of the beast's and yours where you are proficient.
-  const beastSkills = new Map((set.skills?.value ?? "").split(",").map((x) => /^\s*(.+?)\s*([+-]\d+)\s*$/.exec(x)).filter(Boolean).map((m) => [m![1].toLowerCase(), Number(m![2])] as [string, number]));
-  const saves = Object.fromEntries(ABILITIES.map((a) => {
-    const fromBeast = mod(abilities[a]);
-    const mine = own(a);
-    return [a, keepsMind && mine.saveProficient ? Math.max(fromBeast, mine.save) : fromBeast];
-  })) as Record<Ability, number>;
+  const beastSkills = new Map(
+    (set.skills?.value ?? "")
+      .split(",")
+      .map((x) => /^\s*(.+?)\s*([+-]\d+)\s*$/.exec(x))
+      .filter(Boolean)
+      .map((m) => [m![1].toLowerCase(), Number(m![2])] as [string, number]),
+  );
+  const saves = Object.fromEntries(
+    ABILITIES.map((a) => {
+      const fromBeast = mod(abilities[a]);
+      const mine = own(a);
+      return [a, keepsMind && mine.saveProficient ? Math.max(fromBeast, mine.save) : fromBeast];
+    }),
+  ) as Record<Ability, number>;
   const skills = sh.skills.map((s) => {
     const beastBonus = beastSkills.get(s.name.toLowerCase()) ?? mod(abilities[s.ability as Ability] ?? 10);
     return { name: s.name, bonus: keepsMind && s.level !== "none" ? Math.max(beastBonus, s.bonus) : beastBonus };
@@ -103,24 +133,41 @@ export function formStats(r: Resolved, beast: AElement, kind: FormKind): FormBlo
     notes.push(`You keep your hit points and gain ${tempHp} temporary hit points (${moon ? "three times " : ""}your druid level).`);
     if (moon) {
       const moonAc = 13 + mod(abilities.wisdom);
-      if (moonAc > ac) { ac = moonAc; notes.push("AC 13 + your Wisdom modifier (Circle Forms)."); }
+      if (moonAc > ac) {
+        ac = moonAc;
+        notes.push("AC 13 + your Wisdom modifier (Circle Forms).");
+      }
     }
   } else if (kind === "wild shape") notes.push("The beast's hit points; when they run out you return to your own.");
   if (kind === "companion") {
     // Formulas over the character ("5 + five times your Ranger level"), from the class the companion comes from.
     const root = r.active.find((a) => a.el.id === beast.id)?.root ?? "";
     const fromClass = root.startsWith("class:") ? root.slice(6) : undefined;
-    const fac = companionFormula(set.ac?.value, r, beast, fromClass), fhp = companionFormula(set.hp?.value, r, beast, fromClass);
-    if (fac !== undefined) { ac = fac; notes.push(`AC ${set.ac?.value?.replace(/\s*\(.*\)\s*/g, " ").trim()}.`); }
-    if (fhp !== undefined) { hp = fhp; notes.push(`Hit points ${set.hp?.value?.replace(/\s*\(.*\)\s*/g, " ").trim()}.`); }
+    const fac = companionFormula(set.ac?.value, r, beast, fromClass),
+      fhp = companionFormula(set.hp?.value, r, beast, fromClass);
+    if (fac !== undefined) {
+      ac = fac;
+      notes.push(`AC ${set.ac?.value?.replace(/\s*\(.*\)\s*/g, " ").trim()}.`);
+    }
+    if (fhp !== undefined) {
+      hp = fhp;
+      notes.push(`Hit points ${set.hp?.value?.replace(/\s*\(.*\)\s*/g, " ").trim()}.`);
+    }
     // Aurora's companion statistics are the companion's own numbers worked out with the character's (the Steel
     // Defender's "2 + your Intelligence modifier + five times your artificer level"), not bonuses on top. They share
     // one name, so they are this companion's only when it is the character's only one; otherwise the stat block.
     const only = r.active.filter((a) => a.el.type === "Companion").map((a) => a.el.id);
     if (only.length === 1 && only[0] === beast.id) {
-      const cac = r.stats.get("companion:ac"), chp = r.stats.get("companion:hp:max");
-      if (cac > 0 && cac !== ac) { ac = cac; notes.push("AC worked out with your statistics."); }
-      if (chp > 0) { if (chp !== hp) notes.push("Hit points worked out with your level and statistics."); hp = chp; }
+      const cac = r.stats.get("companion:ac"),
+        chp = r.stats.get("companion:hp:max");
+      if (cac > 0 && cac !== ac) {
+        ac = cac;
+        notes.push("AC worked out with your statistics.");
+      }
+      if (chp > 0) {
+        if (chp !== hp) notes.push("Hit points worked out with your level and statistics.");
+        hp = chp;
+      }
     }
   }
   return { name: beast.name, kind, rules, ac, hp, tempHp, speed: set.speed?.value ?? "", abilities, saves, skills, notes };

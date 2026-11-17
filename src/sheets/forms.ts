@@ -645,14 +645,12 @@ export async function placePortrait(doc: PDFDocument, data: FillData, boxes: W[]
     const box = boxes.slice().sort((a, b) => b.w * b.h - a.w * a.h)[0];
     if (draw) {
       const s = Math.min(box.w / img.width, box.h / img.height);
-      doc
-        .getPage(box.p)
-        .drawImage(img, {
-          x: box.x + (box.w - img.width * s) / 2,
-          y: box.y + (box.h - img.height * s) / 2,
-          width: img.width * s,
-          height: img.height * s,
-        });
+      doc.getPage(box.p).drawImage(img, {
+        x: box.x + (box.w - img.width * s) / 2,
+        y: box.y + (box.h - img.height * s) / 2,
+        width: img.width * s,
+        height: img.height * s,
+      });
     } else {
       doc.getForm().getButton(box.name).setImage(img);
     }

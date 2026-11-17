@@ -2,6 +2,11 @@
 
 What changed in each release. Newest first.
 
+## v0.26.2 (2026-11-17)
+
+- 2014 Blessings of Knowledge gives its expertise on 5e.tools content; saved picks carry over
+- The move: picks wait for their owner to be placed; repeats recognised by what a name's brackets name
+
 ## v0.26.1 (2026-11-16)
 
 - STATUS: 2026-11-16

@@ -410,7 +410,7 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         const tctx = makeCtx(prev, ownerLevel, ch, reg, empty, target.id);
         const mutual = mutualExclusions(target, reg);
         if (mutual.size) {
-          const prevHas = tctx.hasId;
+          const prevHas = tctx.hasId.bind(tctx);
           tctx.hasId = (id) => (mutual.has(id) ? ids.has(id) : prevHas(id));
         }
         if (!meets(target.requirements, tctx)) return;

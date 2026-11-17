@@ -91,7 +91,7 @@ export function useContent(): ContentState {
   // On launch: load what is cached, then check links that have not been checked for a while.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const list = await listSources().catch(() => []);
       if (cancelled) return;
       setSources(list);

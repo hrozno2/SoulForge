@@ -37,7 +37,7 @@ export function DetailPanel({ el }: { el: AElement | null }) {
       )}
       {el.source && (
         <p className="muted">
-          Source: <a href="#" onClick={(e) => { e.preventDefault(); openExternal(`https://www.google.com/search?q=${encodeURIComponent(`${el.source} ${el.name}`)}`); }}>{el.source}</a>
+          Source: <a href="#" onClick={(e) => { e.preventDefault(); void openExternal(`https://www.google.com/search?q=${encodeURIComponent(`${el.source} ${el.name}`)}`); }}>{el.source}</a>
         </p>
       )}
     </aside>

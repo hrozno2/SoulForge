@@ -59,6 +59,7 @@ describe("backups", () => {
     expect(files.has("soul-forge-backup-2020-01-01.json")).toBe(false);
     // Files that are not backups are never touched.
     expect(files.get("notes.txt")).toBe("mine");
+    // oxlint-disable-next-line typescript/unbound-method -- a plain object's function, no `this`
     const write = vi.fn(disk.write);
     await runAutoBackup(true, { ...disk, write });
     expect(write).not.toHaveBeenCalled();

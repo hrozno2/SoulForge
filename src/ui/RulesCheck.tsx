@@ -34,7 +34,7 @@ export function useRulesCheck(r: Resolved): RulesCheckResult {
   useEffect(() => {
     const off = onRulesRef(() => setRef(rulesRef()));
     if (official) void ensureRulesRef();
-    return () => void off();
+    return () => { off(); };
   }, [official]);
   return useMemo(() => {
     if (!r.character.classes.length) return { rules: [], content: [], full: !!ref };

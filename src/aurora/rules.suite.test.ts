@@ -459,7 +459,7 @@ describe.skipIf(!CACHE)("rules", () => {
       }
     };
     if (existsSync(corpus)) walk(corpus, 0);
-    const mine = (f: string) => [...f].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % shards === shard;
+    const mine = (f: string) => Array.from(f).reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % shards === shard;
     // Only the code that decides what is offered: the engine, its requirement checks, the content loader and fixes.
     const version = createHash("sha1").update(["engine", "requirements", "registry", "contentFixes", "character", "books", "stats", "edition", "fixture"].map((f) => `src/aurora/${f}.ts`).filter(existsSync).map((f) => readFileSync(f, "utf8")).join("\0")).digest("hex").slice(0, 16);
     const scanDir = join(CACHE!, "options-scan", version);

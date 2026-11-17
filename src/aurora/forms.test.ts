@@ -10,7 +10,7 @@ const C = process.env.SOULFORGE_RULES;
 
 describe.skipIf(!C)("beast forms", () => {
   const reg = C ? loadTestContent(C) : undefined!;
-  const bear = reg?.ofType("Companion").find((e) => e.name === "Black Bear")!;
+  const bear = reg ? reg.ofType("Companion").find((e) => e.name === "Black Bear")! : undefined!;
   const druid = (cls: string, level: number, moon?: string) => {
     let ch: Character = { ...newCharacter(), abilityMethod: "manual", abilityBase: { strength: 8, dexterity: 12, constitution: 14, intelligence: 10, wisdom: 16, charisma: 10 } };
     ch.classes = [{ classId: cls, level }];

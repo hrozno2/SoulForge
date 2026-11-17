@@ -48,6 +48,7 @@ if (dry) process.exit(0);
 
 console.log("Checking: types, tests, build...");
 sh("npx tsc --noEmit", { show: true });
+sh("npm run lint", { show: true });
 sh("npm test", { show: true });
 sh("npm run build", { show: true });
 // The interface, end to end on the built app under its security policy (docs/AUDIT-2026-11-10.md, H5).

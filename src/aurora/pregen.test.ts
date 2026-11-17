@@ -155,7 +155,7 @@ function build(reg: ARegistry, p: Pregen): { ch: Character; log: string[] } {
   ch.background = bg?.id;
   ch.classes = cls ? [{ classId: cls.id, level: 1 }] : [];
   const wanted = new Set([...(p.subrace ? [p.subrace] : []), ...p.picks].map(norm));
-  ch = autoFill(ch, reg, (_slot, option) => (wanted.has(norm(option)) ? 1000 : Math.random() * 0));
+  ch = autoFill(ch, reg, (_slot, option) => (wanted.has(norm(option)) ? 1000 : 0));
   // Scores: printed finals minus bonuses from species/background choices.
   const r0 = resolve(ch, reg);
   const base = { ...ch.abilityBase };

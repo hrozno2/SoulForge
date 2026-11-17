@@ -54,7 +54,7 @@ export function StartTab({
   const [libraryError, setLibraryError] = useState("");
   const refresh = () => listCharacters().then((l) => { setList(l); setListed(true); setLibraryError(""); }, (e) => { setListed(true); setLibraryError((e as Error)?.message || String(e)); });
   useEffect(() => {
-    refresh();
+    void refresh();
     const t = setInterval(refresh, 4000);
     window.addEventListener("cf-saved", refresh);
     return () => { clearInterval(t); window.removeEventListener("cf-saved", refresh); };
@@ -65,7 +65,7 @@ export function StartTab({
     try {
       const parsed = JSON.parse(await f.text());
       // A whole library (from "Export library" or a Settings backup) restores next to the characters here.
-      if (isBackup(parsed)) { setMsg(await importLibrary(parsed)); refresh(); return; }
+      if (isBackup(parsed)) { setMsg(await importLibrary(parsed)); void refresh(); return; }
       const raw = parsed as Character;
       if (raw.version !== 2) throw new Error("This is not a Soul Forge character or library file. Foundry and Roll20 exports go through the Import button next to it.");
       // A damaged or hand-edited file opens with the damaged parts at their defaults, and says which (the audit's S6).
@@ -93,10 +93,10 @@ export function StartTab({
         <div className="row">
           <button className="primary" onClick={onNew}>{t("New character")}</button>
           <button onClick={() => setAskLevel((v) => !v)} aria-expanded={askLevel}>{t("Random character")}</button>
-          <button title="A character file, or a whole library file" onClick={async () => { const f = await pickFiles(["json"]); if (f === null) fileRef.current?.click(); else if (f[0]) importJson(f[0]); }}>Open file (.json)</button>
+          <button title="A character file, or a whole library file" onClick={async () => { const f = await pickFiles(["json"]); if (f === null) fileRef.current?.click(); else if (f[0]) void importJson(f[0]); }}>Open file (.json)</button>
           <button title="Every character in one file, to keep or to carry to another device; open it here with Open file" onClick={async () => setMsg(await exportLibrary())}>Export library</button>
           <button onClick={async () => { const f = await pickFiles(["json"]); if (f === null) foreignRef.current?.click(); else if (f[0]) setMsg(await onImportForeign(f[0])); }}>Import Foundry / Roll20 / Plutonium</button>
-          <input ref={fileRef} type="file" accept=".json" hidden onChange={(e) => { importJson(e.target.files?.[0]); e.target.value = ""; }} />
+          <input ref={fileRef} type="file" accept=".json" hidden onChange={(e) => { void importJson(e.target.files?.[0]); e.target.value = ""; }} />
           <input ref={foreignRef} type="file" accept=".json" hidden onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) setMsg(await onImportForeign(f)); }} />
         </div>
         {askLevel && (
@@ -121,7 +121,7 @@ export function StartTab({
             <CharCard key={c.id} rec={c} reg={reg} current={c.id === currentId} onOpen={() => onOpen(c.id, c.data, true)}
               onDuplicate={() => onOpen(uid(), { ...c.data, name: `${c.data.name || "Character"} (copy)` })}
               onExport={() => downloadText(`${c.name || "character"}.json`, JSON.stringify(c.data, null, 2))}
-              onDelete={async () => { if (await askConfirm({ title: `Delete ${c.name || "this character"}?`, message: "The character and everything saved with it will be removed from this computer. This cannot be undone; export it first if you might want it back.", confirmLabel: "Delete character" })) { await deleteCharacterRecord(c.id); refresh(); } }} />
+              onDelete={async () => { if (await askConfirm({ title: `Delete ${c.name || "this character"}?`, message: "The character and everything saved with it will be removed from this computer. This cannot be undone; export it first if you might want it back.", confirmLabel: "Delete character" })) { await deleteCharacterRecord(c.id); void refresh(); } }} />
           ))}
           {libraryError && <p className="library-error" role="alert">Your saved characters could not be read ({libraryError}). This is a problem reading the app's storage, not an empty library; nothing is saved over it. <button onClick={() => void refresh()}>Try again</button></p>}
           {!list.length && !libraryError && <p className="muted">No saved characters yet. Your work saves automatically.</p>}

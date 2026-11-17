@@ -67,7 +67,7 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
     try {
       setMsg(`Downloading ${o.label}...`);
       setMsg((await downloadOfficialSheet(o)).join(". "));
-      refresh();
+      void refresh();
     } catch (e) {
       setMsg(`Could not download it: ${(e as Error).message} You can open the link and load the file yourself.`);
     }
@@ -75,7 +75,7 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
   const choose = async () => {
     const files = await pickFiles(["pdf"], true);
     if (files === null) fileRef.current?.click();
-    else add(files);
+    else void add(files);
   };
 
   const add = async (picked: FileList | File[] | null) => {
@@ -86,7 +86,7 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
     await nextFrame();
     const notes = await addSheetFiles(list);
     setMsg(notes.join(". "));
-    refresh();
+    void refresh();
   };
 
     /** How many pieces of text the translation service could not do during this export. */
@@ -208,8 +208,8 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
       </ul>
       <p className="muted small-text">
         Fillable sheets stay editable. Print copies have the text written onto the page. Files stay on this computer.{" "}
-        {SHEET_LINKS.filter((l) => /drive\.google/.test(l.url)).map((l) => <a key={l.url} href={l.url} onClick={(e) => { e.preventDefault(); openExternal(l.url); }}>DLtheDM's folder</a>)}
-        {" · "}<a href={SHEET_SEARCH} onClick={(e) => { e.preventDefault(); openExternal(SHEET_SEARCH); }}>Search for a sheet</a>
+        {SHEET_LINKS.filter((l) => /drive\.google/.test(l.url)).map((l) => <a key={l.url} href={l.url} onClick={(e) => { e.preventDefault(); void openExternal(l.url); }}>DLtheDM's folder</a>)}
+        {" · "}<a href={SHEET_SEARCH} onClick={(e) => { e.preventDefault(); void openExternal(SHEET_SEARCH); }}>Search for a sheet</a>
       </p>
     </>
   );
@@ -218,7 +218,7 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
     <div className="subcard">
       <h3>Fill a character sheet</h3>
       {templates.length === 0 && <p className="muted">No sheet yet. Get one below or add your own PDF; your character is written onto it.</p>}
-      <input ref={fileRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = ""; }} />
+      <input ref={fileRef} type="file" accept=".pdf" multiple hidden onChange={(e) => { void add(e.target.files); e.target.value = ""; }} />
       {templates.length > 0 && (
         <>
           <div className="row sheet-pick">
@@ -279,7 +279,7 @@ export function TemplateExport({ r, sheet, tr, allSpells = false }: { r: Resolve
                 <p>The copy you loaded has no form fields. Soul Forge will write the text straight onto the page, so afterwards <b>you cannot edit it in a PDF viewer</b>: a mistake means making the PDF again from Soul Forge.</p>
                 <p className="muted">A fillable copy of the same sheet keeps every box editable. The official 2014 sheet and the DLDM sheets come as fillable files.</p>
                 <div className="row">
-                  <button className="primary" onClick={() => { setConfirmPlain(false); run(); }}>Proceed</button>
+                  <button className="primary" onClick={() => { setConfirmPlain(false); void run(); }}>Proceed</button>
                   <button onClick={() => setConfirmPlain(false)}>Cancel</button>
                 </div>
               </div>

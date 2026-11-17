@@ -25,7 +25,7 @@ export function flyInto(to: keyof typeof TARGET, from: Element | null = lastPres
   document.body.appendChild(token);
   const dx = dest.left + dest.width / 2 - (src.left + src.width / 2), dy = dest.top + dest.height / 2 - (src.top + src.height / 2);
   const s = Math.max(0.08, Math.min(dest.width / src.width, dest.height / src.height) * 0.6);
-  token.animate(
+  void token.animate(
     [{ transform: "none", opacity: 0.95 }, { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 40}px) scale(${(1 + s) / 2}) rotate(-6deg)`, opacity: 0.9, offset: 0.5 }, { transform: `translate(${dx}px, ${dy}px) scale(${s})`, opacity: 0.2 }],
     { duration: 420, easing: "cubic-bezier(.3,.7,.3,1)" },
   ).finished.finally(() => token.remove());

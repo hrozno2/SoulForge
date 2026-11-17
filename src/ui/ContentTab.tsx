@@ -249,10 +249,10 @@ export function ContentTab({ content, onDetail, r, set }: { content: ContentStat
           <button className="primary" disabled={ftBusy || !ftUrl.trim()} onClick={() => ftFetch(ftUrl)}>Fetch from address</button>
         </div>
         <div className="row">
-          <label>Data folder or ZIP: <input type="file" accept=".json,.zip" multiple {...{ webkitdirectory: "" }} onChange={(e) => { ftImport(e.target.files); e.target.value = ""; }} /></label>
+          <label>Data folder or ZIP: <input type="file" accept=".json,.zip" multiple {...{ webkitdirectory: "" }} onChange={(e) => { void ftImport(e.target.files); e.target.value = ""; }} /></label>
         </div>
         <div className="row">
-          <label>Or pick files: <input type="file" accept=".json,.zip" multiple onChange={(e) => { ftImport(e.target.files); e.target.value = ""; }} /></label>
+          <label>Or pick files: <input type="file" accept=".json,.zip" multiple onChange={(e) => { void ftImport(e.target.files); e.target.value = ""; }} /></label>
         </div>
         <p className="muted">Homebrew exported from 5etools or Plutonium works too: import its .json file.</p>
         {ftMsg && <p className="notice">{ftMsg}</p>}
@@ -261,7 +261,7 @@ export function ContentTab({ content, onDetail, r, set }: { content: ContentStat
       <section className="card">
         <h2>Import files</h2>
         <p className="muted">A downloaded ZIP of an elements repository, or loose .xml element files.</p>
-        <input ref={fileRef} aria-label="Choose element files or a ZIP" type="file" accept=".zip,.xml" multiple onChange={(e) => { importFiles(e.target.files); e.target.value = ""; }} />
+        <input ref={fileRef} aria-label="Choose element files or a ZIP" type="file" accept=".zip,.xml" multiple onChange={(e) => { void importFiles(e.target.files); e.target.value = ""; }} />
         {msg && <p className="notice">{msg}</p>}
       </section>
 

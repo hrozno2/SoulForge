@@ -304,8 +304,6 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     for (const a of first.startArmor ?? []) if (!own(sh.proficiencies.armor, ARMOR_NAME[a])) add("Missing class training", `${ARMOR_NAME[a]} from ${first.name}`);
     for (const w of first.startWeapons ?? []) if (!own(sh.proficiencies.weapons, `${w} weapons`)) add("Missing class training", `${w} weapons from ${first.name}`);
     for (const t of first.startTools ?? []) if (!own(sh.proficiencies.tools, t)) add("Missing class training", `${t} from ${first.name}`);
-    {
-    }
   }
 
   // Ability scores: no higher than 20 unless a feature or an item raises the limit.

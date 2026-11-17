@@ -40,6 +40,8 @@ export const Shield = ({ size = 16 }: { size?: number }) => wrap(<path d="M12 3l
  * A symbol for each kind of species, drawn here in the same line style (no outside art): a crown for humans, a leaf
  * for elves, an axe for dwarves, and so on. Anything not listed gets a compass star.
  */
+// Each symbol is drawn on its own, never as a list, so the elements need no keys.
+/* oxlint-disable react/jsx-key */
 const SPECIES_SYMBOLS: [RegExp, ReactNode][] = [
   [/tiefling/, <><path d="M7 21c-3-4-3-9 0-13M17 21c3-4 3-9 0-13" /><path d="M7 8C5 6 4 3 6 2c1 2 2 3 4 4M17 8c2-2 3-5 1-6-1 2-2 3-4 4" /></>],
   [/dragonborn|draconic|dragon/, <path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 1 3 3 4 0-3-1-5 0-8z" />],
@@ -56,6 +58,7 @@ const SPECIES_SYMBOLS: [RegExp, ReactNode][] = [
   [/genasi/, <path d="M12 3c5 0 8 3 8 7 0 3-2 5-5 5-2 0-3-1-3-3 0-1 1-2 2-2M12 21c-5 0-8-3-8-7 0-3 2-5 5-5 2 0 3 1 3 3 0 1-1 2-2 2" />],
   [/human/, <><path d="M4 17h16M4 17 5 8l4 4 3-6 3 6 4-4 1 9" /><path d="M5 20h14" /></>],
 ];
+/* oxlint-enable react/jsx-key */
 const STAR = <path d="M12 2.500l2 7.500 7.500 2-7.500 2-2 7.500-2-7.500L2.500 12l7.500-2z" />;
 
 /** The symbol of a species, by its name. */

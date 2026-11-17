@@ -111,7 +111,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const [gpu, setGpu] = useState({ applies: false, on: false });
   useEffect(() => { void gpuStatus().then(setGpu); }, []);
   const [dates, setDates] = useState<string[]>([]);
-  useEffect(() => { backupStore.dates().then(setDates); }, []);
+  useEffect(() => { void backupStore.dates().then(setDates); }, []);
   // The desktop app also keeps the daily backups as files (src/diskBackup.ts): where they are, to find or copy them.
   const [folder, setFolder] = useState("");
   useEffect(() => { void backupFolder().then(setFolder); }, []);

@@ -51,7 +51,7 @@ export function BugReport({ r, sources, onClose }: { r: Resolved; sources: Sourc
 
   // The system: the app version and the platform, and on the desktop what the app's own process can see.
   useEffect(() => {
-    (async () => {
+    void (async () => {
       const lines = [`user agent: ${navigator.userAgent}`, `screen: ${window.screen.width}x${window.screen.height} @${window.devicePixelRatio}x`];
       if (inTauri()) {
         try {

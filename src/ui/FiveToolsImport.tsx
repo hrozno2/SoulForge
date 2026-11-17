@@ -99,7 +99,7 @@ export function FiveToolsImport({ content, baseUrl, setBaseUrl }: { content: Con
 
       <h4>Step 2. Pick what you want</h4>
       <div className="row">
-        {KINDS.map((k) => <button key={k.kind} className={kind === k.kind ? "pill active" : "pill"} onClick={() => { setKind(k.kind); load(k.kind); }}>{k.label}</button>)}
+        {KINDS.map((k) => <button key={k.kind} className={kind === k.kind ? "pill active" : "pill"} onClick={() => { setKind(k.kind); void load(k.kind); }}>{k.label}</button>)}
       </div>
       {!list ? (
         <div className="row"><button disabled={busy || !baseUrl.trim()} onClick={() => load()}>{baseUrl.trim() ? `Load ${KINDS.find((k) => k.kind === kind)!.label.toLowerCase()}` : "Set the address above first"}</button></div>

@@ -15,6 +15,7 @@ test("a failed save says so, and Try again saves it", async ({ page }) => {
   // The library stops taking writes (a full disk, a broken store).
   await page.evaluate(() => {
     const w = window as unknown as { __put?: IDBObjectStore["put"] };
+    // oxlint-disable-next-line typescript/unbound-method -- kept to be put back, called with its own `this`
     w.__put = IDBObjectStore.prototype.put;
     IDBObjectStore.prototype.put = function (this: IDBObjectStore, ...args: Parameters<IDBObjectStore["put"]>) {
       if (this.name === "characters") throw new DOMException("The disk is full", "QuotaExceededError");

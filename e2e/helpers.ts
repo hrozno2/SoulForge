@@ -36,7 +36,7 @@ export async function tab(page: Page, name: string): Promise<void> {
   for (let i = 0; i < (await groups.count()); i++) {
     await groups.nth(i).click();
     const item = page.getByRole("menuitem", { name: re });
-    if (await item.count()) return void (await item.first().click());
+    if (await item.count()) { await item.first().click(); return; }
     await page.keyboard.press("Escape");
   }
   await nav.getByRole("button", { name: re }).first().click();

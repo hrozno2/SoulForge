@@ -101,6 +101,24 @@ function startWeaponDetail(sp: Json | undefined): { names: string[]; martialWith
   return { names: [...new Set(names)], martialWith: [...new Set(martialWith)] };
 }
 
+/**
+ * A subclass's always-prepared spells by class level ("Life Domain Spells", "Oath of Devotion Spells"), names in lower
+ * case, from 5e.tools' "additionalSpells"; null when it has none or several sets to choose from (Circle of the Land's
+ * terrains), so the rules check judges only what is fixed (W5).
+ */
+function preparedSpells(sets: unknown): Record<string, string[]> | null {
+  if (!Array.isArray(sets) || sets.length !== 1) return null;
+  const prepared = (sets[0] as Json)?.prepared as Json | undefined;
+  if (!prepared) return null;
+  const out: Record<string, string[]> = {};
+  for (const [level, list] of Object.entries(prepared)) {
+    if (!Array.isArray(list)) continue;
+    const names = list.filter((x): x is string => typeof x === "string").map((x) => x.split("|")[0].split("#")[0].trim().toLowerCase());
+    if (names.length) out[level] = names;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 /** One 5e.tools class file (data/class/class-*.json) to the reference entries for its classes. */
 export function condenseClassFile(file: Json): Json[] {
   const out: Json[] = [];
@@ -186,6 +204,7 @@ export function condenseClassFile(file: Json): Json[] {
           source: s.source,
           caster: s.casterProgression ?? null,
           features: ((s.subclassFeatures ?? []) as (string | Json)[]).map(feat),
+          spells: preparedSpells(s.additionalSpells),
         })),
     });
   }

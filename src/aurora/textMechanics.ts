@@ -83,6 +83,25 @@ export function applyArmorBonus(out: AElement[]): number {
   return n;
 }
 
+/**
+ * A bonus to a companion's armor class stated only in text: "Your steel defender gains a +2 bonus to Armor Class" (the
+ * 2014 Battle Smith's Improved Defender, Tasha's). Aurora's copy has it as "companion:ac"; 5e.tools' had nothing, so a
+ * 15th-level Battle Smith's defender showed AC 15 instead of 17 (found 2026-11-17 by the random companion check).
+ */
+export function applyCompanionBonus(out: AElement[]): number {
+  let n = 0;
+  const re =
+    /\byour (?:steel defender|[a-z' ]*?(?:companion|defender|drake|spirit|homunculus|servant|echo)) gains a \+(\d+) bonus to (?:its )?(?:ac|armor class)\b/i;
+  for (const el of out) {
+    if (el.origin !== "5etools" || /Item|Armor|Weapon|Companion|Spell/.test(el.type)) continue;
+    const m = re.exec(plain(el.description ?? ""));
+    if (!m || el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase() === "companion:ac")) continue;
+    el.rules = [...el.rules, stat("companion:ac", m[1])];
+    n++;
+  }
+  return n;
+}
+
 /** How many uses the text gives, as a stat formula; undefined when it names none. */
 export function usesFromText(text: string): string | undefined {
   let m = new RegExp(
@@ -477,7 +496,7 @@ export function initiativeFromText(text: string): ARule[] {
   m = /\+(\d+) bonus to initiative/i.exec(text);
   if (m) return [stat("initiative", m[1])];
   if (
-    /when you roll initiative, you can add your proficiency bonus|you can add your proficiency bonus to your initiative(?: rolls)?/i.test(
+    /when you roll initiative, you can add your proficiency bonus|you can add your proficiency bonus to your initiative(?: rolls)?|gain a bonus to initiative(?: rolls)? equal to your proficiency bonus/i.test(
       text,
     )
   )

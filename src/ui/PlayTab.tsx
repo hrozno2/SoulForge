@@ -44,6 +44,7 @@ import { RollChips, spellRolls } from "./RollChips";
 import type { DcContext } from "./rollInfo";
 import { isAvailable, usedAfterClick } from "./pips";
 import { CompanionCard } from "./ManageTab";
+import { formStats } from "../aurora/forms";
 import type { SetCharacter } from "./Slots";
 
 const sign = (n: number) => (n >= 0 ? `+${n}` : String(n));
@@ -1766,7 +1767,7 @@ export function PlayTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetCh
                   c.el ? (
                     <div key={i}>
                       <h3>{c.name}</h3>
-                      <CompanionCard el={c.el} />
+                      <CompanionCard el={c.el} worked={formStats(r, c.el, "companion")} />
                     </div>
                   ) : null,
                 )}

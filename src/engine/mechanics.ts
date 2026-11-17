@@ -233,12 +233,37 @@ export function checksIncludeInitiative(byId: Map<string, AElement>): string[] {
       const m = /^(.+):misc$/.exec(r.name.toLowerCase());
       if (m && SKILL_NAMES.includes(m[1])) per.set(m[1], { value: r.value, bonus: r.bonus });
     }
-    if (per.size !== SKILL_NAMES.length) continue;
-    const vals = new Set([...per.values()].map((v) => `${v.value}|${v.bonus ?? ""}`));
+    // Every skill, or every Dexterity skill where the text names Dexterity checks (the 2014 Remarkable Athlete: "any
+    // Strength, Dexterity, or Constitution check"; its rules reach Athletics, Acrobatics, Sleight of Hand and Stealth
+    // only, and the 2014 Champion's initiative lacked it, found 2026-11-17 by the rules check's own initiative).
+    const dex = ["acrobatics", "sleight of hand", "stealth"];
+    const every = per.size === SKILL_NAMES.length;
+    const dexChecks = dex.every((k) => per.has(k)) && /\bdexterity\b[^.]*\bchecks?\b/i.test(el.description ?? "");
+    if (!every && !dexChecks) continue;
+    const vals = new Set([...per].filter(([k]) => every || dex.includes(k)).map(([, v]) => `${v.value}|${v.bonus ?? ""}`));
     if (vals.size !== 1) continue;
-    const { value, bonus } = [...per.values()][0];
+    const { value, bonus } = per.get("acrobatics")!;
     el.rules = [...el.rules, { kind: "stat", name: "initiative", value, ...(bonus ? { bonus } : {}) } as ARule];
     changed.push(el.id);
   }
   return changed;
+}
+
+/**
+ * A proficiency-based bonus to a check is one group, the best of it counting: the 2014 Jack of All Trades and
+ * Remarkable Athlete add half the proficiency bonus only to a check that "doesn't already include" (or "use") it, so
+ * neither adds on top of the other or of a full proficiency bonus another feature gives the same roll (Alert's or
+ * Hare-Trigger's initiative). Without a group they stacked: a Champion with a Bard's levels had both on initiative, and
+ * a Harengon Bard's initiative added both (found 2026-11-17 by the rules check's own initiative). Returns how many rules.
+ */
+export function proficiencyCheckGroups(byId: Map<string, AElement>): number {
+  let n = 0;
+  const check = new RegExp(`^(?:initiative|(?:${SKILL_NAMES.join("|")}):misc)$`);
+  for (const el of byId.values())
+    for (const r of el.rules)
+      if (r.kind === "stat" && !r.bonus && /^proficiency(?::half(?::up)?)?$/.test(String(r.value)) && check.test(r.name.toLowerCase())) {
+        (r as { bonus?: string }).bonus = "proficiency";
+        n++;
+      }
+  return n;
 }

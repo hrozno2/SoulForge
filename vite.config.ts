@@ -32,7 +32,9 @@ function testContent(): Plugin {
           const aurora = walk(join(root, "elements-master"), ".xml").map((p) => relative(root, p));
           const fivetools = walk(join(root, "5etools-data"), ".json")
             .map((p) => relative(join(root, "5etools-data"), p))
-            .filter((p) => !/index\.json$/.test(p) && !p.startsWith("bestiary"));
+            // The bestiary too, as the app's import keeps it (its beasts and the creatures features call): left out, a
+            // Battle Smith had no Steel Defender here.
+            .filter((p) => !/index\.json$/.test(p) && !/^bestiary\/(?:fluff|foundry|legendary)/.test(p));
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ aurora, fivetools }));
           return;

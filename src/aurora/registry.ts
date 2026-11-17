@@ -1,11 +1,12 @@
 import type { AAppend, AElement, ParsedFile } from "./types";
 import { markComingSoon } from "./comingSoon";
 import { background2024Choices } from "../engine/backgroundOptions";
+import { soulForgeAdditions } from "./additions";
 import { alignClassSkills } from "../engine/classSkills";
 import { applyContentFixes } from "./contentFixes";
 import { stampEditions } from "./edition";
 import { bookKey } from "./books";
-import { borrowMechanics, checksIncludeInitiative, type MechanicsReport } from "../engine/mechanics";
+import { borrowMechanics, checksIncludeInitiative, proficiencyCheckGroups, type MechanicsReport } from "../engine/mechanics";
 import { applyEditionPolicy } from "../engine/editionPolicy";
 import { optionalFeatureChoices } from "../engine/optionalFeatures";
 import { wildShapeChoices } from "../engine/wildShape";
@@ -207,6 +208,7 @@ export class ARegistry {
     // 5e.tools features whose mechanics are only prose take them from the same feature in Aurora's content.
     this.mechanics = borrowMechanics(this.byId);
     checksIncludeInitiative(this.byId);
+    proficiencyCheckGroups(this.byId);
     applyEditionPolicy(this.byId);
     // Lore (5e.tools' fluff) and the attacks a feature gives (from Foundry data or its text) are the same for both
     // providers' copy of one thing: Aurora's copy, the one the lists show, takes the 5e.tools copy's.
@@ -237,6 +239,7 @@ export class ARegistry {
     resolveCreatureRefs(this.byId);
     markComingSoon(this.byId);
     background2024Choices(this.byId);
+    soulForgeAdditions(this.byId);
     this.skillFixes = alignClassSkills(this.byId);
     optionalFeatureChoices(this.byId);
     wildShapeChoices(this.byId);

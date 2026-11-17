@@ -1,0 +1,207 @@
+{
+  "version": 2,
+  "name": "Evoker 3",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_WIZARD",
+      "level": 3
+    }
+  ],
+  "abilityBase": {
+    "strength": 10,
+    "dexterity": 15,
+    "constitution": 11,
+    "intelligence": 15,
+    "wisdom": 10,
+    "charisma": 10
+  },
+  "abilityMethod": "pointbuy",
+  "selections": {
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SUBCLASS#17kvvd": ["ID_WOTC_PHB24_ARCHETYPE_WIZARD_EVOKER"],
+    "ID_WOTC_PHB24_CLASS_WIZARD#125j9ms": ["ID_PROFICIENCY_SKILL_HISTORY", "ID_PROFICIENCY_SKILL_INSIGHT"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SCHOLAR#ngwl9b": ["ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_HISTORY"],
+    "ID_WOTC_PHB24_RACE_ELF#83j4bt": ["ID_WOTC_PHB24_LANGUAGE_COMMON_SIGN", "ID_5ET_LANGUAGE_ORC"],
+    "ID_WOTC_PHB24_RACIAL_TRAIT_ELF_ELVEN_LINEAGE#ee4rma": ["ID_WOTC_PHB24_RACIAL_TRAIT_ELF_ELVEN_LINEAGE_WOOD_ELF"],
+    "ID_WOTC_PHB24_RACIAL_TRAIT_ELF_ELVEN_LINEAGE_WOOD_ELF#t26x8o": ["ID_WOTC_PHB24_RACIAL_TRAIT_ELF_ELVEN_LINEAGE_WOOD_ELF_INTELLIGENCE"],
+    "ID_WOTC_PHB24_RACIAL_TRAIT_ELF_KEEN_SENSES#1fj3lk5": ["ID_PROFICIENCY_SKILL_PERCEPTION"],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_INT_WIS_CHA#1dso2r8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_INT_WIS_CHA_1"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_INT_WIS_CHA_1#11yhef6": [
+      "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_INTELLIGENCE_INCREASE_2"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_INT_WIS_CHA_1#12ib8pd": ["ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CHARISMA_INCREASE_1"],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_CLERIC#1ponsm7": ["ID_WOTC_PHB24_FEAT_FEATURE_MAGIC_INITIATE_CLERIC_INTELLIGENCE"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#dkdsjx": [
+      "ID_WOTC_PHB24_SPELL_ACID_SPLASH",
+      "ID_WOTC_PHB24_SPELL_ELEMENTALISM",
+      "ID_WOTC_PHB24_SPELL_LIGHT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#15xcgen": [
+      "ID_WOTC_PHB24_SPELL_SEE_INVISIBILITY",
+      "ID_WOTC_PHB24_SPELL_MIND_SPIKE",
+      "ID_WOTC_PHB24_SPELL_GREASE",
+      "ID_WOTC_PHB24_SPELL_CROWN_OF_MADNESS",
+      "ID_WOTC_PHB24_SPELL_ARCANE_VIGOR",
+      "ID_WOTC_PHB24_SPELL_BURNING_HANDS"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#167c23m": [
+      "ID_WOTC_PHB24_SPELL_COMPREHEND_LANGUAGES",
+      "ID_WOTC_PHB24_SPELL_ENLARGE_REDUCE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#16hbnsl": ["ID_WOTC_PHB24_SPELL_JUMP", "ID_WOTC_PHB24_SPELL_ROPE_TRICK"],
+    "ID_WOTC_PHB24_ARCHETYPE_WIZARD_EVOKER_EVOCATION_SAVANT#16xfk2i": [
+      "ID_WOTC_PHB24_SPELL_CHROMATIC_ORB",
+      "ID_WOTC_PHB24_SPELL_THUNDERWAVE"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_INT_WIS#1dso2r8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_INT_WIS_1"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_INT_WIS_1#11yhef6": [
+      "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_INTELLIGENCE_INCREASE_2"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_INT_WIS_1#12ib8pd": ["ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_DEXTERITY_INCREASE_1"],
+    "ID_WOTC_PHB24_FEAT_SKILLED#115ds80": [
+      "ID_PROFICIENCY_SKILL_ARCANA",
+      "ID_PROFICIENCY_SKILL_PERFORMANCE",
+      "ID_PROFICIENCY_SKILL_STEALTH"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "roll",
+  "hpRolls": {
+    "2": 5,
+    "3": 3
+  },
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "xeopeuilydeo",
+      "id": "ID_WOTC_PHB24_WEAPON_DAGGER",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "gj5eq7mzydeo",
+      "id": "ID_WOTC_PHB24_WEAPON_QUARTERSTAFF",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "h5b7ssnjydeo",
+      "id": "ID_WOTC_PHB24_ITEM_ROBE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "1xriupi6ydeo",
+      "id": "ID_WOTC_PHB24_ITEM_BOOK",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "uvl9eg22ydeo",
+      "id": "ID_WOTC_PHB24_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "6de0pqktydeo",
+      "id": "ID_WOTC_PHB24_ITEM_INK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "5otgkyv9ydeo",
+      "id": "ID_WOTC_PHB24_ITEM_INK_PEN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "5j5qbf13ydeo",
+      "id": "ID_WOTC_PHB24_ITEM_LAMP",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "32w2gvpqydeo",
+      "id": "ID_WOTC_PHB24_ITEM_OIL",
+      "qty": 13,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "xsrmf7abydeo",
+      "id": "ID_WOTC_PHB24_ITEM_PARCHMENT",
+      "qty": 22,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "p7mrg4t3ydeo",
+      "id": "ID_WOTC_PHB24_ITEM_TINDERBOX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "3b5edc79ydeo",
+      "id": "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "7ahlltz3ydeo",
+      "id": "ID_WOTC_PHB_ITEM_SPELLBOOK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "2gogpj9hye7q",
+      "id": "ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "eln6j6gxye7q",
+      "id": "ID_WOTC_PHB24_ITEM_CLOTHES_FINE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 28,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {},
+  "play": {},
+  "sources": [],
+  "checkedWith": "0.23.0",
+  "race": "ID_WOTC_PHB24_RACE_ELF",
+  "background": "ID_WOTC_PHB24_BACKGROUND_SCRIBE",
+  "equipmentAdded": ["Wizard, option a", "Scribe, option a"],
+  "equipmentLedger": [],
+  "hpRollLog": []
+}

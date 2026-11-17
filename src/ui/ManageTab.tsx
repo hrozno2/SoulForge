@@ -641,7 +641,9 @@ const COMPANION_LABEL: Record<string, string> = {
   conditionImmunities: "Condition Immunities",
 };
 
-export function CompanionCard({ el }: { el: AElement }) {
+/** `worked`: the armor class and hit points worked out for this character (forms.ts formStats), shown before the stat
+ * block's own words when those are a formula ("14 + PB" is 16 for a 3rd-level Echo Knight). */
+export function CompanionCard({ el, worked }: { el: AElement; worked?: { ac: number; hp: number } }) {
   const { reg } = useUi();
   const s = el.setters;
   const val = (k: string) => s[k]?.value;
@@ -658,12 +660,18 @@ export function CompanionCard({ el }: { el: AElement }) {
     );
   }
   const stats = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"].filter((k) => val(k));
+  // The worked-out number, with the stat block's words beside it when they say something else ("16 (14 + PB)").
+  const shown = (n: number | undefined, text: string | undefined) => {
+    if (n === undefined || !Number.isFinite(n) || n <= 0) return text;
+    const first = Number(/^\s*(\d+)/.exec(text ?? "")?.[1]);
+    return first === n && !/\byour\b|\bPB\b/i.test(text ?? "") ? text : `${n}${text ? ` (${text})` : ""}`;
+  };
   return (
     <div className="statblock">
       <h4>{el.name}</h4>
       <p className="muted">{[val("size"), val("type"), val("alignment")].filter(Boolean).join(", ")}</p>
       <p>
-        <b>AC</b> {val("ac")} · <b>HP</b> {val("hp")} · <b>Speed</b> {val("speed")}
+        <b>AC</b> {shown(worked?.ac, val("ac"))} · <b>HP</b> {shown(worked?.hp, val("hp"))} · <b>Speed</b> {val("speed")}
       </p>
       {stats.length > 0 && <p className="abil-line">{stats.map((k) => `${k.slice(0, 3).toUpperCase()} ${val(k)}`).join("  ")}</p>}
       {["skills", "senses", "languages", "challenge", "resistances", "immunities", "conditionImmunities"].filter(val).map((k) => (

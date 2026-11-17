@@ -1684,3 +1684,43 @@ describe("a skill choice whose text doubles the proficiency (2014 Blessings of K
     expect(ids.has("ID_5ET_EXPERTISE_HISTORY") && ids.has("ID_5ET_EXPERTISE_RELIGION")).toBe(true);
   });
 });
+
+describe("a species' own language its text names", () => {
+  const race = (name: string, text: string) => ({
+    name,
+    source: "PSZ",
+    size: ["M"],
+    speed: 30,
+    languageProficiencies: [{ common: true, other: true }],
+    entries: [{ type: "entries", name: "Languages", entries: [text] }],
+  });
+  const files = {
+    "languages.json": { language: [{ name: "Common", source: "PHB" }] },
+    "races.json": {
+      race: [
+        race("Kor", "You can speak, read, and write Common, and communicate in the silent speech of the Kor."),
+        race("Kalashtar", "You can speak, read, and write Common, Quori, and one other language of your choice."),
+      ],
+    },
+  };
+  const els = convertFiveTools({ files });
+  const byName = (n: string) => els.find((e) => e.type === "Race" && e.name === n)!;
+  it("is granted, a language of Soul Forge additions, not a free pick of any language", () => {
+    expect(byName("Kor").rules).toContainEqual(expect.objectContaining({ kind: "grant", type: "Language", id: "ID_5ET_LANGUAGE_KOR" }));
+    expect(byName("Kor").rules.some((r) => r.kind === "select" && r.type === "Language" && !r.requirements)).toBe(false);
+    const kor = els.find((e) => e.id === "ID_5ET_LANGUAGE_KOR")!;
+    expect([kor.type, kor.source]).toEqual(["Language", "Soul Forge additions"]);
+    expect(byName("Kalashtar").rules).toContainEqual(
+      expect.objectContaining({ kind: "grant", type: "Language", id: "ID_5ET_LANGUAGE_QUORI" }),
+    );
+  });
+});
+
+describe("a summoned creature's attack", () => {
+  it("reads its summoner's spell attack tag", () => {
+    expect(entriesHtml(["{@atk mw} {@hitYourSpellAttack} to hit, reach 5 ft."])).toContain("your spell attack modifier to hit");
+    expect(entriesHtml(["{@hitYourSpellAttack Bonus equals your spell attack modifier}"])).toContain(
+      "Bonus equals your spell attack modifier",
+    );
+  });
+});

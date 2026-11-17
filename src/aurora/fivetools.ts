@@ -6,10 +6,12 @@
  *
  * The data itself is never bundled with Soul Forge: it is read from files or a base address the user supplies.
  */
+import { ADDITIONS_SOURCE } from "./additions";
 import { applyFoundry } from "./foundry";
 import { applyLore } from "./lore";
 import {
   applyArmorBonus,
+  applyCompanionBonus,
   applyTextAttacks,
   applyTextDc,
   applyTextStats,
@@ -158,6 +160,8 @@ function tagOnce(raw: string): string {
       .replace(/\{@(i|italic)\s+([^{}]*)\}/g, "<i>$2</i>")
       .replace(/\{@dc\s+([^{}|]*)[^{}]*\}/g, "DC $1")
       .replace(/\{@hit\s+([^{}|]*)[^{}]*\}/g, (_m, n: string) => (/^[+-]/.test(n.trim()) ? n.trim() : `+${n.trim()}`))
+      // A summoned creature's attack is its summoner's spell attack ("{@hitYourSpellAttack}", the Steel Defender).
+      .replace(/\{@hitYourSpellAttack(?:\s+([^{}|]*))?[^{}]*\}/g, (_m, shown?: string) => shown?.trim() || "your spell attack modifier")
       // "{@damage 2d6|shown}": the roll, or what the text shows instead.
       .replace(/\{@(?:damage|dice)\s+([^{}|]*)(?:\|([^{}|]*))?[^{}]*\}/g, (_m, roll: string, shown?: string) => shown || roll)
       // "{@scaledamage 8d6|3-9|1d6}": the first part is the spell's whole damage, the last what each slot level adds.
@@ -690,6 +694,29 @@ function combinedTotal(e: J): J {
 }
 
 /**
+ * The one language an entry's "Languages" text names that is neither Common nor in the data's language list: "You
+ * can speak, read, and write Common, and communicate in the silent speech of the Kor" is Kor; "Common, Quori, and one
+ * other language of your choice" is Quori. None, or more than one, gives undefined.
+ */
+function ownLanguage(entries: unknown, ctx: Ctx): string | undefined {
+  const flat = (x: unknown): J[] =>
+    Array.isArray(x) ? x.flatMap(flat) : x && typeof x === "object" ? [x as J, ...flat((x as J).entries)] : [];
+  const entry = flat(entries).find((x) => /^languages?$/i.test(String(x.name ?? "")));
+  // Tags stripped, case kept (stripTags lowers it, and the name is found by its capital).
+  const text = JSON.stringify(entry?.entries ?? "")
+    .replace(/\{@\w+ ([^|}]*)[^}]*\}/g, "$1")
+    .replace(/["\[\]]/g, "");
+  const clause = /(?:speak, read, and write|communicate in)\s+([^.]*)/i.exec(text)?.[1];
+  if (!clause) return undefined;
+  const known = new Set((ctx.languageNames ?? []).map((n) => n.toLowerCase()));
+  const names = clause
+    .split(/,|\band\b/)
+    .map((part) => /([A-Z][a-z'’-]+(?: [A-Z][a-z'’-]+)*)\s*$/.exec(part.trim())?.[1])
+    .filter((n): n is string => !!n && !/^(common|you|your)$/i.test(n) && !known.has(n.toLowerCase()));
+  return names.length === 1 ? names[0] : undefined;
+}
+
+/**
  * Everything an entry trains: skills, languages, tools, weapons, armor, saves, expertise, senses. In 5e.tools a list
  * with more than one entry is a choice between them ("Thieves' tools, or one gaming set and one musical
  * instrument"), so each entry becomes an option of its own and the character takes one. A language given as
@@ -746,7 +773,22 @@ function trainingRules(e0: J, label: string, out: AElement[], ctx: Ctx, idBase: 
     const named = (ctx.languageNames ?? []).filter(
       (n) => n.length > 3 && !(n in entry) && new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(text),
     );
-    if (!named.length) return entry;
+    if (!named.length) {
+      // A language the data has no entry for, named in the text ("the silent speech of the Kor", the Kalashtar's
+      // Quori): a language of its own, from Soul Forge additions, rather than a free pick of any language (W10).
+      const own = ownLanguage(e.entries, ctx);
+      if (!own) return entry;
+      const id = `ID_5ET_LANGUAGE_${slug(own)}`;
+      if (!out.some((x) => x.id === id))
+        out.push(
+          base(id, own, "Language", ADDITIONS_SOURCE, {
+            description: `<p>${own}: a language its species' text names (${label}) that 5e.tools' language list does not hold.</p><p><em>${ADDITIONS_SOURCE}.</em></p>`,
+          }),
+        );
+      const { other, ...rest } = entry;
+      void other;
+      return { ...rest, [own.toLowerCase()]: true };
+    }
     const { other, ...rest } = entry;
     void other;
     return { ...rest, ...Object.fromEntries(named.map((n) => [n, true])) };
@@ -1330,12 +1372,35 @@ function withItemEntries(i: J, ctx: Ctx): J {
 }
 
 /**
+ * Books whose content 5e.tools holds but whose names its book and adventure lists do not give (5e.tools' own source
+ * table names them): the Plane Shift articles, Tales from the Yawning Portal (listed by its seven adventures), and a
+ * few supplements. Unnamed, a Zendikar goblin's book was "PSZ", so Aurora's "Plane Shift: Zendikar" goblin was moved
+ * to the Dungeon Master's Guide's goblin (fresh 55, 2026-11-17). Name and release date (YYYYMMDD).
+ */
+const UNLISTED_BOOKS: Record<string, [string, string]> = {
+  PSA: ["Plane Shift: Amonkhet", "20170605"],
+  PSI: ["Plane Shift: Innistrad", "20160720"],
+  PSK: ["Plane Shift: Kaladesh", "20170201"],
+  PSZ: ["Plane Shift: Zendikar", "20160427"],
+  PSX: ["Plane Shift: Ixalan", "20180109"],
+  PSD: ["Plane Shift: Dominaria", "20180413"],
+  TftYP: ["Tales from the Yawning Portal", "20170404"],
+  RoTOS: ["The Rise of Tiamat Online Supplement", "20141104"],
+  EEPC: ["Elemental Evil Player's Companion", "20150310"],
+  EET: ["Elemental Evil: Trinkets", "20150310"],
+  "HAT-LMI": ["Honor Among Thieves: Legendary Magic Items", "20230308"],
+  MCV2DC: ["Monstrous Compendium Volume 2: Dragonlance Creatures", "20221206"],
+  MCV3MC: ["Monstrous Compendium Volume 3: Minecraft Creatures", "20230110"],
+};
+
+/**
  * A book's name from its 5e.tools code. A playtest code the book list does not name ("UATheMysticClass") becomes
  * "Unearthed Arcana: The Mystic Class", so it counts as playtest material and meets Aurora's copy of the same article.
  */
 // Playtest codes as Plutonium tells them: "UA..." (Unearthed Arcana) and "XUA..." (the One D&D playtest).
 const srcName = (ctx: Ctx, code: string) =>
   ctx.books[code] ??
+  UNLISTED_BOOKS[code]?.[0] ??
   (/^X?UA[A-Z0-9]/.test(code)
     ? `Unearthed Arcana: ${code
         .replace(/^X?UA/, "")
@@ -2575,7 +2640,10 @@ function mod(h: J): string {
 }
 
 function convertMonster(m: J, ctx: Ctx): AElement {
-  const ac = Array.isArray(m.ac) ? (typeof m.ac[0] === "object" ? m.ac[0].ac : m.ac[0]) : m.ac;
+  // A summoned creature's numbers are formulas over its summoner ("13 + PB (natural armor)", "5 + five times your
+  // ranger level"), in "special"; the companion card works them out (forms.ts companionFormula). Read only as numbers,
+  // the Steel Defender of the 2024 rules and every Primal Companion beast had no armor class or hit points.
+  const ac = Array.isArray(m.ac) ? (typeof m.ac[0] === "object" ? (m.ac[0].ac ?? m.ac[0].special) : m.ac[0]) : m.ac;
   const speed = m.speed
     ? Object.entries(m.speed)
         .map(([k, v]) => `${k === "walk" ? "" : `${k} `}${typeof v === "object" ? (v as J).number : v} ft.`.trim())
@@ -2592,7 +2660,7 @@ function convertMonster(m: J, ctx: Ctx): AElement {
     size: set(Array.isArray(m.size) ? m.size[0] : (m.size ?? "")),
     type: set(String(type ?? "")),
     ac: set(String(ac ?? "")),
-    hp: set(m.hp?.average ? `${m.hp.average} (${m.hp.formula ?? ""})` : ""),
+    hp: set(m.hp?.average ? `${m.hp.average} (${m.hp.formula ?? ""})` : String(m.hp?.special ?? "")),
     speed: set(speed),
     strength: set(mod(m.str)),
     dexterity: set(mod(m.dex)),
@@ -2628,7 +2696,8 @@ export function castableSpells(f: J): ARule[] {
   const seen = new Set<string>();
   const rules: ARule[] = [];
   for (const m of text.matchAll(
-    /\byou can (?:also )?(?:spend [^."]{1,40}? to |use [^."]{1,40}? to |expend [^."]{1,40}? to )?cast (?:the )?\{@spell ([^|}]+)(?:\|([^|}]*))?[^}]*\}/gi,
+    // Or "You learn the {@spell sacred flame} spell" (Lunar Sorcery's Moon Fire: the Lunar Sorcerer had no Sacred Flame).
+    /\byou (?:can (?:also )?(?:spend [^."]{1,40}? to |use [^."]{1,40}? to |expend [^."]{1,40}? to )?cast|learn) (?:the )?\{@spell ([^|}]+)(?:\|([^|}]*))?[^}]*\}/gi,
   )) {
     const name = m[1].trim().toLowerCase();
     if (seen.has(name)) continue;
@@ -4030,6 +4099,20 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
       );
     }
   }
+  // And one for each book the lists leave unnamed, so its date and kind are known too.
+  for (const [code, [name, rel]] of Object.entries(UNLISTED_BOOKS))
+    if (!ctx.books[code])
+      out.push(
+        base(`ID_5ET_SOURCE_${slug(code)}`, name, "Source", "5etools", {
+          compendiumHidden: true,
+          setters: {
+            release: set(rel),
+            official: set("true"),
+            abbreviation: set(code),
+            group: set(/^PS/.test(code) ? "setting" : "supplement"),
+          },
+        }),
+      );
   const variantItems: J[] = [];
   const cf: J[] = [];
   const sc: J[] = [];
@@ -4152,6 +4235,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   applyTextExpertiseOnChoices(out);
   applyTextUses(out);
   applyArmorBonus(out);
+  applyCompanionBonus(out);
   applyTextDc(out);
   applyTextStats(out, {
     tool: (n) => toolId(n, out),

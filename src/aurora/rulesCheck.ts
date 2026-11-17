@@ -12,7 +12,8 @@ import { bookKey } from "./books";
 import type { Resolved } from "./engine";
 import { preparePool, weaponAbilityOptions, type SheetData } from "./sheet";
 import type { AElement } from "./types";
-import type { AbilityId } from "./character";
+import { ABILITY_IDS, type AbilityId } from "./character";
+import { normalizeRules, spent as pbSpent } from "./pointBuy";
 import { meets } from "./requirements";
 import { reqCtx, stillToChoose } from "./engine";
 import { isModern } from "./edition";
@@ -52,7 +53,15 @@ export interface RefClass {
   multiclass: Partial<Record<AbilityId, number>> | null;
   multiclassOr: Partial<Record<AbilityId, number>>[] | null;
   primaryAbility: AbilityId[][] | null;
-  subclasses: { name: string; shortName: string; source: string; caster: string | null; features: RefFeature[] }[];
+  subclasses: {
+    name: string;
+    shortName: string;
+    source: string;
+    caster: string | null;
+    features: RefFeature[];
+    /** Always-prepared spells by class level, lower case (rulesRef.ts preparedSpells). */
+    spells?: Record<string, string[]> | null;
+  }[];
 }
 
 export interface Finding {
@@ -436,6 +445,56 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     for (const t of first.startTools ?? []) if (!own(sh.proficiencies.tools, t)) add("Missing class training", `${t} from ${first.name}`);
   }
 
+  // Base scores by the method the player chose (W5): the standard array is 15, 14, 13, 12, 10 and 8 in any order; point
+  // buy spends at most its budget on scores within its range (27 points on 8 to 15, PHB 2014 chapter 1 "Variant:
+  // Customizing Ability Scores", PHB 2024 chapter 2 "Generate Your Ability Scores"), or the table's own rules when
+  // set. Read from the character's base scores, not from the sheet.
+  {
+    const base = ABILITY_IDS.map((a) => ch.abilityBase[a]);
+    if (ch.abilityMethod === "standard" && [...base].sort((x, y) => y - x).join(",") !== "15,14,13,12,10,8")
+      add("Ability scores by method", `standard array, but the base scores are ${base.join(", ")}`);
+    if (ch.abilityMethod === "pointbuy") {
+      const pb = normalizeRules(ch.pointBuy);
+      const out = ABILITY_IDS.filter((a) => ch.abilityBase[a] < pb.min || ch.abilityBase[a] > pb.max);
+      const spent = pbSpent(pb, ch.abilityBase);
+      if (out.length)
+        add(
+          "Ability scores by method",
+          `point buy allows ${pb.min} to ${pb.max}; ${out.map((a) => `${a} ${ch.abilityBase[a]}`).join(", ")}`,
+        );
+      else if (spent > pb.budget) add("Ability scores by method", `point buy spends ${spent} of ${pb.budget} points`);
+    }
+  }
+
+  // Initiative (W5): Dexterity's modifier and the features the books say add to it, each by its own rule, never the
+  // sheet's parts. Features that give advantage instead (Feral Instinct, Weapon of Warning) add nothing.
+  {
+    const modOf = (a: AbilityId) => sh.abilities.find((x) => x.id === a)?.mod ?? 0;
+    const pb = sh.proficiency;
+    const has = (name: string, edition?: "2014" | "2024") =>
+      r.active.some((a) => norm(a.el.name) === norm(name) && (!edition || (edition === "2024") === isModern(a.el)));
+    const parts: [string, number][] = [["Dexterity", modOf("dexterity")]];
+    if (has("Alert", "2014")) parts.push(["Alert (2014)", 5]);
+    if (has("Alert", "2024")) parts.push(["Alert", pb]);
+    // A Dexterity check: half the proficiency bonus, rounded down (2014 Jack of All Trades) or up (2014 Remarkable
+    // Athlete), only on a roll that does not already include the bonus (Alert's or Hare-Trigger's), and the two do not
+    // stack (Sage Advice): the better one.
+    const fullPb = has("Alert", "2024") || has("Hare-Trigger") || has("Aura of the Sentinel");
+    const half = Math.max(
+      has("Jack of All Trades", "2014") ? Math.floor(pb / 2) : 0,
+      has("Remarkable Athlete", "2014") ? Math.ceil(pb / 2) : 0,
+    );
+    if (half && !fullPb) parts.push([has("Remarkable Athlete", "2014") ? "Remarkable Athlete" : "Jack of All Trades", half]);
+    if (has("Dread Ambusher")) parts.push(["Dread Ambusher", modOf("wisdom")]);
+    if (has("Rakish Audacity")) parts.push(["Rakish Audacity", modOf("charisma")]);
+    if (has("Tactical Wit")) parts.push(["Tactical Wit", modOf("intelligence")]);
+    if (has("Hare-Trigger")) parts.push(["Hare-Trigger", pb]);
+    if (has("Aura of the Sentinel")) parts.push(["Aura of the Sentinel", pb]);
+    const want = parts.reduce((t, [, v]) => t + v, 0);
+    if (sh.initiative !== want)
+      add("Initiative", `${sh.initiative}, the rules give ${want} (${parts.map(([n, v]) => `${n} ${v >= 0 ? "+" : ""}${v}`).join(", ")})`);
+  }
+
   // Ability scores: no higher than 20 unless a feature or an item raises the limit.
   // A score above 20 needs a named part that raises the maximum (Primal Champion, an Epic Boon) or sets the score (a
   // Belt of Giant Strength); the stat book already stops increases at the maximum, so this catches a bypass.
@@ -462,8 +521,12 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     const P = sh.proficiency;
     const plainName = (a: { el: AElement }) => lc(a.el.name).replace(/^level \d+:\s*/, "");
     const jack = r.active.some((a) => plainName(a) === "jack of all trades");
-    // What named parts add, leaving out Jack of All Trades (counted here by its own rule).
-    const parts = (...names: string[]) => names.flatMap((n) => r.stats.parts(n)).filter((p) => !/jack of all trades/i.test(p.from));
+    // The 2014 Remarkable Athlete: half the proficiency bonus, rounded up, on Strength, Dexterity and Constitution
+    // checks without it; it does not stack with Jack of All Trades (the better one counts, Sage Advice).
+    const athlete = r.active.some((a) => plainName(a) === "remarkable athlete" && !isModern(a.el));
+    // What named parts add, leaving out those two (counted here by their own rules).
+    const parts = (...names: string[]) =>
+      names.flatMap((n) => r.stats.parts(n)).filter((p) => !/jack of all trades|remarkable athlete/i.test(p.from));
     const total = (...names: string[]) => parts(...names).reduce((t, p) => t + p.value, 0);
     for (const sk of sh.skills) {
       const slug = sk.name.replace(/ /g, "-");
@@ -480,12 +543,15 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
       }
       // Training some content gives as a number, with no proficiency of its own behind it, is taken as it stands.
       const own = expert ? 2 * P : trained ? P : total(`${sk.name}:proficiency`);
-      const half = !expert && !trained && own === 0 && jack ? Math.floor(P / 2) : 0;
+      const untrained = !expert && !trained && own === 0;
+      const half = untrained
+        ? Math.max(jack ? Math.floor(P / 2) : 0, athlete && /^(strength|dexterity|constitution)$/.test(sk.ability) ? Math.ceil(P / 2) : 0)
+        : 0;
       const want = mod(sk.ability) + own + half + total(`${sk.name}:misc`, sk.name);
       if (Number.isFinite(want) && sk.bonus !== want)
         add(
           "Skill bonus",
-          `${sk.name}: ${sk.bonus}, the rules give ${want} (${sk.ability} ${mod(sk.ability)}${expert ? `, expertise ${2 * P}` : trained ? `, proficiency ${P}` : half ? `, Jack of All Trades ${half}` : own ? `, training ${own}` : ""}${parts(
+          `${sk.name}: ${sk.bonus}, the rules give ${want} (${sk.ability} ${mod(sk.ability)}${expert ? `, expertise ${2 * P}` : trained ? `, proficiency ${P}` : half ? `, half proficiency ${half}` : own ? `, training ${own}` : ""}${parts(
             `${sk.name}:misc`,
             sk.name,
           )
@@ -642,8 +708,16 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
           ) && !near(norm(f.name)),
       ),
     );
-    for (const f of missing.reduce((a, b) => (b.length < a.length ? b : a)))
-      add("Subclass feature missing", `${sub.name} ${f.level}: ${f.name}`);
+    const fewest = missing.reduce((a, b) => (b.length < a.length ? b : a));
+    for (const f of fewest) add("Subclass feature missing", `${sub.name} ${f.level}: ${f.name}`);
+    // The subclass's always-prepared spells at the levels reached, from the reference (W5): each on the character.
+    const refSub = candidates[missing.indexOf(fewest)];
+    if (refSub?.spells) {
+      const key = (n: string) => n.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
+      const had = new Set(r.spellPicks.map((p) => key(reg.get(p.id)?.name ?? "")));
+      for (const [lvl, list] of Object.entries(refSub.spells))
+        if (Number(lvl) <= x.c.level) for (const n of list) if (!had.has(key(n))) add("Subclass spell missing", `${sub.name} ${lvl}: ${n}`);
+    }
   }
 
   // Feats from level choices: one at each Ability Score Improvement level the class has reached, and the Epic Boon.

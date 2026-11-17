@@ -75,6 +75,16 @@ const EXPLAINED: Record<string, string> = {
   "choices Feat Adept of the Black Robes": FIVE_RIGHT,
   "choices Feat Adept of the Red Robes": FIVE_RIGHT,
   "choices Feat Adept of the White Robes": FIVE_RIGHT,
+  // Twinned since 2026-11-17, when the Plane Shift articles got their names.
+  "grants Race Khenra":
+    'Plane Shift: Amonkhet trains the khopesh as a longsword ("khopesh (longsword)"); Aurora\'s copy gives no longsword',
+  "numbers Race Siren": "Plane Shift: Ixalan: a base walking speed of 25 feet; Aurora's copy has 30",
+  "choices Race Aetherborn": FILED_DIFFERENTLY,
+  "choices Feat Servo Crafting": FILED_DIFFERENTLY,
+  "choices Feat Quicksmithing": "5e.tools adds an artisan's tool choice that Aurora's copy has not; book not checked",
+  // Van Richten's Ancestral Legacy: two skills at character creation, built as a Soul Forge addition (additions.ts).
+  "choices Race Dhampir": FIVE_RIGHT,
+  "choices Race Reborn": FIVE_RIGHT,
 };
 /** What 5e.tools-only characters really lack or get wrong: to close before Aurora leaves (D7), or to accept. */
 const OPEN: Record<string, string> = {};

@@ -5,7 +5,11 @@
  */
 import { describe, expect, it } from "vitest";
 import type { AElement } from "../aurora/types";
-import { checksIncludeInitiative, SKILL_NAMES } from "./mechanics";
+import { checksIncludeInitiative, proficiencyCheckGroups, SKILL_NAMES } from "./mechanics";
+import { ARegistry } from "../aurora/registry";
+import { newCharacter } from "../aurora/character";
+import { resolve } from "../aurora/engine";
+import { buildSheet } from "../aurora/sheet";
 
 const jack = (id: string, text: string): AElement =>
   ({
@@ -36,5 +40,48 @@ describe("a bonus to every skill and initiative", () => {
     );
     checksIncludeInitiative(new Map([["B", now]]));
     expect(now.rules.some((r) => r.kind === "stat" && r.name === "initiative")).toBe(false);
+  });
+  it("reaches initiative from a bonus to Dexterity checks that the content wrote on the Dexterity skills (2014 Remarkable Athlete)", () => {
+    const athlete = {
+      ...jack(
+        "C",
+        "you can add half your proficiency bonus (round up) to any Strength, Dexterity, or Constitution check you make that doesn't already use your proficiency bonus.",
+      ),
+      name: "Remarkable Athlete",
+      rules: ["athletics", "acrobatics", "sleight of hand", "stealth"].map((s) => ({
+        kind: "stat",
+        name: `${s}:misc`,
+        value: "proficiency:half:up",
+      })),
+    } as AElement;
+    checksIncludeInitiative(new Map([["C", athlete]]));
+    expect(athlete.rules.find((r) => r.kind === "stat" && r.name === "initiative")).toMatchObject({ value: "proficiency:half:up" });
+  });
+  it("half-proficiency bonuses do not stack with each other or with a full proficiency bonus on the same roll", () => {
+    const feature = (id: string, name: string, value: string) =>
+      ({ ...jack(id, "x"), name, rules: [{ kind: "stat", name: "initiative", value }] }) as AElement;
+    const byId = new Map([
+      ["J", feature("J", "Jack of All Trades", "proficiency:half")],
+      ["R", feature("R", "Remarkable Athlete", "proficiency:half:up")],
+      ["A", feature("A", "Alert", "proficiency")],
+    ]);
+    expect(proficiencyCheckGroups(byId)).toBe(3);
+    const reg = new ARegistry();
+    reg.addElements([
+      {
+        ...jack("CLS", "x"),
+        name: "Bard",
+        type: "Class",
+        rules: ["J", "R"].map((id) => ({ kind: "grant", type: "Class Feature", id })),
+      } as AElement,
+      ...[...byId.values()].filter((e) => e.id !== "A"),
+    ]);
+    reg.build();
+    // Proficiency bonus +3 at level 5: half rounded up (2) beats half rounded down (1); they do not add up to 3.
+    const base = newCharacter();
+    const sh = buildSheet(
+      resolve({ ...base, abilityBase: { ...base.abilityBase, dexterity: 10 }, classes: [{ classId: "CLS", level: 5 }] }, reg),
+    );
+    expect(sh.initiative).toBe(2);
   });
 });

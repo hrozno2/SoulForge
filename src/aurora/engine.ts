@@ -22,6 +22,8 @@ export interface SpellcastingEntry {
   ability: string;
   prepare: boolean;
   lists: string[];
+  /** The lists its cantrip choices draw on, when a widening reached spells only (see `extendLists` in resolve). */
+  cantripLists?: string[];
   /** Class element that owns this entry. */
   owner: string;
   /** Class level of the owner. */
@@ -186,6 +188,10 @@ export function makeCtx(prev: Pass | null, level: number, ch: Character, reg: AR
   // Judged for `me`: an id that reaches the character only through `me` does not count ("from elsewhere").
   const fromElsewhere = (id: string, me: string | undefined) => {
     if (!me) return true;
+    // A sub race chosen through its own species is still the character's: the species' "not with this descent" is a
+    // gate, not a loop (the Half-Elf's own two skills step aside for a Sword Coast descent's, and its +1s for a Mark's;
+    // judged "from elsewhere", every such gate failed, found 2026-11-17).
+    if (reg.get(id)?.type === "Sub Race") return true;
     const chains = prev?.via?.get(id);
     return !chains || chains.some((c) => !c.includes(me));
   };
@@ -382,6 +388,7 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
   const warnings: string[] = [];
   const spellcasting = new Map<string, SpellcastingEntry>();
   const extendLists = new Map<string, string[]>();
+  const extendCantrips = new Map<string, string[]>();
   const spellPicks: SpellPick[] = [];
   const seen = new Set<string>();
   const lvlTotal = totalLevel(ch);
@@ -411,6 +418,11 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
       const key = lc(sc.name);
       if (sc.extend) {
         extendLists.set(key, [...(extendLists.get(key) ?? []), ...sc.extendLists]);
+        // A whole class's list reaches the cantrip choices only when the feature says cantrips: the 2024 Magical
+        // Secrets widens prepared spells alone (PHB 2024, Bard 10), Divine Soul names "a sorcerer cantrip" (XGE). A
+        // list of named spells (a Ravnica guild's) is taken as written, its cantrips included.
+        const says = /cantrip/i.test(el.description);
+        extendCantrips.set(key, [...(extendCantrips.get(key) ?? []), ...sc.extendLists.filter((x) => says || reg.get(x))]);
       } else {
         spellcasting.set(key, {
           name: sc.name,
@@ -639,7 +651,11 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
 
   for (const [key, more] of extendLists) {
     const entry = spellcasting.get(key);
-    if (entry) entry.lists = [...entry.lists, ...more];
+    if (!entry) continue;
+    const base = entry.lists;
+    entry.lists = [...base, ...more];
+    const forCantrips = extendCantrips.get(key) ?? [];
+    if (forCantrips.length < more.length) entry.cantripLists = [...base, ...forCantrips];
   }
 
   const signature =
@@ -696,7 +712,9 @@ export function resolveSupports(filter: string, casting: string | undefined, pas
   if (!filter.includes("$(")) return filter;
   let entry = casting ? pass.spellcasting.get(lc(casting)) : undefined;
   if (!entry && pass.spellcasting.size === 1) entry = [...pass.spellcasting.values()][0];
-  const lists = entry ? entry.lists : [];
+  // A cantrip choice ("$(spellcasting:list), 0") draws on the lists a widening reached for cantrips.
+  const cantrip = /\$\(spellcasting:list\)\s*,\s*0\s*(,|$)/.test(filter);
+  const lists = entry ? (cantrip && entry.cantripLists) || entry.lists : [];
   const listExpr = lists.length ? `(${lists.join("||")})` : "(no-list)";
   let maxSlot = 0;
   if (entry) {

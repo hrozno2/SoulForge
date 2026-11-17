@@ -43,6 +43,16 @@ export const STAT_FIXES: Record<string, [string, string, string][]> = {
   ID_WOTC_UA_ARCHETYPE_FEATURE_GIANT_SOUL_JOTUN_RESILIENCE: [["hp", "level", "level:sorcerer"]],
 };
 
+/**
+ * Statistics an element states and does not add where the rules put them. Aura of the Sentinel (Oath of the Watchers,
+ * Tasha's): "you all gain a bonus to initiative equal to your proficiency bonus"; Aurora's copy keeps the number for the
+ * text only ("aura of the sentinel:initiative"), and the paladin's initiative lacked it (found 2026-11-17 by the rules
+ * check's own initiative).
+ */
+export const STATS_ADD: Record<string, { name: string; value: string; bonus?: string }[]> = {
+  ID_WOTC_TCOE_ARCHETYPE_FEATURE_OATH_OF_THE_WATCHERS_AURA_OF_THE_SENTINEL: [{ name: "initiative", value: "proficiency" }],
+};
+
 export const SPELL_LIST_ADD: Record<string, string[]> = {
   // Tasha's artificer spell list includes Frostbite (Xanathar's); the other Xanathar's cantrips already have it.
   ID_XGTE_SPELL_FROSTBITE: ["Artificer"],
@@ -126,6 +136,8 @@ export function applyContentFixes(el: AElement): void {
     el.rules = el.rules.map((r) => (r.kind === "stat" && r.name === name && r.value === from ? { ...r, value: to } : r));
   for (const [from, to] of GRANTS_REPLACE[el.id] ?? [])
     el.rules = el.rules.map((r) => (r.kind === "grant" && r.id === from ? { ...r, id: to } : r));
+  for (const st of STATS_ADD[el.id] ?? [])
+    if (!el.rules.some((r) => r.kind === "stat" && r.name === st.name)) el.rules = [...el.rules, { kind: "stat", ...st }];
   for (const g of GRANTS_ADD[el.id] ?? [])
     if (!el.rules.some((r) => r.kind === "grant" && r.id === g.id)) el.rules = [...el.rules, { kind: "grant", ...g }];
   const add = SPELL_LIST_ADD[el.id];

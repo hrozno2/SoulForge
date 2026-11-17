@@ -156,17 +156,42 @@ export function formStats(r: Resolved, beast: AElement, kind: FormKind): FormBlo
     // Aurora's companion statistics are the companion's own numbers worked out with the character's (the Steel
     // Defender's "2 + your Intelligence modifier + five times your artificer level"), not bonuses on top. They share
     // one name, so they are this companion's only when it is the character's only one; otherwise the stat block.
+    // A companion whose own rules set none (5e.tools' creatures, the Echo) takes them as bonuses on its stat block: the
+    // 2014 Improved Defender's +2 made a 5e.tools Steel Defender's AC 2 (found 2026-11-17).
     const only = r.active.filter((a) => a.el.type === "Companion").map((a) => a.el.id);
+    const owns = (n: string) => beast.rules.some((x) => x.kind === "stat" && x.name.toLowerCase() === n);
     if (only.length === 1 && only[0] === beast.id) {
       const cac = r.stats.get("companion:ac"),
         chp = r.stats.get("companion:hp:max");
-      if (cac > 0 && cac !== ac) {
+      if (!owns("companion:ac")) {
+        if (cac) {
+          ac += cac;
+          notes.push(`AC ${cac > 0 ? "+" : ""}${cac} from your features.`);
+        }
+      } else if (cac > 0 && cac !== ac) {
         ac = cac;
         notes.push("AC worked out with your statistics.");
       }
-      if (chp > 0) {
+      if (!owns("companion:hp:max")) {
+        if (chp) hp += chp;
+      } else if (chp > 0) {
         if (chp !== hp) notes.push("Hit points worked out with your level and statistics.");
         hp = chp;
+      }
+    } else if (only.includes(beast.id)) {
+      // Several companions share the statistics: a bonus is this one's when the feature giving it names it (Improved
+      // Defender's "+2 bonus to Armor Class" for the Steel Defender beside a Homunculus Servant).
+      const named = new RegExp(`\\b${beast.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+      const bonus = r.stats
+        .contributions("companion:ac")
+        .filter(
+          (c) =>
+            c.bonus !== "base" && r.active.some((a) => a.el.type !== "Companion" && a.el.name === c.from && named.test(a.el.description)),
+        )
+        .reduce((t, c) => t + (Number(c.value) || 0), 0);
+      if (bonus) {
+        ac += bonus;
+        notes.push(`AC ${bonus > 0 ? "+" : ""}${bonus} from your features.`);
       }
     }
   }

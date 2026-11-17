@@ -240,15 +240,23 @@ export const AUTO_UPDATE_MS = 60 * 60 * 1000;
 const trimSlash = (u: string) => u.replace(/\/+$/, "");
 
 /**
- * A bestiary file cut down to its beasts (Wild Shape's forms, companions): the rest of the bestiary is for the DM and
- * would only fill the cache. Copies ("_copy") stay, since what they copy decides what they are.
+ * A bestiary file cut down to its beasts (Wild Shape's forms, companions) and the creatures a class feature or spell
+ * calls (5e.tools' "summonedByClass" and "summonedBySpell": the Battle Smith's Steel Defender, the Homunculus Servant,
+ * the Wildfire Spirit, the Drake Companion, the summon spells' spirits): the rest of the bestiary is for the DM and
+ * would only fill the cache. Copies ("_copy") stay, since what they copy decides what they are. Before 2026-11-17 only
+ * beasts were kept, and a Battle Smith's companion card had no creature to show.
  */
 export function beastsOnly(text: string): string {
   try {
-    const json = JSON.parse(text) as { monster?: { type?: unknown; _copy?: unknown }[] };
-    const isBeast = (m: { type?: unknown; _copy?: unknown }) =>
-      !!m._copy || /^beast$/i.test(String(typeof m.type === "object" && m.type ? (m.type as { type?: unknown }).type : m.type));
-    return JSON.stringify({ monster: (json.monster ?? []).filter(isBeast) });
+    const json = JSON.parse(text) as {
+      monster?: { type?: unknown; _copy?: unknown; summonedByClass?: unknown; summonedBySpell?: unknown }[];
+    };
+    const keep = (m: { type?: unknown; _copy?: unknown; summonedByClass?: unknown; summonedBySpell?: unknown }) =>
+      !!m._copy ||
+      !!m.summonedByClass ||
+      !!m.summonedBySpell ||
+      /^beast$/i.test(String(typeof m.type === "object" && m.type ? (m.type as { type?: unknown }).type : m.type));
+    return JSON.stringify({ monster: (json.monster ?? []).filter(keep) });
   } catch {
     return text;
   }
@@ -339,8 +347,9 @@ export async function storeFiveTools(name: string, files: Map<string, string>, b
  * of an older format is then out of date, and the app asks the user to import it again.
  *   2: magic variants, lore (fluff), bestiary beasts and Plutonium's Foundry files (2026-10-22)
  *   3: adventures.json, the adventures' names and dates (2026-11-17)
+ *   4: the bestiary keeps the creatures class features and spells call, not beasts alone (2026-11-17)
  */
-export const FIVETOOLS_IMPORT_FORMAT = 3;
+export const FIVETOOLS_IMPORT_FORMAT = 4;
 
 /**
  * Full 5e.tools imports made by an older importer: they lack files this version reads. A source without a stamp

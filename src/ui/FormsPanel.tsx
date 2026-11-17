@@ -136,10 +136,14 @@ export function FormsPanel({
   };
   const preview = useMemo(() => blockFor(pickedId, kind), [r, pickedId, kind]); // eslint-disable-line react-hooks/exhaustive-deps
   const active = useMemo(() => (ws ? blockFor(ws.creatureId, ws.kind) : undefined), [r, ws]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hpOf = (c: Tracked) => ({
-    max: statBlockHp(c.el?.setters.hp?.value),
-    cur: trackedHp(ch.play.companionHp, c.key, statBlockHp(c.el?.setters.hp?.value)),
-  });
+  // A companion's hit points worked out for this character (the Steel Defender's "2 + your Intelligence modifier +
+  // five times your artificer level"), not the first number of that formula: the tracker said 2 / 2 beside a card
+  // that said 76.
+  const maxHp = (c: Tracked) => {
+    const worked = r && c.el ? formStats(r, c.el, "companion").hp : 0;
+    return worked > 0 ? worked : statBlockHp(c.el?.setters.hp?.value);
+  };
+  const hpOf = (c: Tracked) => ({ max: maxHp(c), cur: trackedHp(ch.play.companionHp, c.key, maxHp(c)) });
   const setHp = (key: string, v: number) => patch({ companionHp: { ...(ch.play.companionHp ?? {}), [key]: v } });
 
   return (

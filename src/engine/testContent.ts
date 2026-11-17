@@ -35,7 +35,11 @@ export function loadTestContent(cache: string): ARegistry {
   if (existsSync(dir))
     for (const f of walkDir(dir, ".json")) {
       const rel = relative(dir, f);
-      if (!/index\.json$/.test(rel) && !rel.startsWith("bestiary")) json[rel] = JSON.parse(readFileSync(f, "utf8"));
+      // The bestiary as the app keeps it (beasts and summoned creatures), so a 2024 Battle Smith finds its own Steel
+      // Defender with Aurora loaded too; left out, it took Aurora's 2014 one.
+      if (/index\.json$/.test(rel) || /^bestiary\/(?:fluff|foundry|legendary)/.test(rel)) continue;
+      const text = readFileSync(f, "utf8");
+      json[rel] = JSON.parse(rel.startsWith("bestiary/") ? beastsOnly(text) : text);
     }
   reg.addElements(convertFiveTools({ files: json as never }));
   reg.build();

@@ -371,7 +371,18 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const versions = open.filter((o) => o.type === kind && nameKey(o.name).startsWith(`${n} `) && /\)$/.test(o.name));
     if (kind === "Feat" && versions.length > 1) {
       const own = new Set(pool.filter((q) => q.ownerName === n).map((q) => nameKey(q.name)));
-      return (versions.find((o) => own.has(nameKey(/\(([^)]+)\)$/.exec(o.name)?.[1] ?? ""))) ?? versions[0]).id;
+      const named = versions.find((o) => own.has(nameKey(/\(([^)]+)\)$/.exec(o.name)?.[1] ?? "")));
+      if (named) return named.id;
+      // Else the version whose own choices offer the feat's old picks: the 2014 Spell Sniper's cantrip Primal Savagery is
+      // the Druid version's (Aurora's copy asks no class; the first version, the Bard's, did not offer it).
+      const offers = (o: (typeof open)[number]) =>
+        o.rules
+          .filter((r) => r.kind === "select")
+          .reduce((k, r) => {
+            const ids = new Set(to.find(r.type, String(r.supports ?? "")).map((e) => nameKey(e.name)));
+            return k + [...own].filter((x) => ids.has(x)).length;
+          }, 0);
+      return ([...versions].sort((x, y) => offers(y) - offers(x))[0] ?? versions[0]).id;
     }
     // Near names never fill a choice of increases: those are set to the old scores below ("Resilient (Strength)" is
     // the saving throw, not Resilient's "+1 Strength").
@@ -500,7 +511,17 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       ) {
         const level = Number(sp.setters.level?.value ?? 0);
         const sameKind = (level === 0) === /cantrip/i.test(pl.s.rule.name);
-        if (level > 0 && sameKind && level <= maxLevel(p.casting) && fits({ ...pl.s, options: [...pl.s.options, sp] } as Slot, p))
+        // Only the level is waived, nothing else the choice asks: a choice of one school (the 2024 Evoker's Evocation
+        // Savant) offers no spell of the pick's school, and it took Enlarge/Reduce and Arcane Vigor from the spellbook.
+        const school = (e: { setters: Record<string, { value: string } | undefined> }) => (e.setters.school?.value ?? "").toLowerCase();
+        const schoolOk = !school(sp) || pl.s.options.some((o) => o.type === "Spell" && school(o) === school(sp));
+        if (
+          level > 0 &&
+          sameKind &&
+          schoolOk &&
+          level <= maxLevel(p.casting) &&
+          fits({ ...pl.s, options: [...pl.s.options, sp] } as Slot, p)
+        )
           return { rank: 3, id: p.id };
       }
       const ok = fits(pl.s, p);
@@ -519,17 +540,22 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     // it: placed at once, the Tome's Magic Stone took the Warlock's own cantrip place before the Tome's choice existed.
     // The owner by name and kind: Magic Initiate's list "Druid" is not active because the Druid class is.
     const activeNames = new Set(r.active.map((a) => `${family(a.el.type)}|${nameKey(a.el.name)}`));
+    // And a pick inside a subclass or sub race waits while one of those is still to place: the 2024 Evoker's
+    // Evocation Savant spells went to the spellbook in the pass that placed the Evoker, before its own choice existed.
+    const structural = (q: Pick) => /^(Archetype|Sub Race)$/.test(q.ruleType ?? "");
     const waiting = (p: Pick) =>
       waitForOwner &&
-      !activeNames.has(`${family(p.ownerType)}|${p.ownerName}`) &&
-      picks.some((q) => q !== p && nameKey(q.name) === p.ownerName);
+      ((!activeNames.has(`${family(p.ownerType)}|${p.ownerName}`) && picks.some((q) => q !== p && nameKey(q.name) === p.ownerName)) ||
+        (!structural(p) && family(p.ownerType) !== "class" && picks.some((q) => q !== p && structural(q))));
     const edges = picks.map((p) =>
       waiting(p)
         ? []
         : places
             .map((pl, j) => ({ j, ...(rank(pl, p) ?? { rank: 9, id: "" }) }))
             .filter((e) => e.id && !(next.selections[places[e.j].s.key] ?? []).includes(e.id))
-            .sort((x, y) => x.rank - y.rank),
+            // Equal rank: the narrowest choice first (the 2024 Evoker's Evocation Savant before the spellbook, which
+            // offers the same spell among many; the spellbook took Snilloc's Snowball Swarm and pushed Arcane Lock out).
+            .sort((x, y) => x.rank - y.rank || places[x.j].s.options.length - places[y.j].s.options.length),
     );
     const owner = new Array<number>(places.length).fill(-1);
     const take = (i: number, seen: Set<number>): boolean => {
@@ -825,7 +851,9 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       // still empty takes it: the alternative was the auto-fill inventing another feat there while this one became a
       // manual addition.
       if (el.type === "Feat" && !own && !lvl) return x.options.some((o) => o.id === el.id && !x.blocked.has(o.id)) ? 5 : -1;
-      return own && lvl ? 0 : own ? 1 : lvl ? 2 : 3;
+      // A choice that offers it before one that does not (where the engine keeps it marked against the rules).
+      const offered = x.options.some((o) => o.id === el.id) ? 0 : 10;
+      return offered + (own && lvl ? 0 : own ? 1 : lvl ? 2 : 3);
     };
     for (let i = 0; i < picks.length; i++) {
       const p = picks[i];
@@ -850,6 +878,31 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       picks.splice(i--, 1);
     }
   }
+  // A feat whose increase and saving throw are one ability (the 2014 Resilient: "Increase the chosen ability score by
+  // 1 ... You gain proficiency in saving throws using the chosen ability"): Aurora picks it once ("Resilient
+  // (Wisdom)"), 5e.tools asks twice; the move placed the increase and left the saving throw open. It is the player's
+  // own pick, so kept as built even where it repeats a save the class gives.
+  const chosenSaves: string[] = [];
+  {
+    const r = resolve(next, to);
+    for (const save of r.slots) {
+      if (save.rule.type !== "Proficiency" || !/saving throw/i.test(save.rule.name)) continue;
+      // Placed already (by the bracket's name): still the player's own pick.
+      const have = next.selections[save.key] ?? [];
+      if (have.length) {
+        chosenSaves.push(...have.map((id) => nameKey(to.get(id)?.name ?? id)));
+        continue;
+      }
+      const inc = r.slots.find((x) => x.owner.id === save.owner.id && x.rule.type === "Ability Score Improvement" && x.chosen.length === 1);
+      const ability = inc && /(strength|dexterity|constitution|intelligence|wisdom|charisma)/i.exec(to.get(inc.chosen[0])?.name ?? "")?.[1];
+      if (!ability || !/the chosen ability/i.test(save.owner.description)) continue;
+      const opt = save.options.find((o) => new RegExp(`\\b${ability}\\b`, "i").test(o.name));
+      if (opt) {
+        next.selections[save.key] = [opt.id];
+        chosenSaves.push(nameKey(opt.name));
+      }
+    }
+  }
   const beforeFill = resolve(next, to);
   const filledCh0 = autoFill(next, to);
   // The player's own picks stay, even those 5e.tools' rules rule out (kept and listed): only open choices, and
@@ -858,8 +911,15 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // What the player had left open stays open: a choice the old character had not made (two spells not yet learned, a
   // skill not chosen) is the player's to make, not the auto-fill's. Counted by kind: a spell choice by its casting,
   // anything else by its owner's name (the two providers' choices are not one to one).
+  // A language by its kind alone: the two providers name the owner differently (Aurora's Favored Enemy asks the 6th-level
+  // language, 5e.tools' "Favored Enemy and Natural Explorer improvements"), and a "Minion" with no 5e.tools version had
+  // its place filled with another language (fresh 52, 2026-11-17).
   const kindOf = (x: Slot) =>
-    x.rule.type === "Spell" ? `Spell|${(x.rule.spellcasting ?? "").toLowerCase()}` : `${x.rule.type}|${nameKey(x.owner.name)}`;
+    x.rule.type === "Spell"
+      ? `Spell|${(x.rule.spellcasting ?? "").toLowerCase()}`
+      : x.rule.type === "Language"
+        ? "Language"
+        : `${x.rule.type}|${nameKey(x.owner.name)}`;
   const leftOpen = new Map<string, number>();
   for (const x of old.slots)
     if (!x.rule.optional && x.rule.type !== "List" && new Set(x.chosen).size < x.rule.number)
@@ -868,7 +928,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // open too: filled, the character gained a skill it never had in place of the tool it lost.
   for (const p of picks) {
     if (beforeFill.ids.has(p.id)) continue;
-    const k = p.ruleType === "Spell" ? `Spell|${(p.casting ?? "").toLowerCase()}` : `${p.ruleType}|${p.ownerName}`;
+    const k =
+      p.ruleType === "Spell"
+        ? `Spell|${(p.casting ?? "").toLowerCase()}`
+        : p.ruleType === "Language"
+          ? "Language"
+          : `${p.ruleType}|${p.ownerName}`;
     leftOpen.set(k, (leftOpen.get(k) ?? 0) + 1);
   }
   // How often the original picked each thing, by name: twice means the player's own repeat (Aurora allowed the same
@@ -884,7 +949,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     }
   // A repeat the original had already, whatever its other source: a Monk's Stealth when the 2014 Urchin grants it too
   // (one pick and a grant, so the count above is one). The player built it so; replaced, the sheet gained a skill.
-  const oldRepeats = new Set<string>();
+  const oldRepeats = new Set<string>(chosenSaves);
   for (const s of old.slots)
     for (const msg of repeatedPicks(old, s)) {
       const m = /^[^:]*: (.+?) \(already /.exec(msg);
@@ -959,5 +1024,16 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     .filter((x) => !/^(Race|Sub Race|Background|Class|Archetype)$/.test(x.type))
     .map((x) => ({ name: x.name, type: x.type, text: stripHtml(from.get(x.id)?.description ?? "").trim() }))
     .filter((x) => x.text);
+  // A pick with no 5e.tools version and no place (the "Minion" language of a Ranger's favored enemy): kept by its id, as
+  // a manual addition, and its text in the note, like other content 5e.tools does not have (section 4, rule 1).
+  for (const u of unplaced) {
+    const old = from.get(u.id);
+    // Only what 5e.tools has under no name of that kind (a Feat or a companion it holds in another shape is placed
+    // elsewhere or explained, not kept twice).
+    if (to.get(u.id) || !old || !/^(Spell|Language|Proficiency)$/.test(old.type) || textKept.some((x) => x.name === old.name)) continue;
+    if (to.ofType(old.type).some((e) => nameKey(e.name) === nameKey(old.name))) continue;
+    if (!next.extras.includes(u.id)) next.extras = [...next.extras, u.id];
+    textKept.push({ name: old.name, type: old.type, text: stripHtml(old.description ?? "").trim() || old.name });
+  }
   return { ch: next, moved, noTwin: [...noTwin.values()], unplaced, open, againstRules, filled, kept, decisions, customItems, textKept };
 }

@@ -97,7 +97,10 @@ choice and inventory, extras and prepared ids not in the registry. Show them whe
 and in the repair report ("3 earlier choices have no place now: ..."), with a button to clear them. E1 of the
 audit (upgrade legacy keys once, at the door) belongs here.
 
-**W3. Every content stat is proved by its effect (D1, L2).** For each stat name any element writes, a test adds a
+**W3. Every content stat is proved by its effect (D1, L2).** Measured since 2026-11-17 (`RULES_TIER=stateffect`,
+src/engine/statEffect.test.ts): each statistic a random character's elements write is raised by 3, and a flag taken
+to 0; a name that changes no sheet or companion card is a finding unless its context is decided there. First run: the
+Monk's "ki:dc" was never shown and every sense's range but darkvision's was ignored (both fixed). The original plan: For each stat name any element writes, a test adds a
 contribution and expects some sheet value, check finding or play counter to change. A name with no effect fails.
 This replaces the dictionary's "read by" column, which is a claim, with a measurement. The same for converter
 fields: a field marked "read" must change the element built from it (mutate the field, expect a different
@@ -124,6 +127,14 @@ never from the sheet's own parts:
 - starting equipment within what the class and background give, when taken from them.
 Open from the audit and folded in here: the Psi Warrior's and Soulknife's energy dice.
 
+Done 2026-11-17 (second half): "Ability scores by method" (standard array, point buy within its range and budget,
+from the base scores), "Initiative" (Dexterity plus each feature the books name, worked out by its own rule: Alert,
+2014 Jack of All Trades and Remarkable Athlete, Dread Ambusher, Rakish Audacity, Tactical Wit, Hare-Trigger, Aura of
+the Sentinel) and "Subclass spell missing" (the reference keeps each subclass's always-prepared spells by level). The
+initiative check's first run found the 2014 Remarkable Athlete never reaching initiative. Still open here: increases
+by source and count, languages, tools and skills by count per source, species and background features present,
+starting equipment.
+
 **W6. Concepts everywhere two providers can meet (L2).** Training, languages, senses and sizes are compared by
 concept in the requirement context; the sheet's weapon line now does too. Sweep sheet.ts, rulesCheck.ts and
 PlayTab for every `r.ids.has(` on a proficiency, save, skill or language id and route it through one
@@ -146,7 +157,13 @@ list like parity's and a gate on the unexplained rest. Importer faults it showed
 chainmail" kept as a custom item instead of Chain Mail +1; a worn Cloak or Ring of Protection not attuned, so the
 armor class is one short; an attack line for "Martial Arts" not matched to Unarmed Strike.
 
-**W10. Every choice and gift a text states is on the element (D1, L3).** Books newer than Plutonium's side data
+**W10. Every choice and gift a text states is on the element (D1, L3).** Done 2026-11-17: the 52 candidates were
+read one by one. Real gaps are built as "Soul Forge additions" (src/aurora/additions.ts, a source of its own in the
+books list): the Sword Coast half-elf descents (one variant feature, not the skills and every feature together), the
+Dhampir's and Reborn's two skills, Khoravar, Vahadar, Githyanki, Knowledge Domain (Amonkhet), Knightly Envoy,
+Cavalier and Samurai, the Expert sidekick's Sharp Mind, two playtest Mystic orders, the Echo Knight's echo as a
+companion, and a species' own language its text names (Kor, Quori). The rest are decided in proseLint.test.ts (choices
+made in play, widened lists, sibling grants); the lint is now a gate (`RULES_TIER=prose`). The original plan: Books newer than Plutonium's side data
 state their choices in prose alone, and the converter then gives nothing: found 2026-11-12 in Heroes of Faerûn
 (Knowledge Domain's two skills with expertise, Banneret, Bladesinger, Oath of the Noble Genies) and in the 2024
 Player's Handbook itself (Lessons of the First Ones gave no Origin feat: its `featProgression` was not read on an

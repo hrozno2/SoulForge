@@ -691,7 +691,8 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
  */
 function featureValues(el: AElement, r: Resolved): string {
   const n = canonicalName(el.name);
-  if (n.length < 3) return "";
+  // Two letters only as the whole owner ("ki:dc", the Monk's Ki save DC, was never shown); one is too short to mean it.
+  if (n.length < 2) return "";
   const out: string[] = [];
   for (const name of r.stats.names()) {
     const parts = name.split(":");
@@ -699,7 +700,7 @@ function featureValues(el: AElement, r: Resolved): string {
     if (!["dc", "damage", "attack"].includes(last) || parts.length < 2) continue;
     const owner = parts.slice(0, -1);
     // The feature's own name, alone or after its class ("barbarian rage" for Rage).
-    if (!owner.some((p) => p === n || p.endsWith(` ${n}`))) continue;
+    if (!owner.some((p) => p === n || (n.length > 2 && p.endsWith(` ${n}`)))) continue;
     if (/^(melee|ranged|unarmed|natural|spellcasting|attack|damage)$/.test(owner[owner.length - 1])) continue;
     const v = r.stats.get(name);
     if (!v) continue;
@@ -895,11 +896,16 @@ export function buildSheet(r: Resolved): SheetData {
     size: sizeEl?.el.name,
     vision: r.active
       .filter((a) => a.el.type === "Vision")
-      .map((a) =>
-        /darkvision/i.test(a.el.name) && r.stats.get("darkvision:range") > 0
-          ? `Darkvision ${r.stats.get("darkvision:range")} ft`
-          : a.el.name,
-      ),
+      .map((a) => {
+        // Every sense's range from its statistic, so a feature that extends it shows (W3: only darkvision's was read,
+        // and "blindsight:range" changed nothing).
+        const sense = /^(darkvision|blindsight|tremorsense|truesight)\b/i.exec(a.el.name)?.[1];
+        // Without a statistic, the range its name gives ("Blindsight (10 ft.)"), so both providers' copies read alike.
+        const ft = sense
+          ? r.stats.get(`${sense.toLowerCase()}:range`) || Number(/\((\d+) ?(?:ft|feet)\.?\)/i.exec(a.el.name)?.[1] ?? 0)
+          : 0;
+        return sense && ft > 0 ? `${sense.charAt(0).toUpperCase()}${sense.slice(1).toLowerCase()} ${ft} ft` : a.el.name;
+      }),
     lists: r.slots
       .filter((x) => x.listItems && x.chosen.length)
       .map((x) => ({

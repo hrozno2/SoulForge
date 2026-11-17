@@ -1,6 +1,6 @@
 # Soul Forge: where the engine stands
 
-Updated 2026-11-17 (v0.26.2 released at the start of the day). Every number here was measured on this date unless
+Updated 2026-11-17, evening (v0.26.2 released at the start of the day). Every number here was measured on this date unless
 marked otherwise, and each comes from a command anyone can run again (last column of the scoreboard). Update this page
 at the end of each working session, so the trend shows.
 
@@ -10,40 +10,34 @@ Everything still to do, in one list. Items move off it when done; nothing open l
 
 **Waiting on you**
 1. Two weeks of testing Soul Forge Test with "5e.tools only" switched on (stage D5's exit). Nothing else replaces it.
-2. When to drop Aurora from the release app (D7): after 1, and when the move is ready (below).
-3. One spell in your library (Fartister's Guiding Hand) is from a 2017 Unearthed Arcana article 5e.tools does not
-   carry. The move keeps it in the file and writes its text into the move note; to keep it on the sheet too, it would
-   become a homebrew spell. Your call whether that is worth building.
+2. When to drop Aurora from the release app (D7): after 1.
+3. Fartister's Guiding Hand (a 2017 Unearthed Arcana spell 5e.tools does not carry): kept in the file, its text in
+   the move note, and the moved character now says "content 5e.tools does not have". Homebrew it, or leave it?
+4. Your characters the rules check flags (they were like this before; the app now says so on Build):
+   - Talaan Istodaewl, Indigo Bones, Waldrom Brahms (and Drago in the production app): a 2024 species with a 2014
+     background and its "2024 rules" option not taken, so no ability score increases at all.
+   - Carl Sneakers: Shape Water and Spare the Dying as Bard cantrips (not on the Bard list; Aurora's data let Magical
+     Secrets widen the cantrips, fixed today).
+   - Xarthian: more held than two hands can hold.
 
-**Is the move ready? Not yet.** Where it stands:
-- 60 characters made fresh on Aurora content: 0 change.
-- Your library (26 characters, today's backup): 0 change apart from Guiding Hand above; 2 repeats you had (Stealth
-  twice, Arcana twice) are kept and offered as a decision on Build.
-- The 400 saved test characters: 44 change (96 this morning). Of those, 17 were legal before the move and still change;
-  the rest were already against the rules (older builds made them). Most fixes today were faults in the 5e.tools
-  content itself (Scout, Defense, Dual Wielder, Jack of All Trades, Harengon, Tortle, Ritual Caster), so each helps
-  every character, not only moved ones. What is left: old Unearthed Arcana spells and languages 5e.tools does not
-  carry (Sudden Awakening, Diminishing Repose, Puppet, Ziklight), a few score matches on multiclass builds (Psi
-  Warrior, a Sorcerer 16, an Evoker), and 4 synthetic characters where the move itself leaves a finding (a repeat it
-  filled, an open Resilient save, a Sorcerer 20 one cantrip short).
-- Ready means: those explained or fixed; the 400's accepted counts are locked at today's low (44 changed, 4 findings
-  the move brought) so nothing slips back. Then D7 is your call.
+**Is the move ready?** Close. Measured tonight:
+- 60 characters made fresh on Aurora content: 1 changes (a Ranger's "Minion" language 5e.tools lacks; kept with its
+  text, like Guiding Hand).
+- Your libraries, test app (26) and production app (25): unchanged apart from Guiding Hand.
+- The 400 saved test characters: 42 change (96 yesterday morning); 4 carry a finding the move brings, all on synthetic
+  characters whose originals were already against the rules (a doubled cantrip, a 2014 Resilient on a 2024 Paladin,
+  a Sea Elf's Draconic, a Druid/Wizard's doubled Guidance).
 
-**The engine, in this order**
-1. The 17 saved characters above (D6).
-2. The rules check works out ability scores by source by itself (W5's second half; feature uses are done today and
-   found two real faults on their first run).
-3. Prove every content statistic does something (W3); the 52 feature texts that promise more than their rules give
-   (W10); concepts compared everywhere two providers meet (W6); each rules decision's source written beside it (W7);
-   every combination pairwise (W8).
+**The engine**
+1. W5's last parts: increases by source and count, languages, tools and skills by count per source, species and
+   background features present, starting equipment.
+2. W6 (concepts everywhere two providers meet), W8 (every combination pairwise), W2 (picks with no place shown).
+3. The statistic-effect measurement on combined content (Aurora with 5e.tools) lists 50 names Aurora's own copies
+   write and nothing reads (template numbers such as "aura of protection:range", companion statistics). The 5e.tools
+   and SRD sets are clean, so this matters only while Aurora ships.
 
 **Interface**
 1. Linux drawing lag: needs a measurement on your machine (CachyOS, NVIDIA?) before anything can be changed.
-2. Stat blocks for the Echo and the Steel Defender in Play: the content has no creature for them.
-
-Done today and off the list: the linter (oxlint, type aware) and formatting in CI; one running copy of the app and the
-two-tabs guard (S8); light themes (cards, windows, icons, the bag); the card windows' last parts (C6.3 was already
-built: Done button, shrink, focus, drag into the bag, every "i" in a window).
 
 ## The verdict
 
@@ -71,8 +65,8 @@ loss into a number that can only go down.
 | Every subclass works | Coverage run: every subclass, species, background and feat built and checked (5e.tools) | clean (2026-11-12) | clean on every set | `RULES_TIER=full` coverage |
 | 5e.tools stands without Aurora | Same sheet with and without Aurora (parity effect) | 500/500 | 500/500 | `RULES_TIER=parity-effect` |
 | Nothing dropped engine to paper | Characters whose every feature, spell, training and item reaches the sheet and the print data | 5e.tools 300/300, SRD 300/300, both 297/300 | 100% everywhere | `RULES_TIER=conserve`; 80 SRD characters in every CI run |
-| Nothing dropped data to engine | Features whose text promises a choice or gift no rule gives | 52 candidates of 4,023 (to triage) | 0 unexplained | `RULES_TIER=prose` |
-| Old characters move intact | Characters moved from Aurora to 5e.tools ids: fresh / your library / 400 saved | 0 of 60 change; 0 of 26 change (1 old UA spell kept as text); 44 of 400 change (96 this morning), 17 of them legal before the move | 0 unexplained changes | `RULES_TIER=migrate MIGRATE_FRESH=60`; `MIGRATE_LIBRARY=<backup>`; `RULES_TIER=migrate` |
+| Nothing dropped data to engine | Features whose text promises a choice or gift no rule gives | 0 unexplained of 4,023 (gate); 15 gaps built as Soul Forge additions | 0 unexplained | `RULES_TIER=prose` |
+| Old characters move intact | Characters moved from Aurora to 5e.tools ids: fresh / your libraries / 400 saved | 1 of 60 (a language 5e.tools lacks, kept as text); test 26 and production 25: 0 apart from Guiding Hand; 42 of 400 | 0 unexplained changes | `RULES_TIER=migrate MIGRATE_FRESH=60`; `MIGRATE_LIBRARY=<backup>`; `RULES_TIER=migrate` |
 | Outside check | fastcharacter.com characters imported and compared | 92 characters; the differences found to be ours are fixed; the rest are the site's own slips, not yet in an explained list | gate on the unexplained | `RULES_TIER=fastchar` |
 | Tests | Unit tests / end-to-end tests | 391 / 59, all passing; CI green (an end-to-end test that failed three times on GitHub is fixed: a card covered what it clicked) | | `npm run gates` |
 
@@ -85,7 +79,7 @@ loss into a number that can only go down.
 | A. Engine fixes and buildout | A1 wrong results on real characters (10), A2 missing engine features (13), A3 audits (3), A4 Unearthed Arcana | **Done** (A1 to A4, all 26 items). A0.1, cross-checking every engine area with Plutonium, is a standing rule, not an item to finish |
 | B. Tests | Unit tests, the full check, Chris's own data and characters, then a release | **Done as a practice**: every change runs the gates; full checks run before releases. Chris's library went through the move on 17 November (clean apart from one UA spell) |
 | C1 to C4. Builder, navigation, backpack and shop, floating cards and the Bag of Holding | | **Done** |
-| C5. Other interface work | 15 items | 12 done. Open: C5.3 stat blocks for the Echo and the Steel Defender (the rest done), C5.4 and C5.6 Linux drawing lag (needs a measurement on Chris's machine) |
+| C5. Other interface work | 15 items | 13 done (C5.3 on 17 November: the Echo and every summoned creature, worked-out numbers in Play). Open: C5.4 and C5.6 Linux drawing lag (needs a measurement on Chris's machine) |
 | C6. Finish (Chris's test of the release, 2026-10-28) | 7 items | **Done** (C6.3 checked 17 November: every part built) |
 | C7. Chris's test of v0.23.0 | 20 items | **Done** |
 | D0 to D4. Licenses, two apps, free rules bundled, SRD API check, 5e.tools standing on its own | | **Done** (parity 500 of 500) |
@@ -105,14 +99,14 @@ two-tabs guard). Still open from the audit: stricter types, the engine-shape ite
 |---|---|---|
 | W1 | A pick its choice does not offer is a finding | **Done** (and fixed for spellbooks the same day) |
 | W2 | Picks with no place now are shown, not ignored | Open |
-| W3 | Every content statistic proved by its effect | Open. Would have caught the scores-past-20 bug |
+| W3 | Every content statistic proved by its effect | **Measured and gated** on 5e.tools and SRD (`RULES_TIER=stateffect`): 0 without effect; found the Ki DC and sense ranges unread. Combined content: 50 Aurora-only names open |
 | W4 | Nothing dropped from engine to sheet to print | **Done**: measurement, CI gate, and the fix it found (invocations, metamagic, maneuvers missing from every sheet on 5e.tools content) |
-| W5 | The rules check judges everything itself | **Partly**: skills, saves, weapon attack and damage, training, slots, hit points, AC, class features, and since 17 November feature uses by level from the class table (it found the 2024 Second Wind and Wild Shape stuck at 2). Open: ability scores by source, initiative, speed, languages and tools by count, species and background features present |
+| W5 | The rules check judges everything itself | **Mostly**: skills, saves, weapon attack and damage, training, slots, hit points, AC, class features, feature uses by level, and since the evening of 17 November initiative, base scores by method and subclass spells (it found Remarkable Athlete missing from initiative, half-proficiency bonuses stacking, and the Watchers' aura). Open: increases by source, languages and tools by count, species and background features present |
 | W6 | Two providers compared by concept everywhere | **Partly**: requirements and weapon training. The rest of the sweep is open |
-| W7 | Every rules decision in the code names its source | Open. Three wrong readings this week were undocumented decisions |
+| W7 | Every rules decision in the code names its source | **Started**: docs/RULES-DECISIONS.md, 14 decisions with book, place and test; older ones as the sweep reaches them |
 | W8 | Every combination, pairwise | Open (the coverage run reaches every subclass, species, background and feat once) |
 | W9 | Outside references with an explained list | **Partly**: FastCharacter runs; no explained list yet |
-| W10 | A feature's text promises no more than its rules give | **Measured**: 52 candidates, triage open |
+| W10 | A feature's text promises no more than its rules give | **Done and gated**: every candidate read; real gaps built as Soul Forge additions (src/aurora/additions.ts), the rest decided with reasons |
 
 ### 5e.tools plan (PLAN-5ETOOLS.md)
 
@@ -132,6 +126,39 @@ two-tabs guard). Still open from the audit: stricter types, the engine-shape ite
 | Rules and play R1 to R25 | 20 fixed or found sound | R6 guarded, not rewritten; R7, R8 to verify; R19 replaced by the fresh migration measure |
 | Engine shape E1 to E6 | none | all six; none blocks legality |
 | Tooling H1 to H6 | H1 (oxlint and Prettier in CI), H4, H5 partly | stricter types; the lint's style rules, now warnings |
+
+## Fixed on 17 November, evening
+
+Rules, for every character on the content named:
+- Aurora content: the 2024 Bard's Magical Secrets widened its cantrip choices to every Cleric, Druid and Wizard
+  cantrip (it covers prepared spells only). The rules check now flags such cantrips.
+- 5e.tools content: a species' "not with this sub race" gates never held (the Sword Coast half-elves got their two
+  skills and every variant feature; a Mark half-elf both sets of increases). Engine fix, for every such gate.
+- The 2014 Remarkable Athlete never reached initiative; half-proficiency bonuses stacked with each other and with a
+  full proficiency bonus (Jack of All Trades with Remarkable Athlete, or with Alert).
+- The Oath of the Watchers' Aura of the Sentinel did not add to initiative (both content sets).
+- The 2014 Battle Smith's Improved Defender (+2 AC) was missing on 5e.tools content; a companion's AC bonus replaced
+  its armor class instead of adding to it.
+- The Monk's Ki save DC was never shown; senses other than darkvision ignored their range.
+- The Lunar Sorcerer had no Sacred Flame on 5e.tools content.
+- Plane Shift books and seven others had no names (a Zendikar goblin moved to the Dungeon Master's Guide's goblin).
+- Kor and Kalashtar got a free language pick where the book names their own language (Kor, Quori).
+
+Soul Forge additions, a new source: what a book's text gives and 5e.tools' data lacks, built and marked (Sword Coast
+half-elf descents, Dhampir and Reborn skills, Khoravar, Vahadar, Githyanki, Knowledge Domain of Amonkhet, Knightly
+Envoy, Cavalier and Samurai, the Expert sidekick, two Mystic orders, the Echo Knight's echo, Kor and Quori).
+
+Companions: the bestiary keeps every creature a class feature or spell calls (Steel Defender, Homunculus Servant,
+Wildfire Spirit, Drake Companion, the summon spells' spirits); 5e.tools imports are asked to import again (format 4).
+Play's companion card and its hit-point tracker show the worked-out numbers ("AC 16 (14 + PB)", "76 / 76").
+
+The move: spells stay in a choice that offers them (a 2024 Evoker's Evocation Savant), subclass spells wait for
+their subclass, the 2014 Spell Sniper's version by its cantrip, a language 5e.tools lacks kept with its text, the
+2014 Resilient's saving throw from its ability.
+
+The rules check: initiative, base scores by method, subclass always-prepared spells; the prose lint and the
+statistic-effect measurement are gates. Random Echo Knights and Battle Smiths on every content set, legal and with
+the book's companion numbers (src/aurora/companionRandom.test.ts); built in the app by hand too (Play shows the same).
 
 ## Fixed on 17 November
 
@@ -181,11 +208,9 @@ guard; light themes.
 
 ## Next, in order
 
-1. D6: the 17 saved characters that were legal and still change.
-2. W5: the checker judges ability scores by source.
-3. W3: prove every statistic has an effect.
-4. W10 triage: decide each of the 52.
-5. A release with today's fixes on your word.
+1. Your two weeks of 5e.tools-only testing (D5), then D7 on your word.
+2. W5's last parts; W6; W8 pairwise; W2.
+3. The Aurora-only statistics without effect (only while Aurora ships).
 
 ## Open things you reported, not engine
 

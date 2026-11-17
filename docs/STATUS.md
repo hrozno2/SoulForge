@@ -1,6 +1,6 @@
 # Soul Forge: where the engine stands
 
-Updated 2026-11-17, evening (v0.26.2 released in the morning, v0.26.3 in the evening). Every number here was measured on this date unless
+Updated 2026-11-17, night (v0.26.2 released in the morning, v0.26.3 in the evening; the test round's fixes after it are not released yet). Every number here was measured on this date unless
 marked otherwise, and each comes from a command anyone can run again (last column of the scoreboard). Update this page
 at the end of each working session, so the trend shows.
 

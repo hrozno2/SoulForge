@@ -95,6 +95,15 @@ describe("lasting numbers read from a feature's text", () => {
       { kind: "stat", name: "ac:misc", value: "1" },
     ]);
     const none = el("C", "You gain a +1 bonus to AC.");
+    // The 2014 Dual Wielder: "+1 bonus to AC while you are wielding a separate melee weapon in each hand" (found
+    // 2026-11-17: on 5e.tools content always on).
+    const dual = el("D", "You gain a +1 bonus to AC while you are wielding a separate melee weapon in each hand.", [
+      { kind: "stat", name: "ac:misc", value: "1" },
+    ]);
+    applyArmorBonus([dual]);
+    expect((dual as { rules: unknown[] }).rules).toEqual([
+      { kind: "stat", name: "ac:misc", value: "1", equipped: "[primary:any],[secondary:any]" },
+    ]);
     applyArmorBonus([old, now, none]);
     expect((old as { rules: unknown[] }).rules).toEqual([{ kind: "stat", name: "ac:misc", value: "1", equipped: "[armor:any]" }]);
     expect((now as { rules: unknown[] }).rules).toEqual([{ kind: "stat", name: "ac:misc", value: "1", equipped: "[armor:any]" }]);

@@ -56,17 +56,28 @@ export function stateOnly(html: string): boolean {
  */
 export function applyArmorBonus(out: AElement[]): number {
   let n = 0;
-  const RE = /while you(?:'re| are) wearing (?:light, medium, or heavy )?armor,? you gain a \+(\d+) bonus to (?:ac|armor class)\b/i;
+  // The wording, and the condition it puts on the bonus. The 2014 Dual Wielder: "+1 bonus to AC while you are wielding a
+  // separate melee weapon in each hand" (always on before, 2026-11-17).
+  const FORMS: [RegExp, string][] = [
+    [/while you(?:'re| are) wearing (?:light, medium, or heavy )?armor,? you gain a \+(\d+) bonus to (?:ac|armor class)\b/i, "[armor:any]"],
+    [
+      /a \+(\d+) bonus to (?:ac|armor class) while you(?:'re| are) wielding a separate melee weapon in each (?:of your )?hands?/i,
+      "[primary:any],[secondary:any]",
+    ],
+  ];
   for (const el of out) {
     if (el.origin !== "5etools" || /Item|Armor|Weapon/.test(el.type)) continue;
-    const m = RE.exec(plain(el.description ?? ""));
-    if (!m) continue;
+    const text = plain(el.description ?? "");
+    const form = FORMS.find(([re]) => re.test(text));
+    if (!form) continue;
+    const m = form[0].exec(text)!;
+    const when = form[1];
     const mine = el.rules.filter((r) => r.kind === "stat" && r.name.toLowerCase() === "ac:misc" && String(r.value) === m[1]);
     if (mine.length) {
       el.rules = el.rules.map((r) =>
-        mine.includes(r) && !(r as { equipped?: string }).equipped ? ({ ...r, equipped: "[armor:any]" } as ARule) : r,
+        mine.includes(r) && !(r as { equipped?: string }).equipped ? ({ ...r, equipped: when } as ARule) : r,
       );
-    } else el.rules = [...el.rules, stat("ac:misc", m[1], { equipped: "[armor:any]" })];
+    } else el.rules = [...el.rules, stat("ac:misc", m[1], { equipped: when })];
     n++;
   }
   return n;

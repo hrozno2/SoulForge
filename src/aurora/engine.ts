@@ -117,15 +117,27 @@ const SHIELD_TAGS = ["shield"];
 function equippedFacts(ch: Character, reg: ARegistry) {
   let armor = "none";
   let shield = false;
+  // Weapons in hand: how many melee ones, and whether one is held in both hands (a versatile weapon used two-handed).
+  let melee = 0;
+  let weapons = 0;
+  let bothHands = false;
+  const names: string[] = [];
   for (const it of ch.inventory) {
     if (!it.equipped || !it.id) continue;
     const el = reg.get(it.id);
+    if (el?.type === "Weapon") {
+      weapons++;
+      names.push(lc(el.name));
+      if (!el.supports.some((t) => lc(t).includes("ranged"))) melee++;
+      if (it.twoHanded || el.supports.some((t) => /two-handed/i.test(t))) bothHands = true;
+      continue;
+    }
     if (!el || el.type !== "Armor") continue;
     const kind = lc(el.setters.armor?.value ?? "");
     if (SHIELD_TAGS.includes(kind) || /shield/i.test(el.name)) shield = true;
     else armor = kind || "armor";
   }
-  return { armor, shield };
+  return { armor, shield, melee, weapons, bothHands, names };
 }
 
 /** The concept an id stands for (skill, save, training, language, size, sense), or "" when none. Per registry. */
@@ -208,6 +220,17 @@ export function makeCtx(prev: Pass | null, level: number, ch: Character, reg: AR
         return facts.armor === v;
       }
       if (kind === "shield") return v === "none" ? !facts.shield : facts.shield;
+      // A weapon in each hand (Aurora's "[primary:any],[secondary:any]", the Dual Wielder's AC): "primary" is a weapon in
+      // hand, "secondary" a second melee weapon in the other; "versatile" on the primary is one held in both hands.
+      if (kind === "primary")
+        return v === "none"
+          ? facts.weapons === 0
+          : v === "versatile"
+            ? facts.bothHands
+            : v === "any"
+              ? facts.weapons > 0
+              : facts.names.some((n) => n.includes(v));
+      if (kind === "secondary") return v === "none" ? facts.melee < 2 || facts.bothHands : facts.melee >= 2 && !facts.bothHands;
       return false;
     },
   };

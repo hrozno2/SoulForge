@@ -35,6 +35,15 @@ export const ANY_KIND: Record<string, Decision> = {
 
 /** Per kind of entry. */
 export const BY_KIND: Record<string, Record<string, Decision>> = {
+  // The adventures' list (adventures.json) is read for names and dates only.
+  adventure: {
+    author: PUBLISHING,
+    contents: PUBLISHING,
+    cover: PUBLISHING,
+    parentSource: PUBLISHING,
+    publishedOrder: PUBLISHING,
+    storyline: PUBLISHING,
+  },
   background: {
     fromFeature: "display: which features the background lists, already read from its entries",
   },

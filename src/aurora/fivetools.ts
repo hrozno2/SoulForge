@@ -4083,6 +4083,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
       }
     }
   const spellIds: Record<string, { id: string; source: string }[]> = {};
+  const unlistedSources: AElement[] = [];
   // One Source element per book, so lists can show release dates the way the Aurora content does.
   for (const [, json] of all) {
     for (const b of [...((json?.book as J[]) ?? []), ...((json?.adventure as J[]) ?? [])]) {
@@ -4102,10 +4103,10 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
       );
     }
   }
-  // And one for each book the lists leave unnamed, so its date and kind are known too.
+  // And one for each book the lists leave unnamed that some content comes from (checked at the end, see below).
   for (const [code, [name, rel]] of Object.entries(UNLISTED_BOOKS))
     if (!ctx.books[code])
-      out.push(
+      unlistedSources.push(
         base(`ID_5ET_SOURCE_${slug(code)}`, name, "Source", "5etools", {
           compendiumHidden: true,
           setters: {
@@ -4277,6 +4278,9 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
       }
     }
   resolveLooseRefs(out);
+  // Only the unnamed books something here comes from: the free rules' bundle named The Rise of Tiamat Online Supplement.
+  const used = new Set(out.map((e) => e.source));
+  for (const src of unlistedSources) if (used.has(src.name)) out.push(src);
   const fluff = new Map<string, J[]>();
   for (const [, json] of all)
     if (json && typeof json === "object" && !Array.isArray(json))

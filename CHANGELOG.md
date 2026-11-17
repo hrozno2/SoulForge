@@ -2,6 +2,22 @@
 
 What changed in each release. Newest first.
 
+## v0.26.3 (2026-11-17)
+
+- The 2024 Moon Druid's Fount of Moonlight at level 7 (Aurora's copy said 9); found by the new subclass-spell check, every subclass swept
+- Soul Forge additions for what 5e.tools states only in text; companions from the bestiary and the Echo; the rules check works out initiative, base scores and subclass spells
+- Tasha's Customized Proficiencies; custom origin options reach subraces and traits; the move explains its fills
+- 2014 Ritual Caster asks two 1st-level rituals; the move explains what it fills
+- A weapon in each hand: the engine judges it; the 2014 Dual Wielder's +1 AC only then
+- The rules check reads feature uses from the class table itself (W5); Second Wind and Wild Shape follow their columns
+- Rules fixes found by moving characters; light themes; the move keeps more
+- The move: a feat's spell list named like a class is not that class; gear 5e.tools lacks becomes custom items
+- Formatting: Prettier's second pass over one call chain
+- CI and the release check the formatting; the formatting commit is ignored by git blame
+- Format the tree with Prettier (print width 140); no other change
+- A linter in CI and the release checks (H1): oxlint, type aware; 21 unhandled promises and a few slips fixed
+- One running copy of the desktop app; a character open in two web tabs is saved by one only (S8)
+
 ## v0.26.2 (2026-11-17)
 
 - 2014 Blessings of Knowledge gives its expertise on 5e.tools content; saved picks carry over

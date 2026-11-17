@@ -244,7 +244,7 @@ cause, gates, STATUS.md updated. Item states here; detail in docs/STATUS.md and 
 
 | # | What | State |
 | --- | --- | --- |
-| E1.1 | The move: Zendikar elves (and any sub race filed under another species in 5e.tools) switch species | Species switch done 2026-11-17; the Joraga Elf's Dexterity +2 still to check |
+| E1.1 | The move: Zendikar elves (and any sub race filed under another species in 5e.tools) switch species | Species switch done 2026-11-17. Scores now follow Plane Shift: Zendikar (Wisdom +2, Joraga Dexterity +1) where Aurora's copy had the Player's Handbook Elf's Dexterity +2; check the fresh character's Dexterity (13, expected base +1) and add the explanation to migrateReport |
 | E1.2 | The move: the fresh-sample cases (a Wizard's initiative, a Ranger's Charisma skills, +1s on another score, Auran lost) and the 4 findings the move brings | Open |
 | E1.3 | A move screen for players in the release app: what changes, what is kept as text, decisions, the original untouched | Open |
 | E1.4 | Community builds on 5e.tools alone: the choices they leave open, filled by Soul Forge additions where the text gives them | Open |

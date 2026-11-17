@@ -135,12 +135,18 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
       const got = (b as string[]).filter((x) => !(a as string[]).includes(x));
       const byFeature = got.filter((x) => grantedNow.has(x));
       for (const x of byFeature) explained.push(`spells: ${x} (a feature of the character grants it on 5e.tools content)`);
+      // Filled by the move where the original had a place 5e.tools counts and the original did not fill (the same
+      // cantrip twice in one choice, a choice Aurora's copy did not ask): listed for the player under "Chosen for you".
+      const filledNames = new Set(migration.filled.map((f) => nameKey(f.replace(/^[^:]*:\s*/, ""))));
+      const byFill = got.filter((x) => !grantedNow.has(x) && filledNames.has(x));
+      for (const x of byFill)
+        explained.push(`spells: ${x} (filled where the original repeated a pick or left a place open; listed for the player)`);
       const lostGone = lost.filter((x) => /no 5e\.tools version/.test(why.get(x) ?? ""));
       for (const x of lostGone) {
         unavailable.push(`spells: ${x}`);
         dropped.push(`spells: ${x} (${why.get(x)})`);
       }
-      if (lostGone.length === lost.length && byFeature.length === got.length) continue;
+      if (lostGone.length === lost.length && byFeature.length + byFill.length === got.length) continue;
     }
     if (Array.isArray(a) && Array.isArray(b) && (typeof a[0] === "string" || typeof b[0] === "string")) {
       const lost = (a as string[]).filter((x) => !(b as string[]).includes(x));

@@ -1542,6 +1542,42 @@ function convertItem(raw: J, ctx: Ctx): AElement | null {
   });
 }
 
+/** A 5e.tools spell choice's filter ("level=1|class=Cleric|components & miscellaneous=ritual") as a supports filter. */
+function spellChooseSupports(choose: string): string {
+  const crit = Object.fromEntries(
+    choose
+      .split("|")
+      .map((p) => p.split("="))
+      .filter((p) => p.length === 2)
+      .map(([k, v]) => [k.trim().toLowerCase(), v]),
+  ) as Record<string, string>;
+  // 5e.tools separates alternatives with ";" (class=Cleric;Wizard); the filter syntax here uses "||".
+  const anyOf = (v?: string) =>
+    v
+      ? v.includes(";")
+        ? `(${v
+            .split(";")
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .join("||")})`
+        : v.trim()
+      : "";
+  const school = crit.school
+    ? crit.school
+        .split(";")
+        .map((x) => SCHOOL[x.trim().toUpperCase()] ?? x)
+        .join(";")
+    : "";
+  // "components & miscellaneous=ritual" (Ritual Caster, Magic Initiate's rituals): spells that are rituals, or
+  // concentration spells; the registry offers both as tags.
+  const misc = (crit["components & miscellaneous"] ?? "")
+    .split(";")
+    .map((x) => x.trim().toLowerCase())
+    .filter((x) => x === "ritual" || x === "concentration");
+  const parts = [anyOf(crit.class), anyOf(crit.level), anyOf(school), ...misc].filter(Boolean) as string[];
+  return parts.join(", ") || "0";
+}
+
 /** Feats like Magic Initiate offer one variant per spell list; each becomes its own feat. */
 function featVariants(f: J, ctx: Ctx, out: AElement[]): boolean {
   const adds = (f.additionalSpells as J[] | undefined) ?? [];
@@ -1560,19 +1596,21 @@ function featVariants(f: J, ctx: Ctx, out: AElement[]): boolean {
           kind: "select",
           type: "Spell",
           name: `${list} cantrip`,
-          supports: `${list}, 0`,
+          supports: typeof k.choose === "string" ? spellChooseSupports(k.choose) : `${list}, 0`,
           number: k.count ?? 1,
           spellcasting: `${f.name} (${list})`,
         });
     const inn = Object.values(g.innate?._?.daily ?? {}).flat() as J[];
     for (const k of inn)
       if (k.choose)
+        // The data's own filter and count: the 2014 Ritual Caster's two 1st-level rituals (it asked one spell of any
+        // kind, found 2026-11-17). The choice keeps its name, so picks saved under it keep their place.
         rules.push({
           kind: "select",
           type: "Spell",
           name: `${list} level 1 spell`,
-          supports: `${list}, 1`,
-          number: 1,
+          supports: typeof k.choose === "string" ? spellChooseSupports(k.choose) : `${list}, 1`,
+          number: k.count ?? 1,
           spellcasting: `${f.name} (${list})`,
         });
     const name = `${f.name} (${list})`;
@@ -3631,42 +3669,11 @@ export function additionalSpellRules(
               ...(uses[i] ? { uses: uses[i] } : {}),
             } as ARule);
           } else if (r && typeof (r as J).choose === "string") {
-            const crit = Object.fromEntries(
-              String((r as J).choose)
-                .split("|")
-                .map((p) => p.split("="))
-                .filter((p) => p.length === 2)
-                .map(([k, v]) => [k.trim().toLowerCase(), v]),
-            ) as Record<string, string>;
-            // 5e.tools separates alternatives with ";" (class=Cleric;Wizard); the filter syntax here uses "||".
-            const anyOf = (v?: string) =>
-              v
-                ? v.includes(";")
-                  ? `(${v
-                      .split(";")
-                      .map((x) => x.trim())
-                      .filter(Boolean)
-                      .join("||")})`
-                  : v.trim()
-                : "";
-            const school = crit.school
-              ? crit.school
-                  .split(";")
-                  .map((x) => SCHOOL[x.trim().toUpperCase()] ?? x)
-                  .join(";")
-              : "";
-            // "components & miscellaneous=ritual" (Ritual Caster, Magic Initiate's rituals): spells that are rituals, or
-            // concentration spells; the registry offers both as tags.
-            const misc = (crit["components & miscellaneous"] ?? "")
-              .split(";")
-              .map((x) => x.trim().toLowerCase())
-              .filter((x) => x === "ritual" || x === "concentration");
-            const parts = [anyOf(crit.class), anyOf(crit.level), anyOf(school), ...misc].filter(Boolean) as string[];
             rules.push({
               kind: "select",
               type: "Spell",
               name: `${owner} spell`,
-              supports: parts.join(", ") || "0",
+              supports: spellChooseSupports(String((r as J).choose)),
               number: (r as J).count ?? 1,
               level,
               spellcasting: owner,

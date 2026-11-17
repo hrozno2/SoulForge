@@ -230,9 +230,36 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   }
   const picks = pool.filter((p) => !p.ability);
 
+  // A sub race 5e.tools files under another species (Aurora's Joraga Elf is a Player's Handbook Elf's sub race; 5e.tools'
+  // "Joraga Nation" is "Elf (Zendikar)"'s): the species becomes that one, so the sub race has its place (fresh 358,
+  // 2026-11-17: the move filled a Drow instead).
+  const raceFor = (): string | undefined => {
+    const mapped = map(ch.race);
+    const sub = picks.find((p) => /^sub ?race$/i.test(p.ruleType));
+    if (!sub || !mapped) return mapped;
+    const offered = (raceId: string) =>
+      resolve({ ...ch, race: raceId, selections: {}, classes: [], extras: [], options: [] }, to)
+        .slots.filter((x) => /sub ?race/i.test(x.rule.type + x.rule.name))
+        .flatMap((x) => x.options);
+    const words = nameKey(sub.name)
+      .split(" ")
+      .filter(
+        (w) =>
+          w.length > 2 &&
+          !nameKey(to.get(mapped)?.name ?? "")
+            .split(" ")
+            .includes(w),
+      );
+    const fits = (o: AElement) => words.length > 0 && words.every((w) => nameKey(o.name).split(" ").includes(w));
+    if (offered(mapped).some((o) => o.id === sub.id || nameKey(o.name) === nameKey(sub.name) || fits(o))) return mapped;
+    const base = nameKey(to.get(mapped)?.name ?? "").split(" ")[0];
+    for (const r of to.ofType("Race").filter((x) => nameKey(x.name).split(" ")[0] === base && x.id !== mapped))
+      if (offered(r.id).some(fits)) return r.id;
+    return mapped;
+  };
   const next: Character = {
     ...ch,
-    race: map(ch.race),
+    race: raceFor(),
     background: map(ch.background),
     classes: ch.classes.map((c) => ({ ...c, classId: map(c.classId)! })),
     options: ch.options.map((x) => map(x)!),

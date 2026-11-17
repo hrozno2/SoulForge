@@ -244,7 +244,7 @@ cause, gates, STATUS.md updated. Item states here; detail in docs/STATUS.md and 
 
 | # | What | State |
 | --- | --- | --- |
-| E1.1 | The move: Zendikar elves (and any sub race filed under another species in 5e.tools) switch species | Open |
+| E1.1 | The move: Zendikar elves (and any sub race filed under another species in 5e.tools) switch species | Species switch done 2026-11-17; the Joraga Elf's Dexterity +2 still to check |
 | E1.2 | The move: the fresh-sample cases (a Wizard's initiative, a Ranger's Charisma skills, +1s on another score, Auran lost) and the 4 findings the move brings | Open |
 | E1.3 | A move screen for players in the release app: what changes, what is kept as text, decisions, the original untouched | Open |
 | E1.4 | Community builds on 5e.tools alone: the choices they leave open, filled by Soul Forge additions where the text gives them | Open |
@@ -257,6 +257,7 @@ cause, gates, STATUS.md updated. Item states here; detail in docs/STATUS.md and 
 | E2.7 | Outside references with an explained list (W9, FastCharacter) | Open |
 | E3.1 | Fix-it buttons on rules-check findings | Open |
 | E3.2 | Linux performance | Waits for Chris's measurement |
+| E3.6 | Scrollbars push buttons sideways (Chris: the level "+" moved and the click removed his class) | Done 2026-11-17: every scrolling area and the page keep the scrollbar's room (`scrollbar-gutter: stable`); removing a class asks a second click |
 | E3.3 | Importers and exporters: Roll20 rebuilt on BetterR20's scripts (github.com/DeathStalker471/betterR20, analysed first); Foundry on Plutonium's importer, analysed first; every import with a list of what came across | Open |
 | E3.4 | The library's safety net: visible restore from backup, a warning before moves and mass edits | Open |
 | E3.5 | Homebrew as a first-class path, on the Soul Forge additions machinery (Guiding Hand as the first) | Open |

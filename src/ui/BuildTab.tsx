@@ -1,6 +1,6 @@
 import { RulesCheckBar } from "./RulesCheck";
 import { STANDARD_RULES, canLower, canRaise, clampBase, normalizeRules, spent as pbSpent } from "../aurora/pointBuy";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AElement } from "../aurora/types";
 import { stillToChoose, type Resolved } from "../aurora/engine";
 import { ABILITY_IDS, ABILITY_LABEL, STANDARD_ARRAY, totalLevel, type AbilityId, type Character } from "../aurora/character";
@@ -133,9 +133,7 @@ export function ClassPanel({
                     +
                   </button>
                 </span>
-                <button className="ghost" onClick={() => remove(i)}>
-                  Remove
-                </button>
+                <ConfirmRemove onRemove={() => remove(i)} />
               </div>
             );
           }
@@ -150,9 +148,7 @@ export function ClassPanel({
                   +
                 </button>
               </span>
-              <button className="ghost" onClick={() => remove(i)}>
-                Remove
-              </button>
+              <ConfirmRemove onRemove={() => remove(i)} />
             </ChosenBanner>
           ) : (
             <div className="class-row" key={c.classId}>
@@ -507,5 +503,27 @@ export function BuildTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character;
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Removing a class asks twice: the first click arms the button for a few seconds, the second removes. One stray click
+ * (a scrollbar appeared and moved the level "+" under the pointer, Chris 2026-11-17) took a whole class away.
+ */
+function ConfirmRemove({ onRemove }: { onRemove: () => void }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const t = setTimeout(() => setArmed(false), 4000);
+    return () => clearTimeout(t);
+  }, [armed]);
+  return (
+    <button
+      className={armed ? "danger" : "ghost"}
+      onClick={() => (armed ? onRemove() : setArmed(true))}
+      aria-label={armed ? "Click again to remove the class" : "Remove the class"}
+    >
+      {armed ? "Click again to remove" : "Remove"}
+    </button>
   );
 }

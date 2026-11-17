@@ -1,3 +1,8 @@
+/* A scrollbar that appears takes room it already had: buttons never jump sideways under the pointer (Chris
+   2026-11-17: the level "+" moved and the click removed his class). */
+html {
+  scrollbar-gutter: stable;
+}
 /* Soul Forge look: dark leather and gold, red actions, serif headings. Light theme is parchment. */
 :root {
   --bg: #12100e;
@@ -266,6 +271,7 @@ main.with-detail {
   overflow: auto;
   padding: 16px 22px;
   border-top: 2px solid var(--gold);
+  scrollbar-gutter: stable;
 }
 .detail h2 {
   font-size: 21px;
@@ -596,6 +602,7 @@ button.tiny {
   padding: 0;
   max-height: 340px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 .options.boxed {
   border: 1px solid var(--line);
@@ -1433,6 +1440,7 @@ button.tiny {
   max-height: 220px;
   overflow: auto;
   font-size: 13px;
+  scrollbar-gutter: stable;
 }
 .history li {
   padding: 2px 0;
@@ -2288,6 +2296,7 @@ button.xp:focus-visible {
   gap: 8px;
   max-height: 320px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 .filter-group {
   display: grid;
@@ -2305,6 +2314,7 @@ button.xp:focus-visible {
 .chips.scroll {
   max-height: 96px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 .filters .pill {
   padding: 1px 10px;
@@ -2419,6 +2429,7 @@ em.kind-other {
   background: var(--panel);
   max-height: 520px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 .opt-row {
   display: flex;
@@ -2662,6 +2673,7 @@ em.kind-other {
   border-top: 4px solid var(--crimson);
   box-shadow: 0 12px 50px #000;
   padding: 20px 28px 26px;
+  scrollbar-gutter: stable;
 }
 .modal-page h2 {
   color: var(--crimson);
@@ -2714,6 +2726,7 @@ em.kind-other {
   margin: 8px 0;
   max-height: 260px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 .portrait-grid button {
   padding: 0;
@@ -2905,6 +2918,7 @@ em.kind-other {
   max-height: 280px;
   overflow: auto;
   border: 1px solid var(--line);
+  scrollbar-gutter: stable;
 }
 .pick-list li {
   padding: 2px 8px;
@@ -3191,6 +3205,7 @@ details.tip summary {
 .dice-panel {
   max-height: calc(100vh - 90px);
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 .dice-result .roll-term-head b {
   font: 700 14px var(--body);
@@ -3553,6 +3568,7 @@ span.roll-chip.save:hover {
 .companion-list {
   max-height: 260px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .hp-bar.big .temp-fill {
@@ -3790,6 +3806,7 @@ html.reduce-motion *::after {
   background: var(--panel2);
   padding: 8px;
   font-size: 12px;
+  scrollbar-gutter: stable;
 }
 
 .modal-page.themed {
@@ -4533,6 +4550,7 @@ body::after {
 .form-matches {
   max-height: 220px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 /* ================= conditions: icon tokens, rules on hover ================= */
@@ -4809,6 +4827,7 @@ body::after {
   max-height: 60vh;
   overflow: auto;
   min-width: 320px;
+  scrollbar-gutter: stable;
 }
 .csearch-list li {
   padding: 4px 8px;
@@ -4948,6 +4967,7 @@ body::after {
   border-radius: 6px;
   overflow: auto;
   max-height: 70vh;
+  scrollbar-gutter: stable;
 }
 .sheet-preview-frame img {
   max-width: 100%;
@@ -6323,6 +6343,7 @@ body::after {
   padding-left: 18px;
   max-height: 220px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 .ir-group li {
   margin: 2px 0;
@@ -6516,6 +6537,7 @@ main.wide {
   max-height: calc(100vh - 86px);
   overflow: auto;
   padding-right: 2px;
+  scrollbar-gutter: stable;
 }
 .board-acc {
   background: var(--panel);
@@ -6603,6 +6625,7 @@ main.wide {
   padding: 0 10px 10px;
   max-height: 64vh;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 .board-lib .browse-bar {
   gap: 6px;
@@ -6942,6 +6965,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment {
   border-top: 2px solid var(--gold);
   border-radius: 8px;
   padding: 12px;
+  scrollbar-gutter: stable;
 }
 .board-method {
   display: flex;
@@ -7284,6 +7308,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment {
     transition:
       transform 0.28s cubic-bezier(0.22, 0.8, 0.24, 1),
       opacity 0.2s;
+    scrollbar-gutter: stable;
   }
   .board-lib {
     left: 0;
@@ -7748,6 +7773,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment {
   gap: 4px;
   max-height: 38vh;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 .board-status li button {
   width: 100%;
@@ -7909,6 +7935,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment {
   border-radius: 6px;
   max-height: 55vh;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 /* Manual scores: the number shows a die on hover, and a click rolls it */
@@ -8420,6 +8447,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment {
   flex: 1;
   overflow: auto;
   padding: 12px 18px 18px;
+  scrollbar-gutter: stable;
 }
 .card-back-sub {
   margin: 10px 0 4px;
@@ -9154,6 +9182,7 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment {
   background: rgba(0, 0, 0, 0.06);
   padding: 6px 8px;
   border-radius: 4px;
+  scrollbar-gutter: stable;
 }
 .bug-actions {
   justify-content: flex-end;
@@ -9867,6 +9896,7 @@ button.board-bar {
   flex: 1;
   overflow: auto;
   padding: 10px 14px;
+  scrollbar-gutter: stable;
 }
 .float-resize {
   position: absolute;
@@ -9926,6 +9956,7 @@ button.board-bar {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  scrollbar-gutter: stable;
 }
 .bag-item {
   display: flex;

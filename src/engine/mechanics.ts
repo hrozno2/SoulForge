@@ -194,7 +194,7 @@ export function borrowMechanics(byId: Map<string, AElement>): MechanicsReport {
   return report;
 }
 
-const SKILL_NAMES = [
+export const SKILL_NAMES = [
   "acrobatics",
   "animal handling",
   "arcana",
@@ -218,13 +218,16 @@ const SKILL_NAMES = [
 /**
  * An effect on every skill is an effect on every ability check, and initiative is a Dexterity check (PHB 2014 p.177;
  * PHB 2024, Initiative). Content that adds the same bonus to all eighteen skills (Jack of All Trades) but not to
- * initiative gets it there too, once, with the same stacking group. Returns the ids changed.
+ * initiative gets it there too, once, with the same stacking group; not where the text limits it to checks that use a
+ * skill (PHB 2024, Jack of All Trades). Returns the ids changed.
  */
 export function checksIncludeInitiative(byId: Map<string, AElement>): string[] {
   const changed: string[] = [];
   for (const el of byId.values()) {
     const stats = el.rules.filter((r): r is Extract<ARule, { kind: "stat" }> => r.kind === "stat");
     if (!stats.length || stats.some((r) => r.name.toLowerCase() === "initiative" || r.name.toLowerCase() === "initiative:misc")) continue;
+    // Checks that use a skill only (the 2024 Jack of All Trades): initiative uses none.
+    if (/\buses? a skill\b/i.test(el.description ?? "")) continue;
     const per = new Map<string, { value: string; bonus?: string }>();
     for (const r of stats) {
       const m = /^(.+):misc$/.exec(r.name.toLowerCase());

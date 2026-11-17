@@ -36,7 +36,9 @@ describe("outdated 5e.tools imports", () => {
     expect(outdatedFiveTools([src(["races.json", "items.json"])])).toHaveLength(1);
   });
   it("counts an unstamped import that already has the new files as current", () => {
-    expect(outdatedFiveTools([src(["races.json", "magicvariants.json", "foundry-races.json"])])).toHaveLength(0);
+    expect(outdatedFiveTools([src(["races.json", "magicvariants.json", "foundry-races.json", "adventures.json"])])).toHaveLength(0);
+    // Format 2 without the adventures' names (format 3) is out of date.
+    expect(outdatedFiveTools([src(["races.json", "magicvariants.json", "foundry-races.json"])])).toHaveLength(1);
   });
   it("trusts the stamp, ignores picked entries, Aurora sources and switched-off sources", () => {
     expect(outdatedFiveTools([src(["races.json"], { importFormat: FIVETOOLS_IMPORT_FORMAT })])).toHaveLength(0);

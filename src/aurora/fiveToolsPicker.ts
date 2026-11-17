@@ -242,6 +242,7 @@ export async function savePicks(base: string, entries: Entry[]): Promise<{ cfg: 
   };
   for (const path of [
     "books.json",
+    "adventures.json",
     ...(wanted.has("spell") || files.has(PICK_FILE("spell")) ? ["spells/sources.json"] : []),
     ...(files.has(PICK_FILE("item")) ? ["items-base.json"] : []),
     ...(files.has(PICK_FILE("class")) ? ["spells/sources.json", "optionalfeatures.json"] : []),

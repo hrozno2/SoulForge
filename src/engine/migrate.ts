@@ -61,6 +61,8 @@ function gearNames(el: AElement): string[] {
 }
 
 /** The 5e.tools twin of an element, by twin key, then concept, then (spells, items) name and type. */
+const SUBRACE_ALIASES: Record<string, string> = { [nameKey("Dark Elf")]: "Drow Elf" };
+
 export function fiveToolsTwins(reg: ARegistry): (id: string) => string | undefined {
   const byTwin = new Map<string, string>();
   const byConcept = new Map<string, string>();
@@ -102,6 +104,13 @@ export function fiveToolsTwins(reg: ARegistry): (id: string) => string | undefin
         const gear = GEAR.test(el.type) ? gearNames(el).flatMap((n) => byName.get(`gear|${nameKey(n)}`) ?? []) : [];
         const same = [...(byName.get(`${el.type}|${nameKey(el.name)}`) ?? []), ...gear];
         hit = (same.find((e) => e.edition && e.edition === el.edition) ?? same[0])?.id;
+        // A species' subrace the two name apart: the Player's Handbook's "Dark Elf (Drow)" is Aurora's "Dark Elf" and
+        // 5e.tools' "Drow Elf" (a player's added Dark Elf lost its +1 Charisma in the move, 2026-11-17).
+        const alias = el.type === "Sub Race" ? SUBRACE_ALIASES[nameKey(el.name)] : undefined;
+        if (!hit && alias) {
+          const named = byName.get(`Sub Race|${nameKey(alias)}`) ?? [];
+          hit = (named.find((e) => e.edition && e.edition === el.edition) ?? named[0])?.id;
+        }
         // The elemental languages folded into Primordial (2024; the converter points them there too): Aquan is Primordial.
         if (!hit && el.type === "Language" && /^(aquan|auran|ignan|terran)$/i.test(el.name.trim()))
           hit = byName.get(`Language|${nameKey("Primordial")}`)?.[0]?.id;
@@ -621,27 +630,44 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // Crusher's "+1 Strength"; the species' "+2 Constitution, +1 Charisma" is that, not whatever sum comes nearest (the
   // nearest sum gave a Genasi +2 Strength because Crusher could then give Constitution). Each old increase is used
   // once, by the same owner's choice (a feat's) or the same level's (an origin's, a class improvement's).
-  const increases = pool
-    .filter((p) => p.ability)
-    .map((p) => ({
-      p,
-      ability: ABILITY.exec(p.name)?.[1].toLowerCase() ?? "",
-      left: Number(/\+\s*(\d)/.exec(p.name)?.[1] ?? /\+\s*(\d)/.exec(p.choice)?.[1] ?? 1),
-    }))
-    .filter((x) => x.ability);
   const totalsOf = (name: string): Map<string, number> => {
     const out = new Map<string, number>();
     for (const m of name.matchAll(/\+\s*(\d)\s+(strength|dexterity|constitution|intelligence|wisdom|charisma)\b/gi))
       out.set(m[2].toLowerCase(), (out.get(m[2].toLowerCase()) ?? 0) + Number(m[1]));
     return out;
   };
+  // A name with sizes is each of them ("+1 Dexterity, +1 Charisma" is two increases; only the first was read). A name
+  // of several scores without sizes is the set a choice may raise, not an increase: Aurora's "Strength, Constitution,
+  // Charisma" (a 2014 background under the 2024 rules) was read as +1 Strength, and took the +1 meant for Constitution.
+  const ABILITY_ALL = /\b(strength|dexterity|constitution|intelligence|wisdom|charisma)\b/gi;
+  const increases = pool
+    .filter((p) => p.ability)
+    .flatMap((p) => {
+      const sized = totalsOf(p.name);
+      if (sized.size) return [...sized].map(([ability, left]) => ({ p, ability, left }));
+      const named = new Set([...p.name.matchAll(ABILITY_ALL)].map((m) => m[1].toLowerCase()));
+      if (named.size !== 1) return [];
+      return [{ p, ability: [...named][0], left: Number(/\+\s*(\d)/.exec(p.name)?.[1] ?? /\+\s*(\d)/.exec(p.choice)?.[1] ?? 1) }];
+    })
+    // A feat's one choice that names a score in its brackets ("Resilient (Charisma)", Aurora's 2014 Resilient: the +1
+    // and the save in one pick) is that feat's increase too. Left to the nearest total, a tie gave Constitution.
+    .concat(
+      pool
+        .filter((p) => !p.ability && p.ownerType === "Feat" && new RegExp(`^${p.ownerName}\\b`, "i").test(nameKey(p.name)))
+        .flatMap((p) => {
+          const m = /\((strength|dexterity|constitution|intelligence|wisdom|charisma)\)\s*$/i.exec(p.name);
+          return m ? [{ p: { ...p, ownerName: p.ownerName }, ability: m[1].toLowerCase(), left: 1 }] : [];
+        }),
+    );
   const matchScores = () => {
     for (let round = 0; round < 60; round++) {
       const r = resolve(next, to);
       let done = false;
       for (const s of r.slots) {
         if (!abilityish(s)) continue;
-        const featOwned = s.owner.type === "Feat";
+        // 5e.tools files the class's Ability Score Improvement as a feat; its increases are a level's, not a feat's (a
+        // Barbarian's +2 Dexterity at 4 was matched to no old increase and filled by the nearest total instead).
+        const featOwned = s.owner.type === "Feat" && !/^ability score improvement$/i.test(s.owner.name);
         const mine = increases.filter(
           (x) =>
             x.left > 0 &&
@@ -856,6 +882,14 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       const keys = new Set([nameKey(n), ...[...n.matchAll(/\(([^)]+)\)/g)].map((m) => nameKey(m[1]))]);
       for (const k of keys) oldPicks.set(k, (oldPicks.get(k) ?? 0) + 1);
     }
+  // A repeat the original had already, whatever its other source: a Monk's Stealth when the 2014 Urchin grants it too
+  // (one pick and a grant, so the count above is one). The player built it so; replaced, the sheet gained a skill.
+  const oldRepeats = new Set<string>();
+  for (const s of old.slots)
+    for (const msg of repeatedPicks(old, s)) {
+      const m = /^[^:]*: (.+?) \(already /.exec(msg);
+      if (m) oldRepeats.add(nameKey(m[1]));
+    }
   const nameOf = (id: string) => to.get(id)?.name ?? from.get(id)?.name ?? id;
   for (const x of beforeFill.slots) {
     if (x.rule.type === "List") continue;
@@ -866,7 +900,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       const here = filledCh0.selections[x.key] ?? [];
       const removed = x.chosen.filter((id) => !here.includes(id));
       const added = here.filter((id) => !x.chosen.includes(id));
-      const own = removed.filter((id) => (oldPicks.get(nameKey(nameOf(id))) ?? 0) >= 2);
+      const own = removed.filter((id) => (oldPicks.get(nameKey(nameOf(id))) ?? 0) >= 2 || oldRepeats.has(nameKey(nameOf(id))));
       if (own.length) {
         mine = [...x.chosen];
         own.forEach((id, i) => {

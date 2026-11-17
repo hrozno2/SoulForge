@@ -32,13 +32,24 @@ export class TabGuard {
   private readonly self = Math.random().toString(36).slice(2) + Date.now().toString(36);
   private listeners = new Set<() => void>();
 
-  constructor(private channel: Channel | null) {
-    if (channel) {
-      channel.onmessage = (e) => {
-        if (!isClaim(e.data) || e.data.window === this.self) return;
-        if (e.data.character === this.current && this.current) this.set(true);
-      };
+  private channel: Channel | null = null;
+
+  /**
+   * `open` makes the channel; it is opened when first needed and again after `close`, so a component that closes it on
+   * unmount and mounts again (React's development mode runs every effect twice) keeps working.
+   */
+  constructor(private open: () => Channel | null) {}
+
+  private ch(): Channel | null {
+    if (!this.channel) {
+      this.channel = this.open();
+      if (this.channel)
+        this.channel.onmessage = (e) => {
+          if (!isClaim(e.data) || e.data.window === this.self) return;
+          if (e.data.character === this.current && this.current) this.set(true);
+        };
     }
+    return this.channel;
   }
 
   subscribe = (fn: () => void): (() => void) => {
@@ -57,11 +68,16 @@ export class TabGuard {
   claim(character: string): void {
     this.current = character;
     this.set(false);
-    this.channel?.postMessage({ kind: "claim", window: this.self, character } satisfies Claim);
+    try {
+      this.ch()?.postMessage({ kind: "claim", window: this.self, character } satisfies Claim);
+    } catch {
+      // A closed or broken channel: this window simply does not announce; saving is never stopped by it.
+    }
   }
 
   close(): void {
     this.channel?.close();
+    this.channel = null;
   }
 }
 

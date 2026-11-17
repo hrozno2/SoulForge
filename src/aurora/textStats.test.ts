@@ -5,6 +5,8 @@ import { resolve } from "./engine";
 import type { AElement } from "./types";
 import {
   armorClassFromText,
+  stateOnly,
+  applyArmorBonus,
   halfProficiencyFromText,
   initiativeFromText,
   languagesFromText,
@@ -60,8 +62,64 @@ describe("lasting numbers read from a feature's text", () => {
     expect(monk.map((r) => (r as { value: string }).value).slice(1, 3)).toEqual(["dexterity:modifier", "wisdom:modifier"]);
     expect(monk[3]).toMatchObject({ equipped: "[armor:none],[shield:none]" });
     expect(armorClassFromText("ID_S", "Shell", "Your shell provides your base AC of 17")).toHaveLength(2);
+    // The Tortle of Monsters of the Multiverse, 2026-11-17: every Tortle on 5e.tools content had AC 10 + Dexterity.
+    const tortle = armorClassFromText(
+      "ID_T",
+      "Natural Armor",
+      "Your shell provides you a base AC of 17 (your Dexterity modifier doesn't affect this number). You can't wear light, medium, or heavy armor, but if you are using a shield, you can apply the shield's bonus as normal.",
+    );
+    expect(tortle.map((r) => (r as { value: string }).value)).toEqual(["17", "ac:natural armor id_t"]);
+    expect(tortle[1]).toMatchObject({ equipped: "[armor:none]" });
     // A creature's armor class is not the character's.
     expect(armorClassFromText("ID_C", "Companion", "Its AC equals 13 + your proficiency bonus")).toEqual([]);
+  });
+
+  // The Defense fighting style (found 2026-11-17 moving a Paladin): the 2014 one had no rule, the 2024 one a +1 at all
+  // times. Its text: "While you are wearing armor, you gain a +1 bonus to AC."
+  it("a bonus to armor class while wearing armor holds only in armor", () => {
+    const el = (id: string, text: string, rules: unknown[] = []) =>
+      ({
+        id,
+        name: "Defense",
+        type: "Optional Feature",
+        source: "x",
+        origin: "5etools",
+        supports: [],
+        description: text,
+        setters: {},
+        rules,
+        compendiumHidden: false,
+      }) as never;
+    const old = el("A", "<p>While you are wearing armor, you gain a +1 bonus to AC.</p>");
+    const now = el("B", "While you're wearing Light, Medium, or Heavy armor, you gain a +1 bonus to Armor Class.", [
+      { kind: "stat", name: "ac:misc", value: "1" },
+    ]);
+    const none = el("C", "You gain a +1 bonus to AC.");
+    applyArmorBonus([old, now, none]);
+    expect((old as { rules: unknown[] }).rules).toEqual([{ kind: "stat", name: "ac:misc", value: "1", equipped: "[armor:any]" }]);
+    expect((now as { rules: unknown[] }).rules).toEqual([{ kind: "stat", name: "ac:misc", value: "1", equipped: "[armor:any]" }]);
+    expect((none as { rules: unknown[] }).rules).toEqual([]);
+  });
+
+  // The Scout's Survivalist (found 2026-11-17): expertise in Nature and Survival with no proficiency, because its
+  // "if you don't already have it" read as a condition on the whole sentence.
+  it('proficiency the text gives "if you don\'t already have it" is given', () => {
+    expect(
+      trainingsFromText(
+        " When you choose this archetype at 3rd level, you gain proficiency in the Nature and Survival skills if you don't already have it.",
+      ).skills,
+    ).toEqual(["nature", "survival"]);
+    expect(trainingsFromText("If you are raging, you gain proficiency in the Athletics skill.").skills).toEqual([]);
+  });
+
+  it("numbers held only in a state entered in play are not lasting ones", () => {
+    expect(stateOnly("<p>While in a Wild Shape form, you gain the following benefits.</p>")).toBe(true);
+    expect(stateOnly("While shifted, your walking speed increases by 10 feet.")).toBe(true);
+    expect(stateOnly("While your Elemental Attunement is active, you also have a Fly Speed.")).toBe(true);
+    expect(stateOnly("While raging, you have resistance to all damage except psychic damage.")).toBe(true);
+    // Wearing or holding is the item rules' business, and a later sentence's "while" does not make the feature one.
+    expect(stateOnly("While you're wearing Light, Medium, or Heavy armor, you gain a +1 bonus to Armor Class.")).toBe(false);
+    expect(stateOnly("Your speed increases by 10 feet. While raging, you also ignore difficult terrain.")).toBe(false);
   });
 
   it("saving throws: all, or the named ones, and never a choice of them", () => {
@@ -104,6 +162,11 @@ describe("lasting numbers read from a feature's text", () => {
       value: "wisdom:modifier",
     });
     expect(initiativeFromText("You gain a +5 bonus to initiative.")[0]).toMatchObject({ value: "5" });
+    // The Harengon's Hare-Trigger (found 2026-11-17: every Harengon on 5e.tools content lacked it).
+    expect(initiativeFromText("You can add your proficiency bonus to your initiative rolls.")[0]).toMatchObject({
+      name: "initiative",
+      value: "proficiency",
+    });
     expect(initiativeFromText("When you roll Initiative, you can add your Proficiency Bonus to the roll.")[0]).toMatchObject({
       value: "proficiency",
     });

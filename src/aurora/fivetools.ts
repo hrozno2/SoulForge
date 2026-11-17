@@ -8,7 +8,15 @@
  */
 import { applyFoundry } from "./foundry";
 import { applyLore } from "./lore";
-import { applyTextAttacks, applyTextDc, applyTextStats, applyTextUseSteps, applyTextUses, dropPoolDefaults } from "./textMechanics";
+import {
+  applyArmorBonus,
+  applyTextAttacks,
+  applyTextDc,
+  applyTextStats,
+  applyTextUseSteps,
+  applyTextUses,
+  dropPoolDefaults,
+} from "./textMechanics";
 import { isModern } from "./edition";
 import type { AElement, ARule, SetterValue } from "./types";
 
@@ -721,6 +729,18 @@ function trainingRules(e0: J, label: string, out: AElement[], ctx: Ctx, idBase: 
   rules.push(...skillRules(single.skillProficiencies, label));
   // "other": the language the entry's own text names.
   const langs = (single.languageProficiencies as J[] | undefined)?.map((entry) => {
+    // "Any standard" beside a list, where the text gives one language from the list ("One of your choice of Elvish,
+    // Gnomish, Goblin, or Sylvan": the Feylost, The Wild Beyond the Witchlight): the text holds, one language. A text
+    // that asks two (the Haunted One's "Choose two, one of which must be ...") keeps both.
+    if (
+      entry?.anyStandard &&
+      entry?.choose &&
+      /languages?:?"?,\s*"entry":\s*"one of your choice of/i.test(JSON.stringify(e.entries ?? ""))
+    ) {
+      const { anyStandard, ...rest } = entry;
+      void anyStandard;
+      return rest;
+    }
     if (!entry?.other) return entry;
     const text = stripTags(JSON.stringify(e.entries ?? "")).toLowerCase();
     const named = (ctx.languageNames ?? []).filter(
@@ -1076,6 +1096,7 @@ export function leveledOptionChoices(f: J, idBase: string, ctx: Ctx, out: AEleme
  * Negative adjustments (the DMG Lizardfolk's -2 Intelligence) stay.
  */
 const CUSTOM_ORIGIN_ASI = "ID_5ET_OPTION_TCE_CUSTOMIZED_ABILITY_SCORE_INCREASES";
+const CUSTOM_ORIGIN_LANG = "ID_5ET_OPTION_TCE_CUSTOMIZED_LANGUAGE";
 function customOrigin(rules0: ARule[], label: string, ctx: Ctx, out: AElement[]): ARule[] {
   // A 2014 species' increases give way to a 2014 background taken under the 2024 rules (backgroundOptions.ts: that
   // package raises three scores itself and grants this marker), as Aurora's species do.
@@ -2128,6 +2149,35 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
     overwriting("ability"),
   );
   gate((x) => (x.kind === "grant" || x.kind === "select") && x.type === "Language", overwriting("languageProficiencies"));
+  // Tasha's "Customizing Your Origin" for languages, as an option the player turns on (Aurora's "Customized Language",
+  // the same name, so a character moved from Aurora keeps it): each language the species gives can be swapped for
+  // another of the player's choice. Older species only: a 2024 species gives no languages of its own. Without it, a
+  // moved character got its species' languages back and its chosen ones went to manual additions (found 2026-11-17).
+  if (!isModern({ id, source: String(r.source) })) {
+    const fixedAt = rules.flatMap((x, i) => (x.kind === "grant" && x.type === "Language" ? [i] : []));
+    if (fixedAt.length) {
+      if (!out.some((o) => o.id === CUSTOM_ORIGIN_LANG))
+        out.push(
+          base(CUSTOM_ORIGIN_LANG, "Customized Language", "Option", srcName(ctx, "TCE"), {
+            description:
+              "<p>Customizing Your Origin: each language your species gives you can be replaced by another language of your choice.</p>",
+          }),
+        );
+      for (const i of fixedAt)
+        rules[i] = {
+          ...rules[i],
+          requirements: rules[i].requirements ? `${rules[i].requirements},!${CUSTOM_ORIGIN_LANG}` : `!${CUSTOM_ORIGIN_LANG}`,
+        } as ARule;
+      rules.push({
+        kind: "select",
+        type: "Language",
+        name: `${r.name}: customized languages`,
+        supports: "5et language",
+        number: fixedAt.length,
+        requirements: CUSTOM_ORIGIN_LANG,
+      } as ARule);
+    }
+  }
   gate(
     (x) =>
       (x.kind === "grant" || x.kind === "select") && x.type === "Proficiency" && /SKILL|skill/.test(x.kind === "grant" ? x.id : x.supports),
@@ -3561,6 +3611,22 @@ export function additionalSpellRules(
               ...(uses[i] ? { uses: uses[i] } : {}),
               ...(castAt ? { castAt } : {}),
             } as ARule);
+          } else if (r && Array.isArray((r as J).choose?.from)) {
+            // {"choose": {"from": ["color spray", "disguise self", ...], "count": 2}}: so many of the listed spells
+            // (Initiate of High Sorcery's moon spells). Resolved to every version of each, like tableSpellChoices.
+            const from = ((r as J).choose.from as string[]).map((x) => String(x).split("#")[0].split("|"));
+            rules.push({
+              kind: "select",
+              type: "Spell",
+              name: `${owner} spell`,
+              supports: from
+                .map(([name, src]) => `SPELLREF:${name.trim().toLowerCase()}|${(src ?? "").toLowerCase()}|${ownerSource.toLowerCase()}`)
+                .join("|"),
+              number: Number((r as J).choose.count) || 1,
+              level,
+              spellcasting: owner,
+              ...(uses[i] ? { uses: uses[i] } : {}),
+            } as ARule);
           } else if (r && typeof (r as J).choose === "string") {
             const crit = Object.fromEntries(
               String((r as J).choose)
@@ -3874,7 +3940,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   const spellIds: Record<string, { id: string; source: string }[]> = {};
   // One Source element per book, so lists can show release dates the way the Aurora content does.
   for (const [, json] of all) {
-    for (const b of json?.book ?? []) {
+    for (const b of [...((json?.book as J[]) ?? []), ...((json?.adventure as J[]) ?? [])]) {
       if (!b.name) continue;
       const rel = typeof b.published === "string" ? b.published.replace(/-/g, "").slice(0, 8) : "";
       out.push(
@@ -4012,6 +4078,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   applyTextSkillChoices(out);
   applyTextExpertiseOnChoices(out);
   applyTextUses(out);
+  applyArmorBonus(out);
   applyTextDc(out);
   applyTextStats(out, {
     tool: (n) => toolId(n, out),
@@ -4044,6 +4111,13 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
         if (/Fluff$/.test(k) && Array.isArray(v)) (fluff.get(k) ?? fluff.set(k, []).get(k)!).push(...v);
   if (fluff.size) lastLoreReport = applyLore(fluff, out, ftId, entriesHtml);
   resolvePrerequisites(out);
+  // A spell set (one of a feat's or feature's named sets: Initiate of High Sorcery's moons) is from its owner's book, so
+  // its choices take the owner's edition and offer that edition's copy of each spell; filed under "5etools" they were
+  // edition-neutral and offered both copies of Hex (found 2026-11-17).
+  const setBook = new Map<string, string>();
+  for (const e of out)
+    for (const r of e.rules) if (r.kind === "select" && r.type === "Spell Set") setBook.set(String(r.supports), e.source);
+  for (const e of out) if (e.type === "Spell Set" && setBook.has(e.supports[0])) e.source = setBook.get(e.supports[0])!;
   return out;
 }
 
@@ -4129,6 +4203,9 @@ function resolveSpellRefs(out: AElement[], spellIds: Record<string, { id: string
 /** Files a 5etools data folder offers, for a base address. Index files list the book-specific parts. */
 export const FIVETOOLS_CORE_FILES = [
   "books.json",
+  // The adventures' names and dates: without them a background or species from an adventure (Tomb of Annihilation's
+  // Archaeologist, The Tortle Package) had its code for a book name and no edition, so nothing could match it.
+  "adventures.json",
   "races.json",
   "backgrounds.json",
   "feats.json",

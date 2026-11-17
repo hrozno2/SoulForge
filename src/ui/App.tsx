@@ -142,7 +142,7 @@ export function App() {
   const queue = useMemo(() => new SaveQueue(saveCharacterRecord), []);
   const saveState = useSyncExternalStore(queue.subscribe, queue.getState);
   // Another window opened the same character later: this one stops saving it (S8, src/ui/tabGuard.ts).
-  const guard = useMemo(() => new TabGuard(browserChannel()), []);
+  const guard = useMemo(() => new TabGuard(() => browserChannel()), []);
   const heldElsewhere = useSyncExternalStore(guard.subscribe, guard.getHeld);
   useEffect(() => () => guard.close(), [guard]);
   useEffect(() => guard.claim(id), [guard, id]);

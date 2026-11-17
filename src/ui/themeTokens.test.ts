@@ -21,3 +21,24 @@ describe("themed components use the theme's tokens", () => {
     expect(bad).toEqual([]);
   });
 });
+
+/**
+ * A fixed dark background with the theme's ink on it is dark on dark in a light theme (Chris 2026-11-13: in light themes
+ * icons became unreadable and cards stayed dark). Such a rule takes the theme's paper (var(--panel)), or keeps its dark
+ * face with fixed light ink. Rules inside a part that is dark in every theme (the top bar, Play's hero header) are fine.
+ */
+describe("light themes", () => {
+  it("no fixed dark background under the theme's ink", () => {
+    const DARK_SCOPE = /\.topbar|\.csearch|\.play-head|\.hero|\.lock-note|data-theme="dark"|data-skin=/;
+    const darkBg =
+      /background(?:-color)?:[^;]*(?:rgba\(\s*[0-2]?\d\s*,\s*[0-2]?\d\s*,\s*[0-2]?\d\s*,\s*0?\.[3-9]\d*\)|#[01][0-9a-f]{5}\b|#[01][0-9a-f]{2}\b)/i;
+    const themeInk = /(?<![-\w])color:\s*var\(--(?:text|muted|gold|gold2|ink)\)/;
+    const bad: string[] = [];
+    for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      const sel = m[1].trim();
+      if (DARK_SCOPE.test(sel) || sel.startsWith("@")) continue;
+      if (darkBg.test(m[2]) && themeInk.test(m[2])) bad.push(sel.replace(/\s+/g, " "));
+    }
+    expect(bad).toEqual([]);
+  });
+});

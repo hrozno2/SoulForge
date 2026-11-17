@@ -64,6 +64,17 @@ const EXPLAINED: Record<string, string> = {
   "choices Feat Resilient": FILED_DIFFERENTLY,
   "choices Feat Blessed Warrior": FILED_DIFFERENTLY,
   "choices Feat Druidic Warrior": FILED_DIFFERENTLY,
+  // Twinned since 2026-11-17, when the adventures got their names (adventures.json): Dragonlance and the Witchlight.
+  // 5e.tools asks the moon or the alignment first and the cantrip and spells with it; Aurora asks them side by side.
+  "choices Feat Initiate of High Sorcery": FILED_DIFFERENTLY,
+  "choices Feat Divinely Favored": FILED_DIFFERENTLY,
+  "choices Background Mage of High Sorcery": FILED_DIFFERENTLY,
+  // Lunar Embodiment: the phase is chosen at each long rest.
+  "choices Archetype Lunar Sorcery": IN_PLAY,
+  // Lunar Magic: a spell of the robe's schools, and the ability to cast it with; Aurora's copies ask neither.
+  "choices Feat Adept of the Black Robes": FIVE_RIGHT,
+  "choices Feat Adept of the Red Robes": FIVE_RIGHT,
+  "choices Feat Adept of the White Robes": FIVE_RIGHT,
 };
 /** What 5e.tools-only characters really lack or get wrong: to close before Aurora leaves (D7), or to accept. */
 const OPEN: Record<string, string> = {};

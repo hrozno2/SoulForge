@@ -120,3 +120,26 @@ describe("spells cast without a slot", () => {
     expect(shortRest(ch, sheet).play.featureUses).toEqual({ [freeCastKey(rebuke.id)]: 1 });
   });
 });
+
+// Initiate of High Sorcery (Dragonlance): "choose two of these four spells" is {choose: {from: [...], count: 2}}; only the
+// "level=0|class=Wizard" form was read, so a moon gave its cantrip and none of its spells (found 2026-11-17).
+describe("a choice among named spells", () => {
+  it("offers exactly the listed spells, as many as it says", () => {
+    const { rules } = additionalSpellRules(
+      [
+        {
+          known: { _: [{ choose: "level=0|class=Wizard" }] },
+          innate: {
+            _: { daily: { "1e": [{ choose: { from: ["color spray", "disguise self", "feather fall", "longstrider"], count: 2 } }] } },
+          },
+        },
+      ],
+      "Initiate of High Sorcery",
+      "DSotDQ",
+    );
+    const listed = rules.find((r) => r.kind === "select" && String(r.supports).includes("SPELLREF:"));
+    expect(listed).toMatchObject({ kind: "select", type: "Spell", number: 2 });
+    expect(String((listed as { supports: string }).supports).split("|SPELLREF:").length).toBe(4);
+    expect(String((listed as { supports: string }).supports)).toContain("SPELLREF:feather fall");
+  });
+});

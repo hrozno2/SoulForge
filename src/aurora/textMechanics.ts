@@ -31,6 +31,47 @@ const plain = (html: string) =>
     .replace(/\s+/g, " ");
 const count = (w?: string) => (w ? (COUNT[w.toLowerCase().replace(/ times$/, "")] ?? (Number(w.replace(/ times$/, "")) || 1)) : 1);
 
+/**
+ * A feature whose text puts all it gives under a state the character enters in play: "While in a Wild Shape form, you
+ * gain the following benefits" (the 2024 Circle of the Moon's Improved Circle Forms), "While shifted, your walking speed
+ * increases" (a Shifter), "While your Elemental Attunement is active" (Way of the Elements). Its numbers are not
+ * carried all the time; Foundry's data marks some of them always on (found 2026-11-17: every Moon Druid of level 6
+ * added Wisdom to Constitution saves). Wearing or holding something is not such a state: the item rules handle it.
+ */
+export function stateOnly(html: string): boolean {
+  const first =
+    plain(html)
+      .trim()
+      .split(/(?<=[.:])\s/)[0] ?? "";
+  return /^while (?:you(?:'re| are) )?(?:in (?:a |your )?wild shape\b|shifted\b|raging\b|your rage is active|transformed\b|in your [a-z' ]+ form\b|your [a-z' ]+ is active\b)/i.test(
+    first,
+  );
+}
+
+/**
+ * "While you are wearing armor, you gain a +1 bonus to AC" (the Defense fighting style, 2014; the 2024 one says "Light,
+ * Medium, or Heavy armor"): the bonus holds in armor only. The 2014 one had no rule at all, and Foundry's data gives the
+ * 2024 one at all times (found 2026-11-17). An armor class bonus the element already carries gets the condition; none,
+ * and one is added. Items are left to the item rules.
+ */
+export function applyArmorBonus(out: AElement[]): number {
+  let n = 0;
+  const RE = /while you(?:'re| are) wearing (?:light, medium, or heavy )?armor,? you gain a \+(\d+) bonus to (?:ac|armor class)\b/i;
+  for (const el of out) {
+    if (el.origin !== "5etools" || /Item|Armor|Weapon/.test(el.type)) continue;
+    const m = RE.exec(plain(el.description ?? ""));
+    if (!m) continue;
+    const mine = el.rules.filter((r) => r.kind === "stat" && r.name.toLowerCase() === "ac:misc" && String(r.value) === m[1]);
+    if (mine.length) {
+      el.rules = el.rules.map((r) =>
+        mine.includes(r) && !(r as { equipped?: string }).equipped ? ({ ...r, equipped: "[armor:any]" } as ARule) : r,
+      );
+    } else el.rules = [...el.rules, stat("ac:misc", m[1], { equipped: "[armor:any]" })];
+    n++;
+  }
+  return n;
+}
+
 /** How many uses the text gives, as a stat formula; undefined when it names none. */
 export function usesFromText(text: string): string | undefined {
   let m = new RegExp(
@@ -315,10 +356,12 @@ const sentences = (text: string) =>
   text
     .split(/(?<=[.!?])\s+/)
     .map((s) =>
-      s.replace(
-        /^(?:when you (?:join|choose|adopt|select|reach)\b[^,]*,|(?:at|by|beginning at|starting at|starting when you\b[^,]*at) \d+\w* level,)\s*/i,
-        "",
-      ),
+      s
+        .trim()
+        .replace(
+          /^(?:when you (?:join|choose|adopt|select|reach)\b[^,]*,|(?:at|by|beginning at|starting at|starting when you\b[^,]*at) \d+\w* level,)\s*/i,
+          "",
+        ),
     );
 /** A sentence that only holds some of the time ("when you rage, your speed increases") is not a passive statistic. */
 const CONDITIONAL = /\b(when|whenever|until|if|for \d+|for the duration|as a(?:n)? (?:bonus )?action|until)\b/i;
@@ -342,7 +385,7 @@ export function halfProficiencyFromText(text: string): ARule[] {
 /** An armor class formula of the character's own: "your AC equals 10 + your Dexterity modifier + your Wisdom modifier". */
 export function armorClassFromText(id: string, name: string, text: string): ARule[] {
   const m = new RegExp(
-    `your (?:base )?(?:armor class|ac)(?: equals| is| of)(?: equal to)? (\\d+)(?: (?:\\+|plus) (?:your )?(${ABILITY})(?: modifier)?(?: (?:\\+|and|plus) (?:your )?(${ABILITY}))?)?`,
+    `(?:your|you an?) (?:base )?(?:armor class|ac)(?: equals| is| of)(?: equal to)? (\\d+)(?: (?:\\+|plus) (?:your )?(${ABILITY})(?: modifier)?(?: (?:\\+|and|plus) (?:your )?(${ABILITY}))?)?`,
     "i",
   ).exec(text);
   if (!m) return [];
@@ -422,7 +465,11 @@ export function initiativeFromText(text: string): ARule[] {
   if (m) return [stat("initiative", `${m[1].toLowerCase()}:modifier`)];
   m = /\+(\d+) bonus to initiative/i.exec(text);
   if (m) return [stat("initiative", m[1])];
-  if (/when you roll initiative, you can add your proficiency bonus/i.test(text))
+  if (
+    /when you roll initiative, you can add your proficiency bonus|you can add your proficiency bonus to your initiative(?: rolls)?/i.test(
+      text,
+    )
+  )
     return [stat("initiative", "proficiency", { bonus: "proficiency" })];
   return [];
 }
@@ -455,7 +502,10 @@ const SKILL_NAMES = Object.values(SKILLS_OF).flat();
  */
 export function trainingsFromText(text: string): { armor: string[]; weapons: string[]; tools: string[]; skills: string[] } {
   const out = { armor: [] as string[], weapons: [] as string[], tools: [] as string[], skills: [] as string[] };
-  for (const s of sentences(text)) {
+  // "if you don't already have it" is no condition on the gift (the Scout's Survivalist): it goes before the test.
+  for (const s of sentences(text).map((x) =>
+    x.replace(/,?\s*if you (?:don't|do not) already have (?:it|them|this proficiency|that proficiency)\b/gi, ""),
+  )) {
     if (/\bor\b|your choice|\b(?:one|two|three) (?:type|kind|skill|tool)/i.test(s) || CONDITIONAL.test(s)) continue;
     // "You gain a Disguise Kit and a Poisoner's Kit, and you have proficiency with them."
     const them = /\byou gain ([^.]+?),? and you have proficiency with them/i.exec(s);
@@ -518,6 +568,8 @@ export function applyTextStats(
     if (el.origin !== "5etools" || !USES_TYPES.has(el.type)) continue;
     // "You gain proficiency in X. If you already have it, …" is a choice with X as its default (fivetools.ts
     // settleFallbacks), not a plain grant: that sentence is not read here.
+    // Numbers that hold only in a state entered in play are not read as lasting ones.
+    if (stateOnly(el.description ?? "")) continue;
     const text = plain(el.description ?? "").replace(/[^.]*\bgain proficiency\b[^.]*\.\s*(?=if you (?:are )?already\b)/gi, "");
     const has = (name: string) => el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase() === name);
     const has2 = (id?: string) => el.rules.some((r) => r.kind === "grant" && r.id === id);

@@ -23,8 +23,8 @@ function bus() {
 describe("two windows with the same character (S8)", () => {
   it("the window that opened it last holds it; the other stops saving until it takes it back", () => {
     const make = bus();
-    const a = new TabGuard(make());
-    const b = new TabGuard(make());
+    const a = new TabGuard(make);
+    const b = new TabGuard(make);
     a.claim("c1");
     expect(a.heldElsewhere).toBe(false);
     b.claim("c1");
@@ -37,16 +37,27 @@ describe("two windows with the same character (S8)", () => {
 
   it("different characters in two windows do not touch each other", () => {
     const make = bus();
-    const a = new TabGuard(make());
-    const b = new TabGuard(make());
+    const a = new TabGuard(make);
+    const b = new TabGuard(make);
     a.claim("c1");
     b.claim("c2");
     expect(a.heldElsewhere).toBe(false);
     expect(b.heldElsewhere).toBe(false);
   });
 
+  it("keeps working after it is closed and used again (React runs effects twice in development)", () => {
+    const make = bus();
+    const a = new TabGuard(make);
+    const b = new TabGuard(make);
+    a.claim("c1");
+    a.close();
+    a.claim("c1");
+    b.claim("c1");
+    expect(a.heldElsewhere).toBe(true);
+  });
+
   it("works without a channel", () => {
-    const g = new TabGuard(null);
+    const g = new TabGuard(() => null);
     g.claim("c1");
     expect(g.heldElsewhere).toBe(false);
   });

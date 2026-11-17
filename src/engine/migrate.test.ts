@@ -9,7 +9,8 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { normalizeCharacter } from "../aurora/character";
+import { normalizeCharacter, type Character } from "../aurora/character";
+import type { ARegistry } from "../aurora/registry";
 import { resolve } from "../aurora/engine";
 import { randomCharacter } from "../aurora/randomCharacter";
 import type { RefClass } from "../aurora/rulesCheck";
@@ -51,6 +52,40 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")(
     if (process.env.MIGRATE_TRACE) (globalThis as { __trace?: string[] }).__trace = [];
     const fresh = Number(process.env.MIGRATE_FRESH) || 0;
     const detail: string[] = [];
+    // MIGRATE_DETAIL=3,17 (fresh characters by number, library characters by name): every choice before and after, to
+    // <cache>/engine/migrate-detail.txt.
+    const wantDetail = (process.env.MIGRATE_DETAIL ?? "").split(",").filter(Boolean);
+    const detailFor = (label: string, ch: Character, r: MoveResult) => {
+      if (!wantDetail.some((w) => w === label || (!/^\d+$/.test(w) && label.includes(w)))) return;
+      const dump = (tag: string, c: Character, reg: ARegistry) => {
+        const rr = resolve(c, reg);
+        const sh = buildSheet(rr);
+        const lines = [
+          `  ${tag} scores ${JSON.stringify(sh.abilities.map((a) => a.score))} ac ${sh.ac.value} ${JSON.stringify(sh.ac.parts ?? "")} race ${reg.get(c.race ?? "")?.name} (${reg.get(c.race ?? "")?.source}) bg ${reg.get(c.background ?? "")?.name} (${reg.get(c.background ?? "")?.source}) options ${JSON.stringify(c.options)} extras ${JSON.stringify(c.extras)} prepared ${JSON.stringify(Object.fromEntries(Object.entries(c.prepared ?? {}).map(([k, v]) => [k, (v as string[]).length])))}`,
+          `    skills ${JSON.stringify(sh.skills.map((k) => `${k.name} ${k.bonus}${k.level === "expertise" ? "E" : k.level === "proficient" ? "P" : ""}`))}`,
+          `    saves ${JSON.stringify(sh.abilities.map((a) => a.save))}`,
+          `    worn: ${c.inventory
+            .filter((it: Character["inventory"][number]) => it.equipped)
+            .map((it: Character["inventory"][number]) => reg.get(it.id)?.name ?? it.custom?.name ?? it.id)
+            .join("; ")}`,
+        ];
+        for (const x of rr.slots)
+          lines.push(
+            `    [${x.at}] ${x.owner.name} (${x.owner.source}) / ${x.rule.name} <${x.rule.type}> n=${x.rule.number}${x.rule.optional ? " opt" : ""}: ${x.chosen.map((id) => reg.get(id)?.name ?? id).join("; ") || "-"}${x.chosen.some((id) => x.blocked.has(id)) ? " BLOCKED" : ""} | ${x.options.length} options`,
+          );
+        lines.push(
+          `    spells: ${sh.casting.map((c2) => `${c2.name}: ${[...c2.cantripsKnown, ...c2.spells, ...c2.granted].map((p) => reg.get(p.id)?.name ?? p.id).join(", ")}`).join(" || ")}`,
+        );
+        return lines.join("\n");
+      };
+      detail.push(
+        `CHARACTER ${label}`,
+        dump("OLD", ch, both),
+        dump("NEW", r.migration.ch, five),
+        `  kept ${JSON.stringify(r.migration.kept)} filled ${JSON.stringify(r.migration.filled)} unplaced ${JSON.stringify(r.migration.unplaced)} noTwin ${JSON.stringify(r.migration.noTwin.map((x) => x.name))}`,
+        "",
+      );
+    };
     if (fresh) {
       const aurora = loadContentSet(CACHE!, "aurora");
       let seed = Number(process.env.RULES_SEED) || 20261112;
@@ -65,40 +100,23 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")(
         const r0 = resolve(ch, aurora);
         const cls = ch.classes.map((c) => `${aurora.get(c.classId)?.name} ${c.level}`).join("/");
         const r = moveAndCompare(ch, both, five, ref);
-        // MIGRATE_DETAIL=3,17: every choice of those characters before and after, to <cache>/engine/migrate-detail.txt.
-        if ((process.env.MIGRATE_DETAIL ?? "").split(",").includes(String(i + 1))) {
-          const dump = (label: string, c: typeof ch, reg: typeof both) => {
-            const rr = resolve(c, reg);
-            const sh = buildSheet(rr);
-            const lines = [
-              `  ${label} scores ${JSON.stringify(sh.abilities.map((a) => a.score))} ac ${sh.ac.value} ${JSON.stringify(sh.ac.parts ?? "")} race ${reg.get(c.race ?? "")?.name} (${reg.get(c.race ?? "")?.source}) bg ${reg.get(c.background ?? "")?.name} (${reg.get(c.background ?? "")?.source}) options ${JSON.stringify(c.options)} extras ${JSON.stringify(c.extras)} prepared ${JSON.stringify(Object.fromEntries(Object.entries(c.prepared ?? {}).map(([k, v]) => [k, v.length])))}`,
-            ];
-            lines.push(
-              `    worn: ${c.inventory
-                .filter((it) => it.equipped)
-                .map((it) => reg.get(it.id)?.name ?? it.id)
-                .join("; ")}`,
-            );
-            for (const x of rr.slots)
-              lines.push(
-                `    [${x.at}] ${x.owner.name} (${x.owner.source}) / ${x.rule.name} <${x.rule.type}> n=${x.rule.number}${x.rule.optional ? " opt" : ""}: ${x.chosen.map((id) => reg.get(id)?.name ?? id).join("; ") || "-"}${x.chosen.some((id) => x.blocked.has(id)) ? " BLOCKED" : ""} | ${x.options.length} options`,
-              );
-            lines.push(
-              `    spells: ${sh.casting.map((c2) => `${c2.name}: ${[...c2.cantripsKnown, ...c2.spells, ...c2.granted].map((p) => reg.get(p.id)?.name ?? p.id).join(", ")}`).join(" || ")}`,
-            );
-            return lines.join("\n");
-          };
-          detail.push(
-            `FRESH ${i + 1}`,
-            dump("OLD", ch, both),
-            dump("NEW", r.migration.ch, five),
-            `  kept ${JSON.stringify(r.migration.kept)} filled ${JSON.stringify(r.migration.filled)} unplaced ${JSON.stringify(r.migration.unplaced)} noTwin ${JSON.stringify(r.migration.noTwin.map((x) => x.name))}`,
-            "",
-          );
-        }
+        detailFor(String(i + 1), ch, r);
         results.push({
           ...r,
           name: `fresh ${i + 1}: ${aurora.get(ch.race ?? "")?.name ?? "?"} ${cls} (${aurora.get(ch.classes[0]?.classId)?.source ?? ""}), ${aurora.get(ch.background ?? "")?.name ?? "?"}; ${r0.slots.length} choices`,
+        });
+      }
+    } else if (process.env.MIGRATE_LIBRARY) {
+      // MIGRATE_LIBRARY=<a Soul Forge backup file>: a player's own library (D6's exit check), each character as stored.
+      const backup = JSON.parse(readFileSync(process.env.MIGRATE_LIBRARY, "utf8")) as { characters?: { name: string; data: unknown }[] };
+      for (const rec of backup.characters ?? []) {
+        const ch = normalizeCharacter(rec.data as never);
+        const cls = ch.classes.map((c) => `${both.get(c.classId)?.name} ${c.level}`).join("/");
+        const r = moveAndCompare(ch, both, five, ref);
+        detailFor(rec.name, ch, r);
+        results.push({
+          ...r,
+          name: `${rec.name}: ${both.get(ch.race ?? "")?.name ?? "?"} ${cls}, ${both.get(ch.background ?? "")?.name ?? "?"}`,
         });
       }
     } else
@@ -110,6 +128,7 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")(
           continue;
         }
         const r = moveAndCompare(ch, both, five, ref);
+        detailFor(f.split("/").slice(-3).join("/"), ch, r);
         results.push({ ...r, name: f.split("/").slice(-3).join("/") });
       }
     const dir = join(CACHE!, "engine");
@@ -118,7 +137,15 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")(
     if (process.env.MIGRATE_TRACE)
       writeFileSync(join(dir, "migrate-trace.txt"), ((globalThis as { __trace?: string[] }).__trace ?? []).join("\n"));
     // A smaller sample (RULES_DIFF_MAX) reports to a file of its own and is not held against the accepted counts.
-    const tag = fresh ? `-fresh-${fresh}` : only ? "-only" : process.env.RULES_DIFF_MAX ? `-${max}` : "";
+    const tag = fresh
+      ? `-fresh-${fresh}`
+      : process.env.MIGRATE_LIBRARY
+        ? "-library"
+        : only
+          ? "-only"
+          : process.env.RULES_DIFF_MAX
+            ? `-${max}`
+            : "";
     writeFileSync(join(dir, `migrate${tag}.md`), moveReport(results));
     if (tag) {
       console.log(

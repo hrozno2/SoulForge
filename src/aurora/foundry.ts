@@ -12,6 +12,7 @@
  * Foundry path shows up in the report instead of being dropped.
  */
 import type { AElement, ARule } from "./types";
+import { stateOnly } from "./textMechanics";
 
 type J = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -485,7 +486,11 @@ export function applyFoundry(
               .flatMap((a) => ((a.effects as J[]) ?? []).map((x) => String(x?.foundryId ?? x?._id ?? "")))
               .filter(Boolean),
           );
+          // A feature that gives its numbers only in a state entered in play (Wild Shape, shifted): not always on, whatever
+          // Foundry marks (textMechanics.ts, stateOnly).
+          const inState = stateOnly(el.description ?? "");
           for (const eff of (e.effects as J[]) ?? []) {
+            if (inState) break;
             if (onUse.has(String(eff.foundryId ?? eff._id ?? "")) && eff.transfer !== true) continue;
             // Applied when used, not always on. An enchantment goes on an item, and alternatives are listed side by side
             // (Enhanced Arcane Focus's +1 and +2 added up to +3 for every Artificer).

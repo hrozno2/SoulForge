@@ -488,6 +488,45 @@ describe.skipIf(!DIR)("real 5etools data", () => {
     expect([sc[0], sc[2]]).toEqual([11, 11]);
   });
 
+  // Tasha's Customizing Your Origin for languages (found 2026-11-17 moving characters that used Aurora's option).
+  it("an older species' languages can be swapped with the Customized Language option", () => {
+    const sp = reg!.ofType("Race").find((b) => b.name === "Aasimar" && b.source.includes("Volo"));
+    if (!sp) return;
+    const langs = (options: string[]) => {
+      const ch = { ...newCharacter(), race: sp.id, options };
+      const r = resolve(ch, reg!);
+      return {
+        granted: r.active
+          .filter((a) => a.el.type === "Language")
+          .map((a) => a.el.name)
+          .sort(),
+        open: r.slots.filter((x) => x.rule.type === "Language").reduce((n, x) => n + x.rule.number, 0),
+      };
+    };
+    expect(langs([]).granted).toEqual(["Celestial", "Common"]);
+    const custom = langs(["ID_5ET_OPTION_TCE_CUSTOMIZED_LANGUAGE"]);
+    expect(custom.granted).toEqual([]);
+    expect(custom.open).toBe(2);
+  });
+
+  // The Feylost's data adds "any standard" to its list of four; its text gives one language (found 2026-11-17). The
+  // Haunted One's text asks two, one from its list, and keeps both.
+  it("a background's languages follow its text where the data adds an extra one", () => {
+    const langChoices = (bgName: string, src: string) => {
+      const bg = reg!.ofType("Background").find((b) => b.name === bgName && b.source.includes(src));
+      if (!bg) return undefined;
+      const ch = newCharacter();
+      ch.background = bg.id;
+      return resolve(ch, reg!)
+        .slots.filter((s) => s.rule.type === "Language")
+        .reduce((n, s) => n + s.rule.number, 0);
+    };
+    const fey = langChoices("Feylost", "Witchlight");
+    if (fey !== undefined) expect(fey).toBe(1);
+    const ho = langChoices("Haunted One", "Van Richten");
+    if (ho !== undefined) expect(ho).toBe(2);
+  });
+
   it("a background's several feats are a choice of one (Rewarded; the Haunted One's Survivor or a Dark Gift)", () => {
     const feats = (bgName: string) => {
       const bg = reg!.ofType("Background").find((b) => b.name === bgName);

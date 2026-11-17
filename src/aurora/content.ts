@@ -338,8 +338,9 @@ export async function storeFiveTools(name: string, files: Map<string, string>, b
  * The 5e.tools importer's format. Raise it when the importer starts fetching files it did not before; a full import
  * of an older format is then out of date, and the app asks the user to import it again.
  *   2: magic variants, lore (fluff), bestiary beasts and Plutonium's Foundry files (2026-10-22)
+ *   3: adventures.json, the adventures' names and dates (2026-11-17)
  */
-export const FIVETOOLS_IMPORT_FORMAT = 2;
+export const FIVETOOLS_IMPORT_FORMAT = 3;
 
 /**
  * Full 5e.tools imports made by an older importer: they lack files this version reads. A source without a stamp
@@ -362,7 +363,12 @@ export function outdatedFiveTools(sources: SourceConfig[]): SourceConfig[] {
     const list = files(s);
     if (!list.some((f) => /\/races\.json$/.test(f))) return false;
     const format =
-      s.importFormat ?? (list.some((f) => /\/magicvariants\.json$/.test(f)) && list.some((f) => /\/foundry-races\.json$/.test(f)) ? 2 : 1);
+      s.importFormat ??
+      (list.some((f) => /\/magicvariants\.json$/.test(f)) && list.some((f) => /\/foundry-races\.json$/.test(f))
+        ? list.some((f) => /\/adventures\.json$/.test(f))
+          ? 3
+          : 2
+        : 1);
     return format < FIVETOOLS_IMPORT_FORMAT;
   });
 }

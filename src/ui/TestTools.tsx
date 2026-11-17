@@ -189,7 +189,19 @@ export async function moveCharactersToFiveTools(both: ARegistry, onProgress: (s:
     } catch (e) {
       results.push({
         name: rec.name,
-        migration: { ch: rec.data, moved: 0, noTwin: [], unplaced: [], open: [], againstRules: [], filled: [], kept: [], decisions: [] },
+        migration: {
+          ch: rec.data,
+          moved: 0,
+          noTwin: [],
+          unplaced: [],
+          open: [],
+          againstRules: [],
+          filled: [],
+          kept: [],
+          decisions: [],
+          customItems: [],
+          textKept: [],
+        },
         changed: [],
         dropped: [],
         rules: [`Could not be moved: ${(e as Error).message} (new)`],

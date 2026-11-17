@@ -281,6 +281,13 @@ export function moveNote(r: MoveResult): string {
   if (other.length) parts.push("Numbers that changed:", ...other.map((x) => `- ${x}`));
   if (r.migration.unplaced.length)
     parts.push("Earlier picks no choice takes now:", ...r.migration.unplaced.map((u) => `- ${u.choice}: ${u.name}`));
+  if (r.migration.customItems.length)
+    parts.push("Gear 5e.tools has no version of, kept as custom items (Equipment):", ...r.migration.customItems.map((x) => `- ${x}`));
+  if (r.migration.textKept.length)
+    parts.push(
+      "Content 5e.tools has no version of, kept in the file and written out here so nothing is lost:",
+      ...r.migration.textKept.map((x) => `- ${x.name} (${x.type}): ${x.text}`),
+    );
   if (r.migration.kept.length)
     parts.push("Your picks 5e.tools has no choice for, kept all the same:", ...r.migration.kept.map((x) => `- ${x}`));
   if (r.migration.decisions.length)

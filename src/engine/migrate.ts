@@ -11,7 +11,8 @@ import type { Character, MoveDecision } from "../aurora/character";
 import { autoFill } from "../aurora/autofill";
 import { repeatedPicks } from "../aurora/rulesCheck";
 import { resolve } from "../aurora/engine";
-import { buildSheet } from "../aurora/sheet";
+import { buildSheet, stripHtml } from "../aurora/sheet";
+import { itemWeight } from "../aurora/engine";
 import type { ARegistry } from "../aurora/registry";
 import type { AElement } from "../aurora/types";
 import { conceptOf, nameKey } from "./concepts";
@@ -38,6 +39,13 @@ export interface Migration {
   kept: string[];
   /** Subclasses kept as built where the newer rules have their own version: the player's call (moveDecisions). */
   decisions: MoveDecision[];
+  /** Items 5e.tools has no version of, kept as custom items with their weight, cost and text. */
+  customItems: string[];
+  /**
+   * Other content 5e.tools has no version of (an old Unearthed Arcana spell): its id stays in the file, and its text is
+   * given here so the player's note holds it whatever content is loaded later.
+   */
+  textKept: { name: string; type: string; text: string }[];
 }
 
 const isFive = (e: AElement | undefined) => !!e && (e.origin === "5etools" || e.id.startsWith("ID_5ET"));
@@ -139,6 +147,7 @@ const DRAGON_DAMAGE: Record<string, string> = {
 export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry): Migration {
   const twin = fiveToolsTwins(from);
   const noTwin = new Map<string, { id: string; name: string; type: string }>();
+  const customItems: string[] = [];
   let moved = 0;
   // `keep`: an id the character holds; one with no twin is reported. Choice owners are only mapped to match picks.
   const map = (id: string | undefined, keep = true): string | undefined => {
@@ -219,7 +228,28 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     classes: ch.classes.map((c) => ({ ...c, classId: map(c.classId)! })),
     options: ch.options.map((x) => map(x)!),
     extras: ch.extras.map((x) => map(x)!),
-    inventory: ch.inventory.map((it) => (it.id ? { ...it, id: map(it.id)! } : it)),
+    // An item with no 5e.tools version becomes a custom item of the same name, weight, cost and text, so it stays on
+    // the sheet and in print (a Wooden Stake from Curse of Strahd, the 2014 "String (10 feet)").
+    inventory: ch.inventory.map((it) => {
+      if (!it.id) return it;
+      const el = from.get(it.id);
+      if (el && !twin(it.id) && to.get(it.id) === undefined && /item|armor|weapon/i.test(el.type)) {
+        customItems.push(el.name);
+        const cost = el.setters.cost;
+        return {
+          ...it,
+          id: "",
+          custom: {
+            name: el.name,
+            ...(itemWeight(el) ? { weight: itemWeight(el) } : {}),
+            ...(cost?.value ? { cost: `${cost.value} ${cost.attrs.currency ?? "gp"}`.trim() } : {}),
+            ...(el.description ? { description: stripHtml(el.description).trim() } : {}),
+            ...(it.custom ?? {}),
+          },
+        };
+      }
+      return { ...it, id: map(it.id)! };
+    }),
     prepared: Object.fromEntries(Object.entries(ch.prepared ?? {}).map(([k, v]) => [k, v.map((x) => map(x)!)])),
     companions: (ch.companions ?? []).map((c) => (c.id ? { ...c, id: map(c.id)! } : c)),
     // Everything else that names content by id: pinned favorites (a spell, feature or item), uses spent per feature,
@@ -277,7 +307,19 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // infusion Class Features for 5e.tools' Optional Features); or the owner's name with the pick's ("Magic Initiate
   // (Bard)" for Magic Initiate's "Bard").
   type Slot = ReturnType<typeof resolve>["slots"][number];
-  const ownerOf = (s: Slot, p: Pick) => p.owner === s.owner.id || p.ownerName === nameKey(s.owner.name);
+  // By name only for the same kind of owner: Magic Initiate's spell list "Druid" (a feat's option) is not the Druid class;
+  // taken for it, the feat's cantrips went to the class's places and pushed the class's own pick out (fresh 40,
+  // 2026-11-17). The two providers type features differently (Class Feature, Optional Feature), so by family.
+  const family = (t: string) =>
+    /^(Class|Archetype|Multiclass)$/.test(t)
+      ? "class"
+      : /^(Race|Sub Race|Species)$/.test(t)
+        ? "species"
+        : /^(Background|Feat)$/.test(t)
+          ? t
+          : "feature";
+  const ownerOf = (s: Slot, p: Pick) =>
+    p.owner === s.owner.id || (p.ownerName === nameKey(s.owner.name) && family(p.ownerType) === family(s.owner.type));
   const fits = (s: Slot, p: Pick, anyway = false): string | undefined => {
     // A spell stays with its spellcasting: a Warlock's spells known are not a Sorcerer's.
     // The owner's own choice takes it whatever each provider calls the casting (Blessed Warrior's cantrips: Aurora says
@@ -466,9 +508,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     void mode;
     // A pick whose owner is itself a pick still waiting (the Tome's cantrips before Pact of the Tome is placed) waits for
     // it: placed at once, the Tome's Magic Stone took the Warlock's own cantrip place before the Tome's choice existed.
-    const activeNames = new Set(r.active.map((a) => nameKey(a.el.name)));
+    // The owner by name and kind: Magic Initiate's list "Druid" is not active because the Druid class is.
+    const activeNames = new Set(r.active.map((a) => `${family(a.el.type)}|${nameKey(a.el.name)}`));
     const waiting = (p: Pick) =>
-      waitForOwner && !activeNames.has(p.ownerName) && picks.some((q) => q !== p && nameKey(q.name) === p.ownerName);
+      waitForOwner &&
+      !activeNames.has(`${family(p.ownerType)}|${p.ownerName}`) &&
+      picks.some((q) => q !== p && nameKey(q.name) === p.ownerName);
     const edges = picks.map((p) =>
       waiting(p)
         ? []
@@ -876,5 +921,9 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       .map((id) => `${x.rule.name}: ${to.get(id)?.name ?? id} (${x.whyBlocked?.(id) ?? "against the rules"})`),
   );
   if (decisions.length) next.moveDecisions = decisions;
-  return { ch: next, moved, noTwin: [...noTwin.values()], unplaced, open, againstRules, filled, kept, decisions };
+  const textKept = [...noTwin.values()]
+    .filter((x) => !/^(Race|Sub Race|Background|Class|Archetype)$/.test(x.type))
+    .map((x) => ({ name: x.name, type: x.type, text: stripHtml(from.get(x.id)?.description ?? "").trim() }))
+    .filter((x) => x.text);
+  return { ch: next, moved, noTwin: [...noTwin.values()], unplaced, open, againstRules, filled, kept, decisions, customItems, textKept };
 }

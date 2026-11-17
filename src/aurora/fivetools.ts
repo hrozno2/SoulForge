@@ -3644,7 +3644,10 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
     // its patron's spells on 5e.tools content (found moving characters, 2026-11-16).
     const expanded = ((s.additionalSpells as J[] | undefined) ?? [])
       .flatMap((a) => Object.values((a.expanded as J) ?? {}).flat())
-      .map((x) => String(x));
+      // A filter ("every Cleric spell of level 1": the Divine Soul's {"all": "level=1|class=Cleric"}) as well as names;
+      // read as "[object Object]" before, so a 5e.tools Divine Soul could learn no Cleric spell (found 2026-11-17 by
+      // the move's laws test).
+      .map((x) => (x && typeof x === "object" && (x as J).all ? `@all:${String((x as J).all)}` : String(x)));
     const expandTag = `5et expanded ${slug(s.source ?? "")} ${slug(s.shortName ?? s.name)}`.toLowerCase();
     if (expanded.length && !subCasting.spellcasting) (ctx.expanded ??= []).push({ tag: expandTag, spells: expanded });
     out.push(
@@ -4253,6 +4256,19 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   // given; every edition's copy otherwise, and the choice's edition rule offers the right one).
   for (const x of ctx.expanded ?? [])
     for (const ref of x.spells) {
+      if (ref.startsWith("@all:")) {
+        const level = /level=(\d)/.exec(ref)?.[1];
+        const cls = /class=([^|]+)/.exec(ref)?.[1]?.trim().toLowerCase();
+        for (const el of out)
+          if (
+            el.type === "Spell" &&
+            el.setters.level?.value === level &&
+            el.supports.some((t) => t.toLowerCase() === cls) &&
+            !el.supports.includes(x.tag)
+          )
+            el.supports = [...el.supports, x.tag];
+        continue;
+      }
       const [nm, book] = ref.toLowerCase().split("|");
       for (const sp of spellIds[nm.trim()] ?? []) {
         if (book && sp.source.toLowerCase() !== book) continue;

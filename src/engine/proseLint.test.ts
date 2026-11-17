@@ -48,7 +48,8 @@ const PROMISES: { kind: string; re: RegExp; kept: (r: ARule) => boolean }[] = [
   },
   {
     kind: "language",
-    re: /\b(?:learn|speak, read, and write|know) (?:one|two|three|an?) (?:additional |extra |other )?languages?\b/i,
+    // Or a named one: "you learn to speak, read, and write Giant" (Giant Power, which gave nothing on 5e.tools).
+    re: /\b(?:learn|speak, read, and write|know) (?:one|two|three|an?) (?:additional |extra |other )?languages?\b|\byou learn to speak, read, and write \w/i,
     kept: (r) => (r as { type?: string }).type === "Language",
   },
   {

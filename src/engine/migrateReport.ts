@@ -126,6 +126,11 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
         continue;
       }
     }
+    // A Siren walks at 25 feet (Plane Shift: Ixalan, "Your base walking speed is 25 feet"); Aurora's copy said 30.
+    if (k === "speed" && a === 30 && b === 25 && r1.active.some((x) => x.el.type === "Race" && /^siren$/i.test(x.el.name))) {
+      explained.push("speed: a Siren walks at 25 feet (Plane Shift: Ixalan)");
+      continue;
+    }
     if (k === "gear" && typeof a === "number" && typeof b === "number" && a - b === gearGone) {
       unavailable.push(`gear: ${gearGone} item(s) with no 5e.tools version`);
       continue;

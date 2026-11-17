@@ -1,5 +1,8 @@
 import { ABILITY_IDS, SKILL_ABILITY, type AbilityId } from "./character";
 
+/** The stacking group of half-proficiency bonuses to a check (src/engine/mechanics.ts proficiencyCheckGroups). */
+export const HALF_PROFICIENCY = "half proficiency";
+
 export interface Contribution {
   /** A number, or the name of another statistic. */
   value: string;
@@ -80,6 +83,13 @@ export class StatBook {
       if (c.bonus) groups.set(c.bonus, Math.max(groups.get(c.bonus) ?? -Infinity, v));
       else plain += v;
     }
+    // Half the proficiency bonus (2014 Jack of All Trades, Remarkable Athlete) only on a roll that does not already
+    // include the bonus: dropped when another part adds the whole of it (Alert's, Hare-Trigger's initiative).
+    if (
+      groups.has(HALF_PROFICIENCY) &&
+      list.some((c) => !c.inline && c.bonus !== HALF_PROFICIENCY && c.value.trim().toLowerCase() === "proficiency")
+    )
+      groups.delete(HALF_PROFICIENCY);
     let total = plain;
     for (const v of groups.values()) total += v;
     return total;

@@ -61,6 +61,45 @@ const halfElf = (descent: string, others: Opt[]): Addition => ({
 });
 
 const ADDITIONS: Addition[] = [
+  ...(
+    [
+      ["KEEN_MIND", "Keen Mind", ["Arcana", "History", "Investigation", "Nature", "Religion"]],
+      ["OBSERVANT", "Observant", ["Insight", "Investigation", "Perception"]],
+    ] as const
+  ).map(([key, name, list]): Addition => ({
+    target: `ID_5ET_FEAT_XPHB_${key}`,
+    why: `Player's Handbook (2024), ${name}: "If you lack proficiency with the chosen skill, you gain proficiency in it, and if you already have proficiency in it, you gain Expertise in it." 5e.tools' data gave the proficiency only, so a character who chose a skill it had lost the Expertise (found 2026-11-17 by the 400-character move sample).`,
+    choose: {
+      name: `${name}: skill (proficiency, or Expertise if you have it)`,
+      options: list.map((skill) => {
+        const slugged = skill.toUpperCase().replace(/ /g, "_");
+        return {
+          key: slugged,
+          name: skill,
+          text: `Proficiency in ${skill}, or Expertise in it if you already have proficiency.`,
+          rules: [
+            { kind: "grant", type: "Proficiency", id: `ID_5ET_SKILL_${slugged}` } as ARule,
+            // Proficiency from elsewhere (this option's own grant does not count: requirements.ts, "from elsewhere").
+            { kind: "grant", type: "Proficiency", id: `ID_5ET_EXPERTISE_${slugged}`, requirements: `ID_5ET_SKILL_${slugged}` } as ARule,
+          ],
+        };
+      }),
+      take: (r) => r.kind === "select" && r.type === "Proficiency",
+    },
+  })),
+  {
+    target: "ID_5ET_SF_BGG_GIANT_GIANT_POWER_3",
+    why: "Bigby Presents: Glory of the Giants, Path of the Giant, Giant Power: you learn to speak, read, and write Giant, or another language of your choice if you already know Giant. 5e.tools' data gave no language (Aurora's copy does), so a 5e.tools Path of the Giant barbarian had none.",
+    add: [
+      {
+        kind: "select",
+        type: "Language",
+        name: "Giant Power language",
+        supports: "5et language",
+        number: 1,
+      } as ARule,
+    ],
+  },
   {
     target: "ID_5ET_SF_EGW_ECHO_KNIGHT_MANIFEST_ECHO_31",
     why: "Explorer's Guide to Wildemount, Echo Knight, Manifest Echo: the echo's numbers are in the feature's text (AC 14 + your proficiency bonus, 1 hit point, immunity to all conditions, your saving throws); no bestiary has it as a creature, so Play had no card for it.",
@@ -215,7 +254,9 @@ export function soulForgeAdditions(byId: Map<string, AElement>): number {
       const el: AElement = {
         id,
         name,
-        type: t.type === "Sub Race" || t.type === "Race" ? "Racial Trait" : t.type,
+        // Of the target's family, never a root type: a species' addition is a trait, a feat's a feat feature (as a
+        // "Feat" it would count as a second Keen Mind).
+        type: t.type === "Sub Race" || t.type === "Race" ? "Racial Trait" : t.type === "Feat" ? "Feat Feature" : t.type,
         source: ADDITIONS_SOURCE,
         supports: [],
         description: `<p>${text}</p><p><em>${ADDITIONS_SOURCE}: ${a.why}</em></p>`,
@@ -246,7 +287,10 @@ export function soulForgeAdditions(byId: Map<string, AElement>): number {
         // An option with no rules of its own takes the target's rules of its kind (the descent's spells, the skill).
         const own =
           o.rules.length || o.key === "MASK" ? o.rules : taken.filter((r) => (o.key === "SKILL" ? r.kind === "select" : isSpell(r)));
-        return make(`${base}_${o.key}`, o.name, o.text, own, { supports: [`${base} option`] }).id;
+        return make(`${base}_${o.key}`, o.name, o.text, own, {
+          supports: [`${base} option`],
+          ...(t.type === "Feat" ? { type: "Training Option" } : {}),
+        }).id;
       });
       rules.push({
         kind: "select",

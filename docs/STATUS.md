@@ -1,6 +1,6 @@
 # Soul Forge: where the engine stands
 
-Updated 2026-11-17, evening (v0.26.2 released at the start of the day). Every number here was measured on this date unless
+Updated 2026-11-17, evening (v0.26.2 released in the morning, v0.26.3 in the evening). Every number here was measured on this date unless
 marked otherwise, and each comes from a command anyone can run again (last column of the scoreboard). Update this page
 at the end of each working session, so the trend shows.
 
@@ -27,6 +27,13 @@ Everything still to do, in one list. Items move off it when done; nothing open l
 - The 400 saved test characters: 42 change (96 yesterday morning); 4 carry a finding the move brings, all on synthetic
   characters whose originals were already against the rules (a doubled cantrip, a 2014 Resilient on a 2024 Paladin,
   a Sea Elf's Draconic, a Druid/Wizard's doubled Guidance).
+
+**From the big test round (17 November, night)**: what the new tests still find, to fix next:
+1. The move, Zendikar elves: Aurora files the Joraga Elf as a sub race of the Player's Handbook Elf, 5e.tools under its
+   own "Elf (Zendikar)"; the move finds no place and fills another sub race. It should change the species.
+2. The move, three fresh characters to probe: a Wizard's initiative (5 to 2), a Ranger's Charisma skills (each 3 lower),
+   a Fighter's Persuasion; an Artificer's and a Monk's +1s land on another score; Auran lost by a Kenku and a Tabaxi.
+3. The move's laws hold on 450 Aurora-made and 450 5e.tools-made characters, apart from those above.
 
 **The engine**
 1. W5's last parts: increases by source and count, languages, tools and skills by count per source, species and
@@ -156,8 +163,22 @@ The move: spells stay in a choice that offers them (a 2024 Evoker's Evocation Sa
 their subclass, the 2014 Spell Sniper's version by its cantrip, a language 5e.tools lacks kept with its text, the
 2014 Resilient's saving throw from its ability.
 
-The rules check: initiative, base scores by method, subclass always-prepared spells; the prose lint and the
-statistic-effect measurement are gates. Random Echo Knights and Battle Smiths on every content set, legal and with
+The rules check: initiative, base scores by method, subclass always-prepared spells (its first release run found the
+2024 Moon Druid's Fount of Moonlight at level 9 in Aurora's data, fixed, every subclass swept); a choice saved with
+more picks than it allows is reported, not silently cut. The prose lint and the statistic-effect measurement are
+gates. A 5e.tools Divine Soul could learn no Cleric spell (its list is a filter in the data); fixed.
+
+Found by the big test round the same night and fixed: two whole proficiency bonuses to initiative (Alert and
+Hare-Trigger, Alert and Aura of the Sentinel) counted once; 5e.tools' Path of the Giant gave no Giant language; the
+2024 Keen Mind and Observant gave proficiency but never Expertise in a skill the character had (both built as Soul
+Forge additions); a second move re-guessed the 2024 Ability Score Improvement's pairs; the 2024 Bards' initiative
+still had Jack of All Trades in Aurora's content; the 2024 Shadow Monk's Body and Mind stopped at 20.
+
+New kinds of test: the move's laws (moving twice changes nothing more; a 5e.tools character moves to itself; a moved
+character saves and opens to the same sheet; the move brings no finding of its own), `RULES_TIER=move-props`; and
+known breaks the rules check must notice (a changed standard array, an extra pick, a missing pick, a cantrip from
+another list, heavy armor untrained), `RULES_TIER=mutations`. Their first runs found the Divine Soul and the extra
+pick. Random Echo Knights and Battle Smiths on every content set, legal and with
 the book's companion numbers (src/aurora/companionRandom.test.ts); built in the app by hand too (Play shows the same).
 
 ## Fixed on 17 November

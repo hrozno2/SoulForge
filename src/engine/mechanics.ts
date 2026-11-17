@@ -1,3 +1,4 @@
+import { HALF_PROFICIENCY } from "../aurora/stats";
 /**
  * The mechanics table (docs/ENGINE-PLAN.md, 3.2 and E3). 5e.tools keeps most feature mechanics only in prose: its
  * Unarmored Defense has no AC formula, its College of Valor no armor training, its Mobile feat no speed. Where the
@@ -250,20 +251,27 @@ export function checksIncludeInitiative(byId: Map<string, AElement>): string[] {
 }
 
 /**
- * A proficiency-based bonus to a check is one group, the best of it counting: the 2014 Jack of All Trades and
- * Remarkable Athlete add half the proficiency bonus only to a check that "doesn't already include" (or "use") it, so
- * neither adds on top of the other or of a full proficiency bonus another feature gives the same roll (Alert's or
- * Hare-Trigger's initiative). Without a group they stacked: a Champion with a Bard's levels had both on initiative, and
- * a Harengon Bard's initiative added both (found 2026-11-17 by the rules check's own initiative). Returns how many rules.
+ * Proficiency-based bonuses to a check (initiative, a skill). The 2014 Jack of All Trades and Remarkable Athlete add
+ * half the proficiency bonus only to a check that "doesn't already include" (or "use") it: they are one group, the
+ * better counting, and the stat book drops the group when another part adds the whole bonus (stats.ts). Whole bonuses
+ * from different features add up (2024 Alert and Hare-Trigger), so they are in no group; Hare-Trigger's read from
+ * text had one, and a Harengon with Alert lost one of them. Found 2026-11-17 by the rules check's own initiative.
+ * Returns how many rules changed.
  */
 export function proficiencyCheckGroups(byId: Map<string, AElement>): number {
   let n = 0;
   const check = new RegExp(`^(?:initiative|(?:${SKILL_NAMES.join("|")}):misc)$`);
   for (const el of byId.values())
-    for (const r of el.rules)
-      if (r.kind === "stat" && !r.bonus && /^proficiency(?::half(?::up)?)?$/.test(String(r.value)) && check.test(r.name.toLowerCase())) {
-        (r as { bonus?: string }).bonus = "proficiency";
+    for (const r of el.rules) {
+      if (r.kind !== "stat" || !check.test(r.name.toLowerCase())) continue;
+      const v = String(r.value).trim().toLowerCase();
+      if (/^proficiency:half(?::up)?$/.test(v) && r.bonus !== HALF_PROFICIENCY) {
+        (r as { bonus?: string }).bonus = HALF_PROFICIENCY;
+        n++;
+      } else if (v === "proficiency" && r.bonus === "proficiency") {
+        delete (r as { bonus?: string }).bonus;
         n++;
       }
+    }
   return n;
 }

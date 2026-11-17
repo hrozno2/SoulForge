@@ -116,3 +116,20 @@ describe.skipIf(!C)("companions 5e.tools alone gives", () => {
     expect([b.ac, b.hp]).toEqual([15, 30]);
   });
 });
+
+describe.skipIf(!C)("proficiency, or Expertise if you have it (2024 Observant and Keen Mind)", () => {
+  const reg = C ? loadContentSet(C, "5etools") : undefined!;
+  it("gives Expertise in a chosen skill the character already has, proficiency otherwise", () => {
+    let ch = { ...newCharacter(), classes: [{ classId: "ID_5ET_CLASS_XPHB_ROGUE", level: 4 }], extras: ["ID_5ET_FEAT_XPHB_OBSERVANT"] };
+    const pick = (name: string) => {
+      const s = resolve(ch, reg).slots.find((x) => /Observant: skill/.test(x.rule.name))!;
+      return { ...ch, selections: { ...ch.selections, [s.key]: [s.options.find((o) => o.name === name)!.id] } };
+    };
+    const skill = resolve(ch, reg).slots.find((s) => s.rule.name === "Rogue skill")!;
+    ch = { ...ch, selections: { [skill.key]: [skill.options.find((o) => o.name === "Insight")!.id] } };
+    expect(resolve(pick("Insight"), reg).ids.has("ID_5ET_EXPERTISE_INSIGHT")).toBe(true);
+    const per = resolve(pick("Perception"), reg);
+    expect(per.ids.has("ID_5ET_SKILL_PERCEPTION")).toBe(true);
+    expect(per.ids.has("ID_5ET_EXPERTISE_PERCEPTION")).toBe(false);
+  });
+});

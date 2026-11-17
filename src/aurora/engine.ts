@@ -421,8 +421,10 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         // A whole class's list reaches the cantrip choices only when the feature says cantrips: the 2024 Magical
         // Secrets widens prepared spells alone (PHB 2024, Bard 10), Divine Soul names "a sorcerer cantrip" (XGE). A
         // list of named spells (a Ravnica guild's) is taken as written, its cantrips included.
+        // A whole class's list by its name ("Cleric"); anything else (spell ids, a subclass's list tag) is named spells.
         const says = /cantrip/i.test(el.description);
-        extendCantrips.set(key, [...(extendCantrips.get(key) ?? []), ...sc.extendLists.filter((x) => says || reg.get(x))]);
+        const wholeClass = (x: string) => reg.ofType("Class").some((c) => c.name.toLowerCase() === x.toLowerCase());
+        extendCantrips.set(key, [...(extendCantrips.get(key) ?? []), ...sc.extendLists.filter((x) => says || !wholeClass(x))]);
       } else {
         spellcasting.set(key, {
           name: sc.name,

@@ -334,6 +334,18 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   };
   // Completeness: every choice the rules ask for is made, none is impossible, nothing points at missing content.
   for (const s of r.slots) {
+    // More picks saved than the choice allows (an edited or merged file; found 2026-11-17 by the mutation test, which
+    // put a third skill in a choice of two and the check saw nothing). The engine takes the first ones and ignores the
+    // rest without a word; the player is told which (W2: picks with no place are shown, not ignored).
+    const saved = [...new Set(ch.selections[s.key] ?? [])];
+    if (s.rule.type !== "List" && saved.length > s.rule.number)
+      add(
+        "A choice holds more than it allows",
+        `${s.rule.name}: ${saved.length} of ${s.rule.number}; ignored ${saved
+          .slice(s.rule.number)
+          .map((id) => reg.get(id)?.name ?? id)
+          .join(", ")}`,
+      );
     if (s.rule.optional) continue;
     if (!s.options.length) add("A required choice has no options", `${s.rule.name} [${s.rule.type}]`);
     else if (stillToChoose(s, r)) add("A required choice is not made", `${s.rule.name}: ${s.chosen.length} of ${s.rule.number}`);

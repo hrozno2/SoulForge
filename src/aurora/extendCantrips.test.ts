@@ -53,6 +53,7 @@ function reg(widen: AElement) {
       setters: { hd: { value: "d8", attrs: {} } },
     }),
     widen,
+    el("CLERIC", "Cleric", "Class", { setters: { hd: { value: "d8", attrs: {} } } }),
     spell("MOCKERY", "Vicious Mockery", 0, ["Bard"]),
     spell("FLAME", "Sacred Flame", 0, ["Cleric"]),
     spell("BLESS", "Bless", 1, ["Cleric"]),

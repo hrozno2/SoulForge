@@ -65,7 +65,7 @@ describe("a bonus to every skill and initiative", () => {
       ["R", feature("R", "Remarkable Athlete", "proficiency:half:up")],
       ["A", feature("A", "Alert", "proficiency")],
     ]);
-    expect(proficiencyCheckGroups(byId)).toBe(3);
+    expect(proficiencyCheckGroups(byId)).toBe(2);
     const reg = new ARegistry();
     reg.addElements([
       {
@@ -83,5 +83,27 @@ describe("a bonus to every skill and initiative", () => {
       resolve({ ...base, abilityBase: { ...base.abilityBase, dexterity: 10 }, classes: [{ classId: "CLS", level: 5 }] }, reg),
     );
     expect(sh.initiative).toBe(2);
+  });
+  it("whole proficiency bonuses from two features add up, and half ones drop out beside them", () => {
+    const feature = (id: string, value: string, bonus?: string) =>
+      ({ ...jack(id, "x"), name: id, rules: [{ kind: "stat", name: "initiative", value, ...(bonus ? { bonus } : {}) }] }) as AElement;
+    const reg = new ARegistry();
+    reg.addElements([
+      {
+        ...jack("CLS", "x"),
+        name: "Bard",
+        type: "Class",
+        rules: ["ALERT", "HARE", "JACK"].map((id) => ({ kind: "grant", type: "Class Feature", id })),
+      } as AElement,
+      feature("ALERT", "proficiency"),
+      feature("HARE", "proficiency", "proficiency"),
+      feature("JACK", "proficiency:half"),
+    ]);
+    reg.build();
+    const base = newCharacter();
+    const sh = buildSheet(
+      resolve({ ...base, abilityBase: { ...base.abilityBase, dexterity: 10 }, classes: [{ classId: "CLS", level: 5 }] }, reg),
+    );
+    expect(sh.initiative).toBe(6); // +3 and +3; Jack of All Trades adds nothing to a roll that has the whole bonus
   });
 });

@@ -699,7 +699,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
             x.left > 0 &&
             (featOwned
               ? x.p.ownerType === "Feat" && x.p.ownerName === nameKey(s.owner.name)
-              : x.p.ownerType !== "Feat" && x.p.at <= 1 === (s.at ?? 0) <= 1 && ((s.at ?? 0) <= 1 || x.p.at === s.at)),
+              : // A level's improvement: an old one, or one already filed as the 2024 Ability Score Improvement feat (a
+                // character moved before; its pairs were left out and guessed again, and a second move changed the
+                // scores, found by the move's laws test).
+                (x.p.ownerType !== "Feat" || x.p.ownerName === "ability score improvement") &&
+                x.p.at <= 1 === (s.at ?? 0) <= 1 &&
+                ((s.at ?? 0) <= 1 || x.p.at === s.at)),
         );
         if (!mine.length) continue;
         const have = (a: string) => mine.filter((x) => x.ability === a).reduce((n, x) => n + x.left, 0);

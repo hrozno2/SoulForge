@@ -191,13 +191,17 @@ test("deleting a character asks first, in the app's own dialog", async ({ page }
   await cards.first().hover();
   await page.getByRole("button", { name: /^Delete / }).click();
   const dialog = page.getByRole("alertdialog");
-  await expect(dialog).toContainText("cannot be undone");
+  await expect(dialog).toContainText("Recently deleted");
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(cards).toHaveCount(1);
   await cards.first().hover();
   await page.getByRole("button", { name: /^Delete / }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete character" }).click();
   await expect(cards).toHaveCount(0);
+  // E3.4: it waits in "Recently deleted", and comes back.
+  await page.getByRole("button", { name: /^Recently deleted \(1\)/ }).click();
+  await page.locator(".trash-list li", { hasText: "Doomed Dave" }).getByRole("button", { name: "Restore" }).click();
+  await expect(cards).toHaveCount(1);
 });
 
 test("Report a bug shows what would be sent, with each part optional", async ({ page }) => {

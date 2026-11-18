@@ -90,13 +90,17 @@ const ADDITIONS: Addition[] = [
   {
     target: "ID_5ET_SF_BGG_GIANT_GIANT_POWER_3",
     why: "Bigby Presents: Glory of the Giants, Path of the Giant, Giant Power: you learn to speak, read, and write Giant, or another language of your choice if you already know Giant. 5e.tools' data gave no language (Aurora's copy does), so a 5e.tools Path of the Giant barbarian had none.",
+    // Giant when the character does not know it from elsewhere; the choice only when it does (the element's own grant
+    // does not count: requirements are judged "from elsewhere").
     add: [
+      { kind: "grant", type: "Language", id: "ID_5ET_LANGUAGE_GIANT", requirements: "!ID_5ET_LANGUAGE_GIANT" } as ARule,
       {
         kind: "select",
         type: "Language",
         name: "Giant Power language",
         supports: "5et language",
         number: 1,
+        requirements: "ID_5ET_LANGUAGE_GIANT",
       } as ARule,
     ],
   },

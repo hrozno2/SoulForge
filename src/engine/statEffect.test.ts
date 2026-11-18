@@ -60,6 +60,7 @@ it.skipIf(!C || process.env.RULES_TIER !== "stateffect")(
       [/^wild shape:/, "Wild Shape's limits filter the forms list in Play"],
       [/^ac:/, "another way to work out armor class, used when it is the best"],
       [/:spellcasting:slots:count$/, "Pact Magic's mark; its slots are the levels' own"],
+      [/^ranged(:[\w ]+)?:attack$/, "a bonus to ranged attacks, on a character who may carry no ranged weapon (Archery)"],
       [/:spellcasting:ability:\w+$/, "the casting ability a player chose: read by its presence (castingAbility.test.ts)"],
     ];
     const dead = [...seen].filter(([name, s]) => !s.hit && !CONTEXT.some(([re]) => re.test(name))).sort((a, b) => b[1].n - a[1].n);

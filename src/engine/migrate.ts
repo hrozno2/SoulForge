@@ -17,6 +17,7 @@ import type { ARegistry } from "../aurora/registry";
 import type { AElement } from "../aurora/types";
 import { conceptOf, nameKey } from "./concepts";
 import { twinKey } from "./timeline";
+import { bookKey } from "../aurora/books";
 
 export interface Migration {
   ch: Character;
@@ -46,6 +47,8 @@ export interface Migration {
    * given here so the player's note holds it whatever content is loaded later.
    */
   textKept: { name: string; type: string; text: string }[];
+  /** The species changed to the one 5e.tools files the sub race under (Aurora's Joraga Elf: "Elf (Zendikar)"). */
+  speciesSwitched?: { from: string; to: string };
 }
 
 const isFive = (e: AElement | undefined) => !!e && (e.origin === "5etools" || e.id.startsWith("ID_5ET"));
@@ -103,7 +106,13 @@ export function fiveToolsTwins(reg: ARegistry): (id: string) => string | undefin
         // 5e.tools' "Hempen Rope (50 feet)", "Fine Clothes" and "Leather Armor", whatever kind of item each calls it.
         const gear = GEAR.test(el.type) ? gearNames(el).flatMap((n) => byName.get(`gear|${nameKey(n)}`) ?? []) : [];
         const same = [...(byName.get(`${el.type}|${nameKey(el.name)}`) ?? []), ...gear];
-        hit = (same.find((e) => e.edition && e.edition === el.edition) ?? same[0])?.id;
+        // The same book first: the Tome of Foes' Eladrin (Charisma +1, seasons), not the Dungeon Master's Guide's
+        // (Intelligence +1), both 5e.tools sub races of the Player's Handbook Elf (fresh 80, 2026-11-17).
+        hit = (
+          same.find((e) => bookKey(e.source) === bookKey(el.source)) ??
+          same.find((e) => e.edition && e.edition === el.edition) ??
+          same[0]
+        )?.id;
         // A species' subrace the two name apart: the Player's Handbook's "Dark Elf (Drow)" is Aurora's "Dark Elf" and
         // 5e.tools' "Drow Elf" (a player's added Dark Elf lost its +1 Charisma in the move, 2026-11-17).
         const alias = el.type === "Sub Race" ? SUBRACE_ALIASES[nameKey(el.name)] : undefined;
@@ -257,9 +266,11 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       if (offered(r.id).some(fits)) return r.id;
     return mapped;
   };
+  const speciesNow = raceFor();
+  const speciesSwitched = speciesNow && speciesNow !== map(ch.race) ? { from: map(ch.race)!, to: speciesNow } : undefined;
   const next: Character = {
     ...ch,
-    race: raceFor(),
+    race: speciesNow,
     background: map(ch.background),
     classes: ch.classes.map((c) => ({ ...c, classId: map(c.classId)! })),
     options: ch.options.map((x) => map(x)!),
@@ -370,6 +381,9 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       const oc = p.concept ? conceptOf(o) : undefined;
       return !oc || oc === p.concept;
     });
+    // A skill is never an expertise choice's: a 2024 Human's Skillful Investigation went into the Scholar's expertise
+    // set (an option with no concept of its own, matched by name), and the skill became expertise (fresh 191).
+    if (/^skill:/.test(p.concept ?? "") && /expertise/i.test(`${s.rule.name} ${s.owner.name}`)) return undefined;
     const byId = open.find((o) => o.id === p.id);
     if (byId) return byId.id;
     // A feat 5e.tools has as the very same feat (name and book) is that feat or nothing: its other edition's version
@@ -427,11 +441,23 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     // A near name, when only one option has it: "Rock Gnome" is "Rock Gnome Lineage", "Wisdom" is "+1 Wisdom";
     // "Resilient (Strength)" is "Saving throw proficiency (Strength)" by what the brackets name. Never across kinds:
     // the spell Light is not the feat Light Bringer (it took a Cleric's 4th-level feat).
+    // A spell may be a spell set's (5e.tools offers "Astral Elf: Known, Sacred Flame" where Aurora asked the cantrip; a
+    // Witherbloom student's cantrips are "Strixhaven Initiate: Witherbloom 1"): kept as manual additions before.
+    // A spell's near name never makes another spell (Circle of Death is not Spirit of Death, Suggestion is not Mass
+    // Suggestion): for a spell, only a spell set, which names spells inside it.
     const same = (o: (typeof open)[number]) =>
-      !kind || o.type === kind || (kind !== "Spell" && kind !== "Feat" && o.type !== "Spell" && o.type !== "Feat");
+      !kind ||
+      (o.type === kind && kind !== "Spell") ||
+      (kind === "Spell" && o.type === "Spell Set") ||
+      (kind !== "Spell" && kind !== "Feat" && o.type !== "Spell" && o.type !== "Feat");
+    // Several of one name: the one from the pick's own book (two "Eladrin Elf" sub races, the Dungeon Master's Guide's
+    // and the Tome of Foes'; the first by order was taken, fresh 80, 2026-11-17).
+    const oldBook = bookKey(from.get(p.id)?.source ?? "");
     const one = (xs: typeof open) => {
       const ys = xs.filter(same);
-      return ys.length === 1 ? ys[0].id : undefined;
+      if (ys.length === 1) return ys[0].id;
+      const mine = ys.filter((o) => bookKey(o.source) === oldBook);
+      return mine.length === 1 ? mine[0].id : undefined;
     };
     const inName = n.length > 3 ? one(open.filter((o) => ` ${nameKey(o.name)} `.includes(` ${n} `))) : undefined;
     if (inName) return inName;
@@ -465,7 +491,8 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
         const picked = new Set(pool.map((q) => nameKey(q.name)));
         const score = (o: (typeof open)[number]) =>
           o.rules.filter((x) => x.kind === "grant" && x.id && picked.has(nameKey(to.get(x.id)?.name ?? ""))).length;
-        return [...hits].sort((x, y) => score(y) - score(x))[0].id;
+        const book = (o: (typeof open)[number]) => (bookKey(o.source) === oldBook ? 1 : 0);
+        return [...hits].sort((x, y) => score(y) - score(x) || book(y) - book(x))[0].id;
       }
     }
     // What the brackets name, as an option's brackets, its name, or inside its name: "Cloud's Jaunt (Cloud Giant)"
@@ -542,9 +569,14 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
         // Savant) offers no spell of the pick's school, and it took Enlarge/Reduce and Arcane Vigor from the spellbook.
         const school = (e: { setters: Record<string, { value: string } | undefined> }) => (e.setters.school?.value ?? "").toLowerCase();
         const schoolOk = !school(sp) || pl.s.options.some((o) => o.type === "Spell" && school(o) === school(sp));
+        // And only upward: a spell above the levels a choice offers yet, never below them (Ray of Enfeeblement, a
+        // 2nd-level spell, took a warlock's 6th-level Mystic Arcanum choice).
+        const offered = pl.s.options.filter((o) => o.type === "Spell").map((o) => Number(o.setters.level?.value ?? 0));
+        const notBelow = !offered.length || level >= Math.min(...offered);
         if (
           level > 0 &&
           sameKind &&
+          notBelow &&
           schoolOk &&
           level <= maxLevel(p.casting) &&
           fits({ ...pl.s, options: [...pl.s.options, sp] } as Slot, p)
@@ -623,10 +655,10 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
         featTaken.add(places[j].id!);
       }
       have.push(places[j].id!);
-      if (process.env.MIGRATE_TRACE)
-        (globalThis as { __trace?: string[] }).__trace?.push(
-          `TRACE place ${picks[i].name} (at ${picks[i].at}, owner ${picks[i].ownerName}) -> ${places[j].s.rule.name} [${places[j].s.at}] = ${to.get(places[j].id!)?.name} rank ${edges[i].find((e) => e.j === j)?.rank}`,
-        );
+      // The test's trace (migrate.test.ts sets the list with MIGRATE_TRACE); no Node globals here, this runs in the app.
+      (globalThis as { __trace?: string[] }).__trace?.push(
+        `TRACE place ${picks[i].name} (at ${picks[i].at}, owner ${picks[i].ownerName}) -> ${places[j].s.rule.name} [${places[j].s.at}] = ${to.get(places[j].id!)?.name} rank ${edges[i].find((e) => e.j === j)?.rank}`,
+      );
       used.add(i);
       placed = true;
     }
@@ -892,7 +924,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       const el = to.get(p.id);
       if (!el || !KEEPABLE.test(el.type)) continue;
       const r = resolve(next, to);
-      if (r.ids.has(el.id)) {
+      // Had already, by id or (a spell another edition's copy of which a spell set grants: Strixhaven's Chill Touch) by
+      // name: kept again as a manual addition, the cantrip was on the sheet twice.
+      if (
+        r.ids.has(el.id) ||
+        (el.type === "Spell" && r.active.some((a) => a.el.type === "Spell" && nameKey(a.el.name) === nameKey(el.name)))
+      ) {
         picks.splice(i--, 1);
         continue;
       }
@@ -946,23 +983,28 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // A language by its kind alone: the two providers name the owner differently (Aurora's Favored Enemy asks the 6th-level
   // language, 5e.tools' "Favored Enemy and Natural Explorer improvements"), and a "Minion" with no 5e.tools version had
   // its place filled with another language (fresh 52, 2026-11-17).
+  // Cantrips and spells apart: a playtest 1st-level spell's open place is not a cantrip's (a Sorcerer came out one
+  // cantrip short).
   const kindOf = (x: Slot) =>
     x.rule.type === "Spell"
-      ? `Spell|${(x.rule.spellcasting ?? "").toLowerCase()}`
+      ? `Spell|${(x.rule.spellcasting ?? "").toLowerCase()}|${/cantrip/i.test(x.rule.name) ? 0 : 1}`
       : x.rule.type === "Language"
         ? "Language"
         : `${x.rule.type}|${nameKey(x.owner.name)}`;
   const leftOpen = new Map<string, number>();
+  // A pick made twice is not a place left open: the player chose, wrongly, and the fill takes the place ("Chosen for
+  // you"); left open, a Sorcerer's Mind Sliver twice came out one cantrip short of the class table.
   for (const x of old.slots)
-    if (!x.rule.optional && x.rule.type !== "List" && new Set(x.chosen).size < x.rule.number)
-      leftOpen.set(kindOf(x), (leftOpen.get(kindOf(x)) ?? 0) + x.rule.number - new Set(x.chosen).size);
+    if (!x.rule.optional && x.rule.type !== "List" && x.chosen.length < x.rule.number)
+      leftOpen.set(kindOf(x), (leftOpen.get(kindOf(x)) ?? 0) + x.rule.number - x.chosen.length);
   // A pick with no 5e.tools version (a tool from Unearthed Arcana, an instrument only Aurora lists) leaves its place
   // open too: filled, the character gained a skill it never had in place of the tool it lost.
   for (const p of picks) {
     if (beforeFill.ids.has(p.id)) continue;
+    const pickLevel = Number((from.get(p.id) ?? to.get(p.id))?.setters.level?.value ?? 1);
     const k =
       p.ruleType === "Spell"
-        ? `Spell|${(p.casting ?? "").toLowerCase()}`
+        ? `Spell|${(p.casting ?? "").toLowerCase()}|${pickLevel === 0 ? 0 : 1}`
         : p.ruleType === "Language"
           ? "Language"
           : `${p.ruleType}|${p.ownerName}`;
@@ -1067,5 +1109,18 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     if (!next.extras.includes(u.id)) next.extras = [...next.extras, u.id];
     textKept.push({ name: old.name, type: old.type, text: stripHtml(old.description ?? "").trim() || old.name });
   }
-  return { ch: next, moved, noTwin: [...noTwin.values()], unplaced, open, againstRules, filled, kept, decisions, customItems, textKept };
+  return {
+    ch: next,
+    moved,
+    noTwin: [...noTwin.values()],
+    unplaced,
+    open,
+    againstRules,
+    filled,
+    kept,
+    decisions,
+    customItems,
+    textKept,
+    speciesSwitched,
+  };
 }

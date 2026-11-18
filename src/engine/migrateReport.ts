@@ -84,7 +84,13 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
   const why = new Map<string, string>();
   for (const x of migration.noTwin) why.set(nameKey(x.name), `no 5e.tools version (${x.type})`);
   for (const x of migration.noTwin) if (/item|armor|weapon/i.test(x.type)) dropped.push(`gear: ${nameKey(x.name)} (no 5e.tools version)`);
-  for (const x of migration.unplaced) why.set(nameKey(x.name), `no 5e.tools choice takes it (was in ${x.choice})`);
+  // A pick with no place: content 5e.tools has under no name of its kind (an old playtest spell, kept with its text) is
+  // unavailable, not a change; otherwise no choice takes it.
+  for (const x of migration.unplaced) {
+    const old = from.get(x.id);
+    const none = !to.get(x.id) && !!old && !to.ofType(old.type).some((e) => nameKey(e.name) === nameKey(old.name));
+    why.set(nameKey(x.name), none ? `no 5e.tools version (kept with its text)` : `no 5e.tools choice takes it (was in ${x.choice})`);
+  }
   const explained: string[] = [];
   // The species or background has no 5e.tools version (Secret Identity, Cormanthor Refugee).
   const rootGone = migration.noTwin.some((x) => /^(Race|Background|Sub Race)$/.test(x.type));
@@ -129,6 +135,13 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
     // A Siren walks at 25 feet (Plane Shift: Ixalan, "Your base walking speed is 25 feet"); Aurora's copy said 30.
     if (k === "speed" && a === 30 && b === 25 && r1.active.some((x) => x.el.type === "Race" && /^siren$/i.test(x.el.name))) {
       explained.push("speed: a Siren walks at 25 feet (Plane Shift: Ixalan)");
+      continue;
+    }
+    // The species changed to the one 5e.tools files the sub race under: its scores, speed and what follows from them
+    // are that book's (Plane Shift: Zendikar's elf: Wisdom +2, the Joraga Dexterity +1, where Aurora's copy hung the
+    // Joraga under the Player's Handbook Elf's Dexterity +2).
+    if (migration.speciesSwitched && /^(scores|saves|skills|speed|ac|init|hp)$/.test(k)) {
+      explained.push(`${k}: the species is ${to.get(migration.speciesSwitched.to)?.name}, as 5e.tools files the sub race`);
       continue;
     }
     if (k === "gear" && typeof a === "number" && typeof b === "number" && a - b === gearGone) {
@@ -184,6 +197,18 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
         continue;
       }
       // The 2024 rules fold the elemental languages into Primordial (the converter points them there).
+      // Or the character speaks Primordial already, which the elemental tongues are dialects of (PHB 2014, chapter 4:
+      // "Primordial ... Auran, Aquan, Ignan, and Terran"); the place the dialect had is filled and listed for the player.
+      if (
+        k === "languages" &&
+        lost.length &&
+        lost.every((x) => /^(auran|aquan|ignan|terran)$/.test(x)) &&
+        (b as string[]).includes("primordial") &&
+        got.every((x) => x === "primordial" || filledText.includes(` ${x}`))
+      ) {
+        explained.push(`languages: ${lost.join(", ")} is a dialect of Primordial, which the character speaks`);
+        continue;
+      }
       if (k === "languages" && got.every((x) => x === "primordial") && lost.every((x) => /^(auran|aquan|ignan|terran)$/.test(x))) {
         explained.push(`languages: ${lost.join(", ")} is Primordial`);
         continue;

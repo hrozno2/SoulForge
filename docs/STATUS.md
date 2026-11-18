@@ -1,6 +1,6 @@
 # Soul Forge: where the engine stands
 
-Updated 2026-11-17, night (v0.26.2 released in the morning, v0.26.3 in the evening; the test round's fixes after it are not released yet). Every number here was measured on this date unless
+Updated 2026-11-18, early morning (v0.26.3 is the release; everything below it is unreleased). Every number here was measured on this date unless
 marked otherwise, and each comes from a command anyone can run again (last column of the scoreboard). Update this page
 at the end of each working session, so the trend shows.
 
@@ -19,6 +19,24 @@ Everything still to do, in one list. Items move off it when done; nothing open l
    - Carl Sneakers: Shape Water and Spare the Dying as Bard cantrips (not on the Bard list; Aurora's data let Magical
      Secrets widen the cantrips, fixed today).
    - Xarthian: more held than two hands can hold.
+
+**Night of 17 to 18 November (Chris asleep, the plan run on its own)**
+- The move (E1.2): 400 saved characters now change 22 (42 at the start of the night, 44 on the committed code),
+  drop nothing the move could keep (31 lose an Unearthed Arcana spell 5e.tools does not carry, kept with its text and
+  now counted apart as "unavailable"), and carry 4 findings the move brings (8 on the committed code).
+  Fixed: a spell's near name made another spell (Circle of Death became Spirit of Death, Suggestion became Mass
+  Suggestion); a 2nd-level spell took a 6th-level Mystic Arcanum; the auto-fill took a cantrip a later level already
+  held; a pick made twice was left as an open place; Giant Power, Clan Crafter and Cult of the Dragon Initiate offered
+  a free language where the book gives the named one unless the character knows it.
+- A move screen for players (E1.3): "Move to 5e.tools" on a character built on Aurora's content shows what would
+  change, then makes a 5e.tools copy; the original stays. It found that the move code crashed in the app ("process is
+  not defined"), now guarded by a test.
+- Recently deleted (E3.4): deleting a character keeps it on Home for 30 days to restore.
+- Importers (E3.3): your Eleanor files (Roll20, Foundry, both from v0.26.3 and from this version) all import as the
+  saved character. Fixed: the Roll20 import added the 2024 Acolyte's Magic Initiate a second time; the Foundry export
+  had no languages, size, defenses, armor, weapons, tools, senses or casting ability.
+- Still open from the 400: two Sorcerer multiclasses one cantrip short after the move, a Dhampir's Bard skill
+  repeating Ancestral Legacy, a College of Whispers bard's Skill Expert expertise left open.
 
 **Is the move ready?** Close. Measured tonight:
 - 60 characters made fresh on Aurora content: 1 changes (a Ranger's "Minion" language 5e.tools lacks; kept with its

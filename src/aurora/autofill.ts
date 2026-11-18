@@ -92,7 +92,11 @@ export function autoFill(
       const taken = new Set(open.chosen);
       // Not what the character already has, under any provider's id.
       const hadConcepts = new Set(r.active.map((a) => conceptOf(a.el)).filter(Boolean));
-      const had = (o: (typeof open.options)[number]) => r.ids.has(o.id) || (!!conceptOf(o) && hadConcepts.has(conceptOf(o)));
+      // A spell the character's later choices already hold, too: built level by level, the 1st-level cantrips cannot see
+      // the Guidance chosen at 4th, and took it again (a moved War Domain cleric, 2026-11-18).
+      const later = open.rule.type === "Spell" ? new Set(Object.values(cur.selections).flat()) : new Set<string>();
+      const had = (o: (typeof open.options)[number]) =>
+        r.ids.has(o.id) || later.has(o.id) || (!!conceptOf(o) && hadConcepts.has(conceptOf(o)));
       const free = open.options.filter(
         (o) => !taken.has(o.id) && !open.blocked.has(o.id) && !o.comingSoon && !had(o) && !bad.has(`${open.key} ${o.id}`),
       );

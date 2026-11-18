@@ -1,0 +1,353 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB_CLASS_WARLOCK",
+      "level": 20
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 12,
+    "constitution": 13,
+    "intelligence": 10,
+    "wisdom": 14,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_PHB24_RACE_DWARF|1": ["ID_WOTC_ASI_ABILITY_SCORE_IMPROVEMENT_OPTION_1"],
+    "ID_WOTC_ASI_ABILITY_SCORE_IMPROVEMENT_OPTION_1|0": ["ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_WISDOM_INCREASE_2"],
+    "ID_WOTC_ASI_ABILITY_SCORE_IMPROVEMENT_OPTION_1|1": ["ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_STRENGTH_INCREASE_1"],
+    "ID_WOTC_PHB24_RACE_DWARF|5": ["ID_LANGUAGE_HALFLING", "ID_WOTC_PHB24_LANGUAGE_DRACONIC"],
+    "ID_WOTC_PHB_CLASS_WARLOCK|4": ["ID_PROFICIENCY_SKILL_DECEPTION", "ID_PROFICIENCY_SKILL_INTIMIDATION"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_OTHERWORLDLY_PATRON|0": ["ID_WOTC_PHB_ARCHETYPE_OTHERWORLDLY_PATRON_FIEND"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|20": ["ID_PHB_SPELL_FRIENDS", "ID_WOTC_PHB24_SPELL_ELDRITCH_BLAST"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|21": ["ID_XGTE_SPELL_THUNDERCLAP"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|22": ["ID_PHB_SPELL_BLADE_WARD"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|23": [
+      "ID_WOTC_PHB24_SPELL_COMPREHEND_LANGUAGES",
+      "ID_WOTC_SATO_SPELL_WARP_SENSE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|24": ["ID_XGTE_SPELL_CAUSE_FEAR"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|25": ["ID_PHB_SPELL_HYPNOTIC_PATTERN"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|26": ["ID_WOTC_PHB24_SPELL_ENTHRALL"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|27": ["ID_PHB_SPELL_GASEOUS_FORM"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|28": ["ID_PHB_SPELL_HOLD_MONSTER"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|29": ["ID_PHB_SPELL_ARMOR_OF_AGATHYS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|30": ["ID_PHB_SPELL_HEX"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|31": ["ID_PHB_SPELL_HALLOW"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|32": ["ID_PHB_SPELL_COUNTERSPELL"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|33": ["ID_WOTC_PHB24_SPELL_FLY"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|34": ["ID_PHB_SPELL_DARKNESS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|35": ["ID_WOTC_PHB24_SPELL_PLANAR_BINDING"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|36": ["ID_WOTC_PHB24_SPELL_RAY_OF_ENFEEBLEMENT"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|0": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_DREADFUL_WORD",
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_GAZE_OF_TWO_MINDS"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|1": ["ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_MISTY_VISIONS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|2": ["ID_WOTC_XGTE_CLASS_FEATURE_ELDRITCH_INVOCATION_LANCE_OF_LETHARGY"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|3": ["ID_WOTC_XGTE_CLASS_FEATURE_ELDRITCH_INVOCATION_TOMB_OF_LEVISTUS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|4": ["ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_SCULPTOR_OF_FLESH"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|5": ["ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_EYES_OF_THE_RUNEKEEPER"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|6": ["ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_SIGN_OF_ILL_OMEN"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON|0": ["ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON_PACT_OF_THE_TOME"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON_PACT_OF_THE_TOME|0": [
+      "ID_XGTE_SPELL_SHAPE_WATER",
+      "ID_WOTC_PHB24_SPELL_FIRE_BOLT",
+      "ID_XGTE_SPELL_TOLL_THE_DEAD"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK|0": ["ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_4_PLUS2"],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_4_PLUS2|0": ["ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_4_DEXTERITY_PLUS_2"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK|1": ["ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_8_PLUS1"],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_8_PLUS1|0": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_8_DEXTERITY_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_8_INTELLIGENCE_PLUS_1"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK|2": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_12_PLUS1"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_12_PLUS1|0": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_12_STRENGTH_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_12_WISDOM_PLUS_1"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK|3": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_16_PLUS1"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_16_PLUS1|0": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_16_CHARISMA_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_16_WISDOM_PLUS_1"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK|4": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_19_PLUS1"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_19_PLUS1|0": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_19_CONSTITUTION_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_19_CHARISMA_PLUS_1"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM|0": ["ID_PHB_SPELL_CIRCLE_OF_DEATH"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM|1": ["ID_WOTC_PHB24_SPELL_FINGER_OF_DEATH"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM|2": ["ID_PHB_SPELL_DEMIPLANE"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM|3": ["ID_WOTC_PHB24_SPELL_ASTRAL_PROJECTION"]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "jw42whjzulvy",
+      "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "k8eq8e4gulvy",
+      "id": "ID_WOTC_PHB_WEAPON_CLUB",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "c84zx6evulvy",
+      "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "0q4efk4julvy",
+      "id": "ID_INTERNAL_WEAPON_BOOMERANG",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "k726shb8ulvy",
+      "id": "ID_WOTC_PHB_ITEM_COMPONENTPOUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "5mt12s5fulvy",
+      "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "z2erxbqsulvy",
+      "id": "ID_WOTC_PHB_ITEM_BOOK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "98976hjbulvy",
+      "id": "ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "z1yx0snqulvy",
+      "id": "ID_WOTC_PHB_ITEM_INKPEN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "8lbk8pmfulvy",
+      "id": "ID_WOTC_PHB_ITEM_PARCHMENT_ONESHEET",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "tlgdd89kulw7",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Belaying pin",
+        "description": "belaying pin (club)"
+      }
+    },
+    {
+      "uid": "k36jvhxzulw7",
+      "id": "",
+      "qty": 50,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Feet of silk rope"
+      }
+    },
+    {
+      "uid": "iwl7dmluulw7",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Lucky charm such as a rabbit foot or a small stone with a hole in the center",
+        "description": "lucky charm such as a rabbit foot or a small stone with a hole in the center (or you may roll for a random trinket on the Trinkets table in chapter 5)"
+      }
+    },
+    {
+      "uid": "kzvecphsulw7",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "6qfpqyq1ulw7",
+      "id": "ID_WOTC_PHB_ITEM_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 10,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_DWARF",
+  "background": "ID_BACKGROUND_SAILOR",
+  "equipmentAdded": ["Warlock, starting equipment", "Sailor, starting equipment"],
+  "equipmentLedger": {
+    "Warlock, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+          "name": "Leather",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_CLUB",
+          "name": "Club",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 2
+        },
+        {
+          "id": "ID_INTERNAL_WEAPON_BOOMERANG",
+          "name": "Boomerang",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_COMPONENTPOUCH",
+          "name": "Component Pouch",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BOOK",
+          "name": "Book",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE",
+          "name": "Ink (1 ounce bottle)",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_INKPEN",
+          "name": "Ink Pen",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_PARCHMENT_ONESHEET",
+          "name": "Parchment (one sheet)",
+          "qty": 10
+        }
+      ],
+      "gp": 0
+    },
+    "Sailor, starting equipment": {
+      "items": [
+        {
+          "id": "",
+          "name": "Belaying pin",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Feet of silk rope",
+          "qty": 50
+        },
+        {
+          "id": "",
+          "name": "Lucky charm such as a rabbit foot or a small stone with a hole in the center",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+          "name": "Clothes, Common",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 10
+    }
+  }
+}

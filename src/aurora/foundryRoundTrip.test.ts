@@ -8,6 +8,8 @@ import { randomCharacter } from "./randomCharacter";
 import { exportFoundry } from "./exportForeign";
 import { importForeignCharacter } from "./foreign";
 import { loadTestContent } from "../engine/testContent";
+import { buildSheet } from "./sheet";
+import { foundryLanguageKey } from "./foundryKeys";
 
 const C = process.env.SOULFORGE_RULES;
 
@@ -28,6 +30,39 @@ describe.skipIf(!C)("Foundry round trip", () => {
       for (const it of actor.items)
         if (it.type === "spell" && !["abj", "con", "div", "enc", "evo", "ill", "nec", "trs"].includes(it.system.school ?? ""))
           lost.push(`${i}: spell ${it.name} school "${it.system.school}"`);
+      // The actor itself says what a Foundry game shows: languages, size, armor and weapon training (traits).
+      const sys = (
+        actor as unknown as {
+          system: {
+            traits?: {
+              size?: string;
+              languages?: { value: string[]; custom: string };
+              armorProf?: { value: string[]; custom: string };
+              weaponProf?: { value: string[]; custom: string };
+            };
+          };
+        }
+      ).system;
+      const sh = buildSheet(a);
+      for (const l of sh.proficiencies.languages) {
+        const k = foundryLanguageKey(l);
+        const inFile = k ? sys.traits?.languages?.value.includes(k) : sys.traits?.languages?.custom.toLowerCase().includes(l.toLowerCase());
+        if (!inFile) lost.push(`${i}: actor lacks language ${l}`);
+      }
+      if (sh.size && !sys.traits?.size) lost.push(`${i}: actor lacks size ${sh.size}`);
+      if (sh.proficiencies.armor.length && !(sys.traits?.armorProf?.value.length || sys.traits?.armorProf?.custom))
+        lost.push(`${i}: actor lacks armor training`);
+      if (sh.proficiencies.weapons.length && !(sys.traits?.weaponProf?.value.length || sys.traits?.weaponProf?.custom))
+        lost.push(`${i}: actor lacks weapon training`);
+      // Senses and the casting ability, as dnd5e keeps them (attributes.senses, attributes.spellcasting).
+      const attrs = (actor as unknown as { system: { attributes: { senses?: Record<string, number>; spellcasting?: string } } }).system
+        .attributes;
+      for (const v of sh.vision) {
+        const m = /^(Darkvision|Blindsight|Tremorsense|Truesight) (\d+) ft$/.exec(v);
+        if (m && attrs.senses?.[m[1].toLowerCase()] !== Number(m[2])) lost.push(`${i}: actor lacks ${v}`);
+      }
+      const casting = sh.casting.find((l) => l.ability);
+      if (casting && !attrs.spellcasting) lost.push(`${i}: actor lacks its casting ability (${casting.ability})`);
       const b = resolve(importForeignCharacter(JSON.parse(JSON.stringify(actor)), reg).character, reg);
       const who = `${i} ${a.reg.get(ch.classes[0].classId)?.name} ${ch.classes[0].level}`;
       for (const [label, re] of [

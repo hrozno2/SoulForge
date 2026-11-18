@@ -15,7 +15,11 @@ vi.mock("../aurora/storage", () => ({
       data: { ...newCharacter(), name: "Ora", classes: [{ classId: "ID_X_CLASS", level: 3 }] },
     },
   ],
-  deleteCharacterRecord: async () => undefined,
+  trashCharacter: async () => undefined,
+  listTrash: async () => [],
+  restoreTrashed: async () => undefined,
+  purgeTrashed: async () => undefined,
+  TRASH_DAYS: 30,
 }));
 
 describe("Home cards", () => {

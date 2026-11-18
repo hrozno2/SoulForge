@@ -15,6 +15,7 @@ import { buildSheet, preparePool } from "./sheet";
 import { ItemIndex, resolveChosenTools } from "./startingEquipment";
 import { isModern, isPlaytest } from "./edition";
 import { conceptOf, nameKey } from "../engine/concepts";
+import { FLANG, FTOOL } from "./foundryKeys";
 
 type Json = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -1270,9 +1271,15 @@ class Importer {
     // A feat the background or species already gives (the 2024 Sage's Magic Initiate) is the one the file lists.
     if (el.type === "Feat") {
       // The Sage grants Magic Initiate (Wizard) as the feat's own part, ID_..._FEAT_MAGIC_INITIATE_WIZARD.
+      // Aurora's 2024 Acolyte grants it as ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_CLERIC ("Cleric", a Feat Feature), which
+      // is the same feat as 5e.tools' "Magic Initiate (Cleric)": the id after "_FEAT_" spells the feat's full name.
+      const letters = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
       const asPart =
-        r.active.some((a) => a.el.type !== "Feat" && a.el.id.startsWith(`${el.id}_`)) &&
-        !r.active.some((a) => a.el.type === "Feat" && normalize(a.el.name) === normalize(el.name));
+        r.active.some(
+          (a) =>
+            a.el.type !== "Feat" &&
+            (a.el.id.startsWith(`${el.id}_`) || letters(/_FEAT_(.+)$/.exec(a.el.id)?.[1] ?? "") === letters(el.name)),
+        ) && !r.active.some((a) => a.el.type === "Feat" && normalize(a.el.name) === normalize(el.name));
       const have = r.active.filter((a) => a.el.type === "Feat" && normalize(a.el.name) === normalize(el.name)).length + (asPart ? 1 : 0);
       if (have >= (this.featCount.get(normalize(w.name)) ?? 1)) {
         this.matched.push(`${el.name} (already granted)`);
@@ -1582,61 +1589,6 @@ const SKILL_NAMES = [
   "stealth",
   "survival",
 ];
-
-/** Foundry's language keys that differ from the language's name. */
-const FLANG: Record<string, string> = {
-  sign: "common sign language",
-  deep: "deep speech",
-  cant: "thieves' cant",
-  thieves: "thieves' cant",
-  gith: "githyanki",
-  aarakocra: "auran",
-};
-
-/** Foundry's tool keys (dnd5e system): the kits and instruments by their short names. */
-const FTOOL: Record<string, string> = {
-  thief: "thieves' tools",
-  disg: "disguise kit",
-  forg: "forgery kit",
-  herb: "herbalism kit",
-  navg: "navigator's tools",
-  pois: "poisoner's kit",
-  alchemist: "alchemist's supplies",
-  brewer: "brewer's supplies",
-  calligrapher: "calligrapher's supplies",
-  carpenter: "carpenter's tools",
-  cartographer: "cartographer's tools",
-  cobbler: "cobbler's tools",
-  cook: "cook's utensils",
-  glassblower: "glassblower's tools",
-  jeweler: "jeweler's tools",
-  leatherworker: "leatherworker's tools",
-  mason: "mason's tools",
-  painter: "painter's supplies",
-  potter: "potter's tools",
-  smith: "smith's tools",
-  tinker: "tinker's tools",
-  weaver: "weaver's tools",
-  woodcarver: "woodcarver's tools",
-  chess: "dragonchess set",
-  card: "playing card set",
-  dice: "dice set",
-  "three-dragon": "three-dragon ante set",
-  bagpipes: "bagpipes",
-  drum: "drum",
-  dulcimer: "dulcimer",
-  flute: "flute",
-  horn: "horn",
-  lute: "lute",
-  lyre: "lyre",
-  panflute: "pan flute",
-  shawm: "shawm",
-  viol: "viol",
-  air: "vehicles (air)",
-  land: "vehicles (land)",
-  space: "vehicles (space)",
-  water: "vehicles (water)",
-};
 
 export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   const b = new Importer(reg);

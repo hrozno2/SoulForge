@@ -1,0 +1,208 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_5ET_CLASS_PHB_BARBARIAN",
+      "level": 8
+    }
+  ],
+  "abilityBase": {
+    "strength": 15,
+    "dexterity": 13,
+    "constitution": 14,
+    "intelligence": 8,
+    "wisdom": 12,
+    "charisma": 10
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_5ET_RACE_VGM_LIZARDFOLK#1io58l3": ["ID_5ET_SKILL_ANIMAL_HANDLING", "ID_5ET_SKILL_STEALTH"],
+    "ID_5ET_BG_SATO_PLANAR_PHILOSOPHER#17tibw4": ["ID_5ET_SKILL_RELIGION"],
+    "ID_5ET_BG_SATO_PLANAR_PHILOSOPHER#wjsb5g": ["ID_5ET_LANGUAGE_GOBLIN", "ID_5ET_LANGUAGE_COMMON_SIGN_LANGUAGE"],
+    "ID_5ET_FEAT_SATO_SCION_OF_THE_OUTER_PLANES#2m6jpd": ["ID_INTERNAL_CONDITION_DAMAGE_RESISTANCE_PSYCHIC"],
+    "ID_5ET_FEAT_SATO_SCION_OF_THE_OUTER_PLANES#dkwfk": ["ID_5ET_SPELLSET_SATO_SCION_OF_THE_OUTER_PLANES_1"],
+    "ID_5ET_SPELLSET_SATO_SCION_OF_THE_OUTER_PLANES_1#55xjpq": ["ID_5ET_SPELLABILITY_SATO_SCION_OF_THE_OUTER_PLANES_WISDOM"],
+    "ID_5ET_CLASS_PHB_BARBARIAN#1ppnfx7": ["ID_5ET_SKILL_ATHLETICS", "ID_5ET_SKILL_SURVIVAL"],
+    "ID_5ET_CLASS_PHB_BARBARIAN#p3946d": ["ID_5ET_SUBCLASS_BGG_BARBARIAN_GIANT_FOR_PHB"],
+    "ID_SF_ADD_SF_BGG_GIANT_GIANT_POWER_3#v98rox": ["ID_5ET_LANGUAGE_HALFLING"],
+    "ID_5ET_SUBCLASS_BGG_BARBARIAN_GIANT_FOR_PHB#1f4ch4a": ["ID_5ET_SPELLSET_BGG_PATH_OF_THE_GIANT_2"],
+    "ID_5ET_CLASS_PHB_BARBARIAN#lfhtuv": ["ID_5ET_FEAT_PHB_DUNGEON_DELVER"],
+    "ID_5ET_CLASS_PHB_BARBARIAN#1x14srj": ["ID_5ET_FEAT_PHB_RITUAL_CASTER_SORCERER"],
+    "ID_5ET_FEAT_PHB_RITUAL_CASTER_SORCERER#t58egv": ["ID_5ET_SPELL_PHB_DETECT_MAGIC", "ID_5ET_SPELL_PHB_COMPREHEND_LANGUAGES"]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "5f5pppvzdmfl",
+      "id": "ID_5ET_ITEM_PHB_EXPLORER_S_PACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ckzwy31bdmfl",
+      "id": "ID_5ET_ITEM_PHB_JAVELIN",
+      "qty": 4,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "40529zx0dmfl",
+      "id": "ID_5ET_ITEM_PHB_SILVERED_WARHAMMER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "hb6691nbdmfl",
+      "id": "ID_5ET_ITEM_PHB_HANDAXE",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "g2oo8lq9dmg2",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Portal key",
+        "description": "portal key (such as a bag of golden tea leaves or the tooth of a planar beast)"
+      }
+    },
+    {
+      "uid": "so9ip536dmg3",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Manifesto of your guiding philosophy"
+      }
+    },
+    {
+      "uid": "53bih82rdmg3",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Common clothes in your faction's style"
+      }
+    },
+    {
+      "uid": "38upp5exdmg3",
+      "id": "ID_5ET_ITEM_PHB_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 0,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_5ET_RACE_VGM_LIZARDFOLK",
+  "background": "ID_5ET_BG_SATO_PLANAR_PHILOSOPHER",
+  "equipmentAdded": ["Barbarian, starting equipment", "Planar Philosopher, starting equipment"],
+  "equipmentLedger": {
+    "Barbarian, starting equipment": {
+      "items": [
+        {
+          "id": "ID_5ET_ITEM_PHB_EXPLORER_S_PACK",
+          "name": "Explorer's Pack",
+          "qty": 1
+        },
+        {
+          "id": "ID_5ET_ITEM_PHB_JAVELIN",
+          "name": "Javelin",
+          "qty": 4
+        },
+        {
+          "id": "ID_5ET_ITEM_PHB_SILVERED_WARHAMMER",
+          "name": "Silvered Warhammer",
+          "qty": 1
+        },
+        {
+          "id": "ID_5ET_ITEM_PHB_HANDAXE",
+          "name": "Handaxe",
+          "qty": 2
+        }
+      ],
+      "gp": 0
+    },
+    "Planar Philosopher, starting equipment": {
+      "items": [
+        {
+          "id": "",
+          "name": "Portal key",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Manifesto of your guiding philosophy",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Common clothes in your faction's style",
+          "qty": 1
+        },
+        {
+          "id": "ID_5ET_ITEM_PHB_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 0
+    }
+  },
+  "hpChosen": true
+}

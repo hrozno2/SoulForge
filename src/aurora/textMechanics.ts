@@ -6,6 +6,7 @@
  * is the feature's usage line, "{{name:uses}}/Long Rest", as the Foundry pass and Aurora's content write it.
  */
 import type { AElement, ARule } from "./types";
+import { SKILL_ABILITY } from "./character";
 
 const COUNT: Record<string, number> = {
   once: 1,
@@ -508,6 +509,26 @@ export function initiativeFromText(text: string): ARule[] {
   return [];
 }
 
+/**
+ * A bonus to every check of one ability equal to another's modifier: "whenever you make a Charisma check, you gain a
+ * bonus to the check equal to your Wisdom modifier" (the Fey Wanderer's Otherworldly Glamour, text only on 5e.tools
+ * content until 2026-11-17, found by the move's fresh sample). Read onto each skill of that ability.
+ */
+export function checkBonusFromText(text: string): ARule[] {
+  // Or one skill's: "whenever you make a Charisma (Persuasion) check, ... equal to your Wisdom modifier" (the Samurai's
+  // Elegant Courtier).
+  const m = new RegExp(
+    `whenever you make an? (${ABILITY})(?: \\(([a-z ]+)\\))? check, you gain a bonus to the check equal to your (${ABILITY}) modifier`,
+    "i",
+  ).exec(text);
+  if (!m) return [];
+  const of = m[1].toLowerCase();
+  const only = m[2]?.toLowerCase().trim();
+  return Object.entries(SKILL_ABILITY)
+    .filter(([skill, a]) => a === of && (!only || skill === only))
+    .map(([skill]) => stat(`${skill}:misc`, `${m[3].toLowerCase()}:modifier`));
+}
+
 /** Attuning to more items, and ability scores raised past 20 at the top of a class: totals the sheet shows. */
 export function limitsFromText(text: string): ARule[] {
   const out: ARule[] = [];
@@ -618,6 +639,7 @@ export function applyTextStats(
           !el.rules.some((x) => x.kind === "stat" && /^(?:innate )?speed(?::misc)?$/i.test(x.name)),
       ),
       ...initiativeFromText(text),
+      ...checkBonusFromText(text),
       ...limitsFromText(text),
     ].filter((r) => (r.kind === "stat" ? !has(r.name.toLowerCase()) || r.name === "ac:calculation" : !has2((r as { id?: string }).id)));
     const train = trainingsFromText(text);

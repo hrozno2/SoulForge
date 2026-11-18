@@ -1724,3 +1724,69 @@ describe("a summoned creature's attack", () => {
     );
   });
 });
+
+describe("spells a class feature's text gives", () => {
+  it("reads 'you know {@spell X}' (the 2014 Fey Wanderer's Fey Reinforcements) as a granted spell", async () => {
+    const { castableSpells } = await import("./fivetools");
+    const rules = castableSpells({
+      name: "Fey Reinforcements",
+      className: "Ranger",
+      source: "TCE",
+      entries: ["you know {@spell summon fey|tce}. It doesn't count against the number of ranger spells you know"],
+    });
+    expect(rules).toEqual([expect.objectContaining({ kind: "grant", type: "Spell", id: "SPELLREF:summon fey|tce|tce" })]);
+  });
+  it("reads 'you add the {@spell X} spell to your spellbook' and 'you always have {@spell X} prepared' (Undead Thralls)", async () => {
+    const { castableSpells } = await import("./fivetools");
+    const base = { name: "Undead Thralls", className: "Wizard", source: "PHB" };
+    expect(castableSpells({ ...base, entries: ["At 6th level, you add the {@spell animate dead} spell to your spellbook"] })).toHaveLength(
+      1,
+    );
+    expect(castableSpells({ ...base, source: "XPHB", entries: ["You always have {@spell Animate Dead|XPHB} prepared"] })).toHaveLength(1);
+  });
+});
+
+describe("a named language, or another if the character knows it", () => {
+  // SCAG Clan Crafter: "Dwarvish or one of your choice if you already speak Dwarvish"; FRHoF Cult of the Dragon
+  // Initiate: "If you already know Draconic when you select this feat, you instead learn ...". 5e.tools files both as
+  // two sets; read as a free choice of either, a character could skip the named language (move laws, 2026-11-18).
+  const files = {
+    "languages.json": {
+      language: [
+        { name: "Common", source: "PHB" },
+        { name: "Dwarvish", source: "PHB" },
+      ],
+    },
+    "backgrounds.json": {
+      background: [
+        {
+          name: "Clan Crafter",
+          source: "SCAG",
+          languageProficiencies: [{ dwarvish: true }, { anyStandard: 1 }],
+          entries: [
+            {
+              type: "list",
+              items: [{ type: "item", name: "Languages:", entry: "Dwarvish or one of your choice if you already speak Dwarvish" }],
+            },
+          ],
+        },
+      ],
+    },
+  };
+  const els = convertFiveTools({ files });
+  const bg = els.find((e) => e.type === "Background" && e.name === "Clan Crafter")!;
+  it("grants the language, and offers the choice only to a character who knows it", () => {
+    expect(bg.rules).toContainEqual(
+      expect.objectContaining({
+        kind: "grant",
+        type: "Language",
+        id: "ID_5ET_LANGUAGE_DWARVISH",
+        requirements: "!ID_5ET_LANGUAGE_DWARVISH",
+      }),
+    );
+    expect(bg.rules).toContainEqual(
+      expect.objectContaining({ kind: "select", type: "Language", requirements: "ID_5ET_LANGUAGE_DWARVISH" }),
+    );
+    expect(bg.rules.some((r) => r.kind === "select" && r.type === "Training Option")).toBe(false);
+  });
+});

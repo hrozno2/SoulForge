@@ -8,6 +8,7 @@ import { ABILITY_IDS, itemLabel, type AbilityId } from "./character";
 import type { Resolved } from "./engine";
 import type { AElement } from "./types";
 import { buildSheet } from "./sheet";
+import { foundryLanguageKey, foundryToolKey } from "./foundryKeys";
 
 const ABBR: Record<AbilityId, string> = {
   strength: "str",
@@ -357,6 +358,13 @@ function exportFoundryActor(r: Resolved): Record<string, unknown> {
     ]),
   );
   const hp = c.play.hp ?? sheet.hp;
+  const traits = foundryTraits(sheet);
+  const tools = Object.fromEntries(
+    sheet.proficiencies.tools.flatMap((t) => {
+      const k = foundryToolKey(t.replace(/\s*\(expertise\)$/i, "").replace(/^tool proficiency \((.+)\)$/i, "$1"));
+      return k ? [[k, { value: /\(expertise\)$/i.test(t) ? 2 : 1, ability: "int" }]] : [];
+    }),
+  );
   return {
     name: c.name || "Character",
     type: "character",
@@ -364,10 +372,15 @@ function exportFoundryActor(r: Resolved): Record<string, unknown> {
     system: {
       abilities,
       skills,
+      tools,
+      traits,
       attributes: {
         hp: { value: hp, max: sheet.hp, temp: c.play.tempHp },
         ac: { flat: sheet.ac.value, calc: "flat" },
         movement: { walk: sheet.speed, units: "ft" },
+        senses: foundrySenses(sheet.vision),
+        // The first casting line's ability, as dnd5e's three-letter key ("cha"); "" for a character who casts nothing.
+        spellcasting: ABBR[(sheet.casting.find((l) => l.ability)?.ability ?? "") as AbilityId] ?? "",
         exhaustion: c.play.exhaustion ?? 0,
       },
       currency: { ...c.coins },
@@ -394,6 +407,60 @@ function exportFoundryActor(r: Resolved): Record<string, unknown> {
     flags: {},
     prototypeToken: { name: c.name || "Character" },
     _stats: { systemId: "dnd5e", systemVersion: "3.2.0", coreVersion: "11.315" },
+  };
+}
+
+/** The senses as dnd5e keeps them: each range in feet (the longest, if two features give one), from the sheet's lines. */
+function foundrySenses(vision: string[]) {
+  const out: Record<string, number | string> = { darkvision: 0, blindsight: 0, tremorsense: 0, truesight: 0, units: "ft", special: "" };
+  for (const v of vision) {
+    const m = /^(Darkvision|Blindsight|Tremorsense|Truesight) (\d+) ft$/.exec(v);
+    if (m) out[m[1].toLowerCase()] = Math.max(Number(out[m[1].toLowerCase()]) || 0, Number(m[2]));
+  }
+  return out;
+}
+
+/**
+ * The actor's traits as the dnd5e system keeps them: size, languages, damage defenses, armor and weapon training.
+ * What has no dnd5e key goes in the field's "custom" text, so a Foundry game shows everything the sheet does.
+ */
+function foundryTraits(sheet: ReturnType<typeof buildSheet>) {
+  const SIZE: Record<string, string> = { tiny: "tiny", small: "sm", medium: "med", large: "lg", huge: "huge", gargantuan: "grg" };
+  const split = (names: string[], key: (n: string) => string | undefined) => {
+    const value: string[] = [];
+    const custom: string[] = [];
+    for (const n of names) {
+      const k = key(n);
+      if (k) {
+        if (!value.includes(k)) value.push(k);
+      } else custom.push(n);
+    }
+    return { value, custom: custom.join("; ") };
+  };
+  const ARMOR: [RegExp, string][] = [
+    [/^light( armou?r)?$/i, "lgt"],
+    [/^medium( armou?r)?$/i, "med"],
+    [/^heavy( armou?r)?$/i, "hvy"],
+    [/^shields?$/i, "shl"],
+  ];
+  const WEAPON: [RegExp, string][] = [
+    [/^simple( weapons?)?$/i, "sim"],
+    [/^martial( weapons?)?$/i, "mar"],
+  ];
+  // "Armor Proficiency (Light Armor)" and "Light Armor" are one training.
+  const bare = (n: string) => n.trim().replace(/^(?:armou?r|weapon|tool) proficiency \((.+)\)$/i, "$1");
+  const byList = (list: [RegExp, string][]) => (n: string) => list.find(([re]) => re.test(bare(n)))?.[1];
+  const DAMAGE = /^(acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|slashing|thunder)$/i;
+  const damage = (names: string[]) => split(names, (n) => (DAMAGE.test(n.trim()) ? n.trim().toLowerCase() : undefined));
+  const size = SIZE[(sheet.size ?? "").toLowerCase()];
+  return {
+    ...(size ? { size } : {}),
+    languages: split(sheet.proficiencies.languages, foundryLanguageKey),
+    dr: damage(sheet.defenses.resistances),
+    di: damage(sheet.defenses.immunities),
+    dv: damage(sheet.defenses.vulnerabilities),
+    armorProf: split(sheet.proficiencies.armor, byList(ARMOR)),
+    weaponProf: split(sheet.proficiencies.weapons, byList(WEAPON)),
   };
 }
 

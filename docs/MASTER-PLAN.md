@@ -245,10 +245,10 @@ cause, gates, STATUS.md updated. Item states here; detail in docs/STATUS.md and 
 | # | What | State |
 | --- | --- | --- |
 | E1.1 | The move: Zendikar elves (and any sub race filed under another species in 5e.tools) switch species | Species switch done 2026-11-17. Scores now follow Plane Shift: Zendikar (Wisdom +2, Joraga Dexterity +1) where Aurora's copy had the Player's Handbook Elf's Dexterity +2; check the fresh character's Dexterity (13, expected base +1) and add the explanation to migrateReport |
-| E1.2 | The move: the fresh-sample cases (a Wizard's initiative, a Ranger's Charisma skills, +1s on another score, Auran lost) and the 4 findings the move brings | Open |
-| E1.3 | A move screen for players in the release app: what changes, what is kept as text, decisions, the original untouched | Open |
+| E1.2 | The move: the fresh-sample cases (a Wizard's initiative, a Ranger's Charisma skills, +1s on another score, Auran lost) and the 4 findings the move brings | Mostly done 2026-11-18: species switch explained, same-book twins, skill picks never into expertise, spell sets, Samurai/Fey Wanderer check bonuses, "you know"/"always have prepared" spells, Tasha's expanded lists, playtest-only spells counted as unavailable; a spell's near name never makes another spell (Circle of Death had become Spirit of Death, Suggestion Mass Suggestion); a spell never drops below its choice's level. 400 saved: changed 42 to 24 |
+| E1.3 | A move screen for players in the release app: what changes, what is kept as text, decisions, the original untouched | Done 2026-11-18: "Move to 5e.tools" on a character built on Aurora's class, species or background; the dialog shows the move first, then makes a 5e.tools copy that opens with its import notes (src/ui/MoveDialog.tsx). Checked in the browser on a 2014 Fiend warlock |
 | E1.4 | Community builds on 5e.tools alone: the choices they leave open, filled by Soul Forge additions where the text gives them | Open |
-| E2.1 | Rules check judges the rest itself (W5): increases by source, languages/tools/skills by count, species and background features, starting equipment | Open |
+| E2.1 | Rules check judges the rest itself (W5): increases by source, languages/tools/skills by count, species and background features, starting equipment | Open. Species and background features present: not needed on 5e.tools content (the converter makes every named entry a trait); the rest open |
 | E2.2 | Every combination pairwise (W8) | Open |
 | E2.3 | Concepts compared everywhere (W6) | Open |
 | E2.4 | Engine shape E1–E6 and the timeline resolver's speed (incremental) | Open |
@@ -258,8 +258,8 @@ cause, gates, STATUS.md updated. Item states here; detail in docs/STATUS.md and 
 | E3.1 | Fix-it buttons on rules-check findings | Open |
 | E3.2 | Linux performance | Waits for Chris's measurement |
 | E3.6 | Scrollbars push buttons sideways (Chris: the level "+" moved and the click removed his class) | Done 2026-11-17: every scrolling area and the page keep the scrollbar's room (`scrollbar-gutter: stable`); removing a class asks a second click |
-| E3.3 | Importers and exporters (test files: Chris's Eleanor exports, 2026-11-17, in ~/.claude/uploads/70fadbec-…: Roll20, Foundry, Soul Forge JSON, two PDFs): Roll20 rebuilt on BetterR20's scripts (github.com/DeathStalker471/betterR20, analysed first); Foundry on Plutonium's importer, analysed first; every import with a list of what came across | Open |
-| E3.4 | The library's safety net: visible restore from backup, a warning before moves and mass edits | Open |
+| E3.3 | Importers and exporters (test files: Chris's Eleanor exports, 2026-11-17, kept in the test folder's imports/eleanor): Roll20 rebuilt on BetterR20's scripts (github.com/DeathStalker471/betterR20, analysed first); Foundry on Plutonium's importer, analysed first; every import with a list of what came across | Started 2026-11-18: all four Eleanor files (v0.26.3 Roll20 and Foundry, this version's Roll20 and Foundry) import as the character saved (`eleanorImport.test.ts`); a background's feat is not added twice (2024 Acolyte's Magic Initiate); the Foundry actor now carries its traits (languages, size, defenses, armor, weapons, tools), which it had none of |
+| E3.4 | The library's safety net: visible restore from backup, a warning before moves and mass edits | Done 2026-11-18: a deleted character goes to "Recently deleted" on Home for 30 days (restore, or delete for good), deleted and trashed in one transaction; the move never touches the original (it makes a copy), and restoring a backup never deletes, so neither needs a warning. Daily backups and their restore stay in Settings |
 | E3.5 | Homebrew as a first-class path, on the Soul Forge additions machinery (Guiding Hand as the first) | Open |
 | D5/D7 | Chris's two weeks on 5e.tools only; then the release app drops Aurora | Waits for Chris |
 

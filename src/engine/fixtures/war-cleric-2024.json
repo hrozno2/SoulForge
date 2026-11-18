@@ -1,0 +1,314 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_CLERIC",
+      "level": 16
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 12,
+    "constitution": 13,
+    "intelligence": 10,
+    "wisdom": 15,
+    "charisma": 14
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_VGTM_RACIAL_TRAIT_KENKU_KENKU_TRAINING|0": ["ID_PROFICIENCY_SKILL_DECEPTION", "ID_PROFICIENCY_SKILL_STEALTH"],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_DEX_WIS|0": ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_DEX_WIS_2"],
+    "ID_WOTC_PHB24_CLASS_CLERIC|6": ["ID_PROFICIENCY_SKILL_RELIGION", "ID_PROFICIENCY_SKILL_INSIGHT"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_SPELLCASTING|40": [
+      "ID_WOTC_PHB24_SPELL_LIGHT",
+      "ID_PHB_SPELL_SACRED_FLAME",
+      "ID_WOTC_PHB24_SPELL_SACRED_FLAME"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_SPELLCASTING|41": ["ID_WOTC_PHB24_SPELL_GUIDANCE"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_SPELLCASTING|42": ["ID_WOTC_PHB24_SPELL_TOLL_THE_DEAD"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_DIVINE_ORDER|0": ["ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_DIVINE_ORDER_THAUMATURGE"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_DIVINE_ORDER_THAUMATURGE|0": ["ID_PHB_SPELL_LIGHT"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_CLERIC_SUBCLASS|0": ["ID_WOTC_PHB_ARCHETYPE_CLERIC_WAR_DOMAIN"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_ABILITY_SCORE_IMPROVEMENT|0": ["ID_WOTC_PHB24_FEAT_TELEKINETIC"],
+    "ID_WOTC_PHB24_FEAT_TELEKINETIC|0": ["ID_WOTC_PHB24_FEAT_FEATURE_TELEKINETIC_CHARISMA"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_ABILITY_SCORE_IMPROVEMENT|1": ["ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT"],
+    "ID_WOTC_PHB24_FEAT_ABILITY_SCORE_IMPROVEMENT|0": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_STRENGTH",
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_CONSTITUTION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_ABILITY_SCORE_IMPROVEMENT|2": ["ID_PHB_FEAT_MODERATELYARMORED"],
+    "ID_PHB_FEAT_MODERATELYARMORED|0": ["ID_PHB_FEAT_ASI_DEXTERITY"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_ABILITY_SCORE_IMPROVEMENT|3": ["ID_WOTC_PHB24_FEAT_MARTIAL_WEAPON_TRAINING"],
+    "ID_WOTC_PHB24_FEAT_MARTIAL_WEAPON_TRAINING|0": ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_DEXTERITY"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_BLESSED_STRIKES|0": ["ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_BLESSED_STRIKES_DIVINE_STRIKE"]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {
+    "Cleric": [
+      "ID_WOTC_PHB24_SPELL_MELD_INTO_STONE",
+      "ID_WOTC_PHB24_SPELL_ANTIMAGIC_FIELD",
+      "ID_WOTC_PHB24_SPELL_HARM",
+      "ID_WOTC_PHB24_SPELL_AID",
+      "ID_WOTC_PHB24_SPELL_CALM_EMOTIONS",
+      "ID_WOTC_PHB24_SPELL_COMMAND",
+      "ID_WOTC_PHB24_SPELL_HALLOW",
+      "ID_WOTC_PHB24_SPELL_CONJURE_CELESTIAL",
+      "ID_WOTC_PHB24_SPELL_BESTOW_CURSE",
+      "ID_WOTC_PHB24_SPELL_FIRE_STORM",
+      "ID_WOTC_PHB24_SPELL_FREEDOM_OF_MOVEMENT",
+      "ID_WOTC_PHB24_SPELL_CREATE_OR_DESTROY_WATER",
+      "ID_WOTC_PHB24_SPELL_DEATH_WARD",
+      "ID_WOTC_PHB24_SPELL_EARTHQUAKE",
+      "ID_WOTC_PHB24_SPELL_BEACON_OF_HOPE",
+      "ID_WOTC_PHB24_SPELL_BLINDNESS_DEAFNESS",
+      "ID_WOTC_PHB24_SPELL_FIND_THE_PATH",
+      "ID_WOTC_PHB24_SPELL_ENHANCE_ABILITY"
+    ]
+  },
+  "inventory": [
+    {
+      "uid": "30pq1ndacumj",
+      "id": "ID_WOTC_PHB24_WEAPON_MACE",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "7mw4xztfcumj",
+      "id": "ID_WOTC_PHB24_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "s30llyy6cumj",
+      "id": "ID_WOTC_PHB24_ITEM_BLANKET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "c950ctdgcumj",
+      "id": "ID_WOTC_PHB24_ITEM_HOLY_WATER",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "qno30dq6cumj",
+      "id": "ID_WOTC_PHB24_ITEM_LAMP",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "340ciwfvcumj",
+      "id": "ID_WOTC_PHB24_ITEM_RATIONS",
+      "qty": 7,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "orq5a70wcumj",
+      "id": "ID_WOTC_PHB24_ITEM_ROBE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "km1timm6cumj",
+      "id": "ID_WOTC_PHB24_ITEM_TINDERBOX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ygkz5vvccumj",
+      "id": "ID_WOTC_PHB24_ARMOR_MEDIUM_CHAIN_SHIRT",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "dotk6bzvcumj",
+      "id": "ID_WOTC_PHB24_ARMOR_SHIELD",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "vuhky37hcumk",
+      "id": "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "fr4ad3u6cumw",
+      "id": "ID_WOTC_PHB24_WEAPON_DAGGER",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "xmr1abzucumw",
+      "id": "ID_WOTC_PHB24_ITEM_TOOL_NAVIGATORS_TOOLS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "rpngd6elcumw",
+      "id": "ID_WOTC_PHB24_ITEM_ROPE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "s9eljpsjcumw",
+      "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 27,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_VGTM_RACE_KENKU",
+  "background": "ID_WOTC_PHB24_BACKGROUND_SAILOR",
+  "equipmentAdded": ["Cleric, option a", "Sailor, option a"],
+  "equipmentLedger": {
+    "Cleric, option a": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_WEAPON_MACE",
+          "name": "Mace",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BLANKET",
+          "name": "Blanket",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_HOLY_WATER",
+          "name": "Holy Water",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_LAMP",
+          "name": "Lamp",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_RATIONS",
+          "name": "Rations",
+          "qty": 7
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_ROBE",
+          "name": "Robe",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TINDERBOX",
+          "name": "Tinderbox",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ARMOR_MEDIUM_CHAIN_SHIRT",
+          "name": "Chain Shirt",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ARMOR_SHIELD",
+          "name": "Shield",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET",
+          "name": "Amulet",
+          "qty": 1
+        }
+      ],
+      "gp": 7
+    },
+    "Sailor, option a": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TOOL_NAVIGATORS_TOOLS",
+          "name": "Navigator’s Tools",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_ROPE",
+          "name": "Rope",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+          "name": "Clothes, Traveler's",
+          "qty": 1
+        }
+      ],
+      "gp": 20
+    }
+  }
+}

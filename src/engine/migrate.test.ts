@@ -61,7 +61,7 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")(
         const rr = resolve(c, reg);
         const sh = buildSheet(rr);
         const lines = [
-          `  ${tag} scores ${JSON.stringify(sh.abilities.map((a) => a.score))} ac ${sh.ac.value} ${JSON.stringify(sh.ac.parts ?? "")} race ${reg.get(c.race ?? "")?.name} (${reg.get(c.race ?? "")?.source}) bg ${reg.get(c.background ?? "")?.name} (${reg.get(c.background ?? "")?.source}) options ${JSON.stringify(c.options)} extras ${JSON.stringify(c.extras)} prepared ${JSON.stringify(Object.fromEntries(Object.entries(c.prepared ?? {}).map(([k, v]) => [k, (v as string[]).length])))}`,
+          `  ${tag} scores ${JSON.stringify(sh.abilities.map((a) => a.score))} base ${JSON.stringify(Object.values(c.abilityBase))} ac ${sh.ac.value} ${JSON.stringify(sh.ac.parts ?? "")} race ${reg.get(c.race ?? "")?.name} (${reg.get(c.race ?? "")?.source}) bg ${reg.get(c.background ?? "")?.name} (${reg.get(c.background ?? "")?.source}) options ${JSON.stringify(c.options)} extras ${JSON.stringify(c.extras)} prepared ${JSON.stringify(Object.fromEntries(Object.entries(c.prepared ?? {}).map(([k, v]) => [k, (v as string[]).length])))}`,
           `    skills ${JSON.stringify(sh.skills.map((k) => `${k.name} ${k.bonus}${k.level === "expertise" ? "E" : k.level === "proficient" ? "P" : ""}`))}`,
           `    saves ${JSON.stringify(sh.abilities.map((a) => a.save))}`,
           `    worn: ${c.inventory
@@ -83,8 +83,18 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")(
         dump("OLD", ch, both),
         dump("NEW", r.migration.ch, five),
         `  kept ${JSON.stringify(r.migration.kept)} filled ${JSON.stringify(r.migration.filled)} unplaced ${JSON.stringify(r.migration.unplaced)} noTwin ${JSON.stringify(r.migration.noTwin.map((x) => x.name))}`,
+        // With MIGRATE_TRACE, this character's own placements (the trace is reset before each move).
+        ...(lastTrace.map((t) => `  ${t}`) ?? []),
         "",
       );
+    };
+    let lastTrace: string[] = [];
+    const traced = (f: () => MoveResult): MoveResult => {
+      const g = globalThis as { __trace?: string[] };
+      const start = g.__trace?.length ?? 0;
+      const out = f();
+      lastTrace = g.__trace?.slice(start) ?? [];
+      return out;
     };
     if (fresh) {
       const aurora = loadContentSet(CACHE!, "aurora");
@@ -99,7 +109,7 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")(
         );
         const r0 = resolve(ch, aurora);
         const cls = ch.classes.map((c) => `${aurora.get(c.classId)?.name} ${c.level}`).join("/");
-        const r = moveAndCompare(ch, both, five, ref);
+        const r = traced(() => moveAndCompare(ch, both, five, ref));
         detailFor(String(i + 1), ch, r);
         results.push({
           ...r,
@@ -112,7 +122,7 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")(
       for (const rec of backup.characters ?? []) {
         const ch = normalizeCharacter(rec.data as never);
         const cls = ch.classes.map((c) => `${both.get(c.classId)?.name} ${c.level}`).join("/");
-        const r = moveAndCompare(ch, both, five, ref);
+        const r = traced(() => moveAndCompare(ch, both, five, ref));
         detailFor(rec.name, ch, r);
         results.push({
           ...r,
@@ -127,7 +137,7 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")(
         } catch {
           continue;
         }
-        const r = moveAndCompare(ch, both, five, ref);
+        const r = traced(() => moveAndCompare(ch, both, five, ref));
         detailFor(f.split("/").slice(-3).join("/"), ch, r);
         results.push({ ...r, name: f.split("/").slice(-3).join("/") });
       }
@@ -155,7 +165,10 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")(
     }
     const now = {
       changed: results.filter((r) => r.changed.length).length,
-      dropped: results.filter((r) => r.dropped.length).length,
+      // The move's own drops; content 5e.tools has no version of (an Unearthed Arcana spell, kept with its text) is
+      // counted apart as unavailable: no move can keep it on the sheet.
+      dropped: results.filter((r) => r.dropped.some((x) => !/no 5e\.tools version/.test(x))).length,
+      unavailable: results.filter((r) => r.unavailable.length).length,
       rules: results.filter((r) => r.rules.some((x) => !/kept as built/.test(x))).length,
       newRules: results.filter((r) => r.newRules > 0).length,
     };
@@ -163,7 +176,7 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "migrate")(
     const was = existsSync(base) ? (JSON.parse(readFileSync(base, "utf8")) as Partial<typeof now>) : {};
     if (!existsSync(base) || process.env.RULES_SNAPSHOT) writeFileSync(base, JSON.stringify(now));
     console.log(
-      `MIGRATE ${results.length} characters; changed ${now.changed}, dropped ${now.dropped}, rules ${now.rules} (accepted ${JSON.stringify(was)})`,
+      `MIGRATE ${results.length} characters; changed ${now.changed}, dropped ${now.dropped}, unavailable ${now.unavailable}, rules ${now.rules} (accepted ${JSON.stringify(was)})`,
     );
     for (const k of Object.keys(now) as (keyof typeof now)[])
       if (typeof was[k] === "number") expect(now[k], k).toBeLessThanOrEqual(was[k]!);

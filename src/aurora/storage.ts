@@ -204,6 +204,70 @@ export async function deleteCharacterRecord(id: string): Promise<void> {
   await done(tx);
 }
 
+/** A deleted character, kept in "Recently deleted" (E3.4) with the time it was deleted. */
+export interface TrashedRecord {
+  rec: CharacterRecord;
+  deleted: number;
+}
+export const TRASH_DAYS = 30;
+const TRASH_KEY = "trash";
+const fresh = (t: TrashedRecord[], now = Date.now()) => t.filter((x) => now - x.deleted < TRASH_DAYS * 86400000);
+
+/**
+ * Deletes a character into "Recently deleted": the record leaves the library and joins the trash in one transaction,
+ * so a failure leaves it where it was. Entries older than TRASH_DAYS are forgotten. `at` is for tests.
+ */
+export async function trashCharacter(id: string, at = Date.now()): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction(["characters", "meta"], "readwrite");
+  const chars = tx.objectStore("characters");
+  const meta = tx.objectStore("meta");
+  const rec = (await wrap(chars.get(id))) as CharacterRecord | undefined;
+  const trash = ((await wrap(meta.get(TRASH_KEY))) as TrashedRecord[] | undefined) ?? [];
+  if (rec) {
+    meta.put(fresh([{ rec, deleted: at }, ...trash.filter((x) => x.rec.id !== id)]), TRASH_KEY);
+    chars.delete(id);
+  }
+  await done(tx);
+}
+
+/** "Recently deleted", newest first. */
+export async function listTrash(): Promise<TrashedRecord[]> {
+  const db = await openDb();
+  const trash = ((await wrap(db.transaction("meta").objectStore("meta").get(TRASH_KEY))) as TrashedRecord[] | undefined) ?? [];
+  return fresh(trash).sort((a, b) => b.deleted - a.deleted);
+}
+
+/** Puts a deleted character back in the library (and out of the trash), in one transaction. */
+export async function restoreTrashed(id: string): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction(["characters", "meta"], "readwrite");
+  const meta = tx.objectStore("meta");
+  const trash = ((await wrap(meta.get(TRASH_KEY))) as TrashedRecord[] | undefined) ?? [];
+  const hit = trash.find((x) => x.rec.id === id);
+  if (hit) {
+    tx.objectStore("characters").put(hit.rec);
+    meta.put(
+      trash.filter((x) => x.rec.id !== id),
+      TRASH_KEY,
+    );
+  }
+  await done(tx);
+}
+
+/** Forgets a deleted character for good. */
+export async function purgeTrashed(id: string): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction("meta", "readwrite");
+  const meta = tx.objectStore("meta");
+  const trash = ((await wrap(meta.get(TRASH_KEY))) as TrashedRecord[] | undefined) ?? [];
+  meta.put(
+    trash.filter((x) => x.rec.id !== id),
+    TRASH_KEY,
+  );
+  await done(tx);
+}
+
 /** A sheet PDF the player loaded. The file itself is kept on this computer only. */
 export interface TemplateRecord {
   id: string;

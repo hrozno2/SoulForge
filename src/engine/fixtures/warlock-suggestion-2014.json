@@ -1,0 +1,447 @@
+{
+  "version": 2,
+  "name": "Test 7: Warlock 20",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB_CLASS_WARLOCK",
+      "level": 20
+    }
+  ],
+  "abilityBase": {
+    "strength": 10,
+    "dexterity": 12,
+    "constitution": 13,
+    "intelligence": 8,
+    "wisdom": 14,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_MOTM_RACE_HOBGOBLIN|8": ["ID_LANGUAGE_DWARVISH"],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_CON_WIS_CHA|0": ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_CON_WIS_CHA_2"],
+    "ID_WOTC_PHB_CLASS_WARLOCK|4": ["ID_PROFICIENCY_SKILL_NATURE", "ID_PROFICIENCY_SKILL_INTIMIDATION"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_OTHERWORLDLY_PATRON|0": ["ID_WOTC_PHB_ARCHETYPE_OTHERWORLDLY_PATRON_FIEND"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|20": ["ID_PHB_SPELL_PRESTIDIGITATION", "ID_PHB_SPELL_TRUE_STRIKE"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|21": ["ID_XGTE_SPELL_TOLL_THE_DEAD"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|22": ["ID_PHB_SPELL_CHILL_TOUCH"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|23": ["ID_WOTC_PHB24_SPELL_WITCH_BOLT", "ID_PHB_SPELL_SUGGESTION"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|24": ["ID_WOTC_PHB24_SPELL_SUMMON_FEY"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|25": ["ID_PHB_SPELL_DREAM"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|26": ["ID_PHB_SPELL_HOLD_PERSON"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|27": ["ID_WOTC_TCOE_SPELL_SUMMON_FEY"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|28": ["ID_WOTC_TCOE_SPELL_SUMMON_SHADOWSPAWN"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|29": ["ID_PHB_SPELL_ENTHRALL"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|30": ["ID_WOTC_PHB24_SPELL_TELEPORTATION_CIRCLE"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|31": ["ID_XGTE_SPELL_SUMMON_LESSER_DEMONS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|32": ["ID_PHB_SPELL_FEAR"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|33": ["ID_WOTC_PHB24_SPELL_REMOVE_CURSE"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|34": ["ID_WOTC_PHB24_SPELL_SYNAPTIC_STATIC"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|35": ["ID_WOTC_BOMT_SPELL_ANTAGONIZE"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC|36": ["ID_PHB_SPELL_BLIGHT"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|0": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_BEGUILING_INFLUENCE",
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_BEAST_SPEECH"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|1": ["ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_GAZE_OF_TWO_MINDS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|2": ["ID_WOTC_TCOE_CLASS_FEATURE_ELDRITCH_MIND"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|3": ["ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_THIEF_OF_FIVE_FATES"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|4": ["ID_WOTC_XGTE_CLASS_FEATURE_ELDRITCH_INVOCATION_RELENTLESS_HEX"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|5": ["ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_WITCH_SIGHT"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS|6": ["ID_WOTC_XGTE_CLASS_FEATURE_ELDRITCH_INVOCATION_CLOAK_OF_FLIES"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON|0": ["ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON_PACT_OF_THE_CHAIN"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON_PACT_OF_THE_CHAIN|1": ["ID_WOTC_MM25_COMPANION_HYENA"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK|0": ["ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_4_FEAT"],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_4_FEAT|0": ["ID_WOTC_TCOE_FEAT_METAMAGIC_ADEPT"],
+    "ID_WOTC_TCOE_FEAT_METAMAGIC_ADEPT|0": [
+      "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_METAMAGIC_SUBTLE_SPELL",
+      "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_METAMAGIC_CAREFUL_SPELL"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK|1": ["ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_8_PLUS1"],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_8_PLUS1|0": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_8_CONSTITUTION_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_8_STRENGTH_PLUS_1"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK|2": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_12_PLUS1"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_12_PLUS1|0": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_12_STRENGTH_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_12_CHARISMA_PLUS_1"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK|3": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_16_PLUS2"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_16_PLUS2|0": ["ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_16_STRENGTH_PLUS_2"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK|4": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_19_PLUS1"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_19_PLUS1|0": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_19_DEXTERITY_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_19_WISDOM_PLUS_1"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM|0": ["ID_WOTC_PHB24_SPELL_TASHAS_BUBBLING_CAULDRON"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM|1": ["ID_PHB_SPELL_PLANE_SHIFT"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM|2": ["ID_WOTC_PHB24_SPELL_GLIBNESS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM|3": ["ID_WOTC_PHB24_SPELL_ASTRAL_PROJECTION"]
+  },
+  "options": ["ID_WOTC_DMG_OPTION_FIREARMS"],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "6kp9ltkrgy4k",
+      "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "6m1fgwj6gy4k",
+      "id": "ID_WOTC_PHB_WEAPON_CLUB",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "f3sjgvoegy4k",
+      "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "eelwhzk5gy4k",
+      "id": "ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "pegp1k2zgy4k",
+      "id": "ID_WOTC_PHB24_ITEM_BOLT",
+      "qty": 20,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "rlrgi8k7gy4k",
+      "id": "ID_WOTC_PHB_ITEM_CRYSTAL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "cw05t32agy4k",
+      "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "28pzp7n9gy4k",
+      "id": "ID_WOTC_PHB_ITEM_BOOK",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "d4hsas37gy4k",
+      "id": "ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "7ickcfzhgy4k",
+      "id": "ID_WOTC_PHB_ITEM_INKPEN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ew3v5h8pgy4k",
+      "id": "ID_WOTC_PHB_ITEM_PARCHMENT_ONESHEET",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "atnhscxqgy4u",
+      "id": "ID_WOTC_PHB24_WEAPON_QUARTERSTAFF",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "q6eo5fdlgy4u",
+      "id": "ID_WOTC_PHB24_ITEM_TOOL_HERBALISM_KIT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "309mfcpogy4u",
+      "id": "ID_WOTC_PHB24_ITEM_BEDROLL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "3isvp66fgy4u",
+      "id": "ID_WOTC_PHB24_ITEM_BOOK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "4143xmapgy4u",
+      "id": "ID_WOTC_PHB24_ITEM_LAMP",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "cp7ekmp2gy4u",
+      "id": "ID_WOTC_PHB24_ITEM_OIL",
+      "qty": 3,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "9kcmcmxfgy4u",
+      "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "u4q105s3gy4u",
+      "id": "ID_WOTC_PHB_WEAPON_QUARTERSTAFF",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "0gzz4vilgy4u",
+      "id": "ID_WOTC_PHB_ITEM_TOOL_HERBALISM_KIT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ena6w2dagy4u",
+      "id": "ID_WOTC_PHB_ITEM_BEDROLL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "0adww9ukgy4u",
+      "id": "ID_WOTC_PHB_ITEM_LAMP",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "7zb5ub92gy4u",
+      "id": "ID_WOTC_PHB_ITEM_OIL_FLASK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "zazz7r56gy4u",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_TRAVELERS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 0.16,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_MOTM_RACE_HOBGOBLIN",
+  "background": "ID_WOTC_PHB24_BACKGROUND_HERMIT",
+  "equipmentAdded": ["Warlock, starting equipment", "Hermit, option a"],
+  "equipmentLedger": {
+    "Warlock, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+          "name": "Leather",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_CLUB",
+          "name": "Club",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT",
+          "name": "Light Crossbow",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BOLT",
+          "name": "Bolt",
+          "qty": 20
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CRYSTAL",
+          "name": "Crystal",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BOOK",
+          "name": "Book",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE",
+          "name": "Ink (1 ounce bottle)",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_INKPEN",
+          "name": "Ink Pen",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_PARCHMENT_ONESHEET",
+          "name": "Parchment (one sheet)",
+          "qty": 10
+        }
+      ],
+      "gp": 0
+    },
+    "Hermit, option a": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_WEAPON_QUARTERSTAFF",
+          "name": "Quarterstaff",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TOOL_HERBALISM_KIT",
+          "name": "Herbalism Kit",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BEDROLL",
+          "name": "Bedroll",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BOOK",
+          "name": "Book",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_LAMP",
+          "name": "Lamp",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_OIL",
+          "name": "Oil",
+          "qty": 3
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+          "name": "Clothes, Traveler's",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_QUARTERSTAFF",
+          "name": "Quarterstaff",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TOOL_HERBALISM_KIT",
+          "name": "Herbalism Kit",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BEDROLL",
+          "name": "Bedroll",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BOOK",
+          "name": "Book",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_LAMP",
+          "name": "Lamp",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_OIL_FLASK",
+          "name": "Oil (flask)",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_TRAVELERS",
+          "name": "Clothes, Traveler’s",
+          "qty": 1
+        }
+      ],
+      "gp": 0.16
+    }
+  }
+}

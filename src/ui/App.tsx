@@ -41,6 +41,7 @@ import { appDataDisk } from "../diskBackup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
 import { ImportNotes, ImportReport, importReportText } from "./ImportReport";
+import { MoveDialog, usesAurora } from "./MoveDialog";
 import { APP_VERSION, OlderBuildNotice, ruleProblems } from "./RulesCheck";
 import { loadTestContent, makeTestBatch, moveCharactersToFiveTools, testExport } from "./TestTools";
 import { listCharacters } from "../aurora/storage";
@@ -286,6 +287,7 @@ export function App() {
   // A short notice after an import report closes or the report is added to the notes: where to find it.
   const [notesHint, setNotesHint] = useState<"" | "report" | "added">("");
   const [reportOpen, setReportOpen] = useState<false | "import" | "repair">(false);
+  const [moveOpen, setMoveOpen] = useState(false);
   useEffect(() => {
     if (!notesHint) return;
     const t = window.setTimeout(() => setNotesHint(""), 9000);
@@ -620,6 +622,19 @@ export function App() {
               </button>
             </div>
           )}
+          {moveOpen && (
+            <MoveDialog
+              ch={character}
+              reg={content.reg}
+              onClose={() => setMoveOpen(false)}
+              onCopy={async (moved) => {
+                // A new character beside the original, which is not touched; its import notes say what moved.
+                open(uid(), { ...moved, movedFrom: id, checkedWith: APP_VERSION });
+                setMoveOpen(false);
+                setReportOpen("import");
+              }}
+            />
+          )}
           {reportOpen === "import" && character.importReport && (
             <ImportNotes
               text={character.importReport}
@@ -788,6 +803,14 @@ export function App() {
                   </button>
                   <button onClick={() => setTab("play")}>Play</button>
                   <button onClick={() => setTab("sheet")}>Export</button>
+                  {content.ready && usesAurora(character, content.reg) && (
+                    <button
+                      onClick={() => setMoveOpen(true)}
+                      title="See what moving this character to 5e.tools' content would change, then make a 5e.tools copy; this one stays as it is"
+                    >
+                      Move to 5e.tools
+                    </button>
+                  )}
                   {character.importReport && (
                     <button onClick={() => setReportOpen("import")} title="The report of the import that made this character">
                       Import notes

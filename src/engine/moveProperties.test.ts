@@ -65,8 +65,11 @@ it.skipIf(!C || process.env.RULES_TIER !== "move-props")(
       // 2 on a character made on 5e.tools content alone.
       const native = randomCharacter(five, level, filters, rng);
       const moved = migrateToFiveTools(native, both, five).ch;
-      if (facts(native) !== facts(moved))
+      if (facts(native) !== facts(moved)) {
+        mkdirSync(join(C!, "engine", "move-props"), { recursive: true });
+        writeFileSync(join(C!, "engine", "move-props", `native-${i}.json`), JSON.stringify(native, null, 1));
         breaks.push(`#${i} (level ${level}): a 5e.tools character changed when moved: ${facts(native)} -> ${facts(moved)}`);
+      }
     }
     out.push(
       `# The move's laws`,

@@ -10865,3 +10865,24 @@ button.spell-count.prep.on {
 .warn-btn {
   border-color: var(--warn, #b7791f);
 }
+
+/* E3.4: "Recently deleted" under the character cards. */
+.trash {
+  margin-top: 12px;
+}
+.trash-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  gap: 6px;
+}
+.trash-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.trash-list li > span {
+  flex: 1 1 220px;
+}

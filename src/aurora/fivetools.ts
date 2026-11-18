@@ -694,6 +694,43 @@ function combinedTotal(e: J): J {
 }
 
 /**
+ * Tasha's optional expanded spell lists for the 2014 classes ("Optional Class Features: Additional Ranger Spells"),
+ * which 5e.tools keeps only as notes on the spells ("classVariant", defined in Tasha's), so on 5e.tools content a 2014
+ * Ranger could not take Summon Fey (found 2026-11-18 by the move's fresh sample). Each 2014 class gets the option, off
+ * until taken, as a Soul Forge addition; taken, its spells join the class's list.
+ */
+function tceExpandedLists(out: AElement[], ctx: Ctx): void {
+  for (const [cls, names] of Object.entries(ctx.tceExpanded ?? {})) {
+    const classEl = out.find((e) => e.id === `ID_5ET_CLASS_PHB_${slug(cls)}`);
+    if (!classEl) continue;
+    const tag = `5et tce expanded ${slug(cls)}`.toLowerCase();
+    const want = new Set(names);
+    for (const e of out)
+      if (e.type === "Spell" && want.has(e.name.toLowerCase()) && !e.supports.includes(tag)) e.supports = [...e.supports, tag];
+    const id = `ID_SF_ADD_TCE_EXPANDED_${slug(cls)}`;
+    if (out.some((e) => e.id === id)) continue;
+    out.push(
+      base(id, `Additional ${cls} Spells`, "Class Feature", ADDITIONS_SOURCE, {
+        description: `<p>Tasha's Cauldron of Everything, Optional Class Features: the following spells are added to the ${cls.toLowerCase()} spell list: ${[...want].sort().join(", ")}.</p><p><em>${ADDITIONS_SOURCE}: 5e.tools holds this list only as notes on the spells.</em></p>`,
+        spellcasting: { name: cls, extend: true, list: [], extendLists: [tag] },
+      }),
+    );
+    classEl.rules = [
+      ...classEl.rules,
+      {
+        kind: "select",
+        type: "Class Feature",
+        name: `Optional class feature: Additional ${cls} Spells (${cls} 1)`,
+        supports: id,
+        number: 1,
+        level: 1,
+        optional: true,
+      } as ARule,
+    ];
+  }
+}
+
+/**
  * The one language an entry's "Languages" text names that is neither Common nor in the data's language list: "You
  * can speak, read, and write Common, and communicate in the silent speech of the Kor" is Kor; "Common, Quori, and one
  * other language of your choice" is Quori. None, or more than one, gives undefined.
@@ -726,6 +763,28 @@ function trainingRules(e0: J, label: string, out: AElement[], ctx: Ctx, idBase: 
   const rules: ARule[] = [];
   const e = combinedTotal(e0);
   const single: J = { ...e };
+  // One named language, or another of the player's choice when the character already knows it: the 5e.tools sets
+  // [{ dwarvish }, { anyStandard: 1 }] with the text's "if you already speak Dwarvish" (SCAG Clan Crafter; FRHoF Cult of
+  // the Dragon Initiate). Not a free choice of the two: the language when it is new, the choice only when it is not
+  // (requirements are judged "from elsewhere", so this element's own grant does not count).
+  const lp = e.languageProficiencies as J[] | undefined;
+  if (
+    Array.isArray(lp) &&
+    lp.length === 2 &&
+    Object.keys(lp[0]).length === 1 &&
+    lp[0][Object.keys(lp[0])[0]] === true &&
+    Object.keys(lp[1]).every((k) => k === "any" || k === "anyStandard") &&
+    /\b(?:if you already (?:know|speak)|you instead learn)\b/i.test(stripTags(JSON.stringify(e.entries ?? "")))
+  ) {
+    const fixed = langRules([lp[0]], label).rules;
+    const id = (fixed.find((r) => r.kind === "grant") as { id?: string } | undefined)?.id;
+    if (id) {
+      rules.push(...fixed.map((r) => ({ ...r, requirements: `!${id}` }) as ARule));
+      rules.push(...langRules([lp[1]], label).rules.map((r) => ({ ...r, requirements: id }) as ARule));
+      delete e.languageProficiencies;
+      delete single.languageProficiencies;
+    }
+  }
   for (const f of TRAINING_FIELDS) {
     const list = e[f] as J[] | undefined;
     if (!Array.isArray(list) || list.length < 2) continue;
@@ -1334,6 +1393,8 @@ interface Ctx {
   /** Every language the data lists, lower case, for "other" languages a species names only in its text. */
   languageNames?: string[];
   spellClasses: Record<string, Record<string, string[]>>;
+  /** Tasha's optional additions to a 2014 class's spell list ("classVariant", defined in TCE), by class name. */
+  tceExpanded?: Record<string, string[]>;
   /** Base items by "name|source" for items that build on one. */
   baseItems: Map<string, J>;
   /** Shared item text ("itemEntry"), by "name|source" in lower case. */
@@ -2696,8 +2757,10 @@ export function castableSpells(f: J): ARule[] {
   const seen = new Set<string>();
   const rules: ARule[] = [];
   for (const m of text.matchAll(
-    // Or "You learn the {@spell sacred flame} spell" (Lunar Sorcery's Moon Fire: the Lunar Sorcerer had no Sacred Flame).
-    /\byou (?:can (?:also )?(?:spend [^."]{1,40}? to |use [^."]{1,40}? to |expend [^."]{1,40}? to )?cast|learn) (?:the )?\{@spell ([^|}]+)(?:\|([^|}]*))?[^}]*\}/gi,
+    // Or "You learn the {@spell sacred flame} spell" (Lunar Sorcery's Moon Fire: the Lunar Sorcerer had no Sacred Flame),
+    // or "you know {@spell summon fey}" (the 2014 Fey Wanderer's Fey Reinforcements, 2026-11-18), or "you add the
+    // {@spell animate dead} spell to your spellbook" (Undead Thralls).
+    /\byou (?:can (?:also )?(?:spend [^."]{1,40}? to |use [^."]{1,40}? to |expend [^."]{1,40}? to )?cast|learn|know|add|always have) (?:the )?(?:spell )?\{@spell ([^|}]+)(?:\|([^|}]*))?[^}]*\}/gi,
   )) {
     const name = m[1].trim().toLowerCase();
     if (seen.has(name)) continue;
@@ -4050,6 +4113,12 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
         // (Tasha's Artificer has Absorb Elements). Tasha's optional additions to older classes' lists do not count.
         for (const [spell, v] of Object.entries(spells as J)) {
           const own = ((v as J).classVariant ?? []) as J[];
+          for (const c of own)
+            if (String(c.definedInSource) === "TCE" && String(c.source) === "PHB" && src !== "TCE")
+              ((ctx.tceExpanded ??= {})[String(c.name)] ??= []).push(spell.toLowerCase());
+          if (src === "TCE")
+            for (const c of own)
+              if (String(c.source) === "PHB") ((ctx.tceExpanded ??= {})[String(c.name)] ??= []).push(spell.toLowerCase());
           bucket[spell.toLowerCase()] = [
             ...new Set(
               [
@@ -4278,6 +4347,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
       }
     }
   resolveLooseRefs(out);
+  tceExpandedLists(out, ctx);
   // Only the unnamed books something here comes from: the free rules' bundle named The Rise of Tiamat Online Supplement.
   const used = new Set(out.map((e) => e.source));
   for (const src of unlistedSources) if (used.has(src.name)) out.push(src);

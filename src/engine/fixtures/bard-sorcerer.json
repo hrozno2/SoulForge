@@ -1,0 +1,459 @@
+{
+  "version": 2,
+  "name": "Test 9: Bard 11",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB_CLASS_BARD",
+      "level": 11
+    },
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_SORCERER",
+      "level": 2
+    }
+  ],
+  "abilityBase": {
+    "strength": 10,
+    "dexterity": 14,
+    "constitution": 13,
+    "intelligence": 12,
+    "wisdom": 8,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_PHB24_RACE_AASIMAR|1": ["ID_INTERNAL_RACIAL_TRAIT_SMALL"],
+    "ID_WOTC_PHB24_RACE_AASIMAR|5": ["ID_LANGUAGE_GIANT", "ID_WOTC_PHB24_LANGUAGE_COMMON_SIGN"],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_CON_INT|0": ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_CON_INT_1"],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_CON_INT_1|0": ["ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_INTELLIGENCE_INCREASE_2"],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_CON_INT_1|1": ["ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CONSTITUTION_INCREASE_1"],
+    "ID_WOTC_PHB_CLASS_BARD|6": [
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_DRUM",
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_LUTE",
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_BAGPIPES"
+    ],
+    "ID_WOTC_PHB_CLASS_BARD|9": [
+      "ID_PROFICIENCY_SKILL_ACROBATICS",
+      "ID_PROFICIENCY_SKILL_ANIMALHANDLING",
+      "ID_PROFICIENCY_SKILL_DECEPTION"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|22": ["ID_PHB_SPELL_TRUE_STRIKE", "ID_PHB_SPELL_BLADE_WARD"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|23": ["ID_PHB_SPELL_LIGHT"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|24": ["ID_PHB_SPELL_MESSAGE"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|25": [
+      "ID_PHB_SPELL_HALLUCINATORY_TERRAIN",
+      "ID_PHB_SPELL_ANIMATE_OBJECTS",
+      "ID_WOTC_PHB24_SPELL_TASHAS_HIDEOUS_LAUGHTER",
+      "ID_XGTE_SPELL_WARDING_WIND"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|26": ["ID_PHB_SPELL_MODIFY_MEMORY"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|27": ["ID_WOTC_PHB24_SPELL_SLOW"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|28": ["ID_WOTC_PHB24_SPELL_SEEMING"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|29": ["ID_WOTC_PHB24_SPELL_TRUE_SEEING"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|30": ["ID_PHB_SPELL_BANE"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|31": ["ID_PHB_SPELL_DISSONANT_WHISPERS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|32": ["ID_PHB_SPELL_GLYPH_OF_WARDING"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|33": ["ID_WOTC_PHB24_SPELL_CURE_WOUNDS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|34": ["ID_WOTC_PHB24_SPELL_SPEAK_WITH_PLANTS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_BARD_COLLEGE|0": ["ID_WOTC_XGTE_ARCHETYPE_COLLEGE_OF_SWORDS"],
+    "ID_WOTC_XGTE_ARCHETYPE_FEATURE_BARD_SWORDS_FIGHTING_STYLE|1": ["ID_WOTC_PHB_CLASS_FEATURE_FIGHTINGSTYLE_TWOWEAPON_FIGHTING"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_EXPERTISE|0": ["ID_EXPERTISE_SKILL_SLEIGHTOFHAND", "ID_EXPERTISE_SKILL_ACROBATICS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_EXPERTISE|1": ["ID_EXPERTISE_SKILL_ANIMALHANDLING", "ID_EXPERTISE_SKILL_DECEPTION"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_ABILITYSCOREIMPROVEMENT_BARD|0": ["ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_4_PLUS2"],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_4_PLUS2|0": ["ID_INTERNAL_IMPROVEMENT_OPTION_BARD_4_CONSTITUTION_PLUS_2"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_ABILITYSCOREIMPROVEMENT_BARD|1": ["ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_8_FEAT"],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_8_FEAT|0": ["ID_WOTC_PHB24_FEAT_TOUGH"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_MAGICAL_SECRETS|0": ["ID_PHB_SPELL_MASS_HEALING_WORD", "ID_PHB_SPELL_HALLOW"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING|22": [
+      "ID_XGTE_SPELL_THUNDERCLAP",
+      "ID_WOTC_TCOE_SPELL_MIND_SLIVER",
+      "ID_WOTC_PHB24_SPELL_PRESTIDIGITATION",
+      "ID_WOTC_UA20200414_SPELL_MIND_SLIVER"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING|25": ["ID_PHB_SPELL_BURNING_HANDS", "ID_WOTC_UA20200326_SPELL_ACID_STREAM"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING|26": ["ID_PHB_SPELL_RAY_OF_SICKNESS", "ID_PHB_SPELL_CHROMATIC_ORB"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC|0": [
+      "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_METAMAGIC_DISTANT_SPELL",
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_SEEKING_SPELL"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "roll",
+  "hpRolls": {
+    "2": 4,
+    "3": 7,
+    "4": 5,
+    "5": 8,
+    "6": 6,
+    "7": 1,
+    "8": 5,
+    "9": 6,
+    "10": 5,
+    "11": 4
+  },
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "dhzxdnrzzxhz",
+      "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "d7itf00izxhz",
+      "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+      "qty": 3,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "g5qu1ih1zxhz",
+      "id": "ID_INTERNAL_WEAPON_BOOMERANG",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "h40o4b01zxhz",
+      "id": "ID_WOTC_PHB_ITEM_CHEST",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ew6znay7zxhz",
+      "id": "ID_WOTC_PHB_ITEM_CASE_MAPORSCROLL",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "k1wp5oqizxhz",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_FINE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "kr6uoi4wzxhz",
+      "id": "ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "4uzc842azxhz",
+      "id": "ID_WOTC_PHB_ITEM_INKPEN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "jrsn3lkpzxhz",
+      "id": "ID_WOTC_PHB_ITEM_LAMP",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "7bdiczivzxhz",
+      "id": "ID_WOTC_PHB_ITEM_OIL_FLASK",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "4db9k7aqzxhz",
+      "id": "ID_WOTC_PHB_ITEM_PAPER_ONESHEET",
+      "qty": 5,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "rm9n4x26zxhz",
+      "id": "ID_WOTC_PHB_ITEM_PERFUME_VIAL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "gh47iflxzxhz",
+      "id": "ID_WOTC_PHB_ITEM_SEALINGWAX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "8fk61445zxhz",
+      "id": "ID_WOTC_PHB_ITEM_SOAP",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "qq3pbkbnzxhz",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Any other musical intrument"
+      }
+    },
+    {
+      "uid": "jh0xpzekzxi9",
+      "id": "ID_WOTC_PHB24_WEAPON_DAGGER",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "pnfjphvfzxi9",
+      "id": "ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "8lb8j4cyzxi9",
+      "id": "ID_WOTC_PHB24_ITEM_CROWBAR",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "96mbmuo8zxi9",
+      "id": "ID_WOTC_PHB24_ITEM_POUCH",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "4yarwe16zxi9",
+      "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ve75zpkczxi9",
+      "id": "ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ih288m88zxi9",
+      "id": "ID_WOTC_PHB_ITEM_CROWBAR",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "my7aoloozxi9",
+      "id": "ID_WOTC_PHB_ITEM_POUCH",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "i5gki9tpzxi9",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_TRAVELERS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 0.16,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [
+    {
+      "uid": "cmp956118497",
+      "id": "ID_WOTC_PHB_COMPANION_STIRGE",
+      "name": "Stirge"
+    }
+  ],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_AASIMAR",
+  "background": "ID_WOTC_PHB24_BACKGROUND_CRIMINAL",
+  "equipmentAdded": ["Bard, starting equipment", "Criminal, option a"],
+  "equipmentLedger": {
+    "Bard, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+          "name": "Leather",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 1
+        },
+        {
+          "id": "ID_INTERNAL_WEAPON_BOOMERANG",
+          "name": "Boomerang",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CHEST",
+          "name": "Chest",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CASE_MAPORSCROLL",
+          "name": "Case, Map or Scroll",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_FINE",
+          "name": "Clothes, Fine",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE",
+          "name": "Ink (1 ounce bottle)",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_INKPEN",
+          "name": "Ink Pen",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_LAMP",
+          "name": "Lamp",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_OIL_FLASK",
+          "name": "Oil (flask)",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_PAPER_ONESHEET",
+          "name": "Paper (one sheet)",
+          "qty": 5
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_PERFUME_VIAL",
+          "name": "Perfume (vial)",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_SEALINGWAX",
+          "name": "Sealing Wax",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_SOAP",
+          "name": "Soap",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Any other musical intrument",
+          "qty": 1
+        }
+      ],
+      "gp": 0
+    },
+    "Criminal, option a": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TOOL_THIEVES_TOOLS",
+          "name": "Thieves’ Tools",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_CROWBAR",
+          "name": "Crowbar",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+          "name": "Clothes, Traveler's",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS",
+          "name": "Thieves’ Tools",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CROWBAR",
+          "name": "Crowbar",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_TRAVELERS",
+          "name": "Clothes, Traveler’s",
+          "qty": 1
+        }
+      ],
+      "gp": 0.16
+    }
+  }
+}

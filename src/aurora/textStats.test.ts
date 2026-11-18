@@ -9,6 +9,7 @@ import {
   applyArmorBonus,
   halfProficiencyFromText,
   initiativeFromText,
+  checkBonusFromText,
   languagesFromText,
   limitsFromText,
   savesFromText,
@@ -285,5 +286,26 @@ describe("attunement slots", () => {
       ),
     ).toBe(6);
     expect(slots({ kind: "stat", name: "attunement:max", value: "1" })).toBe(4);
+  });
+});
+
+describe("a bonus to an ability's checks equal to another's modifier", () => {
+  it("reads the Fey Wanderer's Otherworldly Glamour onto every Charisma skill", () => {
+    const rules = checkBonusFromText(
+      "Whenever you make a Charisma check, you gain a bonus to the check equal to your Wisdom modifier (minimum of +1).",
+    );
+    expect(rules.map((r) => (r as { name: string }).name).sort()).toEqual([
+      "deception:misc",
+      "intimidation:misc",
+      "performance:misc",
+      "persuasion:misc",
+    ]);
+    expect(rules.every((r) => (r as { value: string }).value === "wisdom:modifier")).toBe(true);
+  });
+  it("and onto one skill when the text names it (the Samurai's Elegant Courtier)", () => {
+    const rules = checkBonusFromText(
+      "Whenever you make a Charisma (Persuasion) check, you gain a bonus to the check equal to your Wisdom modifier.",
+    );
+    expect(rules).toEqual([expect.objectContaining({ name: "persuasion:misc", value: "wisdom:modifier" })]);
   });
 });

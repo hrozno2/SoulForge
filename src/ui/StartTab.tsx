@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { exportLibrary, importLibrary, isBackup } from "./library";
-import { deleteCharacterRecord, listCharacters, type CharacterRecord } from "../aurora/storage";
+import {
+  listCharacters,
+  listTrash,
+  purgeTrashed,
+  restoreTrashed,
+  trashCharacter,
+  TRASH_DAYS,
+  type CharacterRecord,
+  type TrashedRecord,
+} from "../aurora/storage";
 import { sanitizeCharacter, uid, type Character } from "../aurora/character";
 import { downloadText, pickFiles } from "../store";
 import { Hint } from "./Help";
@@ -64,8 +73,13 @@ export function StartTab({
   const foreignRef = useRef<HTMLInputElement>(null);
   // A library that cannot be read is said so, never shown as empty (the audit's S3); the last list read stays.
   const [libraryError, setLibraryError] = useState("");
-  const refresh = () =>
-    listCharacters().then(
+  // "Recently deleted" (E3.4): a deleted character stays restorable for TRASH_DAYS.
+  const [trash, setTrash] = useState<TrashedRecord[]>([]);
+  const [trashOpen, setTrashOpen] = useState(false);
+  const refreshTrash = () => listTrash().then(setTrash, () => setTrash([]));
+  const refresh = () => {
+    void refreshTrash();
+    return listCharacters().then(
       (l) => {
         setList(l);
         setListed(true);
@@ -76,6 +90,7 @@ export function StartTab({
         setLibraryError((e as Error)?.message || String(e));
       },
     );
+  };
   useEffect(() => {
     void refresh();
     const t = setInterval(refresh, 4000);
@@ -245,12 +260,11 @@ export function StartTab({
                   if (
                     await askConfirm({
                       title: `Delete ${c.name || "this character"}?`,
-                      message:
-                        "The character and everything saved with it will be removed from this computer. This cannot be undone; export it first if you might want it back.",
+                      message: `The character goes to "Recently deleted" at the bottom of this page, where you can restore it for ${TRASH_DAYS} days.`,
                       confirmLabel: "Delete character",
                     })
                   ) {
-                    await deleteCharacterRecord(c.id);
+                    await trashCharacter(c.id);
                     void refresh();
                   }
                 }}
@@ -264,6 +278,54 @@ export function StartTab({
           )}
           {!list.length && !libraryError && <p className="muted">No saved characters yet. Your work saves automatically.</p>}
         </div>
+        {trash.length > 0 && (
+          <div className="trash">
+            <button className="linkish" aria-expanded={trashOpen} onClick={() => setTrashOpen(!trashOpen)}>
+              Recently deleted ({trash.length})
+            </button>
+            {trashOpen && (
+              <ul className="trash-list">
+                {trash.map((t) => {
+                  const left = Math.max(1, TRASH_DAYS - Math.floor((Date.now() - t.deleted) / 86400000));
+                  return (
+                    <li key={t.rec.id}>
+                      <span>
+                        <b>{t.rec.name || "Unnamed"}</b>{" "}
+                        <span className="muted">
+                          {t.rec.summary}, kept {left} more day{left === 1 ? "" : "s"}
+                        </span>
+                      </span>
+                      <button
+                        onClick={async () => {
+                          await restoreTrashed(t.rec.id);
+                          void refresh();
+                        }}
+                      >
+                        Restore
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (
+                            await askConfirm({
+                              title: `Delete ${t.rec.name || "this character"} for good?`,
+                              message: "It cannot be restored after this. Export it first if you might want it back.",
+                              confirmLabel: "Delete for good",
+                            })
+                          ) {
+                            await purgeTrashed(t.rec.id);
+                            void refreshTrash();
+                          }
+                        }}
+                      >
+                        Delete for good
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
       </section>
       {reg && list.length > 1 && <PartyView list={list} reg={reg} onOpen={(c) => onOpen(c.id, c.data, true)} />}
     </div>

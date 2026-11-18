@@ -133,3 +133,27 @@ describe.skipIf(!C)("proficiency, or Expertise if you have it (2024 Observant an
     expect(per.ids.has("ID_5ET_EXPERTISE_PERCEPTION")).toBe(false);
   });
 });
+
+const CACHE = process.env.SOULFORGE_RULES;
+describe.skipIf(!CACHE)("Giant Power's language", () => {
+  // "You learn to speak, read, and write Giant, or another language of your choice if you already know Giant." A
+  // character who does not know Giant learns it; the choice is only for one who does (move laws, seed 4444 #71: the
+  // random builder took Halfling, the move took Giant).
+  it("is Giant, unless the character knows Giant already", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const five = loadContentSet(CACHE!, "5etools");
+    const ch = JSON.parse(readFileSync(join(__dirname, "../engine/fixtures/giant-barbarian-5etools.json"), "utf8"));
+    const r = resolve(ch, five);
+    expect(r.ids.has("ID_5ET_LANGUAGE_GIANT")).toBe(true);
+    expect(r.slots.filter((s) => s.rule.name === "Giant Power language")).toEqual([]);
+    // A Goliath (2014) speaks Giant: the choice is open, Giant is not granted twice.
+    const goliath = five
+      .ofType("Race")
+      .find((e) => e.id === "ID_5ET_RACE_VGM_GOLIATH" || (/^Goliath$/.test(e.name) && /Volo/.test(e.source)));
+    expect(goliath).toBeTruthy();
+    const r2 = resolve({ ...ch, race: goliath!.id }, five);
+    expect(r2.ids.has("ID_5ET_LANGUAGE_GIANT")).toBe(true);
+    expect(r2.slots.some((s) => s.rule.name === "Giant Power language")).toBe(true);
+  }, 600000);
+});

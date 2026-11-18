@@ -1,5 +1,26 @@
 # Where we left off
 
+## 2026-11-18, morning: the night's run on Stage E (Chris asleep, "go with the plan all night")
+
+Committed and pushed (CI green; Soul Forge Test rebuilt at d4a4549). Nothing released: v0.26.3 is the release.
+Detail per item in docs/STATUS.md (top section) and the Stage E table in docs/MASTER-PLAN.md.
+
+Done: E1.2 (the move: 400 saved characters change 21, drop nothing, none with a finding the move brought), E1.3
+(Move to 5e.tools screen), E3.1 (fix-it buttons), E3.4 (Recently deleted), E2.6 (W2: picks with no place, with
+Clear them), E2.7 (W9: FastCharacter explained list, 61 gated). Started: E3.3 (Eleanor imports, Foundry actor
+traits, senses and casting ability).
+
+Next, in order:
+1. The 61 FastCharacter differences, each a rules judgment (ENGINE-LEGAL-PLAN W9 lists the kinds).
+2. E1.4 community builds on 5e.tools alone; E2.1 (increases by source, languages/tools/skills by count); E2.2
+   pairwise (W8); E2.3; E2.4.
+3. E3.3: a real Roll20 2024-sheet file is still needed to build its export; Foundry import of Plutonium-made actors.
+4. Waiting on Chris: Guiding Hand (homebrew or leave), the point-buy unspent warning, D5/D7.
+
+How to check the whole state: the validation script the night used is `gates`, then RULES_TIER prose, stateffect
+(5etools, srd), four big batches of 400, migrate (400 saved), move-props, mutations and sweep. Accepted counts live
+in the test folder: engine/migrate-count.json, fastcharacter/count.json.
+
 ## 2026-11-12: repair report, rules faults from the move and FastCharacter, the engine plan
 
 Chris asked for four things: a report of what is damaged in a damaged character, reopenable from Build; the

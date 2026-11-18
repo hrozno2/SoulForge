@@ -75,6 +75,21 @@ for (const [name, tier, file] of [
   steps.push(await run(name, "npx", ["vitest", "run", ...file.split(" "), "--silent=false"], { RULES_TIER: tier }));
 }
 
+// W8: every class with every kind of species and background, and every pair of caster kinds, on every content set.
+for (const set of ["5etools", "srd", "both", "aurora"]) {
+  const dir = join(out, `pairwise-${set}`);
+  mkdirSync(dir, { recursive: true });
+  steps.push(
+    await run(`every combination pairwise on ${set}`, "npx", ["vitest", "run", "src/aurora/rules.suite.test.ts", "-t", "pairwise"], {
+      RULES_TIER: "pairwise",
+      RULES_CONTENT: set,
+      RULES_NOPDF: "1",
+      RULES_SEED: seed,
+      RULES_OUT: dir,
+    }),
+  );
+}
+
 // Every content set, not only Aurora's: 5e.tools (what the release moves to) gets the same big batch; the built-in rules are
 // small, so a share of it covers them. The sweep touches every element of every set.
 steps.push(

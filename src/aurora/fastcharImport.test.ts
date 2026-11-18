@@ -68,4 +68,17 @@ describe.skipIf(!C || !existsSync(RAW))("FastCharacter import", () => {
     const dex = sh.abilities.find((a) => a.id === "dexterity")!.mod;
     expect(sh.attacksCarried.find((a) => /Vengeance/.test(a.name))!.bonus).toBe(dex + sh.proficiency + 1);
   }, 600000);
+
+  // A skill line with a note after its mark ("+9 ... Stealth Skill  * (Disadv.)", heavy armor) is read (fc124).
+  it("reads a skill line with a note after its mark", () => {
+    expect(load("fc124.txt").res.differences.filter((d) => /^Stealth/.test(d))).toEqual([]);
+  }, 600000);
+
+  // A 2024 character's subclass by its 2014 name ("Sorcerer 20 (Aberrant Mind)") is the 2024 subclass of the new name
+  // (Aberrant Sorcery), not Tasha's 2014 one (fc141).
+  it("takes the 2024 subclass for a subclass the 2024 rules renamed", () => {
+    const { r } = load("fc141.txt");
+    const sub = r.active.find((a) => a.el.type === "Archetype")!.el;
+    expect(sub.name).toMatch(/Aberrant Sorcery/);
+  }, 600000);
 });

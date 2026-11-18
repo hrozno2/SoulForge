@@ -138,7 +138,9 @@ starting equipment.
 **W6. Concepts everywhere two providers can meet (L2).** Training, languages, senses and sizes are compared by
 concept in the requirement context; the sheet's weapon line now does too. Sweep sheet.ts, rulesCheck.ts and
 PlayTab for every `r.ids.has(` on a proficiency, save, skill or language id and route it through one
-`hasConcept(r, id)`.
+`hasConcept(r, id)`. Done 2026-11-18: the sweep found `repeatedPicks` (rules check and auto-fill) and the build's
+`ownership` note comparing by id; both now go by concept (autofillRepeat.test.ts, ownership.test.ts). The sheet's
+weapon training and the requirement context already did.
 
 **W7. Rules decisions carry their text (L1, L2).** Every place the converter or the engine decides a rule that the
 data does not state (edition mixing, what "standard" means, who steps aside for whom) gets the book, chapter and
@@ -149,6 +151,8 @@ source, where decided, test. The three reversed or narrowed readings found today
 and feat once per content set. Extend it by a pairwise table: each class with each species kind (2014 fixed
 increases, lineage, 2024), each background kind (2014, 2014 under the 2024 rules, 2024), each caster kind in a
 multiclass pair, levels 1, 4, 5, 11, 17 and 20. About 600 characters per content set; part of the full check.
+Done 2026-11-18 as `RULES_TIER=pairwise` in the rules suite (classes and levels crossed, species and background kinds
+rotated so each class meets each kind, caster pairs at 5, 11 and 20): 101 (srd) to 307 (both) characters, all clean.
 
 **W9. Outside references keep running.** FastCharacter: one character per class and subclass fetched
 (2026-11-12: 52 new, 92 in all); most differences are that site's own slips (2024 Bards trained with rapiers,
@@ -156,14 +160,14 @@ skills beyond what the rules give, Thaumaturge's bonus stated and not added), so
 list like parity's and a gate on the unexplained rest. Importer faults it showed, all fixed by 2026-11-18: "+1
 magical chainmail" is Chain Mail +1; a carried Cloak or Ring of Protection is worn and attuned when the sheet's own
 armor class counts it (kept only when the number then matches); a "Martial Arts" attack line is the Unarmed Strike
-(`fastcharImport.test.ts`). The explained list, 2026-11-18: 119 of 161 differences explained, each by its
-evidence (Thaumaturge and Magician bonuses stated but not added; skills beyond every made choice; a Cloak of
-Protection in armor class but not in saves; Disciplined Survivor's saves left out; the 2024 Jack of All Trades added
-to initiative; attacks for weapons the gear does not list, with weapons the class is not trained with, with Strength
-where Martial Arts allows Dexterity, without the weapon's magic bonus, or unbonded where Pact of the Blade applies).
-Two were Soul Forge's own and are fixed: Pact of the Blade's Charisma reached a plain ranged weapon, and a magic
-weapon's own +1 counted twice on import. The other 42 are gated (`fastcharacter/count.json`); the kinds left:
-Fighters' Perception and passive Perception, tools beyond the background's, a few skills.
+(`fastcharImport.test.ts`). The explained list, done 2026-11-18: all 160 differences explained, each by its
+evidence (FastCharacter's slips: bonuses stated but not added, skills, saves, tools and expertise beyond what the rules
+give, its own lists contradicting its marks, attacks with untrained weapons or the wrong ability, the 2014 Draconic
+Resilience on a 2024 sheet, an item's initiative left out). Five were Soul Forge's own and are fixed: Pact of the
+Blade's Charisma on a plain ranged weapon, a magic weapon's +1 counted twice, a skill line with a note after its mark
+not read, a 2024 subclass named the old way taken as the 2014 one (Aberrant Mind), and a list of options read as a
+feature. The gate (`fastcharacter/count.json`): no unexplained difference, and no new rules finding beyond the
+choices the files leave open.
 
 **W10. Every choice and gift a text states is on the element (D1, L3).** Done 2026-11-17: the 52 candidates were
 read one by one. Real gaps are built as "Soul Forge additions" (src/aurora/additions.ts, a source of its own in the

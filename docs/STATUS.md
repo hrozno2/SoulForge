@@ -43,14 +43,25 @@ Everything still to do, in one list. Items move off it when done; nothing open l
 - Picks with no place (W2): "Earlier choices with no place now" with "Clear them". On your test-app library it lists
   leftovers on 11 characters, and 11 in the production app (picks from a species, class or increase option you later changed, such as Elvish
   Prunesley's Dhampir languages and Maine Dockers' Artificer skills); nothing is cleared unless you click.
-- FastCharacter (W9): a carried Cloak or Ring of Protection is worn when the sheet's armor class counts it, and a
-  "Martial Arts" attack is the Unarmed Strike. Of 161 differences from FastCharacter's own numbers, 119 are now
-  explained as that site's slips, each by its evidence; the other 42 are gated and listed for a rules judgment. Two
-  were Soul Forge's: a Pact of the Blade warlock's light crossbow attacked with Charisma (the pact weapon is a melee
-  or magic weapon), and a magic weapon's own +1 counted twice on import. Both fixed.
+- FastCharacter (W9): every one of the 160 differences from FastCharacter's own numbers is now explained, each by
+  its evidence, and the run is gated at zero. Five were Soul Forge bugs, all fixed: a Pact of the Blade warlock's
+  light crossbow attacked with Charisma; a magic weapon's +1 counted twice on import; a skill line with a note after
+  its mark ("* (Disadv.)") was not read; a 2024 Sorcerer named "Aberrant Mind" got Tasha's 2014 subclass instead of
+  the 2024 Aberrant Sorcery (the importer now knows the subclasses 2024 renamed); and a list of options was read as a
+  feature. A carried Cloak or Ring of Protection is worn when the sheet's armor class counts it, and a "Martial Arts"
+  attack is the Unarmed Strike.
 - The auto-fill (random characters and the move): a repeat it must take back is taken from the choice that has
   another option (a Wizard whose every skill was held elsewhere kept Arcana twice, while Skilled could take any
   skill); what later choices hold is judged by concept and only from choices the character has.
+- Every combination pairwise (W8, `RULES_TIER=pairwise`, also in the full check): each class at the levels where the
+  rules turn, with every kind of species and background, and every pair of caster kinds: clean on all four content
+  sets. It found the auto-fill giving a 2014 background switched to the 2024 rules an origin feat a later level
+  already held (Savage Attacker twice); fixed.
+- Concepts everywhere (W6): a repeated pick across the two providers' ids is now seen (Aurora's Insight picked where
+  a 5e.tools background grants Insight), by the rules check, the auto-fill and the build's "you already have this".
+- With both providers loaded, a 5e.tools feature whose own set choice gives a training ("smith's tools, or another
+  artisan's tool") also borrowed Aurora's choice of it, so Battle Smiths got Smith's Tools twice; the concept-based
+  repeat check found it. Fixed in the borrowing (src/engine/mechanics.ts).
 - A list of options is not a feature: the SRD 5.2 Warlock's "Eldritch Invocation Options" holds Pact of the Blade's
   text, and a Sorcerer/Warlock who never took it attacked with Charisma. The sheet and the rules check now share one
   rule for which weapons another ability reaches, so they cannot drift apart again.
@@ -72,8 +83,8 @@ Everything still to do, in one list. Items move off it when done; nothing open l
 4. The full check (`node scripts/full-check.mjs 31415 --count 2000`): 2,000 random characters, every source, saved
    characters, FastCharacter, parity, the SRD: passed. Fixed from it: the SRD bundle naming a book it has no content
    from, the loader gate's adventure fields, Chronurgy's Temporal Awareness missing from initiative on 5e.tools, the
-   content linter misreading the Epic Boons' lower-case ids, coverage counting internal markers as missing. Still to
-   look at: the community builds (`builds` group) on 5e.tools content alone leave some choices open.
+   content linter misreading the Epic Boons' lower-case ids, coverage counting internal markers as missing. The
+   community builds on 5e.tools content alone: all 20 clean (2026-11-18).
 
 **The engine**
 1. W5's last parts: increases by source and count, languages, tools and skills by count per source, species and

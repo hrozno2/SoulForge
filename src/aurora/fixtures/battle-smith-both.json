@@ -1,0 +1,346 @@
+{
+  "version": 2,
+  "name": "Test 1: Artificer 3",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_5ET_CLASS_TCE_ARTIFICER",
+      "level": 3
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 13,
+    "constitution": 14,
+    "intelligence": 15,
+    "wisdom": 10,
+    "charisma": 12
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_MOTM_RACE_SHADARKAI#vrsqd9": ["ID_5ET_LANGUAGE_HALFLING"],
+    "ID_5ET_BG_XPHB_FARMER#nyas14": ["ID_5ET_BG_XPHB_FARMER_ABILITY_OPTION_1"],
+    "ID_5ET_BG_XPHB_FARMER_ABILITY_OPTION_1#n9obt": ["ID_5ET_ASIONE_2_str"],
+    "ID_5ET_BG_XPHB_FARMER_ABILITY_OPTION_1#imydeg": ["ID_5ET_ASIONE_1_wis"],
+    "ID_5ET_CLASS_TCE_ARTIFICER#y0g4zq": ["ID_5ET_SKILL_INVESTIGATION", "ID_5ET_SKILL_SLEIGHT_OF_HAND"],
+    "ID_5ET_CLASS_TCE_ARTIFICER#6dmrp": ["ID_5ET_TOOL_MASON_S_TOOLS"],
+    "ID_5ET_CLASS_TCE_ARTIFICER#v3j5jr": ["ID_PHB_SPELL_MENDING", "ID_PHB_SPELL_MAGE_HAND"],
+    "ID_5ET_CLASS_TCE_ARTIFICER#1mlo0wh": [
+      "ID_5ET_OPT_TCE_ENHANCED_ARCANE_FOCUS",
+      "ID_5ET_OPT_TCE_ENHANCED_DEFENSE",
+      "ID_5ET_OPT_TCE_SPELL_REFUELING_RING",
+      "ID_5ET_OPT_TCE_ARCANE_PROPULSION_ARMOR"
+    ],
+    "ID_5ET_CLASS_TCE_ARTIFICER#16cw1xv": ["ID_5ET_SUBCLASS_TCE_ARTIFICER_BATTLE_SMITH"],
+    "ID_5ET_SF_TCE_BATTLE_SMITH_TOOL_PROFICIENCY_31#1mpumfl": []
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {
+    "Artificer": ["ID_XGTE_SPELL_ABSORB_ELEMENTS", "ID_PHB_SPELL_PURIFY_FOOD_AND_DRINK", "ID_PHB_SPELL_ALARM"]
+  },
+  "inventory": [
+    {
+      "uid": "9cv290e32rno",
+      "id": "ID_5ET_ITEM_XGE_ADAMANTINE_CLUB",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "xx0rgjhn2rno",
+      "id": "ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "3zekydlb2rno",
+      "id": "ID_5ET_ITEM_PHB_CROSSBOW_BOLTS_20",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "soibh16v2rno",
+      "id": "ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "4ai54q1v2rno",
+      "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "9v72rkug2rno",
+      "id": "ID_WOTC_PHB_ITEM_CROWBAR",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "2yrioizb2rno",
+      "id": "ID_WOTC_PHB_ITEM_HAMMER",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "zqc80kit2rno",
+      "id": "ID_WOTC_PHB_ITEM_PITON",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "k7h2n4sa2rno",
+      "id": "ID_WOTC_PHB_ITEM_TORCH",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "drc1b1tg2rno",
+      "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "vrkp8ezg2rno",
+      "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "1d14m67i2rno",
+      "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ppw2iihy2rno",
+      "id": "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "cx5rounz2rno",
+      "id": "ID_WOTC_ARMOR_MEDIUM_SCALE_MAIL",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "w7dbfmex2ro9",
+      "id": "ID_WOTC_PHB24_WEAPON_SICKLE",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "ks7zajz82ro9",
+      "id": "ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "28nnf80c2ro9",
+      "id": "ID_WOTC_PHB24_ITEM_HEALERS_KIT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "iiq7rpcg2ro9",
+      "id": "ID_WOTC_PHB24_ITEM_POT_IRON",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "c3gn5k2v2ro9",
+      "id": "ID_WOTC_PHB24_ITEM_SHOVEL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ypfykwpi2ro9",
+      "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 30,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_MOTM_RACE_SHADARKAI",
+  "background": "ID_5ET_BG_XPHB_FARMER",
+  "equipmentAdded": ["Artificer, starting equipment", "Farmer, option a"],
+  "equipmentLedger": {
+    "Artificer, starting equipment": {
+      "items": [
+        {
+          "id": "ID_5ET_ITEM_XGE_ADAMANTINE_CLUB",
+          "name": "Adamantine Club",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT",
+          "name": "Light Crossbow",
+          "qty": 1
+        },
+        {
+          "id": "ID_5ET_ITEM_PHB_CROSSBOW_BOLTS_20",
+          "name": "Crossbow Bolts (20)",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS",
+          "name": "Thieves’ Tools",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CROWBAR",
+          "name": "Crowbar",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_HAMMER",
+          "name": "Hammer",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_PITON",
+          "name": "Piton",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TORCH",
+          "name": "Torch",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+          "name": "Tinderbox",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+          "name": "Rations (1 day)",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+          "name": "Waterskin",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET",
+          "name": "Rope, Hempen (50 feet)",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_ARMOR_MEDIUM_SCALE_MAIL",
+          "name": "Scale Mail",
+          "qty": 1
+        }
+      ],
+      "gp": 0
+    },
+    "Farmer, option a": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_WEAPON_SICKLE",
+          "name": "Sickle",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS",
+          "name": "Carpenter’s Tools",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_HEALERS_KIT",
+          "name": "Healer's Kit",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_POT_IRON",
+          "name": "Pot, Iron",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_SHOVEL",
+          "name": "Shovel",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+          "name": "Clothes, Traveler's",
+          "qty": 1
+        }
+      ],
+      "gp": 30
+    }
+  },
+  "hpChosen": true
+}

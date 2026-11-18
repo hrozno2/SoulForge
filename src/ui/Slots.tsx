@@ -6,6 +6,7 @@ import { D20 } from "./icons";
 import { Browse } from "./Browse";
 import { Fold, useScrollOnFold } from "./Fold";
 import type { AElement } from "../aurora/types";
+import { conceptOf } from "../engine/concepts";
 import { skippable, type Resolved, type SelectSlot } from "../aurora/engine";
 import type { Character } from "../aurora/character";
 
@@ -22,10 +23,13 @@ export function metaLine(el: AElement): string {
 
 /** What already gives the character this option, in words, or nothing when they do not have it. */
 export function ownership(r: Resolved, el: AElement, thisSlot: string | string[]): string | undefined {
-  if (!r.ids.has(el.id)) return undefined;
-  const other = r.slots.find((s) => ![thisSlot].flat().includes(s.key) && s.chosen.includes(el.id));
+  // By id, or by concept under the other provider's id (W6): Aurora's Insight is had when a 5e.tools background grants
+  // 5e.tools' Insight.
+  const c = conceptOf(el);
+  const a = r.active.find((x) => x.el.id === el.id) ?? (c ? r.active.find((x) => conceptOf(x.el) === c) : undefined);
+  if (!a) return undefined;
+  const other = r.slots.find((s) => ![thisSlot].flat().includes(s.key) && (s.chosen.includes(el.id) || s.chosen.includes(a.el.id)));
   if (other) return `You chose this for ${other.rule.name} (${other.owner.name}).`;
-  const a = r.active.find((x) => x.el.id === el.id);
   const from = a?.from ? r.reg.get(a.from)?.name : undefined;
   const ch = r.character;
   const rootId = !a

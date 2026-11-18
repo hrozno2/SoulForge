@@ -71,6 +71,24 @@ export interface Finding {
   fix?: FindingFix;
 }
 
+/**
+ * A feat the character may take more than once: the content says so ("allow duplicate"), the text does ("you can take
+ * this feat more than once", the 2024 Magic Initiate with another spell list), or the content gives repeat copies
+ * (Aurora's Magic Initiate_2). Judged by name, as "Same feat twice" counts feats across providers.
+ */
+export function featRepeatable(reg: Resolved["reg"], name: string): boolean {
+  if (/repeatable|elemental adept|ability score improvement/i.test(name)) return true;
+  return reg
+    .ofType("Feat")
+    .some(
+      (f) =>
+        f.name === name &&
+        (!!f.setters["allow duplicate"] ||
+          /_\d+$/.test(f.id) ||
+          /(?:take|select|choose) this feat more than once|more than once\b/i.test(f.description ?? "")),
+    );
+}
+
 /** The element a saved choice key belongs to: "<id>#<hash>", or "<id>|<n>" from before stable keys. */
 export const choiceBase = (key: string) => key.replace(/[#|].*$/, "");
 
@@ -289,12 +307,33 @@ export function checkChoiceWindows(r: Resolved): Finding[] {
  */
 export function repeatedPicks(r: Resolved, s: Resolved["slots"][number]): string[] {
   const out: string[] = [];
-  const hasOther = s.options.some((o) => !s.chosen.includes(o.id) && !s.blocked.has(o.id) && !r.ids.has(o.id));
+  // By concept as well as by id (W6): Aurora's Insight picked where a 5e.tools background grants 5e.tools' Insight is
+  // one skill twice. The pick's own grants (an option that gives the skill) and its choice's owner do not count.
+  const held = new Map<string, (typeof r.active)[number][]>();
+  for (const a of r.active) {
+    const c = conceptOf(a.el);
+    if (c) held.set(c, [...(held.get(c) ?? []), a]);
+  }
+  const hadElsewhere = (id: string) => {
+    const same = r.active.find((a) => a.el.id === id);
+    if (same && same.from && same.from !== s.owner.id) return same.from;
+    // Only a plain training: an option that gives more than the repeated part (Blessings of Knowledge: History with its
+    // expertise) is not wasted when the character already has the proficiency (a moved Knowledge cleric lost it).
+    const el = r.reg.get(id);
+    const plain =
+      !!el && (el.type === "Proficiency" || el.type === "Language") && !el.rules.some((x) => x.kind === "grant" || x.kind === "select");
+    const c = plain ? conceptOf(el!) : undefined;
+    const other = c
+      ? held.get(c)?.find((a) => a.el.id !== id && a.from && a.from !== id && a.from !== s.owner.id && !s.chosen.includes(a.from))
+      : undefined;
+    return other?.from;
+  };
+  const hasOther = s.options.some((o) => !s.chosen.includes(o.id) && !s.blocked.has(o.id) && !r.ids.has(o.id) && !hadElsewhere(o.id));
   if ((s.rule.type === "Proficiency" || s.rule.type === "Language") && hasOther) {
     for (const id of s.chosen) {
-      const got = r.active.find((a) => a.el.id === id);
-      if (got && got.from && got.from !== s.owner.id)
-        out.push(`${s.rule.name}: ${r.reg.get(id)?.name} (already from ${r.reg.get(got.from)?.name ?? "another choice"}); choose another`);
+      const from = hadElsewhere(id);
+      if (from)
+        out.push(`${s.rule.name}: ${r.reg.get(id)?.name} (already from ${r.reg.get(from)?.name ?? "another choice"}); choose another`);
     }
   }
   // A spell already learned in an earlier choice (a Songbook at level 1 and again at level 3): the same owner grants
@@ -826,18 +865,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
   }
   // Repeatable: the content says so ("allow duplicate"), the text does ("you can take this feat more than once", the
   // 2024 Magic Initiate with another spell list), or the content gives repeat copies (Aurora's Magic Initiate_2).
-  const repeatable = (name: string) =>
-    r.reg
-      .ofType("Feat")
-      .some(
-        (f) =>
-          f.name === name &&
-          (!!f.setters["allow duplicate"] ||
-            /_\d+$/.test(f.id) ||
-            /(?:take|select|choose) this feat more than once|more than once\b/i.test(f.description ?? "")),
-      );
-  for (const [name, count] of seenFeats)
-    if (count > 1 && !/repeatable|elemental adept|ability score improvement/i.test(name) && !repeatable(name)) add("Same feat twice", name);
+  for (const [name, count] of seenFeats) if (count > 1 && !featRepeatable(r.reg, name)) add("Same feat twice", name);
 
   // Spellcasting: slots by the class tables or the multiclass table; cantrips and prepared spells by the class table;
   // spell levels within what the class can cast; DC and attack bonus by the formula.

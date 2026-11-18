@@ -7,15 +7,14 @@ Detail per item in docs/STATUS.md (top section) and the Stage E table in docs/MA
 
 Done: E1.2 (the move: 400 saved characters change 21, drop nothing, none with a finding the move brought), E1.3
 (Move to 5e.tools screen), E3.1 (fix-it buttons), E3.4 (Recently deleted), E2.6 (W2: picks with no place, with
-Clear them), E2.7 (W9: FastCharacter explained list: 119 explained, 42 gated; two Soul Forge bugs it found fixed). Started: E3.3 (Eleanor imports, Foundry actor
+Clear them), E2.7 (W9: FastCharacter: all 160 differences explained, gated at zero; five Soul Forge bugs it found fixed). Started: E3.3 (Eleanor imports, Foundry actor
 traits, senses and casting ability).
 
 Next, in order:
-1. The 42 FastCharacter differences left, each a rules judgment (ENGINE-LEGAL-PLAN W9 lists the kinds).
-2. E1.4 community builds on 5e.tools alone; E2.1 (increases by source, languages/tools/skills by count); E2.2
-   pairwise (W8); E2.3; E2.4.
-3. E3.3: a real Roll20 2024-sheet file is still needed to build its export; Foundry import of Plutonium-made actors.
-4. Waiting on Chris: Guiding Hand (homebrew or leave), the point-buy unspent warning, D5/D7.
+1. E2.1 (increases by source, languages/tools/skills by count); E2.4 (engine shape and the timeline's speed).
+   (E1.4 community builds, E2.2 pairwise and E2.3 concepts are done.)
+2. E3.3: a real Roll20 2024-sheet file is still needed to build its export; Foundry import of Plutonium-made actors.
+3. Waiting on Chris: Guiding Hand (homebrew or leave), the point-buy unspent warning, D5/D7.
 
 How to check the whole state: the validation script the night used is `gates`, then RULES_TIER prose, stateffect
 (5etools, srd), four big batches of 400, migrate (400 saved), move-props, mutations and sweep. Accepted counts live

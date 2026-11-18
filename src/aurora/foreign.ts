@@ -41,6 +41,30 @@ export function detectCharacterFormat(data: unknown): "foundry" | "roll20" | "ch
   return "unknown";
 }
 
+/** Subclasses the 2024 Player's Handbook renamed: the 2014 name (as the name key) to the 2024 one. */
+const RENAMED_2024_SUBCLASS: Record<string, string> = Object.fromEntries(
+  (
+    [
+      ["Aberrant Mind", "Aberrant Sorcery"],
+      ["Clockwork Soul", "Clockwork Sorcery"],
+      ["Draconic Bloodline", "Draconic Sorcery"],
+      ["Wild Magic", "Wild Magic Sorcery"],
+      ["Way of the Open Hand", "Warrior of the Open Hand"],
+      ["Way of Shadow", "Warrior of Shadow"],
+      ["Way of Mercy", "Warrior of Mercy"],
+      ["Way of the Four Elements", "Warrior of the Elements"],
+      ["School of Abjuration", "Abjurer"],
+      ["School of Divination", "Diviner"],
+      ["School of Evocation", "Evoker"],
+      ["School of Illusion", "Illusionist"],
+      ["The Archfey", "Archfey Patron"],
+      ["The Celestial", "Celestial Patron"],
+      ["The Fiend", "Fiend Patron"],
+      ["The Great Old One", "Great Old One Patron"],
+    ] as const
+  ).map(([a, b]) => [nameKey(a), b]),
+);
+
 // The engine's name key (concepts.ts): "Melfs Acid Arrow" (FastCharacter) and "Melf’s Acid Arrow" agree.
 const normalize = (s: string) => nameKey(s.replace(/\(.*?\)/g, " "));
 
@@ -518,6 +542,13 @@ class Importer {
     early?: boolean,
     exactId?: string,
   ): void {
+    // A subclass the 2024 rules renamed, named the old way on a 2024 character ("Sorcerer 20 (Aberrant Mind)"): the
+    // 2024 subclass first, the old name as the fallback (FastCharacter fc141 took Tasha's Aberrant Mind).
+    const renamed = types.includes("Archetype") ? RENAMED_2024_SUBCLASS[normalize(name)] : undefined;
+    if (renamed && (edition ?? this.edition) === "2024") {
+      alts = [name, ...alts];
+      name = renamed;
+    }
     if (name && label === "spell") this.hints.spells.add(normalize(name));
     if (name && label === "feat") this.featCount.set(normalize(name), (this.featCount.get(normalize(name)) ?? 0) + 1);
     if (name) this.wantedChoices.push({ types, name, label, alts, from, edition, early, exactId });
@@ -2312,7 +2343,8 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
   for (const l of lines) {
     let m = /^(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) (\d+)$/.exec(l);
     if (m) scores[m[1].toLowerCase() as AbilityId] = Number(m[2]);
-    m = /^([+-]\d+) \.\.\. (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) Saving Throws( \*)?$/.exec(l);
+    // A note may follow the mark: "+9 ... Stealth Skill  * (Disadv.)" (heavy armor), "(adv. vs. poison)".
+    m = /^([+-]\d+) \.\.\. (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) Saving Throws( \*)?(?:\s*\(.*\))?$/.exec(l);
     if (m) {
       const a = m[2].toLowerCase() as AbilityId;
       saves[a] = Number(m[1]);
@@ -2321,7 +2353,7 @@ export function importFastCharacter(text: string, reg: ARegistry): ForeignImport
         b.hints.saves.add(a);
       }
     }
-    m = /^([+-]\d+) \.\.\. (.+?) Skill\s*(\*{1,2})?$/.exec(l);
+    m = /^([+-]\d+) \.\.\. (.+?) Skill\s*(\*{1,2})?(?:\s*\(.*\))?$/.exec(l);
     if (m) {
       const k = m[2].toLowerCase();
       skills[k] = Number(m[1]);

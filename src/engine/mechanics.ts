@@ -168,7 +168,17 @@ export function borrowMechanics(byId: Map<string, AElement>): MechanicsReport {
         r.kind === "select" &&
         r.default &&
         (r.type === "Proficiency" || r.type === "Language") &&
-        !el.rules.some((x) => x.kind === "select" && x.type === r.type)
+        !el.rules.some((x) => x.kind === "select" && x.type === r.type) &&
+        // Nor when the copy makes the same decision as a set ("smith's tools, or another artisan's tool": 5e.tools'
+        // Training Options): borrowed as well, Battle Smith's Smith's Tools came twice (big batch, 2026-11-18).
+        !el.rules.some(
+          (x) =>
+            x.kind === "select" &&
+            x.type === "Training Option" &&
+            x.supports
+              .split("|")
+              .some((oid) => (byId.get(oid)?.rules ?? []).some((y) => (y.kind === "grant" || y.kind === "select") && y.type === r.type)),
+        )
       ) {
         const opts = [...byId.values()].filter(
           (o) =>

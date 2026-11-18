@@ -5,7 +5,7 @@ import { totalLevel } from "./character";
 import { atLevel } from "../engine/timeline";
 import { conceptOf } from "../engine/concepts";
 import { buildSheet, preparePool } from "./sheet";
-import { repeatedPicks } from "./rulesCheck";
+import { featRepeatable, repeatedPicks } from "./rulesCheck";
 
 /**
  * Fills every open choice with the first sensible option. Used for random characters and tests.
@@ -118,8 +118,22 @@ export function autoFill(
       const once = /^(Spell|Proficiency|Language)$/.test(open.rule.type);
       const later = once ? heldLater : new Set<string>();
       const laterConcepts = new Set([...later].map((id) => (reg.get(id) ? conceptOf(reg.get(id)!) : undefined)).filter(Boolean));
+      // A feat another choice holds, at any level, by name (as "Same feat twice" counts), unless it may repeat: a
+      // background switched to the 2024 rules took Savage Attacker as its origin feat while a level's feat held it.
+      const laterFeats =
+        open.rule.type === "Feat"
+          ? new Set(
+              [...heldLater]
+                .map((id) => reg.get(id))
+                .filter((e) => e?.type === "Feat")
+                .map((e) => e!.name),
+            )
+          : new Set<string>();
       const had = (o: (typeof open.options)[number]) =>
-        r.ids.has(o.id) || later.has(o.id) || (!!conceptOf(o) && (hadConcepts.has(conceptOf(o)) || laterConcepts.has(conceptOf(o))));
+        r.ids.has(o.id) ||
+        later.has(o.id) ||
+        (o.type === "Feat" && laterFeats.has(o.name) && !featRepeatable(reg, o.name)) ||
+        (!!conceptOf(o) && (hadConcepts.has(conceptOf(o)) || laterConcepts.has(conceptOf(o))));
       const free = open.options.filter(
         (o) => !taken.has(o.id) && !open.blocked.has(o.id) && !o.comingSoon && !had(o) && !bad.has(`${open.key} ${o.id}`),
       );

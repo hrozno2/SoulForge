@@ -20,7 +20,7 @@ import { normalizeCharacter, type Character } from "./character";
 import { randomBatch } from "./randomBatch";
 import { randomCharacter } from "./randomCharacter";
 import { multiclassLockFor } from "./multiclassLock";
-import { checkCharacter, type Finding, type RefClass } from "./rulesCheck";
+import { checkCharacter, noPlaceKeys, type Finding, type RefClass } from "./rulesCheck";
 import { ALL_CONTENT, BookIndex, hiddenBy } from "./books";
 import { buildFillData } from "../sheets/data";
 import { fillOfficialSheet } from "../sheets/official";
@@ -31,6 +31,7 @@ import { importForeignCharacter } from "./foreign";
 import { lintContent } from "./contentLint";
 import { LINT_ACCEPTED } from "./contentFixes";
 import { isModern } from "./edition";
+import { BACKGROUND_2024_ID } from "../engine/backgroundOptions";
 import { probeFeats } from "./featProbe";
 import type { ARegistry } from "./registry";
 
@@ -259,6 +260,122 @@ describe.skipIf(!CACHE)("rules", () => {
         ...[...tally].sort((a, b) => b[1] - a[1]).map(([rule, n]) => `- ${rule}: ${n}`),
       );
       writeReport();
+      expect(bad).toBe(0);
+    },
+    86400000,
+  );
+
+  // W8: every class with every kind of species and background, at the levels where the rules turn (1, 4, 5, 11, 17,
+  // 20), and every pair of caster kinds in a multiclass. RULES_TIER=pairwise; about 200 characters per content set.
+  it.skipIf(process.env.RULES_TIER !== "pairwise")(
+    "every combination pairwise (W8)",
+    async () => {
+      const books = new BookIndex(reg);
+      const shown = (e: { source: string; compendiumHidden: boolean }) =>
+        !e.compendiumHidden && !hiddenBy(books.info(e.source), e.source, filters);
+      const classes = reg.ofType("Class").filter(shown);
+      const ABIL = /^(strength|dexterity|constitution|intelligence|wisdom|charisma)$/;
+      const species = reg.ofType("Race").filter((e) => shown(e) && !/^custom\b/i.test(e.name));
+      const speciesKinds: [string, typeof species][] = [
+        [
+          "2014 species, fixed increases",
+          species.filter((e) => !isModern(e) && e.rules.some((x) => x.kind === "stat" && ABIL.test(x.name))),
+        ],
+        [
+          "2014 species, increases to choose",
+          species.filter(
+            (e) =>
+              !isModern(e) &&
+              !e.rules.some((x) => x.kind === "stat" && ABIL.test(x.name)) &&
+              e.rules.some((x) => x.kind === "select" && x.type === "Ability Score Improvement"),
+          ),
+        ],
+        ["2024 species", species.filter((e) => isModern(e))],
+      ];
+      const backgrounds = reg.ofType("Background").filter((e) => shown(e) && !/^custom\b/i.test(e.name));
+      const bgKinds: [string, typeof backgrounds][] = [
+        ["2014 background", backgrounds.filter((e) => !isModern(e))],
+        ["2014 background, 2024 rules", reg.get(BACKGROUND_2024_ID) ? backgrounds.filter((e) => !isModern(e)) : []],
+        ["2024 background", backgrounds.filter((e) => isModern(e))],
+      ];
+      const pickFrom = <T>(xs: T[]) => xs[Math.floor(rng() * xs.length)];
+      const take2024Rules = (ch: Character): Character => {
+        const r = resolve(ch, reg);
+        const slot = r.slots.find((x) => x.options.some((o) => o.id === BACKGROUND_2024_ID));
+        if (!slot) return ch;
+        const taken = autoFill({ ...ch, selections: { ...ch.selections, [slot.key]: [BACKGROUND_2024_ID] } }, reg, () => rng());
+        // The species' own increases give way to the background's (2024 rules): their picks have no place now, and a
+        // player clears them with the notice's button.
+        const selections = { ...taken.selections };
+        for (const k of noPlaceKeys(taken, resolve(taken, reg))) delete selections[k];
+        return { ...taken, selections };
+      };
+      const tally = new Map<string, number>();
+      let n = 0,
+        bad = 0;
+      const run = async (label: string, ch: Character) => {
+        n++;
+        const found = await check(label, ch);
+        if (found.length) bad++;
+        for (const f of found) tally.set(f.rule, (tally.get(f.rule) ?? 0) + 1);
+      };
+      const LEVELS = [1, 4, 5, 11, 17, 20];
+      for (const [ci, cls] of classes.entries())
+        for (const [li, level] of LEVELS.entries()) {
+          const sk = speciesKinds[(ci + li) % 3];
+          const bk = bgKinds[(ci + 2 * li) % 3];
+          if (!sk[1].length || !bk[1].length) continue;
+          let ch = randomCharacter(reg, level, filters, rng, {
+            classId: cls.id,
+            raceId: pickFrom(sk[1]).id,
+            backgroundId: pickFrom(bk[1]).id,
+          });
+          if (bk[0] === "2014 background, 2024 rules") ch = take2024Rules(ch);
+          await run(`${cls.name} (${cls.source}) ${level}, ${sk[0]}, ${bk[0]}`, ch);
+        }
+      // Caster kinds in a multiclass: full, half and pact casters two by two, where the multiclass requirements allow.
+      const kindOf = (name: string) =>
+        /^(bard|cleric|druid|sorcerer|wizard)$/i.test(name)
+          ? "full"
+          : /^(paladin|ranger|artificer)$/i.test(name)
+            ? "half"
+            : /^warlock$/i.test(name)
+              ? "pact"
+              : "";
+      const PAIRS = [
+        ["full", "full"],
+        ["full", "half"],
+        ["half", "half"],
+        ["full", "pact"],
+        ["half", "pact"],
+      ];
+      for (const [a, b] of PAIRS)
+        for (const level of [5, 11, 20]) {
+          const first = pickFrom(classes.filter((c) => kindOf(c.name) === a));
+          if (!first) continue;
+          let ch = randomCharacter(reg, level - 2, filters, rng, { classId: first.id });
+          const r = resolve(ch, reg);
+          const seconds = classes.filter(
+            (c) =>
+              kindOf(c.name) === b &&
+              c.name !== first.name &&
+              !multiclassLockFor(r, c.id) &&
+              !multiclassLockFor({ ...r, character: { ...ch, classes: [...ch.classes, { classId: c.id, level: 2 }] } } as typeof r, c.id),
+          );
+          const second = pickFrom(seconds);
+          if (!second) continue;
+          ch = autoFill({ ...ch, classes: [...ch.classes, { classId: second.id, level: 2 }] }, reg, () => rng());
+          await run(`${first.name} ${level - 2} / ${second.name} 2 (${a} and ${b} caster)`, ch);
+        }
+      report.splice(
+        1,
+        0,
+        `\nPairwise (W8): ${n} characters, ${bad} with findings.`,
+        ...[...tally].sort((x, y) => y[1] - x[1]).map(([rule, c]) => `- ${rule}: ${c}`),
+      );
+      writeReport();
+      console.log(`PAIRWISE ${n} characters, ${bad} with findings`);
+      expect(n).toBeGreaterThan(50);
       expect(bad).toBe(0);
     },
     86400000,

@@ -1,0 +1,232 @@
+{
+  "version": 2,
+  "name": "Test 8: Cleric 10",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_CLERIC",
+      "level": 10
+    },
+    {
+      "classId": "ID_WOTC_PHB_CLASS_RANGER",
+      "level": 2
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 12,
+    "constitution": 13,
+    "intelligence": 10,
+    "wisdom": 15,
+    "charisma": 14
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_MOTM_RACE_HARENGON#1uq2lb5": ["ID_WOTC_ASI_ABILITY_SCORE_IMPROVEMENT_OPTION_1"],
+    "ID_WOTC_ASI_ABILITY_SCORE_IMPROVEMENT_OPTION_1#1nu03pl": ["ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CONSTITUTION_INCREASE_2"],
+    "ID_WOTC_ASI_ABILITY_SCORE_IMPROVEMENT_OPTION_1#1na41tm": ["ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_DEXTERITY_INCREASE_1"],
+    "ID_WOTC_MOTM_RACE_HARENGON#lmsa3n": ["ID_INTERNAL_RACIAL_TRAIT_MEDIUM"],
+    "ID_WOTC_MOTM_RACE_HARENGON#1fim1f6": ["ID_WOTC_MOOT_LANGUAGE_LEONIN"],
+    "ID_BACKGROUND_SAGE#dzgidy": ["ID_LANGUAGE_ELVISH", "ID_WOTC_DSDQ_LANGUAGE_SOLAMNIC"],
+    "ID_WOTC_PHB24_CLASS_CLERIC#nhr7h7": ["ID_PROFICIENCY_SKILL_INSIGHT", "ID_PROFICIENCY_SKILL_RELIGION"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_SPELLCASTING#qn2cb0": [
+      "ID_WOTC_PHB24_SPELL_RESISTANCE",
+      "ID_WOTC_PHB24_SPELL_WORD_OF_RADIANCE",
+      "ID_WOTC_PHB24_SPELL_LIGHT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_DIVINE_ORDER#1l6pw4r": ["ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_DIVINE_ORDER_PROTECTOR"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_CLERIC_SUBCLASS#h8387i": ["ID_WOTC_PHB_ARCHETYPE_CLERIC_KNOWLEDGE_DOMAIN"],
+    "ID_WOTC_PHB_ARCHETYPE_FEATURE_KNOWLEDGE_DOMAIN_BLESSINGS_OF_KNOWLEDGE#18oaniu": [
+      "ID_WOTC_DSDQ_LANGUAGE_NERAKESE",
+      "ID_LANGUAGE_PRIMORDIAL"
+    ],
+    "ID_WOTC_PHB_ARCHETYPE_FEATURE_KNOWLEDGE_DOMAIN_BLESSINGS_OF_KNOWLEDGE#1lw0z0r": [
+      "ID_WOTC_PHB_ARCHETYPE_FEATURE_KNOWLEDGE_DOMAIN_BLESSINGS_OF_KNOWLEDGE_ARCANA",
+      "ID_WOTC_PHB_ARCHETYPE_FEATURE_KNOWLEDGE_DOMAIN_BLESSINGS_OF_KNOWLEDGE_HISTORY"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_SPELLCASTING#pt3j83": ["ID_WOTC_PHB24_SPELL_SACRED_FLAME"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_ABILITY_SCORE_IMPROVEMENT#1dwxbjw": ["ID_WOTC_PHB24_FEAT_OBSERVANT"],
+    "ID_WOTC_PHB24_FEAT_OBSERVANT#wyo9pc": ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_INTELLIGENCE"],
+    "ID_WOTC_PHB24_FEAT_OBSERVANT#15nb7hm": ["ID_WOTC_PHB24_FEAT_FEATURE_OBSERVANT_INSIGHT"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_BLESSED_STRIKES#14rlekg": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_BLESSED_STRIKES_POTENT_SPELLCASTING"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_ABILITY_SCORE_IMPROVEMENT#ld449g": ["ID_WOTC_TCOE_FEAT_FIGHTING_INITIATE"],
+    "ID_WOTC_TCOE_FEAT_FIGHTING_INITIATE#tw245j": ["ID_WOTC_TCOE_CLASS_FEATURE_FIGHTING_STYLE_UNARMED_FIGHTING"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_SPELLCASTING#9f9i9g": ["ID_WOTC_PHB24_SPELL_MENDING"],
+    "ID_WOTC_PHB_MULTICLASS_RANGER#10bw77i": ["ID_PROFICIENCY_SKILL_STEALTH"],
+    "ID_WOTC_CLASSFEATURE_RANGER_FAVORED_ENEMY#345bjv": ["ID_WOTC_PHB_CLASS_FEATURE_RANGER_FAVORED_ENEMY_HUMANOIDS_1"],
+    "ID_WOTC_CLASSFEATURE_RANGER_FAVORED_ENEMY#1rc5c3k": ["ID_GGTR_LANGUAGE_MINOTAUR"],
+    "ID_WOTC_CLASSFEATURE_RANGER_NATURAL_EXPLORER#vhk7iy": ["ID_WOTC_CLASSFEATURE_RANGER_NATURAL_EXPLORER_FT_DESERT"],
+    "ID_WOTC_CLASSFEATURE_RANGER_FIGHTING_STYLE#1rsyp0q": ["ID_WOTC_TCOE_CLASS_FEATURE_FIGHTING_STYLE_THROWN_WEAPON_FIGHTING"],
+    "ID_WOTC_CLASSFEATURE_RANGER_SPELLCASTING#aptr9u": ["ID_WOTC_UA20170403_SPELL_SUDDEN_AWAKENING", "ID_PHB_SPELL_ENSNARING_STRIKE"]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {
+    "Cleric": [
+      "ID_WOTC_PHB24_SPELL_BANISHMENT",
+      "ID_WOTC_PHB24_SPELL_FREEDOM_OF_MOVEMENT",
+      "ID_WOTC_PHB24_SPELL_INFLICT_WOUNDS",
+      "ID_WOTC_PHB24_SPELL_MASS_CURE_WOUNDS",
+      "ID_WOTC_PHB24_SPELL_FEIGN_DEATH",
+      "ID_WOTC_PHB24_SPELL_SPEAK_WITH_DEAD",
+      "ID_WOTC_PHB24_SPELL_ANIMATE_DEAD",
+      "ID_WOTC_PHB24_SPELL_WATER_WALK",
+      "ID_WOTC_PHB24_SPELL_COMMAND",
+      "ID_WOTC_PHB24_SPELL_DEATH_WARD",
+      "ID_WOTC_PHB24_SPELL_SPIRIT_GUARDIANS",
+      "ID_WOTC_PHB24_SPELL_CALM_EMOTIONS",
+      "ID_WOTC_PHB24_SPELL_RAISE_DEAD",
+      "ID_WOTC_PHB24_SPELL_FIND_TRAPS",
+      "ID_WOTC_TCOE_SPELL_SPIRIT_SHROUD"
+    ]
+  },
+  "inventory": [
+    {
+      "uid": "j647gjev95tx",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Bottle of black ink"
+      }
+    },
+    {
+      "uid": "el6n0fj895tx",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Quill"
+      }
+    },
+    {
+      "uid": "sysq92gm95tx",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Small knife"
+      }
+    },
+    {
+      "uid": "cegfl51x95tx",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Letter from a dead colleague posing a question you have not yet been able to answer"
+      }
+    },
+    {
+      "uid": "2dibwbsc95tx",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "19kqcwg395tx",
+      "id": "ID_WOTC_PHB24_ITEM_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 120,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_MOTM_RACE_HARENGON",
+  "background": "ID_BACKGROUND_SAGE",
+  "equipmentAdded": ["Cleric, option b", "Sage, starting equipment"],
+  "equipmentLedger": {
+    "Cleric, option b": {
+      "items": [],
+      "gp": 110
+    },
+    "Sage, starting equipment": {
+      "items": [
+        {
+          "id": "",
+          "name": "Bottle of black ink",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Quill",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Small knife",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Letter from a dead colleague posing a question you have not yet been able to answer",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+          "name": "Clothes, Common",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 10
+    }
+  },
+  "hpChosen": true
+}

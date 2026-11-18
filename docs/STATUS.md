@@ -44,8 +44,16 @@ Everything still to do, in one list. Items move off it when done; nothing open l
   leftovers on 11 characters, and 11 in the production app (picks from a species, class or increase option you later changed, such as Elvish
   Prunesley's Dhampir languages and Maine Dockers' Artificer skills); nothing is cleared unless you click.
 - FastCharacter (W9): a carried Cloak or Ring of Protection is worn when the sheet's armor class counts it, and a
-  "Martial Arts" attack is the Unarmed Strike. Of 163 differences from FastCharacter's own numbers, 102 are now
-  explained as that site's slips, each by its evidence; the other 61 are gated and listed for a rules judgment.
+  "Martial Arts" attack is the Unarmed Strike. Of 161 differences from FastCharacter's own numbers, 119 are now
+  explained as that site's slips, each by its evidence; the other 42 are gated and listed for a rules judgment. Two
+  were Soul Forge's: a Pact of the Blade warlock's light crossbow attacked with Charisma (the pact weapon is a melee
+  or magic weapon), and a magic weapon's own +1 counted twice on import. Both fixed.
+- The auto-fill (random characters and the move): a repeat it must take back is taken from the choice that has
+  another option (a Wizard whose every skill was held elsewhere kept Arcana twice, while Skilled could take any
+  skill); what later choices hold is judged by concept and only from choices the character has.
+- A list of options is not a feature: the SRD 5.2 Warlock's "Eldritch Invocation Options" holds Pact of the Blade's
+  text, and a Sorcerer/Warlock who never took it attacked with Charisma. The sheet and the rules check now share one
+  rule for which weapons another ability reaches, so they cannot drift apart again.
 
 **Is the move ready?** Close. Measured tonight:
 - 60 characters made fresh on Aurora content: 1 changes (a Ranger's "Minion" language 5e.tools lacks; kept with its

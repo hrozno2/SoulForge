@@ -1,0 +1,275 @@
+{
+  "version": 2,
+  "name": "Test 1: Wizard 7",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_WIZARD",
+      "level": 7
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 12,
+    "constitution": 13,
+    "intelligence": 15,
+    "wisdom": 14,
+    "charisma": 10
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_PHB24_RACE_HUMAN#1gm0a8i": ["ID_INTERNAL_RACIAL_TRAIT_SMALL"],
+    "ID_WOTC_PHB24_RACE_HUMAN#oqelwl": ["ID_5ET_LANGUAGE_DWARVISH", "ID_5ET_LANGUAGE_GOBLIN"],
+    "ID_WOTC_PHB24_RACIAL_TRAIT_HUMAN_SKILLFUL#ycm1lb": ["ID_PROFICIENCY_SKILL_INVESTIGATION"],
+    "ID_WOTC_PHB24_RACIAL_TRAIT_HUMAN_VERSATILE#1nijvcp": ["ID_WOTC_PHB24_FEAT_SKILLED"],
+    "ID_WOTC_PHB24_FEAT_SKILLED#115ds80": ["ID_PROFICIENCY_SKILL_ARCANA", "ID_PROFICIENCY_SKILL_HISTORY", "ID_PROFICIENCY_SKILL_RELIGION"],
+    "ID_5ET_BG_AU_WARD_OF_THE_SHELTERING_HANDS#nyas14": ["ID_5ET_BG_AU_WARD_OF_THE_SHELTERING_HANDS_ABILITY_OPTION_2"],
+    "ID_5ET_BG_AU_WARD_OF_THE_SHELTERING_HANDS_ABILITY_OPTION_2#imydeg": ["ID_5ET_ASIONE_1_con"],
+    "ID_5ET_BG_AU_WARD_OF_THE_SHELTERING_HANDS_ABILITY_OPTION_2#imydeg.2": ["ID_5ET_ASIONE_1_cha"],
+    "ID_5ET_BG_AU_WARD_OF_THE_SHELTERING_HANDS_ABILITY_OPTION_2#imydeg.3": ["ID_5ET_ASIONE_1_wis"],
+    "ID_5ET_FEAT_AU_ARCANE_SAFEGUARD#t7i30w": ["ID_5ET_SPELLABILITY_AU_ARCANE_SAFEGUARD_CHARISMA"],
+    "ID_WOTC_PHB24_CLASS_WIZARD#125j9ms": ["ID_PROFICIENCY_SKILL_NATURE", "ID_PROFICIENCY_SKILL_ARCANA"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#dkdsjx": [
+      "ID_WOTC_PHB24_SPELL_LIGHT",
+      "ID_WOTC_TCOE_SPELL_LIGHTNING_LURE",
+      "ID_WOTC_PHB24_SPELL_RAY_OF_FROST"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#15xcgen": [
+      "ID_XGTE_SPELL_EARTH_TREMOR",
+      "ID_WOTC_PHB24_SPELL_SILENT_IMAGE",
+      "ID_XGTE_SPELL_ABSORB_ELEMENTS",
+      "ID_XGTE_SPELL_CATAPULT",
+      "ID_WOTC_PHB24_SPELL_FOG_CLOUD",
+      "ID_WOTC_PHB24_SPELL_UNSEEN_SERVANT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#167c23m": ["ID_WOTC_PHB24_SPELL_DETECT_MAGIC", "ID_XGTE_SPELL_SNARE"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SCHOLAR#ngwl9b": ["ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_NATURE"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#16hbnsl": ["ID_WOTC_PHB24_SPELL_KNOCK", "ID_WOTC_PHB24_SPELL_CROWN_OF_MADNESS"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SUBCLASS#17kvvd": ["ID_WOTC_TCOE_ARCHETYPE_WIZARD_ORDER_OF_SCRIBES"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#c6fs32": ["ID_XGTE_SPELL_INFESTATION"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#14jefxs": ["ID_WOTC_PHB24_SPELL_PHANTASMAL_FORCE", "ID_WOTC_PHB24_SPELL_HOLD_PERSON"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_ABILITY_SCORE_IMPROVEMENT#14ni0bt": ["ID_WOTC_PHB24_FEAT_MAGIC_INITIATE"],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE#1iy89xc": ["ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_CLERIC"],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_CLERIC#1ponsm7": ["ID_WOTC_PHB24_FEAT_FEATURE_MAGIC_INITIATE_CLERIC_INTELLIGENCE"],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_CLERIC#44c087": ["ID_WOTC_PHB24_SPELL_RESISTANCE", "ID_WOTC_PHB24_SPELL_GUIDANCE"],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_CLERIC#9lmx0t": ["ID_WOTC_PHB24_SPELL_SANCTUARY"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#14te1mr": ["ID_WOTC_PHB24_SPELL_WITCH_BOLT", "ID_WOTC_PHB24_SPELL_STINKING_CLOUD"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#153dnbq": ["ID_WOTC_PHB24_SPELL_FEAR", "ID_WOTC_TCOE_SPELL_TASHAS_CAUSTIC_BREW"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WIZARD_SPELLCASTING#15dd90p": ["ID_WOTC_PHB24_SPELL_GREASE", "ID_XGTE_SPELL_SHADOW_BLADE"]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "roll",
+  "hpRolls": {
+    "2": 4,
+    "3": 6,
+    "4": 3,
+    "5": 4,
+    "6": 2,
+    "7": 3
+  },
+  "prepared": {
+    "Wizard": [
+      "ID_WOTC_PHB24_SPELL_HOLD_PERSON",
+      "ID_WOTC_PHB24_SPELL_PHANTASMAL_FORCE",
+      "ID_XGTE_SPELL_SHADOW_BLADE",
+      "ID_WOTC_PHB24_SPELL_UNSEEN_SERVANT",
+      "ID_XGTE_SPELL_ABSORB_ELEMENTS",
+      "ID_WOTC_PHB24_SPELL_GREASE",
+      "ID_WOTC_PHB24_SPELL_CROWN_OF_MADNESS",
+      "ID_XGTE_SPELL_SNARE",
+      "ID_WOTC_TCOE_SPELL_TASHAS_CAUSTIC_BREW",
+      "ID_WOTC_PHB24_SPELL_DETECT_MAGIC",
+      "ID_WOTC_PHB24_SPELL_KNOCK"
+    ]
+  },
+  "inventory": [
+    {
+      "uid": "xyv8h29s56fl",
+      "id": "ID_WOTC_PHB24_ITEM_TOOL_COOKS_UTENSILS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "98qxzzod56fl",
+      "id": "ID_WOTC_PHB24_ITEM_BLANKET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "jobh0q4w56fl",
+      "id": "ID_WOTC_PHB24_ITEM_HEALERS_KIT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "gc4g6zms56fl",
+      "id": "ID_WOTC_PHB24_ITEM_LAMP",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "sfj4qxuw56fl",
+      "id": "ID_WOTC_PHB24_ITEM_OIL",
+      "qty": 3,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "hxrfpj2k56fl",
+      "id": "ID_WOTC_PHB24_ITEM_TINDERBOX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "86jo1tfz56fl",
+      "id": "ID_5ET_ITEM_PHB_TRAVELER_S_CLOTHES",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "pk2ssr1156fl",
+      "id": "ID_WOTC_PHB24_ITEM_WATERSKIN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 55,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_HUMAN",
+  "background": "ID_5ET_BG_AU_WARD_OF_THE_SHELTERING_HANDS",
+  "equipmentAdded": ["Wizard, option b", "Ward of the Sheltering Hands, starting equipment"],
+  "equipmentLedger": {
+    "Wizard, option b": {
+      "items": [],
+      "gp": 55
+    },
+    "Ward of the Sheltering Hands, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TOOL_COOKS_UTENSILS",
+          "name": "Cook’s Utensils",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BLANKET",
+          "name": "Blanket",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_HEALERS_KIT",
+          "name": "Healer's Kit",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_LAMP",
+          "name": "Lamp",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_OIL",
+          "name": "Oil",
+          "qty": 3
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TINDERBOX",
+          "name": "Tinderbox",
+          "qty": 1
+        },
+        {
+          "id": "ID_5ET_ITEM_PHB_TRAVELER_S_CLOTHES",
+          "name": "Traveler's Clothes",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_WATERSKIN",
+          "name": "Waterskin",
+          "qty": 1
+        }
+      ],
+      "gp": 0
+    }
+  },
+  "hpRollLog": {
+    "2": {
+      "value": 4,
+      "die": 6,
+      "by": "app"
+    },
+    "3": {
+      "value": 6,
+      "die": 6,
+      "by": "app"
+    },
+    "4": {
+      "value": 3,
+      "die": 6,
+      "by": "app"
+    },
+    "5": {
+      "value": 4,
+      "die": 6,
+      "by": "app"
+    },
+    "6": {
+      "value": 2,
+      "die": 6,
+      "by": "app"
+    },
+    "7": {
+      "value": 3,
+      "die": 6,
+      "by": "app"
+    }
+  },
+  "hpChosen": true
+}

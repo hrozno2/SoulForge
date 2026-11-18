@@ -156,12 +156,14 @@ skills beyond what the rules give, Thaumaturge's bonus stated and not added), so
 list like parity's and a gate on the unexplained rest. Importer faults it showed, all fixed by 2026-11-18: "+1
 magical chainmail" is Chain Mail +1; a carried Cloak or Ring of Protection is worn and attuned when the sheet's own
 armor class counts it (kept only when the number then matches); a "Martial Arts" attack line is the Unarmed Strike
-(`fastcharImport.test.ts`). The explained list, 2026-11-18: 102 of 163 differences explained, each by its
+(`fastcharImport.test.ts`). The explained list, 2026-11-18: 119 of 161 differences explained, each by its
 evidence (Thaumaturge and Magician bonuses stated but not added; skills beyond every made choice; a Cloak of
 Protection in armor class but not in saves; Disciplined Survivor's saves left out; the 2024 Jack of All Trades added
-to initiative; attacks for weapons the gear does not list). The other 61 are gated (`fastcharacter/count.json`) and
-each needs a rules judgment: Monks' magic quarterstaff attacks (Martial Arts' Dexterity), a 2024 Druid's scimitar
-(not a simple weapon), Fighters' Perception and passive Perception, tools beyond the background's.
+to initiative; attacks for weapons the gear does not list, with weapons the class is not trained with, with Strength
+where Martial Arts allows Dexterity, without the weapon's magic bonus, or unbonded where Pact of the Blade applies).
+Two were Soul Forge's own and are fixed: Pact of the Blade's Charisma reached a plain ranged weapon, and a magic
+weapon's own +1 counted twice on import. The other 42 are gated (`fastcharacter/count.json`); the kinds left:
+Fighters' Perception and passive Perception, tools beyond the background's, a few skills.
 
 **W10. Every choice and gift a text states is on the element (D1, L3).** Done 2026-11-17: the 52 candidates were
 read one by one. Real gaps are built as "Soul Forge additions" (src/aurora/additions.ts, a source of its own in the

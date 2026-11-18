@@ -1,0 +1,173 @@
+{
+  "version": 2,
+  "name": "Test 1: Sorcerer 14",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_5ET_CLASS_PHB_SORCERER",
+      "level": 14
+    },
+    {
+      "classId": "ID_5ET_CLASS_XPHB_WARLOCK",
+      "level": 1
+    }
+  ],
+  "abilityBase": {
+    "strength": 12,
+    "dexterity": 13,
+    "constitution": 14,
+    "intelligence": 8,
+    "wisdom": 10,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_5ET_RACE_PHB_HUMAN#1obfsi8": ["ID_5ET_LANGUAGE_ELVISH"],
+    "ID_5ET_BG_XPHB_ACOLYTE#nyas14": ["ID_5ET_BG_XPHB_ACOLYTE_ABILITY_OPTION_2"],
+    "ID_5ET_BG_XPHB_ACOLYTE_ABILITY_OPTION_2#imydeg": ["ID_5ET_ASIONE_1_int"],
+    "ID_5ET_BG_XPHB_ACOLYTE_ABILITY_OPTION_2#imydeg.2": ["ID_5ET_ASIONE_1_cha"],
+    "ID_5ET_BG_XPHB_ACOLYTE_ABILITY_OPTION_2#imydeg.3": ["ID_5ET_ASIONE_1_wis"],
+    "ID_5ET_FEAT_XPHB_MAGIC_INITIATE_CLERIC#1mf4fj7": ["ID_5ET_SPELLABILITY_XPHB_MAGIC_INITIATE_CLERIC_WISDOM"],
+    "ID_5ET_FEAT_XPHB_MAGIC_INITIATE_CLERIC#ligv5a": ["ID_5ET_SPELL_XPHB_RESISTANCE", "ID_5ET_SPELL_XPHB_LIGHT"],
+    "ID_5ET_FEAT_XPHB_MAGIC_INITIATE_CLERIC#lemo2o": ["ID_5ET_SPELL_XPHB_SANCTUARY"],
+    "ID_5ET_CLASS_PHB_SORCERER#kirtqa": ["ID_5ET_SKILL_ARCANA", "ID_5ET_SKILL_PERSUASION"],
+    "ID_5ET_CLASS_PHB_SORCERER#jgmc1c": ["ID_5ET_SUBCLASS_PHB_SORCERER_DRACONIC"],
+    "ID_5ET_SUBCLASS_PHB_SORCERER_DRACONIC#xhvkg2": ["ID_5ET_SF_PHB_DRACONIC_DRAGON_ANCESTOR_11_CHOICE_WHITE_COLD"],
+    "ID_5ET_CLASS_PHB_SORCERER#bjsqmf": [
+      "ID_5ET_SPELL_PHB_MESSAGE",
+      "ID_5ET_SPELL_PHB_MINOR_ILLUSION",
+      "ID_5ET_SPELL_PHB_CHILL_TOUCH",
+      "ID_5ET_SPELL_PHB_ACID_SPLASH"
+    ],
+    "ID_5ET_CLASS_PHB_SORCERER#1qojibn": ["ID_5ET_SPELL_PHB_SILENT_IMAGE", "ID_5ET_SPELL_PHB_FEATHER_FALL"],
+    "ID_5ET_CLASS_PHB_SORCERER#1qyj40m": ["ID_5ET_SPELL_PHB_DETECT_MAGIC"],
+    "ID_5ET_CLASS_PHB_SORCERER#137ihxq": ["ID_5ET_OPT_PHB_HEIGHTENED_SPELL", "ID_5ET_OPT_PHB_DISTANT_SPELL"],
+    "ID_5ET_CLASS_PHB_SORCERER#1r8ippl": ["ID_5ET_SPELL_PHB_MAGE_ARMOR"],
+    "ID_5ET_CLASS_PHB_SORCERER#a5uq5k": ["ID_5ET_SPELL_PHB_MAGE_HAND"],
+    "ID_5ET_CLASS_PHB_SORCERER#1riibek": ["ID_5ET_SPELL_PHB_COMPREHEND_LANGUAGES"],
+    "ID_5ET_CLASS_PHB_SORCERER#1rshx3j": ["ID_5ET_SPELL_PHB_CHARM_PERSON"],
+    "ID_5ET_CLASS_PHB_SORCERER#1s2hisi": ["ID_5ET_SPELL_PHB_PROTECTION_FROM_ENERGY"],
+    "ID_5ET_CLASS_PHB_SORCERER#1sch4hh": ["ID_5ET_SPELL_PHB_KNOCK"],
+    "ID_5ET_CLASS_PHB_SORCERER#1smgq6g": ["ID_5ET_SPELL_PHB_ALTER_SELF"],
+    "ID_5ET_CLASS_PHB_SORCERER#1swgbvf": ["ID_5ET_SPELL_PHB_BANISHMENT"],
+    "ID_5ET_CLASS_PHB_SORCERER#sd170o": ["ID_5ET_OPT_PHB_EMPOWERED_SPELL"],
+    "ID_5ET_CLASS_PHB_SORCERER#z4ij11": ["ID_5ET_SPELL_PHB_PRESTIDIGITATION"],
+    "ID_5ET_CLASS_PHB_SORCERER#neabih": ["ID_5ET_SPELL_PHB_FOG_CLOUD"],
+    "ID_5ET_CLASS_PHB_SORCERER#n4apti": ["ID_5ET_SPELL_PHB_TELEKINESIS"],
+    "ID_5ET_CLASS_PHB_SORCERER#mkbifk": ["ID_5ET_SPELL_PHB_DARKNESS"],
+    "ID_5ET_CLASS_XPHB_WARLOCK#1zu1qs": ["ID_5ET_OPT_PHB_BEAST_SPEECH"],
+    "ID_5ET_CLASS_XPHB_WARLOCK#gw4nkv": ["ID_5ET_SPELL_XPHB_POISON_SPRAY", "ID_5ET_SPELL_XPHB_MINOR_ILLUSION"]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {
+    "Warlock": ["ID_5ET_SPELL_XPHB_UNSEEN_SERVANT", "ID_5ET_SPELL_XPHB_DETECT_MAGIC"]
+  },
+  "inventory": [
+    {
+      "uid": "e7wqnh2qevhm",
+      "id": "ID_5ET_ITEM_PHB_LIGHT_CROSSBOW",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "nvpyu9j4evhm",
+      "id": "ID_5ET_ITEM_PHB_CROSSBOW_BOLTS_20",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "zryv46f0evhm",
+      "id": "ID_5ET_ITEM_PHB_COMPONENT_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "9afm2916evhm",
+      "id": "ID_5ET_ITEM_PHB_EXPLORER_S_PACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 0,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_5ET_RACE_PHB_HUMAN",
+  "background": "ID_5ET_BG_XPHB_ACOLYTE",
+  "equipmentAdded": ["Sorcerer, starting equipment"],
+  "equipmentLedger": {
+    "Sorcerer, starting equipment": {
+      "items": [
+        {
+          "id": "ID_5ET_ITEM_PHB_LIGHT_CROSSBOW",
+          "name": "Light Crossbow",
+          "qty": 1
+        },
+        {
+          "id": "ID_5ET_ITEM_PHB_CROSSBOW_BOLTS_20",
+          "name": "Crossbow Bolts (20)",
+          "qty": 1
+        },
+        {
+          "id": "ID_5ET_ITEM_PHB_COMPONENT_POUCH",
+          "name": "Component Pouch",
+          "qty": 1
+        },
+        {
+          "id": "ID_5ET_ITEM_PHB_EXPLORER_S_PACK",
+          "name": "Explorer's Pack",
+          "qty": 1
+        }
+      ],
+      "gp": 0
+    }
+  },
+  "hpChosen": true
+}

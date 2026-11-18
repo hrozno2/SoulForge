@@ -483,9 +483,14 @@ function buildAc(r: Resolved): { value: number; parts: string[] } {
  * you attack with a magic weapon, you can use your Intelligence modifier..." (Battle Ready). The conditions the same
  * sentence or paragraph sets are kept: a magic weapon, a weapon without the two-handed property.
  */
-export function weaponAbilityOptions(r: Resolved): { ability: AbilityId; magicOnly: boolean; notTwoHanded: boolean; from: string }[] {
-  const out: { ability: AbilityId; magicOnly: boolean; notTwoHanded: boolean; from: string }[] = [];
+export function weaponAbilityOptions(
+  r: Resolved,
+): { ability: AbilityId; magicOnly: boolean; notTwoHanded: boolean; meleeOrMagic: boolean; from: string }[] {
+  const out: { ability: AbilityId; magicOnly: boolean; notTwoHanded: boolean; meleeOrMagic: boolean; from: string }[] = [];
   for (const a of r.active) {
+    // A list of options is not a feature the character has ("Eldritch Invocation Options" holds every invocation's
+    // text, Pact of the Blade's among them): its options are read when taken.
+    if (/\boptions$/i.test(a.el.name) || /options appear in alphabetical order/i.test(a.el.description)) continue;
     const text = a.el.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
     for (const para of [text]) {
       const m =
@@ -513,11 +518,21 @@ export function weaponAbilityOptions(r: Resolved): { ability: AbilityId; magicOn
         ability: m[1].toLowerCase() as AbilityId,
         magicOnly: /attack with a magic weapon/i.test(sentence),
         notTwoHanded: /lacks the two-handed property/i.test(around),
+        // The 2024 Pact of the Blade: the bonded weapon is "a Simple or Martial Melee weapon" or a magic weapon.
+        meleeOrMagic: /\b(?:simple or martial )?melee weapon\b/i.test(para) && /magic weapon/i.test(para),
         from: a.el.name,
       });
     }
   }
   return out;
+}
+
+/** Whether another ability a feature allows (weaponAbilityOptions) applies to this weapon; the sheet and the rules check both ask. */
+export function weaponAbilityFits(
+  o: { magicOnly: boolean; notTwoHanded: boolean; meleeOrMagic: boolean },
+  w: { magic: boolean; ranged: boolean; twoHanded: boolean },
+): boolean {
+  return (!o.magicOnly || w.magic) && (!o.notTwoHanded || !w.twoHanded) && (!o.meleeOrMagic || !w.ranged || w.magic);
 }
 
 /** Attack lines from equipped weapons and custom attacks. With `carried`, weapons that are only carried count too, once per kind. */
@@ -574,11 +589,10 @@ function buildAttacks(r: Resolved, carried = false): AttackLine[] {
       finesse || monkWeapon ? (mods("dexterity") > mods("strength") ? "dexterity" : "strength") : ranged ? "dexterity" : "strength";
     // Another ability a feature allows for this weapon (Hex Warrior, Battle Ready), when it is better.
     const twoHandedTag = tags.some((t) => /two.?handed/.test(t));
+    // A +N, or a weapon with a rarity (a magic weapon: Flame Tongue, the Shortsword of Vengeance).
+    const isMagic = (it.magic ?? 0) > 0 || /^\+\d/.test(el.name) || !/^(|none|mundane|unknown)$/i.test(el.setters.rarity?.value ?? "");
     const alt = weaponAbilities
-      .filter(
-        (o) =>
-          (!o.magicOnly || (it.magic ?? 0) > 0 || el.type === "Magic Item" || /^\+\d/.test(el.name)) && (!o.notTwoHanded || !twoHandedTag),
-      )
+      .filter((o) => weaponAbilityFits(o, { magic: isMagic, ranged, twoHanded: twoHandedTag }))
       .map((o) => o.ability);
     const ability: AbilityId = [usual, ...alt].reduce((best, x) => (mods(x) > mods(best) ? x : best), usual);
     // Trained by the id the weapon names, or by the same training under the other provider's id: a 5e.tools magic

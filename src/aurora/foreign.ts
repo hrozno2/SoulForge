@@ -585,7 +585,10 @@ class Importer {
       el = findAllByName(this.reg, ["Item"], words[1]).find((e) => !e.compendiumHidden);
     // "+1 Shield", "Rapier +1" and "Requital (+2 The Emerald Blade)" are a base item with a bonus.
     // An element that is already the magic version ("Rhythm-Maker's Drum, +2") carries its own bonus.
-    const magic = el && /[+]\d/.test(el.name) ? 0 : extra.magic || Number(/[+]([1-3])\b/.exec(name)?.[1]) || 0;
+    // So does a magic weapon whose bonus is on the element ("+1 Shortsword of Vengeance": 5e.tools' Shortsword of
+    // Vengeance has its attack bonus of 1; counted again, the attack was one too high, FastCharacter fc39).
+    const ownBonus = !!el && (/[+]\d/.test(el.name) || Number(el.setters.attackBonus?.value) > 0);
+    const magic = ownBonus ? 0 : extra.magic || Number(/[+]([1-3])\b/.exec(name)?.[1]) || 0;
     const plain = name
       .replace(/[+]\d\s*/g, "")
       .replace(/\(\s*\)/g, "")

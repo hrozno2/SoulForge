@@ -52,8 +52,25 @@ export function autoFill(
       const repeats = repeatedPicks(r, s);
       const drop = s.chosen.filter((id) => s.blocked.has(id) || repeats.some((t) => t.includes(`: ${reg.get(id)?.name} (`)));
       if (!drop.length) continue;
-      cur = { ...cur, selections: { ...cur.selections, [s.key]: s.chosen.filter((id) => !drop.includes(id)) } };
-      for (const id of drop) bad.add(`${s.key} ${id}`);
+      // A choice with another option the character does not have yet, under any provider's id (one concept, two ids:
+      // a background's 5e.tools Insight is the Wizard's Aurora Insight).
+      const heldConcepts = new Set(r.active.map((a) => conceptOf(a.el)).filter(Boolean));
+      const held = (o: (typeof r.slots)[number]["options"][number]) =>
+        r.ids.has(o.id) || (!!conceptOf(o) && heldConcepts.has(conceptOf(o)));
+      const roomIn = (x: (typeof r.slots)[number], id: string) =>
+        x.options.some((o) => o.id !== id && !held(o) && !x.chosen.includes(o.id) && !x.blocked.has(o.id) && !bad.has(`${x.key} ${o.id}`));
+      for (const id of drop) {
+        // A repeat (not a blocked pick) whose choice has nowhere else to go is taken from the other choice that holds it,
+        // when that one has (a Wizard's skills all held elsewhere, and Skilled, which offers any skill, holding Arcana).
+        const other =
+          !s.blocked.has(id) && !roomIn(s, id)
+            ? r.slots.find((x) => x !== s && x.chosen.includes(id) && !x.listItems && roomIn(x, id))
+            : undefined;
+        const from = other ?? s;
+        const now = cur.selections[from.key] ?? from.chosen;
+        cur = { ...cur, selections: { ...cur.selections, [from.key]: now.filter((x) => x !== id) } };
+        bad.add(`${from.key} ${id}`);
+      }
       dropped = true;
     }
     if (!dropped) break;
@@ -85,6 +102,9 @@ export function autoFill(
 
   function fillLevel(start: Character, n: number): Character {
     let cur = start;
+    // What the finished character's choices hold, at every level: only choices it has (a leftover pick under a key with
+    // no place is not had; counted, it left a Wizard no skill to take but one it held).
+    const heldLater = new Set(resolve(start, reg).slots.flatMap((x) => x.chosen));
     for (let i = 0; i < 600; i++) {
       const r = resolve(atLevel(cur, n), reg);
       const open = r.slots.find((s) => !s.defaulted && stillToChoose(s, r));
@@ -96,7 +116,7 @@ export function autoFill(
       // training, languages): built level by level, the 1st-level cantrips cannot see the Guidance chosen at 4th (a
       // moved War Domain cleric), nor a Dhampir's Ancestral Legacy the Animal Handling of a later Bard level.
       const once = /^(Spell|Proficiency|Language)$/.test(open.rule.type);
-      const later = once ? new Set(Object.values(cur.selections).flat()) : new Set<string>();
+      const later = once ? heldLater : new Set<string>();
       const laterConcepts = new Set([...later].map((id) => (reg.get(id) ? conceptOf(reg.get(id)!) : undefined)).filter(Boolean));
       const had = (o: (typeof open.options)[number]) =>
         r.ids.has(o.id) || later.has(o.id) || (!!conceptOf(o) && (hadConcepts.has(conceptOf(o)) || laterConcepts.has(conceptOf(o))));

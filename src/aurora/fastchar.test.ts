@@ -71,6 +71,27 @@ it.skipIf(!C || process.env.RULES_TIER !== "fastchar")(
         const gear = (text.split(/EQUIPMENT & TREASURE/i)[1] ?? "").toLowerCase();
         const weapon = atk?.[1].replace(/^\+\d\s*(magic\s*)?/i, "").toLowerCase();
         if (weapon && gear && !gear.includes(weapon)) return "FastCharacter gives an attack for a weapon its gear does not list";
+        // An attack line both sheets have, judged by what Soul Forge's line rests on.
+        const atkDiff = /^(.+) attack: the file says (-?\d+), Soul Forge works out (-?\d+)$/.exec(d);
+        if (atkDiff) {
+          const fileB = Number(atkDiff[2]),
+            ours = Number(atkDiff[3]);
+          const bare = atkDiff[1].replace(/^\+\d\s*(magic\s*)?/i, "").toLowerCase();
+          const line = sh.attacksCarried.find((a) => a.name.toLowerCase().replace(/\s*\+\d$/, "") === bare);
+          const mod = (id: string) => sh.abilities.find((a) => a.id === id)!.mod;
+          // The class is not trained with the weapon (2024 Bards, Druids and Clerics: simple weapons only).
+          if (line && /not proficient/.test(line.notes) && fileB - ours === sh.proficiency)
+            return "FastCharacter adds proficiency with a weapon the character is not trained with";
+          // Martial Arts lets a Monk use Dexterity with Monk weapons.
+          if (line && /Martial Arts/.test(line.notes) && ours - fileB === mod("dexterity") - mod("strength"))
+            return "FastCharacter uses Strength where Martial Arts lets the Monk use Dexterity";
+          // Pact of the Blade: Soul Forge shows a melee weapon as it attacks when bonded (Charisma); the file unbonded.
+          if (line && names.has("pact of the blade") && ours - fileB === mod("charisma") - Math.max(mod("strength"), mod("dexterity")))
+            return "Soul Forge shows the weapon as Pact of the Blade's bonded weapon (Charisma); FastCharacter shows it unbonded";
+          // The carried weapon is magic, and the file's line leaves its bonus out.
+          if (line && (line.magic ?? 0) > 0 && ours - fileB === line.magic)
+            return "FastCharacter's attack line leaves out the weapon's magic bonus";
+        }
         // A skill the file has and the rules do not give: every skill choice is made (none left open).
         const prof = /^([A-Za-z ]+): the file has proficiency, Soul Forge has no proficiency$/.exec(d);
         const same = prof ?? (m && Number(m[2]) - Number(m[3]) === sh.proficiency ? m : null);
@@ -83,8 +104,18 @@ it.skipIf(!C || process.env.RULES_TIER !== "fastchar")(
           return "FastCharacter lists a skill proficiency the rules do not give (every skill choice is made)";
         return undefined;
       };
+      // Passive Perception follows Perception: the same gap, explained when Perception's is.
+      const percGap = (() => {
+        const m = res.differences.map((x) => /^Perception: the file says (-?\d+), Soul Forge works out (-?\d+)$/.exec(x)).find(Boolean);
+        return m && explain(m[0]) ? Number(m[1]) - Number(m[2]) : undefined;
+      })();
+      const explainAll = (d: string) => {
+        const p = /^Passive Perception: the file says (-?\d+), Soul Forge works out (-?\d+)$/.exec(d);
+        if (p && percGap !== undefined && Number(p[1]) - Number(p[2]) === percGap) return "follows the Perception difference, explained";
+        return explain(d);
+      };
       for (const d of res.differences) {
-        const why = explain(d);
+        const why = explainAll(d);
         out.push(`- differs: ${d}${why ? ` (explained: ${why})` : ""}`);
         count(why ? "explained" : `differs: ${d.split(":")[0].replace(/ attack$/, " (attack)")}`);
       }

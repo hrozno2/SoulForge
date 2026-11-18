@@ -10,7 +10,7 @@ import { conceptOf } from "../engine/concepts";
 import { choiceEdition, editionOfElement, offeredAcrossEditions } from "../engine/editionPolicy";
 import { bookKey } from "./books";
 import type { Resolved } from "./engine";
-import { preparePool, weaponAbilityOptions, type SheetData } from "./sheet";
+import { preparePool, weaponAbilityFits, weaponAbilityOptions, type SheetData } from "./sheet";
 import type { AElement } from "./types";
 import { ABILITY_IDS, type AbilityId, type Character } from "./character";
 import { normalizeRules, spent as pbSpent } from "./pointBuy";
@@ -1071,7 +1071,13 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     // A feature may allow another ability for this weapon (Hex Warrior, Pact of the Blade, Battle Ready): the better.
     const twoHandedTag = tags.some((t) => /two.?handed/.test(t));
     const alts = altAbilities
-      .filter((o) => (!o.magicOnly || (it?.magic ?? 0) > 0 || /^\+\d/.test(el.name)) && (!o.notTwoHanded || !twoHandedTag))
+      .filter((o) =>
+        weaponAbilityFits(o, {
+          magic: (it?.magic ?? 0) > 0 || /^\+\d/.test(el.name) || !/^(|none|mundane|unknown)$/i.test(el.setters.rarity?.value ?? ""),
+          ranged,
+          twoHanded: twoHandedTag,
+        }),
+      )
       .map((o) => mod(o.ability));
     const plainName = el.name
       .replace(/^[+-]\d+\s*/, "")

@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { importFastCharacter } from "./foreign";
 import { resolve } from "./engine";
+import { buildSheet } from "./sheet";
 import { loadTestContent } from "../engine/testContent";
 
 const C = process.env.SOULFORGE_RULES;
@@ -58,5 +59,13 @@ describe.skipIf(!C || !existsSync(RAW))("FastCharacter import", () => {
   // W9: the sheet's "Martial Arts" attack is the Unarmed Strike (fc126).
   it("reads a Martial Arts attack as the Unarmed Strike", () => {
     expect(load("fc126.txt").res.differences.filter((d) => /^Martial Arts attack: in the file/.test(d))).toEqual([]);
+  }, 600000);
+
+  // "+1 Shortsword of Vengeance" is the magic weapon, whose own +1 is on the element: not +1 again (fc39).
+  it("counts a magic weapon's own bonus once", () => {
+    const { r } = load("fc39.txt");
+    const sh = buildSheet(r);
+    const dex = sh.abilities.find((a) => a.id === "dexterity")!.mod;
+    expect(sh.attacksCarried.find((a) => /Vengeance/.test(a.name))!.bonus).toBe(dex + sh.proficiency + 1);
   }, 600000);
 });

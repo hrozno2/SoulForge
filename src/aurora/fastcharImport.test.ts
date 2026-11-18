@@ -46,7 +46,10 @@ describe.skipIf(!C || !existsSync(RAW))("FastCharacter import", () => {
   it("wears a protective item the sheet's armor class counts", () => {
     for (const f of ["fc04.txt", "fc22.txt", "fc132.txt"]) {
       const { res } = load(f);
-      expect(res.differences.filter((d) => /^Armor class/.test(d)), f).toEqual([]);
+      expect(
+        res.differences.filter((d) => /^Armor class/.test(d)),
+        f,
+      ).toEqual([]);
       const cloak = res.character.inventory.find((i) => /cloak of protection/i.test(reg.get(i.id)?.name ?? ""));
       expect([cloak?.equipped, cloak?.attuned], f).toEqual([true, true]);
     }

@@ -12,10 +12,10 @@ import { bookKey } from "./books";
 import type { Resolved } from "./engine";
 import { preparePool, weaponAbilityOptions, type SheetData } from "./sheet";
 import type { AElement } from "./types";
-import { ABILITY_IDS, type AbilityId } from "./character";
+import { ABILITY_IDS, type AbilityId, type Character } from "./character";
 import { normalizeRules, spent as pbSpent } from "./pointBuy";
 import { meets } from "./requirements";
-import { reqCtx, stillToChoose } from "./engine";
+import { reqCtx, resolve, stillToChoose } from "./engine";
 import { isModern } from "./edition";
 
 export interface RefFeature {
@@ -67,6 +67,42 @@ export interface RefClass {
 export interface Finding {
   rule: string;
   detail: string;
+  /** The one safe answer, when there is one (E3.1): applied with applyFix (findingFix.ts). */
+  fix?: FindingFix;
+}
+
+/** The element a saved choice key belongs to: "<id>#<hash>", or "<id>|<n>" from before stable keys. */
+export const choiceBase = (key: string) => key.replace(/[#|].*$/, "");
+
+/** Kinds of element that make up the build; a choice saved under one the character lacks has no place (W2). */
+const BUILD_KIND =
+  /^(Class|Archetype|Race|Sub Race|Background|Feat|Feat Feature|Class Feature|Archetype Feature|Racial Trait|Background Feature|Ability Score Improvement)$/;
+
+/**
+ * Saved choices with no place on the character (W2): under an element of the build that the character does not have,
+ * even at level 20 in each class (so a character levelled down keeps the picks of the levels to come back). Never an
+ * item's (unequipped or unattuned, it waits), an option's switched off, or one whose content is not loaded.
+ */
+export function noPlaceKeys(ch: Character, r: Resolved): string[] {
+  const away = Object.keys(ch.selections).filter((k) => {
+    const el = r.reg.get(choiceBase(k));
+    return (ch.selections[k] ?? []).length && !!el && BUILD_KIND.test(el.type) && !r.ids.has(el.id) && !ch.options.includes(el.id);
+  });
+  if (!away.length) return [];
+  const full = resolve({ ...ch, classes: ch.classes.map((c) => ({ ...c, level: 20 })) }, r.reg);
+  return away.filter((k) => !full.ids.has(choiceBase(k)));
+}
+
+/** Take picks out of a choice (it opens again for the player), or keep only its first `keep` picks. */
+export interface FindingFix {
+  label: string;
+  slot: string;
+  /** What the choice holds now, however it was saved (an older file keeps picks under an older key). */
+  picks: string[];
+  /** Saved choices to forget (picks with no place on the character, W2). */
+  clear?: string[];
+  remove?: string[];
+  keep?: number;
 }
 
 const lc = (s: string) => s.toLowerCase();
@@ -298,7 +334,7 @@ export function noBodyArmor(r: Resolved): { name: string; unarmored: number }[] 
 
 export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Finding[] {
   const out: Finding[] = [...checkChoiceWindows(r)];
-  const add = (rule: string, detail: string) => out.push({ rule, detail });
+  const add = (rule: string, detail: string, fix?: FindingFix) => out.push(fix ? { rule, detail, fix } : { rule, detail });
   const ch = r.character;
   const reg = r.reg;
   const names = new Set(r.active.map((a) => norm(a.el.name)));
@@ -332,6 +368,18 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     }
     return set;
   };
+  // W2: picks saved under something the character does not have, at any level of its classes (a class or species
+  // since changed, a feat taken back): shown, never silently ignored, and clearable.
+  {
+    const gone = noPlaceKeys(ch, r);
+    const picks = gone.flatMap((k) => ch.selections[k] ?? []).map((id) => reg.get(id)?.name ?? id);
+    if (gone.length)
+      add(
+        "Earlier choices with no place now",
+        `${picks.length} pick${picks.length === 1 ? "" : "s"} from ${[...new Set(gone.map((k) => reg.get(choiceBase(k))?.name ?? choiceBase(k)))].join(", ")}, which the character no longer has: ${picks.join(", ")}`,
+        { label: "Clear them", slot: "", picks: [], clear: gone },
+      );
+  }
   // Completeness: every choice the rules ask for is made, none is impossible, nothing points at missing content.
   for (const s of r.slots) {
     // More picks saved than the choice allows (an edited or merged file; found 2026-11-17 by the mutation test, which
@@ -345,20 +393,31 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
           .slice(s.rule.number)
           .map((id) => reg.get(id)?.name ?? id)
           .join(", ")}`,
+        { label: `Keep the first ${s.rule.number}`, slot: s.key, picks: saved, keep: s.rule.number },
       );
     if (s.rule.optional) continue;
     if (!s.options.length) add("A required choice has no options", `${s.rule.name} [${s.rule.type}]`);
     else if (stillToChoose(s, r)) add("A required choice is not made", `${s.rule.name}: ${s.chosen.length} of ${s.rule.number}`);
+    const takeOut = (id: string): FindingFix => ({
+      label: `Take ${reg.get(id)?.name ?? "it"} out`,
+      slot: s.key,
+      picks: [...s.chosen],
+      remove: [id],
+    });
     for (const id of s.chosen)
-      if (s.blocked.has(id)) add("A choice does not meet its requirements", `${s.rule.name}: ${reg.get(id)?.name}`);
+      if (s.blocked.has(id)) add("A choice does not meet its requirements", `${s.rule.name}: ${reg.get(id)?.name}`, takeOut(id));
     // The engine activates whatever a saved pick names. One the choice does not offer at all (an edited file, content
     // that changed since, a pick kept through a move to other content) is on the character against its choice's rules.
     // A choice asked again at later levels (a spellbook, spells known) is one list to the player, and the Magic tab
     // hands picks to its places in order: a pick is offered when any place of the same choice offers it.
     if (s.rule.type !== "List")
       for (const id of s.chosen)
-        if (reg.get(id) && !offeredBy(s).has(id)) add("A pick its choice does not offer", `${s.rule.name}: ${reg.get(id)?.name}`);
-    for (const d of repeatedPicks(r, s)) add("A choice repeats something the character already has", d);
+        if (reg.get(id) && !offeredBy(s).has(id))
+          add("A pick its choice does not offer", `${s.rule.name}: ${reg.get(id)?.name}`, takeOut(id));
+    for (const d of repeatedPicks(r, s)) {
+      const id = s.chosen.find((x) => d.startsWith(`${s.rule.name}: ${reg.get(x)?.name} (`));
+      add("A choice repeats something the character already has", d, id ? takeOut(id) : undefined);
+    }
   }
   for (const w of r.warnings) add("Content refers to something missing", w);
   // Origins: the 2024 rules raise ability scores in the background, the 2014 rules in the species. A 2024 species

@@ -9,7 +9,7 @@
  */
 import type { Character, MoveDecision } from "../aurora/character";
 import { autoFill } from "../aurora/autofill";
-import { repeatedPicks } from "../aurora/rulesCheck";
+import { noPlaceKeys, repeatedPicks } from "../aurora/rulesCheck";
 import { resolve } from "../aurora/engine";
 import { buildSheet, stripHtml } from "../aurora/sheet";
 import { itemWeight } from "../aurora/engine";
@@ -49,6 +49,8 @@ export interface Migration {
   textKept: { name: string; type: string; text: string }[];
   /** The species changed to the one 5e.tools files the sub race under (Aurora's Joraga Elf: "Elf (Zendikar)"). */
   speciesSwitched?: { from: string; to: string };
+  /** Picks the original made twice, kept as built (the rules check names them; they are not the move's doing). */
+  ownRepeats?: string[];
 }
 
 const isFive = (e: AElement | undefined) => !!e && (e.origin === "5etools" || e.id.startsWith("ID_5ET"));
@@ -322,6 +324,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // version is offered as a decision on Build (Chris, 2026-11-13). Set before the other picks are placed, so the kept
   // subclass's own choices take its old picks.
   const decisions: MoveDecision[] = [];
+  const ownRepeats: string[] = [];
   {
     const r = resolve(next, to);
     for (const s of old.slots) {
@@ -980,6 +983,8 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // What the player had left open stays open: a choice the old character had not made (two spells not yet learned, a
   // skill not chosen) is the player's to make, not the auto-fill's. Counted by kind: a spell choice by its casting,
   // anything else by its owner's name (the two providers' choices are not one to one).
+  // A subclass by its kind alone too: Aurora's "Sorcerous Origin" is 5e.tools' Sorcerer's subclass choice (a playtest
+  // Sea Sorcerer's place was filled with Draconic Bloodline, and hit points rose; 2026-11-18).
   // A language by its kind alone: the two providers name the owner differently (Aurora's Favored Enemy asks the 6th-level
   // language, 5e.tools' "Favored Enemy and Natural Explorer improvements"), and a "Minion" with no 5e.tools version had
   // its place filled with another language (fresh 52, 2026-11-17).
@@ -988,8 +993,8 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   const kindOf = (x: Slot) =>
     x.rule.type === "Spell"
       ? `Spell|${(x.rule.spellcasting ?? "").toLowerCase()}|${/cantrip/i.test(x.rule.name) ? 0 : 1}`
-      : x.rule.type === "Language"
-        ? "Language"
+      : x.rule.type === "Language" || x.rule.type === "Archetype"
+        ? x.rule.type
         : `${x.rule.type}|${nameKey(x.owner.name)}`;
   const leftOpen = new Map<string, number>();
   // A pick made twice is not a place left open: the player chose, wrongly, and the fill takes the place ("Chosen for
@@ -1005,8 +1010,8 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const k =
       p.ruleType === "Spell"
         ? `Spell|${(p.casting ?? "").toLowerCase()}|${pickLevel === 0 ? 0 : 1}`
-        : p.ruleType === "Language"
-          ? "Language"
+        : p.ruleType === "Language" || p.ruleType === "Archetype"
+          ? p.ruleType
           : `${p.ruleType}|${p.ownerName}`;
     leftOpen.set(k, (leftOpen.get(k) ?? 0) + 1);
   }
@@ -1015,19 +1020,33 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // (5e.tools grants what Aurora had the player pick) is picked again as before.
   const oldPicks = new Map<string, number>();
   // By name, and by what a name's brackets name: Aurora's "Blessings of Knowledge (Religion)" is Religion again.
+  // And by concept: Aurora's two "Skill Expertise (Survival)" picks (a Proficiency and a Class Feature) are 5e.tools'
+  // "Survival (expertise)" twice (a College of Whispers bard's Skill Expert repeat was dropped, its place left empty).
+  const oldPickConcepts = new Map<string, number>();
   for (const s of old.slots)
     for (const id of s.chosen) {
       const n = from.get(id)?.name ?? id;
       const keys = new Set([nameKey(n), ...[...n.matchAll(/\(([^)]+)\)/g)].map((m) => nameKey(m[1]))]);
       for (const k of keys) oldPicks.set(k, (oldPicks.get(k) ?? 0) + 1);
+      const c = from.get(id) ? conceptOf(from.get(id)!) : undefined;
+      if (c) oldPickConcepts.set(c, (oldPickConcepts.get(c) ?? 0) + 1);
     }
   // A repeat the original had already, whatever its other source: a Monk's Stealth when the 2014 Urchin grants it too
   // (one pick and a grant, so the count above is one). The player built it so; replaced, the sheet gained a skill.
   const oldRepeats = new Set<string>(chosenSaves);
+  // And by concept: Aurora's "Skill Expertise (Survival)" is 5e.tools' "Survival (expertise)" (a College of Whispers
+  // bard's Skill Expert repeat was dropped and its place left empty, 2026-11-18).
+  const oldRepeatConcepts = new Set<string>();
   for (const s of old.slots)
     for (const msg of repeatedPicks(old, s)) {
       const m = /^[^:]*: (.+?) \(already /.exec(msg);
-      if (m) oldRepeats.add(nameKey(m[1]));
+      if (!m) continue;
+      oldRepeats.add(nameKey(m[1]));
+      for (const id of s.chosen) {
+        const el = from.get(id);
+        const k = el && nameKey(el.name) === nameKey(m[1]) ? conceptOf(el) : undefined;
+        if (k) oldRepeatConcepts.add(k);
+      }
     }
   const nameOf = (id: string) => to.get(id)?.name ?? from.get(id)?.name ?? id;
   for (const x of beforeFill.slots) {
@@ -1039,9 +1058,16 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       const here = filledCh0.selections[x.key] ?? [];
       const removed = x.chosen.filter((id) => !here.includes(id));
       const added = here.filter((id) => !x.chosen.includes(id));
-      const own = removed.filter((id) => (oldPicks.get(nameKey(nameOf(id))) ?? 0) >= 2 || oldRepeats.has(nameKey(nameOf(id))));
+      const own = removed.filter(
+        (id) =>
+          (oldPicks.get(nameKey(nameOf(id))) ?? 0) >= 2 ||
+          oldRepeats.has(nameKey(nameOf(id))) ||
+          (!!to.get(id) && oldRepeatConcepts.has(conceptOf(to.get(id)!) ?? "")) ||
+          (oldPickConcepts.get((to.get(id) && conceptOf(to.get(id)!)) ?? "") ?? 0) >= 2,
+      );
       if (own.length) {
         mine = [...x.chosen];
+        ownRepeats.push(...own.map(nameOf));
         own.forEach((id, i) => {
           if (added[i])
             decisions.push({
@@ -1109,6 +1135,11 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     if (!next.extras.includes(u.id)) next.extras = [...next.extras, u.id];
     textKept.push({ name: old.name, type: old.type, text: stripHtml(old.description ?? "").trim() || old.name });
   }
+  // Picks the move wrote under an element the moved character does not take, at any level of its classes (a fourth
+  // Ability Score Improvement's +2, left from a placement tried and given up): the engine ignores them; cleared, so the
+  // copy holds only what its sheet shows (W2's "Earlier choices with no place now" found 152 of 400 moved characters).
+  for (const k of noPlaceKeys(next, final)) delete next.selections[k];
+
   return {
     ch: next,
     moved,
@@ -1118,6 +1149,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     againstRules,
     filled,
     kept,
+    ownRepeats,
     decisions,
     customItems,
     textKept,

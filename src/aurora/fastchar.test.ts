@@ -34,9 +34,59 @@ it.skipIf(!C || process.env.RULES_TIER !== "fastchar")(
       const r = resolve(res.character, reg);
       const findings = checkCharacter(r, buildSheet(r), ref);
       out.push(`## ${f}: ${title}`);
+      // W9: differences that are FastCharacter's own slips, each with its evidence; the rest is counted and gated.
+      const sh = buildSheet(r);
+      const wis = sh.abilities.find((a) => a.id === "wisdom")?.mod ?? 0;
+      const names = new Set(r.active.map((a) => a.el.name.toLowerCase().replace(/^level \d+: /, "")));
+      const skillOpen = res.todo.some((t) => /skill|expertise|primal knowledge|proficiency/i.test(t));
+      const explain = (d: string): string | undefined => {
+        const m = /^([A-Za-z ]+): the file says (-?\d+), Soul Forge works out (-?\d+)$/.exec(d);
+        const skill = m && sh.skills.find((k) => k.name.toLowerCase() === m[1].toLowerCase());
+        // 2024 Divine Order Thaumaturge (Arcana, Religion) and Primal Order Magician (Arcana, Nature): Wisdom added.
+        if (skill && Number(m![3]) - Number(m![2]) === wis && wis > 0) {
+          if (names.has("thaumaturge") && /^(arcana|religion)$/i.test(skill.name))
+            return "FastCharacter states Thaumaturge's bonus and does not add it";
+          if (names.has("magician") && /^(arcana|nature)$/i.test(skill.name))
+            return "FastCharacter states Magician's bonus and does not add it";
+        }
+        // A Cloak or Ring of Protection worn because the file's armor class counts it: its +1 to every saving throw,
+        // which the file leaves out of its saves.
+        const save = /^\w+ saving throw: the file says (-?\d+), Soul Forge works out (-?\d+)$/.exec(d);
+        const worn = res.notes.filter((n) => /^(Cloak|Ring) of Protection: worn and attuned/.test(n)).length;
+        if (save && worn && Number(save[2]) - Number(save[1]) === worn)
+          return "FastCharacter counts the Cloak or Ring of Protection in armor class but not in saving throws";
+        // A Monk of 14th level: Disciplined Survivor (2014: Diamond Soul), proficiency in every saving throw.
+        const allSaves = names.has("disciplined survivor") || names.has("diamond soul");
+        if (
+          allSaves &&
+          (save ? Number(save[2]) - Number(save[1]) === sh.proficiency : /saving throw: the file is not proficient, Soul Forge is$/.test(d))
+        )
+          return "FastCharacter leaves out Disciplined Survivor's (Diamond Soul's) proficiency in every saving throw";
+        // 2024 Jack of All Trades adds to checks that use a skill; initiative uses none (PHB 2024, Bard; RULES-DECISIONS).
+        const init = /^Initiative: the file says (-?\d+), Soul Forge works out (-?\d+)$/.exec(d);
+        if (init && names.has("jack of all trades") && Number(init[1]) - Number(init[2]) === Math.floor(sh.proficiency / 2))
+          return "FastCharacter adds the 2024 Jack of All Trades to initiative, which is not a check that uses a skill";
+        // An attack line for a weapon the file's own gear does not list.
+        const atk = /^(.+) attack: in the file, not on the Soul Forge sheet$/.exec(d);
+        const gear = (text.split(/EQUIPMENT & TREASURE/i)[1] ?? "").toLowerCase();
+        const weapon = atk?.[1].replace(/^\+\d\s*(magic\s*)?/i, "").toLowerCase();
+        if (weapon && gear && !gear.includes(weapon)) return "FastCharacter gives an attack for a weapon its gear does not list";
+        // A skill the file has and the rules do not give: every skill choice is made (none left open).
+        const prof = /^([A-Za-z ]+): the file has proficiency, Soul Forge has no proficiency$/.exec(d);
+        const same = prof ?? (m && Number(m[2]) - Number(m[3]) === sh.proficiency ? m : null);
+        if (
+          same &&
+          !skillOpen &&
+          sh.skills.some((k) => k.name.toLowerCase() === same[1].toLowerCase()) &&
+          res.differences.some((x) => x === `${same[1]}: the file has proficiency, Soul Forge has no proficiency`)
+        )
+          return "FastCharacter lists a skill proficiency the rules do not give (every skill choice is made)";
+        return undefined;
+      };
       for (const d of res.differences) {
-        out.push(`- differs: ${d}`);
-        count(`differs: ${d.split(":")[0].replace(/ attack$/, " (attack)")}`);
+        const why = explain(d);
+        out.push(`- differs: ${d}${why ? ` (explained: ${why})` : ""}`);
+        count(why ? "explained" : `differs: ${d.split(":")[0].replace(/ attack$/, " (attack)")}`);
       }
       for (const m of res.missing) {
         out.push(`- not found: ${m}`);
@@ -62,6 +112,14 @@ it.skipIf(!C || process.env.RULES_TIER !== "fastchar")(
     );
     // An import never leaves a pick that repeats what the character has from elsewhere (it is taken back and left open).
     expect(kinds.get("rules: A choice repeats something the character already has") ?? 0).toBe(0);
+    // W9: the unexplained differences never grow (RULES_SNAPSHOT=1 accepts a new count).
+    const unexplained = [...kinds].filter(([k]) => k.startsWith("differs:")).reduce((n, [, v]) => n + v, 0);
+    const base = join(C!, "fastcharacter", "count.json");
+    const was = existsSync(base) ? (JSON.parse(readFileSync(base, "utf8")) as { unexplained?: number }) : {};
+    if (!existsSync(base) || process.env.RULES_SNAPSHOT)
+      writeFileSync(base, JSON.stringify({ unexplained, explained: kinds.get("explained") ?? 0 }));
+    console.log(`FASTCHAR unexplained ${unexplained}, explained ${kinds.get("explained") ?? 0} (accepted ${JSON.stringify(was)})`);
+    if (typeof was.unexplained === "number") expect(unexplained).toBeLessThanOrEqual(was.unexplained);
   },
   3600000,
 );

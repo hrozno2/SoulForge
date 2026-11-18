@@ -417,7 +417,7 @@ export function BuildTab({ r, ch, set, onDetail }: { r: Resolved; ch: Character;
   const backgrounds = r.reg.ofType("Background");
   return (
     <div>
-      <RulesCheckBar r={r} />
+      <RulesCheckBar r={r} set={set} />
       <nav className="subtabs">
         {SUBS.map(([k, label]) => {
           const lines = todo(k);

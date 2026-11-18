@@ -153,9 +153,15 @@ multiclass pair, levels 1, 4, 5, 11, 17 and 20. About 600 characters per content
 **W9. Outside references keep running.** FastCharacter: one character per class and subclass fetched
 (2026-11-12: 52 new, 92 in all); most differences are that site's own slips (2024 Bards trained with rapiers,
 skills beyond what the rules give, Thaumaturge's bonus stated and not added), so its report needs an "explained"
-list like parity's and a gate on the unexplained rest. Importer faults it showed, still open: "+1 magical
-chainmail" kept as a custom item instead of Chain Mail +1; a worn Cloak or Ring of Protection not attuned, so the
-armor class is one short; an attack line for "Martial Arts" not matched to Unarmed Strike.
+list like parity's and a gate on the unexplained rest. Importer faults it showed, all fixed by 2026-11-18: "+1
+magical chainmail" is Chain Mail +1; a carried Cloak or Ring of Protection is worn and attuned when the sheet's own
+armor class counts it (kept only when the number then matches); a "Martial Arts" attack line is the Unarmed Strike
+(`fastcharImport.test.ts`). The explained list, 2026-11-18: 102 of 163 differences explained, each by its
+evidence (Thaumaturge and Magician bonuses stated but not added; skills beyond every made choice; a Cloak of
+Protection in armor class but not in saves; Disciplined Survivor's saves left out; the 2024 Jack of All Trades added
+to initiative; attacks for weapons the gear does not list). The other 61 are gated (`fastcharacter/count.json`) and
+each needs a rules judgment: Monks' magic quarterstaff attacks (Martial Arts' Dexterity), a 2024 Druid's scimitar
+(not a simple weapon), Fighters' Perception and passive Perception, tools beyond the background's.
 
 **W10. Every choice and gift a text states is on the element (D1, L3).** Done 2026-11-17: the 52 candidates were
 read one by one. Real gaps are built as "Soul Forge additions" (src/aurora/additions.ts, a source of its own in the

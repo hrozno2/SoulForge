@@ -40,4 +40,20 @@ describe.skipIf(!C || !existsSync(RAW))("FastCharacter import", () => {
   it("fills the 2024 Fighter's skills from the file once Insight is on the list", () => {
     expect(load("fc19.txt").res.todo.some((t) => /Skill Proficiency \(Fighter\)/.test(t))).toBe(false);
   }, 600000);
+
+  // W9: a carried Cloak of Protection came in unworn and unattuned, so the armor class was one short of the sheet's
+  // own (fc04, fc22, fc132). The file's armor class is the evidence that it is worn.
+  it("wears a protective item the sheet's armor class counts", () => {
+    for (const f of ["fc04.txt", "fc22.txt", "fc132.txt"]) {
+      const { res } = load(f);
+      expect(res.differences.filter((d) => /^Armor class/.test(d)), f).toEqual([]);
+      const cloak = res.character.inventory.find((i) => /cloak of protection/i.test(reg.get(i.id)?.name ?? ""));
+      expect([cloak?.equipped, cloak?.attuned], f).toEqual([true, true]);
+    }
+  }, 900000);
+
+  // W9: the sheet's "Martial Arts" attack is the Unarmed Strike (fc126).
+  it("reads a Martial Arts attack as the Unarmed Strike", () => {
+    expect(load("fc126.txt").res.differences.filter((d) => /^Martial Arts attack: in the file/.test(d))).toEqual([]);
+  }, 600000);
 });

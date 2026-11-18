@@ -1,0 +1,266 @@
+{
+  "version": 2,
+  "name": "Test 3: Paladin 17",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB_CLASS_PALADIN",
+      "level": 17
+    },
+    {
+      "classId": "ID_WOTC_PHB_CLASS_SORCERER",
+      "level": 1
+    }
+  ],
+  "abilityBase": {
+    "strength": 15,
+    "dexterity": 10,
+    "constitution": 12,
+    "intelligence": 8,
+    "wisdom": 13,
+    "charisma": 14
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_WIS_CHA|0": ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_WIS_CHA_2"],
+    "ID_WOTC_PHB_CLASS_PALADIN|8": ["ID_PROFICIENCY_SKILL_INTIMIDATION", "ID_PROFICIENCY_SKILL_ATHLETICS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_PALADIN_FIGHTING_STYLE|0": ["ID_WOTC_TCOE_CLASS_FEATURE_FIGHTING_STYLE_BLESSED_WARRIOR"],
+    "ID_WOTC_TCOE_CLASS_FEATURE_FIGHTING_STYLE_BLESSED_WARRIOR|0": ["ID_PHB_SPELL_SACRED_FLAME", "ID_PHB_SPELL_SPARE_THE_DYING"],
+    "ID_WOTC_PHB_CLASS_FEATURE_PALADIN_SACRED_OATH|1": ["ID_WOTC_PHB_ARCHETYPE_PALADIN_OATH_OF_VENGEANCE"],
+    "ID_WOTC_PHB_CLASS_FEATURE_PALADIN_ASI|0": ["ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_PALADIN_4_PLUS2"],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_PALADIN_4_PLUS2|0": ["ID_INTERNAL_IMPROVEMENT_OPTION_PALADIN_4_DEXTERITY_PLUS_2"],
+    "ID_WOTC_PHB_CLASS_FEATURE_PALADIN_ASI|1": ["ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_PALADIN_8_PLUS2"],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_PALADIN_8_PLUS2|0": ["ID_INTERNAL_IMPROVEMENT_OPTION_PALADIN_8_CHARISMA_PLUS_2"],
+    "ID_WOTC_PHB_CLASS_FEATURE_PALADIN_ASI|2": ["ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_PALADIN_12_PLUS1"],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_PALADIN_12_PLUS1|0": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_PALADIN_12_STRENGTH_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_PALADIN_12_INTELLIGENCE_PLUS_1"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_PALADIN_ASI|3": ["ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_PALADIN_16_PLUS2"],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_PALADIN_16_PLUS2|0": ["ID_INTERNAL_IMPROVEMENT_OPTION_PALADIN_16_INTELLIGENCE_PLUS_2"],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER|21": [
+      "ID_WOTC_TCOE_SPELL_SWORD_BURST",
+      "ID_PHB_SPELL_MAGE_HAND",
+      "ID_PHB_SPELL_PRESTIDIGITATION",
+      "ID_WOTC_UA20150803_SPELL_ON_OFF"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER|24": ["ID_WOTC_PHB24_SPELL_DETECT_MAGIC", "ID_XGTE_SPELL_CATAPULT"],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SORCEROUS_ORIGIN|0": ["ID_WOTC_UA_ARCHETYPE_SEA_SORCERER"]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "roll",
+  "hpRolls": {
+    "2": 2,
+    "3": 3,
+    "4": 4,
+    "5": 3,
+    "6": 4,
+    "7": 3,
+    "8": 7,
+    "9": 2,
+    "10": 1,
+    "11": 4,
+    "12": 4,
+    "13": 9,
+    "14": 1,
+    "15": 10,
+    "16": 2,
+    "17": 7
+  },
+  "prepared": {
+    "Paladin": [
+      "ID_PHB_SPELL_AID",
+      "ID_WOTC_PHB24_SPELL_WARDING_BOND",
+      "ID_PHB_SPELL_CURE_WOUNDS",
+      "ID_XGTE_SPELL_FIND_GREATER_STEED",
+      "ID_WOTC_PHB24_SPELL_GREATER_RESTORATION",
+      "ID_PHB_SPELL_CIRCLE_OF_POWER",
+      "ID_PHB_SPELL_DISPEL_MAGIC",
+      "ID_PHB_SPELL_LOCATE_CREATURE",
+      "ID_PHB_SPELL_COMMAND",
+      "ID_PHB_SPELL_BLINDING_SMITE",
+      "ID_PHB_SPELL_BANISHING_SMITE"
+    ]
+  },
+  "inventory": [
+    {
+      "uid": "cn3jz6xmf5fo",
+      "id": "ID_WOTC_ARMOR_HEAVY_CHAIN_MAIL",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "7ikh80x6f5fo",
+      "id": "ID_WOTC_PHB_ITEM_AMULET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "e6eqdxg9f5fo",
+      "id": "ID_WOTC_PHB_WEAPON_MAUL",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "bbp09ovkf5fo",
+      "id": "ID_WOTC_PHB_WEAPON_CLUB",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "daskjvrsf5fo",
+      "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "g3eq0dw4f5fo",
+      "id": "ID_WOTC_PHB_ITEM_BLANKET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "biznjutnf5fo",
+      "id": "ID_WOTC_PHB_ITEM_CANDLE",
+      "qty": 5,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ftr0xklkf5fo",
+      "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "62pkib4kf5fo",
+      "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "wrxp6obtf5fo",
+      "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 50,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_RACE_TIEFLING",
+  "background": "ID_WOTC_PHB24_BACKGROUND_WAYFARER",
+  "equipmentAdded": ["Paladin, starting equipment", "Wayfarer, option b"],
+  "equipmentLedger": {
+    "Paladin, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_ARMOR_HEAVY_CHAIN_MAIL",
+          "name": "Chain Mail",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_AMULET",
+          "name": "Amulet",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_MAUL",
+          "name": "Maul",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_CLUB",
+          "name": "Club",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BLANKET",
+          "name": "Blanket",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CANDLE",
+          "name": "Candle",
+          "qty": 5
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+          "name": "Tinderbox",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+          "name": "Rations (1 day)",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+          "name": "Waterskin",
+          "qty": 1
+        }
+      ],
+      "gp": 0
+    },
+    "Wayfarer, option b": {
+      "items": [],
+      "gp": 50
+    }
+  }
+}

@@ -34,7 +34,15 @@ describe.skipIf(!CACHE)("spells moved to 5e.tools stay in a choice that offers t
   // option with "death"; and Ray of Enfeeblement took the 6th-level arcanum choice, a level the spell is below.
   // And a saved Warlock 20 (2026-10-13) whose Suggestion became Mass Suggestion: "suggestion" is inside the other
   // spell's name. A spell's near name never makes another spell.
-  it.each(["fiend-warlock-2014", "warlock-suggestion-2014", "war-cleric-2024", "bard-sorcerer"])(
+  it.each([
+    "fiend-warlock-2014",
+    "warlock-suggestion-2014",
+    "war-cleric-2024",
+    "bard-sorcerer",
+    "paladin-sorcerer-onoff",
+    "dhampir-bard",
+    "whispers-bard",
+  ])(
     "%s keeps its spells",
     (file) => {
       const both = loadTestContent(CACHE!);

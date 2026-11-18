@@ -35,8 +35,17 @@ Everything still to do, in one list. Items move off it when done; nothing open l
 - Importers (E3.3): your Eleanor files (Roll20, Foundry, both from v0.26.3 and from this version) all import as the
   saved character. Fixed: the Roll20 import added the 2024 Acolyte's Magic Initiate a second time; the Foundry export
   had no languages, size, defenses, armor, weapons, tools, senses or casting ability.
-- Still open from the 400: two Sorcerer multiclasses one cantrip short after the move, a Dhampir's Bard skill
-  repeating Ancestral Legacy, a College of Whispers bard's Skill Expert expertise left open.
+- Later in the night: the move brings no rules finding on any of the 400 (8 on the committed code): a playtest
+  subclass's place is left open for the player instead of filled with another subclass; the auto-fill never repeats a
+  skill or language a later level holds; picks the original made twice are recognised across the two providers' names.
+- Fix-it buttons (E3.1): a repeated pick, a pick its choice does not offer or that fails its requirements gets "Take X
+  out"; a choice holding too many gets "Keep the first N".
+- Picks with no place (W2): "Earlier choices with no place now" with "Clear them". On your test-app library it lists
+  leftovers on 11 characters, and 11 in the production app (picks from a species, class or increase option you later changed, such as Elvish
+  Prunesley's Dhampir languages and Maine Dockers' Artificer skills); nothing is cleared unless you click.
+- FastCharacter (W9): a carried Cloak or Ring of Protection is worn when the sheet's armor class counts it, and a
+  "Martial Arts" attack is the Unarmed Strike. Of 163 differences from FastCharacter's own numbers, 102 are now
+  explained as that site's slips, each by its evidence; the other 61 are gated and listed for a rules judgment.
 
 **Is the move ready?** Close. Measured tonight:
 - 60 characters made fresh on Aurora content: 1 changes (a Ranger's "Minion" language 5e.tools lacks; kept with its

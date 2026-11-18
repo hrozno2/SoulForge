@@ -2502,7 +2502,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         {/* One status panel (C7.21): whether the character follows the rules, and each choice still open as a link to
             its place. While a list is open the choices fold to one line, so the list keeps the room. */}
         <section className={`board-status ${leftItems.length ? "todo" : "done"}`} aria-label="Character status">
-          <RulesCheckView r={r} res={rulesCheck} />
+          <RulesCheckView r={r} res={rulesCheck} set={set} />
           {!leftItems.length ? (
             <>
               <p className="ok">✓ Every choice is made. Export your sheet when you are ready.</p>

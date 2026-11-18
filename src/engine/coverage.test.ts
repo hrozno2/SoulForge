@@ -79,7 +79,13 @@ function sweep(reg: ARegistry, set: ContentSet, ref: RefClass[]) {
     for (const f of checkCharacter(r, sh, ref))
       if (
         !/Class not in the rules reference/.test(f.rule) &&
-        !(forced && /repeats something|Same feat twice|does not meet its requirements|feature missing|requirements not met/.test(f.rule))
+        // Taking an option in place of another leaves the other's picks behind, with no place: told, cleared on a click.
+        !(
+          forced &&
+          /repeats something|Same feat twice|does not meet its requirements|feature missing|requirements not met|with no place now/.test(
+            f.rule,
+          )
+        )
       )
         find(`rules: ${f.rule}`, `${label}: ${f.detail}`);
     for (const a of sh.attacks)

@@ -1,0 +1,421 @@
+{
+  "version": 2,
+  "name": "Dhampir swashbuckler bard",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB_CLASS_ROGUE",
+      "level": 5
+    },
+    {
+      "classId": "ID_WOTC_PHB_CLASS_BARD",
+      "level": 3
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 15,
+    "constitution": 12,
+    "intelligence": 13,
+    "wisdom": 10,
+    "charisma": 14
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_VRGTR_RACE_DHAMPIR|0": ["ID_WOTC_ASI_ABILITY_SCORE_IMPROVEMENT_OPTION_1"],
+    "ID_WOTC_ASI_ABILITY_SCORE_IMPROVEMENT_OPTION_1|0": ["ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CONSTITUTION_INCREASE_2"],
+    "ID_WOTC_ASI_ABILITY_SCORE_IMPROVEMENT_OPTION_1|1": ["ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_WISDOM_INCREASE_1"],
+    "ID_WOTC_VRGTR_RACE_DHAMPIR|3": ["ID_LANGUAGE_SYLVAN"],
+    "ID_WOTC_VRGTR_RACE_DHAMPIR|6": ["ID_INTERNAL_RACIAL_TRAIT_SMALL"],
+    "ID_WOTC_PHB_CLASS_ROGUE|9": [
+      "ID_PROFICIENCY_SKILL_INTIMIDATION",
+      "ID_PROFICIENCY_SKILL_ACROBATICS",
+      "ID_PROFICIENCY_SKILL_PERFORMANCE",
+      "ID_PROFICIENCY_SKILL_INVESTIGATION"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_ROGUE_EXPERTISE|0": ["ID_EXPERTISE_SKILL_ACROBATICS", "ID_EXPERTISE_SKILL_ATHLETICS"],
+    "ID_WOTC_PHB_CLASS_FEATURE_ROGUE_ROGUISHARCHETYPE|0": ["ID_WOTC_SCAG_ARCHETYPE_SWASHBUCKLER"],
+    "ID_WOTC_PHB_CLASS_FEATURE_ROGUE_ABILITYSCOREIMPROVEMENT_ROGUE|0": ["ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_ROGUE_4_FEAT"],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_ROGUE_4_FEAT|0": ["ID_WOTC_PHB24_FEAT_CHEF"],
+    "ID_WOTC_PHB24_FEAT_CHEF|0": ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_WISDOM"],
+    "ID_WOTC_PHB_MULTICLASS_BARD|2": ["ID_PROFICIENCY_SKILL_ANIMALHANDLING"],
+    "ID_WOTC_PHB_MULTICLASS_BARD|3": ["ID_PROFICIENCY_TOOL_PROFICIENCY_SHAWM"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|22": ["ID_WOTC_PHB24_SPELL_BLADE_WARD", "ID_PHB_SPELL_TRUE_STRIKE"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|25": [
+      "ID_PHB_SPELL_HOLD_PERSON",
+      "ID_WOTC_PHB24_SPELL_ENHANCE_ABILITY",
+      "ID_WOTC_PHB24_SPELL_THUNDERWAVE",
+      "ID_PHB_SPELL_HEROISM"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|26": ["ID_PHB_SPELL_COMPREHEND_LANGUAGES"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD|27": ["ID_WOTC_PHB24_SPELL_INVISIBILITY"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_BARD_COLLEGE|0": ["ID_WOTC_XGTE_ARCHETYPE_COLLEGE_OF_SWORDS"],
+    "ID_WOTC_XGTE_ARCHETYPE_FEATURE_BARD_SWORDS_FIGHTING_STYLE|1": ["ID_WOTC_PHB_CLASS_FEATURE_FIGHTINGSTYLE_DUELING"],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_EXPERTISE|0": ["ID_EXPERTISE_SKILL_PERCEPTION", "ID_EXPERTISE_SKILL_INTIMIDATION"]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "nfckh1lt104m",
+      "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "8cm3r8h3104m",
+      "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "966kp7l1104m",
+      "id": "ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "3qcy5w37104m",
+      "id": "ID_WOTC_PHB_WEAPON_RAPIER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "y9o77tuc104m",
+      "id": "ID_WOTC_PHB_WEAPON_SHORTSWORD",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "otipbshi104m",
+      "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "dz0779ab104m",
+      "id": "ID_WOTC_PHB_ITEM_BALLBEARINGS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "v12sz3wk104m",
+      "id": "ID_WOTC_PHB_ITEM_STRING_10FEET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "uo5ig3gz104m",
+      "id": "ID_WOTC_PHB_ITEM_BELL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "v01dpy4l104m",
+      "id": "ID_WOTC_PHB_ITEM_CANDLE",
+      "qty": 5,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "rvhxa5ut104m",
+      "id": "ID_WOTC_PHB_ITEM_CROWBAR",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "z907mmtp104m",
+      "id": "ID_WOTC_PHB_ITEM_HAMMER",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "aarz8vd0104m",
+      "id": "ID_WOTC_PHB_ITEM_PITON",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "vzuiu5fz104m",
+      "id": "ID_WOTC_PHB_ITEM_LANTERN_HOODED",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "gptm3384104m",
+      "id": "ID_WOTC_PHB_ITEM_OIL_FLASK",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "vkq4cg69104m",
+      "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+      "qty": 5,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "6lcdz85a104m",
+      "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "bm3abz39104m",
+      "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "qtmi1w6x104m",
+      "id": "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "oua88t2m104y",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Belaying pin",
+        "description": "belaying pin (club)"
+      }
+    },
+    {
+      "uid": "l0r38ka3104y",
+      "id": "",
+      "qty": 50,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Feet of silk rope"
+      }
+    },
+    {
+      "uid": "jvqkgkkc104y",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Lucky charm such as a rabbit foot or a small stone with a hole in the center",
+        "description": "lucky charm such as a rabbit foot or a small stone with a hole in the center (or you may roll for a random trinket on the Trinkets table in chapter 5)"
+      }
+    },
+    {
+      "uid": "o2usci1q104y",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "e3qfmbgm104y",
+      "id": "ID_WOTC_PHB_ITEM_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 10,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_VRGTR_RACE_DHAMPIR",
+  "background": "ID_BACKGROUND_SAILOR",
+  "equipmentAdded": ["Rogue, starting equipment", "Sailor, starting equipment"],
+  "equipmentLedger": {
+    "Rogue, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+          "name": "Leather",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS",
+          "name": "Thieves’ Tools",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_RAPIER",
+          "name": "Rapier",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_SHORTSWORD",
+          "name": "Shortsword",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BALLBEARINGS",
+          "name": "Ball Bearings (bag of 1,000)",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_STRING_10FEET",
+          "name": "String (10 feet)",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BELL",
+          "name": "Bell",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CANDLE",
+          "name": "Candle",
+          "qty": 5
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CROWBAR",
+          "name": "Crowbar",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_HAMMER",
+          "name": "Hammer",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_PITON",
+          "name": "Piton",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_LANTERN_HOODED",
+          "name": "Lantern, Hooded",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_OIL_FLASK",
+          "name": "Oil (flask)",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+          "name": "Rations (1 day)",
+          "qty": 5
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+          "name": "Tinderbox",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+          "name": "Waterskin",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET",
+          "name": "Rope, Hempen (50 feet)",
+          "qty": 1
+        }
+      ],
+      "gp": 0
+    },
+    "Sailor, starting equipment": {
+      "items": [
+        {
+          "id": "",
+          "name": "Belaying pin",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Feet of silk rope",
+          "qty": 50
+        },
+        {
+          "id": "",
+          "name": "Lucky charm such as a rabbit foot or a small stone with a hole in the center",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+          "name": "Clothes, Common",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 10
+    }
+  }
+}

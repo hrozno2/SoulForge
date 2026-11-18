@@ -1,0 +1,204 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_BARD",
+      "level": 17
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 14,
+    "constitution": 13,
+    "intelligence": 10,
+    "wisdom": 12,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_MOTM_RACE_SHIFTER|7": ["ID_LANGUAGE_DWARVISH"],
+    "ID_WOTC_MOTM_RACIAL_TRAIT_SHIFTER_BESTIAL_INSTINCTS|0": ["ID_PROFICIENCY_SKILL_INTIMIDATION"],
+    "ID_WOTC_MOTM_RACIAL_TRAIT_SHIFTER_SHIFTING|2": ["ID_WOTC_MOTM_RACIAL_TRAIT_SHIFTER_SHIFTING_LONGTOOTH"],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_INT_WIS_CHA|0": ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_INT_WIS_CHA_1"],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_INT_WIS_CHA_1|0": ["ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_INTELLIGENCE_INCREASE_2"],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_INT_WIS_CHA_1|1": ["ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CHARISMA_INCREASE_1"],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_CLERIC|0": ["ID_WOTC_PHB24_FEAT_FEATURE_MAGIC_INITIATE_CLERIC_CHARISMA"],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_CLERIC|1": ["ID_WOTC_PHB24_SPELL_SACRED_FLAME", "ID_PHB_SPELL_SPARE_THE_DYING"],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_CLERIC|2": ["ID_WOTC_PHB24_SPELL_SHIELD_OF_FAITH"],
+    "ID_WOTC_PHB24_CLASS_BARD|4": ["ID_PROFICIENCY_SKILL_ACROBATICS", "ID_PROFICIENCY_SKILL_DECEPTION", "ID_PROFICIENCY_SKILL_SURVIVAL"],
+    "ID_WOTC_PHB24_CLASS_BARD|5": [
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_LUTE",
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_BAGPIPES",
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_DRUM"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|23": ["ID_WOTC_PHB24_SPELL_GUIDANCE", "ID_PHB_SPELL_TRUE_STRIKE"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|24": ["ID_XGTE_SPELL_SHAPE_WATER"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|25": ["ID_XGTE_SPELL_MOLD_EARTH"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|26": [
+      "ID_PHB_SPELL_FALSE_LIFE",
+      "ID_WOTC_PHB24_SPELL_ILLUSORY_SCRIPT",
+      "ID_WOTC_PHB24_SPELL_COMMAND",
+      "ID_WOTC_PHB24_SPELL_DISGUISE_SELF"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|27": ["ID_XGTE_SPELL_NEGATIVE_ENERGY_FLOOD"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|28": ["ID_PHB_SPELL_MASS_CURE_WOUNDS"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|29": ["ID_WOTC_PHB24_SPELL_COMMUNE"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|30": ["ID_WOTC_PHB24_SPELL_PASSWALL", "ID_PHB_SPELL_PHANTASMAL_KILLER"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|31": ["ID_XGTE_SPELL_INVESTITURE_OF_ICE"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|32": ["ID_PHB_SPELL_REVIVIFY"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|33": ["ID_PHB_SPELL_SYMBOL"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|34": ["ID_WOTC_PHB24_SPELL_TIME_STOP", "ID_WOTC_PHB24_SPELL_GOODBERRY"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|35": ["ID_WOTC_PHB24_SPELL_CREATE_UNDEAD"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|36": ["ID_WOTC_PHB24_SPELL_TONGUES"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|37": ["ID_XGTE_SPELL_CATAPULT"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|38": ["ID_WOTC_PHB24_SPELL_CROWN_OF_MADNESS"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_SPELLCASTING|39": ["ID_PHB_SPELL_EARTHQUAKE"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_EXPERTISE|0": [
+      "ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_SURVIVAL",
+      "ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_DECEPTION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_EXPERTISE|1": [
+      "ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_INSIGHT",
+      "ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_INTIMIDATION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_BARD_SUBCLASS|0": ["ID_WOTC_XGTE_ARCHETYPE_COLLEGE_OF_WHISPERS"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_ABILITY_SCORE_IMPROVEMENT|0": ["ID_PHB_FEAT_POLEARMMASTER"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_ABILITY_SCORE_IMPROVEMENT|1": ["ID_WOTC_FTOD_FEAT_GIFT_OF_THE_METALLIC_DRAGON"],
+    "ID_WOTC_FTOD_FEAT_FEATURE_GIFT_OF_THE_METALLIC_DRAGON_DRACONIC_HEALING|0": [
+      "ID_WOTC_FTOD_FEAT_FEATURE_GIFT_OF_THE_METALLIC_DRAGON_DRACONIC_HEALING_CHARISMA "
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_ABILITY_SCORE_IMPROVEMENT|2": ["ID_WOTC_PHB24_FEAT_CHEF"],
+    "ID_WOTC_PHB24_FEAT_CHEF|0": ["ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_WISDOM"],
+    "ID_WOTC_PHB24_CLASS_FEATURE_BARD_ABILITY_SCORE_IMPROVEMENT|3": ["ID_WOTC_TCOE_FEAT_SKILL_EXPERT"],
+    "ID_WOTC_TCOE_FEAT_SKILL_EXPERT|0": ["ID_PHB_FEAT_ASI_CHARISMA"],
+    "ID_WOTC_TCOE_FEAT_SKILL_EXPERT|1": ["ID_PROFICIENCY_SKILL_MEDICINE"],
+    "ID_WOTC_TCOE_FEAT_SKILL_EXPERT|2": ["ID_EXPERTISE_SKILL_SURVIVAL"]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "p3fu7btisr2w",
+      "id": "ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "d7g83nttsr2w",
+      "id": "ID_WOTC_PHB24_ITEM_BOOK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "88cc22w2sr2w",
+      "id": "ID_WOTC_PHB24_ITEM_PARCHMENT",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "00fvtmb5sr2w",
+      "id": "ID_WOTC_PHB24_ITEM_ROBE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "pvccdpk0sr2w",
+      "id": "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 98,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_MOTM_RACE_SHIFTER",
+  "background": "ID_WOTC_PHB24_BACKGROUND_ACOLYTE",
+  "equipmentAdded": ["Bard, option b", "Acolyte, option a"],
+  "equipmentLedger": {
+    "Bard, option b": {
+      "items": [],
+      "gp": 90
+    },
+    "Acolyte, option a": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES",
+          "name": "Calligrapher’s Supplies",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BOOK",
+          "name": "Book",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_PARCHMENT",
+          "name": "Parchment",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_ROBE",
+          "name": "Robe",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_HOLY_SYMBOL_AMULET",
+          "name": "Amulet",
+          "qty": 1
+        }
+      ],
+      "gp": 8
+    }
+  }
+}

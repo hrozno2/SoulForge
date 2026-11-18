@@ -996,6 +996,34 @@ class Importer {
     return cur;
   }
 
+  /**
+   * A carried item that adds to armor class (a Cloak or Ring of Protection) is worn, and attuned when it needs it, when
+   * the file's own armor class counts it: a sheet that lists the cloak among its gear and states AC 19 where Soul Forge
+   * works out 18 without it (W9, FastCharacter). Kept only when the armor class then matches; never past three
+   * attuned items.
+   */
+  private wearForArmorClass(ch: Character, f: FileNumbers | undefined): Character {
+    if (f?.ac === undefined) return ch;
+    let cur = ch;
+    let ac = buildSheet(resolve(cur, this.reg)).ac.value;
+    for (let i = 0; i < cur.inventory.length && ac < f.ac; i++) {
+      const it = cur.inventory[i];
+      const el = it.id ? this.reg.get(it.id) : undefined;
+      if (!el || (it.equipped && it.attuned) || /^(armor|weapon)$/i.test(el.type)) continue;
+      if (!el.rules.some((x) => x.kind === "stat" && /^ac(:|$)/i.test(x.name))) continue;
+      if (cur.inventory.filter((x) => x.attuned).length >= 3 && !it.attuned) continue;
+      const inventory = cur.inventory.map((x, j) => (j === i ? { ...x, equipped: true, attuned: true } : x));
+      const next = { ...cur, inventory };
+      const now = buildSheet(resolve(next, this.reg)).ac.value;
+      if (now > ac && now <= f.ac) {
+        cur = next;
+        ac = now;
+        this.notes.push(`${el.name}: worn and attuned, as the file's armor class counts it.`);
+      }
+    }
+    return cur;
+  }
+
   /** The file's own numbers against Soul Forge's (plan principle P5: an answer key). Only numbers the file states. */
   private compare(ch: Character, f: FileNumbers | undefined): string[] {
     if (!f) return [];
@@ -1017,7 +1045,9 @@ class Importer {
     diff("Speed", f.speed, sh.speed);
     for (const at of f.attacks ?? []) {
       // The line of the same name first ("Scimitar" is the plain one, "+2 Magic Scimitar" the magic one).
-      const bare = tight(at.name.replace(/^\+\d\s*(magic\s*)?/i, ""));
+      // "Martial Arts" is how some sheets name the Unarmed Strike's attack (W9, FastCharacter).
+      const bare0 = tight(at.name.replace(/^\+\d\s*(magic\s*)?/i, ""));
+      const bare = bare0 === tight("Martial Arts") ? tight("Unarmed Strike") : bare0;
       const named = (x: { name: string }) => tight(x.name.replace(/^\+\d\s*/, ""));
       const magic = /^\+\d/.test(at.name);
       const ours =
@@ -1538,6 +1568,7 @@ class Importer {
         if (lost.length) ch = { ...ch, extras: [...ch.extras, ...lost] };
       }
     }
+    ch = this.wearForArmorClass(ch, opts.numbers);
     if (this.missing.length)
       this.notes.push(`${this.missing.length} things were not found in your loaded content and were skipped or kept as custom items.`);
     this.notes.push(`${this.matched.length} matched.`);

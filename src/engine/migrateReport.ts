@@ -86,10 +86,23 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
   for (const x of migration.noTwin) if (/item|armor|weapon/i.test(x.type)) dropped.push(`gear: ${nameKey(x.name)} (no 5e.tools version)`);
   // A pick with no place: content 5e.tools has under no name of its kind (an old playtest spell, kept with its text) is
   // unavailable, not a change; otherwise no choice takes it.
+  // The kinds of place left open for the player because the pick there has no 5e.tools version: "subclass",
+  // "cantrip", "spell" (said so on the rules findings that follow from them).
+  const openForPlayer = new Set<string>();
   for (const x of migration.unplaced) {
     const old = from.get(x.id);
     const none = !to.get(x.id) && !!old && !to.ofType(old.type).some((e) => nameKey(e.name) === nameKey(old.name));
     why.set(nameKey(x.name), none ? `no 5e.tools version (kept with its text)` : `no 5e.tools choice takes it (was in ${x.choice})`);
+    if (none && old)
+      openForPlayer.add(
+        old.type === "Archetype"
+          ? "subclass"
+          : old.type === "Spell"
+            ? Number(old.setters.level?.value ?? 1) === 0
+              ? "cantrip"
+              : "spell"
+            : old.type,
+      );
   }
   const explained: string[] = [];
   // The species or background has no 5e.tools version (Secret Identity, Cormanthor Refugee).
@@ -262,6 +275,19 @@ export function moveAndCompare(ch: Character, from: ARegistry, to: ARegistry, re
     if (isNew && /Content refers to something missing/.test(f.rule)) return `${f.rule}: ${f.detail} (content 5e.tools does not have)`;
     if (isNew && /A required choice is not made/.test(f.rule) && (migration.noTwin.length || migration.unplaced.length))
       return `${f.rule}: ${f.detail} (left open: the original's pick has no 5e.tools version)`;
+    // The counts that follow from such a place: no subclass yet, a cantrip or spell short of the class table.
+    const shortOf =
+      f.rule === "Subclass" && /has 0$/.test(f.detail)
+        ? "subclass"
+        : /^Cantrips known/.test(f.rule)
+          ? "cantrip"
+          : /^Spells known/.test(f.rule)
+            ? "spell"
+            : "";
+    if (isNew && shortOf && openForPlayer.has(shortOf))
+      return `${f.rule}: ${f.detail} (left open: the original's pick has no 5e.tools version)`;
+    if (isNew && /repeats something/.test(f.rule) && (migration.ownRepeats ?? []).some((n) => f.detail.includes(`: ${n} (`)))
+      return `${f.rule}: ${f.detail} (kept as built: the original made this pick twice)`;
     if (isNew && /does not meet its requirements|Feat requirements not met|does not offer/.test(f.rule))
       return `${f.rule}: ${f.detail} (the player's pick, against a rule 5e.tools states and Aurora's data did not)`;
     if (isNew) newRules++;

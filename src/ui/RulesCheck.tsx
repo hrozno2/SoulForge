@@ -10,6 +10,7 @@ import { ensureRulesRef, onRulesRef, rulesRef } from "../aurora/rulesRefStore";
 import { RULES_REF_CLASSES } from "../aurora/rulesRef";
 import { markChecked, misalignments } from "../aurora/olderBuild";
 import type { Character } from "../aurora/character";
+import { applyFix } from "../aurora/findingFix";
 
 declare const __APP_VERSION__: string;
 export const APP_VERSION = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev";
@@ -17,7 +18,8 @@ export const APP_VERSION = typeof __APP_VERSION__ === "string" ? __APP_VERSION__
 /** Choices still to make are shown by the Build tab's badges; the check lists only the rest. */
 const OPEN_CHOICE = /^A required choice is not made$/;
 /** Problems in the content (a reference to something missing) rather than in the character. */
-const CONTENT = /^(Content refers to something missing|A required choice has no options|Class not in the rules reference)$/;
+const CONTENT =
+  /^(Content refers to something missing|A required choice has no options|Class not in the rules reference|Earlier choices with no place now)$/;
 
 export interface RulesCheckResult {
   rules: Finding[];
@@ -76,12 +78,21 @@ export function useRulesCheck(r: Resolved): RulesCheckResult {
 }
 
 /** A bar on the Build tab: "Follows the rules", or each problem and what rule it breaks. */
-export function RulesCheckBar({ r }: { r: Resolved }) {
-  return <RulesCheckView r={r} res={useRulesCheck(r)} />;
+export function RulesCheckBar({ r, set }: { r: Resolved; set?: (fn: (c: Character) => Character) => void }) {
+  return <RulesCheckView r={r} res={useRulesCheck(r)} set={set} />;
 }
 
 /** The same bar for a caller that already has the check's result (the Build board's status panel). */
-export function RulesCheckView({ r, res }: { r: Resolved; res: RulesCheckResult }) {
+export function RulesCheckView({
+  r,
+  res,
+  set,
+}: {
+  r: Resolved;
+  res: RulesCheckResult;
+  /** With it, a finding that has one safe answer gets a button that applies it (E3.1). */
+  set?: (fn: (c: Character) => Character) => void;
+}) {
   const [open, setOpen] = useState(false);
   if (!r.character.classes.length) return null;
   const n = res.rules.length + res.content.length;
@@ -102,11 +113,31 @@ export function RulesCheckView({ r, res }: { r: Resolved; res: RulesCheckResult 
           {res.rules.map((f, i) => (
             <li key={`r${i}`}>
               <b>{f.rule}:</b> {f.detail}
+              {set && f.fix && (
+                <>
+                  {" "}
+                  <button
+                    className="fix-it"
+                    onClick={() => set((c) => applyFix(c, f.fix!))}
+                    title="Applies this; the choice opens again for you"
+                  >
+                    {f.fix.label}
+                  </button>
+                </>
+              )}
             </li>
           ))}
           {res.content.map((f, i) => (
             <li key={`c${i}`} className="muted">
               <b>{f.rule}:</b> {f.detail}
+              {set && f.fix && (
+                <>
+                  {" "}
+                  <button className="fix-it" onClick={() => set((c) => applyFix(c, f.fix!))}>
+                    {f.fix.label}
+                  </button>
+                </>
+              )}
             </li>
           ))}
         </ul>

@@ -92,11 +92,14 @@ export function autoFill(
       const taken = new Set(open.chosen);
       // Not what the character already has, under any provider's id.
       const hadConcepts = new Set(r.active.map((a) => conceptOf(a.el)).filter(Boolean));
-      // A spell the character's later choices already hold, too: built level by level, the 1st-level cantrips cannot see
-      // the Guidance chosen at 4th, and took it again (a moved War Domain cleric, 2026-11-18).
-      const later = open.rule.type === "Spell" ? new Set(Object.values(cur.selections).flat()) : new Set<string>();
+      // What the character's later choices already hold, too, for what is never had twice (spells, skills and other
+      // training, languages): built level by level, the 1st-level cantrips cannot see the Guidance chosen at 4th (a
+      // moved War Domain cleric), nor a Dhampir's Ancestral Legacy the Animal Handling of a later Bard level.
+      const once = /^(Spell|Proficiency|Language)$/.test(open.rule.type);
+      const later = once ? new Set(Object.values(cur.selections).flat()) : new Set<string>();
+      const laterConcepts = new Set([...later].map((id) => (reg.get(id) ? conceptOf(reg.get(id)!) : undefined)).filter(Boolean));
       const had = (o: (typeof open.options)[number]) =>
-        r.ids.has(o.id) || later.has(o.id) || (!!conceptOf(o) && hadConcepts.has(conceptOf(o)));
+        r.ids.has(o.id) || later.has(o.id) || (!!conceptOf(o) && (hadConcepts.has(conceptOf(o)) || laterConcepts.has(conceptOf(o))));
       const free = open.options.filter(
         (o) => !taken.has(o.id) && !open.blocked.has(o.id) && !o.comingSoon && !had(o) && !bad.has(`${open.key} ${o.id}`),
       );

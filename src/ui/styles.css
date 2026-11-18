@@ -10886,3 +10886,10 @@ button.spell-count.prep.on {
 .trash-list li > span {
   flex: 1 1 220px;
 }
+
+/* E3.1: a rules-check finding's fix, beside it. */
+.rules-check .fix-it {
+  margin-left: 6px;
+  padding: 1px 8px;
+  font-size: 0.85em;
+}

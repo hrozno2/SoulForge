@@ -7,7 +7,8 @@ Detail per item in docs/STATUS.md (top section) and the Stage E table in docs/MA
 
 Done: E1.2 (the move: 400 saved characters change 21, drop nothing, none with a finding the move brought), E1.3
 (Move to 5e.tools screen), E3.1 (fix-it buttons), E3.4 (Recently deleted), E2.6 (W2: picks with no place, with
-Clear them), E2.7 (W9: FastCharacter: all 160 differences explained, gated at zero; five Soul Forge bugs it found fixed). Started: E3.3 (Eleanor imports, Foundry actor
+Clear them), E2.7 (W9: FastCharacter: all 160 differences explained, gated at zero; seven Soul Forge bugs it found fixed). Later
+the same day: E1.4, E2.2 (pairwise tier) and E2.3 (concepts everywhere) done too. Started: E3.3 (Eleanor imports, Foundry actor
 traits, senses and casting ability).
 
 Next, in order:

@@ -612,6 +612,77 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
       add("Initiative", `${sh.initiative}, the rules give ${want} (${parts.map(([n, v]) => `${n} ${v >= 0 ? "+" : ""}${v}`).join(", ")})`);
   }
 
+  // W5: ability score increases by their source, counted from what each source's elements give and never from the
+  // sheet's sum. A feat raises scores by 1 in all (PHB 2014 and 2024: every feat with an increase gives one point);
+  // the Ability Score Improvement by 2 (one score by 2 or two by 1); a level's improvement choice by 2 at most; a 2024
+  // background by 3, no score by more than 2 (PHB 2024, chapter 4). Species are their book's own numbers.
+  {
+    const isAbility = (n: string): n is AbilityId => (ABILITY_IDS as readonly string[]).includes(n.toLowerCase());
+    const bySlotOwner = new Map<string, Resolved["slots"]>();
+    for (const s of r.slots) bySlotOwner.set(s.owner.id, [...(bySlotOwner.get(s.owner.id) ?? []), s]);
+    const activeIds = new Set(r.active.map((a) => a.el.id));
+    const incCtx = reqCtx(r);
+    // What an element gives, itself and through the options chosen in its own choices (and theirs).
+    const points = (id: string, seen = new Set<string>()): Partial<Record<AbilityId, number>> => {
+      const out: Partial<Record<AbilityId, number>> = {};
+      if (seen.has(id) || !activeIds.has(id)) return out;
+      seen.add(id);
+      const el = reg.get(id);
+      for (const x of el?.rules ?? [])
+        // A conditional increase counts when its condition holds ("the ability chosen for Divinely Favored").
+        if (x.kind === "stat" && isAbility(x.name) && Number(x.value) > 0 && !x.bonus && meets(x.requirements, incCtx)) {
+          const k = x.name.toLowerCase() as AbilityId;
+          out[k] = (out[k] ?? 0) + Number(x.value);
+        }
+      for (const s of bySlotOwner.get(id) ?? [])
+        for (const c of s.chosen) {
+          // A feat chosen inside is judged as its own feat.
+          if (reg.get(c)?.type === "Feat") continue;
+          for (const [k, v] of Object.entries(points(c, seen))) out[k as AbilityId] = (out[k as AbilityId] ?? 0) + v;
+        }
+      return out;
+    };
+    const total = (p: Partial<Record<AbilityId, number>>) => Object.values(p).reduce((t, v) => t + (v ?? 0), 0);
+    const most = (p: Partial<Record<AbilityId, number>>) => Math.max(0, ...Object.values(p).map((v) => v ?? 0));
+    const RULE = "Ability increases by source";
+    for (const a of r.active) {
+      if (a.el.type !== "Feat") continue;
+      const p = points(a.el.id);
+      const cap = /^ability score (improvement|increase)/i.test(a.el.name) ? 2 : 1;
+      if (total(p) > cap)
+        add(
+          RULE,
+          `${a.el.name}: +${total(p)} in all; ${cap === 2 ? "an Ability Score Improvement gives at most +2" : "a feat gives at most +1"}`,
+        );
+    }
+    // A class's improvement choice that is not a feat element (Aurora's improvement options).
+    for (const s of r.slots) {
+      if (!s.root.startsWith("class:") || !/^(Feat|Ability Score Improvement)$/.test(s.rule.type)) continue;
+      if (r.slots.some((x) => x.chosen.includes(s.owner.id))) continue;
+      const p: Partial<Record<AbilityId, number>> = {};
+      for (const c of s.chosen)
+        if (reg.get(c)?.type !== "Feat") for (const [k, v] of Object.entries(points(c))) p[k as AbilityId] = (p[k as AbilityId] ?? 0) + v;
+      if (total(p) > 2) add(RULE, `${s.rule.name}: +${total(p)} in all; an improvement gives at most +2`);
+    }
+    // A 2024 background, or a 2014 one under the 2024 rules.
+    const bg = ch.background ? reg.get(ch.background) : undefined;
+    if (bg && (isModern(bg) || r.ids.has(BACKGROUND_ASI_MARKER))) {
+      const p: Partial<Record<AbilityId, number>> = {};
+      const add1 = (q: Partial<Record<AbilityId, number>>) => {
+        for (const [k, v] of Object.entries(q)) p[k as AbilityId] = (p[k as AbilityId] ?? 0) + v;
+      };
+      for (const s of r.slots)
+        if (
+          s.root === "background" &&
+          s.rule.type === "Ability Score Improvement" &&
+          !r.slots.some((x) => x.rule.type === "Ability Score Improvement" && x.chosen.includes(s.owner.id))
+        )
+          for (const c of s.chosen) add1(points(c));
+      if (total(p) > 3 || most(p) > 2)
+        add(RULE, `${bg.name}: +${total(p)} in all, +${most(p)} to one score; a 2024 background gives +3 in all and at most +2 to one`);
+    }
+  }
+
   // Ability scores: no higher than 20 unless a feature or an item raises the limit.
   // A score above 20 needs a named part that raises the maximum (Primal Champion, an Epic Boon) or sets the score (a
   // Belt of Giant Strength); the stat book already stops increases at the maximum, so this catches a bypass.

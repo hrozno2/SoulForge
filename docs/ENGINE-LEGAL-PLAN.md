@@ -131,9 +131,11 @@ Done 2026-11-17 (second half): "Ability scores by method" (standard array, point
 from the base scores), "Initiative" (Dexterity plus each feature the books name, worked out by its own rule: Alert,
 2014 Jack of All Trades and Remarkable Athlete, Dread Ambusher, Rakish Audacity, Tactical Wit, Hare-Trigger, Aura of
 the Sentinel) and "Subclass spell missing" (the reference keeps each subclass's always-prepared spells by level). The
-initiative check's first run found the 2014 Remarkable Athlete never reaching initiative. Still open here: increases
-by source and count, languages, tools and skills by count per source, species and background features present,
-starting equipment.
+initiative check's first run found the 2014 Remarkable Athlete never reaching initiative. Done 2026-11-19:
+"Ability increases by source" (increaseSources.test.ts): a feat gives at most +1 in all, an Ability Score Improvement
+or a level's improvement at most +2, a 2024 background +3 with at most +2 to one score; clean on 1,600 random
+characters, the pairwise set, the 400 moved and the sweep. Still open here: languages, tools and skills by count per
+source, starting equipment, the energy dice.
 
 **W6. Concepts everywhere two providers can meet (L2).** Training, languages, senses and sizes are compared by
 concept in the requirement context; the sheet's weapon line now does too. Sweep sheet.ts, rulesCheck.ts and

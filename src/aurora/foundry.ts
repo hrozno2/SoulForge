@@ -568,7 +568,19 @@ export function applyFoundry(
           const max = translateFormula(sys["uses.max"] ?? sys.uses?.max);
           const period = RECOVERY[String((((sys["uses.recovery"] ?? sys.uses?.recovery) as J[]) ?? [])[0]?.period ?? "")];
           let usage = false;
-          if (max && max !== "0" && period && !el.sheet?.usage && !el.sheet?.descriptions?.some((d) => d.usage)) {
+          // Uses written on a feature that itself spends another feature's (the 2024 Soulknife's Psi-Bolstered Knack
+          // carries the Psionic Energy dice its action takes from Psionic Power) are that other feature's pool.
+          const spendsAnother = ((e.activities ?? []) as J[]).some((a) =>
+            (((a.consumption as J | undefined)?.targets ?? []) as J[]).some(
+              (t) =>
+                t.type === "itemUses" &&
+                t.target?.uid &&
+                !String(t.target.uid)
+                  .toLowerCase()
+                  .startsWith(`${String(e.name).toLowerCase()}|`),
+            ),
+          );
+          if (max && max !== "0" && period && !spendsAnother && !el.sheet?.usage && !el.sheet?.descriptions?.some((d) => d.usage)) {
             const name = `${el.name.toLowerCase()}:uses`;
             // A bonus group: two elements of the same name (a species and its version) count once.
             if (!already.has(name)) added.push(stat(name, max, "foundry uses"));

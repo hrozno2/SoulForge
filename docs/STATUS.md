@@ -13,6 +13,9 @@ Rogue offered a multiclass the 2014 skill list; Aurora's Witherbloom Student had
 rebuilt with the Monk fix. Measured after: gates pass; 2,400 random characters, pairwise, the move of 400 and the
 sweep (5e.tools, SRD) clean. Unreleased.
 
+Same day: the Psi Warrior's and Soulknife's Psionic Energy dice now show their count and rest (they showed none, or
+"1/Short Rest"), and the check judges them. Full validation clean after it.
+
 ## What is open, in plain words
 
 Everything still to do, in one list. Items move off it when done; nothing open lives anywhere else.

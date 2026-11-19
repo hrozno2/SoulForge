@@ -115,6 +115,10 @@ export function usesFromText(text: string): string | undefined {
   }
   m = /a number of times equal to (?:(twice|three times) )?your proficiency bonus/i.exec(text);
   if (m) return `{proficiency}${m[1] ? ` * ${count(m[1])}` : ""}`;
+  // A pool of dice sized the same way: "You have a number of these dice equal to twice your proficiency bonus" (the
+  // Psi Warrior's and Soulknife's Psionic Energy dice, Tasha's).
+  m = /a number of (?:these |[\w'’-]+ ){1,3}dice equal to (?:(twice|three times) )?your proficiency bonus/i.exec(text);
+  if (m) return `{proficiency}${m[1] ? ` * ${count(m[1])}` : ""}`;
   m =
     /[Yy]ou can use (?:this feature|this ability|this trait|(?:[A-Z][\w'’-]* ?)+) (once|twice|thrice|(?:two|three|four|five|\d+) times)\b/.exec(
       text,
@@ -128,6 +132,30 @@ export function usesFromText(text: string): string | undefined {
   if (m) return `{level:${m[1].toLowerCase()}} * ${count(m[2])}`;
   m = /\b(\d+|two|three|four|five|ten) times your (\w+) level\b/i.exec(text);
   if (m) return `{level:${m[2].toLowerCase()}} * ${count(m[1])}`;
+  return undefined;
+}
+
+/**
+ * A feature's own table of how many it has by level ("Soulknife Energy Dice": Rogue Level, Die Size, Number), as
+ * [level, number] where the number changes; undefined when the text holds no such table.
+ */
+export function tableUsesFromHtml(html: string): [number, number][] | undefined {
+  for (const t of html.matchAll(/<table>[\s\S]*?<\/table>/g)) {
+    const cells = (row: string, tag: string) =>
+      [...row.matchAll(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, "g"))].map((c) => c[1].replace(/<[^>]+>/g, "").trim());
+    const head = cells(/<thead>([\s\S]*?)<\/thead>/.exec(t[0])?.[1] ?? "", "th");
+    const num = head.findIndex((h) => /^number$/i.test(h));
+    if (num < 1 || !/ level$/i.test(head[0])) continue;
+    const out: [number, number][] = [];
+    for (const row of t[0].matchAll(/<tr>([\s\S]*?)<\/tr>/g)) {
+      const c = cells(row[1], "td");
+      const lv = Number(c[0]);
+      const n = Number(c[num]);
+      if (!Number.isInteger(lv) || !Number.isInteger(n) || !c.length) continue;
+      if (!out.length || out[out.length - 1][1] !== n) out.push([lv, n]);
+    }
+    if (out.length) return out;
+  }
   return undefined;
 }
 
@@ -175,6 +203,15 @@ export function recoveryFromText(text: string): string | undefined {
     )
   )
     return "Long Rest (one on a Short Rest)";
+  // A pool of dice or points: one back on a short rest and all on a long one (the 2024 Psionic Energy Dice), or all on
+  // a long rest whatever else returns one in between (Tasha's: a bonus action, once between rests).
+  if (
+    /regain one of (?:its|your|the) expended [\w'’ ]+? when you finish a short rest,? and (?:you )?regain all (?:of them|of (?:its|your|the) expended [\w'’ ]+?) when you finish a long rest/i.test(
+      text,
+    )
+  )
+    return "Long Rest (one on a Short Rest)";
+  if (/regain all (?:of )?(?:your )?expended [\w'’ ]*?dic?e when you finish a long rest/i.test(text)) return "Long Rest";
   if (/when(?:ever)? you finish a short rest, .* can't do so again until you finish a long rest/i.test(text)) return "Long Rest";
   // "Once per day when you finish a short rest, you can..." (Arcane Recovery): the short rest is when it is used.
   if (/\bonce per day\b/i.test(text)) return "Long Rest";
@@ -206,7 +243,9 @@ export function applyTextUses(out: AElement[]): number {
     const text = plain(el.description ?? "");
     const rest = recoveryFromText(text);
     if (!rest) continue;
-    const max = usesFromText(text) ?? "1";
+    // The feature's own table of numbers by level comes first: the text beside it only points at the table.
+    const table = tableUsesFromHtml(el.description ?? "");
+    const max = table ? String(table[0][1]) : (usesFromText(text) ?? "1");
     const name = `${el.name.toLowerCase()}:uses`;
     if (el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase() === name)) continue;
     // More at later levels, stated in the same text: "when you reach Fighter levels 7 (five dice total) and 15 (six
@@ -214,6 +253,8 @@ export function applyTextUses(out: AElement[]): number {
     const steps = [...text.matchAll(/\b(\d+) \((\w+) (?:dice|uses) total\)/gi)].map(
       (x) => ({ kind: "stat", name, value: String(count(x[2])), bonus: "text uses", level: Number(x[1]) }) as ARule,
     );
+    for (const [level, n] of (table ?? []).slice(1))
+      steps.push({ kind: "stat", name, value: String(n), bonus: "text uses", level } as ARule);
     el.rules = [...el.rules, { kind: "stat", name, value: max, bonus: "text uses" } as ARule, ...steps];
     el.sheet = { ...(el.sheet ?? { display: true, descriptions: [] }), usage: `{{${name}}}/${rest}` };
     n++;

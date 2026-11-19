@@ -799,7 +799,9 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
       unknown = true;
     }
   }
-  return unknown && stated > 0 ? stated : total;
+  // The stated level stands in for a caster the rules here do not know, and never lowers what the others give (content
+  // of two providers: only one of them stating its share).
+  return unknown && stated > total ? stated : total;
 }
 
 /** Highest spell level a shared multiclass slot table gives, 0 when not applicable. */

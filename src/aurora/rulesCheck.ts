@@ -938,6 +938,26 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     }
   }
 
+  // Psionic Energy dice (Psi Warrior, Soulknife), which no class table holds: twice the proficiency bonus (Tasha's
+  // Cauldron of Everything, "Psionic Power"), or the subclass's own table by class level (PHB 2024: 4 dice at level 3,
+  // 6 at 5, 8 at 9, 10 at 13, 12 at 17).
+  for (const x of refs) {
+    const sub = r.active.find(
+      (a) => a.el.type === "Archetype" && a.root === `class:${x.c.classId}` && /^(psi warrior|soulknife)$/.test(lc(a.el.name)),
+    );
+    if (!sub || isPlaytest(sub.el) || x.c.level < 3) continue;
+    const want = isModern(sub.el) ? 2 * prof(x.c.level) : 2 * prof(level);
+    // The count, with or without the die beside it ("4/Long Rest", "4d6/Long Rest").
+    const have = sh.features
+      .filter((f) => /^psionic power$/.test(norm(f.name).trim()))
+      .map((f) => Number(/^(\d+)(?:d\d+)?\s*\//.exec(f.usage ?? "")?.[1] ?? NaN));
+    if (have.length && !have.includes(want))
+      add(
+        "Feature uses by level",
+        `${sub.el.name} ${x.c.level}: Psionic Energy dice ${have.map((n) => (Number.isNaN(n) ? "no count" : n)).join(" / ")} (the rules give ${want})`,
+      );
+  }
+
   // Subclass: chosen at the level the class gets it, not before; one per class.
   for (const x of refs) {
     if (!x.ref?.subclassLevel) continue;

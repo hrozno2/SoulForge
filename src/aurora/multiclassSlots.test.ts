@@ -69,3 +69,35 @@ describe("multiclass spell slots without a stated caster level", () => {
     ).toBe(3);
   });
 });
+
+// Big batch on mixed content, 2026-11-19: an Aurora 2024 Ranger 17 with three levels of a 5e.tools Monk whose subclass
+// casts (Warrior of the Mystic Arts) had two 1st-level slots. Only the subclass stated a caster level (1), and the
+// stated level replaced the Ranger's nine.
+describe("a stated caster level beside classes the rules know", () => {
+  it("never lowers what the known classes give", () => {
+    expect(
+      multiclassCasterLevel(
+        pass(
+          [
+            ["Ranger", "ID_WOTC_PHB24_CLASS_RANGER", 17],
+            ["Mystic Arts", "ID_5ET_CLASS_XPHB_MONK", 3],
+          ],
+          { "multiclass:spellcasting:level": 1, "mystic arts:spellcasting:slots:1": 2 },
+        ),
+      ),
+    ).toBe(10);
+  });
+  it("still stands in when it gives more than the known classes do", () => {
+    expect(
+      multiclassCasterLevel(
+        pass(
+          [
+            ["Wizard", "ID_PHB_CLASS_WIZARD", 3],
+            ["Mystic", "ID_X_CLASS_MYSTIC", 6],
+          ],
+          { "multiclass:spellcasting:level": 9, "mystic:spellcasting:slots:1": 9 },
+        ),
+      ),
+    ).toBe(9);
+  });
+});

@@ -11,8 +11,9 @@ choice as open (it was never asked before).
 The test folder's rules-ref.json was extended in place (backup: rules-ref.before-2026-11-19.json); the app refetches
 its own copy when it lacks the new fields.
 
-Next, in order: the rest of W5 (species by count, starting equipment within what class and background give, Psi
-Warrior and Soulknife energy dice), then W7 (older decisions into RULES-DECISIONS.md), then E2.4 (engine shape, speed).
+Also done and pushed: the Psi Warrior's and Soulknife's energy dice (count, rest, judged by the check).
+
+Next, in order: the rest of W5 (species by count, starting equipment within what class and background give), then W7 (older decisions into RULES-DECISIONS.md), then E2.4 (engine shape, speed).
 
 ## 2026-11-18, morning: the night's run on Stage E (Chris asleep, "go with the plan all night")
 

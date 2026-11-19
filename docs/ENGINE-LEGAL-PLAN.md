@@ -143,8 +143,14 @@ an element named "Variant ..." read as a variant choice and never asked (the Kni
 Aurora's 2024 Rogue offering the 2014 skill list to a multiclass; Aurora's Witherbloom Student without its language.
 Rebuilding the SRD bundle for the Monk showed Tasha's optional spell lists would have come along; they are kept out,
 with a test. Clean on 2,400 random characters, pairwise, the 400 moved, and the sweep on 5e.tools and the SRD.
-Known, not gated: Aurora's 2014 Custom Background in the sweep's forced picks (12 rows). Still open here: species by
-count, starting equipment, the energy dice.
+Known, not gated: Aurora's 2014 Custom Background in the sweep's forced picks (12 rows). Energy dice, same day (energyDice.test.ts): the Psi
+Warrior's and Soulknife's Psionic Power showed no count (Tasha's) or "1/Short Rest" (2024), and the 2024 Soulknife's
+pool sat on Psi-Bolstered Knack. The text reader now sizes a pool of dice by "twice your proficiency bonus" or by the
+feature's own table of numbers by level, reads "all dice on a long rest" and "one on a short rest, all on a long
+rest", and side-data uses on a feature that spends another feature's uses are left to that feature. "Feature uses by
+level" works the number out itself. Found on the way (mixed content): a caster level only one provider stated
+replaced what the known classes give (an Aurora Ranger 17 with a casting 5e.tools Monk subclass had two slots).
+Still open here: species by count, starting equipment.
 
 **W6. Concepts everywhere two providers can meet (L2).** Training, languages, senses and sizes are compared by
 concept in the requirement context; the sheet's weapon line now does too. Sweep sheet.ts, rulesCheck.ts and

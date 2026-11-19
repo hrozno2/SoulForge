@@ -373,3 +373,14 @@ describe("the SRD's PDF as structure", () => {
 it("a weight in the thousands is read whole", () => {
   expect(gearRow("Elephant 1,320 lb. 200 GP")).toMatchObject({ lb: 1320, cost: "200" });
 });
+
+// Found 2026-11-19 when the bundle was rebuilt: the converter's Tasha's Cauldron additions (the optional expanded
+// spell lists of the 2014 classes) had come along. They are no part of the SRD.
+describe("the bundled SRD", () => {
+  it("holds nothing of Tasha's optional spell lists", () => {
+    for (const v of ["5.1", "5.2"]) {
+      const text = readFileSync(join("public", "srd", `srd-${v}.json`), "utf8");
+      expect(/TCE_EXPANDED|tce expanded|Tasha.s Cauldron/i.test(text), v).toBe(false);
+    }
+  });
+});

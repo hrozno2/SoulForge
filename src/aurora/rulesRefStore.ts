@@ -42,6 +42,8 @@ export function ensureRulesRef(force = false): Promise<void> {
       !!saved?.data?.length &&
       (saved.data[0].startWeaponNames === undefined ||
         saved.data[0].counters === undefined ||
+        saved.data[0].startSkills === undefined ||
+        saved.data[0].backgrounds === undefined ||
         !saved.data.some((c: { subclasses?: { spells?: unknown }[] }) => c.subclasses?.some((s) => s.spells !== undefined)));
     if (!force && saved && !older && Date.now() - saved.fetched < MAX_AGE) return;
     try {

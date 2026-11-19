@@ -43,7 +43,6 @@ const EXPLAINED: Record<string, string> = {
   "choices Race Githyanki": FIVE_RIGHT,
   "choices Race Hexblood": FIVE_RIGHT,
   "choices Race Eladrin": "Aurora asks a spellcasting ability for Fey Step; 5e.tools' data has none",
-  "choices Background Witherbloom Student": FILED_DIFFERENTLY,
   "choices Archetype Death Domain": FILED_DIFFERENTLY,
   "choices Archetype Circle of the Land": FILED_DIFFERENTLY,
   "choices Archetype College of Lore": FILED_DIFFERENTLY,

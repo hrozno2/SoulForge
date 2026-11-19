@@ -352,12 +352,16 @@ function movedLegacy(ch: Character, reg: ARegistry, el: AElement, rule: SelectRu
 /**
  * A choice the player may turn down: one marked optional, or a variant ("Variant Feature", "Optional class feature").
  * Not a choice inside a variant that was taken (C7.5: the Variant Human's increase, skill and feat were left turned
- * down): once the variant is the character's, what it asks for is required.
+ * down): once the variant is the character's, what it asks for is required. Nor a choice that only carries the name
+ * of an owner called a variant.
  */
-export function skippable(rule: { name: string; optional?: boolean }, owner?: { type: string }): boolean {
+export function skippable(rule: { name: string; optional?: boolean }, owner?: { type: string; name?: string }): boolean {
   if (rule.optional) return true;
   if (owner && /variant/i.test(owner.type)) return false;
-  return /\b(variant|optional)\b/i.test(rule.name);
+  // The owner's own name inside the choice's label says nothing about the choice (5e.tools' "Variant Noble (Knight)
+  // language" is the Knight's language; read as a variant, it was never asked).
+  const label = owner?.name ? rule.name.split(owner.name).join(" ") : rule.name;
+  return /\b(variant|optional)\b/i.test(label);
 }
 
 export function choiceKey(el: AElement, rule: SelectRule, idx: number): string {

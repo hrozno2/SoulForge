@@ -68,6 +68,22 @@ const swapNames = (text: string, renames: [string, string][]) =>
   renames.reduce((t, [from, to]) => t.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), to), text);
 
 /** The bundle's elements for one edition: converted, labelled as the SRD, with the SRD's names and only its words. */
+/**
+ * Tasha's optional additions to the 2014 classes' spell lists are no part of the SRD (the converter adds them from
+ * 5e.tools' notes on the spells): the option, the classes' choice of it and the spells' mark all stay out.
+ */
+function withoutTasha(els: AElement[]): AElement[] {
+  const gone = new Set(els.filter((e) => e.id.startsWith("ID_SF_ADD_TCE_EXPANDED_")).map((e) => e.id));
+  if (!gone.size) return els;
+  return els
+    .filter((e) => !gone.has(e.id))
+    .map((e) => ({
+      ...e,
+      supports: e.supports.filter((t) => !t.startsWith("5et tce expanded ")),
+      rules: e.rules.filter((r) => !(r.kind === "select" && gone.has(r.supports))),
+    }));
+}
+
 export function srdElements(
   files: Files,
   edition: SrdEdition,
@@ -80,7 +96,7 @@ export function srdElements(
   const { files: marked, renames } = srdFiles(files, edition);
   // Longest first, so a name inside a longer one is not swapped half way.
   const swaps = [...renames].sort((a, b) => b[0].length - a[0].length);
-  const named = convertFiveTools({ files: marked as never }).map((el) => ({
+  const named = withoutTasha(convertFiveTools({ files: marked as never })).map((el) => ({
     ...el,
     name: swapNames(el.name, swaps),
     ...(el.description ? { description: swapNames(el.description, swaps).replace(/, from X?PHB\./, ".") } : {}),

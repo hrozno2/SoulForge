@@ -3347,7 +3347,10 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
   };
   for (const w of sp.weapons ?? []) for (const g of weaponGrants(w)) rules.push({ kind: "grant", type: "Proficiency", id: g, ...first });
   for (const r of skillRules(sp.skills, c.name)) rules.push({ ...r, ...first } as ARule);
-  for (const r of profRules({ toolProficiencies: sp.toolProficiencies }, c.name, out)) rules.push({ ...r, ...first } as ARule);
+  // Through trainingRules, so sets written side by side are a choice of one (a Monk: one type of artisan's tools or
+  // one musical instrument; before, both were given).
+  for (const r of trainingRules({ toolProficiencies: sp.toolProficiencies }, c.name, out, ctx, `${id}_START`))
+    rules.push({ ...r, ...first } as ARule);
   for (const r of profRules({ toolProficiencies: mc.proficienciesGained?.toolProficiencies }, c.name, out)) gained.push(r);
   for (const a of mc.proficienciesGained?.armor ?? []) {
     const g = armorGrant(a);

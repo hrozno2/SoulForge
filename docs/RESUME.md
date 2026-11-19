@@ -1,5 +1,19 @@
 # Where we left off
 
+## 2026-11-19: W5 continued (Chris: "continue with plan in order")
+
+Committed and pushed: "Ability increases by source", then "Training by source" (skills, tools, languages by count per
+class, multiclass and background; reference extended with class counts and backgrounds). The second found four real
+faults, all fixed with tests: 5e.tools Monk tools, choices of "Variant ..." elements never asked, Aurora's 2024 Rogue
+multiclass skills, Aurora's Witherbloom Student language. The SRD bundle was rebuilt (Monk; Tasha's lists kept out).
+Note for saved characters: a Knight, Spy, Gladiator or Guild Merchant now shows its gaming set, instrument or language
+choice as open (it was never asked before).
+The test folder's rules-ref.json was extended in place (backup: rules-ref.before-2026-11-19.json); the app refetches
+its own copy when it lacks the new fields.
+
+Next, in order: the rest of W5 (species by count, starting equipment within what class and background give, Psi
+Warrior and Soulknife energy dice), then W7 (older decisions into RULES-DECISIONS.md), then E2.4 (engine shape, speed).
+
 ## 2026-11-18, morning: the night's run on Stage E (Chris asleep, "go with the plan all night")
 
 Committed and pushed (CI green; Soul Forge Test rebuilt after the last commit). Nothing released: v0.26.3 is the release.

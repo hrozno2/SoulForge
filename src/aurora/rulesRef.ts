@@ -24,6 +24,7 @@ export const RULES_REF_CLASSES = [
   "wizard",
 ];
 export const RULES_REF_URL = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/class";
+export const RULES_REF_BACKGROUNDS_URL = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/backgrounds.json";
 
 type Json = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -99,6 +100,64 @@ function startWeaponDetail(sp: Json | undefined): { names: string[]; martialWith
   for (const block of (sp?.weaponProficiencies ?? []) as Json[])
     for (const [k, v] of Object.entries(block)) if (v === true && k.includes("|")) names.push(k.split("|")[0].trim().toLowerCase());
   return { names: [...new Set(names)], martialWith: [...new Set(martialWith)] };
+}
+
+/** How many proficiencies one block of 5e.tools' structured lists gives: each named one, each "any" count, each choice. */
+function profCount(block: Json | undefined): number {
+  let n = 0;
+  for (const [k, v] of Object.entries(block ?? {})) {
+    if (v === true) n++;
+    else if (typeof v === "number") n += v;
+    else if (k === "choose" && v && typeof v === "object") n += Number((v as Json).count ?? 1);
+  }
+  return n;
+}
+/** The count of each alternative a list offers (a Monk: one artisan's tool, or one musical instrument); [0] for none. */
+const profCounts = (list: unknown): number[] => {
+  const blocks = Array.isArray(list) ? (list as Json[]) : [];
+  return blocks.length ? [...new Set(blocks.map(profCount))] : [0];
+};
+/** A class's skills: how many, and from which list (null: any skill). Named skills count and join the list. */
+function skillRule(list: unknown): { count: number; from: string[] | null } {
+  const block = (Array.isArray(list) ? (list as Json[])[0] : undefined) ?? {};
+  const named = Object.entries(block)
+    .filter(([, v]) => v === true)
+    .map(([k]) => k.toLowerCase());
+  const choose = block.choose as Json | undefined;
+  const any = typeof block.any === "number";
+  return {
+    count: profCount(block),
+    from: any ? null : [...named, ...((choose?.from ?? []) as string[]).map((x) => String(x).toLowerCase())],
+  };
+}
+
+/**
+ * The backgrounds of 5e.tools condensed to what each trains by count: skills, tools, languages (W5: training judged
+ * per source). A copy ("Baldur's Gate Acolyte" of Acolyte) takes what it does not write itself from its original.
+ */
+/**
+ * Where the book's text and 5e.tools' structured list part, the text holds. The Feylost: "Languages: One of your
+ * choice of Elvish, Gnomish, Goblin, or Sylvan" (The Wild Beyond the Witchlight); the list holds that choice and one
+ * standard language besides.
+ */
+const BACKGROUND_BY_THE_BOOK: Record<string, { languages?: number[]; tools?: number[]; skills?: number[] }> = {
+  "Feylost|WBtW": { languages: [1] },
+};
+
+export function condenseBackgrounds(file: Json): Json[] {
+  const all = (file.background ?? []) as Json[];
+  const find = (name: string, source: string) => all.find((b) => b.name === name && b.source === source);
+  const field = (b: Json | undefined, key: string, depth = 0): unknown =>
+    !b || depth > 5 ? undefined : (b[key] ?? (b._copy ? field(find(b._copy.name, b._copy.source), key, depth + 1) : undefined));
+  return all.map((b) => ({
+    name: b.name,
+    source: b.source,
+    edition: field(b, "edition") === "one" ? "one" : "classic",
+    skills: profCounts(field(b, "skillProficiencies")),
+    tools: profCounts(field(b, "toolProficiencies")),
+    languages: profCounts(field(b, "languageProficiencies")),
+    ...BACKGROUND_BY_THE_BOOK[`${b.name}|${b.source}`],
+  }));
 }
 
 /**
@@ -196,6 +255,11 @@ export function condenseClassFile(file: Json): Json[] {
       startTools: Object.entries(Object.assign({}, ...((c.startingProficiencies?.toolProficiencies ?? []) as Json[])))
         .filter(([k, v]) => v === true && !/^any/.test(k))
         .map(([k]) => k),
+      // Skills and tools by count (W5): at first level, and what a character gains by multiclassing into the class.
+      startSkills: skillRule(c.startingProficiencies?.skills),
+      mcSkills: skillRule(c.multiclassing?.proficienciesGained?.skills),
+      startToolCounts: profCounts(c.startingProficiencies?.toolProficiencies),
+      mcToolCounts: profCounts(c.multiclassing?.proficienciesGained?.toolProficiencies),
       subclasses: ((file.subclass ?? []) as Json[])
         .filter((s) => s.className === c.name && s.classSource === c.source)
         .map((s) => ({
@@ -215,5 +279,7 @@ export function condenseClassFile(file: Json): Json[] {
 export async function downloadRulesRef(get: (url: string) => Promise<Json>): Promise<Json[]> {
   const all: Json[] = [];
   for (const c of RULES_REF_CLASSES) all.push(...condenseClassFile(await get(`${RULES_REF_URL}/class-${c}.json`)));
+  // The backgrounds ride on the first entry, so the reference stays one list of classes wherever it is kept.
+  if (all.length) all[0].backgrounds = condenseBackgrounds(await get(RULES_REF_BACKGROUNDS_URL));
   return all;
 }

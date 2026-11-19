@@ -3,7 +3,7 @@
  * says what is wrong in AuroraLegacy and why the fix is right. The content linter finds these; the lint test fails
  * on any new finding that is neither fixed here nor accepted in LINT_ACCEPTED.
  */
-import type { AElement } from "./types";
+import type { AElement, ARule } from "./types";
 
 /** IDs written wrongly where a requirement names them: the wrong ID never matches, so the rule silently fails. */
 export const ID_TYPOS: Record<string, string> = {
@@ -116,6 +116,26 @@ export const GRANTS_REPLACE: Record<string, [string, string][]> = {
   ID_WOTC_MOTM_RACE_DEEP_GNOME: [["ID_SIZE_MEDIUM", "ID_SIZE_SMALL"]],
 };
 
+/**
+ * Choices the content leaves out. The Witherbloom Student speaks one language of the player's choice (Strixhaven: A
+ * Curriculum of Chaos p.34, "Languages: One of your choice"); the content has the skills and the herbalism kit only
+ * (found by "Training by source", 2026-11-19).
+ */
+export const SELECTS_ADD: Record<string, { type: string; name: string; supports: string; number: number }[]> = {
+  ID_WOTC_SCOC_BACKGROUND_WITHERBLOOM_STUDENT: [
+    { type: "Language", name: "Language (Witherbloom Student)", supports: "Standard||Exotic", number: 1 },
+  ],
+};
+
+/**
+ * Choices in a class's multiclass block that draw on the wrong list: [what the content offers, what the rules offer].
+ * A character multiclassing into the 2024 Rogue takes one skill from the 2024 Rogue's list (PHB 2024 p.45 and p.129);
+ * the content offers the 2014 list, which also has Performance (found by "Training by source", 2026-11-19).
+ */
+export const MULTICLASS_SUPPORTS_FIX: Record<string, [string, string][]> = {
+  ID_WOTC_PHB24_CLASS_ROGUE: [["Skill,Rogue", "Skill,PHB24 Rogue"]],
+};
+
 /** Linter findings that are right as they are (a requirement ruling out content that is not part of AuroraLegacy). */
 export const LINT_ACCEPTED = [
   "ID_KBP_DMBD_CLASS_FEATURE_ANTIPALADIN_UNHOLY_SMITE", // homebrew Antipaladin, ruled out by Divine Smite
@@ -143,6 +163,14 @@ export function applyContentFixes(el: AElement): void {
   }
   for (const [name, from, to] of STAT_FIXES[el.id] ?? [])
     el.rules = el.rules.map((r) => (r.kind === "stat" && r.name === name && r.value === from ? { ...r, value: to } : r));
+  for (const sel of SELECTS_ADD[el.id] ?? [])
+    if (!el.rules.some((r) => r.kind === "select" && r.type === sel.type)) el.rules = [...el.rules, { kind: "select", ...sel } as ARule];
+  if (el.multiclass)
+    for (const [from, to] of MULTICLASS_SUPPORTS_FIX[el.id] ?? [])
+      el.multiclass = {
+        ...el.multiclass,
+        rules: el.multiclass.rules.map((r) => (r.kind === "select" && r.supports === from ? { ...r, supports: to } : r)),
+      };
   for (const [from, to] of GRANTS_REPLACE[el.id] ?? [])
     el.rules = el.rules.map((r) => (r.kind === "grant" && r.id === from ? { ...r, id: to } : r));
   for (const st of STATS_ADD[el.id] ?? [])

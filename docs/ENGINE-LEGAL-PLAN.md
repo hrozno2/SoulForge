@@ -134,8 +134,17 @@ the Sentinel) and "Subclass spell missing" (the reference keeps each subclass's 
 initiative check's first run found the 2014 Remarkable Athlete never reaching initiative. Done 2026-11-19:
 "Ability increases by source" (increaseSources.test.ts): a feat gives at most +1 in all, an Ability Score Improvement
 or a level's improvement at most +2, a 2024 background +3 with at most +2 to one score; clean on 1,600 random
-characters, the pairwise set, the 400 moved and the sweep. Still open here: languages, tools and skills by count per
-source, starting equipment, the energy dice.
+characters, the pairwise set, the 400 moved and the sweep. "Training by source" (trainingSources.test.ts), same day: the reference now keeps each class's skills (count and
+list) and tools (count) at first level and by multiclassing, and each background's skills, tools and languages by
+count (5e.tools' backgrounds.json, condensed apart from the converter; the book's text where the list parts from it:
+Feylost). The check counts what comes from the class or background itself (not its features, subclass or feat). First
+runs found and fixed: the 5e.tools Monk given an artisan's tool and an instrument (one or the other); every choice of
+an element named "Variant ..." read as a variant choice and never asked (the Knight had no gaming set or language);
+Aurora's 2024 Rogue offering the 2014 skill list to a multiclass; Aurora's Witherbloom Student without its language.
+Rebuilding the SRD bundle for the Monk showed Tasha's optional spell lists would have come along; they are kept out,
+with a test. Clean on 2,400 random characters, pairwise, the 400 moved, and the sweep on 5e.tools and the SRD.
+Known, not gated: Aurora's 2014 Custom Background in the sweep's forced picks (12 rows). Still open here: species by
+count, starting equipment, the energy dice.
 
 **W6. Concepts everywhere two providers can meet (L2).** Training, languages, senses and sizes are compared by
 concept in the requirement context; the sheet's weapon line now does too. Sweep sheet.ts, rulesCheck.ts and

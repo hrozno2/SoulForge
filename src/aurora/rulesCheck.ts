@@ -24,6 +24,14 @@ export interface RefFeature {
   optional?: boolean;
   subclass?: boolean;
 }
+export interface RefBackground {
+  name: string;
+  source: string;
+  edition: "classic" | "one";
+  skills: number[];
+  tools: number[];
+  languages: number[];
+}
 export interface RefClass {
   name: string;
   source: string;
@@ -48,6 +56,13 @@ export interface RefClass {
   startWeaponNames?: string[];
   startMartialWith?: string[];
   startTools?: string[];
+  /** Skills and tools by count: at first level, and gained by multiclassing into the class (`from` null: any skill). */
+  startSkills?: { count: number; from: string[] | null };
+  mcSkills?: { count: number; from: string[] | null };
+  startToolCounts?: number[];
+  mcToolCounts?: number[];
+  /** On the first entry only: what each background trains by count (each alternative's count). */
+  backgrounds?: RefBackground[];
   asiLevels: number[];
   epicBoon: number | null;
   multiclass: Partial<Record<AbilityId, number>> | null;
@@ -553,6 +568,88 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     for (const w of first.startWeapons ?? [])
       if (!own(sh.proficiencies.weapons, `${w} weapons`)) add("Missing class training", `${w} weapons from ${first.name}`);
     for (const t of first.startTools ?? []) if (!own(sh.proficiencies.tools, t)) add("Missing class training", `${t} from ${first.name}`);
+  }
+
+  // Training by source (W5): how many skills and tools each class gives, at first level and by multiclassing, and how
+  // many skills, tools and languages the background gives, counted from where each one comes (what the class or the
+  // background itself gives, not its features, subclass or feat) against the reference's numbers. A class's skills
+  // are also among those its list names. Both Player's Handbooks: the class's "Proficiencies" (2014) or "Core Traits"
+  // (2024), the Multiclassing table, and each background's own lines.
+  {
+    const RULE = "Training by source";
+    // The source's own: straight from it, or through a set it lets the player choose (a Monk's artisan's tools or
+    // musical instrument).
+    const own = (roots: string[]) => (c: string[]) =>
+      roots.includes(c[0]) && c.slice(1).every((id) => reg.get(id)?.type === "Training Option");
+    // A background's own also comes through its options (a House Agent's house, a custom background's picks), though
+    // never through a feat (the 2024 origin feat is the feat's training, not the background's).
+    const ofBackground = (id: string) => (c: string[]) => c[0] === id && c.slice(1).every((x) => reg.get(x)?.type !== "Feat");
+    const from = (kind: string, mine: (c: string[]) => boolean) =>
+      r.active
+        .map((a) => ({ a, k: conceptOf(a.el) }))
+        .filter((x) => x.k?.startsWith(`${kind}:`) && (r.via.get(x.a.el.id) ?? []).some(mine));
+    const direct = (kind: string, ...roots: string[]) => from(kind, own(roots));
+    const open = (...owners: string[]) => r.slots.some((s) => owners.includes(s.owner.id) && stillToChoose(s, r));
+    const few = (got: number, wants: number[], undecided: boolean) => !wants.includes(got) && !(undecided && got < Math.max(...wants));
+    refs.forEach((x, i) => {
+      if (!x.ref?.startSkills || !x.ref.mcSkills) return;
+      const roots = [x.c.classId, ...(x.el.multiclass?.id ? [x.el.multiclass.id] : [])];
+      const undecided = open(...roots);
+      const rule = i === 0 ? x.ref.startSkills : x.ref.mcSkills;
+      const how = i === 0 ? "at first level" : "by multiclassing";
+      const skills = direct("skill", ...roots);
+      if (few(skills.length, [rule.count], undecided))
+        add(
+          RULE,
+          `${x.el.name}: ${skills.length} skills ${how}, the class gives ${rule.count} (${skills.map((y) => y.a.el.name).join(", ")})`,
+        );
+      if (rule.from) {
+        const list = new Set(rule.from.map((n) => `skill:${n.replace(/ /g, "-")}`));
+        for (const y of skills) if (!list.has(y.k!)) add(RULE, `${x.el.name}: ${y.a.el.name} is not among the class's skills`);
+      }
+      const toolWants = (i === 0 ? x.ref.startToolCounts : x.ref.mcToolCounts) ?? [0];
+      const tools = direct("tool", ...roots);
+      if (few(tools.length, toolWants, undecided))
+        add(
+          RULE,
+          `${x.el.name}: ${tools.length} tools ${how}, the class gives ${toolWants.join(" or ")} (${tools.map((y) => y.a.el.name).join(", ")})`,
+        );
+    });
+    const bg = ch.background ? reg.get(ch.background) : undefined;
+    const known = ref.find((c) => c.backgrounds)?.backgrounds;
+    if (bg && known && !isPlaytest(bg)) {
+      const same = known.filter((b) => lc(b.name) === lc(bg.name));
+      const mine = same.filter((b) => (b.edition === "one") === isModern(bg));
+      const cands = mine.length ? mine : same;
+      const got = {
+        skills: from("skill", ofBackground(bg.id)).length,
+        tools: from("tool", ofBackground(bg.id)).length,
+        languages: from("language", ofBackground(bg.id)).length,
+      };
+      const undecided = r.slots.some((s) => s.root === "background" && stillToChoose(s, r));
+      const fits = (b: RefBackground) =>
+        !few(got.skills, b.skills, undecided) && !few(got.tools, b.tools, undecided) && !few(got.languages, b.languages, undecided);
+      if (lc(bg.name) === "custom background") {
+        // The player's own background: two skills, and two tools or languages in any mix (PHB 2014 chapter 4,
+        // "Customizing a Background"); under the 2024 rules two skills and one tool (DMG 2024 chapter 3, "Creating a
+        // Background").
+        const extra = got.tools + got.languages;
+        const bad = isModern(bg)
+          ? few(got.skills, [2], undecided) || few(got.tools, [1], undecided) || got.languages > 0
+          : few(got.skills, [2], undecided) || few(extra, [2], undecided);
+        if (bad)
+          add(
+            RULE,
+            `${bg.name}: ${got.skills} skills, ${got.tools} tools, ${got.languages} languages; a custom background gives ${isModern(bg) ? "2 skills and 1 tool" : "2 skills and 2 tools or languages in all"}`,
+          );
+      } else if (cands.length && !cands.some(fits)) {
+        const b = cands[0];
+        add(
+          RULE,
+          `${bg.name}: ${got.skills} skills, ${got.tools} tools, ${got.languages} languages; the background gives ${b.skills.join(" or ")}, ${b.tools.join(" or ")} and ${b.languages.join(" or ")}`,
+        );
+      }
+    }
   }
 
   // Base scores by the method the player chose (W5): the standard array is 15, 14, 13, 12, 10 and 8 in any order; point

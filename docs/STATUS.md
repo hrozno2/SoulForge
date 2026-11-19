@@ -1,8 +1,17 @@
 # Soul Forge: where the engine stands
 
-Updated 2026-11-18, early morning (v0.26.3 is the release; everything below it is unreleased). Every number here was measured on this date unless
+Updated 2026-11-19 (v0.26.3 is the release; everything below it is unreleased). Every number here was measured on this date unless
 marked otherwise, and each comes from a command anyone can run again (last column of the scoreboard). Update this page
 at the end of each working session, so the trend shows.
+
+## 19 November: training judged by source
+
+The rules check now counts skills, tools and languages by where they come from (class at first level, class by
+multiclassing, background) against the reference. It found four faults, all fixed: a 5e.tools Monk had two tools for
+one; a Knight, Spy, Gladiator or Guild Merchant was never asked its gaming set, instrument or language; Aurora's 2024
+Rogue offered a multiclass the 2014 skill list; Aurora's Witherbloom Student had no language. The bundled SRD was
+rebuilt with the Monk fix. Measured after: gates pass; 2,400 random characters, pairwise, the move of 400 and the
+sweep (5e.tools, SRD) clean. Unreleased.
 
 ## What is open, in plain words
 

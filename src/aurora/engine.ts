@@ -454,7 +454,7 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
 
       if (rule.kind === "stat") {
         if (rule.equipped && !meets(rule.equipped, ctx, true)) return;
-        stats.add(rule.name, { value: rule.value, bonus: rule.bonus, from: el.name, alt: rule.alt, inline: rule.inline });
+        stats.add(rule.name, { value: rule.value, bonus: rule.bonus, from: el.name, fromId: el.id, alt: rule.alt, inline: rule.inline });
       } else if (rule.kind === "grant") {
         if (!rule.id) return;
         const target = reg.get(rule.id);
@@ -583,7 +583,7 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
             const tctx = makeCtx(prev, ownerLevel, ch, reg, empty, target.id);
             for (const r of target.rules)
               if (r.kind === "stat" && (r.level === undefined || r.level <= ownerLevel) && meets(r.requirements, tctx))
-                stats.add(r.name, { value: r.value, bonus: r.bonus, from: target.name, alt: r.alt, inline: r.inline });
+                stats.add(r.name, { value: r.value, bonus: r.bonus, from: target.name, fromId: target.id, alt: r.alt, inline: r.inline });
           }
           visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0), below);
         }
@@ -786,12 +786,17 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
   let guessed = 0;
   let unknown = false;
   const knownNames: string[] = [];
+  const knownIds = new Set<string>();
   for (const e of byOwner.values()) {
     const cls = reg?.get(e.owner);
     const name = lc(cls?.name ?? e.owner.match(/CLASS_([A-Z]+)$/i)?.[1] ?? e.name);
     const modern = isModern({ id: e.owner, source: cls?.source ?? "" });
     const known = FULL_CASTERS.has(name) || HALF_CASTERS.has(name) || name === "fighter" || name === "rogue";
-    if (known) knownNames.push(name);
+    if (known) {
+      knownNames.push(name);
+      knownIds.add(e.owner);
+      if (cls?.multiclass?.id) knownIds.add(cls.multiclass.id);
+    }
     if (FULL_CASTERS.has(name)) total += e.level;
     else if (HALF_CASTERS.has(name)) total += name === "artificer" || modern ? Math.ceil(e.level / 2) : Math.floor(e.level / 2);
     else if (name === "fighter" || name === "rogue") total += Math.floor(e.level / 3);
@@ -809,10 +814,14 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
   // way, so a share only one provider's content states is neither lost nor counted twice (a Ranger 17 with such a Monk
   // had two slots; a Monk 12 with one level of Sorcerer counted 4 for 5). With no parts to tell, the stated level
   // stands whole, or the guess from the caster's own slots.
-  const parts = (pass.stats as { parts?: (n: string) => { from: string; value: number }[] }).parts?.("multiclass:spellcasting:level");
+  const parts = (pass.stats as { parts?: (n: string) => { from: string; fromId?: string; value: number }[] }).parts?.(
+    "multiclass:spellcasting:level",
+  );
   if (parts?.length) {
-    const fromKnown = (from: string) => knownNames.some((n) => lc(from).includes(n)) || /spellcasting|pact magic/i.test(from);
-    const stated = parts.filter((p) => !fromKnown(p.from)).reduce((t, p) => t + p.value, 0);
+    // By the element's id first (the class or its multiclass block), by name where a feature of the class states it.
+    const fromKnown = (p: { from: string; fromId?: string }) =>
+      (!!p.fromId && knownIds.has(p.fromId)) || knownNames.some((n) => lc(p.from).includes(n)) || /spellcasting|pact magic/i.test(p.from);
+    const stated = parts.filter((p) => !fromKnown(p)).reduce((t, p) => t + p.value, 0);
     return total + (stated > 0 ? stated : guessed);
   }
   return stated > 0 ? stated : total + guessed;

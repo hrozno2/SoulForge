@@ -8,6 +8,8 @@ export interface Contribution {
   value: string;
   bonus?: string;
   from: string;
+  /** The id of the element it came from; none for what the player added by hand. */
+  fromId?: string;
   alt?: string;
   inline?: boolean;
 }
@@ -238,16 +240,17 @@ export class StatBook {
    * What a statistic's own contributions add up to, one part per contributor (the best of each bonus group only),
    * with where it came from: the calculators' "parts" (docs/ENGINE-PLAN.md, 3.5).
    */
-  parts(rawName: string): { from: string; value: number }[] {
+  parts(rawName: string): { from: string; fromId?: string; value: number }[] {
     const list = this.contribs.get(rawName.toLowerCase().trim());
     if (!list) return [];
-    const out: { from: string; value: number }[] = [];
-    const best = new Map<string, { from: string; value: number }>();
+    const out: { from: string; fromId?: string; value: number }[] = [];
+    const best = new Map<string, { from: string; fromId?: string; value: number }>();
     for (const c of list) {
       if (c.inline) continue;
       const v = this.evalValue(c.value);
-      if (!c.bonus) out.push({ from: c.from, value: v });
-      else if (!best.has(c.bonus) || best.get(c.bonus)!.value < v) best.set(c.bonus, { from: c.from, value: v });
+      const part = c.fromId ? { from: c.from, fromId: c.fromId, value: v } : { from: c.from, value: v };
+      if (!c.bonus) out.push(part);
+      else if (!best.has(c.bonus) || best.get(c.bonus)!.value < v) best.set(c.bonus, part);
     }
     return [...out, ...best.values()].filter((p) => p.value !== 0);
   }

@@ -1,5 +1,19 @@
 # Where we left off
 
+## Paused 2026-11-20, morning (Chris travelling)
+
+Chris said: cut a release if all tests finish without an issue; then, while the release script was still in its own
+checks, "pause". The script was stopped before it changed anything: no version bump, no tag, nothing pushed beyond the
+commits below. v0.26.3 is still the release.
+
+State: main is at "The resolver reads each choice's own key only" (CI green). The full validation on that commit was
+clean (gates, prose, both statistics checks, four batches of 400, the move of 400, move properties, mutations, the
+sweep, pairwise). Soul Forge Test was last rebuilt one commit earlier (the portrait copy); rebuild it on resuming.
+
+To resume: `node scripts/release.mjs minor` (0.26.3 to 0.27.0; do not pipe it through tail), then watch the release
+workflow and check it published and the Homebrew step ran. Then the notes below.
+
+
 ## 2026-11-19: W5 continued (Chris: "continue with plan in order")
 
 Committed and pushed: "Ability increases by source", then "Training by source" (skills, tools, languages by count per

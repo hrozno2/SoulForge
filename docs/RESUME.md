@@ -1,18 +1,18 @@
 # Where we left off
 
-## Paused 2026-11-20, morning (Chris travelling)
+## 2026-11-20, evening: v0.27.0 released
 
-Chris said: cut a release if all tests finish without an issue; then, while the release script was still in its own
-checks, "pause". The script was stopped before it changed anything: no version bump, no tag, nothing pushed beyond the
-commits below. v0.26.3 is still the release.
+Published 2026-11-20 (all builds, Homebrew and Arch steps green). It carries W5 (training by source, energy dice,
+species, starting equipment), W7 (the decisions table), audit E1, E3, E4, E2's list, E6's first half, the SRD fixes
+(classes' fixed gear, the Acolyte's gear, background gold on 5e.tools) and the origin options filed as Soul Forge's own.
 
-State: main is at "The resolver reads each choice's own key only" (CI green). The full validation on that commit was
-clean (gates, prose, both statistics checks, four batches of 400, the move of 400, move properties, mutations, the
-sweep, pairwise). Soul Forge Test was last rebuilt one commit earlier (the portrait copy); rebuild it on resuming.
-
-To resume: `node scripts/release.mjs minor` (0.26.3 to 0.27.0; do not pipe it through tail), then watch the release
-workflow and check it published and the Homebrew step ran. Then the notes below.
-
+Two things from cutting it:
+- The release's own test step runs the imports check, which the validation script used all session does not. It
+  stopped the release once: an imported Foundry character now keeps its Elvish (Aurora's Witherbloom Student has its
+  language choice). Snapshots accepted with IMPORT_BASELINE=1 for the default and "both" sets; the old ones are beside
+  them (imports/snapshots.before-2026-11-20, snapshots-both.before-2026-11-20). In "both", an EFA Artificer's Mending
+  now shows on its own "Tinker's Magic" line: same spells and DC, not looked into further.
+- Run the release under `caffeinate -i`: a sleeping Mac timed out a test on the first attempt.
 
 ## 2026-11-19: W5 continued (Chris: "continue with plan in order")
 

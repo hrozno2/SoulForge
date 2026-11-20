@@ -1,6 +1,6 @@
 # Soul Forge: where the engine stands
 
-Updated 2026-11-20 (v0.26.3 is the release; everything below it is unreleased). Every number here was measured on this date unless
+Updated 2026-11-20 (v0.27.0 is the release, published 2026-11-20). Every number here was measured on this date unless
 marked otherwise, and each comes from a command anyone can run again (last column of the scoreboard). Update this page
 at the end of each working session, so the trend shows.
 

@@ -19,6 +19,13 @@ Later on 2026-11-20: starting equipment judged (W5 done) and the W7 sweep writte
 Three faults are in the released v0.26.3 too and want a patch release when Chris says: the bundled SRD 5.1 classes
 without their fixed gear, the SRD 5.1 Acolyte without any gear, 2014 backgrounds on 5e.tools content without gold.
 
+For Chris to decide (not done, on purpose): the bundled SRD 5.1 holds three options from Tasha's "Customizing Your
+Origin" (customized ability scores, languages, proficiencies for older species), in Soul Forge's own words but under
+the SRD's name; they were in v0.25.0 already. Taking them out matches the bundle to the SRD but would undo the swap on
+any released character that uses one (its picks would show under "Earlier choices with no place now"). Alternatives:
+keep them and file them under "Soul Forge additions" instead of the SRD's name. The change that removes them was
+written and tried (16 elements change, 3 go) and then put back.
+
 Next, in order: tests for the four decisions that have none (W7's open part), then E2.4 (engine shape, the timeline's
 speed), the largest job left.
 

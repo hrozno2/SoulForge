@@ -3,6 +3,7 @@
  * a character can be built with nothing imported. Ids stay those of the user's own 5e.tools copy, so loading both gives
  * one entry of each. Names follow the SRD where it names a thing differently ("Melf's Acid Arrow" is "Acid Arrow").
  */
+import { ADDITIONS_SOURCE } from "./additions";
 import { convertFiveTools } from "./fivetools";
 import { followSrd, type FollowReport } from "./srdFollow";
 import type { SrdSection } from "./srdPdf";
@@ -125,5 +126,25 @@ export function srdElements(
       ? { sheet: { ...el.sheet, descriptions: el.sheet.descriptions?.map((d) => ({ ...d, text: d.text ? text(el, d.text) : d.text })) } }
       : {}),
     source: SRD_SOURCE[edition],
+    ...ownOption(el),
   }));
+}
+
+/**
+ * The options that let an older species' ability scores, languages and proficiencies be swapped are no rule of the
+ * SRD (the converter offers them from a later book). They stay in the bundle, so a character that uses one keeps its
+ * swap, filed as Soul Forge's own with a text of its own.
+ */
+export const OWN_OPTIONS: Record<string, string> = {
+  ID_5ET_OPTION_TCE_CUSTOMIZED_ABILITY_SCORE_INCREASES:
+    "The ability score increases your species gives you can be moved to other ability scores of your choice.",
+  ID_5ET_OPTION_TCE_CUSTOMIZED_LANGUAGE: "Each language your species gives you can be replaced by another language of your choice.",
+  ID_5ET_OPTION_TCE_CUSTOMIZED_PROFICIENCY:
+    "Each skill proficiency your species gives you can be replaced by another skill, and each tool proficiency by another tool.",
+};
+function ownOption(el: AElement): Partial<AElement> {
+  const text = OWN_OPTIONS[el.id];
+  return text
+    ? { source: ADDITIONS_SOURCE, description: `<p>${text}</p><p><em>An optional rule of Soul Forge's own, not part of the SRD.</em></p>` }
+    : {};
 }

@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
-import { NOT_IN_SRD, SRD_SOURCE, srdElements, srdFiles, type SrdEdition } from "./srdBundle";
+import { NOT_IN_SRD, OWN_OPTIONS, SRD_SOURCE, srdElements, srdFiles, type SrdEdition } from "./srdBundle";
 import { srdCorpus, srdDescription } from "./srdText";
 import { SRD_ATTRIBUTION } from "./srdAttribution";
 import { ARegistry } from "./registry";
@@ -186,7 +186,8 @@ describe.skipIf(!C || process.env.RULES_TIER !== "srd-bundle")("the bundle", () 
         ...new Set(
           reg
             .all()
-            .filter((e) => e.source !== SRD_SOURCE[edition] && e.source !== "Internal")
+            // The three origin options are Soul Forge's own and say so (OWN_OPTIONS); nothing else may differ.
+            .filter((e) => e.source !== SRD_SOURCE[edition] && e.source !== "Internal" && !(e.id in OWN_OPTIONS))
             .map((e) => `${e.source}: ${e.type}`),
         ),
       ];
@@ -411,5 +412,36 @@ describe("a class's starting gear in the SRD text check", () => {
     expect(fixed("Sorcerer")).toEqual(["2 Dagger"]);
     expect(fixed("Rogue")).toEqual(["1 Leather Armor", "1 Thieves' Tools", "2 Dagger"]);
     expect(fixed("Barbarian")).toEqual(["1 Explorer's Pack", "4 Javelin"]);
+  });
+});
+
+// Chris, 2026-11-20: the three options that let an older species' ability scores, languages and proficiencies be
+// swapped sat in the 5.1 bundle under the SRD's name, with no text. The rule is not the SRD's. They stay, so no
+// character that uses one loses its swap, and are filed as what they are: Soul Forge's own additions.
+describe("the origin options in the bundled SRD 5.1", () => {
+  const bundle = JSON.parse(readFileSync(join("public", "srd", "srd-5.1.json"), "utf8")) as {
+    elements: { id: string; name: string; type: string; source: string; description: string; rules: { requirements?: string }[] }[];
+  };
+  const options = bundle.elements.filter((e) => e.type === "Option" && /CUSTOMIZED/.test(e.id));
+  it("are filed under Soul Forge additions, each saying what it does and that it is not the SRD's", () => {
+    expect(options.map((o) => o.name).sort()).toEqual([
+      "Customized Ability Score Increases",
+      "Customized Language",
+      "Customized Proficiencies",
+    ]);
+    for (const o of options) {
+      expect(o.source, o.name).toBe("Soul Forge additions");
+      expect(o.description, o.name).toMatch(/can be replaced|can be moved/);
+      expect(o.description, o.name).toMatch(/not part of the SRD/);
+      expect(o.description, o.name).not.toMatch(/Tasha|Cauldron|Customizing Your Origin/);
+    }
+  });
+  it("still work: the species' choices that need them are there, and everything else is the SRD's", () => {
+    for (const o of options)
+      expect(
+        bundle.elements.some((e) => e.rules.some((r) => (r.requirements ?? "").split(",").includes(o.id))),
+        o.name,
+      ).toBe(true);
+    expect([...new Set(bundle.elements.filter((e) => !options.includes(e)).map((e) => e.source))]).toEqual(["SRD 5.1 (2014)"]);
   });
 });

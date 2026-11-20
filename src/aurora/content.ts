@@ -14,7 +14,8 @@ import {
 } from "./sources";
 import { idbFileCache, readFiles, saveSource } from "./storage";
 import type { AElement } from "./types";
-import { FIVETOOLS_CORE_FILES, FIVETOOLS_EXTRA_FILES, convertFiveTools } from "./fivetools";
+import { FIVETOOLS_CORE_FILES, FIVETOOLS_EXTRA_FILES } from "./fivetools";
+import { convertOffThread } from "./convertOffThread";
 
 export const DEFAULT_LINK = "https://raw.githubusercontent.com/AuroraLegacy/elements/master/AuroraLegacy.index";
 
@@ -109,25 +110,18 @@ export async function buildRegistry(
         }
       }
       // 5etools files are converted together, because classes refer to features and spell lists in other files.
-      const files: Record<string, unknown> = {};
       t = performance.now();
       const texts = await readFiles(urls);
       times.read += performance.now() - t;
-      t = performance.now();
       const prefix = `${source.url}/`;
+      const named: Record<string, string> = {};
       for (const u of urls) {
         const text = texts.get(u);
-        if (!text) continue;
-        try {
-          files[u.startsWith(prefix) ? u.slice(prefix.length) : u] = JSON.parse(text);
-        } catch (e) {
-          errors.push(`${u.split("/").pop()}: ${(e as Error).message}`);
-        }
+        if (text) named[u.startsWith(prefix) ? u.slice(prefix.length) : u] = text;
         n++;
       }
-      times.parse += performance.now() - t;
       // The one long step (seconds, after an update or a new import): said so, as it has no count of its own, and that
-      // it is a one-off (C1.7).
+      // it is a one-off (C1.7). It runs in a worker (audit E4), so the window stays alive while it does.
       onProgress?.(
         n,
         total,
@@ -135,14 +129,14 @@ export async function buildRegistry(
       );
       await painted();
       t = performance.now();
-      try {
-        const elements = convertFiveTools({ files });
+      const converted = await convertOffThread(named);
+      errors.push(...converted.errors);
+      if (converted.failed) errors.push(`${source.name}: ${converted.failed}`);
+      else {
         // Kept before the registry's build passes change them; written after the launch, off the critical path.
-        const copy = JSON.stringify({ key: cacheKey, elements });
+        const copy = JSON.stringify({ key: cacheKey, elements: converted.elements });
         globalThis.setTimeout(() => void idbFileCache.put(cacheUrl, copy, source.url).catch(() => undefined), 3000);
-        reg.addElements(elements);
-      } catch (e) {
-        errors.push(`${source.name}: ${(e as Error).message}`);
+        reg.addElements(converted.elements);
       }
       times.convert += performance.now() - t;
       continue;

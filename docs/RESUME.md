@@ -28,7 +28,8 @@ written and tried (16 elements change, 3 go) and then put back.
 
 W7 is done (the four decisions without a test got one).
 
-E2.4 started: audit E3 done (contributions carry their element's id).
+E2.4 so far: audit E3 (contributions carry their element's id), E2's list (docs/audit/text-rules.md), E4 (the rules
+database rebuild runs in a worker). Left: E1, the rest of E2, E5 step 2 (profile first), E6.
 
 Next: the rest of E2.4, the engine shape items of docs/AUDIT-2026-11-10.md. Order the
 audit gives: E4 (content off the main thread), E5 steps 1 to 3, E6 (portrait out of the record), then E1 (saved picks

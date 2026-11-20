@@ -1,5 +1,5 @@
 /**
- * Audit E1: saved picks under old keys are upgraded once, at the door, instead of being read anew by every pass over
+ * Audit E1: saved picks under old keys are upgraded once, at the door (`upgradeSelections`), instead of being read anew by every pass over
  * every choice. A character saved before stable keys (docs/ENGINE-PLAN.md 1.6) has its picks under the choice's
  * position in its element ("<element id>|<n>"); the content has moved its rules since. `upgradePositionKeys` gives
  * each choice the picks the resolver used to work out for it, under the choice's stable key. The position keys stay
@@ -151,4 +151,37 @@ function upgraded(ch: Character, reg: ARegistry): Record<string, string[]> | und
     });
   }
   return next;
+}
+
+/**
+ * Characters saved before a choice of two +1s became "+2 to one ability" or "+1 to two abilities" (registry.ts,
+ * plusTwoChoices) keep their two +1s: the picks move inside "+1 to two abilities". Nothing else changes.
+ */
+function upgradePlusTwo(ch: Character, reg: ARegistry): Character {
+  let out: Character | undefined;
+  for (const [key, ids] of Object.entries(ch.selections)) {
+    if (!ids.length || ids.some((id) => id.startsWith("ID_INTERNAL_PLUS_TWO_"))) continue;
+    // Both key forms: "<id>#<hash>" (choiceKey) and the oldest saves' "<id>|<rule index>", which the resolver still
+    // reads; a two-+1 pick under either moves inside "+1 to two abilities" (missed for the old form: one +1 was lost).
+    const legacy = /^(.*)\|(\d+)$/.exec(key);
+    const el = reg.get(legacy ? legacy[1] : key.split("#")[0]);
+    if (!el) continue;
+    el.rules.forEach((rule, idx) => {
+      if (rule.kind !== "select" || !rule.supports.startsWith("Plus two ")) return;
+      if (legacy ? Number(legacy[2]) !== idx : choiceKey(el, rule, idx) !== key) return;
+      const plus1 = reg.get(`ID_INTERNAL_${`PLUS_TWO_${el.id}_${idx}`.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}_PLUS1`);
+      const inner = plus1?.rules[0];
+      if (!plus1 || inner?.kind !== "select") return;
+      out ??= { ...ch, selections: { ...ch.selections } };
+      if (legacy) delete out.selections[key];
+      out.selections[choiceKey(el, rule, idx)] = [plus1.id];
+      out.selections[choiceKey(plus1, inner, 0)] = ids;
+    });
+  }
+  return out ?? ch;
+}
+
+/** Everything a saved character's picks need before the resolver reads them: the two upgrades, in the order they came. */
+export function upgradeSelections(ch: Character, reg: ARegistry): Character {
+  return upgradePositionKeys(upgradePlusTwo(ch, reg), reg);
 }

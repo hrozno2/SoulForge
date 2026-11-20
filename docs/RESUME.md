@@ -29,8 +29,9 @@ written and tried (16 elements change, 3 go) and then put back.
 W7 is done (the four decisions without a test got one).
 
 E2.4 so far: audit E3 (contributions carry their element's id), E2's list (docs/audit/text-rules.md), E4 (the rules
-database rebuild runs in a worker). Also E6's first half (the quick-recovery copy without a too-big portrait). Left: E1, the rest of E2, E5 step 2
-(profile first), E6's second half (needs two releases).
+database rebuild runs in a worker). Also E6's first half (the quick-recovery copy without a too-big portrait) and E1 (saved picks upgraded once at the
+door, the old reading removed). Left of E2.4: the rest of E2 (data first, reader by reader), E5 step 2 (profile
+first), E6's second half (needs two releases).
 
 Next: the rest of E2.4, the engine shape items of docs/AUDIT-2026-11-10.md. Order the
 audit gives: E4 (content off the main thread), E5 steps 1 to 3, E6 (portrait out of the record), then E1 (saved picks

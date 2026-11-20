@@ -7,7 +7,7 @@ import { isModern } from "./edition";
 import { conceptOf, conceptOfMarker } from "../engine/concepts";
 import { hash } from "../engine/load";
 import { resolveTimeline } from "../engine/timeline";
-import { upgradePositionKeys } from "../engine/selections";
+import { upgradeSelections } from "../engine/selections";
 
 export interface ActiveElement {
   el: AElement;
@@ -307,50 +307,6 @@ function mutualExclusions(el: AElement, reg: ARegistry): Set<string> {
  */
 const KEYS = new WeakMap<AElement, string[]>();
 /**
- * Whether old picks are among a choice's options, so a pick that only shares the kind is not read into it (a
- * species' two Standard languages are not its optional "Customized Language" picks). A filter that depends on the
- * character ("$(spellcasting:...)") is not judged here.
- */
-function legacyOffered(reg: ARegistry, rule: SelectRule, ids: string[]): boolean {
-  if (!rule.supports || rule.supports.includes("$(")) return true;
-  const offered = new Set(reg.find(rule.type, rule.supports).map((e) => e.id));
-  return ids.every((id) => offered.has(id));
-}
-
-/** An old position-keyed pick ("<id>|<n>") that moved: see its use in walk. Undefined unless exactly one fits. */
-function movedLegacy(ch: Character, reg: ARegistry, el: AElement, rule: SelectRule, idx: number): string[] | undefined {
-  if (rule.type === "List" || !rule.supports) return undefined;
-  const prefix = `${el.id}|`;
-  const keys = Object.keys(ch.selections).filter(
-    (k) => k.startsWith(prefix) && /^\d+$/.test(k.slice(prefix.length)) && Number(k.slice(prefix.length)) !== idx,
-  );
-  if (!keys.length) return undefined;
-  const offered = new Set(reg.find(rule.type, rule.supports).map((e) => e.id));
-  const fitsAt = (n: number, ids: string[]) => {
-    const r = el.rules[n];
-    // An optional choice at that position does not hold on to it against this required one (see the optional side),
-    // nor one switched off by an option the character does not use (Tasha's "Customized Language").
-    const off = (x: { requirements?: string }) => {
-      const q = (x.requirements ?? "").trim();
-      return /^ID_[A-Z0-9_]+$/.test(q) && !ch.options.includes(q);
-    };
-    return (
-      !!r &&
-      r.kind === "select" &&
-      !off(r as { requirements?: string }) &&
-      ids.every((id) => reg.get(id)?.type === r.type) &&
-      legacyOffered(reg, r as SelectRule, ids) &&
-      !(skippable(r as SelectRule, el) && !skippable(rule, el) && legacyOffered(reg, rule, ids))
-    );
-  };
-  const found = keys.filter((k) => {
-    const ids = ch.selections[k] ?? [];
-    return ids.length > 0 && !fitsAt(Number(k.slice(prefix.length)), ids) && ids.every((id) => offered.has(id));
-  });
-  return found.length === 1 ? ch.selections[found[0]] : undefined;
-}
-
-/**
  * A choice the player may turn down: one marked optional, or a variant ("Variant Feature", "Optional class feature").
  * Not a choice inside a variant that was taken (C7.5: the Variant Human's increase, skill and feat were left turned
  * down): once the variant is the character's, what it asks for is required. Nor a choice that only carries the name
@@ -491,42 +447,9 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         visit(target, ownerLevel, el.id, root, classOwner, Math.max(at, rule.level ?? 0), below);
       } else {
         const key = choiceKey(el, rule, idx);
-        const legacy = `${el.id}|${idx}`;
-        // A character saved before stable keys has its picks under the rule's position. They are read only when every
-        // pick is of this choice's kind, so a pick that now sits at another position is never taken for this one.
-        const old = ch.selections[key] === undefined ? ch.selections[legacy] : undefined;
-        // An optional choice (Customized Language) leaves an old pick to a required one of its kind that also offers it
-        // and has none (the species' own Language): the pick was made for that one.
-        const requiredTakes = (ids: string[]) =>
-          skippable(rule, el) &&
-          el.rules.some(
-            (r, j) =>
-              j !== idx &&
-              r.kind === "select" &&
-              r.type === rule.type &&
-              !skippable(r as SelectRule, el) &&
-              ch.selections[choiceKey(el, r as SelectRule, j)] === undefined &&
-              legacyOffered(reg, r as SelectRule, ids),
-          );
-        // Whether the pick is among the options is asked only where the element has another choice of the same kind
-        // to mix it up with; elsewhere the kind settles it (options built at run time, such as a class's increases, are
-        // not all in the registry's list).
-        const twin = el.rules.some((r, j) => j !== idx && r.kind === "select" && r.type === rule.type);
-        const oldFits =
-          !!old &&
-          (rule.type === "List" ||
-            (old.every((id) => reg.get(id)?.type === rule.type) && (!twin || (legacyOffered(reg, rule, old) && !requiredTakes(old)))));
-        // The content moved its rules since (a species' Size was its 2nd rule, its languages the 6th): an old pick at
-        // another position of this element, that position no longer holding a choice it fits, is this choice's when
-        // it is the only one whose every pick is among this choice's options (2026-10-29: saved 2024 species lost
-        // their size and languages).
-        const moved = ch.selections[key] === undefined && !oldFits ? movedLegacy(ch, reg, el, rule, idx) : undefined;
-        // Audit E1: the old position keys are upgraded once, before the walk (src/engine/selections.ts); the reading
-        // here stays only behind `legacyReads` until the proof against it has run, and goes in the next commit.
-        let chosen = (legacyReads.on ? (ch.selections[key] ?? (oldFits ? old! : (moved ?? []))) : (ch.selections[key] ?? [])).slice(
-          0,
-          rule.number,
-        );
+        // Picks saved under an older build's position keys are upgraded once, before the walk
+        // (src/engine/selections.ts, audit E1): here a choice reads its own key and nothing else.
+        let chosen = (ch.selections[key] ?? []).slice(0, rule.number);
         // A pick saved before the choice's options were wrapped (a bare skill, where the option now gives the skill and
         // its expertise: the 2014 Blessings of Knowledge, 2026-11-16) is the option that gives it. Only for a choice
         // that lists its options by id.
@@ -882,39 +805,7 @@ export function stillToChoose(s: SelectSlot, _r?: unknown): boolean {
  * two was an old bug (docs/ENGINE-PLAN.md, E5).
  */
 export function resolve(ch: Character, reg: ARegistry): Resolved {
-  const plus = upgradePlusTwo(ch, reg);
-  return resolveTimeline(legacyReads.on ? plus : upgradePositionKeys(plus, reg), reg);
-}
-
-/** For the proof of audit E1 only (src/engine/selections.test.ts): the walk reading old position keys itself. */
-export const legacyReads = { on: false };
-
-/**
- * Characters saved before a choice of two +1s became "+2 to one ability" or "+1 to two abilities" (registry.ts,
- * plusTwoChoices) keep their two +1s: the picks move inside "+1 to two abilities". Nothing else changes.
- */
-function upgradePlusTwo(ch: Character, reg: ARegistry): Character {
-  let out: Character | undefined;
-  for (const [key, ids] of Object.entries(ch.selections)) {
-    if (!ids.length || ids.some((id) => id.startsWith("ID_INTERNAL_PLUS_TWO_"))) continue;
-    // Both key forms: "<id>#<hash>" (choiceKey) and the oldest saves' "<id>|<rule index>", which the resolver still
-    // reads; a two-+1 pick under either moves inside "+1 to two abilities" (missed for the old form: one +1 was lost).
-    const legacy = /^(.*)\|(\d+)$/.exec(key);
-    const el = reg.get(legacy ? legacy[1] : key.split("#")[0]);
-    if (!el) continue;
-    el.rules.forEach((rule, idx) => {
-      if (rule.kind !== "select" || !rule.supports.startsWith("Plus two ")) return;
-      if (legacy ? Number(legacy[2]) !== idx : choiceKey(el, rule, idx) !== key) return;
-      const plus1 = reg.get(`ID_INTERNAL_${`PLUS_TWO_${el.id}_${idx}`.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}_PLUS1`);
-      const inner = plus1?.rules[0];
-      if (!plus1 || inner?.kind !== "select") return;
-      out ??= { ...ch, selections: { ...ch.selections } };
-      if (legacy) delete out.selections[key];
-      out.selections[choiceKey(el, rule, idx)] = [plus1.id];
-      out.selections[choiceKey(plus1, inner, 0)] = ids;
-    });
-  }
-  return out ?? ch;
+  return resolveTimeline(upgradeSelections(ch, reg), reg);
 }
 
 export type { AbilityId };

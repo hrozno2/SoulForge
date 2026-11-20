@@ -63,6 +63,8 @@ export interface RefClass {
   mcToolCounts?: number[];
   /** On the first entry only: what each background trains by count (each alternative's count). */
   backgrounds?: RefBackground[];
+  /** On the first entry only: what each species and subrace trains by count. */
+  species?: (RefBackground & { base: string })[];
   asiLevels: number[];
   epicBoon: number | null;
   multiclass: Partial<Record<AbilityId, number>> | null;
@@ -584,10 +586,12 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
     // A background's own also comes through its options (a House Agent's house, a custom background's picks), though
     // never through a feat (the 2024 origin feat is the feat's training, not the background's).
     const ofBackground = (id: string) => (c: string[]) => c[0] === id && c.slice(1).every((x) => reg.get(x)?.type !== "Feat");
+    // Each training once, whichever provider's id carries it (a species' own Stealth beside the same one borrowed).
     const from = (kind: string, mine: (c: string[]) => boolean) =>
       r.active
         .map((a) => ({ a, k: conceptOf(a.el) }))
-        .filter((x) => x.k?.startsWith(`${kind}:`) && (r.via.get(x.a.el.id) ?? []).some(mine));
+        .filter((x) => x.k?.startsWith(`${kind}:`) && (r.via.get(x.a.el.id) ?? []).some(mine))
+        .filter((x, i, all) => all.findIndex((y) => y.k === x.k) === i);
     const direct = (kind: string, ...roots: string[]) => from(kind, own(roots));
     const open = (...owners: string[]) => r.slots.some((s) => owners.includes(s.owner.id) && stillToChoose(s, r));
     const few = (got: number, wants: number[], undecided: boolean) => !wants.includes(got) && !(undecided && got < Math.max(...wants));
@@ -615,6 +619,44 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
           `${x.el.name}: ${tools.length} tools ${how}, the class gives ${toolWants.join(" or ")} (${tools.map((y) => y.a.el.name).join(", ")})`,
         );
     });
+    // The species, the same way: its skills, tools and (a 2014 species) languages by count, through its traits and
+    // subrace but not a feat it gives. Aurora files a subrace apart from its species, so any entry of the species
+    // (itself or one of its subraces) may be the one.
+    const sp = ch.race ? reg.get(ch.race) : undefined;
+    const speciesRef = ref.find((c) => c.species)?.species;
+    if (sp && speciesRef && !isPlaytest(sp)) {
+      const bare = lc(sp.name.replace(/\s*\(.*\)$/, ""));
+      const exact = speciesRef.filter((x) => lc(x.name) === lc(sp.name));
+      const same = [...new Set([...exact, ...speciesRef.filter((x) => lc(x.base) === lc(sp.name) || lc(x.base) === bare)])];
+      const mine = same.filter((x) => (x.edition === "one") === isModern(sp));
+      const cands = mine.length ? mine : same;
+      const got = {
+        skills: from("skill", ofBackground(sp.id)).length,
+        tools: from("tool", ofBackground(sp.id)).length,
+        languages: from("language", ofBackground(sp.id)).length,
+      };
+      // A choice still open, or holding a pick it does not offer (a finding of its own, "A pick its choice does not
+      // offer": a moved character's longbow where the Dwarf's tool goes), leaves the count short.
+      const undecided = r.slots.some(
+        (x) => x.root === "race" && (stillToChoose(x, r) || x.chosen.some((id) => !x.options.some((o) => o.id === id))),
+      );
+      // Tasha's "Customizing Your Origin" lets a species' weapon or armor training be traded for tools: more tools
+      // than the species' own are then right.
+      const traded = [...r.ids].some((id) => /CUSTOMIZED_PROFICIENCY/.test(id));
+      const fits = (b: RefBackground) =>
+        !few(got.skills, b.skills, undecided) &&
+        (!few(got.tools, b.tools, undecided) || (traded && got.tools > Math.max(...b.tools))) &&
+        // Languages only where the species' own entry states them: the later books (Monsters of the Multiverse) and
+        // the 2024 rules give them by a general rule, not per species.
+        (b.edition === "one" || isModern(sp) || Math.max(...b.languages) === 0 || !few(got.languages, b.languages, undecided));
+      if (cands.length && !cands.some(fits)) {
+        const b = cands[0];
+        add(
+          RULE,
+          `${sp.name}: ${got.skills} skills, ${got.tools} tools, ${got.languages} languages; the species gives ${[...new Set(cands.flatMap((c) => c.skills))].join(" or ")}, ${[...new Set(cands.flatMap((c) => c.tools))].join(" or ")} and ${b.edition === "one" || isModern(sp) ? "its languages by the 2024 rules" : [...new Set(cands.flatMap((c) => c.languages))].join(" or ")}`,
+        );
+      }
+    }
     const bg = ch.background ? reg.get(ch.background) : undefined;
     const known = ref.find((c) => c.backgrounds)?.backgrounds;
     if (bg && known && !isPlaytest(bg)) {

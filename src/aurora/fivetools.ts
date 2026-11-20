@@ -829,7 +829,7 @@ function trainingRules(e0: J, label: string, out: AElement[], ctx: Ctx, idBase: 
     }
     if (!entry?.other) return entry;
     const text = stripTags(JSON.stringify(e.entries ?? "")).toLowerCase();
-    const named = (ctx.languageNames ?? []).filter(
+    const named = [...new Set(ctx.languageNames ?? [])].filter(
       (n) => n.length > 3 && !(n in entry) && new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(text),
     );
     if (!named.length) {
@@ -850,6 +850,8 @@ function trainingRules(e0: J, label: string, out: AElement[], ctx: Ctx, idBase: 
     }
     const { other, ...rest } = entry;
     void other;
+    // Several named: "other" is one language, so one of them (Plane Shift: Ixalan's Itzocan or Vampire).
+    if (named.length > 1 && !rest.choose) return { ...rest, choose: { from: named, count: 1 } };
     return { ...rest, ...Object.fromEntries(named.map((n) => [n, true])) };
   });
   rules.push(...langRules(langs, label).rules);
@@ -2339,8 +2341,17 @@ function convertRace(r: J, ctx: Ctx, subs: J[], out: AElement[]): void {
   const mine = subs.filter((s) => s.raceName === r.name && (s.raceSource ?? r.source) === r.source);
   // A subrace that overwrites a field (Duergar: languages; Draconblood: ability scores) replaces the species' own:
   // the species' rules from that field do not apply with it.
+  // So does one that sets the field to nothing (the Mark of Finding's skills), and one that writes the whole language
+  // list again, Common included (its "Common and Goblin" beside the Half-Orc's "Common and Orc").
   const overwriting = (field: string) =>
-    mine.filter((s) => s.overwrite?.[field]).map((s) => ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source));
+    mine
+      .filter(
+        (s) =>
+          s.overwrite?.[field] ||
+          s[field] === null ||
+          (field === "languageProficiencies" && ((s[field] ?? []) as J[]).some((b) => b?.common === true)),
+      )
+      .map((s) => ftId("SUBRACE", `${r.name} ${s.name ?? "Base"}`, s.source));
   const gate = (pick: (x: ARule) => boolean, ids: string[]) => {
     if (!ids.length) return;
     const not = ids.map((x) => `!${x}`).join(",");

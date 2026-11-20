@@ -783,6 +783,7 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
   );
   if (byOwner.size < 2) return 0;
   let total = 0;
+  let guessed = 0;
   let unknown = false;
   for (const e of byOwner.values()) {
     const cls = reg?.get(e.owner);
@@ -796,12 +797,13 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
       const row = Array.from({ length: 9 }, (_, i) => pass.stats.get(`${lc(e.name)}:spellcasting:slots:${i + 1}`)).filter((n) => n > 0);
       const match = FULL_CASTER_SLOTS.findIndex((r, i) => i > 0 && r.length === row.length && r.every((n, j) => n === row[j]));
       total += match > 0 ? match : 0;
+      guessed += match > 0 ? match : 0;
       unknown = true;
     }
   }
-  // The stated level stands in for a caster the rules here do not know, and never lowers what the others give (content
-  // of two providers: only one of them stating its share).
-  return unknown && stated > total ? stated : total;
+  // The stated level stands in for a caster the rules here do not know. Where it is less than the known classes alone
+  // give, it leaves them out (content of two providers, only one stating its share): then the count here holds.
+  return unknown && stated >= total - guessed && stated > 0 ? stated : total;
 }
 
 /** Highest spell level a shared multiclass slot table gives, 0 when not applicable. */

@@ -1,6 +1,6 @@
 # Soul Forge: where the engine stands
 
-Updated 2026-11-19 (v0.26.3 is the release; everything below it is unreleased). Every number here was measured on this date unless
+Updated 2026-11-20 (v0.26.3 is the release; everything below it is unreleased). Every number here was measured on this date unless
 marked otherwise, and each comes from a command anyone can run again (last column of the scoreboard). Update this page
 at the end of each working session, so the trend shows.
 
@@ -15,6 +15,10 @@ sweep (5e.tools, SRD) clean. Unreleased.
 
 Same day: the Psi Warrior's and Soulknife's Psionic Energy dice now show their count and rest (they showed none, or
 "1/Short Rest"), and the check judges them. Full validation clean after it.
+
+20 November: species are judged the same way (skills, tools, languages by count). Four faults fixed on rarer books
+(a variant's language list on top of its species', "other" language giving two) and on mixed content. Gates, 1,200
+random characters, pairwise, the move of 400 and the sweep clean.
 
 ## What is open, in plain words
 

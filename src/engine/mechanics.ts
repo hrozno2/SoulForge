@@ -139,6 +139,9 @@ export function borrowMechanics(byId: Map<string, AElement>): MechanicsReport {
     const setHere = new Set(el.rules.filter((r) => r.kind === "stat").map((r) => family((r as { name: string }).name)));
     for (const rid of rootsById.get(el.id) ?? []) for (const n of statsUnder(rid)) setHere.add(family(n));
     const givenHere = conceptsOf(el);
+    // What its owner gives straight away counts as given: the 5e.tools Bugbear trains Stealth on the species, and its
+    // trait Sneaky borrowing Aurora's Stealth made the species' own a second skill.
+    for (const rid of rootsById.get(el.id) ?? []) for (const k of conceptsOf(byId.get(rid) ?? el)) givenHere.add(k);
     // A copy with its own armor class formula borrows none of its twin's, whatever the twin calls the parts.
     const ownAc = el.rules.some((r) => r.kind === "stat" && r.name === "ac:calculation");
     // A copy that raises walking speed itself borrows no raise to the other speeds: "speed increases by 10 feet" is

@@ -24,6 +24,7 @@ export const RULES_REF_CLASSES = [
   "wizard",
 ];
 export const RULES_REF_URL = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/class";
+export const RULES_REF_SPECIES_URL = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/races.json";
 export const RULES_REF_BACKGROUNDS_URL = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/backgrounds.json";
 
 type Json = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -161,6 +162,74 @@ export function condenseBackgrounds(file: Json): Json[] {
 }
 
 /**
+ * The species of 5e.tools condensed to what each trains by count, as the backgrounds are: one entry per species and
+ * one per subrace ("Elf (High)"), a subrace's own list standing in place of its species' (5e.tools writes the whole
+ * list on it: the High Elf's languages are Common, Elvish and one more). `base` is the species' name without a subrace.
+ */
+/**
+ * Species entries read with the book beside them. The Githyanki's Astral Knowledge (Monsters of the Multiverse) gives
+ * a skill and a weapon or tool chosen anew after each long rest: content may leave them to the player.
+ */
+const SPECIES_BY_THE_BOOK: Record<string, { languages?: number[]; tools?: number[]; skills?: number[] }> = {
+  "Githyanki|MPMM": { skills: [0, 1], tools: [0, 1] },
+  // Mordenkainen's Tome of Foes, Githyanki, Decadent Mastery: "one language of your choice, and ... one skill or tool
+  // of your choice"; 5e.tools holds it as text only.
+  "Gith (Githyanki)|MTF": { skills: [0, 1], tools: [0, 1], languages: [3] },
+  // One Grung Above names no tool; Aurora's file trains the Grung's whistle-stick. Left open either way (the book was
+  // not at hand to settle it).
+  "Grung|OGA": { tools: [0, 1] },
+  // Tasha's Custom Lineage, Variable Trait: darkvision, or one skill.
+  "Custom Lineage|TCE": { skills: [0, 1] },
+  // Van Richten's lineages, Ancestral Legacy: two skills, unless the lineage replaces a species whose own are kept.
+  "Dhampir|VRGR": { skills: [0, 2] },
+  "Hexblood|VRGR": { skills: [0, 2] },
+  "Reborn|VRGR": { skills: [0, 2] },
+  // The Khoravar's Skill Versatility (Eberron: Forge of the Artificer): one skill or tool.
+  "Khoravar|EFA": { skills: [0, 1], tools: [0, 1] },
+  // Sword Coast Adventurer's Guide, Half-Elf Variants: a trait "in place of" Skill Versatility (Keen Senses gives one).
+  "Half-Elf (Variant; Aquatic Elf Descent)|SCAG": { skills: [0, 1] },
+  "Half-Elf (Variant; Drow Descent)|SCAG": { skills: [0, 1] },
+  "Half-Elf (Variant; Moon Elf or Sun Elf Descent)|SCAG": { skills: [0, 1] },
+  "Half-Elf (Variant; Wood Elf Descent)|SCAG": { skills: [0, 1] },
+  // Plane Shift: the Tajuru's "any combination of two skills or tools", Nephalia's "any combination of four".
+  "Elf (Zendikar) (Tajuru Nation)|PSZ": { skills: [1, 2, 3], tools: [0, 1, 2] },
+  "Human (Innistrad) (Nephalia)|PSI": { skills: [0, 1, 2, 3, 4], tools: [0, 1, 2, 3, 4] },
+};
+
+export function condenseSpecies(file: Json): Json[] {
+  const races = (file.race ?? []) as Json[];
+  const find = (name: string, source: string) => races.find((r) => r.name === name && r.source === source);
+  const field = (r: Json | undefined, key: string, depth = 0): unknown =>
+    !r || depth > 5 ? undefined : (r[key] ?? (r._copy ? field(find(r._copy.name, r._copy.source), key, depth + 1) : undefined));
+  const entry = (name: string, base: string, source: string, edition: unknown, get: (key: string) => unknown) => ({
+    name,
+    base,
+    source,
+    edition: edition === "one" ? "one" : "classic",
+    skills: profCounts(get("skillProficiencies")),
+    tools: profCounts(get("toolProficiencies")),
+    languages: profCounts(get("languageProficiencies")),
+    ...SPECIES_BY_THE_BOOK[`${name}|${source}`],
+  });
+  const out = races.map((r) => entry(r.name, r.name, r.source, field(r, "edition"), (k) => field(r, k)));
+  for (const s of (file.subrace ?? []) as Json[]) {
+    const parent = find(s.raceName, s.raceSource);
+    if (!parent) continue;
+    out.push(
+      entry(
+        s.name ? `${s.raceName} (${s.name})` : s.raceName,
+        s.raceName,
+        s.source ?? s.raceSource,
+        s.edition ?? field(parent, "edition"),
+        // Set to nothing on the subrace: the species' own is taken away.
+        (k) => (k in s ? (s[k] ?? undefined) : field(parent, k)),
+      ),
+    );
+  }
+  return out;
+}
+
+/**
  * A subclass's always-prepared spells by class level ("Life Domain Spells", "Oath of Devotion Spells"), names in lower
  * case, from 5e.tools' "additionalSpells"; null when it has none or several sets to choose from (Circle of the Land's
  * terrains), so the rules check judges only what is fixed (W5).
@@ -281,5 +350,6 @@ export async function downloadRulesRef(get: (url: string) => Promise<Json>): Pro
   for (const c of RULES_REF_CLASSES) all.push(...condenseClassFile(await get(`${RULES_REF_URL}/class-${c}.json`)));
   // The backgrounds ride on the first entry, so the reference stays one list of classes wherever it is kept.
   if (all.length) all[0].backgrounds = condenseBackgrounds(await get(RULES_REF_BACKGROUNDS_URL));
+  if (all.length) all[0].species = condenseSpecies(await get(RULES_REF_SPECIES_URL));
   return all;
 }

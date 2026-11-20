@@ -87,6 +87,21 @@ describe("a stated caster level beside classes the rules know", () => {
       ),
     ).toBe(10);
   });
+  // The same pair on 5e.tools content alone, where both state their share: the stated level holds, and the subclass's
+  // own slot row (which looks like a higher full caster's) does not raise it.
+  it("holds when it covers the known classes", () => {
+    expect(
+      multiclassCasterLevel(
+        pass(
+          [
+            ["Ranger", "ID_5ET_CLASS_XPHB_RANGER", 5],
+            ["Mystic Arts", "ID_5ET_CLASS_XPHB_MONK", 5],
+          ],
+          { "multiclass:spellcasting:level": 4, "mystic arts:spellcasting:slots:1": 3 },
+        ),
+      ),
+    ).toBe(4);
+  });
   it("still stands in when it gives more than the known classes do", () => {
     expect(
       multiclassCasterLevel(

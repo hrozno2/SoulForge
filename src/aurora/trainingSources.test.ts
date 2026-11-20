@@ -10,7 +10,7 @@ import { resolve } from "./engine";
 import { buildSheet } from "./sheet";
 import { normalizeCharacter } from "./character";
 import { checkCharacter, type RefClass } from "./rulesCheck";
-import { condenseBackgrounds, condenseClassFile } from "./rulesRef";
+import { condenseBackgrounds, condenseClassFile, condenseSpecies } from "./rulesRef";
 import { loadContentSet } from "../engine/testContent";
 
 const RULE = "Training by source";
@@ -87,6 +87,34 @@ describe("the reference's training counts", () => {
   });
 });
 
+describe("the reference's species", () => {
+  it("reads a species and its subraces, a subrace's own list in place of the species'", () => {
+    const out = condenseSpecies({
+      race: [
+        { name: "Elf", source: "PHB", skillProficiencies: [{ perception: true }], languageProficiencies: [{ common: true, elvish: true }] },
+        { name: "Wood Elf Kin", source: "X", _copy: { name: "Elf", source: "PHB" } },
+        { name: "Human", source: "XPHB", edition: "one", skillProficiencies: [{ any: 1 }] },
+      ],
+      subrace: [
+        {
+          name: "High",
+          raceName: "Elf",
+          raceSource: "PHB",
+          source: "PHB",
+          languageProficiencies: [{ common: true, elvish: true, anyStandard: 1 }],
+        },
+        { name: "Rock", raceName: "Gnome", raceSource: "PHB", source: "PHB" },
+      ],
+    });
+    expect(out.map((b) => [b.name, b.base, b.edition, b.skills, b.tools, b.languages])).toEqual([
+      ["Elf", "Elf", "classic", [1], [0], [2]],
+      ["Wood Elf Kin", "Wood Elf Kin", "classic", [1], [0], [2]],
+      ["Human", "Human", "one", [1], [0], [0]],
+      ["Elf (High)", "Elf", "classic", [1], [0], [3]],
+    ]);
+  });
+});
+
 describe("training by source", () => {
   // A Sorcerer who multiclassed into Warlock, on the bundled SRD 5.2: two Sorcerer skills, none from Warlock.
   const reg = loadContentSet("", "srd");
@@ -121,6 +149,18 @@ describe("training by source", () => {
   it("finds a second class that gave another number than multiclassing gives", () => {
     const found = check(refWith([{ choose: { from: SORCERER, count: 2 } }], [{ any: 1 }]));
     expect(found.map((f) => f.detail.replace(/ \(.*\)$/, ""))).toEqual(["Warlock: 0 skills by multiclassing, the class gives 1"]);
+  });
+
+  it("finds a species that gave another number than its own entry", () => {
+    const sp = reg.get(ch.race!)!;
+    const ref = refWith([{ choose: { from: SORCERER, count: 2 } }]);
+    const entry = { name: sp.name, base: sp.name, source: "XPHB", edition: "one", skills: [5], tools: [0], languages: [0] };
+    ref[0].species = [entry];
+    const got = check(ref);
+    expect(got.length).toBe(1);
+    expect(got[0].detail).toMatch(new RegExp(`^${sp.name}: \\d skills, 0 tools, \\d languages; the species gives 5, 0 and `));
+    ref[0].species = [{ ...entry, skills: [0, 1, 2] }];
+    expect(check(ref)).toEqual([]);
   });
 
   it("finds a background that gave another number than its own lines", () => {

@@ -150,7 +150,15 @@ feature's own table of numbers by level, reads "all dice on a long rest" and "on
 rest", and side-data uses on a feature that spends another feature's uses are left to that feature. "Feature uses by
 level" works the number out itself. Found on the way (mixed content): a caster level only one provider stated
 replaced what the known classes give (an Aurora Ranger 17 with a casting 5e.tools Monk subclass had two slots).
-Still open here: species by count, starting equipment.
+Species by count, 2026-11-20: the reference holds 257 species and subraces (races.json; a subrace's own list in place
+of its species'; entries read against the book where 5e.tools holds text only: Custom Lineage, the Ravenloft lineages,
+Githyanki, Khoravar, the Half-Elf variants, two Plane Shift subraces). Languages are judged only where the species'
+own entry states them. Found and fixed: a subrace that writes the language list again without an "overwrite" mark had
+the species' languages on top (Mark of Finding: Common, Orc and Goblin); a field a subrace sets to nothing kept the
+species'; "other" where the text names two languages gave both (Plane Shift: Ixalan); on mixed content a trait
+borrowed a training its species already gives (the Bugbear's Stealth, making the species' own a second skill).
+Known, not gated: Aurora's sweep rows (custom background, a few Plane Shift subraces, City Watch's variant).
+Still open here: starting equipment.
 
 **W6. Concepts everywhere two providers can meet (L2).** Training, languages, senses and sizes are compared by
 concept in the requirement context; the sheet's weapon line now does too. Sweep sheet.ts, rulesCheck.ts and

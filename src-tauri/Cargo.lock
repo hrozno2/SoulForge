@@ -488,7 +488,7 @@ dependencies = [
 
 [[package]]
 name = "charforge"
-version = "0.26.3"
+version = "0.27.0"
 dependencies = [
  "serde_json",
  "tauri",

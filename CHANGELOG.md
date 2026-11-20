@@ -2,6 +2,41 @@
 
 What changed in each release. Newest first.
 
+## v0.27.0 (2026-11-20)
+
+- The origin options in the bundled SRD 5.1 are filed as Soul Forge's own, with a text of their own
+- Resume notes: paused before the release
+- The resolver reads each choice's own key only; the old position-key reading is gone (audit E1, step two)
+- Saved picks under old position keys are upgraded once, before the resolver runs (audit E1, step one)
+- A character with a large portrait keeps its edits through a sudden quit (audit E6, first half)
+- The rules database is rebuilt in a worker, so the window stays alive (audit E4)
+- One list of every rule read from prose, with how often each fires (audit E2, first part)
+- A statistic's parts carry the id of the element they came from (audit E3)
+- Tests for the four rules decisions that had none (W7 done)
+- Resume notes: a question on Tasha's options in the SRD bundle
+- Starting equipment judged; SRD classes get their fixed gear back; background gold on 5e.tools
+- The rules check judges a species' skills, tools and languages by count
+- Psionic Energy dice counted; a stated caster level never lowers the known classes'
+- The rules check judges skills, tools and languages by their source
+- The rules check judges ability score increases by their source
+- Resume notes: E1.4, E2.2, E2.3 done
+- FastCharacter fully explained; every combination pairwise; concepts everywhere; the 2024 subclass renames; a borrowed choice twice
+- Resume notes: FastCharacter numbers
+- FastCharacter's differences judged; Pact of the Blade's Charisma kept to its weapon; a list of options is not a feature; the auto-fill's repeats
+- Resume notes for the night's Stage E work
+- Format the FastCharacter import test
+- The move brings no rules finding on the 400; fix-it buttons; picks with no place shown and cleared; FastCharacter explained
+- End-to-end: deleting a character puts it in Recently deleted, and Restore brings it back
+- The move keeps each spell and fills only what is open; a player's Move to 5e.tools screen; Recently deleted; importers and the Foundry actor's traits
+- Master plan: test files for the importer work; paused here
+- Master plan: E1.1 state and next step
+- Scrollbars keep their room so buttons never move under the pointer; removing a class asks a second click; the move switches species for a sub race 5e.tools files elsewhere (Zendikar elves)
+- Master plan: Stage E, the agreed order before Aurora leaves and after
+- From the full check: Chronurgy's Temporal Awareness reaches initiative on 5e.tools content; the content linter reads lower-case ids; coverage skips internal markers and gives its characters hand-set scores; the initiative check takes features it does not know as the sheet has them
+- STATUS: what is released and what is not
+- Full check fixes: unnamed books get a source entry only where content comes from them (the free rules named Tiamat's supplement); the adventures' fields decided; the SRD bundle rebuilt
+- New test kinds (the move's laws, rules-check mutations) and what they found: whole proficiency bonuses stack, Divine Soul's Cleric list, Giant Power's language, 2024 Keen Mind and Observant Expertise, a second move's improvement pairs
+
 ## v0.26.3 (2026-11-17)
 
 - The 2024 Moon Druid's Fount of Moonlight at level 7 (Aurora's copy said 9); found by the new subclass-spell check, every subclass swept

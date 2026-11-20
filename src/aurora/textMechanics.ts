@@ -24,6 +24,33 @@ const COUNT: Record<string, number> = {
   ten: 10,
 };
 const ABILITY = "strength|dexterity|constitution|intelligence|wisdom|charisma";
+/**
+ * Audit E2: one count of every rule read from prose. Switched on by the report (`RULES_TIER=text-rules`), each reader
+ * notes the elements it fires on: `kept` where its reading went into the element, `had` where the element already
+ * held that fact from data (5e.tools' own fields or its Foundry side data), so the text only repeated it.
+ */
+export const textTally = {
+  on: false,
+  rows: new Map<string, { kept: number; had: number; samples: string[] }>(),
+};
+/** A pass that only reports how many elements it changed. */
+export function noteCount(reader: string, n: number): number {
+  if (textTally.on && n) {
+    const row = textTally.rows.get(reader) ?? { kept: 0, had: 0, samples: [] };
+    row.kept += n;
+    textTally.rows.set(reader, row);
+  }
+  return n;
+}
+function note(reader: string, el: { name: string; type: string }, kept: boolean): void {
+  if (!textTally.on) return;
+  const row = textTally.rows.get(reader) ?? { kept: 0, had: 0, samples: [] };
+  if (kept) row.kept++;
+  else row.had++;
+  if (kept && row.samples.length < 4) row.samples.push(`${el.name} (${el.type})`);
+  textTally.rows.set(reader, row);
+}
+
 const plain = (html: string) =>
   html
     .replace(/<[^>]+>/g, " ")
@@ -239,15 +266,24 @@ export function applyTextUses(out: AElement[]): number {
   let n = 0;
   for (const el of out) {
     if (el.origin !== "5etools" || !USES_TYPES.has(el.type)) continue;
-    if (el.sheet?.usage || el.sheet?.descriptions?.some((d) => d.usage)) continue;
+    const hasUsage = !!el.sheet?.usage || !!el.sheet?.descriptions?.some((d) => d.usage);
+    if (hasUsage && !textTally.on) continue;
     const text = plain(el.description ?? "");
     const rest = recoveryFromText(text);
     if (!rest) continue;
+    if (hasUsage) {
+      note("limited uses and their rest", el, false);
+      continue;
+    }
     // The feature's own table of numbers by level comes first: the text beside it only points at the table.
     const table = tableUsesFromHtml(el.description ?? "");
     const max = table ? String(table[0][1]) : (usesFromText(text) ?? "1");
     const name = `${el.name.toLowerCase()}:uses`;
-    if (el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase() === name)) continue;
+    if (el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase() === name)) {
+      note("limited uses and their rest", el, false);
+      continue;
+    }
+    note("limited uses and their rest", el, true);
     // More at later levels, stated in the same text: "when you reach Fighter levels 7 (five dice total) and 15 (six
     // dice total)".
     const steps = [...text.matchAll(/\b(\d+) \((\w+) (?:dice|uses) total\)/gi)].map(
@@ -343,9 +379,12 @@ export function applyTextDc(out: AElement[]): number {
     // feature's own DC.
     if (RESERVED.test(owner)) continue;
     const name = `${owner}:dc`;
-    if (el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase().endsWith(":dc"))) continue;
+    const hasDc = el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase().endsWith(":dc"));
+    if (hasDc && !textTally.on) continue;
     const dc = dcFromText(plain(el.description ?? ""));
     if (!dc) continue;
+    note("a feature's save DC", el, !hasDc);
+    if (hasDc) continue;
     el.rules = [...el.rules, { kind: "stat", name, value: dc, bonus: "text dc" } as ARule];
     n++;
   }
@@ -401,9 +440,13 @@ export function attackFromText(name: string, text: string): NonNullable<AElement
 export function applyTextAttacks(out: AElement[]): number {
   let n = 0;
   for (const el of out) {
-    if (el.origin !== "5etools" || !USES_TYPES.has(el.type) || el.attacks?.length) continue;
+    if (el.origin !== "5etools" || !USES_TYPES.has(el.type)) continue;
+    const hasAttack = !!el.attacks?.length;
+    if (hasAttack && !textTally.on) continue;
     const a = attackFromText(el.name.replace(/\s*\(.*\)\s*$/, ""), plain(el.description ?? ""));
     if (!a) continue;
+    note("an attack of the feature's own", el, !hasAttack);
+    if (hasAttack) continue;
     el.attacks = [a];
     n++;
   }
@@ -669,30 +712,71 @@ export function applyTextStats(
     const text = plain(el.description ?? "").replace(/[^.]*\bgain proficiency\b[^.]*\.\s*(?=if you (?:are )?already\b)/gi, "");
     const has = (name: string) => el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase() === name);
     const has2 = (id?: string) => el.rules.some((r) => r.kind === "grant" && r.id === id);
+    const isNew = (r: ARule) =>
+      r.kind === "stat" ? !has(r.name.toLowerCase()) || r.name === "ac:calculation" : !has2((r as { id?: string }).id);
+    // Each reader by its name, so the report (audit E2) can say how often it fires and how often the data had it.
+    const read = (reader: string, found: ARule[]): ARule[] => {
+      const kept = found.filter(isNew);
+      if (found.length) note(reader, el, kept.length > 0);
+      return kept;
+    };
     const add = [
-      ...halfProficiencyFromText(text),
-      ...armorClassFromText(el.id, el.name, text),
-      ...savesFromText(text),
-      ...speedFromText(text).filter(
-        (r) =>
-          r.kind !== "stat" ||
-          !/misc$/.test(r.name) ||
-          !el.rules.some((x) => x.kind === "stat" && /^(?:innate )?speed(?::misc)?$/i.test(x.name)),
+      ...read("half proficiency on checks", halfProficiencyFromText(text)),
+      ...read("an armor class formula", armorClassFromText(el.id, el.name, text)),
+      ...read("saving throw proficiency", savesFromText(text)),
+      ...read(
+        "speeds",
+        speedFromText(text).filter(
+          (r) =>
+            r.kind !== "stat" ||
+            !/misc$/.test(r.name) ||
+            !el.rules.some((x) => x.kind === "stat" && /^(?:innate )?speed(?::misc)?$/i.test(x.name)),
+        ),
       ),
-      ...initiativeFromText(text),
-      ...checkBonusFromText(text),
-      ...limitsFromText(text),
-    ].filter((r) => (r.kind === "stat" ? !has(r.name.toLowerCase()) || r.name === "ac:calculation" : !has2((r as { id?: string }).id)));
+      ...read("initiative bonuses", initiativeFromText(text)),
+      ...read("bonuses to checks", checkBonusFromText(text)),
+      ...read("score maximums and other limits", limitsFromText(text)),
+    ];
     const train = trainingsFromText(text);
+    const asGrants = (type: string, found: (string | undefined)[]) =>
+      found.filter((id): id is string => !!id).map((id) => ({ kind: "grant", type, id }) as ARule);
     const grants = [
-      ...train.armor.map((k) => ["Proficiency", ids.armor(k)]),
-      ...train.weapons.map((k) => ["Proficiency", ids.weapon(k)]),
-      ...train.tools.map((k) => ["Proficiency", ids.tool(k)]),
-      ...train.skills.map((k) => ["Proficiency", ids.skill(k)]),
-      ...languagesFromText(text, languages).map((k) => ["Language", ids.language(k)]),
-    ]
-      .filter(([, id]) => id && !has2(id))
-      .map(([type, id]) => ({ kind: "grant", type, id }) as ARule);
+      ...read(
+        "armor training",
+        asGrants(
+          "Proficiency",
+          train.armor.map((k) => ids.armor(k)),
+        ),
+      ),
+      ...read(
+        "weapon training",
+        asGrants(
+          "Proficiency",
+          train.weapons.map((k) => ids.weapon(k)),
+        ),
+      ),
+      ...read(
+        "tool training",
+        asGrants(
+          "Proficiency",
+          train.tools.map((k) => ids.tool(k)),
+        ),
+      ),
+      ...read(
+        "skill training",
+        asGrants(
+          "Proficiency",
+          train.skills.map((k) => ids.skill(k)),
+        ),
+      ),
+      ...read(
+        "languages",
+        asGrants(
+          "Language",
+          languagesFromText(text, languages).map((k) => ids.language(k)),
+        ),
+      ),
+    ];
     add.push(...grants);
     if (add.length && !(has("ac:calculation") && add.some((r) => r.kind === "stat" && r.name === "ac:calculation"))) {
       el.rules = [...el.rules, ...add];

@@ -16,6 +16,7 @@ import {
   applyTextDc,
   applyTextStats,
   applyTextUseSteps,
+  noteCount,
   applyTextUses,
   dropPoolDefaults,
 } from "./textMechanics";
@@ -4359,8 +4360,8 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   applyTextSkillChoices(out);
   applyTextExpertiseOnChoices(out);
   applyTextUses(out);
-  applyArmorBonus(out);
-  applyCompanionBonus(out);
+  noteCount("a bonus to armor class under a condition", applyArmorBonus(out));
+  noteCount("a companion's armor class bonus", applyCompanionBonus(out));
   applyTextDc(out);
   applyTextStats(out, {
     tool: (n) => toolId(n, out),
@@ -4371,8 +4372,8 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
   });
   gateTraitTwins(out);
   for (const c of classes) applyTableMechanics(c, out);
-  dropPoolDefaults(out);
-  applyTextUseSteps(out);
+  noteCount("a pool the text sizes elsewhere (default use taken back)", dropPoolDefaults(out));
+  noteCount("uses a later feature adds to an earlier one", applyTextUseSteps(out));
   applyTextAttacks(out);
   resolveSpellRefs(out, spellIds);
   // Expanded lists: each named spell carries the subclass's list tag ("sleep", "hex|xphb": by name, the book when

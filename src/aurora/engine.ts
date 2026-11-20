@@ -7,6 +7,7 @@ import { isModern } from "./edition";
 import { conceptOf, conceptOfMarker } from "../engine/concepts";
 import { hash } from "../engine/load";
 import { resolveTimeline } from "../engine/timeline";
+import { upgradePositionKeys } from "../engine/selections";
 
 export interface ActiveElement {
   el: AElement;
@@ -520,7 +521,12 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
         // it is the only one whose every pick is among this choice's options (2026-10-29: saved 2024 species lost
         // their size and languages).
         const moved = ch.selections[key] === undefined && !oldFits ? movedLegacy(ch, reg, el, rule, idx) : undefined;
-        let chosen = (ch.selections[key] ?? (oldFits ? old! : (moved ?? []))).slice(0, rule.number);
+        // Audit E1: the old position keys are upgraded once, before the walk (src/engine/selections.ts); the reading
+        // here stays only behind `legacyReads` until the proof against it has run, and goes in the next commit.
+        let chosen = (legacyReads.on ? (ch.selections[key] ?? (oldFits ? old! : (moved ?? []))) : (ch.selections[key] ?? [])).slice(
+          0,
+          rule.number,
+        );
         // A pick saved before the choice's options were wrapped (a bare skill, where the option now gives the skill and
         // its expertise: the 2014 Blessings of Knowledge, 2026-11-16) is the option that gives it. Only for a choice
         // that lists its options by id.
@@ -876,8 +882,12 @@ export function stillToChoose(s: SelectSlot, _r?: unknown): boolean {
  * two was an old bug (docs/ENGINE-PLAN.md, E5).
  */
 export function resolve(ch: Character, reg: ARegistry): Resolved {
-  return resolveTimeline(upgradePlusTwo(ch, reg), reg);
+  const plus = upgradePlusTwo(ch, reg);
+  return resolveTimeline(legacyReads.on ? plus : upgradePositionKeys(plus, reg), reg);
 }
+
+/** For the proof of audit E1 only (src/engine/selections.test.ts): the walk reading old position keys itself. */
+export const legacyReads = { on: false };
 
 /**
  * Characters saved before a choice of two +1s became "+2 to one ability" or "+1 to two abilities" (registry.ts,

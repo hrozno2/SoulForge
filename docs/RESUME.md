@@ -26,8 +26,11 @@ any released character that uses one (its picks would show under "Earlier choice
 keep them and file them under "Soul Forge additions" instead of the SRD's name. The change that removes them was
 written and tried (16 elements change, 3 go) and then put back.
 
-Next, in order: tests for the four decisions that have none (W7's open part), then E2.4 (engine shape, the timeline's
-speed), the largest job left.
+W7 is done (the four decisions without a test got one).
+
+Next: E2.4, the engine shape items of docs/AUDIT-2026-11-10.md (E1 to E6), none started but E5 step 4. Order the
+audit gives: E4 (content off the main thread), E5 steps 1 to 3, E6 (portrait out of the record), then E1 (saved picks
+upgraded once at the door), E2 (one list of rules read from prose), E3 (contributions carry their element's id).
 
 ## 2026-11-18, morning: the night's run on Stage E (Chris asleep, "go with the plan all night")
 

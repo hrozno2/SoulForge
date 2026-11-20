@@ -176,7 +176,7 @@ PlayTab for every `r.ids.has(` on a proficiency, save, skill or language id and 
 `ownership` note comparing by id; both now go by concept (autofillRepeat.test.ts, ownership.test.ts). The sheet's
 weapon training and the requirement context already did.
 
-**W7. Rules decisions carry their text (L1, L2).** Sweep done 2026-11-20: every comment in src citing a book was read and each decision without a row got one (docs/RULES-DECISIONS.md, 76 rows); four rows have no test of their own yet. Every place the converter or the engine decides a rule that the
+**W7. Rules decisions carry their text (L1, L2).** Sweep done 2026-11-20: every comment in src citing a book was read and each decision without a row got one (docs/RULES-DECISIONS.md, 76 rows); the four without a test of their own got one (olderDecisions.test.ts). Done. Every place the converter or the engine decides a rule that the
 data does not state (edition mixing, what "standard" means, who steps aside for whom) gets the book, chapter and
 sentence in its comment and a test named for the rule. docs/RULES-DECISIONS.md lists them in one table: rule,
 source, where decided, test. The three reversed or narrowed readings found today were all undocumented decisions.

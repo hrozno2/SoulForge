@@ -32,6 +32,15 @@ const files = {
         entries: [],
       },
       {
+        name: "Brute",
+        source: "PHB",
+        size: ["M"],
+        speed: 30,
+        skillProficiencies: [{ intimidation: true }],
+        languageProficiencies: [{ common: true }],
+        entries: [{ name: "Menacing", type: "entries", entries: ["You gain proficiency in the Intimidation skill."] }],
+      },
+      {
         name: "Sun Human",
         source: "PSX",
         size: ["M"],
@@ -57,12 +66,12 @@ const files = {
   },
 };
 
-function build(raceName: string, sub?: RegExp) {
+function build(raceName: string, sub?: RegExp, options: string[] = []) {
   const reg = new ARegistry();
   reg.addElements(convertFiveTools({ files: files as never }));
   reg.build();
   const race = reg.ofType("Race").find((r) => r.name === raceName)!;
-  let ch = { ...newCharacter(), race: race.id };
+  let ch = { ...newCharacter(), race: race.id, options };
   if (sub) {
     const slot = resolve(ch, reg).slots.find((s) => s.options.some((o) => sub.test(o.name)))!;
     ch = { ...ch, selections: { ...ch.selections, [slot.key]: [slot.options.find((o) => sub.test(o.name))!.id] } };
@@ -93,4 +102,31 @@ describe('"other" where the text names two languages', () => {
     expect(got.length).toBe(2);
     expect(got).toContain("language:common");
   });
+});
+
+// Big batch, 2026-11-20: a Half-Orc with Tasha's customized proficiencies had the skill it chose and Intimidation too.
+// The species' own grant steps aside for the choice; its trait Menacing, whose text gives the same skill, did not.
+describe("a species' skill that its trait words as well", () => {
+  it("is one skill, and one when Tasha's customized proficiencies swap it", () => {
+    expect(build("Brute").skills).toEqual(["skill:intimidation"]);
+    const swapped = build("Brute", undefined, ["ID_5ET_OPTION_TCE_CUSTOMIZED_PROFICIENCY"]).skills;
+    expect(swapped.length).toBe(1);
+    expect(swapped).not.toEqual(["skill:intimidation"]);
+  });
+});
+
+describe.skipIf(!process.env.SOULFORGE_RULES)("the Half-Orc with Tasha's customized proficiencies", () => {
+  it("has the one skill it chose, not Menacing's Intimidation as well", async () => {
+    const { loadContentSet } = await import("../engine/testContent");
+    const reg = loadContentSet(process.env.SOULFORGE_RULES!, "5etools");
+    const skillsOf = (options: string[]) => {
+      const ch = autoFill({ ...newCharacter(), race: "ID_5ET_RACE_PHB_HALF_ORC", options }, reg);
+      return resolve(ch, reg)
+        .active.filter((a) => a.root === "race")
+        .map((a) => conceptOf(a.el))
+        .filter((k) => k?.startsWith("skill:"));
+    };
+    expect(skillsOf([])).toEqual(["skill:intimidation"]);
+    expect(skillsOf(["ID_5ET_OPTION_TCE_CUSTOMIZED_PROFICIENCY"]).length).toBe(1);
+  }, 600000);
 });

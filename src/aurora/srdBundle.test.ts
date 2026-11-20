@@ -384,3 +384,32 @@ describe("the bundled SRD", () => {
     }
   });
 });
+
+// Found 2026-11-20 by the starting equipment check: the bundled SRD 5.1 classes had lost every item given outright
+// (a Sorcerer's two daggers, a Rogue's leather armor and thieves' tools). The gear list is the converter's wording of
+// the data ("Leather Armor, 2 Dagger, Thieves' Tools"), not the book's sentence, so the SRD text check dropped it.
+describe("a class's starting gear in the SRD text check", () => {
+  it("keeps the list under the equipment heading, the converter's own wording of the data", () => {
+    const html =
+      "<p>Rogue. Hit die d8.</p><h5>EQUIPMENT</h5><ul><li><i>(a)</i> Rapier or <i>(b)</i> Shortsword</li><li>Leather Armor, 2 Dagger, Thieves' Tools</li></ul><h5>OTHER</h5><ul><li>Count Strahd approves of this.</li></ul>";
+    const r = srdDescription(html, "rogue hit die d8", undefined);
+    expect(r.html).toContain("<li>Leather Armor, 2 Dagger, Thieves' Tools</li>");
+    expect(r.dropped).toEqual(["Count Strahd approves of this."]);
+  });
+  it("the bundled classes give their fixed gear", async () => {
+    const { planFor } = await import("./startingEquipment");
+    const { loadContentSet } = await import("../engine/testContent");
+    const reg = loadContentSet("", "srd-5.1");
+    const fixed = (name: string) =>
+      planFor(
+        reg.ofType("Class").find((c) => c.name === name)!,
+        "class",
+        reg,
+      )!
+        .variants[0].fixed.map((f) => `${f.qty} ${f.text}`)
+        .sort();
+    expect(fixed("Sorcerer")).toEqual(["2 Dagger"]);
+    expect(fixed("Rogue")).toEqual(["1 Leather Armor", "1 Thieves' Tools", "2 Dagger"]);
+    expect(fixed("Barbarian")).toEqual(["1 Explorer's Pack", "4 Javelin"]);
+  });
+});

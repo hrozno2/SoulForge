@@ -1207,6 +1207,30 @@ const CUSTOM_ORIGIN_PROF = "ID_5ET_OPTION_TCE_CUSTOMIZED_PROFICIENCY";
  * name): each skill an older species gives can be swapped for another skill, each tool for another tool. Weapon and
  * armor training stays (the swap rules for those are the DM's). Gates the species' own grants and adds the choices.
  */
+/**
+ * A species' training that one of its traits gives as well (the Half-Orc's Intimidation, on the species and on
+ * Menacing, from the trait's text or side data) steps aside together: the species' own grant carries a condition
+ * (not with Tasha's customized proficiencies, not with a subrace that replaces it), and the trait's copy takes the
+ * same one. Before, the swapped skill came with the old one still there.
+ */
+function gateTraitTwins(out: AElement[]): void {
+  const byId = new Map(out.map((e) => [e.id, e]));
+  for (const race of out) {
+    if (race.type !== "Race" || race.origin !== "5etools") continue;
+    const gated = new Map<string, string>();
+    for (const r of race.rules)
+      if (r.kind === "grant" && r.requirements && (r.type === "Proficiency" || r.type === "Language")) gated.set(r.id, r.requirements);
+    if (!gated.size) continue;
+    for (const r of race.rules) {
+      const trait = r.kind === "grant" && r.type === "Racial Trait" ? byId.get(r.id) : undefined;
+      if (!trait || !trait.rules.some((x) => x.kind === "grant" && gated.has(x.id) && !x.requirements)) continue;
+      trait.rules = trait.rules.map((x) =>
+        x.kind === "grant" && gated.has(x.id) && !x.requirements ? ({ ...x, requirements: gated.get(x.id) } as ARule) : x,
+      );
+    }
+  }
+}
+
 function customProficiencies(rules: ARule[], label: string, ctx: Ctx, out: AElement[]): void {
   const at = (re: RegExp) => rules.flatMap((x, i) => (x.kind === "grant" && x.type === "Proficiency" && re.test(x.id) ? [i] : []));
   const skills = at(/^ID_5ET_SKILL_/);
@@ -2564,8 +2588,10 @@ function gearText(it: unknown): string {
   if (typeof it === "string") return titleCase(plainName(it.split("|")[0]));
   const x = (it ?? {}) as J;
   const q = Number(x.quantity) || 1;
-  if (x.value !== undefined) return `${Math.round(Number(x.value) / 100)} GP`;
-  const worth = x.containsValue ? ` (with ${Math.round(Number(x.containsValue) / 100)} GP)` : "";
+  // Money is in copper: whole gold as gold, less as silver or copper (the Haunted One's single silver piece was "0 GP").
+  const coins = (cp: number) => (cp % 100 === 0 ? `${cp / 100} GP` : cp % 10 === 0 ? `${cp / 10} SP` : `${cp} CP`);
+  if (x.value !== undefined) return coins(Number(x.value));
+  const worth = x.containsValue ? ` (with ${coins(Number(x.containsValue))})` : "";
   // "One of these kinds" (the 2024 Monk), worded so the starting-gear builder offers both.
   if (Array.isArray(x.equipmentTypes))
     return `${(x.equipmentTypes as string[])
@@ -2594,24 +2620,36 @@ function gearText(it: unknown): string {
 function equipmentHtml(se: unknown): string {
   const data = (Array.isArray(se) ? se : (se as J)?.defaultData) as J[] | undefined;
   if (!Array.isArray(data) || !data.length) return "";
-  const lettered = data.length === 1 && Object.keys(data[0]).every((k) => /^[A-Z]$/.test(k));
+  // Lettered options: capital letters (2024), or small ones where an option is or holds money (Ravenloft: The Horrors
+  // Within writes its "(a) the gear and 14 GP or (b) 50 GP" that way; read as a 2014 list, neither gave its gold).
+  const withMoney = (items: unknown) => (items as unknown[]).some((it) => it && typeof it === "object" && (it as J).value !== undefined);
+  const lettered =
+    data.length === 1 &&
+    (Object.keys(data[0]).every((k) => /^[A-Z]$/.test(k)) ||
+      (Object.keys(data[0]).length > 1 && Object.keys(data[0]).every((k) => /^[a-z]$/.test(k)) && Object.values(data[0]).some(withMoney)));
   if (lettered) {
     // The book's own line decides the gold: 5e.tools' data has the 2024 Cleric's 7 GP as 7000 copper, which is 70 GP.
     const lines = Array.isArray(se) ? [] : (se as J)?.entries;
     const line = Array.isArray(lines) ? lines.join(" ") : "";
     const gold = (k: string, text: string) => {
-      const m = new RegExp(`\\(${k}\\)[^;]*?(\\d[\\d,]*) ?GP`).exec(line);
+      const m = new RegExp(`\\(${k}\\)[^;]*?(\\d[\\d,]*) ?GP`, "i").exec(line);
       return m ? text.replace(/\b\d[\d,]* GP$/, `${m[1]} GP`) : text;
     };
-    const parts = Object.entries(data[0]).map(
-      ([k, items]) =>
-        `(${k}) ${(items as unknown[])
-          .map(gearText)
-          .filter(Boolean)
-          .map((t) => gold(k, t))
-          .join(", ")}`,
-    );
-    return `<ul><li><strong>Equipment:</strong> ${esc(`Choose ${Object.keys(data[0]).join(" or ")}: ${parts.join("; or ")}`)}</li></ul>`;
+    const parts = Object.entries(data[0])
+      .map(([k0, items]) => [k0.toUpperCase(), items] as const)
+      .map(
+        ([k, items]) =>
+          `(${k}) ${(items as unknown[])
+            .map(gearText)
+            .filter(Boolean)
+            .map((t) => gold(k, t))
+            .join(", ")}`,
+      );
+    return `<ul><li><strong>Equipment:</strong> ${esc(
+      `Choose ${Object.keys(data[0])
+        .map((k) => k.toUpperCase())
+        .join(" or ")}: ${parts.join("; or ")}`,
+    )}</li></ul>`;
   }
   const lis = data.map((group) => {
     const fixed = group._ as unknown[] | undefined;
@@ -4331,6 +4369,7 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
     skill: (n) => `ID_5ET_SKILL_${slug(n)}`,
     language: (n) => `ID_5ET_LANGUAGE_${slug(n)}`,
   });
+  gateTraitTwins(out);
   for (const c of classes) applyTableMechanics(c, out);
   dropPoolDefaults(out);
   applyTextUseSteps(out);

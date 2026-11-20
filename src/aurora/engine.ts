@@ -785,10 +785,13 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
   let total = 0;
   let guessed = 0;
   let unknown = false;
+  const knownNames: string[] = [];
   for (const e of byOwner.values()) {
     const cls = reg?.get(e.owner);
     const name = lc(cls?.name ?? e.owner.match(/CLASS_([A-Z]+)$/i)?.[1] ?? e.name);
     const modern = isModern({ id: e.owner, source: cls?.source ?? "" });
+    const known = FULL_CASTERS.has(name) || HALF_CASTERS.has(name) || name === "fighter" || name === "rogue";
+    if (known) knownNames.push(name);
     if (FULL_CASTERS.has(name)) total += e.level;
     else if (HALF_CASTERS.has(name)) total += name === "artificer" || modern ? Math.ceil(e.level / 2) : Math.floor(e.level / 2);
     else if (name === "fighter" || name === "rogue") total += Math.floor(e.level / 3);
@@ -796,14 +799,23 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
       // A caster this does not know: count the full caster level whose slots match its own.
       const row = Array.from({ length: 9 }, (_, i) => pass.stats.get(`${lc(e.name)}:spellcasting:slots:${i + 1}`)).filter((n) => n > 0);
       const match = FULL_CASTER_SLOTS.findIndex((r, i) => i > 0 && r.length === row.length && r.every((n, j) => n === row[j]));
-      total += match > 0 ? match : 0;
       guessed += match > 0 ? match : 0;
       unknown = true;
     }
   }
-  // The stated level stands in for a caster the rules here do not know. Where it is less than the known classes alone
-  // give, it leaves them out (content of two providers, only one stating its share): then the count here holds.
-  return unknown && stated >= total - guessed && stated > 0 ? stated : total;
+  if (!unknown) return total;
+  // A caster the rules here do not know counts what the content states for it: the stated level's parts that no known
+  // class wrote (a Monk subclass that casts states a third of its level). The known classes count by the rules either
+  // way, so a share only one provider's content states is neither lost nor counted twice (a Ranger 17 with such a Monk
+  // had two slots; a Monk 12 with one level of Sorcerer counted 4 for 5). With no parts to tell, the stated level
+  // stands whole, or the guess from the caster's own slots.
+  const parts = (pass.stats as { parts?: (n: string) => { from: string; value: number }[] }).parts?.("multiclass:spellcasting:level");
+  if (parts?.length) {
+    const fromKnown = (from: string) => knownNames.some((n) => lc(from).includes(n)) || /spellcasting|pact magic/i.test(from);
+    const stated = parts.filter((p) => !fromKnown(p.from)).reduce((t, p) => t + p.value, 0);
+    return total + (stated > 0 ? stated : guessed);
+  }
+  return stated > 0 ? stated : total + guessed;
 }
 
 /** Highest spell level a shared multiclass slot table gives, 0 when not applicable. */

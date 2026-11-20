@@ -158,7 +158,16 @@ the species' languages on top (Mark of Finding: Common, Orc and Goblin); a field
 species'; "other" where the text names two languages gave both (Plane Shift: Ixalan); on mixed content a trait
 borrowed a training its species already gives (the Bugbear's Stealth, making the species' own a second skill).
 Known, not gated: Aurora's sweep rows (custom background, a few Plane Shift subraces, City Watch's variant).
-Still open here: starting equipment.
+Starting equipment, 2026-11-20 (equipmentCheck.ts): each take's record is judged against what the first class and
+the background give now: once each, never from a class taken by multiclassing, no more gold than the option gives,
+weapons and armor among those it names. It uses the same reader as the dialog, so it guards the record, not the
+reader; the reader's own faults showed when the check met content of two kinds. Found and fixed: the bundled SRD 5.1
+classes had lost every item given outright (the SRD text check dropped the converter's wording of the list); the
+bundled SRD 5.1 Acolyte had no gear to take (its "Equipment:" is a paragraph); a 2014 background on 5e.tools content
+brought no gold ("Pouch (with 15 GP)"), nor did two lettered options in a 2014-style list, and one silver piece read
+"0 GP". Also from these runs, on mixed content: a borrowed sense range added to the character's own (Skulker with
+Feral Senses: Blindsight 40 ft), and a species' skill its trait words as well staying when Tasha's customized
+proficiencies swap it. W5 is done.
 
 **W6. Concepts everywhere two providers can meet (L2).** Training, languages, senses and sizes are compared by
 concept in the requirement context; the sheet's weapon line now does too. Sweep sheet.ts, rulesCheck.ts and
@@ -167,7 +176,7 @@ PlayTab for every `r.ids.has(` on a proficiency, save, skill or language id and 
 `ownership` note comparing by id; both now go by concept (autofillRepeat.test.ts, ownership.test.ts). The sheet's
 weapon training and the requirement context already did.
 
-**W7. Rules decisions carry their text (L1, L2).** Every place the converter or the engine decides a rule that the
+**W7. Rules decisions carry their text (L1, L2).** Sweep done 2026-11-20: every comment in src citing a book was read and each decision without a row got one (docs/RULES-DECISIONS.md, 76 rows); four rows have no test of their own yet. Every place the converter or the engine decides a rule that the
 data does not state (edition mixing, what "standard" means, who steps aside for whom) gets the book, chapter and
 sentence in its comment and a test named for the rule. docs/RULES-DECISIONS.md lists them in one table: rule,
 source, where decided, test. The three reversed or narrowed readings found today were all undocumented decisions.

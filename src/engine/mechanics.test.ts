@@ -54,3 +54,18 @@ describe("a training the owner already gives", () => {
     expect(build([])).toBe(1);
   });
 });
+
+// Parity gate, 2026-11-20: a 2024 Ranger 20 with Skulker showed Blindsight 40 ft with Aurora loaded. Feral Senses gives
+// 30 feet and Skulker 10; the larger counts. Skulker's range, borrowed from its Aurora twin under Aurora's own group,
+// was added on top.
+describe("a borrowed sense range", () => {
+  it("joins the sense's own group, so the larger range counts and they do not add up", () => {
+    const all = [
+      el("5E_FEAT", "Skulker", "Feat", "5etools", []),
+      el("AU_FEAT", "Skulker", "Feat", "aurora", [{ kind: "stat", name: "blindsight:range", value: "10", bonus: "base" } as ARule]),
+    ];
+    const byId = new Map(all.map((e) => [e.id, e]));
+    borrowMechanics(byId);
+    expect(byId.get("5E_FEAT")!.rules).toEqual([{ kind: "stat", name: "blindsight:range", value: "10", bonus: "blindsight range" }]);
+  });
+});

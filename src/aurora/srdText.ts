@@ -65,6 +65,7 @@ export function srdDescription(html: string, corpus: string, forbidden?: RegExp)
   let kept = 0;
   const parts = html.split(/(<table[\s\S]*?<\/table>|<h\d[^>]*>[\s\S]*?<\/h\d>|<li[^>]*>[\s\S]*?<\/li>|<p[^>]*>[\s\S]*?<\/p>)/i);
   const out: string[] = [];
+  let underGear = false;
   for (const part of parts) {
     if (!part) continue;
     if (/^<table/i.test(part)) {
@@ -89,6 +90,13 @@ export function srdDescription(html: string, corpus: string, forbidden?: RegExp)
       continue;
     }
     if (/^<h\d/i.test(part)) {
+      underGear = /^equipment$/i.test(plainOf(part));
+      out.push(part);
+      continue;
+    }
+    // A class's gear list is the converter's wording of the data ("Leather Armor, 2 Dagger, Thieves' Tools"), not a
+    // sentence of the book: kept as it is (before, the SRD 5.1 classes lost every item given outright).
+    if (underGear && /^<li/i.test(part)) {
       out.push(part);
       continue;
     }

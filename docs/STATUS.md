@@ -20,6 +20,10 @@ Same day: the Psi Warrior's and Soulknife's Psionic Energy dice now show their c
 (a variant's language list on top of its species', "other" language giving two) and on mixed content. Gates, 1,200
 random characters, pairwise, the move of 400 and the sweep clean.
 
+Same day: starting equipment is judged too, which closes W5. It found three faults that are in v0.26.3 as well:
+the bundled SRD 5.1 classes had lost their fixed starting gear, the SRD 5.1 Acolyte had none to take, and a 2014
+background on 5e.tools content brought no gold. All fixed; they want a patch release. Full validation clean.
+
 ## What is open, in plain words
 
 Everything still to do, in one list. Items move off it when done; nothing open lives anywhere else.

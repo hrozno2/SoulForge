@@ -70,39 +70,57 @@ describe("multiclass spell slots without a stated caster level", () => {
   });
 });
 
-// Big batch on mixed content, 2026-11-19: an Aurora 2024 Ranger 17 with three levels of a 5e.tools Monk whose subclass
-// casts (Warrior of the Mystic Arts) had two 1st-level slots. Only the subclass stated a caster level (1), and the
-// stated level replaced the Ranger's nine.
+// Big batches on mixed content, 2026-11-19 and 20: an Aurora 2024 Ranger 17 with three levels of a 5e.tools Monk whose
+// subclass casts (Warrior of the Mystic Arts) had two 1st-level slots, and a Monk 12 with one level of Sorcerer counted
+// 4 for 5. Only the subclass stated a caster level, and the stated level stood for the whole character.
 describe("a stated caster level beside classes the rules know", () => {
-  it("never lowers what the known classes give", () => {
+  const withParts = (classes: [string, string, number][], stats: Record<string, number>, parts: { from: string; value: number }[]) => {
+    const p = pass(classes, stats) as unknown as { stats: { parts: (n: string) => typeof parts } };
+    p.stats.parts = () => parts;
+    return p as unknown as P;
+  };
+  const MONK: [string, string, number] = ["Mystic Arts", "ID_5ET_CLASS_XPHB_MONK", 3];
+  it("counts the known classes by the rules and the unknown caster by its stated share", () => {
     expect(
       multiclassCasterLevel(
-        pass(
-          [
-            ["Ranger", "ID_WOTC_PHB24_CLASS_RANGER", 17],
-            ["Mystic Arts", "ID_5ET_CLASS_XPHB_MONK", 3],
-          ],
+        withParts(
+          [["Ranger", "ID_WOTC_PHB24_CLASS_RANGER", 17], MONK],
           { "multiclass:spellcasting:level": 1, "mystic arts:spellcasting:slots:1": 2 },
+          [{ from: "Warrior of the Mystic Arts", value: 1 }],
         ),
       ),
     ).toBe(10);
-  });
-  // The same pair on 5e.tools content alone, where both state their share: the stated level holds, and the subclass's
-  // own slot row (which looks like a higher full caster's) does not raise it.
-  it("holds when it covers the known classes", () => {
     expect(
       multiclassCasterLevel(
-        pass(
+        withParts(
+          [
+            ["Mystic Arts", "ID_5ET_CLASS_XPHB_MONK", 12],
+            ["Sorcerer", "ID_WOTC_PHB24_CLASS_SORCERER", 1],
+          ],
+          { "multiclass:spellcasting:level": 4, "mystic arts:spellcasting:slots:1": 4, "mystic arts:spellcasting:slots:2": 3 },
+          [{ from: "Warrior of the Mystic Arts", value: 4 }],
+        ),
+      ),
+    ).toBe(5);
+  });
+  it("does not count a known class twice when its content states its share too", () => {
+    expect(
+      multiclassCasterLevel(
+        withParts(
           [
             ["Ranger", "ID_5ET_CLASS_XPHB_RANGER", 5],
             ["Mystic Arts", "ID_5ET_CLASS_XPHB_MONK", 5],
           ],
           { "multiclass:spellcasting:level": 4, "mystic arts:spellcasting:slots:1": 3 },
+          [
+            { from: "Ranger (multiclass)", value: 3 },
+            { from: "Warrior of the Mystic Arts", value: 1 },
+          ],
         ),
       ),
     ).toBe(4);
   });
-  it("still stands in when it gives more than the known classes do", () => {
+  it("lets the stated level stand whole where nothing tells its parts", () => {
     expect(
       multiclassCasterLevel(
         pass(

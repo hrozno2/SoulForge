@@ -170,6 +170,17 @@ export function parseItems(text: string): { refs: ItemRef[]; gp: number } {
       if (r) refs.push(r);
       continue;
     }
+    // "Pouch (with 15 GP)": the same, as the 5e.tools converter writes it (before, a 2014 background on 5e.tools
+    // content brought no gold at all).
+    const holds = part.match(/^(.*?)\s*\(with\s+(\d[\d,]*)\s*(gp|sp|cp|pp)\)$/i);
+    if (holds) {
+      const n = parseInt(holds[2].replace(/,/g, ""), 10);
+      const unit = holds[3].toLowerCase();
+      gp += unit === "gp" ? n : unit === "pp" ? n * 10 : unit === "sp" ? n / 10 : n / 100;
+      const r = toRef(holds[1]);
+      if (r) refs.push(r);
+      continue;
+    }
     const r = toRef(part);
     if (r) refs.push(r);
   }
@@ -185,6 +196,12 @@ export function equipmentText(html: string): { kind: "letters" | "groups" | "pla
   const li = html.match(/<strong>\s*Equipment:?\s*<\/strong>\s*([\s\S]*?)<\/li>/i);
   if (li) {
     const t = stripTags(li[1]);
+    return { kind: /\(A\)/.test(t) ? "letters" : "plain", text: t };
+  }
+  // A paragraph of its own, as the SRD writes a background's: "<b>Equipment: </b> A holy symbol, ... 15 gp".
+  const para = html.match(/<p[^>]*>\s*<(?:b|strong)>\s*Equipment:?\s*<\/(?:b|strong)>\s*:?\s*([\s\S]*?)<\/p>/i);
+  if (para) {
+    const t = stripTags(para[1]);
     return { kind: /\(A\)/.test(t) ? "letters" : "plain", text: t };
   }
   const head = html.match(/<h5[^>]*>\s*EQUIPMENT\s*<\/h5>([\s\S]*?)(?:<h5|<table|<h4|$)/i);

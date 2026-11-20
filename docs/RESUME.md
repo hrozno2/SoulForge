@@ -15,7 +15,12 @@ Also done and pushed: the Psi Warrior's and Soulknife's energy dice (count, rest
 
 2026-11-20: species by count done and pushed (reference: 257 species and subraces; four converter faults fixed).
 
-Next, in order: the rest of W5 (starting equipment within what class and background give), then W7 (older decisions into RULES-DECISIONS.md), then E2.4 (engine shape, speed).
+Later on 2026-11-20: starting equipment judged (W5 done) and the W7 sweep written (docs/RULES-DECISIONS.md).
+Three faults are in the released v0.26.3 too and want a patch release when Chris says: the bundled SRD 5.1 classes
+without their fixed gear, the SRD 5.1 Acolyte without any gear, 2014 backgrounds on 5e.tools content without gold.
+
+Next, in order: tests for the four decisions that have none (W7's open part), then E2.4 (engine shape, the timeline's
+speed), the largest job left.
 
 ## 2026-11-18, morning: the night's run on Stage E (Chris asleep, "go with the plan all night")
 

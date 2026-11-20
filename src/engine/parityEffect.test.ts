@@ -72,6 +72,8 @@ it.skipIf(!C || process.env.RULES_TIER !== "parity-effect")(
           /features\[\]\.text$/.test(d.path) && String(d.both).replace(/\s*\((?:DC \d+|damage [+-]\d+)\)/g, "") === String(d.alone);
         if (out.some(isHint)) hints++;
         if (!out.filter((d) => !isHint(d)).length) same++;
+        // The character behind a real difference, kept beside the report so it can be opened and looked at.
+        else writeFileSync(join(C!, "engine", `parity-effect-${i}.json`), JSON.stringify(ch));
         const who0 = ch.classes.map((c) => `${alone.get(c.classId)?.name} ${c.level}`).join("/");
         for (const d of out.filter((x) => !isHint(x))) {
           const [a, b] = [String(JSON.stringify(d.alone)), String(JSON.stringify(d.both))];

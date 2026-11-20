@@ -17,6 +17,7 @@ import { normalizeRules, spent as pbSpent } from "./pointBuy";
 import { meets } from "./requirements";
 import { reqCtx, resolve, stillToChoose } from "./engine";
 import { isModern } from "./edition";
+import { checkStartingEquipment } from "./equipmentCheck";
 
 export interface RefFeature {
   name: string;
@@ -1435,5 +1436,7 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
         );
     }
   }
+  // Starting equipment within what the first class and the background give (W5; src/aurora/equipmentCheck.ts).
+  for (const f of checkStartingEquipment(ch, reg)) add(f.rule, f.detail);
   return out;
 }

@@ -157,8 +157,12 @@ export function borrowMechanics(byId: Map<string, AElement>): MechanicsReport {
         !ownUses.has(r.name.toLowerCase()) &&
         !(ownWalk && /^(?:innate )?speed(?::misc)?$/i.test(r.name)) &&
         !(ownWalk && /^innate speed:(?:climb|fly|swim|burrow):misc$/i.test(r.name))
-      )
-        added.push(r);
+      ) {
+        // A sense's range goes into the group the 5e.tools features use ("blindsight range"): of two ranges the larger
+        // counts (Feral Senses' 30 feet and Skulker's 10 are 30, not 40).
+        const sense = /^(blindsight|darkvision|tremorsense|truesight):range$/i.exec(r.name);
+        added.push(sense ? ({ ...r, bonus: `${sense[1].toLowerCase()} range` } as ARule) : r);
+      }
       if (r.kind === "grant" && r.id) {
         const target = byId.get(r.id);
         const k = target ? conceptOf(target) : conceptOfMarker(r.id);

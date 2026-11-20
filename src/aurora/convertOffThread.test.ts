@@ -40,11 +40,11 @@ describe("converting a 5e.tools source off the main thread", () => {
     expect(here.failed).toBeUndefined();
   });
   it("gives the same result through a worker", async () => {
-    expect(await convertOffThread(texts, fake("works"))).toEqual(here);
+    expect(await convertOffThread(texts, fake("works"))).toEqual({ ...here, offThread: true });
   });
   it("converts on the calling thread when no worker can be made, or the worker fails", async () => {
-    expect(await convertOffThread(texts, undefined)).toEqual(here);
-    expect(await convertOffThread(texts, fake("throws on start"))).toEqual(here);
-    expect(await convertOffThread(texts, fake("errors"))).toEqual(here);
+    expect(await convertOffThread(texts, undefined)).toEqual({ ...here, offThread: false });
+    expect(await convertOffThread(texts, fake("throws on start"))).toEqual({ ...here, offThread: false });
+    expect(await convertOffThread(texts, fake("errors"))).toEqual({ ...here, offThread: false });
   });
 });

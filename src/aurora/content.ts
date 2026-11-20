@@ -76,6 +76,8 @@ export async function buildRegistry(
   // How long each step takes, for the launch-time budget (printed to the console, kept in lastLoadTimes).
   const t0 = performance.now();
   const times = { read: 0, parse: 0, convert: 0, build: 0 };
+  // Where each conversion ran, for the log (a worker that cannot start falls back to the main thread).
+  const wheres: string[] = [];
   const plan: { source: SourceConfig; urls: string[] }[] = [];
   let total = 0;
   for (const s of sources) {
@@ -130,6 +132,7 @@ export async function buildRegistry(
       await painted();
       t = performance.now();
       const converted = await convertOffThread(named);
+      wheres.push(`${source.name} converted ${converted.offThread ? "in a worker" : "on the main thread"}`);
       errors.push(...converted.errors);
       if (converted.failed) errors.push(`${source.name}: ${converted.failed}`);
       else {
@@ -182,6 +185,7 @@ export async function buildRegistry(
       .map(([k, v]) => `${k} ${Math.round(v)}`)
       .join(", ")})`,
   );
+  if (wheres.length) logEvent("content", wheres.join("; "));
   if (errors.length) logEvent("content", `${errors.length} files could not be read: ${errors.slice(0, 10).join("; ")}`);
   if (reg.skillFixes.length) logEvent("content", `class skill lists aligned with 5e.tools: ${reg.skillFixes.join(", ")}`);
   return { reg, errors };

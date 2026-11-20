@@ -1,3 +1,4 @@
+import { readCurrentCopy, withLibraryPortrait, writeCurrentCopy } from "./currentCopy";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { SaveQueue } from "./saveQueue";
 import { TabGuard, browserChannel } from "./tabGuard";
@@ -72,12 +73,14 @@ const TABS: [Tab, string][] = [
 ];
 const CUR_KEY = CURRENT_CHARACTER_KEY;
 
-function loadCurrent(): { id: string; ch: Character; fromLibrary?: boolean } {
+function loadCurrent(): { id: string; ch: Character; fromLibrary?: boolean; portraitFromLibrary?: boolean } {
   try {
-    const raw = localStorage.getItem(CUR_KEY);
-    if (raw) {
-      const p = JSON.parse(raw) as { id: string; ch?: Character };
+    const p = readCurrentCopy(localStorage.getItem(CUR_KEY));
+    if (p) {
       if (p.ch?.version === 2) return { id: p.id, ch: openCharacter(p.ch, "the character that was open").character };
+      // Kept without its portrait: the newer copy, and the library's portrait joins it below.
+      if (p.chNoPortrait?.version === 2)
+        return { id: p.id, ch: openCharacter(p.chNoPortrait, "the character that was open").character, portraitFromLibrary: true };
       // Only the id was kept (the character was too big for this storage): it is loaded from the library below.
       if (p.id) return { id: p.id, ch: newCharacter(), fromLibrary: true };
     }
@@ -168,13 +171,18 @@ export function App() {
     if (saveState === "saved") window.dispatchEvent(new Event("cf-saved"));
   }, [saveState]);
   // While the open character is still coming from the library, nothing is saved over it.
-  const loading = useRef(!!initial.fromLibrary);
+  const loading = useRef(!!initial.fromLibrary || !!initial.portraitFromLibrary);
   useEffect(() => {
-    if (!initial.fromLibrary) return;
+    if (!initial.fromLibrary && !initial.portraitFromLibrary) return;
     void listCharacters()
       .then((all) => {
         const rec = all.find((c) => c.id === initial.id);
         loading.current = false;
+        // The copy that was open is the newer one; only its portrait, left out for size, comes from the library.
+        if (initial.portraitFromLibrary) {
+          if (rec) setCharacter((c) => withLibraryPortrait(c, rec.data));
+          return;
+        }
         if (rec) {
           const { character: ch, repaired } = openCharacter(rec.data, "the library");
           if (!repaired.length) queue.markStored(initial.id, ch);
@@ -183,7 +191,10 @@ export function App() {
         }
       })
       .catch(() => {
-        loading.current = false;
+        // Without the library the portrait cannot be put back. Nothing is written this session then, neither over the
+        // library's copy nor over the copy that was open: a character with no portrait must not replace either, and
+        // the next start finds both as they were and tries again.
+        if (!initial.portraitFromLibrary) loading.current = false;
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [detail, setDetail] = useState<AElement | null>(null);
@@ -236,16 +247,8 @@ export function App() {
   // Autosave the open character, and keep a copy in the library.
   useEffect(() => {
     if (loading.current || heldElsewhere) return;
-    try {
-      localStorage.setItem(CUR_KEY, JSON.stringify({ id, ch: character }));
-    } catch {
-      // Too big for this storage (a large portrait, say): keep the id, the library has the character.
-      try {
-        localStorage.setItem(CUR_KEY, JSON.stringify({ id }));
-      } catch {
-        /* storage can be unavailable */
-      }
-    }
+    // The fullest copy this storage takes: whole, or without a large portrait (the library has it), or the id.
+    writeCurrentCopy(id, character, (text) => localStorage.setItem(CUR_KEY, text));
     // Only a real change is saved (src/ui/saveQueue.ts): opening a character, or the content loading under it, is no
     // edit. Not before the content is read: the library card's line names the species and classes from it.
     if (!content.ready) return;

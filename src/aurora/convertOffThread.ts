@@ -10,11 +10,11 @@ const viteWorker: MakeWorker = () => new Worker(new URL("./convertWorker.ts", im
 export function convertOffThread(
   texts: Record<string, string>,
   make: MakeWorker | undefined = typeof Worker === "undefined" ? undefined : viteWorker,
-): Promise<ConvertResult> {
-  if (!make) return Promise.resolve(convertTexts(texts));
+): Promise<ConvertResult & { offThread: boolean }> {
+  if (!make) return Promise.resolve({ ...convertTexts(texts), offThread: false });
   return new Promise((done) => {
     let worker: Worker;
-    const here = () => done(convertTexts(texts));
+    const here = () => done({ ...convertTexts(texts), offThread: false });
     try {
       worker = make();
     } catch {
@@ -22,7 +22,7 @@ export function convertOffThread(
     }
     worker.onmessage = (e: MessageEvent<ConvertResult>) => {
       worker.terminate();
-      done(e.data);
+      done({ ...e.data, offThread: true });
     };
     // The worker's own script failing to load or run is not the content's fault: convert here instead.
     worker.onerror = () => {

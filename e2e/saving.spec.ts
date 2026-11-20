@@ -157,3 +157,74 @@ test("a character open in two tabs is saved by one of them only", async ({ page,
   await expect(page.getByLabel("Character name")).toHaveValue("Shared One");
   await second.close();
 });
+
+// Audit E6: a character whose portrait is too big for the quick-recovery copy is kept there without the portrait.
+// After a sudden quit the newer copy opens, and the portrait comes back from the library; neither is lost.
+test("a copy kept without its portrait opens with its edits and gets the portrait back", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
+  await randomCharacter(page, 2);
+  await tab(page, "Build");
+  await page.getByLabel("Character name").fill("Has A Picture");
+  await page.getByLabel("Character name").blur();
+  await expect(page.locator(".actionbar .saved")).toHaveText("✓ Saved");
+
+  // As it would be after a quit: the library has the saved character with its portrait; the open copy has a newer
+  // edit and no portrait.
+  const PORTRAIT = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+  const stored = async () =>
+    page.evaluate(async () => {
+      const db = await new Promise<IDBDatabase>((res, rej) => {
+        const q = indexedDB.open("charforge");
+        q.onsuccess = () => res(q.result);
+        q.onerror = () => rej(q.error);
+      });
+      const all = await new Promise<{ id: string; name: string; data: { name: string; portrait?: string } }[]>((res, rej) => {
+        const q = db.transaction("characters").objectStore("characters").getAll();
+        q.onsuccess = () => res(q.result);
+        q.onerror = () => rej(q.error);
+      });
+      db.close();
+      return all.map((c) => ({ name: c.data.name, portrait: c.data.portrait }));
+    });
+  await page.evaluate(async (portrait) => {
+    const copy = JSON.parse(localStorage.getItem("charforge.current.v2")!) as { id: string; ch: Record<string, unknown> };
+    const db = await new Promise<IDBDatabase>((res, rej) => {
+      const q = indexedDB.open("charforge");
+      q.onsuccess = () => res(q.result);
+      q.onerror = () => rej(q.error);
+    });
+    const store = () => db.transaction("characters", "readwrite").objectStore("characters");
+    const rec = await new Promise<{ data: Record<string, unknown> }>((res, rej) => {
+      const q = store().get(copy.id);
+      q.onsuccess = () => res(q.result);
+      q.onerror = () => rej(q.error);
+    });
+    rec.data.portrait = portrait;
+    await new Promise<void>((res, rej) => {
+      const q = store().put(rec);
+      q.onsuccess = () => res();
+      q.onerror = () => rej(q.error);
+    });
+    db.close();
+    const { portrait: _none, ...rest } = copy.ch;
+    void _none;
+    localStorage.setItem(
+      "charforge.current.v2",
+      JSON.stringify({ id: copy.id, chNoPortrait: { ...rest, name: "Edited After The Last Save" } }),
+    );
+  }, PORTRAIT);
+  expect(await stored()).toEqual([{ name: "Has A Picture", portrait: PORTRAIT }]);
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
+  await tab(page, "Build");
+  await expect(page.getByLabel("Character name")).toHaveValue("Edited After The Last Save");
+  // The library ends with the newer edit and the portrait; the open copy is whole again.
+  await expect.poll(stored, { timeout: 15_000 }).toEqual([{ name: "Edited After The Last Save", portrait: PORTRAIT }]);
+  const copy = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("charforge.current.v2")!) as { ch?: { portrait?: string }; chNoPortrait?: unknown },
+  );
+  expect(copy.ch?.portrait).toBe(PORTRAIT);
+  expect(copy.chNoPortrait).toBeUndefined();
+});

@@ -129,7 +129,16 @@ function Prepared({
             {/spellbook/i.test(line.name) || line.name === "Wizard" ? ": add spells to your spellbook" : ""}.
           </p>
         )}
-        <Browse items={pool} type="Spell" chosen={valid} onPick={(e) => toggle(e.id)} onHover={onDetail} defaultView="cards" perPage={60} />
+        <Browse
+          items={pool}
+          type="Spell"
+          chosen={valid}
+          onPick={(e) => toggle(e.id)}
+          onHover={onDetail}
+          defaultView="cards"
+          perPage={60}
+          filterKey={`prepare.${line.name}`}
+        />
       </Fold>
     </>
   );

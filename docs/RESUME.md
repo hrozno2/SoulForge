@@ -1,5 +1,13 @@
 # Where we left off
 
+## 2026-11-21: filters stay (Chris)
+
+A list's filters were wiped whenever a card was slotted, replaced or removed, because each list kept them in itself
+and is drawn anew then. They are kept outside the list now (src/ui/keptFilters.ts), by the list's name, for as long as
+the app runs; only the player clears them. Every list of the kind: the board's lists, each choice's own, prepared
+spells, the shop, feat picks, the equipment search. Not kept across a restart. Unreleased (after v0.27.0).
+
+
 ## 2026-11-20, evening: v0.27.0 released
 
 Published 2026-11-20 (all builds, Homebrew and Arch steps green). It carries W5 (training by source, energy dice,

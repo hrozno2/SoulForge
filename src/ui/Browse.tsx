@@ -24,6 +24,7 @@ import { Pack, Shield, Sword, Wand } from "./icons";
 
 const SCHOOLS = new Set(["abjuration", "conjuration", "divination", "enchantment", "evocation", "illusion", "necromancy", "transmutation"]);
 import { updateSettings, useSettings } from "./Settings";
+import { useKept } from "./keptFilters";
 
 function useStored<T extends string>(key: string, initial: T): [T, (v: T) => void] {
   const full = `charforge.browse.${key}`;
@@ -261,6 +262,8 @@ export interface BrowseProps {
   mini?: boolean;
   /** Where the Cards/List choice is remembered, when a list should keep it apart from the same type elsewhere. */
   viewKey?: string;
+  /** The list's name for its kept filters (keptFilters.ts), where one kind of list appears for many choices: the choice's key. */
+  filterKey?: string;
   /** Ignore the global content filters (2024 only, playtest, other worlds): the override of a choice that came up empty. */
   showAll?: boolean;
   /** How many picks the choice takes: the content filters never hide options it needs to be completed. */
@@ -321,6 +324,7 @@ export function Browse({
   barExtra,
   mini,
   viewKey,
+  filterKey,
   showAll,
   need,
 }: BrowseProps) {
@@ -331,9 +335,11 @@ export function Browse({
     defaultLocked && viewKey ? `locked.${viewKey}` : `locked.${type}`,
     defaultLocked ?? "show",
   );
-  const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
-  const [sel, setSel] = useState<Selected>({});
+  // The filters outlive this list on screen (keptFilters.ts): they go only when the player clears them.
+  const listName = filterKey ?? viewKey ?? `type.${type}`;
+  const [q, setQ] = useKept(listName, "search", "");
+  const [open, setOpen] = useKept(listName, "panel", false);
+  const [sel, setSel] = useKept<Selected>(listName, "ticked", {});
   const [shown, setShown] = useState(perPage);
   const [active, setActive] = useState<Record<string, string>>({});
   const chosenSet = useMemo(() => new Set(chosen), [chosen]);

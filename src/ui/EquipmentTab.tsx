@@ -1,3 +1,4 @@
+import { useKept } from "./keptFilters";
 import { isContainer } from "../aurora/containers";
 import { choosePending, genericOptions } from "../aurora/startingEquipment";
 import { useMemo, useState } from "react";
@@ -50,8 +51,9 @@ export function EquipmentTab({
   part?: "all" | "adding" | "inventory";
 }) {
   const sheet = useMemo(() => buildSheet(r), [r]);
-  const [q, setQ] = useState("");
-  const [type, setType] = useState("all");
+  // Kept through the list being drawn anew (keptFilters.ts): only the player clears them.
+  const [q, setQ] = useKept("equipment", "search", "");
+  const [type, setType] = useKept("equipment", "kind", "all");
   const [custom, setCustom] = useState({ name: "", weight: "", cost: "", description: "" });
 
   const results = useMemo(() => {

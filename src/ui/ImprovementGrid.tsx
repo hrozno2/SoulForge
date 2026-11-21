@@ -197,6 +197,7 @@ export function ImprovementGrid({ grid, r, set }: { grid: Grid; r: Resolved; set
             <Browse
               items={feats}
               type="Feat"
+              filterKey={`improve.${grid.modeKey ?? "feat"}`}
               chosen={otherChosen && grid.chosenMode ? [grid.chosenMode] : []}
               onPick={(el) => choose(grid.modeKey!, el.id, allColumnKeys)}
               disabledReason={locked}

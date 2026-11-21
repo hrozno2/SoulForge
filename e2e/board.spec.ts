@@ -248,3 +248,60 @@ test("one status panel says the rules verdict and links every open choice (C7.21
   expect(seen.csp).toEqual([]);
   expect(seen.errors).toEqual([]);
 });
+
+// Chris, 2026-11-21: filters in a list were wiped when a card was slotted, replaced or discarded. A filter goes only
+// when the player clears it.
+test("a list's filters stay through slotting, replacing and removing a card", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
+  await randomCharacter(page, 3);
+  await tab(page, "Build");
+  const head = page.locator(".board-acc-head", { hasText: "Species" });
+  const list = page.locator(".board-acc.open");
+  const search = () => list.locator('input[type="search"]');
+  const openSpecies = async () => {
+    if (!(await search().count()) || !(await list.locator(".mini-card").count())) await head.click();
+    await expect(search()).toBeVisible();
+  };
+  await openSpecies();
+  // A filter two species pass, so one can replace the other: the letter both names share.
+  const names = (await list.locator(".mini-card:not(.picked) .mini-name").allTextContents()).map((n) => n.trim());
+  const letters = "aeiou".split("");
+  const letter = letters.find(
+    (l) => names.filter((n) => n.toLowerCase().includes(l)).length >= 2 && names.some((n) => !n.toLowerCase().includes(l)),
+  )!;
+  await search().fill(letter);
+  const shown = () => list.locator(".mini-card:not(.picked) .mini-name");
+  const filteredCount = await shown().count();
+  expect(filteredCount).toBeLessThan(names.length);
+
+  // Slotted: pick one and apply it.
+  const applyFresh = async () => {
+    const fresh = page.locator(".float-window.card-window-race");
+    await expect(fresh).toBeVisible();
+    await fresh.getByRole("button", { name: /^Apply / }).click();
+    await expect(fresh).toHaveCount(0);
+  };
+  await shown().first().click();
+  await applyFresh();
+  await openSpecies();
+  await expect(search()).toHaveValue(letter);
+
+  // Replaced: another one from the same filtered list.
+  await shown().first().click();
+  await applyFresh();
+  await openSpecies();
+  await expect(search()).toHaveValue(letter);
+
+  // Removed: the card taken off the board.
+  await page
+    .locator("[data-tile=race]")
+    .getByRole("button", { name: /^Remove / })
+    .click();
+  await openSpecies();
+  await expect(search()).toHaveValue(letter);
+
+  // Cleared by the player, and only then.
+  await search().fill("");
+  await expect(shown()).toHaveCount(names.length + 1);
+});

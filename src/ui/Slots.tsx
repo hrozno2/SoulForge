@@ -297,6 +297,7 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
                 perPage={60}
                 showAll={all}
                 need={slot.rule.number}
+                filterKey={slot.key}
               />
             </>
           )}

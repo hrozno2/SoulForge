@@ -53,6 +53,7 @@ export function Shop({ r, ch, set }: { r: Resolved; ch: Character; set: SetChara
         items={items}
         type="Item"
         chosen={[]}
+        filterKey="shop"
         onPick={onBuy}
         disabledReason={why}
         defaultView="list"

@@ -52,6 +52,7 @@ export function PickCards({
       <Browse
         items={items}
         type={type}
+        filterKey={`pick.${type}`}
         chosen={value ? [value] : []}
         onPick={(e) => onPick(e.id)}
         onSwap={(_, to) => onPick(to.id)}

@@ -1,3 +1,4 @@
+import { GuideCoach } from "./GuideCoach";
 import { readCurrentCopy, withLibraryPortrait, writeCurrentCopy } from "./currentCopy";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { SaveQueue } from "./saveQueue";
@@ -94,6 +95,8 @@ export function App() {
   const [tab, setTab] = useState<Tab>("start");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(tutorialWanted);
+  // The guided first character (the tutorial offers it), beside the Build board.
+  const [guide, setGuide] = useState(false);
   // The tutorial waits for the launch intro to finish.
   const [introOver, setIntroOver] = useState(false);
   const endIntro = useCallback(() => setIntroOver(true), []);
@@ -684,8 +687,16 @@ export function App() {
               onGo={(t) => setTab(t as Tab)}
               content={content}
               onImportForeign={importForeign}
+              onGuide={() => {
+                // A new character on the board, the tutorial put away, the guide beside it.
+                setTutorialOpen(false);
+                setTutorialMin(false);
+                open(uid(), { ...newCharacter(), checkedWith: APP_VERSION });
+                setGuide(true);
+              }}
             />
           )}
+          {guide && introOver && <GuideCoach r={r} set={set} onGo={(t) => setTab(t as Tab)} onClose={() => setGuide(false)} />}
           {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
           {levelUpOpen && (
             <Suspense fallback={null}>

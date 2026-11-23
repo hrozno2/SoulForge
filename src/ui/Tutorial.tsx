@@ -40,6 +40,8 @@ export interface TutorialProps {
   content: ContentState;
   /** Imports a Foundry or Roll20 character file and opens it. Returns a note to show. */
   onImportForeign: (file: File) => Promise<string>;
+  /** Starts the guided first character (src/ui/GuideCoach.tsx) on a new character. */
+  onGuide: () => void;
 }
 
 /** A short walk through the setup: rules content, other imports, characters and a sheet. Each step can do its job right here. */
@@ -140,6 +142,15 @@ export function Tutorial(p: TutorialProps) {
             Soul Forge builds D&D 5e characters from rules content that you add yourself, so it starts with none. This setup gets you ready
             in a few clicks: it adds rules content and a character sheet, right here. You can skip any step.
           </p>
+          <div className="tutorial-guide">
+            <p>
+              <b>New to D&D?</b> I can guide you through making your first character: a few plain questions, some recommendations, and you
+              do the choosing. It uses the free rules that come with Soul Forge.
+            </p>
+            <button className="primary" onClick={p.onGuide}>
+              Guide me through my first character
+            </button>
+          </div>
           <p className="muted">You can reopen this from Menu, Show the tutorial.</p>
         </>
       ),

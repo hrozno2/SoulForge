@@ -5,8 +5,8 @@
 Done and pushed today, each with tests, gates green: the point-buy notice; filters through a restart; the shop as the
 one place items come from (keeper, Buy or Add free, shelves; 5e.tools items carry their kind; SRD bundle rebuilt);
 Make it legal (table rulings on the character, the journal entry). Soul Forge Test rebuilt after Make it legal.
-Left of docs/PLAN-2026-11-23.md: item 5b, the guided first character in the tutorial (not started), and the
-simplification proposals in item 6 (for Chris to pick from). Nothing of today is released (v0.27.0 is the release).
+Also done: the guided first character, first version (item 5b; what it lacks is listed there). Left of
+docs/PLAN-2026-11-23.md: the rest of 5b and the simplification proposals in item 6 (for Chris to pick from). Nothing of today is released (v0.27.0 is the release).
 
 ## 2026-11-23, earlier: the requests as they came (usage 74% then)
 

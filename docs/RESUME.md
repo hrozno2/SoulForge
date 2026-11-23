@@ -1,5 +1,28 @@
 # Where we left off
 
+## 2026-11-23, evening: Chris's standing order for this stretch
+
+"Do all the stuff you can do without me, harden the engine so it can handle all edge cases and doesn't break on
+anything, continue with plan." Usage: no limit today (the last day before the weekly reset); from tomorrow the 70%
+rule applies again except on the last day before a reset.
+
+Order of work (tick off here as done; each with a failing test first, gates, CI, test app rebuilt):
+1. Import check on the 5etools and srd sets (was running; read any snapshot change before accepting with
+   IMPORT_BASELINE=1).
+2. Engine hardening, new: a fuzz tier that never lets the engine throw. Saved characters damaged at random (fields
+   missing or of the wrong type, ids that do not exist, levels 0 and 30, negative and huge scores, thousands of
+   items, selections pointing at each other), and content with cycles and dangling references, each through
+   normalizeCharacter, resolve, buildSheet, checkCharacter, the exports and the importers: no throw, no hang, a
+   finding or a repair note instead. Existing pieces: parserFuzz.test.ts, sanitize.test.ts, cache.test.ts,
+   determinism.test.ts, moveProperties.test.ts, checkMutations.test.ts. Fix every crash at its cause.
+3. The guide's rest (docs/PLAN-2026-11-23.md 5b): marks on recommended options in the lists, a start button outside
+   the tutorial, the tutorial's welcome text (it still says the app starts with no content; the SRD is built in).
+4. Audit E2, the rest: data first, text as the fallback, a gate on disagreements (docs/audit/text-rules.md).
+5. Audit E6 second half, step one: the portraits store, read only.
+6. E3.3 importers; E3.5 homebrew; C6.3 card windows checked one by one.
+7. Loose ends: Blindsight listed twice; Mending on its own casting line on mixed content; Aurora sweep rows.
+
+
 ## 2026-11-23, building (Chris: use what is left of the week; from now on no limit on the last day before the reset)
 
 Done and pushed today, each with tests, gates green: the point-buy notice; filters through a restart; the shop as the

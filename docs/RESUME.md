@@ -40,9 +40,11 @@ Can be done without Chris, in plan order:
 9. A0.1, standing: the Plutonium cross-check for every engine area, more characters built in both.
 
 Waiting on Chris:
-- D5: two weeks of testing Soul Forge Test with "5e.tools only" on, and five clean `full-check --no-aurora` runs
-  (the full check runs only on request). Then D7: dropping Aurora from the release app.
-- Guiding Hand: homebrew it, or leave it as text.
+- D5: two weeks of testing Soul Forge Test with "5e.tools only" on. The five clean `full-check --no-aurora` runs
+  are now scheduled (Chris 2026-11-23: every few days or when needed, at least weekly; the scheduled task
+  "soulforge-no-aurora-check", results in docs/NO-AURORA-RUNS.md). Then D7: dropping Aurora from the release app.
+- Guiding Hand: decided 2026-11-23 ("if it is real content on 5e.tools, do it; if not, leave it"). It is not: the
+  local 5e.tools data and the upstream spell files hold no Guiding Hand. Left as text.
 - The point-buy unspent warning: wanted or not.
 - A real Roll20 2024-sheet file, to build that export.
 - Linux numbers from the CachyOS machine (C5.4 window drawing, C5.6 lag, E3.2): whether it has NVIDIA, and a

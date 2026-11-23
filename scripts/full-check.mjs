@@ -1,5 +1,5 @@
 // The full check, run on request (the engine plan's "nightly run", started by hand): every test and audit there is,
-// one after another, with one summary. Usage: node scripts/full-check.mjs [seed] [--count N]
+// one after another, with one summary. Usage: node scripts/full-check.mjs [seed] [--count N] [--no-aurora]
 //   - unit tests; the loader gates (one key per concept, every 5e.tools field read or decided, every stat read)
 //   - the standard rules check (random, level 20, builds and imports, every element, the reference), with the sheets
 //   - N random characters (default 10,000) with every choice window checked, without the sheets
@@ -16,7 +16,10 @@ const args = process.argv.slice(2);
 const seed = args.find((a) => /^\d+$/.test(a)) ?? String(Date.now() % 2147483647);
 const countAt = args.indexOf("--count");
 const count = countAt >= 0 ? Number(args[countAt + 1]) || 10000 : 10000;
-const out = join(CACHE, "runs", `full-${new Date().toISOString().replace(/[:.]/g, "-")}`);
+// --no-aurora (stage D5): the engine judged on 5e.tools and the built-in SRD rules alone. The steps that build on
+// Aurora's content, or compare with it, are left out; everything else runs as in the full check.
+const noAurora = args.includes("--no-aurora");
+const out = join(CACHE, "runs", `full-${noAurora ? "no-aurora-" : ""}${new Date().toISOString().replace(/[:.]/g, "-")}`);
 mkdirSync(out, { recursive: true });
 
 const run = (name, cmd, cmdArgs, env = {}) =>
@@ -48,19 +51,21 @@ console.log(`Full check, seed ${seed}. Files: ${out}`);
 const steps = [];
 steps.push(await run("unit tests", "npx", ["vitest", "run"]));
 steps.push(await run("loader gates", "npx", ["vitest", "run", "src/engine/load.test.ts", "--silent=false"]));
-steps.push(await run("rules check", "node", ["scripts/rules-check.mjs", seed]));
+if (!noAurora) steps.push(await run("rules check", "node", ["scripts/rules-check.mjs", seed]));
 const bigOut = join(out, "big");
 mkdirSync(bigOut, { recursive: true });
-steps.push(
-  await run(
-    `${count} random characters`,
-    "npx",
-    ["vitest", "run", "src/aurora/rules.suite.test.ts", "-t", "a big batch|writes the report", "--silent=false"],
-    { RULES_SEED: seed, RULES_BIG: String(count), RULES_NOPDF: "1", RULES_OUT: bigOut, RULES_RUN: "full-big" },
-  ),
-);
+if (!noAurora)
+  steps.push(
+    await run(
+      `${count} random characters`,
+      "npx",
+      ["vitest", "run", "src/aurora/rules.suite.test.ts", "-t", "a big batch|writes the report", "--silent=false"],
+      { RULES_SEED: seed, RULES_BIG: String(count), RULES_NOPDF: "1", RULES_OUT: bigOut, RULES_RUN: "full-big" },
+    ),
+  );
 const bigReport = join(bigOut, "report.md");
-if (existsSync(bigReport)) steps[steps.length - 1].facts.push(...readFileSync(bigReport, "utf8").split("\n").slice(2, 12).filter(Boolean));
+if (!noAurora && existsSync(bigReport))
+  steps[steps.length - 1].facts.push(...readFileSync(bigReport, "utf8").split("\n").slice(2, 12).filter(Boolean));
 for (const [name, tier, file] of [
   ["edition gate", "editions", "src/engine/editions.test.ts"],
   ["against Aurora", "aurora", "src/engine/aurora.test.ts"],
@@ -72,11 +77,13 @@ for (const [name, tier, file] of [
   ["saved characters", "diff", "src/engine/timeline.diff.test.ts src/engine/determinism.test.ts"],
   ["FastCharacter", "fastchar", "src/aurora/fastchar.test.ts"],
 ]) {
+  // Built on Aurora's content or a comparison with it: not part of the Aurora-free check.
+  if (noAurora && ["aurora", "parity", "parity-effect", "diff", "fastchar"].includes(tier)) continue;
   steps.push(await run(name, "npx", ["vitest", "run", ...file.split(" "), "--silent=false"], { RULES_TIER: tier }));
 }
 
 // W8: every class with every kind of species and background, and every pair of caster kinds, on every content set.
-for (const set of ["5etools", "srd", "both", "aurora"]) {
+for (const set of noAurora ? ["5etools", "srd"] : ["5etools", "srd", "both", "aurora"]) {
   const dir = join(out, `pairwise-${set}`);
   mkdirSync(dir, { recursive: true });
   steps.push(
@@ -116,7 +123,7 @@ for (const [set, share] of [
 
 const ok = steps.every((s) => s.ok);
 const summary = [
-  `# Full check, ${new Date().toISOString().slice(0, 16).replace("T", " ")}`,
+  `# Full check${noAurora ? " without Aurora" : ""}, ${new Date().toISOString().slice(0, 16).replace("T", " ")}`,
   "",
   `Seed ${seed}. ${ok ? "Everything passed." : "Something failed: see the step and its log."}`,
   "",

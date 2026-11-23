@@ -231,7 +231,7 @@ closed and enough Aurora-free test rounds have passed. The test app gets its own
 | D3 (done 2026-11-06) | SRD API as a third check: cached offline, a full-check gate "against the SRD" (class tables, spells, species, items, conditions) | Gate in the full check, findings fixed at the cause |
 | D3b (done 2026-11-06 but for Open5e) | Every source compared: for SRD content the official SRD PDFs, SRD API, Open5e, 5e.tools, Aurora and Plutonium's handling (the SRD text decides); for the rest 5e.tools, Aurora and Plutonium's handling (two of three decide, a split goes to Chris) | Full-check gates with counts that only go down |
 | D4 (done 2026-11-17: 500/500) | Close the parity gap: the sheet first (same sheet with and without Aurora: 224 to 500 of 500), then the borrowed mechanics by kind; choices 90, grants 10, numbers 1 to 0 | All parity counts 0; the gate fails if one rises |
-| D5 | Aurora-free testing: `full-check --no-aurora`; a 5e.tools-only switch in the test app | Five clean `--no-aurora` full checks and two weeks of Chris's testing |
+| D5 | Aurora-free testing: `full-check --no-aurora` (the flag exists since 2026-11-23; runs are scheduled, results in docs/NO-AURORA-RUNS.md); a 5e.tools-only switch in the test app | Five clean `--no-aurora` full checks and two weeks of Chris's testing |
 | D6 (in progress, see E1) | Saved characters move from Aurora ids to their 5e.tools twins on load | 400 saved characters and Chris's library: no unexplained sheet change |
 | D7 | The release app drops Aurora (importer, files, settings); the test app keeps it | Chris's go-ahead after D5 and D6 |
 

@@ -1,5 +1,48 @@
 # Where we left off
 
+## 2026-11-23, night: decisions A to G built
+
+All on main, each with tests; commits 9ab94de to the D7 commit. Nothing of it is released (v0.27.0 is the release).
+
+- A. Board only: done, and the dead code is gone (the tabs branches in App.tsx and Tutorial.tsx, BuildTab's
+  tabs-only components, the `buildLayout` setting, the Magic and Equipment tabs as places to go).
+- B. Journal: import notes, move notes and repair reports go in as dated entries (src/aurora/journal.ts); the
+  character's details show the same Journal as Play. The notes field itself stays as the Journal's "Notes" box:
+  existing notes were NOT turned into entries (nothing to migrate, nothing lost).
+- C. "What this table uses": src/aurora/tableUses.ts, src/ui/TableUses.tsx. On every list's count line; Settings
+  shows the same rows. Left out on purpose: "Print the entire spellbook" (a print setting) and "5e.tools only" (a
+  test-build switch).
+- D. Rules check in one panel: src/aurora/rulesPanel.ts sorts into to fix, your call, accepted. A finding can be
+  kept as a table ruling from the panel. The older-build notice is one line that opens the panel.
+- F. Wording: src/ui/wording.test.ts keeps the list (species, space, choice, pick, option, what this table uses).
+- G. D7: the release build reads no Aurora content (src/ui/flavor.ts: AURORA_IN_APP is the test build only).
+  - Loading: useContent reads `withoutAurora(sources)`; Aurora links are not fetched. Nothing is deleted.
+  - Whose content a source holds: src/aurora/sourceFamily.ts. This fixed a fault that is in v0.27.0: Aurora index
+    links carry no format, and the move asked for `format !== "aurora"`, so it read them as 5e.tools content.
+    MY CALL, for Chris to overrule: an import from this computer with more than 25 files counts as an elements
+    repository (Aurora), a smaller one as somebody's homebrew, which the release still reads; the homebrew builder
+    and content written by hand always count as homebrew.
+  - Content tab (release): no index link, no element files, no raw XML; Aurora sources on the computer are listed
+    apart, with Remove behind a confirmation.
+  - A character on Aurora content: a notice and "Move to 5e.tools" (src/aurora/auroraLeft.ts); the move dialog
+    reads Aurora's files itself, for the move only.
+  - Tutorial (release): six steps, no Aurora step, and the welcome says the free rules are built in.
+  - Tests: e2e runs as two projects (playwright.config.ts): "release" on the release build (flavor, guide, legal,
+    saving, release.spec.ts) and "fixtures" on the test build (VITE_FLAVOR=test, port 4174, test bar hidden),
+    because the fixture rules are Aurora-format files. firstrun.spec.ts still runs on the fixtures build.
+  - NOT met, and Chris knows the criteria: D5 asks for five clean `--no-aurora` full checks (none run yet; the first
+    is scheduled for 2026-11-24 01:30, docs/NO-AURORA-RUNS.md) and two weeks of his own testing with "5e.tools
+    only"; D6 asks that the 400 saved characters move with no unexplained change (22 still change). Chris said "go
+    with D7" on 2026-11-23, so it is built; whether to RELEASE it before those are met is his call.
+
+With the release that carries D7: README.md still describes Aurora links and the element format as the app's
+content (lines 5, 13, 32, 158 to 176); rewrite those then, not before, since they describe v0.27.0 truthfully.
+
+Next, in order: read the first Aurora-free run's result; item 2's rest (fuzz damaged content, the importers, a time
+limit); item 3 (the guide's rest; the welcome text is done); items 4 to 7 below. One top-bar e2e test failed once in
+a gates run that took 19.7 minutes instead of 3 (a slow machine); it passes alone and in full reruns. If it comes
+back, look at it.
+
 ## 2026-11-23, evening: Chris's standing order for this stretch
 
 "Do all the stuff you can do without me, harden the engine so it can handle all edge cases and doesn't break on

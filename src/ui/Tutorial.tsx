@@ -1,3 +1,4 @@
+import { AURORA_IN_APP } from "./flavor";
 import { useEffect, useRef, useState } from "react";
 import { listTemplates } from "../aurora/storage";
 import { OFFICIAL_DOWNLOADS } from "../sheets/links";
@@ -28,7 +29,8 @@ export function neverShowTutorial(): void {
 
 export const AURORA_LINK = "https://raw.githubusercontent.com/AuroraLegacy/elements/master/AuroraLegacy.index";
 
-export const TUTORIAL_STEPS = 7;
+/** The release app has no Aurora step (D7). */
+export const TUTORIAL_STEPS = AURORA_IN_APP ? 7 : 6;
 
 export interface TutorialProps {
   step: number;
@@ -131,14 +133,14 @@ export function Tutorial(p: TutorialProps) {
   }
 
   const aurora = content.sources.length > 0;
-  const steps: { title: string; body: React.ReactNode }[] = [
+  const allSteps: { title: string; body: React.ReactNode; aurora?: boolean }[] = [
     {
       title: "Welcome to Soul Forge",
       body: (
         <>
           <p>
-            Soul Forge builds D&D 5e characters from rules content that you add yourself, so it starts with none. This setup gets you ready
-            in a few clicks: it adds rules content and a character sheet, right here. You can skip any step.
+            Soul Forge builds D&D 5e characters. The free rules (SRD 5.1 and 5.2.1) come with it, so you can make a character right away;
+            this setup shows how to add more books and a character sheet, right here. You can skip any step.
           </p>
           <div className="tutorial-guide">
             <p>
@@ -154,7 +156,8 @@ export function Tutorial(p: TutorialProps) {
       ),
     },
     {
-      title: "1. Add rules content from Aurora",
+      aurora: true,
+      title: "Add rules content from Aurora",
       body: (
         <>
           <p>
@@ -191,7 +194,7 @@ export function Tutorial(p: TutorialProps) {
       ),
     },
     {
-      title: "2. Which rules to show",
+      title: "Which rules to show",
       body: (
         <>
           <p>Choose which books the lists show. Everything you load stays loaded; this only decides what you see when you pick.</p>
@@ -227,19 +230,21 @@ export function Tutorial(p: TutorialProps) {
             version. Each list's <b>Filters</b> can also narrow it by source.
           </p>
           <p className="muted">
-            You can change all of this later in Menu, Settings, under Content shown in lists. What you already picked stays visible even
-            when its book is hidden.
+            You can change all of this later in Menu, Settings, under What this table uses. What you already picked stays visible even when
+            its book is hidden.
           </p>
         </>
       ),
     },
     {
-      title: "3. Import from 5e.tools or Plutonium",
+      title: "Import from 5e.tools or Plutonium",
       body: (
         <>
           <p>
-            Soul Forge also reads the data format used by 5e.tools and the Plutonium module for Foundry. Load <b>all of it</b> alongside
-            Aurora: the two fill each other's gaps, and books one has the other may not. On the Content tab:
+            {AURORA_IN_APP
+              ? "Soul Forge also reads the data format used by 5e.tools and the Plutonium module for Foundry. Load all of it alongside Aurora: the two fill each other's gaps, and books one has the other may not."
+              : "Books beyond the free rules come from the data format used by 5e.tools and the Plutonium module for Foundry."}{" "}
+            On the Content tab:
           </p>
           <ul>
             <li>
@@ -254,7 +259,11 @@ export function Tutorial(p: TutorialProps) {
               <span className="done-mark">✓ 5e.tools data loaded</span>
             </p>
           ) : (
-            <p className="notice">No 5e.tools data loaded yet: with Aurora alone, books only 5e.tools has are missing.</p>
+            <p className="notice">
+              {AURORA_IN_APP
+                ? "No 5e.tools data loaded yet: with Aurora alone, books only 5e.tools has are missing."
+                : "No 5e.tools data loaded yet: the lists show the free rules only."}
+            </p>
           )}
           <p className="muted">5e.tools blocks apps from fetching its pages, so use a folder or an address that serves the data.</p>
           <p>
@@ -265,7 +274,7 @@ export function Tutorial(p: TutorialProps) {
       ),
     },
     {
-      title: "4. Bring in characters from Foundry or Roll20",
+      title: "Bring in characters from Foundry or Roll20",
       body: (
         <>
           <p>
@@ -296,7 +305,7 @@ export function Tutorial(p: TutorialProps) {
       ),
     },
     {
-      title: "5. Get a character sheet",
+      title: "Get a character sheet",
       body: (
         <>
           <p>
@@ -358,7 +367,7 @@ export function Tutorial(p: TutorialProps) {
       ),
     },
     {
-      title: "6. Finding your way",
+      title: "Finding your way",
       body: (
         <>
           <ul className="tutorial-tour">
@@ -426,7 +435,9 @@ export function Tutorial(p: TutorialProps) {
               <b>You are set up:</b>
               <ul>
                 <li>
-                  {aurora ? "✓" : "○"} Rules content {aurora ? "added" : "not added yet (Content tab)"}
+                  {AURORA_IN_APP
+                    ? `${aurora ? "✓" : "○"} Rules content ${aurora ? "added" : "not added yet (Content tab)"}`
+                    : `✓ The free rules are built in${fiveTools ? ", and 5e.tools data is loaded" : "; more books can be added on the Content tab"}`}
                 </li>
                 <li>
                   {sheets > 0 ? "✓" : "○"} Character sheet {sheets > 0 ? "added" : "not added yet (optional)"}
@@ -438,6 +449,7 @@ export function Tutorial(p: TutorialProps) {
       ),
     },
   ];
+  const steps = allSteps.filter((x) => AURORA_IN_APP || !x.aurora);
   const step = steps[i];
 
   return (
@@ -449,7 +461,7 @@ export function Tutorial(p: TutorialProps) {
         <small className="muted">
           Step {i + 1} of {TUTORIAL_STEPS}
         </small>
-        <h2>{step.title}</h2>
+        <h2>{i === 0 ? step.title : `${i}. ${step.title}`}</h2>
         {step.body}
         <div className="tutorial-dots" aria-hidden="true">
           {steps.map((_, k) => (

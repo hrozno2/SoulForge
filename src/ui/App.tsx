@@ -42,7 +42,9 @@ import { appDataDisk } from "../diskBackup";
 import { useUpdater } from "../updater";
 import { importForeignCharacter, type ForeignImport } from "../aurora/foreign";
 import { ImportNotes, ImportReport, importReportText } from "./ImportReport";
-import { MoveDialog, usesAurora } from "./MoveDialog";
+import { MoveDialog } from "./MoveDialog";
+import { moveOffered, standsOnUnreadAurora } from "../aurora/auroraLeft";
+import { holdsAurora } from "../aurora/sourceFamily";
 import { APP_VERSION, OlderBuildNotice, ruleProblems } from "./RulesCheck";
 import { loadTestContent, makeTestBatch, moveCharactersToFiveTools, testExport } from "./TestTools";
 import { listCharacters } from "../aurora/storage";
@@ -558,6 +560,20 @@ export function App() {
               </button>
             </div>
           )}
+          {content.ready && !moveOpen && standsOnUnreadAurora(character, content.reg, holdsAurora(content.sources)) && (
+            <section className="older-build" role="status" aria-label="Built on Aurora content">
+              <p>
+                <b>{character.name || "This character"} was built on Aurora content,</b> which this version of Soul Forge no longer reads,
+                so its class, species or background shows as missing. Nothing is lost: the character and Aurora's files are untouched.
+                Moving it makes a copy on 5e.tools' content and shows you first what would change.
+              </p>
+              <div className="row">
+                <button className="primary" onClick={() => setMoveOpen(true)}>
+                  Move to 5e.tools
+                </button>
+              </div>
+            </section>
+          )}
           {moveOpen && (
             <MoveDialog
               ch={character}
@@ -750,7 +766,7 @@ export function App() {
                   </button>
                   <button onClick={() => setTab("play")}>Play</button>
                   <button onClick={() => setTab("sheet")}>Export</button>
-                  {content.ready && usesAurora(character, content.reg) && (
+                  {content.ready && moveOffered(character, content.reg, holdsAurora(content.sources)) && (
                     <button
                       onClick={() => setMoveOpen(true)}
                       title="See what moving this character to 5e.tools' content would change, then make a 5e.tools copy; this one stays as it is"

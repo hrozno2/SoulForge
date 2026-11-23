@@ -1,3 +1,7 @@
+import { askConfirm } from "./Confirm";
+import { useSettings } from "./Settings";
+import { AURORA_IN_APP, readsAurora } from "./flavor";
+import { sourceFamily } from "../aurora/sourceFamily";
 import { useMemo, useRef, useState } from "react";
 import type { ContentState } from "./useContent";
 import { DEFAULT_LINK } from "../aurora/content";
@@ -164,6 +168,8 @@ export function ContentTab({
   };
   const [ftMsg, setFtMsg] = useState("");
   const [ftBusy, setFtBusy] = useState(false);
+  // The release app does not read Aurora's sources (D7): they are listed apart, with what that means.
+  const unread = readsAurora(useSettings()) ? [] : content.sources.filter((x) => sourceFamily(x) === "aurora");
   const pct = content.progress && content.progress.total ? Math.round((content.progress.done / content.progress.total) * 100) : 0;
 
   const importFiles = async (list: FileList | null) => {
@@ -272,21 +278,33 @@ export function ContentTab({
   return (
     <div>
       <section className="card">
-        <h2>Content links</h2>
-        <p className="muted">
-          Add the address of an Aurora index file. Soul Forge downloads everything it lists, keeps a copy for offline use, and checks for
-          new versions each time it starts.
-        </p>
-        <div className="row">
-          <input style={{ flex: 1 }} value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://.../something.index" />
-          <button className="primary" disabled={content.busy} onClick={() => content.addLink(link)}>
-            Add link
-          </button>
-        </div>
-        <div className="row">
-          <button onClick={() => openExternal("https://github.com/AuroraLegacy/elements")}>AuroraLegacy elements repo</button>
-          <button onClick={() => openExternal("https://aurorabuilder.com/documentation/")}>Aurora documentation</button>
-        </div>
+        {AURORA_IN_APP ? (
+          <>
+            <h2>Content links</h2>
+            <p className="muted">
+              Add the address of an Aurora index file. Soul Forge downloads everything it lists, keeps a copy for offline use, and checks
+              for new versions each time it starts.
+            </p>
+            <div className="row">
+              <input style={{ flex: 1 }} value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://.../something.index" />
+              <button className="primary" disabled={content.busy} onClick={() => content.addLink(link)}>
+                Add link
+              </button>
+            </div>
+            <div className="row">
+              <button onClick={() => openExternal("https://github.com/AuroraLegacy/elements")}>AuroraLegacy elements repo</button>
+              <button onClick={() => openExternal("https://aurorabuilder.com/documentation/")}>Aurora documentation</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2>Rules content</h2>
+            <p className="muted">
+              The free rules (SRD 5.1 and 5.2.1) come with Soul Forge. More books come from 5e.tools data, below; your own homebrew is made
+              with the homebrew builder further down.
+            </p>
+          </>
+        )}
         {content.busy && (
           <div className="progress">
             <div style={{ width: `${pct}%` }} />
@@ -308,37 +326,70 @@ export function ContentTab({
         )}
       </section>
 
-      {content.sources.map((s) => (
-        <section className="card" key={s.url}>
-          <h2>{s.name}</h2>
+      {unread.length > 0 && (
+        <section className="card" aria-label="Aurora content, not read">
+          <h2>Aurora content on this computer</h2>
           <p className="muted">
-            {s.kind === "link" ? s.url : "Stored on this computer"}
-            <br />
-            {s.fileCount} files enabled · checked {ago(s.lastChecked)}
+            This version of Soul Forge no longer reads Aurora's content: the lists come from the free rules, 5e.tools data and your
+            homebrew. These files are still here and nothing has been deleted. A character built on them opens with a{" "}
+            <b>Move to 5e.tools</b> button, which reads them once more to make a 5e.tools copy; keep them until your characters are moved.
           </p>
-          <div className="row">
-            {s.format === "5etools" && s.baseUrl && (
-              <button disabled={ftBusy || content.busy} onClick={() => ftFetch(s.baseUrl!)}>
-                Refresh from address
-              </button>
-            )}
-            {s.kind === "link" && (
-              <button disabled={content.busy} onClick={() => content.update(s.url)}>
-                Check for updates
-              </button>
-            )}
-            {s.kind === "link" && (
-              <button disabled={content.busy} onClick={() => content.update(s.url, true)}>
-                Download everything again
-              </button>
-            )}
-            <button disabled={content.busy} onClick={() => content.remove(s.url)}>
-              Remove
-            </button>
-          </div>
-          {s.tree && <Tree node={s.tree} source={s} content={content} depth={0} />}
+          <ul>
+            {unread.map((s) => (
+              <li key={s.url}>
+                <b>{s.name}</b> <span className="muted">({s.fileCount} files)</span>{" "}
+                <button
+                  disabled={content.busy}
+                  onClick={async () => {
+                    if (
+                      await askConfirm({
+                        title: `Remove ${s.name}?`,
+                        message: "Characters built on this content can no longer be moved to 5e.tools once it is removed.",
+                      })
+                    )
+                      await content.remove(s.url);
+                  }}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
         </section>
-      ))}
+      )}
+      {content.sources
+        .filter((s) => !unread.includes(s))
+        .map((s) => (
+          <section className="card" key={s.url}>
+            <h2>{s.name}</h2>
+            <p className="muted">
+              {s.kind === "link" ? s.url : "Stored on this computer"}
+              <br />
+              {s.fileCount} files enabled · checked {ago(s.lastChecked)}
+            </p>
+            <div className="row">
+              {s.format === "5etools" && s.baseUrl && (
+                <button disabled={ftBusy || content.busy} onClick={() => ftFetch(s.baseUrl!)}>
+                  Refresh from address
+                </button>
+              )}
+              {s.kind === "link" && (
+                <button disabled={content.busy} onClick={() => content.update(s.url)}>
+                  Check for updates
+                </button>
+              )}
+              {s.kind === "link" && (
+                <button disabled={content.busy} onClick={() => content.update(s.url, true)}>
+                  Download everything again
+                </button>
+              )}
+              <button disabled={content.busy} onClick={() => content.remove(s.url)}>
+                Remove
+              </button>
+            </div>
+            {s.tree && <Tree node={s.tree} source={s} content={content} depth={0} />}
+          </section>
+        ))}
 
       <section className="card">
         <h2>5etools data (works with Plutonium)</h2>
@@ -389,22 +440,24 @@ export function ContentTab({
         {ftMsg && <p className="notice">{ftMsg}</p>}
       </section>
 
-      <section className="card">
-        <h2>Import files</h2>
-        <p className="muted">A downloaded ZIP of an elements repository, or loose .xml element files.</p>
-        <input
-          ref={fileRef}
-          aria-label="Choose element files or a ZIP"
-          type="file"
-          accept=".zip,.xml"
-          multiple
-          onChange={(e) => {
-            void importFiles(e.target.files);
-            e.target.value = "";
-          }}
-        />
-        {msg && <p className="notice">{msg}</p>}
-      </section>
+      {AURORA_IN_APP && (
+        <section className="card">
+          <h2>Import files</h2>
+          <p className="muted">A downloaded ZIP of an elements repository, or loose .xml element files.</p>
+          <input
+            ref={fileRef}
+            aria-label="Choose element files or a ZIP"
+            type="file"
+            accept=".zip,.xml"
+            multiple
+            onChange={(e) => {
+              void importFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          {msg && <p className="notice">{msg}</p>}
+        </section>
+      )}
 
       <HomebrewBuilder
         content={content}
@@ -415,27 +468,29 @@ export function ContentTab({
           .sort()}
       />
 
-      <section className="card">
-        <h2>Write your own content</h2>
-        <p className="muted">
-          Homebrew uses the same element format as the official content: grants, selections and stat rules. See the Aurora documentation for
-          the format.
-        </p>
-        <div className="row">
-          <input value={xmlName} onChange={(e) => setXmlName(e.target.value)} placeholder="Name" />
-          <button className="primary" onClick={saveCustom}>
-            Save content
-          </button>
-        </div>
-        <textarea
-          className="code"
-          aria-label="Element XML"
-          rows={14}
-          value={xml}
-          onChange={(e) => setXml(e.target.value)}
-          spellCheck={false}
-        />
-      </section>
+      {AURORA_IN_APP && (
+        <section className="card">
+          <h2>Write your own content</h2>
+          <p className="muted">
+            Homebrew uses the same element format as the official content: grants, selections and stat rules. See the Aurora documentation
+            for the format.
+          </p>
+          <div className="row">
+            <input value={xmlName} onChange={(e) => setXmlName(e.target.value)} placeholder="Name" />
+            <button className="primary" onClick={saveCustom}>
+              Save content
+            </button>
+          </div>
+          <textarea
+            className="code"
+            aria-label="Element XML"
+            rows={14}
+            value={xml}
+            onChange={(e) => setXml(e.target.value)}
+            spellCheck={false}
+          />
+        </section>
+      )}
 
       <Compendium content={content} onDetail={onDetail} />
       {r && set && r.character.classes.length + (r.character.race ? 1 : 0) > 0 && <Sources r={r} set={set} />}

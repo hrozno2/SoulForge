@@ -7,17 +7,9 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Character } from "../aurora/character";
 import type { ARegistry } from "../aurora/registry";
-import type { AElement } from "../aurora/types";
 import type { MoveResult } from "../engine/migrateReport";
 
-/** Aurora's own element (not 5e.tools', not the SRD's, not Soul Forge's additions). */
-export const isAuroraElement = (e: AElement | undefined) =>
-  !!e && e.origin !== "5etools" && !e.id.startsWith("ID_5ET") && !e.id.startsWith("ID_SF_") && !/^SRD /.test(e.source);
-
-/** The character's class, species or background is Aurora's: the move has something to do. */
-export function usesAurora(ch: Character, reg: ARegistry): boolean {
-  return [...ch.classes.map((c) => c.classId), ch.race ?? "", ch.background ?? ""].some((id) => !!id && isAuroraElement(reg.get(id)));
-}
+export { isAuroraElement, usesAurora } from "../aurora/auroraLeft";
 
 type State = { kind: "working"; step: string } | { kind: "ready"; res: MoveResult } | { kind: "failed"; why: string };
 
@@ -45,7 +37,7 @@ export function MoveDialog({
   onClose,
 }: {
   ch: Character;
-  /** The content as loaded: Aurora and 5e.tools together. */
+  /** The content as loaded: with Aurora's (the test app), or without it (the release app: the dialog reads it). */
   reg: ARegistry;
   /** Saves the moved copy as a new character and opens it. */
   onCopy: (moved: Character) => Promise<void>;
@@ -71,7 +63,18 @@ export function MoveDialog({
         if (!live) return;
         setState({ kind: "working", step: "Working out the move..." });
         await new Promise((ok) => setTimeout(ok, 0));
-        const res = moveAndCompare(ch, reg, five, rulesRef() ?? []);
+        // The original is read on the content it was built on. Where the app no longer loads Aurora's files (the
+        // release app, D7), they are read here, for the move only.
+        const { usesAurora } = await import("../aurora/auroraLeft");
+        let both = reg;
+        if (!usesAurora(ch, reg)) {
+          setState({ kind: "working", step: "Reading the content the character was built on..." });
+          both = (await buildRegistry(await listSources())).reg;
+          if (!live) return;
+          setState({ kind: "working", step: "Working out the move..." });
+          await new Promise((ok) => setTimeout(ok, 0));
+        }
+        const res = moveAndCompare(ch, both, five, rulesRef() ?? []);
         if (live) setState({ kind: "ready", res: { ...res, name: ch.name } });
       } catch (e) {
         if (live) setState({ kind: "failed", why: (e as Error).message });

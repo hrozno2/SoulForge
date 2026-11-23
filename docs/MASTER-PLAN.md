@@ -233,7 +233,7 @@ closed and enough Aurora-free test rounds have passed. The test app gets its own
 | D4 (done 2026-11-17: 500/500) | Close the parity gap: the sheet first (same sheet with and without Aurora: 224 to 500 of 500), then the borrowed mechanics by kind; choices 90, grants 10, numbers 1 to 0 | All parity counts 0; the gate fails if one rises |
 | D5 | Aurora-free testing: `full-check --no-aurora` (the flag exists since 2026-11-23; runs are scheduled, results in docs/NO-AURORA-RUNS.md); a 5e.tools-only switch in the test app | Five clean `--no-aurora` full checks and two weeks of Chris's testing |
 | D6 (in progress, see E1) | Saved characters move from Aurora ids to their 5e.tools twins on load | 400 saved characters and Chris's library: no unexplained sheet change |
-| D7 | The release app drops Aurora (importer, files, settings); the test app keeps it | Chris's go-ahead after D5 and D6 |
+| D7 (built 2026-11-23, unreleased) | The release app drops Aurora (importer, files, settings); the test app keeps it. Chris gave the go-ahead on 2026-11-23, before D5 and D6 were met: see docs/RESUME.md for what is built and what the release still waits on | Chris's go-ahead after D5 and D6 |
 
 ---
 

@@ -1,4 +1,5 @@
-import { withoutAurora } from "../aurora/sourceFamily";
+import { sourceFamily, withoutAurora } from "../aurora/sourceFamily";
+import { readsAurora } from "./flavor";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ARegistry } from "../aurora/registry";
 import { AUTO_UPDATE_MS, buildRegistry, newLinkSource, updateSource, DEFAULT_LINK } from "../aurora/content";
@@ -47,8 +48,9 @@ export function useContent(): ContentState {
     setBusy(true);
     setStatus("Reading content...");
     try {
-      // Soul Forge Test's 5e.tools-only switch: Aurora's sources stay on disk and in the list, but are not read.
-      const read = __TEST_FLAVOR__ && getSettings().fiveToolsOnly ? withoutAurora(list) : list;
+      // The release app, and Soul Forge Test's 5e.tools-only switch: Aurora's sources stay on disk and in the list,
+      // but are not read (D7).
+      const read = readsAurora(getSettings()) ? list : withoutAurora(list);
       const { reg: next, errors: errs } = await buildRegistry(read, undefined, (d, t, step) => {
         setProgress({ phase: "files", done: d, total: t });
         launchProgress(t ? d / t : 1, step ?? `Reading content (${d} of ${t} files)`, !!step);
@@ -107,6 +109,8 @@ export function useContent(): ContentState {
       setSources(list);
       await rebuild(list);
       for (const s of list) {
+        // An Aurora link the app does not read is not fetched either.
+        if (!readsAurora(getSettings()) && sourceFamily(s) === "aurora") continue;
         if (s.kind === "link" && Date.now() - s.lastChecked > AUTO_UPDATE_MS && navigator.onLine) await syncOne(s, false, true);
       }
     })();

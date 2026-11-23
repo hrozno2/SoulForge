@@ -398,7 +398,9 @@ export class ItemIndex {
     ];
     // Older books name armor "Leather" where the class list says "leather armor".
     if (/ armor$/.test(n)) tries.push(this.pick(this.byName.get(n.replace(/ armor$/, "")), prefer));
-    for (const syn of SYNONYMS[n] ?? SYNONYMS[singular(n)] ?? [])
+    // By own key only: the text comes from a file, and "constructor" is a word like any other.
+    const syns = (k: string) => (Object.hasOwn(SYNONYMS, k) ? SYNONYMS[k] : undefined);
+    for (const syn of syns(n) ?? syns(singular(n)) ?? [])
       tries.push(this.pick(this.byKeep.get(normKeep(syn)), prefer), this.pick(this.byName.get(norm(syn)), prefer));
     return tries.find(Boolean);
   }

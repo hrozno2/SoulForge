@@ -19,6 +19,14 @@ import { FLANG, FTOOL } from "./foundryKeys";
 
 type Json = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
+/**
+ * A foreign file is somebody else's program's output, and a damaged one holds anything anywhere (importFuzz.test.ts):
+ * a number where a list should be, an object where a name should be. These two read a field as what the importer
+ * needs it to be, and as nothing when it is not that.
+ */
+const each = <T = any>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []); // eslint-disable-line @typescript-eslint/no-explicit-any
+const text = (v: unknown): string => (typeof v === "string" ? v : typeof v === "number" && Number.isFinite(v) ? String(v) : "");
+
 export interface ForeignImport {
   character: Character;
   notes: string[];
@@ -66,7 +74,7 @@ const RENAMED_2024_SUBCLASS: Record<string, string> = Object.fromEntries(
 );
 
 // The engine's name key (concepts.ts): "Melfs Acid Arrow" (FastCharacter) and "Melf’s Acid Arrow" agree.
-const normalize = (s: string) => nameKey(s.replace(/\(.*?\)/g, " "));
+const normalize = (s: string) => nameKey(text(s).replace(/\(.*?\)/g, " "));
 
 /** Keeps the words inside parentheses and after a colon: "Magic Initiate: Warlock" and "Magic Initiate (Warlock)" agree. */
 const normalizeFull = (s: string) => nameKey(s);
@@ -188,7 +196,7 @@ function classByFeatures(reg: ARegistry, name: string, featureNames: Set<string>
 function itemNameVariants(name: string, base?: string): string[] {
   const out: string[] = [];
   const add = (n: string | undefined) => {
-    const t = (n ?? "").replace(/\s+/g, " ").trim();
+    const t = text(n).replace(/\s+/g, " ").trim();
     if (t && !out.includes(t)) out.push(t);
   };
   const plus = (n: string) => n.replace(/^\s*[+-]\d+\s+/, "").replace(/\s*,?\s*[+-]\d+\s*$/, "");
@@ -516,7 +524,7 @@ class Importer {
 
   /** A language the file lists; "Any" and blanks say nothing. */
   addLanguage(n: string): void {
-    for (const part of n.split(/[,;]/)) {
+    for (const part of text(n).split(/[,;]/)) {
       const l = part
         .replace(/\(.*?\)/g, "")
         .trim()
@@ -1664,7 +1672,8 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
     const v = Number(sys.abilities?.[k]?.value);
     if (Number.isFinite(v)) scores[a] = v;
   }
-  const items: Json[] = Array.isArray(data.items) ? data.items : [];
+  // Only what is an item at all: a list entry that is null or a number is nothing to read.
+  const items: Json[] = each<Json>(data.items).filter((it) => !!it && typeof it === "object" && !Array.isArray(it));
   // The species traits the file lists tell the versions of a species apart (the Dungeon Master's Guide aasimar has
   // Celestial Legacy, Volo's has a subrace).
   b.speciesTraits = new Set(
@@ -1707,8 +1716,8 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   const LABEL = (t: string) =>
     t === "Archetype" ? "subclass" : /^(Sub Race|Race Variant)$/.test(t) ? "subrace or lineage" : t === "Spell" ? "spell" : "feat";
   const sfChoices = (it: Json) => {
-    for (const id of (it.flags?.soulforge?.choices ?? []) as string[]) {
-      const c = reg.get(id);
+    for (const id of each(it.flags?.soulforge?.choices)) {
+      const c = typeof id === "string" ? reg.get(id) : undefined;
       if (c) b.want([c.type], c.name, LABEL(c.type), [], undefined, c.edition, false, c.id);
     }
   };
@@ -1738,8 +1747,8 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
         if (own?.type === "Race") {
           b.ch.race = own.id;
           b.matched.push(`${own.name} (species)`);
-          for (const id of (it.flags?.soulforge?.lineages ?? []) as string[]) {
-            const l = reg.get(id);
+          for (const id of each(it.flags?.soulforge?.lineages)) {
+            const l = typeof id === "string" ? reg.get(id) : undefined;
             if (l)
               b.want(["Sub Race", "Race Variant", "Racial Trait"], l.name, "subrace or lineage", [], undefined, l.edition, false, l.id);
           }
@@ -1780,8 +1789,8 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
         if (ownFeat?.type === "Feat") {
           b.want(["Feat"], ownFeat.name, "feat", [], undefined, ownFeat.edition, false, ownFeat.id);
           // Its own choices, exactly (a Soul Forge export lists them): the list Magic Initiate draws from, and so on.
-          for (const id of (it.flags?.soulforge?.choices ?? []) as string[]) {
-            const c = reg.get(id);
+          for (const id of each(it.flags?.soulforge?.choices)) {
+            const c = typeof id === "string" ? reg.get(id) : undefined;
             if (c) b.want([c.type], c.name, c.type === "Spell" ? "spell" : "feat", [], undefined, c.edition, false, c.id);
           }
         }
@@ -1882,7 +1891,7 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
   const SIZE: Record<string, string> = { tiny: "tiny", sm: "small", med: "medium", lg: "large", huge: "huge", grg: "gargantuan" };
   b.hints.size = SIZE[String(sys.traits?.size ?? "")] ?? "";
   for (const it of items) if (it?.name && ["feat", "subclass"].includes(it.type)) b.addName(String(it.name));
-  for (const l of sys.traits?.languages?.value ?? []) b.addLanguage(FLANG[String(l).toLowerCase()] ?? String(l));
+  for (const l of each(sys.traits?.languages?.value)) b.addLanguage(FLANG[String(l).toLowerCase()] ?? String(l));
   for (const l of sys.traits?.languages?.custom ? String(sys.traits.languages.custom).split(/[;,]/) : [])
     if (l.trim()) b.hints.languages.add(l.trim().toLowerCase());
   for (const [k, t] of Object.entries<Json>(sys.tools ?? {}))
@@ -1903,7 +1912,7 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
     const adv = it.system?.advancement;
     for (const a of (Array.isArray(adv) ? adv : Object.values<Json>(adv ?? {})) as Json[]) {
       if (a?.type !== "Trait") continue;
-      for (const c of (a.value?.chosen ?? []) as string[]) {
+      for (const c of each<string>(a.value?.chosen)) {
         const [kind, ...rest] = String(c).split(":");
         const last = rest[rest.length - 1] ?? "";
         // Each pick also under the item that made it (the class, the background, a feat), for its own choices.
@@ -1933,12 +1942,12 @@ export function importFoundry(data: Json, reg: ARegistry): ForeignImport {
       }
     }
   }
-  for (const d of (sys.traits?.dr?.value ?? []) as string[]) b.hints.resist.add(String(d).toLowerCase());
-  for (const a of (sys.traits?.armorProf?.value ?? []) as string[])
+  for (const d of each<string>(sys.traits?.dr?.value)) b.hints.resist.add(String(d).toLowerCase());
+  for (const a of each<string>(sys.traits?.armorProf?.value))
     b.hints.armor.add(({ lgt: "light", med: "medium", hvy: "heavy", shl: "shields" } as Record<string, string>)[a] ?? a);
-  for (const w of (sys.traits?.weaponProf?.value ?? []) as string[])
+  for (const w of each<string>(sys.traits?.weaponProf?.value))
     if (/^(sim|mar)$/.test(w)) b.hints.weapons.add(w === "sim" ? "simple" : "martial");
-  for (const m of sys.traits?.weaponProf?.mastery?.value ?? [])
+  for (const m of each(sys.traits?.weaponProf?.mastery?.value))
     b.hints.masteries.add(
       String(m)
         .toLowerCase()

@@ -1,3 +1,4 @@
+import { soundElements } from "./elementShape";
 import type { AAppend, AElement, ParsedFile } from "./types";
 import { markComingSoon } from "./comingSoon";
 import { background2024Choices } from "../engine/backgroundOptions";
@@ -170,12 +171,25 @@ export class ARegistry {
 
   /** Later files override earlier elements with the same id. */
   addFile(file: ParsedFile): void {
-    this.raw.push(...file.elements);
-    this.appends.push(...file.appends);
+    this.addElements(file.elements);
+    for (const ap of file.appends ?? [])
+      if (ap && typeof ap.id === "string")
+        this.appends.push({
+          id: ap.id,
+          rules: soundElements([{ id: ap.id, type: "Append", rules: ap.rules }]).elements[0]?.rules ?? [],
+          supports: Array.isArray(ap.supports) ? ap.supports.filter((x) => typeof x === "string") : [],
+        });
   }
 
+  /** How many elements the door repaired or left out since the registry was made (elementShape.ts). */
+  shape = { repaired: 0, dropped: 0 };
+
+  /** Every element enters here, through the door for content: sound ones as they are, damaged ones repaired. */
   addElements(elements: AElement[]): void {
-    this.raw.push(...elements);
+    const sound = soundElements(Array.isArray(elements) ? elements : []);
+    this.shape.repaired += sound.repaired;
+    this.shape.dropped += sound.dropped;
+    for (const e of sound.elements) this.raw.push(e);
   }
 
   /** Call once after all files are added. Applies overrides and `append` patches. */

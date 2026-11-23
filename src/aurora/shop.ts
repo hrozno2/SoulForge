@@ -99,8 +99,15 @@ export const sellValue = buyCost;
 export type ShopResult = { ok: true; character: Character } | { ok: false; reason: string };
 
 /** Buys `qty` of an item: the coins go down and the item goes into the inventory (with one it already has). */
-export function buy(ch: Character, el: AElement, qty = 1, uid = `shop-${el.id}-${Date.now().toString(36)}`): ShopResult {
-  const cost = buyCost(ch, el, qty);
+export function buy(
+  ch: Character,
+  el: AElement,
+  qty = 1,
+  uid = `shop-${el.id}-${Date.now().toString(36)}`,
+  /** The shop's "add" mode: the item is taken without paying (a gift, loot, the table's call). */
+  free = false,
+): ShopResult {
+  const cost = free ? 0 : buyCost(ch, el, qty);
   const coins = pay(ch.coins, cost);
   if (!coins) return { ok: false, reason: `Not enough coins: ${formatCp(cost)} needed, ${formatCp(purseCp(ch.coins))} in the purse.` };
   const same = ch.inventory.find((i) => i.id === el.id && !i.custom && !i.magic && !i.label);
@@ -140,4 +147,47 @@ export function formatCoins(c: Coinage): string {
     .filter((k) => c[k])
     .map((k) => `${c[k].toLocaleString("en-US")} ${k}`);
   return parts.join(" ") || "no coins";
+}
+
+/**
+ * The shop's shelves (Chris 2026-11-23): each item on one, by its kind. One function for the shelf tiles, so a
+ * shelf and the list behind it never disagree.
+ */
+export const SHELVES = [
+  { id: "weapons", label: "Weapons" },
+  { id: "armor", label: "Armor and shields" },
+  { id: "gear", label: "Adventuring gear" },
+  { id: "tools", label: "Tools and instruments" },
+  { id: "packs", label: "Packs" },
+  { id: "potions", label: "Potions and poisons" },
+  { id: "mounts", label: "Mounts and vehicles" },
+  { id: "magic", label: "Magic items" },
+  { id: "treasure", label: "Treasure and trade goods" },
+] as const;
+export type ShelfId = (typeof SHELVES)[number]["id"];
+
+export function shelfOf(el: AElement): ShelfId {
+  if (el.type === "Weapon") return "weapons";
+  if (el.type === "Armor") return "armor";
+  const c = (el.setters.category?.value ?? "").toLowerCase();
+  if (/potion|poison/.test(c)) return "potions";
+  if (/tool|instrument|gaming|kit/.test(c)) return "tools";
+  if (/pack/.test(c)) return "packs";
+  if (/mount|vehicle/.test(c)) return "mounts";
+  if (/treasure|trade|gem|art object/.test(c)) return "treasure";
+  if (el.type === "Magic Item") return "magic";
+  return "gear";
+}
+
+/**
+ * What the shopkeeper says: by the purse, the mode and the last thing that happened. Plain lines, no dice: the same
+ * state gives the same line.
+ */
+export function keeperLine(state: { purseCp: number; mode: "buy" | "add"; last?: string; shelf?: string }): string {
+  if (state.last) return state.last;
+  if (state.mode === "add") return "Take what you need. This one is on the house.";
+  if (state.purseCp <= 0) return "An empty purse? Have a look anyway. Looking is free.";
+  if (state.shelf) return `${state.shelf}, is it? Here is what I have.`;
+  if (state.purseCp < 1000) return "Welcome. I have something for every purse.";
+  return "Welcome, welcome. That is a fine, heavy purse.";
 }

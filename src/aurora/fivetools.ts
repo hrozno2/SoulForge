@@ -1570,6 +1570,51 @@ const cost = (cp: number | undefined): SetterValue | undefined => {
   return set(String(cp), { currency: "cp" });
 };
 
+/**
+ * An item's kind, in the words Aurora's content uses for it ("Tools", "Mounts & Vehicles", "Potions"), from 5e.tools'
+ * own item type. Before, everything that was not a weapon, armor or magic was "Adventuring Gear", and every magic
+ * item "Magic Items", so nothing could sort items by kind on 5e.tools content (the shop's shelves, Chris 2026-11-23).
+ */
+const ITEM_KIND: Record<string, string> = {
+  AT: "Tools",
+  T: "Tools",
+  GS: "Tools",
+  INS: "Musical Instruments",
+  SCF: "Spellcasting Focus",
+  MNT: "Mounts & Vehicles",
+  VEH: "Mounts & Vehicles",
+  SHP: "Mounts & Vehicles",
+  AIR: "Mounts & Vehicles",
+  SPC: "Mounts & Vehicles",
+  TAH: "Mounts & Vehicles",
+  TG: "Trade Goods",
+  TB: "Trade Goods",
+  $: "Treasure",
+  $A: "Treasure",
+  $C: "Treasure",
+  $G: "Treasure",
+  EXP: "Explosives",
+  A: "Ammunition",
+  AF: "Ammunition",
+  FD: "Food & Drink",
+  P: "Potions",
+  SC: "Scrolls",
+  RG: "Rings",
+  WD: "Wands",
+  RD: "Rods",
+};
+function itemCategory(m: J, t: string, weapon: boolean, armor: boolean, magic: boolean): string {
+  if (weapon) return "Weapons";
+  if (armor) return "Armor";
+  if (m.poison) return "Poison";
+  // Its own type first: a bundle of arrows lists its contents too, and is ammunition, not a pack.
+  if (ITEM_KIND[t]) return ITEM_KIND[t];
+  // A pack by name: a bag of ball bearings lists its contents too, and is gear.
+  if (m.packContents && /\bpack\b/i.test(String(m.name))) return "Equipment Packs";
+  if (magic) return m.staff ? "Staffs" : m.wondrous ? "Wondrous Items" : "Magic Items";
+  return "Adventuring Gear";
+}
+
 function convertItem(raw: J, ctx: Ctx): AElement | null {
   if (!raw.name) return null;
   const i = withItemEntries(raw, ctx);
@@ -1586,7 +1631,7 @@ function convertItem(raw: J, ctx: Ctx): AElement | null {
     !(!i.baseItem && (weapon || armor) && m.source === (b.source ?? m.source) && !i.reqAttune && !i.bonusWeapon && !i.bonusAc);
   const type = weapon ? "Weapon" : armor ? "Armor" : magic ? "Magic Item" : "Item";
   const setters: Record<string, SetterValue> = {
-    category: set(weapon ? "Weapons" : armor ? "Armor" : magic ? "Magic Items" : "Adventuring Gear"),
+    category: set(itemCategory(m, t, weapon, armor, !!magic)),
   };
   const rules: ARule[] = [];
   // Futuristic technology (5e.tools' "age": laser rifles, powered armor) is "scifi" and renaissance or modern technology

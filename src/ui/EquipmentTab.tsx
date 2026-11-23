@@ -1,4 +1,3 @@
-import { useKept } from "./keptFilters";
 import { isContainer } from "../aurora/containers";
 import { choosePending, genericOptions } from "../aurora/startingEquipment";
 import { useMemo, useState } from "react";
@@ -31,41 +30,25 @@ export const addItem = (set: SetCharacter, el: AElement) =>
   });
 
 /**
- * `listBeside`: items are added from a list next to this (the build board), so the search here is left out.
- * `part`: the build board shows the adding part (starting equipment and custom items) in its lists and only the
- * inventory and coins under the board.
+ * `part`: the build board shows the adding part (starting equipment; every other item comes from the shop) in its
+ * lists and only the inventory and coins under the board.
  */
 export function EquipmentTab({
   r,
   ch,
   set,
   onDetail,
-  listBeside = false,
   part = "all",
 }: {
   r: Resolved;
   ch: Character;
   set: SetCharacter;
   onDetail: (e: AElement) => void;
-  listBeside?: boolean;
   part?: "all" | "adding" | "inventory";
 }) {
   const sheet = useMemo(() => buildSheet(r), [r]);
-  // Kept through the list being drawn anew (keptFilters.ts): only the player clears them.
-  const [q, setQ] = useKept("equipment", "search", "");
-  const [type, setType] = useKept("equipment", "kind", "all");
-  const [custom, setCustom] = useState({ name: "", weight: "", cost: "", description: "" });
-
-  const results = useMemo(() => {
-    const n = q.trim().toLowerCase();
-    if (!n) return [];
-    const pool = type === "all" ? ITEM_TYPES.flatMap((t) => r.reg.ofType(t)) : r.reg.ofType(type);
-    return pool.filter((e) => e.name.toLowerCase().includes(n) && !e.compendiumHidden).slice(0, 60);
-  }, [q, type, r.reg]);
-
   const update = (id: string, fn: (i: InvItem) => InvItem) =>
     set((c) => ({ ...c, inventory: c.inventory.map((i) => (i.uid === id ? fn(i) : i)) }));
-  const add = (el: AElement) => addItem(set, el);
   const remove = (id: string) =>
     set((c) => ({
       ...c,
@@ -94,97 +77,8 @@ export function EquipmentTab({
     <div className="equip">
       {part !== "inventory" && <StartingEquipment r={r} ch={ch} set={set} onDetail={onDetail} />}
       {part !== "inventory" && (
-        <section className="card">
-          <h2>{listBeside ? "Custom items" : "Add equipment"}</h2>
-          {!listBeside && (
-            <>
-              <div className="row">
-                <input placeholder="Search items, weapons, armor" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1 }} />
-                <select aria-label="Filter by type" value={type} onChange={(e) => setType(e.target.value)}>
-                  <option value="all">All</option>
-                  {ITEM_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <ul className="options boxed">
-                {results.map((o) => (
-                  <li key={o.id}>
-                    <button onClick={() => add(o)} onMouseEnter={() => onDetail(o)}>
-                      <span className="tick">+</span>
-                      <span className="opt-name">{o.name}</span>
-                      <span className="opt-meta">
-                        {o.type}
-                        {o.setters.cost ? ` · ${o.setters.cost.value} ${o.setters.cost.attrs.currency ?? ""}` : ""}
-                      </span>
-                      <span className="opt-src" title={o.source}>
-                        {o.source}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-                {q.trim() && !results.length && (
-                  <li className="muted pad">No items match. Load more content on the Content tab, or add a custom item below.</li>
-                )}
-              </ul>
-            </>
-          )}
-          <details>
-            <summary>Custom item</summary>
-            <div className="row">
-              <input placeholder="Name" value={custom.name} onChange={(e) => setCustom({ ...custom, name: e.target.value })} />
-              <input
-                placeholder="Weight (lb)"
-                value={custom.weight}
-                onChange={(e) => setCustom({ ...custom, weight: e.target.value })}
-                style={{ width: 100 }}
-              />
-              <input
-                placeholder="Cost"
-                value={custom.cost}
-                onChange={(e) => setCustom({ ...custom, cost: e.target.value })}
-                style={{ width: 100 }}
-              />
-              <input
-                placeholder="Notes"
-                value={custom.description}
-                onChange={(e) => setCustom({ ...custom, description: e.target.value })}
-                style={{ flex: 1 }}
-              />
-              <button
-                disabled={!custom.name.trim()}
-                onClick={() => {
-                  set((c) => ({
-                    ...c,
-                    inventory: [
-                      ...c.inventory,
-                      {
-                        uid: uid(),
-                        id: "",
-                        qty: 1,
-                        equipped: false,
-                        attuned: false,
-                        custom: {
-                          name: custom.name.trim(),
-                          weight: Number(custom.weight) || 0,
-                          cost: custom.cost,
-                          description: custom.description,
-                        },
-                      },
-                    ],
-                  }));
-                  setCustom({ name: "", weight: "", cost: "", description: "" });
-                }}
-              >
-                Add
-              </button>
-            </div>
-          </details>
-        </section>
+        <p className="muted pad equip-from-shop">Everything else comes from the shop: buy it there, or add it free.</p>
       )}
-
       {part !== "adding" && (
         <section className="card">
           <h2>Inventory</h2>

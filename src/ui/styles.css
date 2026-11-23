@@ -10897,3 +10897,89 @@ button.spell-count.prep.on {
   padding: 1px 8px;
   font-size: 0.85em;
 }
+
+/* The shop (Chris 2026-11-23): a keeper at the counter, the till beside them, shelves to pick from. Theme tokens only. */
+.shop-keeper {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+.shop-sign {
+  width: 54px;
+  height: 54px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  background: var(--panel);
+  display: grid;
+  place-items: center;
+  font-family: var(--initial);
+  font-size: 28px;
+  color: var(--gold);
+}
+.shop-talk {
+  flex: 1;
+  min-width: 200px;
+}
+.shop-talk h2 {
+  margin: 0 0 2px;
+}
+.shop-line {
+  margin: 0;
+  font-family: var(--book);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--text);
+}
+.shop-line::before {
+  content: "\201C";
+}
+.shop-line::after {
+  content: "\201D";
+}
+.shop-till {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+.shop-shelves {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.shop-shelf {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+.shop-shelf:hover,
+.shop-shelf:focus-visible {
+  border-color: var(--gold);
+}
+.shop-shelf.on {
+  border-color: var(--gold);
+  box-shadow: inset 0 -3px 0 var(--gold);
+}
+.shop-shelf small {
+  color: var(--muted);
+}
+.shop-hint {
+  margin: 4px 0 12px;
+}
+.shop-custom {
+  margin-top: 12px;
+}

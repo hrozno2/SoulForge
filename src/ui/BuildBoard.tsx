@@ -1821,7 +1821,6 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const races = r.reg.ofType("Race");
   const classes = r.reg.ofType("Class").filter((c) => !c.compendiumHidden);
   const backgrounds = r.reg.ofType("Background");
-  const items = useMemo(() => ITEM_KINDS.flatMap((t) => r.reg.ofType(t)).filter((e) => !e.compendiumHidden), [r.reg]);
   const have = new Set(ch.classes.map((c) => c.classId));
   const classLock = (c: AElement) =>
     !ch.classes.length || have.has(c.id) ? undefined : totalLevel(ch) >= 20 ? "Level 20 is the maximum" : multiclassLock(r, c);
@@ -2072,19 +2071,9 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
     ),
     equipment: (
       <>
-        <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="adding" />
-        <h3 className="board-lib-sub">All items</h3>
-        <Browse
-          items={items}
-          type="Item"
-          chosen={[]}
-          onPick={pick("equipment")}
-          defaultView="list"
-          allowCards={false}
-          perPage={80}
-          draggable
-          pickLabel={() => "Add"}
-        />
+        <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} part="adding" />
+        {/* Items come from the shop, here as on the backpack (Chris 2026-11-23): no other list adds them. */}
+        <Shop r={r} ch={ch} set={set} />
       </>
     ),
   };
@@ -2416,7 +2405,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
               role="tab"
               className={`card-back-toggle ${backView !== "inventory" && backView !== "shop" ? "on" : ""}`}
               aria-selected={backView !== "inventory" && backView !== "shop"}
-              title="Starting equipment, adventuring packs and any item to add"
+              title="Starting equipment and adventuring packs"
               onClick={() => setBackView(null)}
             >
               <StartingGear />
@@ -2438,7 +2427,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
               role="tab"
               className={`card-back-toggle ${backView === "shop" ? "on" : ""}`}
               aria-selected={backView === "shop"}
-              title="Buy items with your coins, sell from the inventory"
+              title="Every other item: buy it with your coins, or add it free"
               onClick={() => setBackView("shop")}
             >
               <Purse />
@@ -2448,22 +2437,10 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
           {backView === "shop" && <Shop r={r} ch={ch} set={set} />}
           {backView !== "inventory" && backView !== "shop" && (
             <>
-              <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="adding" />
-              <h3 className="board-lib-sub">All items</h3>
-              <Browse
-                items={items}
-                type="Item"
-                chosen={[]}
-                onPick={(el) => addItem(set, el)}
-                defaultView="cards"
-                mini
-                viewKey="board.Item"
-                perPage={60}
-                pickLabel={() => "Add"}
-              />
+              <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} part="adding" />
             </>
           )}
-          <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} listBeside part="inventory" />
+          <EquipmentTab r={r} ch={ch} set={set} onDetail={() => undefined} part="inventory" />
         </>
       )}
     </>

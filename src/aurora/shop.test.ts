@@ -72,3 +72,28 @@ describe("rarity prices", () => {
     expect(priceCp(magic("Artifact"), true)).toBeUndefined();
   });
 });
+
+// Chris, 2026-11-23: the shop has a mode where items are added free.
+describe("the shop's add mode", () => {
+  it("adds the item and leaves the purse alone, even an empty one", async () => {
+    const { buy, keeperLine } = await import("./shop");
+    const { newCharacter } = await import("./character");
+    const sword = {
+      id: "ID_T_SWORD",
+      name: "Sword",
+      type: "Weapon",
+      setters: { cost: { value: "15", attrs: { currency: "gp" } } },
+    } as never;
+    const ch = { ...newCharacter(), coins: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 } };
+    expect(buy(ch, sword).ok).toBe(false);
+    const res = buy(ch, sword, 1, "u1", true);
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.character.inventory.map((i) => i.id)).toEqual(["ID_T_SWORD"]);
+      expect(res.character.coins).toEqual(ch.coins);
+    }
+    expect(keeperLine({ purseCp: 0, mode: "add" })).toMatch(/on the house/);
+    expect(keeperLine({ purseCp: 0, mode: "buy" })).toMatch(/empty purse/);
+    expect(keeperLine({ purseCp: 500, mode: "buy", last: "Sold." })).toBe("Sold.");
+  });
+});

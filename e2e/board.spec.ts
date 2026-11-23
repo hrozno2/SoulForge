@@ -83,10 +83,13 @@ test("the backpack shows starting gear, inventory or shop, and always opens on t
   const gear = page.getByRole("tab", { name: /Starting gear/ });
   const inv = page.getByRole("tab", { name: /Inventory/ });
   await expect(gear).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator(".board-lib-sub", { hasText: "All items" })).toBeVisible();
+  // Items are not added here (Chris 2026-11-23): the starting gear says where they come from, and no item list shows.
+  const win = page.locator(".card-window-equipment");
+  await expect(win.locator(".equip-from-shop")).toBeVisible();
+  await expect(win.locator(".board-lib-sub", { hasText: "All items" })).toHaveCount(0);
   await inv.click();
   await expect(inv).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator(".board-lib-sub", { hasText: "All items" })).toHaveCount(0);
+  await expect(win.locator(".equip-from-shop")).toHaveCount(0);
   // Closed on the inventory and opened again: back on the starting gear.
   await page
     .locator(".card-window-equipment")
@@ -95,7 +98,7 @@ test("the backpack shows starting gear, inventory or shop, and always opens on t
     .click();
   await page.locator("[data-tile=equipment]").click();
   await expect(page.getByRole("tab", { name: /Starting gear/ })).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator(".board-lib-sub", { hasText: "All items" })).toBeVisible();
+  await expect(page.locator(".card-window-equipment .equip-from-shop")).toBeVisible();
 });
 
 test("the shop on the backpack buys with the purse and the inventory sells back at the same price (C3)", async ({ page }) => {
@@ -108,10 +111,14 @@ test("the shop on the backpack buys with the purse and the inventory sells back 
   await page.getByRole("tab", { name: /Shop/ }).click();
   const shop = page.locator(".card-window .shop");
   await expect(shop.locator(".summary")).toContainText("100 gp");
+  // The keeper greets, the shelves sort the stock; a shelf opens its list.
+  await expect(shop.locator(".shop-line")).not.toBeEmpty();
+  await expect(shop.locator(".opt-row")).toHaveCount(0);
+  await shop.locator(".shop-shelf", { hasText: "Everything" }).click();
   const row = shop.locator(".opt-row:not(.dim)", { has: page.locator(".opt-label") }).first();
   const name = (await row.locator(".opt-name").textContent())!.trim();
   await row.locator(".opt-main").click();
-  await expect(shop.locator(".summary")).toContainText(`Bought ${name}`);
+  await expect(shop.locator(".shop-line")).toContainText(`Sold: ${name}`);
   await page.getByRole("tab", { name: /Inventory/ }).click();
   const line = page.locator(".card-window table.inv tr", { hasText: name }).first();
   await line.getByRole("button", { name: /^Sell/ }).click();
@@ -119,6 +126,18 @@ test("the shop on the backpack buys with the purse and the inventory sells back 
   // One to one: the purse is back where it started.
   await page.getByRole("tab", { name: /Shop/ }).click();
   await expect(shop.locator(".summary")).toContainText("100 gp");
+
+  // Add free: the same item is taken without paying, and an empty purse does not lock the shelves.
+  await page.getByRole("tab", { name: /Inventory/ }).click();
+  await page.locator(".coin", { hasText: "GP" }).locator("input").fill("0");
+  await page.getByRole("tab", { name: /Shop/ }).click();
+  await shop.getByRole("button", { name: "Add free" }).click();
+  const free = shop.locator(".opt-row:not(.dim)", { hasText: name }).first();
+  await free.locator(".opt-main").click();
+  await expect(shop.locator(".shop-line")).toContainText(`${name} is yours`);
+  await expect(shop.locator(".summary")).toContainText("no coins");
+  await page.getByRole("tab", { name: /Inventory/ }).click();
+  await expect(page.locator(".card-window table.inv tr", { hasText: name })).toHaveCount(1);
 });
 
 test("blank details never count as a choice; the board's Details button opens them (C2)", async ({ page }) => {

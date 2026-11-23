@@ -10,7 +10,7 @@ test("a character can be built from the built-in rules alone", async ({ page }) 
   await tab(page, "Play");
   await expect(page.locator(".play-id h1")).toHaveText(/random adventurer/i);
   await expect(page.locator(".ab-row .ab-box")).toHaveCount(6);
-  await tab(page, "Sheet");
+  await tab(page, "Export");
   await expect(page.locator("main")).toBeVisible();
   expect(seen.csp).toEqual([]);
   expect(seen.errors).toEqual([]);

@@ -11087,3 +11087,21 @@ button.spell-count.prep.on {
 .older-build .row {
   gap: 8px;
 }
+
+/* The guide's mark on a recommended card in the lists */
+.mini-card.guide-marked {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.guide-mark {
+  display: inline-block;
+  margin-bottom: 2px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

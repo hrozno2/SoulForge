@@ -272,6 +272,13 @@ export function App() {
     setTab("build");
     if (repaired.length) setReportOpen("repair");
   };
+  /** The guided first character: a new character on the board, the tutorial put away, the guide beside it. */
+  const startGuide = () => {
+    setTutorialOpen(false);
+    setTutorialMin(false);
+    open(uid(), { ...newCharacter(), checkedWith: APP_VERSION });
+    setGuide(true);
+  };
   const random = (level: number) => {
     const p = getSettings();
     open(uid(), {
@@ -422,6 +429,15 @@ export function App() {
                 }}
               >
                 Show the tutorial
+              </button>
+              <button
+                className="menu-item"
+                title="A few plain questions, some recommendations, and you do the choosing, on a new character"
+                onClick={() => {
+                  startGuide();
+                }}
+              >
+                Guide me through a first character
               </button>
               <button className="menu-item" onClick={() => updater.check(true)}>
                 Check for updates
@@ -634,13 +650,7 @@ export function App() {
               onGo={(t) => setTab(t as Tab)}
               content={content}
               onImportForeign={importForeign}
-              onGuide={() => {
-                // A new character on the board, the tutorial put away, the guide beside it.
-                setTutorialOpen(false);
-                setTutorialMin(false);
-                open(uid(), { ...newCharacter(), checkedWith: APP_VERSION });
-                setGuide(true);
-              }}
+              onGuide={startGuide}
             />
           )}
           {guide && introOver && <GuideCoach r={r} set={set} onGo={(t) => setTab(t as Tab)} onClose={() => setGuide(false)} />}

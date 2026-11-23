@@ -4,7 +4,8 @@
  * the real cards. It watches the character and moves on when a step is done. Nothing is picked for the player, except
  * the recommended scores when they ask for them.
  */
-import { useState } from "react";
+import { setGuideMarks } from "./guideMarks";
+import { useEffect, useState } from "react";
 import type { Character } from "../aurora/character";
 import { stillToChoose, type Resolved } from "../aurora/engine";
 import {
@@ -51,6 +52,20 @@ export function GuideCoach({
               : open
                 ? "choices"
                 : "done";
+  // The step's recommendations are marked on their cards in the lists; nothing is marked once the guide moves on.
+  const marked =
+    step === "class" && style && upkeep
+      ? { type: "Class", names: recommendClasses(style, upkeep).map((c) => c.name) }
+      : step === "species"
+        ? { type: "Race", names: guide?.species ?? ["Human"] }
+        : step === "background"
+          ? { type: "Background", names: guide?.backgrounds ?? ["Soldier"] }
+          : null;
+  const markKey = marked ? `${marked.type}:${marked.names.join("|")}` : "";
+  useEffect(() => {
+    setGuideMarks(marked);
+    return () => setGuideMarks(null);
+  }, [markKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const order = ["ask", "class", "species", "background", "scores", "choices", "done"];
   const how = (list: string, space: string) => (
     <p className="muted">

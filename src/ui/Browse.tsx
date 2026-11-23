@@ -1,3 +1,4 @@
+import { isGuideMarked, useGuideMarks } from "./guideMarks";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { flyInto } from "./flight";
 import type { AElement } from "../aurora/types";
@@ -360,6 +361,8 @@ export function Browse({
       if (!to.comingSoon) swapProp(from, to);
     });
   const prefs = useSettings();
+  // The guided first character's recommendations, marked on their cards.
+  const marks = useGuideMarks();
   // The global content filters. Whatever is already picked stays visible.
   const items = useMemo(() => {
     if (showAll) return allItems;
@@ -660,7 +663,7 @@ export function Browse({
             return (
               <div
                 key={g.key}
-                className={`mini-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""}`}
+                className={`mini-card ${picked ? "picked" : ""} ${why ? "dim" : ""} ${owner ? "owned" : ""} ${isGuideMarked(marks, e) ? "guide-marked" : ""}`}
                 style={{ ["--hue" as string]: hueOf(e.name) }}
                 title={owner ?? why}
                 onMouseEnter={() => onHover?.(e)}
@@ -671,6 +674,7 @@ export function Browse({
                     <Emblem el={e} size={24} />
                   </span>
                   {itemBadge(e) && <span className="mini-badge">{itemBadge(e)}</span>}
+                  {isGuideMarked(marks, e) && <span className="guide-mark">Guide's pick</span>}
                   <b className="mini-name">{e.name}</b>
                   <small className="mini-blurb">{CLASS_TAGS[e.name]?.[0] ?? blurb(e.description, 54)}</small>
                   {why && !owner && (

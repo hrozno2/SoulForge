@@ -24,6 +24,15 @@ test("the tutorial guides a new player through a first character", async ({ page
   await coach.getByRole("button", { name: "As little as possible" }).click();
   await expect(coach).toContainText("Pick a class");
   await expect(coach.locator(".guide-recs li b")).toHaveText(["Fighter", "Barbarian", "Monk"]);
+  // The recommended classes carry the guide's mark in the list itself; the rest do not.
+  await page.locator(".board-acc-head", { hasText: "Class" }).click();
+  const cards = page.locator(".board-acc.open .mini-card");
+  // (The list keeps its own order, so the names are compared as a set.)
+  await expect
+    .poll(async () =>
+      (await cards.filter({ hasText: "Guide's pick" }).locator(".mini-name").allInnerTexts()).map((t) => t.toLowerCase()).sort(),
+    )
+    .toEqual(["barbarian", "fighter", "monk"]);
 
   // The player does the picking, on the real board; the guide moves on when it is done.
   const pickFrom = async (list: string, name: string, kind: string) => {
@@ -66,4 +75,22 @@ test("the tutorial guides a new player through a first character", async ({ page
   await coach.getByRole("button", { name: "Close the guide" }).click();
   await expect(coach).toHaveCount(0);
   await expect(page.locator("[data-tile=class] h3")).toHaveText("Fighter");
+});
+
+test("the guide starts from the menu too, and its marks go when it is closed", async ({ browser }) => {
+  const context = await browser.newContext({ storageState: stored({ reduceMotion: true }), viewport: { width: 1600, height: 900 } });
+  const page = await context.newPage();
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
+  await page.getByRole("button", { name: /^menu/i }).click();
+  await page.getByRole("button", { name: "Guide me through a first character" }).click();
+  const coach = page.getByRole("region", { name: "Guide: your first character" });
+  await coach.getByRole("button", { name: "Casting spells" }).click();
+  await coach.getByRole("button", { name: "As little as possible" }).click();
+  await expect(coach).toContainText("Pick a class");
+  await page.locator(".board-acc-head", { hasText: "Class" }).click();
+  await expect(page.locator(".board-acc.open .guide-mark").first()).toBeVisible();
+  await coach.getByRole("button", { name: "Close the guide" }).click();
+  await expect(page.locator(".guide-mark")).toHaveCount(0);
+  await context.close();
 });

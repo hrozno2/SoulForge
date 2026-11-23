@@ -77,7 +77,7 @@ export function ImportReport({
             <h3>To do: choose these ({res.todo.length})</h3>
             <p className="muted small-text">
               The file does not say, so these are left open for you instead of guessed. Make them on the Build or Magic tab; the list is
-              also in the character's notes.
+              also in the import notes, which you can keep in the character's journal.
             </p>
             <ul>
               {res.todo.map((g, i) => (
@@ -139,7 +139,7 @@ export function ImportReport({
         {other.length + res.todo.length + rules.length + res.differences.length + notes.length + items.length === 0 && (
           <p>Everything came through. Nothing to check.</p>
         )}
-        <p className="muted small-text">This report is saved in the character's notes.</p>
+        <p className="muted small-text">This report stays with the character as Import notes; from there you can add it to the journal.</p>
         <div className="levelup-foot">
           <button onClick={onClose}>Close</button>
           <button
@@ -157,7 +157,7 @@ export function ImportReport({
   );
 }
 
-/** The kept import report of a character, with a button to add it to the character's notes. */
+/** The kept import report of a character, with a button to add it to the character's journal. */
 export function ImportNotes({
   text,
   added,
@@ -191,7 +191,7 @@ export function ImportNotes({
         <pre className="import-notes">{text}</pre>
         <div className="row">
           <button className="primary" disabled={added} onClick={onAdd}>
-            {added ? "Already in the notes" : "Add to notes"}
+            {added ? "Already in the journal" : "Add to journal"}
           </button>
           <button onClick={onClose}>Close</button>
           {onDismiss && (

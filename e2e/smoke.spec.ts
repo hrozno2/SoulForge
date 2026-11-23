@@ -555,7 +555,7 @@ test.describe("Soul Forge smoke tests", () => {
     await dialog.locator("button.primary", { hasText: "Done" }).click();
     expect(await level()).toBe(start + 1);
   });
-  test("an import report is kept with the character and can be added to the notes", async ({ page }) => {
+  test("an import report is kept with the character and can be added to the journal", async ({ page }) => {
     const seen = watchProblems(page);
     await addTestContent(page);
     const foundry = {
@@ -575,24 +575,28 @@ test.describe("Soul Forge smoke tests", () => {
     const report = page.getByRole("dialog", { name: /import report/i });
     await expect(report).toContainText("Mystery Trinket");
     await report.getByText("Close", { exact: true }).click();
-    // The notice points to Import notes on Build, which shows the kept report and adds it to the notes.
+    // The notice points to Import notes on Build, which shows the kept report and adds it to the journal.
     const notice = page.locator(".notice-toast");
     await expect(notice).toContainText(/Import notes/);
     await notice.getByRole("button", { name: /show import notes/i }).click();
     const kept = page.getByRole("dialog", { name: "Import notes" });
     await expect(kept).toContainText("Mystery Trinket");
-    await kept.getByRole("button", { name: "Add to notes" }).click();
+    await kept.getByRole("button", { name: "Add to journal" }).click();
     await expect(page.locator(".notice-toast")).toContainText(/character's details/);
     await page
       .locator(".notice-toast")
-      .getByRole("button", { name: /open notes/i })
+      .getByRole("button", { name: /open journal/i })
       .click();
-    await expect(page.locator("#character-notes")).toHaveValue(/Import notes: ira\.json[\s\S]*Mystery Trinket/);
+    // An entry of its own in the Journal, open; the character's own notes are left alone.
+    const details = page.getByRole("dialog", { name: "Character details" });
+    await expect(details.getByLabel("Entry title")).toHaveValue("Import notes");
+    await expect(details.getByLabel("Entry text")).toHaveValue(/Import notes: ira\.json[\s\S]*Mystery Trinket/);
+    await expect(page.locator("#character-notes")).toHaveValue("");
     await page.getByRole("dialog", { name: "Character details" }).getByRole("button", { name: "Close" }).click();
     // The button stays on Build, and the report is not added twice.
     await tab(page, "Build");
     await page.getByRole("toolbar", { name: "Character actions" }).getByRole("button", { name: "Import notes" }).click();
-    await expect(page.getByRole("dialog", { name: "Import notes" }).getByRole("button", { name: "Already in the notes" })).toBeDisabled();
+    await expect(page.getByRole("dialog", { name: "Import notes" }).getByRole("button", { name: "Already in the journal" })).toBeDisabled();
     expect(seen.csp).toEqual([]);
     expect(seen.errors).toEqual([]);
   });

@@ -1,3 +1,4 @@
+import { addJournalNote, hasJournalNote } from "../aurora/journal";
 import { GuideCoach } from "./GuideCoach";
 import { readCurrentCopy, withLibraryPortrait, writeCurrentCopy } from "./currentCopy";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -599,7 +600,7 @@ export function App() {
                 <>
                   <span>
                     The import report and its to-do list stay with the character: <b>Import notes</b>, next to Level up on Build. From there
-                    you can add it to the character's notes.
+                    you can add it to the character's journal.
                   </span>
                   <button
                     className="primary"
@@ -614,9 +615,9 @@ export function App() {
                 </>
               ) : (
                 <>
-                  <span>Added to the character's notes. Find them in the character's details (and in Play, Notes).</span>
+                  <span>Added to the character's journal. Find it in the character's details and in Play, Notes.</span>
                   <button className="primary" onClick={openNotes}>
-                    Open notes
+                    Open journal
                   </button>
                 </>
               )}
@@ -641,9 +642,10 @@ export function App() {
           {reportOpen === "import" && character.importReport && (
             <ImportNotes
               text={character.importReport}
-              added={character.notes.includes(character.importReport)}
+              added={hasJournalNote(character, character.importReport) || character.notes.includes(character.importReport)}
               onAdd={() => {
-                set((c) => ({ ...c, notes: [c.notes, c.importReport].filter(Boolean).join("\n\n") }));
+                // The Journal is the one home for notes (Chris 2026-11-23): an entry of its own, not the notes field.
+                set((c) => addJournalNote(c, "Import notes", c.importReport ?? "", new Date().toISOString().slice(0, 10)));
                 setReportOpen(false);
                 setNotesHint("added");
               }}
@@ -655,9 +657,9 @@ export function App() {
               title="Repair report"
               lead="This character's file was damaged. This is what could not be read, what was done about it, and where to put it right. You can open this again from Build (Repair report)."
               text={character.repairReport}
-              added={character.notes.includes(character.repairReport)}
+              added={hasJournalNote(character, character.repairReport) || character.notes.includes(character.repairReport)}
               onAdd={() => {
-                set((c) => ({ ...c, notes: [c.notes, c.repairReport].filter(Boolean).join("\n\n") }));
+                set((c) => addJournalNote(c, "Repair report", c.repairReport ?? "", new Date().toISOString().slice(0, 10)));
                 setReportOpen(false);
                 setNotesHint("added");
               }}

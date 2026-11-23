@@ -8,6 +8,7 @@ import { ABILITY_IDS, ABILITY_LABEL, uid, type AbilityId, type AttackEdit, type 
 import { buildSheet } from "../aurora/sheet";
 import { SlotList, tabOfSlot, type SetCharacter } from "./Slots";
 import { Html } from "./Html";
+import { Journal } from "./Journal";
 import { useUi } from "./Learn";
 import { companionHtml } from "../aurora/companion";
 import { twinKey } from "../engine/timeline";
@@ -59,7 +60,7 @@ function PickOrType({ label, items, value, onChange }: { label: string; items: A
   );
 }
 
-function Info({ ch, set, r }: { ch: Character; set: SetCharacter; r: Resolved }) {
+function Info({ ch, set, r, journal }: { ch: Character; set: SetCharacter; r: Resolved; journal?: boolean }) {
   const [crop, setCrop] = useState<File | null>(null);
   const put = (k: keyof Character["info"], v: string) => set((c) => ({ ...c, info: { ...c.info, [k]: v } }));
   return (
@@ -127,18 +128,16 @@ function Info({ ch, set, r }: { ch: Character; set: SetCharacter; r: Resolved })
           <TextArea rows={k === "backstory" ? 6 : 3} value={ch.info[k]} onCommit={(v) => put(k, v)} />
         </label>
       ))}
-      <label className="field">
-        <span>Notes</span>
-        <TextArea id="character-notes" rows={6} value={ch.notes} onCommit={(v) => set((c) => ({ ...c, notes: v }))} />
-      </label>
+      <Journal ch={ch} set={set} showLatest={journal} />
     </>
   );
 }
 
 /**
  * The character's details (C2: moved from Manage to Build): portrait, name, player, alignment, deity, the other
- * details, personality, backstory and notes, in a dialog the board's "Details" button, Play's description, the
- * character badge and "Open notes" all open (the "cf-details" event, `{ notes: true }` to bring the notes into view).
+ * details, personality, backstory and the Journal (the one home for notes), in a dialog the board's "Details" button,
+ * Play's description, the character badge and "Open journal" all open (the "cf-details" event, `{ notes: true }` to
+ * bring the journal into view with its newest entry open).
  */
 export function DetailsDialog({
   r,
@@ -156,9 +155,9 @@ export function DetailsDialog({
   useEffect(() => {
     if (!notes) return;
     const t = window.setTimeout(() => {
-      const el = document.getElementById("character-notes");
-      el?.scrollIntoView({ block: "center" });
-      el?.focus();
+      // "Open journal": the journal's heading into view, the entry added last open below it.
+      // (Play may show the same Journal behind the dialog, so look inside the dialog.)
+      document.querySelector(".details-dialog #character-journal")?.scrollIntoView({ block: "start" });
     }, 60);
     return () => window.clearTimeout(t);
   }, [notes]);
@@ -170,7 +169,7 @@ export function DetailsDialog({
         </button>
         <h2>Character details</h2>
         <p className="muted">None of this is a choice to make: blank details stay blank on the sheet.</p>
-        <Info ch={ch} set={set} r={r} />
+        <Info ch={ch} set={set} r={r} journal={notes} />
       </div>
     </div>,
     document.body,

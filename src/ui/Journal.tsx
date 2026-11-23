@@ -7,10 +7,18 @@ type SetCharacter = (fn: (c: Character) => Character) => void;
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-/** General notes plus a session log. Entries are kept newest first by date. */
-export function Journal({ ch, set }: { ch: Character; set: SetCharacter }) {
+/**
+ * The Journal: the one home for a character's notes (Chris 2026-11-23). General notes on top, then dated entries:
+ * sessions the player writes up, and what the app adds on request (import notes, a repair report, the changes of
+ * "Make it legal"). Entries are kept newest first by date. The same Journal shows in Play and in the character's
+ * details; `showLatest` opens the entry added last (the "Open journal" button after adding a report).
+ */
+export function Journal({ ch, set, showLatest }: { ch: Character; set: SetCharacter; showLatest?: boolean }) {
   const [filter, setFilter] = useState("");
-  const [open, setOpen] = useState<string[]>([]);
+  const [open, setOpen] = useState<string[]>(() => {
+    const last = showLatest ? (ch.journal ?? []).at(-1) : undefined;
+    return last ? [last.uid] : [];
+  });
   const toggle = (id: string) => setOpen((o) => (o.includes(id) ? o.filter((x) => x !== id) : [...o, id]));
   const entries = [...(ch.journal ?? [])].sort((a, b) => b.date.localeCompare(a.date));
   const q = filter.trim().toLowerCase();
@@ -21,10 +29,10 @@ export function Journal({ ch, set }: { ch: Character; set: SetCharacter }) {
     <>
       <label className="field">
         <span>Notes</span>
-        <TextArea rows={8} value={ch.notes} onCommit={(v) => set((c) => ({ ...c, notes: v }))} />
+        <TextArea id="character-notes" rows={6} value={ch.notes} onCommit={(v) => set((c) => ({ ...c, notes: v }))} />
       </label>
       <section className="block journal">
-        <h3>Session log</h3>
+        <h3 id="character-journal">Journal</h3>
         <div className="row">
           <button
             className="primary"
@@ -39,14 +47,18 @@ export function Journal({ ch, set }: { ch: Character; set: SetCharacter }) {
           {entries.length > 3 && (
             <input
               type="search"
-              aria-label="Search the session log"
+              aria-label="Search the journal"
               placeholder="Search"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             />
           )}
         </div>
-        {entries.length === 0 && <p className="muted">Nothing yet. Add an entry after a session to keep track of what happened.</p>}
+        {entries.length === 0 && (
+          <p className="muted">
+            Nothing yet. Add an entry after a session to keep track of what happened. Import notes and rules changes you keep land here too.
+          </p>
+        )}
         {shown.map((e) => {
           const isOpen = open.includes(e.uid);
           const preview = e.text.replace(/\s+/g, " ").trim();
@@ -61,7 +73,7 @@ export function Journal({ ch, set }: { ch: Character; set: SetCharacter }) {
               {isOpen && (
                 <div className="journal-body">
                   <div className="row">
-                    <input type="date" aria-label="Session date" value={e.date} onChange={(ev) => edit(e.uid, { date: ev.target.value })} />
+                    <input type="date" aria-label="Entry date" value={e.date} onChange={(ev) => edit(e.uid, { date: ev.target.value })} />
                     <input
                       aria-label="Entry title"
                       placeholder="Title"

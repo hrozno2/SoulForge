@@ -1,22 +1,11 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
-import { addTestContent, closeFresh, randomCharacter, tab } from "./helpers";
+import { addTestContent, closeFresh, randomCharacter, tab, stored } from "./helpers";
 
 // Creation paths not covered elsewhere (C5.5): multiclass, preparing spells, the Foundry round trip, the settings.
 test.use({
   viewport: { width: 1600, height: 900 },
-  storageState: {
-    cookies: [],
-    origins: [
-      {
-        origin: "http://localhost:4173",
-        localStorage: [
-          { name: "charforge.tutorial", value: "never" },
-          { name: "charforge.settings", value: JSON.stringify({}) },
-        ],
-      },
-    ],
-  },
+  storageState: stored(),
 });
 
 const saved = (page: import("@playwright/test").Page) =>

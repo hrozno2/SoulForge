@@ -1,22 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { addTestContent, randomCharacter, tab } from "./helpers";
+import { addTestContent, randomCharacter, tab, stored } from "./helpers";
 
 // Choices on a card of the build board (src/ui/Slots.tsx). The saved "tabs" layout below is ignored on purpose: the
 // board is the only layout (Chris 2026-11-23), and an old setting must not bring the tabs back.
 test.use({
   viewport: { width: 1600, height: 900 },
-  storageState: {
-    cookies: [],
-    origins: [
-      {
-        origin: "http://localhost:4173",
-        localStorage: [
-          { name: "charforge.tutorial", value: "never" },
-          { name: "charforge.settings", value: JSON.stringify({}) },
-        ],
-      },
-    ],
-  },
+  storageState: stored(),
 });
 
 test("deselecting never folds a choice; picking folds it (C1.2)", async ({ page }) => {

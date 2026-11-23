@@ -1,3 +1,4 @@
+import { withoutAurora } from "../aurora/sourceFamily";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ARegistry } from "../aurora/registry";
 import { AUTO_UPDATE_MS, buildRegistry, newLinkSource, updateSource, DEFAULT_LINK } from "../aurora/content";
@@ -47,7 +48,7 @@ export function useContent(): ContentState {
     setStatus("Reading content...");
     try {
       // Soul Forge Test's 5e.tools-only switch: Aurora's sources stay on disk and in the list, but are not read.
-      const read = __TEST_FLAVOR__ && getSettings().fiveToolsOnly ? list.filter((s) => s.format !== "aurora") : list;
+      const read = __TEST_FLAVOR__ && getSettings().fiveToolsOnly ? withoutAurora(list) : list;
       const { reg: next, errors: errs } = await buildRegistry(read, undefined, (d, t, step) => {
         setProgress({ phase: "files", done: d, total: t });
         launchProgress(t ? d / t : 1, step ?? `Reading content (${d} of ${t} files)`, !!step);

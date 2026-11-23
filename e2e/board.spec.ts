@@ -1,21 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { addTestContent, tab, watchProblems, randomCharacter } from "./helpers";
+import { addTestContent, tab, watchProblems, randomCharacter, stored } from "./helpers";
 
 // The build board, the default Build layout.
 test.use({
   viewport: { width: 1600, height: 900 },
-  storageState: {
-    cookies: [],
-    origins: [
-      {
-        origin: "http://localhost:4173",
-        localStorage: [
-          { name: "charforge.tutorial", value: "never" },
-          { name: "charforge.settings", value: JSON.stringify({}) },
-        ],
-      },
-    ],
-  },
+  storageState: stored(),
 });
 
 test.describe("Build board", () => {

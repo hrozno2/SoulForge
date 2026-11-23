@@ -2,6 +2,7 @@
  * Tools only in the test build (scripts/test-app.sh sets VITE_FLAVOR=test): make 10 varied test characters, and
  * export every test character as JSON, the 2024 sheet, the 2014 sheet and the Soul Forge sheet in one zip.
  */
+import { withoutAurora } from "../aurora/sourceFamily";
 import { contentFilters } from "../aurora/tableUses";
 import type { ARegistry } from "../aurora/registry";
 import { normalizeCharacter, uid, type Character } from "../aurora/character";
@@ -151,7 +152,7 @@ export async function moveCharactersToFiveTools(both: ARegistry, onProgress: (s:
   if (!both.all().some((e) => e.origin !== "5etools" && !e.id.startsWith("ID_5ET") && !/^SRD /.test(e.source)))
     return "Aurora's content is not loaded: turn the 5e.tools-only switch off, then move the characters.";
   onProgress("Reading 5e.tools content on its own...");
-  const sources = (await listSources()).filter((s) => s.format !== "aurora");
+  const sources = withoutAurora(await listSources());
   const { reg: five } = await buildRegistry(sources);
   const all = await listCharacters();
   const done = new Set(all.map((r) => r.data.movedFrom).filter(Boolean));

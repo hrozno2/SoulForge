@@ -91,3 +91,26 @@ export async function closeFresh(page: Page): Promise<void> {
     await win.waitFor({ state: "detached", timeout: 3000 }).catch(() => undefined);
   }
 }
+
+/** Where the two builds are served: the release build, and the test build that still reads Aurora's fixture files. */
+export const RELEASE_ORIGIN = "http://localhost:4173";
+export const FIXTURE_ORIGIN = "http://localhost:4174";
+
+/**
+ * The browser storage a test starts with, for whichever build its project runs on (playwright.config.ts): the
+ * given settings, and the tutorial said "never" to unless the test is about it. On the test build the test bar is
+ * hidden, so the page is laid out as the released app is.
+ */
+export function stored(settings: Record<string, unknown> = {}, opts: { tutorial?: boolean } = {}) {
+  const items = (s: Record<string, unknown>) => [
+    ...(opts.tutorial ? [] : [{ name: "charforge.tutorial", value: "never" }]),
+    { name: "charforge.settings", value: JSON.stringify(s) },
+  ];
+  return {
+    cookies: [],
+    origins: [
+      { origin: RELEASE_ORIGIN, localStorage: items(settings) },
+      { origin: FIXTURE_ORIGIN, localStorage: items({ ...settings, hideTestTools: true }) },
+    ],
+  };
+}

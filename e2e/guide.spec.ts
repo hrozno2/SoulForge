@@ -1,18 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { stored } from "./helpers";
 
 // Chris, 2026-11-23: on first launch the tutorial asks whether the player is new to D&D and offers to guide them
 // through a first character: plain questions, recommendations, and the player does the choosing on the real board.
 test.use({
   viewport: { width: 1600, height: 900 },
-  storageState: {
-    cookies: [],
-    origins: [
-      {
-        origin: "http://localhost:4173",
-        localStorage: [{ name: "charforge.settings", value: JSON.stringify({ reduceMotion: true }) }],
-      },
-    ],
-  },
+  storageState: stored({ reduceMotion: true }, { tutorial: true }),
 });
 
 test("the tutorial guides a new player through a first character", async ({ page }) => {

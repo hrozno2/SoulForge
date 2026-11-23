@@ -1,21 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { addTestContent } from "./helpers";
+import { addTestContent, stored } from "./helpers";
 
 // Floating windows and the Bag of Holding (C4): compendium entries open as windows like 5e.tools; at most 10.
 test.use({
   viewport: { width: 1600, height: 900 },
-  storageState: {
-    cookies: [],
-    origins: [
-      {
-        origin: "http://localhost:4173",
-        localStorage: [
-          { name: "charforge.tutorial", value: "never" },
-          { name: "charforge.settings", value: JSON.stringify({ reduceMotion: true }) },
-        ],
-      },
-    ],
-  },
+  storageState: stored({ reduceMotion: true }),
 });
 
 test("compendium entries float; ten at most; bag, take out, tidy, empty", async ({ page }) => {

@@ -1,18 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { addTestContent, tab } from "./helpers";
+import { addTestContent, tab, stored } from "./helpers";
 test.use({
-  storageState: {
-    cookies: [],
-    origins: [
-      {
-        origin: "http://localhost:4173",
-        localStorage: [
-          { name: "charforge.tutorial", value: "never" },
-          { name: "charforge.settings", value: JSON.stringify({ reduceMotion: true }) },
-        ],
-      },
-    ],
-  },
+  storageState: stored({ reduceMotion: true }),
 });
 for (const w of [1300, 1100, 980, 860, 760])
   test(`the top bar fits a ${w}px window: no tab runs under the buttons (Chris 2026-10-30)`, async ({ page }) => {

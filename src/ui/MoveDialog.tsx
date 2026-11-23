@@ -62,8 +62,11 @@ export function MoveDialog({
         const { moveAndCompare } = await import("../engine/migrateReport");
         const { ensureRulesRef, rulesRef } = await import("../aurora/rulesRefStore");
         await ensureRulesRef().catch(() => undefined);
-        const sources = (await listSources()).filter((s) => s.format !== "aurora");
-        if (!sources.length) throw new Error("No 5e.tools content is loaded. Add it on the Content tab first.");
+        const { withoutAurora } = await import("../aurora/sourceFamily");
+        // 5e.tools and the player's own homebrew; an Aurora link carries no format, so it is told by its family.
+        const sources = withoutAurora(await listSources());
+        if (!sources.some((s) => s.format === "5etools"))
+          throw new Error("No 5e.tools content is loaded. Add it on the Content tab first.");
         const { reg: five } = await buildRegistry(sources);
         if (!live) return;
         setState({ kind: "working", step: "Working out the move..." });

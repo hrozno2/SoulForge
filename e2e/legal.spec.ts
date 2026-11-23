@@ -1,24 +1,13 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { newCharacter } from "../src/aurora/character";
-import { tab } from "./helpers";
+import { tab, stored } from "./helpers";
 
 // Chris, 2026-11-23: a character the rules check flags is made rules legal in one screen. The player decides what is
 // theirs to decide, sees what changed, and the changes go into the character's journal.
 test.use({
   viewport: { width: 1600, height: 900 },
-  storageState: {
-    cookies: [],
-    origins: [
-      {
-        origin: "http://localhost:4173",
-        localStorage: [
-          { name: "charforge.tutorial", value: "never" },
-          { name: "charforge.settings", value: JSON.stringify({ reduceMotion: true }) },
-        ],
-      },
-    ],
-  },
+  storageState: stored({ reduceMotion: true }),
 });
 
 type El = { id: string; name: string; type: string; source: string; compendiumHidden?: boolean };

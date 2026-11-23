@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { expect, test } from "@playwright/test";
-import { addTestContent, randomCharacter, tab, watchProblems } from "./helpers";
+import { addTestContent, randomCharacter, tab, watchProblems, stored } from "./helpers";
 
 /**
  * The on-request browser run (C5.5; procedure in docs/BROWSER-RUN.md). BROWSER_RUN=<count> makes that many random
@@ -11,18 +11,7 @@ import { addTestContent, randomCharacter, tab, watchProblems } from "./helpers";
 const N = Number(process.env.BROWSER_RUN) || 0;
 test.use({
   viewport: { width: 1600, height: 900 },
-  storageState: {
-    cookies: [],
-    origins: [
-      {
-        origin: "http://localhost:4173",
-        localStorage: [
-          { name: "charforge.tutorial", value: "never" },
-          { name: "charforge.settings", value: JSON.stringify({ reduceMotion: true }) },
-        ],
-      },
-    ],
-  },
+  storageState: stored({ reduceMotion: true }),
 });
 
 test.skip(!N, "on request only: BROWSER_RUN=<count>");

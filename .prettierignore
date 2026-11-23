@@ -4,3 +4,4 @@ public
 src-tauri
 test-results
 playwright-report
+dist-test

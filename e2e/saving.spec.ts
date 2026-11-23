@@ -1,20 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { randomCharacter, tab } from "./helpers";
+import { randomCharacter, tab, stored } from "./helpers";
 
 // docs/AUDIT-2026-11-10.md, S1 and S2: a save that fails is shown and tried again, never swallowed under "Saved".
 test.use({
-  storageState: {
-    cookies: [],
-    origins: [
-      {
-        origin: "http://localhost:4173",
-        localStorage: [
-          { name: "charforge.tutorial", value: "never" },
-          { name: "charforge.settings", value: JSON.stringify({ reduceMotion: true }) },
-        ],
-      },
-    ],
-  },
+  storageState: stored({ reduceMotion: true }),
 });
 
 test("a failed save says so, and Try again saves it", async ({ page }) => {

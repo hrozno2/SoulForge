@@ -16,7 +16,9 @@ build". Decided, to build after the hardening below:
   all spells, 5e.tools only), reachable from every list's filter bar, with the count each switch hides.
 - D. The rules check in one panel with three kinds: to fix, your call, accepted (Make it legal's shape); the
   older-build notice, the import report's findings and "earlier choices with no place" fold into it.
-- E. Test controls hidden unless it is the test build (identifier app.charforge.test or the dev server).
+- E. Test controls hidden unless it is the test build: ALREADY SO (checked 2026-11-23: the bar and its settings switch
+  exist only where `__TEST_FLAVOR__` is true, which only scripts/test-app.sh sets). Nothing to build; the proposal
+  was mistaken.
 - F. A wording pass: one word per thing (species not race in the interface; choice, pick, card, space each for one
   thing), in the interface text only, ids untouched.
 - G. D7: the release app drops Aurora (the importer for Aurora's index, its files and settings; the test app keeps
@@ -24,9 +26,14 @@ build". Decided, to build after the hardening below:
   clean (scheduled; first run tonight) and the move screen stays so existing characters can be moved.
 
 Order of work (tick off here as done; each with a failing test first, gates, CI, test app rebuilt):
-1. Import check on the 5etools and srd sets (was running; read any snapshot change before accepting with
-   IMPORT_BASELINE=1).
-2. Engine hardening, new: a fuzz tier that never lets the engine throw. Saved characters damaged at random (fields
+1. DONE in part: import check on the 5etools and srd sets read (every change an improvement or neutral: fewer open
+   choices; the Artificer's Mending line). Accepting them with IMPORT_BASELINE=1 was started in the background
+   (scratchpad baseline-2026-11-23.log; old snapshots kept as snapshots-<set>.before-2026-11-23): confirm it ended.
+2. STARTED 2026-11-23 (src/engine/engineFuzz.test.ts, in the unit tests at 400 mutants; ENGINE_FUZZ=6000 clean):
+   saved characters damaged at random open, resolve, check and export without a throw or a hang. It found and fixed
+   three crashes at the door (an item's name or details not text, a starting-gear record not a list, journal entries
+   not text). Still to add to it: damaged CONTENT (cycles, dangling references, wrong kinds), the importers on
+   damaged foreign files, and a time limit per step. Original note: Engine hardening, new: a fuzz tier that never lets the engine throw. Saved characters damaged at random (fields
    missing or of the wrong type, ids that do not exist, levels 0 and 30, negative and huge scores, thousands of
    items, selections pointing at each other), and content with cycles and dangling references, each through
    normalizeCharacter, resolve, buildSheet, checkCharacter, the exports and the importers: no throw, no hang, a

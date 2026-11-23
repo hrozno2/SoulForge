@@ -597,6 +597,19 @@ export function sanitizeCharacter(
   const coins = { ...base.coins };
   for (const k of Object.keys(base.coins) as (keyof Coinage)[]) coins[k] = num(coinsIn[k], 0, "coins", 0, Infinity, String(k));
 
+  // A custom item's own details, each in its own kind: its name and notes text, its weight a number.
+  const customOf = (c: unknown): InvItem["custom"] => {
+    if (!c || typeof c !== "object" || Array.isArray(c)) return undefined;
+    const x = c as Obj;
+    const text = (k: string) => (typeof x[k] === "string" ? (x[k] as string) : undefined);
+    return {
+      ...x,
+      name: text("name") || "Item",
+      description: text("description"),
+      cost: text("cost"),
+      weight: isNum(x.weight) ? x.weight : undefined,
+    } as InvItem["custom"];
+  };
   const inventory = objects(o.inventory, "inventory").map((it) => ({
     ...it,
     uid: typeof it.uid === "string" && it.uid ? it.uid : (fix("inventory", `${itemName(it)}: had no entry number; given a new one`), uid()),
@@ -607,7 +620,22 @@ export function sanitizeCharacter(
     qty: num(it.qty, 1, "inventory", 0, Infinity, `${itemName(it)}: quantity`),
     equipped: !!it.equipped,
     attuned: !!it.attuned,
+    // The rest of an entry, each in its own kind or not at all: a label that is not text broke the exports, found by
+    // the engine fuzz (2026-11-23).
+    label: typeof it.label === "string" ? it.label : undefined,
+    container: typeof it.container === "string" ? it.container : undefined,
+    magic: isNum(it.magic) ? it.magic : undefined,
+    twoHanded: it.twoHanded === undefined ? undefined : !!it.twoHanded,
+    custom: customOf(it.custom),
   })) as InvItem[];
+  if (
+    objects(o.inventory, "").some(
+      (it) =>
+        (it.label !== undefined && typeof it.label !== "string") ||
+        (it.custom !== undefined && (typeof it.custom !== "object" || it.custom === null)),
+    )
+  )
+    fix("inventory", "an item's own name or details could not be read; the item is kept without them");
 
   const character: Character = {
     ...base,
@@ -674,6 +702,34 @@ export function sanitizeCharacter(
   for (const key of ["abilityBases", "pointBuy", "hpRollLog", "equipmentLedger", "attackEdits"] as const)
     if (optObj(key) === undefined) delete character[key];
   for (const key of ["journal", "favorites"] as const) if (o[key] !== undefined) (character as unknown as Obj)[key] = objects(o[key], key);
+  // A journal entry is text throughout (the Journal sorts by date); a ledger entry is a list of items and an amount.
+  if (character.journal)
+    character.journal = character.journal.map((e) => {
+      const j = e as unknown as Obj;
+      const text = (k: string, d: string) => (typeof j[k] === "string" ? (j[k] as string) : d);
+      return { uid: text("uid", "") || uid(), date: text("date", ""), title: text("title", ""), text: text("text", "") };
+    });
+  if (character.equipmentLedger) {
+    const ledger: NonNullable<Character["equipmentLedger"]> = {};
+    for (const [label, raw] of Object.entries(character.equipmentLedger as unknown as Obj)) {
+      const e = raw as Obj | null;
+      if (!e || typeof e !== "object" || !Array.isArray(e.items)) {
+        fix("starting equipment", `the record of "${label}" could not be read and is dropped (the items stay in the inventory)`);
+        continue;
+      }
+      ledger[label] = {
+        items: (e.items as unknown[])
+          .filter((i): i is Obj => !!i && typeof i === "object" && !Array.isArray(i))
+          .map((i) => ({
+            id: typeof i.id === "string" ? i.id : "",
+            name: typeof i.name === "string" ? i.name : "",
+            qty: isNum(i.qty) ? i.qty : 1,
+          })),
+        gp: isNum(e.gp) ? e.gp : 0,
+      };
+    }
+    character.equipmentLedger = ledger;
+  }
   if (o.priceMultiplier !== undefined && !(isNum(o.priceMultiplier) && o.priceMultiplier > 0)) {
     fix("price multiplier", `was ${show(o.priceMultiplier)}; back to normal prices`);
     delete character.priceMultiplier;

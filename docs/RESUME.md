@@ -8,8 +8,16 @@ rule applies again except on the last day before a reset.
 
 Chris, later the same evening, on docs/PLAN-2026-11-23.md item 6: "basically everything in the plan is good to
 build". Decided, to build after the hardening below:
-- A. Board only: the tabs Build layout goes (setting, switch in the top bar, Tutorial's tabs line, BuildTab paths
-  only the tabs layout uses, their tests).
+- A. Board only: STARTED on the branch `board-only` (pushed; main is untouched and green). Done there: the menu's
+  layout switch and the Settings row removed, `board` forced true in App.tsx and Tutorial.tsx, e2e/choices.spec.ts
+  ported to the race card's window. NOT done, and why it is on a branch: playwright.config.ts gives every test the
+  tabs layout by default, so six tests still drive it and fail on the branch: firstrun.spec.ts:5 ("Sheet" tab and
+  the tabs flow), paths.spec.ts:126 (clicks the "Tabs" setting, expects nav.subtabs), smoke.spec.ts:5 (walks the
+  tabs "Magic", "Equipment", "Sheet"), :245 (point buy), :272 (global content filters), :294 and :347 (starting
+  equipment through the Equipment tab). To finish: set the config's default to the board (or drop the setting),
+  port each test to the board (Magic and Equipment are the board's magic and equipment tiles; "Sheet" is "Export"),
+  then remove the dead tabs branches in App.tsx and the tabs-only parts of BuildTab.tsx (tsc and the linter name
+  them), gates, merge into main.
 - B. The Journal is the one home for notes: character notes, import notes and move notes become Journal entries
   (migrate on open, nothing lost); Make it legal already writes there.
 - C. One "What this table uses" panel for the content switches (older editions, playtest, unusual, sci-fi, modern,

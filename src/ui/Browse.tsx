@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { flyInto } from "./flight";
 import type { AElement } from "../aurora/types";
 import {
@@ -24,6 +24,8 @@ import { Pack, Shield, Sword, Wand } from "./icons";
 
 const SCHOOLS = new Set(["abjuration", "conjuration", "divination", "enchantment", "evocation", "illusion", "necromancy", "transmutation"]);
 import { updateSettings, useSettings } from "./Settings";
+import { TableUses } from "./TableUses";
+import { contentFilters } from "../aurora/tableUses";
 import { useKept } from "./keptFilters";
 
 function useStored<T extends string>(key: string, initial: T): [T, (v: T) => void] {
@@ -362,42 +364,16 @@ export function Browse({
   const items = useMemo(() => {
     if (showAll) return allItems;
     const kept = allItems.filter(
-      (e) =>
-        chosenSet.has(e.id) ||
-        !hiddenBy(
-          books.info(e.source),
-          e.source,
-          {
-            legacy: prefs.showLegacy,
-            playtest: prefs.showPlaytest,
-            unusual: prefs.showUnusual,
-            scifi: prefs.showSciFi,
-            modern: prefs.showModern,
-          },
-          e.type,
-          e.supports,
-        ),
+      (e) => chosenSet.has(e.id) || !hiddenBy(books.info(e.source), e.source, contentFilters(prefs), e.type, e.supports),
     );
     // The content filters never leave a choice unable to be completed: when fewer options the character can take
     // remain than picks still to make, every option shows.
     const takeable = (list: typeof allItems) => list.filter((e) => !chosenSet.has(e.id) && !disabledReason?.(e)).length;
     const toPick = Math.max(0, (need ?? 1) - chosen.length);
     return kept.length && takeable(kept) >= Math.min(toPick, takeable(allItems)) ? kept : allItems;
-  }, [
-    allItems,
-    books,
-    chosenSet,
-    chosen,
-    need,
-    disabledReason,
-    prefs.showLegacy,
-    prefs.showPlaytest,
-    prefs.showUnusual,
-    prefs.showSciFi,
-    prefs.showModern,
-    showAll,
-  ]);
+  }, [allItems, books, chosenSet, chosen, need, disabledReason, prefs, showAll]);
   const hidden = allItems.length - items.length;
+  const bookInfo = useCallback((source: string) => books.info(source), [books]);
 
   const defs = useMemo(() => facetsFor(type), [type]);
   const counts = useMemo(
@@ -568,7 +544,13 @@ export function Browse({
       {barExtra}
       <p className="muted count">
         {groups.length} shown{filtered.length !== groups.length ? `, ${filtered.length} versions` : ""}
-        {hidden > 0 ? `, ${hidden} hidden by your content filters (Menu, Settings)` : ""}
+        {hidden > 0 ? `, ${hidden} hidden by what this table uses` : ""}
+        {!showAll && (
+          <>
+            {" · "}
+            <TableUses items={allItems} info={bookInfo} hidden={hidden} />
+          </>
+        )}
       </p>
       {open && (
         <div className="filters">

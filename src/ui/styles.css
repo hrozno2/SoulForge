@@ -11053,3 +11053,16 @@ button.spell-count.prep.on {
 .tutorial-guide p {
   margin: 0 0 8px;
 }
+
+/* "What this table uses": the content switches beside the list they change */
+.table-uses-btn {
+  font-size: inherit;
+}
+.table-count {
+  display: block;
+  opacity: 0.8;
+}
+.table-count.hides {
+  font-weight: 600;
+  opacity: 1;
+}

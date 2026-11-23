@@ -1,3 +1,4 @@
+import { contentFilters } from "../aurora/tableUses";
 import { addJournalNote, hasJournalNote } from "../aurora/journal";
 import { GuideCoach } from "./GuideCoach";
 import { readCurrentCopy, withLibraryPortrait, writeCurrentCopy } from "./currentCopy";
@@ -279,13 +280,7 @@ export function App() {
   const random = (level: number) => {
     const p = getSettings();
     open(uid(), {
-      ...randomCharacter(content.reg, level, {
-        legacy: p.showLegacy,
-        playtest: p.showPlaytest,
-        unusual: p.showUnusual,
-        scifi: p.showSciFi,
-        modern: p.showModern,
-      }),
+      ...randomCharacter(content.reg, level, contentFilters(p)),
       checkedWith: APP_VERSION,
     });
   };

@@ -1,3 +1,4 @@
+import { TableSwitches } from "./TableUses";
 import { SRD_ATTRIBUTION } from "../aurora/srdAttribution";
 import { CLASS_ICON_CREDIT } from "./classIcons";
 import { gpuStatus, setGpuFast } from "../system";
@@ -269,41 +270,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             only hide; the content stays loaded and characters that use it keep working. A choice is never left unable to be completed: when
             the filters would leave too few options, it shows all of them. Each list's own Filters button narrows that list further.
           </p>
-          <label className="set-row">
-            <span>
-              <b>2014 rules</b>
-              <small className="muted"> Species, classes, spells and items from before the 2024 books</small>
-            </span>
-            <input type="checkbox" checked={s.showLegacy} onChange={(e) => updateSettings({ showLegacy: e.target.checked })} />
-          </label>
-          <label className="set-row">
-            <span>
-              <b>Unearthed Arcana and playtest</b>
-              <small className="muted"> Draft material that may change</small>
-            </span>
-            <input type="checkbox" checked={s.showPlaytest} onChange={(e) => updateSettings({ showPlaytest: e.target.checked })} />
-          </label>
-          <label className="set-row">
-            <span>
-              <b>Settings and other sources</b>
-              <small className="muted"> Eberron, Ravnica, Theros and other worlds, plus third party and homebrew books</small>
-            </span>
-            <input type="checkbox" checked={s.showUnusual} onChange={(e) => updateSettings({ showUnusual: e.target.checked })} />
-          </label>
-          <label className="set-row">
-            <span>
-              <b>Sci-fi technology</b>
-              <small className="muted"> Futuristic gear: laser and antimatter guns, powered armor</small>
-            </span>
-            <input type="checkbox" checked={s.showSciFi} onChange={(e) => updateSettings({ showSciFi: e.target.checked })} />
-          </label>
-          <label className="set-row">
-            <span>
-              <b>Modern technology</b>
-              <small className="muted"> Renaissance and modern gear: pistols, revolvers, muskets, rifles, shotguns, modern vehicles</small>
-            </span>
-            <input type="checkbox" checked={s.showModern} onChange={(e) => updateSettings({ showModern: e.target.checked })} />
-          </label>
+          <TableSwitches />
           <p className="muted">What you already picked stays visible even when its book is hidden here.</p>
         </fieldset>
         {__TEST_FLAVOR__ && (

@@ -4,6 +4,7 @@
  * filling in on the middle board (click a list entry or drag it onto its space), and the scores, numbers and
  * training on the right. The same rules and choices as the tab layout (BuildTab), arranged differently.
  */
+import { contentFilters } from "../aurora/tableUses";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { WindowFrame, useFloating } from "./Floating";
 import { detailsBlank } from "./ManageTab";
@@ -1801,23 +1802,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
   const sheet = useMemo(() => buildSheet(r), [r]);
 
   const visible = (items: AElement[]) =>
-    items.filter(
-      (e) =>
-        !e.compendiumHidden &&
-        !hiddenBy(
-          books.info(e.source),
-          e.source,
-          {
-            legacy: prefs.showLegacy,
-            playtest: prefs.showPlaytest,
-            unusual: prefs.showUnusual,
-            scifi: prefs.showSciFi,
-            modern: prefs.showModern,
-          },
-          e.type,
-          e.supports,
-        ),
-    );
+    items.filter((e) => !e.compendiumHidden && !hiddenBy(books.info(e.source), e.source, contentFilters(prefs), e.type, e.supports));
   const races = r.reg.ofType("Race");
   const classes = r.reg.ofType("Class").filter((c) => !c.compendiumHidden);
   const backgrounds = r.reg.ofType("Background");

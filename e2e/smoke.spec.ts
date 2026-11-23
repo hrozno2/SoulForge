@@ -270,17 +270,32 @@ test.describe("Soul Forge smoke tests", () => {
     await tab(page, "Build");
     await page.locator(".board-acc-head", { hasText: "Species" }).click();
     await expect(page.locator(".board-acc.open .mini-card").first()).toBeVisible();
-    await expect(page.getByText(/hidden by your content filters/)).toHaveCount(0);
+    await expect(page.getByText(/hidden by what this table uses/)).toHaveCount(0);
     await page.getByRole("button", { name: /^menu/i }).click();
     await page.getByRole("button", { name: /settings/i }).click();
     await page.getByLabel(/Settings and other sources/).uncheck();
     await page.getByRole("button", { name: "Close" }).click();
-    await expect(page.getByText(/hidden by your content filters/).first()).toBeVisible();
+    await expect(page.getByText(/hidden by what this table uses/).first()).toBeVisible();
     await page.getByRole("button", { name: /^menu/i }).click();
     await page.getByRole("button", { name: /settings/i }).click();
     await page.getByLabel(/Settings and other sources/).check();
     await page.getByRole("button", { name: "Close" }).click();
-    await expect(page.getByText(/hidden by your content filters/)).toHaveCount(0);
+    await expect(page.getByText(/hidden by what this table uses/)).toHaveCount(0);
+    // The same switches open from the list itself, with what each means for this list.
+    await page.getByRole("button", { name: "What this table uses" }).first().click();
+    const uses = page.getByRole("dialog", { name: "What this table uses" });
+    await expect(uses.getByRole("status")).toContainText(/^All \d+ options of this list show\./);
+    const row = uses.locator("label", { hasText: "Settings and other sources" });
+    await expect(row).toContainText(/\d+ in this list/);
+    await uses.getByLabel(/Settings and other sources/).uncheck();
+    await expect(row).toContainText(/hides \d+ in this list/);
+    await expect(uses.getByRole("status")).toContainText(/\d+ of this list's \d+ options are hidden now/);
+    await uses.getByRole("button", { name: "Done" }).click();
+    await expect(page.getByText(/hidden by what this table uses/).first()).toBeVisible();
+    await page.getByRole("button", { name: "What this table uses" }).first().click();
+    await uses.getByLabel(/Settings and other sources/).check();
+    await uses.getByRole("button", { name: "Done" }).click();
+    await expect(page.getByText(/hidden by what this table uses/)).toHaveCount(0);
   });
 
   test("starting equipment folds class and background one at a time", async ({ page }) => {

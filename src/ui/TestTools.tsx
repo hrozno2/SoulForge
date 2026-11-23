@@ -2,6 +2,7 @@
  * Tools only in the test build (scripts/test-app.sh sets VITE_FLAVOR=test): make 10 varied test characters, and
  * export every test character as JSON, the 2024 sheet, the 2014 sheet and the Soul Forge sheet in one zip.
  */
+import { contentFilters } from "../aurora/tableUses";
 import type { ARegistry } from "../aurora/registry";
 import { normalizeCharacter, uid, type Character } from "../aurora/character";
 import { listCharacters, listTemplates, saveCharacterRecord, templateBytes } from "../aurora/storage";
@@ -17,13 +18,7 @@ import { APP_VERSION } from "./RulesCheck";
 
 export async function makeTestBatch(reg: ARegistry): Promise<{ id: string; ch: Character }[]> {
   const p = getSettings();
-  const batch = randomBatch(reg, 10, {
-    legacy: p.showLegacy,
-    playtest: p.showPlaytest,
-    unusual: p.showUnusual,
-    scifi: p.showSciFi,
-    modern: p.showModern,
-  });
+  const batch = randomBatch(reg, 10, contentFilters(p));
   const out: { id: string; ch: Character }[] = [];
   for (const ch of batch) {
     const id = uid();

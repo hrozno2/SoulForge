@@ -1,6 +1,14 @@
 # Where we left off
 
-## 2026-11-23, later: new requests, planned not built (usage 74%)
+## 2026-11-23, building (Chris: use what is left of the week; from now on no limit on the last day before the reset)
+
+Done and pushed today, each with tests, gates green: the point-buy notice; filters through a restart; the shop as the
+one place items come from (keeper, Buy or Add free, shelves; 5e.tools items carry their kind; SRD bundle rebuilt);
+Make it legal (table rulings on the character, the journal entry). Soul Forge Test rebuilt after Make it legal.
+Left of docs/PLAN-2026-11-23.md: item 5b, the guided first character in the tutorial (not started), and the
+simplification proposals in item 6 (for Chris to pick from). Nothing of today is released (v0.27.0 is the release).
+
+## 2026-11-23, earlier: the requests as they came (usage 74% then)
 
 Chris asked for: the point-buy unspent warning; his flagged characters made rules legal with the changes told and
 the calls left to the player, notes kept with the character; the shop as the one place items come from, with a

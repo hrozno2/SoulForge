@@ -1313,10 +1313,17 @@ export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Fin
       );
   }
 
-  // Hands: a two-handed weapon and a shield, or more than two weapons, cannot be held at once.
+  // Hands: a two-handed weapon and a shield, more than two weapons, or two weapons and a shield, cannot be held at once
+  // (the last was not counted before: three things in two hands).
   const weapons = ch.inventory.filter((i) => i.equipped && i.id && reg.get(i.id)?.type === "Weapon");
   const twoHanded = weapons.filter((i) => reg.get(i.id)!.supports.some((t) => /two.?handed/i.test(t)) || i.twoHanded);
-  if ((twoHanded.length && shield) || twoHanded.length > 1 || weapons.length > 2 || (twoHanded.length && weapons.length > 1))
+  if (
+    (twoHanded.length && shield) ||
+    twoHanded.length > 1 ||
+    weapons.length > 2 ||
+    (weapons.length > 1 && shield) ||
+    (twoHanded.length && weapons.length > 1)
+  )
     add("More held than two hands can hold", weapons.map((i) => reg.get(i.id)?.name).join(", ") + (shield ? ", shield" : ""));
 
   // Attacks from weapons: ability modifier, proficiency if trained, magic bonus.

@@ -223,6 +223,11 @@ export interface Character {
   declined?: string[];
   /** Optional and variant choices (slot keys) the player opted into: they start not taken until ticked or picked. */
   taken?: string[];
+  /**
+   * Rules-check findings the player keeps on purpose, as a table ruling (each as "rule: detail"): shown apart and never
+   * counted as a fault again (src/aurora/makeLegal.ts).
+   */
+  acceptedFindings?: string[];
   /** Option elements the player enabled (type Option). */
   options: string[];
   /** Bonuses the player adds by hand, for table rulings and things the content does not cover. */
@@ -376,6 +381,7 @@ const PART: Record<string, string> = {
   background: "background",
   declined: "choices turned down",
   taken: "optional choices taken",
+  acceptedFindings: "table rulings",
   equipmentAdded: "starting equipment",
   grantedItemsAdded: "items from features",
   importReport: "import notes",
@@ -655,7 +661,7 @@ export function sanitizeCharacter(
     play,
   };
   // Optional fields: kept when well formed, dropped (and named) when not.
-  for (const key of ["declined", "taken", "equipmentAdded", "grantedItemsAdded"] as const) {
+  for (const key of ["declined", "taken", "acceptedFindings", "equipmentAdded", "grantedItemsAdded"] as const) {
     const v = optStrings(key);
     if (v === undefined) delete character[key];
     else character[key] = v;

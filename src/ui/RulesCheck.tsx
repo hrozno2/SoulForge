@@ -12,6 +12,8 @@ import { markChecked, misalignments } from "../aurora/olderBuild";
 import type { Character } from "../aurora/character";
 import { applyFix } from "../aurora/findingFix";
 import { unspentPoints } from "../aurora/pointBuy";
+import { findingKey, unaccept } from "../aurora/makeLegal";
+import { MakeLegal } from "./MakeLegal";
 
 declare const __APP_VERSION__: string;
 export const APP_VERSION = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev";
@@ -27,6 +29,8 @@ export interface RulesCheckResult {
   content: Finding[];
   /** Within the rules, but probably not meant (point buy points left unspent). Never counted as a fault. */
   notes: Finding[];
+  /** Findings the player keeps on purpose, as table rulings (Character.acceptedFindings): shown apart, not counted. */
+  accepted: Finding[];
   /** False when the 5e.tools reference has not been downloaded: class tables were not checked. */
   full: boolean;
 }
@@ -44,7 +48,7 @@ export function useRulesCheck(r: Resolved): RulesCheckResult {
     };
   }, [official]);
   return useMemo(() => {
-    if (!r.character.classes.length) return { rules: [], content: [], notes: [], full: !!ref };
+    if (!r.character.classes.length) return { rules: [], content: [], notes: [], accepted: [], full: !!ref };
     const left = unspentPoints(r.character);
     const notes: Finding[] = left
       ? [
@@ -81,9 +85,12 @@ export function useRulesCheck(r: Resolved): RulesCheckResult {
         !(!official && /^Class not in the rules reference$/.test(f.rule)) &&
         !(ref === null && /^Class not in the rules reference$/.test(f.rule)),
     );
+    const rulings = new Set(r.character.acceptedFindings ?? []);
+    const open = kept.filter((f) => !rulings.has(findingKey(f)));
     return {
-      rules: kept.filter((f) => !CONTENT.test(f.rule)),
-      content: kept.filter((f) => CONTENT.test(f.rule)),
+      rules: open.filter((f) => !CONTENT.test(f.rule)),
+      content: open.filter((f) => CONTENT.test(f.rule)),
+      accepted: kept.filter((f) => rulings.has(findingKey(f))),
       notes,
       full: !!ref || !official,
     };
@@ -107,8 +114,9 @@ export function RulesCheckView({
   set?: (fn: (c: Character) => Character) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [legal, setLegal] = useState(false);
   if (!r.character.classes.length) return null;
-  const n = res.rules.length + res.content.length + res.notes.length;
+  const n = res.rules.length + res.content.length + res.notes.length + res.accepted.length;
   return (
     <section
       className={`rules-check ${res.rules.length ? "bad" : res.content.length || res.notes.length ? "warn" : "ok"}`}
@@ -120,12 +128,18 @@ export function RulesCheckView({
           {n === 0
             ? "Follows the rules"
             : !res.rules.length && !res.content.length
-              ? `Follows the rules; ${res.notes.length} to look at`
+              ? `Follows the rules${res.accepted.length ? `, with ${res.accepted.length} table ${res.accepted.length === 1 ? "ruling" : "rulings"}` : ""}${res.notes.length ? `; ${res.notes.length} to look at` : ""}`
               : `${res.rules.length ? `${res.rules.length} against the rules` : ""}${res.rules.length && res.content.length ? ", " : ""}${res.content.length ? `${res.content.length} content problem${res.content.length > 1 ? "s" : ""}` : ""}`}
         </span>
         {!res.full && <small className="muted">class tables not checked yet (the rules reference downloads with content)</small>}
         {n > 0 && <span className="chev">{open ? "▴" : "▾"}</span>}
       </button>
+      {set && (res.rules.length > 0 || res.content.some((f) => f.fix)) && (
+        <button className="make-legal-open" onClick={() => setLegal(true)}>
+          Make it legal…
+        </button>
+      )}
+      {legal && set && <MakeLegal r={r} findings={[...res.rules, ...res.content]} set={set} onClose={() => setLegal(false)} />}
       {open && n > 0 && (
         <ul>
           {res.rules.map((f, i) => (
@@ -148,6 +162,19 @@ export function RulesCheckView({
           {res.notes.map((f, i) => (
             <li key={`n${i}`} className="muted">
               <b>{f.rule}:</b> {f.detail}
+            </li>
+          ))}
+          {res.accepted.map((f, i) => (
+            <li key={`a${i}`} className="muted">
+              <b>Table ruling:</b> {f.rule}: {f.detail}
+              {set && (
+                <>
+                  {" "}
+                  <button className="fix-it" onClick={() => set((c) => unaccept(c, findingKey(f)))} title="It counts as a finding again">
+                    Take back
+                  </button>
+                </>
+              )}
             </li>
           ))}
           {res.content.map((f, i) => (
@@ -173,8 +200,9 @@ export function RulesCheckView({
 export function ruleProblems(r: Resolved): string[] {
   if (!r.character.classes.length) return [];
   try {
+    const rulings = new Set(r.character.acceptedFindings ?? []);
     return checkCharacter(r, buildSheet(r), rulesRef() ?? [])
-      .filter((f) => !OPEN_CHOICE.test(f.rule) && !CONTENT.test(f.rule))
+      .filter((f) => !OPEN_CHOICE.test(f.rule) && !CONTENT.test(f.rule) && !rulings.has(findingKey(f)))
       .map((f) => `${f.rule}: ${f.detail}`);
   } catch {
     return [];

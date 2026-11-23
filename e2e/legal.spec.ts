@@ -1,0 +1,75 @@
+import { readFileSync } from "node:fs";
+import { expect, test } from "@playwright/test";
+import { newCharacter } from "../src/aurora/character";
+import { tab } from "./helpers";
+
+// Chris, 2026-11-23: a character the rules check flags is made rules legal in one screen. The player decides what is
+// theirs to decide, sees what changed, and the changes go into the character's journal.
+test.use({
+  viewport: { width: 1600, height: 900 },
+  storageState: {
+    cookies: [],
+    origins: [
+      {
+        origin: "http://localhost:4173",
+        localStorage: [
+          { name: "charforge.tutorial", value: "never" },
+          { name: "charforge.settings", value: JSON.stringify({ buildLayout: "board", reduceMotion: true }) },
+        ],
+      },
+    ],
+  },
+});
+
+type El = { id: string; name: string; type: string; source: string; compendiumHidden?: boolean };
+const bundle = (v: string) => (JSON.parse(readFileSync(`public/srd/srd-${v}.json`, "utf8")) as { elements: El[] }).elements;
+const pick = (els: El[], type: string, name: string) => els.find((e) => e.type === type && e.name === name && !e.compendiumHidden)!.id;
+
+test("Make it legal: the player's call, what changed, and the journal", async ({ page }) => {
+  // A 2024 species with a 2014 background: neither raises a score. One of Chris's own flagged characters is like this.
+  const ch = {
+    ...newCharacter(),
+    name: "Mixed Origins",
+    abilityMethod: "manual" as const,
+    race: pick(bundle("5.2"), "Race", "Elf"),
+    background: pick(bundle("5.1"), "Background", "Acolyte"),
+    classes: [{ classId: pick(bundle("5.2"), "Class", "Fighter"), level: 1 }],
+  };
+  await page.goto("/");
+  await page.evaluate((c) => localStorage.setItem("charforge.current.v2", JSON.stringify({ id: "legal-test", ch: c })), ch);
+  await page.reload();
+  await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
+  await tab(page, "Build");
+
+  const check = page.locator(".rules-check").first();
+  await expect(check).toContainText(/against the rules/);
+  await check.getByRole("button", { name: /Make it legal/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Make it legal" });
+  await expect(dialog).toBeVisible();
+  const call = dialog.locator(".legal-call", { hasText: "Origin editions mixed" });
+  await expect(call.getByRole("button")).toHaveText(["Use the 2024 rules for Acolyte", "Keep it, as a table ruling"]);
+  // Nothing is chosen for the player, and Apply waits for a decision.
+  await expect(call.locator(".pill.active")).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Apply" })).toBeDisabled();
+
+  await call.getByRole("button", { name: "Keep it, as a table ruling" }).click();
+  await dialog.getByRole("button", { name: "Apply" }).click();
+  await expect(dialog).toContainText("Kept as a table ruling: Origin editions mixed");
+  await dialog.locator(".levelup-foot").getByRole("button", { name: "Close" }).click();
+
+  // The finding is a table ruling now: said so, not counted, and it can be taken back.
+  await expect(check).not.toContainText("Origin editions mixed: ");
+  await expect(check).toContainText(/table ruling/);
+  // And the change is in the character's journal, saved with the character.
+  const saved = await page.evaluate(
+    () =>
+      (
+        JSON.parse(localStorage.getItem("charforge.current.v2")!) as {
+          ch: { journal?: { title: string; text: string }[]; acceptedFindings?: string[] };
+        }
+      ).ch,
+  );
+  expect(saved.journal?.map((j) => j.title)).toEqual(["Rules changes"]);
+  expect(saved.journal?.[0].text).toContain("Kept as a table ruling: Origin editions mixed");
+  expect(saved.acceptedFindings?.length).toBe(1);
+});

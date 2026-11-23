@@ -10983,3 +10983,18 @@ button.spell-count.prep.on {
 .shop-custom {
   margin-top: 12px;
 }
+
+/* Make it legal (Chris 2026-11-23): each call as a framed question with its options. */
+.make-legal-open {
+  margin: 6px 0 2px;
+}
+.legal-call {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 8px 0;
+  padding: 8px 10px;
+}
+.legal-call legend {
+  padding: 0 6px;
+  font-size: 13.5px;
+}

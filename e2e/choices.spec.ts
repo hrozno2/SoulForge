@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { addTestContent, randomCharacter, tab } from "./helpers";
 
-// Choices in the Build tab's list layout (the board's card backs use the same component, src/ui/Slots.tsx).
+// Choices on a card of the build board (src/ui/Slots.tsx). The saved "tabs" layout below is ignored on purpose: the
+// board is the only layout (Chris 2026-11-23), and an old setting must not bring the tabs back.
 test.use({
   viewport: { width: 1600, height: 900 },
   storageState: {
@@ -29,11 +30,14 @@ test("deselecting never folds a choice; picking folds it (C1.2)", async ({ page 
   });
   await page.reload();
   await tab(page, "Build");
-  await page.locator("nav.subtabs button", { hasText: "Species" }).click();
-  const head = page.locator(".slot-head", { hasText: "Ember gift" });
+  await expect(page.locator("nav.subtabs")).toHaveCount(0);
+  await page.locator("[data-tile=race] .chosen-banner").click();
+  const win = page.locator(".float-window.card-window-race");
+  await expect(win).toBeVisible();
+  const head = win.locator(".slot-head", { hasText: "Ember gift" });
   const key = await head.locator("xpath=../..").getAttribute("data-slot");
   expect(key, "Ember gift").not.toBeNull();
-  const slot = page.locator(`[data-slot="${key}"] > .slot`);
+  const slot = win.locator(`[data-slot="${key}"] > .slot`);
   const body = slot.locator(".slot-body");
   // Open it (an unfilled choice starts open), then pick another option (a default one too becomes a real pick): it folds.
   if (!(await body.count())) await slot.locator(".slot-head").click();

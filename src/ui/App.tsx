@@ -352,7 +352,10 @@ export function App() {
   // When the last open choice on Build is made, go on to Magic (casters) or Equipment; when the last spell is
   // chosen on Magic, go on to Equipment. Only on the change itself, so opening a finished character moves nothing.
   const settings = useSettings();
-  const board = settings.buildLayout !== "tabs";
+  // Board only (Chris 2026-11-23): the older tabs layout is gone from the settings and the menu, and a saved "tabs"
+  // setting is ignored. The branches below that still ask `board` are the tabs layout's, to be removed with BuildTab's
+  // tabs-only parts (docs/RESUME.md, decision A).
+  const board: boolean = true;
   // The build board holds spells and equipment too, so their own tabs go and Build counts what they had open.
   useEffect(() => {
     if (board && (tab === "magic" || tab === "equipment")) setTab("build");
@@ -533,12 +536,6 @@ export function App() {
                   Load test content
                 </button>
               )}
-              <button
-                onClick={() => updateSettings({ buildLayout: board ? "tabs" : "board" })}
-                title="Try the new Build layout or go back to the old one"
-              >
-                Build layout: {board ? "new (board)" : "old (tabs)"}
-              </button>
               <button
                 onClick={async () => {
                   const on = !settings.fiveToolsOnly;

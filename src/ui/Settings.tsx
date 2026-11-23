@@ -252,19 +252,6 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
         </label>
         <div className="set-row">
           <span>
-            <b>Build layout</b>
-            <small className="muted"> The board, or the older tabs (with Magic and Equipment as their own tabs)</small>
-          </span>
-          <span className="set-ctl">
-            {(["board", "tabs"] as const).map((l) => (
-              <button key={l} className={s.buildLayout === l ? "pill active" : "pill"} onClick={() => updateSettings({ buildLayout: l })}>
-                {l === "board" ? "Board" : "Tabs"}
-              </button>
-            ))}
-          </span>
-        </div>
-        <div className="set-row">
-          <span>
             <b>Paper size for PDFs</b>
           </span>
           <span className="set-ctl">

@@ -2448,7 +2448,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
         {leftItems.length > 0 && <span className="board-acc-badge">{leftItems.length}</span>}
         {/* The panel is inside this drawer in a narrow window: a rule problem must still show from outside it. */}
         {rulesCheck.rules.length > 0 && (
-          <span className="board-acc-badge bad" aria-label={`${rulesCheck.rules.length} against the rules`}>
+          <span className="board-acc-badge bad" aria-label={`${rulesCheck.rules.length} to fix`}>
             !
           </span>
         )}

@@ -90,7 +90,7 @@ export function ImportReport({
           <section className="ir-group bad">
             <h3>Against the rules ({rules.length})</h3>
             <p className="muted small-text">
-              As the file has it. Fix these on the Build or Magic tab; the Rules check on Build keeps track.
+              As the file has it. The Rules check on Build lists these under To fix, where each can be put right or kept as a table ruling.
             </p>
             <ul>
               {rules.map((g, i) => (

@@ -33,10 +33,16 @@ export interface LegalPlan {
 /** Leftovers nobody sees: cleared without asking. Everything else that has a fix is still the player's call. */
 const AUTO = /^Earlier choices with no place now$/;
 
+/** The character with this finding kept on purpose, as a table ruling: shown apart, never counted as a fault. */
+export const acceptFinding = (c: Character, f: Pick<Finding, "rule" | "detail">): Character => ({
+  ...c,
+  acceptedFindings: [...new Set([...(c.acceptedFindings ?? []), findingKey(f)])],
+});
+
 const accept = (f: Finding): LegalOption => ({
   label: "Keep it, as a table ruling",
   says: `Kept as a table ruling: ${findingKey(f)}`,
-  apply: (c) => ({ ...c, acceptedFindings: [...new Set([...(c.acceptedFindings ?? []), findingKey(f)])] }),
+  apply: (c) => acceptFinding(c, f),
 });
 
 export function planLegal(r: Resolved, findings: Finding[]): LegalPlan {

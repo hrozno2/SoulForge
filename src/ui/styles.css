@@ -11066,3 +11066,24 @@ button.spell-count.prep.on {
   font-weight: 600;
   opacity: 1;
 }
+
+/* The rules check's one panel: to fix, your call, accepted */
+.rules-panel {
+  padding: 2px 14px 10px;
+}
+.rules-panel h4 {
+  margin: 8px 0 2px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.rules-panel ul {
+  padding: 0 0 0 18px;
+}
+.rules-older {
+  margin: 6px 0 2px;
+}
+.older-build .row {
+  gap: 8px;
+}

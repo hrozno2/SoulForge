@@ -42,7 +42,16 @@ test("Make it legal: the player's call, what changed, and the journal", async ({
   await tab(page, "Build");
 
   const check = page.locator(".rules-check").first();
-  await expect(check).toContainText(/against the rules/);
+  await expect(check).toContainText(/1 to fix/);
+  // A character from an older build: the notice says how much no longer lines up and opens the one panel that lists it.
+  const notice = page.getByRole("status", { name: "Changes since this character was saved" });
+  await expect(notice).toContainText(/no longer lines? up/);
+  await notice.getByRole("button", { name: "Show in the rules check" }).click();
+  const toFix = check.getByRole("region", { name: "To fix" });
+  await expect(toFix).toContainText("Origin editions mixed");
+  await expect(toFix.getByRole("button", { name: "Keep as a table ruling" })).toBeVisible();
+  await check.getByRole("button", { name: "Got it" }).click();
+  await expect(notice).toHaveCount(0);
   await check.getByRole("button", { name: /Make it legal/ }).click();
   const dialog = page.getByRole("dialog", { name: "Make it legal" });
   await expect(dialog).toBeVisible();
@@ -58,8 +67,15 @@ test("Make it legal: the player's call, what changed, and the journal", async ({
   await dialog.locator(".levelup-foot").getByRole("button", { name: "Close" }).click();
 
   // The finding is a table ruling now: said so, not counted, and it can be taken back.
-  await expect(check).not.toContainText("Origin editions mixed: ");
   await expect(check).toContainText(/table ruling/);
+  await expect(check.locator(".rules-check-head")).toContainText("Follows the rules, with 1 table ruling");
+  const accepted = check.getByRole("region", { name: "Accepted" });
+  await expect(accepted).toContainText("Origin editions mixed");
+  await expect(check.getByRole("region", { name: "To fix" })).toHaveCount(0);
+  // Taken back, it is to fix again; kept from the panel itself, it is accepted again.
+  await accepted.getByRole("button", { name: "Take back" }).click();
+  await check.getByRole("region", { name: "To fix" }).getByRole("button", { name: "Keep as a table ruling" }).click();
+  await expect(check.getByRole("region", { name: "Accepted" })).toContainText("Origin editions mixed");
   // And the change is in the character's journal, saved with the character.
   const saved = await page.evaluate(
     () =>

@@ -697,7 +697,9 @@ export function App() {
               <LevelUp r={r} ch={character} set={set} onDetail={setDetail} onClose={() => setLevelUpOpen(false)} />
             </Suspense>
           )}
-          {checkDue(character, APP_VERSION) && !loading.current && <OlderBuildNotice key={id} r={r} set={set} />}
+          {checkDue(character, APP_VERSION) && !loading.current && (
+            <OlderBuildNotice key={id} r={r} set={set} onShow={() => setTab("build")} />
+          )}
           {detailsOpen && (
             <Suspense fallback={null}>
               <DetailsDialog r={r} ch={character} set={set} notes={detailsOpen.notes} onClose={() => setDetailsOpen(null)} />

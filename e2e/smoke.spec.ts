@@ -622,7 +622,7 @@ test.describe("Soul Forge smoke tests", () => {
     await tab(page, "Build");
     const bar = page.getByRole("region", { name: "Rules check" });
     await expect(bar).toBeVisible();
-    await expect(bar).toContainText(/follows the rules|against the rules|content problem/i);
+    await expect(bar).toContainText(/follows the rules|to fix|your call/i);
     await page.screenshot({ path: "test-results/rules-check.png" });
     expect(seen.csp).toEqual([]);
     expect(seen.errors).toEqual([]);

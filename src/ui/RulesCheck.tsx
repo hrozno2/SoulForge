@@ -8,11 +8,12 @@ import { buildSheet } from "../aurora/sheet";
 import { checkCharacter, type Finding } from "../aurora/rulesCheck";
 import { ensureRulesRef, onRulesRef, rulesRef } from "../aurora/rulesRefStore";
 import { RULES_REF_CLASSES } from "../aurora/rulesRef";
-import { markChecked, misalignments } from "../aurora/olderBuild";
+import { checkDue, markChecked, misalignments } from "../aurora/olderBuild";
+import { panelTone, panelVerdict, rulesPanel } from "../aurora/rulesPanel";
 import type { Character } from "../aurora/character";
 import { applyFix } from "../aurora/findingFix";
 import { unspentPoints } from "../aurora/pointBuy";
-import { findingKey, unaccept } from "../aurora/makeLegal";
+import { acceptFinding, findingKey, unaccept } from "../aurora/makeLegal";
 import { MakeLegal } from "./MakeLegal";
 
 declare const __APP_VERSION__: string;
@@ -102,7 +103,28 @@ export function RulesCheckBar({ r, set }: { r: Resolved; set?: (fn: (c: Characte
   return <RulesCheckView r={r} res={useRulesCheck(r)} set={set} />;
 }
 
-/** The same bar for a caller that already has the check's result (the Build board's status panel). */
+/** Asked for while the panel was not on screen (another tab): it opens when it next shows. */
+let wantOpen = false;
+/** Opens the rules check's panel, now or as soon as Build shows it. */
+export function showRulesCheck() {
+  wantOpen = true;
+  window.dispatchEvent(new CustomEvent("cf-rules-check"));
+}
+
+/** What an older build's character holds that no longer lines up, beyond what the check itself finds. */
+function useStale(r: Resolved, res: RulesCheckResult): Finding[] {
+  return useMemo(() => {
+    if (!res.full || !checkDue(r.character, APP_VERSION)) return [];
+    const own = new Set([...res.rules, ...res.content, ...res.accepted].map(findingKey));
+    return misalignments(r, [...res.rules, ...res.content]).filter((f) => !own.has(findingKey(f)));
+  }, [r, res]);
+}
+
+/**
+ * The rules check in one panel (plan 2026-11-23, item 5): everything the app has to say about the character and
+ * the rules, in three kinds: to fix, your call, accepted (rulesPanel.ts). The older-build notice and the import
+ * report point here; "cf-rules-check" opens it.
+ */
 export function RulesCheckView({
   r,
   res,
@@ -110,27 +132,37 @@ export function RulesCheckView({
 }: {
   r: Resolved;
   res: RulesCheckResult;
-  /** With it, a finding that has one safe answer gets a button that applies it (E3.1). */
+  /** With it, a finding can be put right or kept as a table ruling from here (E3.1). */
   set?: (fn: (c: Character) => Character) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(wantOpen);
   const [legal, setLegal] = useState(false);
+  useEffect(() => {
+    wantOpen = false;
+    const show = () => setOpen(true);
+    window.addEventListener("cf-rules-check", show);
+    return () => window.removeEventListener("cf-rules-check", show);
+  }, []);
+  const stale = useStale(r, res);
+  const panel = useMemo(() => rulesPanel(res, stale), [res, stale]);
   if (!r.character.classes.length) return null;
-  const n = res.rules.length + res.content.length + res.notes.length + res.accepted.length;
+  const n = panel.toFix.length + panel.yourCall.length + panel.accepted.length;
+  const older = res.full && checkDue(r.character, APP_VERSION) && panel.toFix.length + panel.yourCall.length > 0;
+  const fixButton = (f: Finding) =>
+    set &&
+    f.fix && (
+      <>
+        {" "}
+        <button className="fix-it" onClick={() => set((c) => applyFix(c, f.fix!))} title="Applies this; the choice opens again for you">
+          {f.fix.label}
+        </button>
+      </>
+    );
   return (
-    <section
-      className={`rules-check ${res.rules.length ? "bad" : res.content.length || res.notes.length ? "warn" : "ok"}`}
-      aria-label="Rules check"
-    >
+    <section className={`rules-check ${panelTone(panel)}`} aria-label="Rules check">
       <button className="rules-check-head" aria-expanded={n ? open : undefined} onClick={() => n && setOpen(!open)}>
         <b>Rules check</b>
-        <span>
-          {n === 0
-            ? "Follows the rules"
-            : !res.rules.length && !res.content.length
-              ? `Follows the rules${res.accepted.length ? `, with ${res.accepted.length} table ${res.accepted.length === 1 ? "ruling" : "rulings"}` : ""}${res.notes.length ? `; ${res.notes.length} to look at` : ""}`
-              : `${res.rules.length ? `${res.rules.length} against the rules` : ""}${res.rules.length && res.content.length ? ", " : ""}${res.content.length ? `${res.content.length} content problem${res.content.length > 1 ? "s" : ""}` : ""}`}
-        </span>
+        <span>{panelVerdict(panel)}</span>
         {!res.full && <small className="muted">class tables not checked yet (the rules reference downloads with content)</small>}
         {n > 0 && <span className="chev">{open ? "▴" : "▾"}</span>}
       </button>
@@ -141,56 +173,84 @@ export function RulesCheckView({
       )}
       {legal && set && <MakeLegal r={r} findings={[...res.rules, ...res.content]} set={set} onClose={() => setLegal(false)} />}
       {open && n > 0 && (
-        <ul>
-          {res.rules.map((f, i) => (
-            <li key={`r${i}`}>
-              <b>{f.rule}:</b> {f.detail}
-              {set && f.fix && (
-                <>
-                  {" "}
-                  <button
-                    className="fix-it"
-                    onClick={() => set((c) => applyFix(c, f.fix!))}
-                    title="Applies this; the choice opens again for you"
-                  >
-                    {f.fix.label}
-                  </button>
-                </>
-              )}
-            </li>
-          ))}
-          {res.notes.map((f, i) => (
-            <li key={`n${i}`} className="muted">
-              <b>{f.rule}:</b> {f.detail}
-            </li>
-          ))}
-          {res.accepted.map((f, i) => (
-            <li key={`a${i}`} className="muted">
-              <b>Table ruling:</b> {f.rule}: {f.detail}
+        <div className="rules-panel">
+          {older && (
+            <p className="rules-older">
+              Saved {r.character.checkedWith ? `in Soul Forge ${r.character.checkedWith}` : "by an older Soul Forge"}: this is what no
+              longer lines up with this version's content and rules.
               {set && (
                 <>
                   {" "}
-                  <button className="fix-it" onClick={() => set((c) => unaccept(c, findingKey(f)))} title="It counts as a finding again">
-                    Take back
+                  <button className="fix-it" onClick={() => set((c) => markChecked(c, APP_VERSION))}>
+                    Got it
                   </button>
                 </>
               )}
-            </li>
-          ))}
-          {res.content.map((f, i) => (
-            <li key={`c${i}`} className="muted">
-              <b>{f.rule}:</b> {f.detail}
-              {set && f.fix && (
-                <>
-                  {" "}
-                  <button className="fix-it" onClick={() => set((c) => applyFix(c, f.fix!))}>
-                    {f.fix.label}
-                  </button>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
+            </p>
+          )}
+          {panel.toFix.length > 0 && (
+            <section aria-label="To fix">
+              <h4>To fix ({panel.toFix.length})</h4>
+              <ul>
+                {panel.toFix.map((f, i) => (
+                  <li key={i}>
+                    <b>{f.rule}:</b> {f.detail}
+                    {fixButton(f)}
+                    {set && !stale.includes(f) && (
+                      <>
+                        {" "}
+                        <button
+                          className="fix-it"
+                          onClick={() => set((c) => acceptFinding(c, f))}
+                          title="Your table plays it this way: it is shown under Accepted and no longer counted"
+                        >
+                          Keep as a table ruling
+                        </button>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {panel.yourCall.length > 0 && (
+            <section aria-label="Your call">
+              <h4>Your call ({panel.yourCall.length})</h4>
+              <ul>
+                {panel.yourCall.map((f, i) => (
+                  <li key={i} className="muted">
+                    <b>{f.rule}:</b> {f.detail}
+                    {fixButton(f)}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {panel.accepted.length > 0 && (
+            <section aria-label="Accepted">
+              <h4>Accepted ({panel.accepted.length})</h4>
+              <ul>
+                {panel.accepted.map((f, i) => (
+                  <li key={i} className="muted">
+                    <b>Table ruling:</b> {f.rule}: {f.detail}
+                    {set && (
+                      <>
+                        {" "}
+                        <button
+                          className="fix-it"
+                          onClick={() => set((c) => unaccept(c, findingKey(f)))}
+                          title="It counts as a finding again"
+                        >
+                          Take back
+                        </button>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
       )}
     </section>
   );
@@ -226,11 +286,21 @@ export function ExportRulesNote({ r }: { r: Resolved }) {
 }
 
 /**
- * A character saved by an older Soul Forge, opened in this version: what no longer lines up (picks a choice no longer
- * offers, content that is gone, what the rules check now finds), listed once. "Got it" marks it checked in this
- * version; a character with nothing to report is marked without a word.
+ * A character saved by an older Soul Forge, opened in this version: one line saying how much no longer lines up
+ * (picks a choice no longer offers, content that is gone, what the rules check now finds). The list itself is in
+ * the rules check's panel, which "Show" opens; "Got it" marks the character checked in this version, and one with
+ * nothing to report is marked without a word.
  */
-export function OlderBuildNotice({ r, set }: { r: Resolved; set: (fn: (c: Character) => Character) => void }) {
+export function OlderBuildNotice({
+  r,
+  set,
+  onShow,
+}: {
+  r: Resolved;
+  set: (fn: (c: Character) => Character) => void;
+  /** Brings Build to the front; the notice then opens the rules check's panel there. */
+  onShow: () => void;
+}) {
   const res = useRulesCheck(r);
   const items = useMemo(() => misalignments(r, [...res.rules, ...res.content]), [r, res]);
   const ready = res.full;
@@ -253,17 +323,20 @@ export function OlderBuildNotice({ r, set }: { r: Resolved; set: (fn: (c: Charac
           {r.character.checkedWith ? `in Soul Forge ${r.character.checkedWith}` : "by an older Soul Forge"}.
         </b>{" "}
         {items.length === 1 ? "One thing no longer lines up" : `${items.length} things no longer line up`} with this version's content and
-        rules:
+        rules. The rules check on Build lists {items.length === 1 ? "it" : "them"}, with what can be done about each.
       </p>
-      <ul>
-        {items.slice(0, 12).map((f, i) => (
-          <li key={i}>
-            <b>{f.rule}:</b> {f.detail}
-          </li>
-        ))}
-        {items.length > 12 && <li className="muted">and {items.length - 12} more (the rules check on Build lists them)</li>}
-      </ul>
-      <button onClick={() => set((c) => markChecked(c, APP_VERSION))}>Got it</button>
+      <div className="row">
+        <button
+          className="primary"
+          onClick={() => {
+            onShow();
+            showRulesCheck();
+          }}
+        >
+          Show in the rules check
+        </button>
+        <button onClick={() => set((c) => markChecked(c, APP_VERSION))}>Got it</button>
+      </div>
     </section>
   );
 }

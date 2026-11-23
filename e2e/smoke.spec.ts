@@ -6,7 +6,8 @@ test.describe("Soul Forge smoke tests", () => {
     const seen = watchProblems(page);
     await page.goto("/");
     await expect(page.locator("header")).toContainText("Soul Forge");
-    for (const name of ["Build", "Magic", "Equipment", "Manage", "Play", "Sheet", "Content", "Home"]) {
+    // Magic and Equipment are cards on the Build board, not tabs (board only, Chris 2026-11-23).
+    for (const name of ["Build", "Manage", "Play", "Export", "Content", "Home"]) {
       await tab(page, name);
       await expect(page.locator("main")).toBeVisible();
     }
@@ -244,40 +245,31 @@ test.describe("Soul Forge smoke tests", () => {
 
   test("point buy follows the standard table and custom house rules", async ({ page }) => {
     await addTestContent(page);
+    await page.getByRole("button", { name: /new character/i }).click();
     await tab(page, "Build");
-    await page
-      .getByRole("button", { name: /^Ability/ })
-      .first()
-      .click();
-    await page.getByRole("button", { name: "Point buy" }).click();
-    await expect(page.getByText("0 / 27 points")).toBeVisible();
+    await page.locator(".board-method button", { hasText: "Point buy" }).click();
+    const note = page.locator(".board-method-note");
+    await expect(note).toContainText("27 of 27 points left");
     // Three 15s are 27 points, so nothing else can go up.
-    const plus = page.locator(".abilities .stepper button", { hasText: "+" });
-    for (let i = 0; i < 7; i++) {
-      await plus.nth(0).click();
-      await plus.nth(1).click();
-      await plus.nth(2).click();
-    }
-    await expect(page.getByText("27 / 27 points")).toBeVisible();
-    await expect(plus.nth(3)).toBeDisabled();
-    await page.locator(".pb-rules summary").click();
+    const raise = (n: string) => page.getByRole("button", { name: `Raise ${n}` });
+    for (let i = 0; i < 7; i++) for (const n of ["Strength", "Dexterity", "Constitution"]) await raise(n).click();
+    await expect(note).toContainText("0 of 27 points left");
+    await expect(raise("Intelligence")).toBeDisabled();
+    await note.getByRole("button", { name: /^Custom rules/ }).click();
     await page.getByLabel("Points to spend").fill("40");
     await page.getByLabel("Highest score").fill("17");
-    await expect(plus.nth(3)).toBeEnabled();
     await expect(page.getByLabel("Cost of 17")).toBeVisible();
+    await expect(note).toContainText("13 of 40 points left");
     await page.getByRole("button", { name: "Standard rules" }).click();
-    await expect(page.getByText("/ 27 points")).toBeVisible();
+    await expect(note).toContainText("of 27 points left");
   });
 
   test("global content filters hide books from lists and keep what is picked", async ({ page }) => {
     await addTestContent(page);
     await randomCharacter(page);
     await tab(page, "Build");
-    await page
-      .getByRole("button", { name: /^Species/ })
-      .first()
-      .click();
-    await page.getByRole("button", { name: "Change" }).click();
+    await page.locator(".board-acc-head", { hasText: "Species" }).click();
+    await expect(page.locator(".board-acc.open .mini-card").first()).toBeVisible();
     await expect(page.getByText(/hidden by your content filters/)).toHaveCount(0);
     await page.getByRole("button", { name: /^menu/i }).click();
     await page.getByRole("button", { name: /settings/i }).click();
@@ -294,12 +286,22 @@ test.describe("Soul Forge smoke tests", () => {
   test("starting equipment folds class and background one at a time", async ({ page }) => {
     await addTestContent(page);
     await randomCharacter(page);
-    await tab(page, "Equipment");
+    await tab(page, "Build");
+    // The backpack card: its starting gear and its inventory are two views of one window.
+    await page.locator("[data-tile=equipment]").click();
+    const win = page.locator(".card-window-equipment");
+    const gearView = () => win.getByRole("tab", { name: /Starting gear/ }).click();
+    const invView = () => win.getByRole("tab", { name: /Inventory/ }).click();
+    const rows = win.locator("table.inv tbody tr");
     // A random character arrives with its starting gear; starting over takes it back out (adding it again must not
     // double it).
-    await expect(page.locator("table tbody tr").first()).toBeVisible();
+    await invView();
+    await expect(rows.first()).toBeVisible();
+    await gearView();
     await page.locator(".equip-done").getByRole("button", { name: "Start over" }).click();
-    await expect(page.locator("table tbody tr")).toHaveCount(0);
+    await invView();
+    await expect(rows).toHaveCount(0);
+    await gearView();
     const origins = page.locator(".equip-origin");
     await expect(origins).toHaveCount(2);
     await origins
@@ -344,8 +346,8 @@ test.describe("Soul Forge smoke tests", () => {
     await expect(page.getByRole("button", { name: new RegExp(`✓ ${gearName} ×2`) })).toBeVisible();
     await expect(page.getByRole("status").filter({ hasText: /^Added/ })).toBeVisible();
     // The same gear twice is one line with a bigger quantity.
-    await tab(page, "Equipment");
-    const names = await page.locator("table tbody tr td:first-child").allInnerTexts();
+    await invView();
+    const names = await rows.locator("td:first-child").allInnerTexts();
     expect(new Set(names.map((n) => n.trim())).size).toBe(names.length);
   });
 

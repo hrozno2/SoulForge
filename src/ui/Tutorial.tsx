@@ -132,7 +132,7 @@ export function Tutorial(p: TutorialProps) {
 
   const aurora = content.sources.length > 0;
   // The build board is explained in its own words; the older tabs layout keeps its own line.
-  const board = settings.buildLayout !== "tabs";
+  const board: boolean = true;
   const steps: { title: string; body: React.ReactNode }[] = [
     {
       title: "Welcome to Soul Forge",

@@ -123,7 +123,7 @@ test("a character exported for Foundry comes back through the importer", async (
   expect(back.race).toBe(ch.race);
 });
 
-test("settings: compact layout, reduce motion and the build layout take effect", async ({ page }) => {
+test("settings: compact layout and reduce motion take effect; Build is the board", async ({ page }) => {
   await page.goto("/");
   const open = async () => {
     await page.getByRole("button", { name: /^menu/i }).click();
@@ -135,10 +135,12 @@ test("settings: compact layout, reduce motion and the build layout take effect",
   await expect(page.locator("html")).toHaveClass(/\bcompact\b/);
   await row("Reduce motion").check();
   await expect(page.locator("html")).toHaveClass(/\breduce-motion\b/);
-  await page.getByRole("button", { name: "Tabs", exact: true }).click();
+  // The board is the only Build layout (Chris 2026-11-23): no setting offers another.
+  await expect(page.locator(".set-row", { hasText: "Build layout" })).toHaveCount(0);
   await page.keyboard.press("Escape");
   await tab(page, "Build");
-  await expect(page.locator("nav.subtabs")).toBeVisible();
+  await expect(page.locator(".board-lib")).toBeVisible();
+  await expect(page.locator("nav.subtabs")).toHaveCount(0);
   await page.reload();
   await expect(page.locator("html")).toHaveClass(/\bcompact\b/);
 });

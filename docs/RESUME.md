@@ -1,5 +1,15 @@
 # Where we left off
 
+## 2026-11-23, later: new requests, planned not built (usage 74%)
+
+Chris asked for: the point-buy unspent warning; his flagged characters made rules legal with the changes told and
+the calls left to the player, notes kept with the character; the shop as the one place items come from, with a
+shopkeeper, categories and a buy or add switch; filters that survive a restart, tested; an analysis of what else to
+do and what to simplify. All of it is planned in docs/PLAN-2026-11-23.md. Linux: later. The Roll20 file he added is
+the 2014-sheet character already in the test folder, not a 2024-sheet file.
+Start at item 1 of that plan when the weekly usage has reset.
+
+
 ## 2026-11-23: stopped at the usage edge (weekly 73%, rule is 70%); what is left
 
 Chris asked to continue the plan and for a report of what is left. Usage was past the stop rule, so nothing was built;

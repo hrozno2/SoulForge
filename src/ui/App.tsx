@@ -7,24 +7,21 @@ import { SaveQueue } from "./saveQueue";
 import { TabGuard, browserChannel } from "./tabGuard";
 import { CURRENT_CHARACTER_KEY, ErrorBoundary } from "./ErrorBoundary";
 import { logSystemOnce } from "../system";
-import { TextInput } from "./TextField";
 import { logEvent, timed } from "../logbook";
 import { withGrantedItems } from "../aurora/grantedItems";
 import { checkDue } from "../aurora/olderBuild";
 import { ConfirmHost } from "./Confirm";
 import { BugReport } from "./BugReport";
 import { t } from "../i18n";
-import { tabOfSlot } from "./Slots";
 import { openChoices } from "./openChoices";
 import { buildSheet } from "../aurora/sheet";
 import { TAB_ICONS } from "./icons";
 import { newCharacter, openCharacter, uid, type Character } from "../aurora/character";
-import { resolve, stillToChoose } from "../aurora/engine";
+import { resolve } from "../aurora/engine";
 import { randomCharacter } from "../aurora/randomCharacter";
 import { saveCharacterRecord } from "../aurora/storage";
 import type { AElement } from "../aurora/types";
 import { useContent } from "./useContent";
-import { BuildTab } from "./BuildTab";
 import { BuildBoard } from "./BuildBoard";
 import { StartTab, missingContent } from "./StartTab";
 import { LaunchIntro, launchReady } from "./LaunchIntro";
@@ -54,8 +51,6 @@ import { CompendiumSearch } from "./CompendiumSearch";
 
 // The tabs that are not needed at start-up load on first use, which keeps the first screen quick.
 // Magic and Equipment are part of the build board, so they load with it rather than on their own (issue #2).
-import { MagicTab } from "./MagicTab";
-import { EquipmentTab } from "./EquipmentTab";
 const ManageTab = lazy(() => import("./ManageTab").then((m) => ({ default: m.ManageTab })));
 const DetailsDialog = lazy(() => import("./ManageTab").then((m) => ({ default: m.DetailsDialog })));
 const SheetTab = lazy(() => import("./SheetTab").then((m) => ({ default: m.SheetTab })));
@@ -63,12 +58,10 @@ const PlayTab = lazy(() => import("./PlayTab").then((m) => ({ default: m.PlayTab
 const LevelUp = lazy(() => import("./LevelUp").then((m) => ({ default: m.LevelUp })));
 const ContentTab = lazy(() => import("./ContentTab").then((m) => ({ default: m.ContentTab })));
 
-type Tab = "start" | "build" | "magic" | "equipment" | "manage" | "play" | "sheet" | "content";
+type Tab = "start" | "build" | "manage" | "play" | "sheet" | "content";
 const TABS: [Tab, string][] = [
   ["start", "Home"],
   ["build", "Build"],
-  ["magic", "Magic"],
-  ["equipment", "Equipment"],
   ["manage", "Manage"],
   ["play", "Play"],
   ["sheet", "Export"],
@@ -329,36 +322,11 @@ export function App() {
     }
   };
 
-  const unfilled = r.slots.filter((s) => stillToChoose(s, r));
-  const describe = (s: (typeof unfilled)[number]) => `${s.rule.name}: ${s.rule.number - s.chosen.length} to choose`;
-  // Spell choices belong to the Magic tab, everything else to Build.
-  const pendingList = [
-    ...(character.race ? [] : ["Pick a species"]),
-    ...(character.classes.length ? [] : ["Pick a class"]),
-    ...unfilled.filter((s) => tabOfSlot(s) !== "magic").map(describe),
-  ];
-  const magicList = unfilled.filter((s) => tabOfSlot(s) === "magic").map(describe);
-  const pending = pendingList.length;
-  // Starting gear not chosen: shown on the Equipment tab, like open choices on Build.
-  // Starting gear not taken yet, or gear that names only a kind still to pick ("a musical instrument").
-  const equipPending =
-    (character.classes.length > 0 && !character.equipmentAdded?.length && character.inventory.length === 0) ||
-    character.inventory.some((i) => i.pending);
-  const hasMagic = r.spellcasting.size > 0 || r.spellPicks.length > 0;
-  // When the last open choice on Build is made, go on to Magic (casters) or Equipment; when the last spell is
-  // chosen on Magic, go on to Equipment. Only on the change itself, so opening a finished character moves nothing.
   const settings = useSettings();
-  // Board only (Chris 2026-11-23): the older tabs layout is gone from the settings and the menu, and a saved "tabs"
-  // setting is ignored. The branches below that still ask `board` are the tabs layout's, to be removed with BuildTab's
-  // tabs-only parts (docs/RESUME.md, decision A).
-  const board: boolean = true;
-  // The build board holds spells and equipment too, so their own tabs go and Build counts what they had open.
-  useEffect(() => {
-    if (board && (tab === "magic" || tab === "equipment")) setTab("build");
-  }, [board, tab]);
+  // Board only (Chris 2026-11-23): Build is the board, which holds spells and equipment too; there is no tabs layout
+  // and no Magic or Equipment tab.
   // The board's badge counts what its status panel lists (C7.21).
   const boardOpen = useMemo(() => {
-    if (!board) return [];
     try {
       return openChoices(r, buildSheet(r));
     } catch (e) {
@@ -366,20 +334,12 @@ export function App() {
       logEvent("build", `open choices failed: ${(e as Error).message}`);
       return [];
     }
-  }, [board, r]);
-  const prevOpen = useRef({ build: pending, magic: magicList.length, id });
-  useEffect(() => {
-    const prev = prevOpen.current;
-    prevOpen.current = { build: pending, magic: magicList.length, id };
-    if (prev.id !== id || board) return;
-    if (tab === "build" && prev.build > 0 && pending === 0) setTab(hasMagic ? "magic" : "equipment");
-    else if (tab === "magic" && prev.magic > 0 && magicList.length === 0 && pending === 0) setTab("equipment");
-  }, [pending, magicList.length, id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [r]);
   const tip = (where: string, list: string[]) =>
     `Still to choose on the ${where} tab:\n${list.slice(0, 12).join("\n")}${list.length > 12 ? `\n...and ${list.length - 12} more` : ""}`;
   // The build board has no description panel: its lists open descriptions with Learn more.
   // Manage has no right-hand lore panel (C2): its rows carry an "i" that opens the full description.
-  const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play" && tab !== "manage" && !(tab === "build" && board);
+  const showDetail = tab !== "start" && tab !== "sheet" && tab !== "play" && tab !== "manage" && tab !== "build";
 
   return (
     <FloatingProvider characterId={id} render={(w) => <FloatingContent w={w} reg={content.reg} />}>
@@ -402,46 +362,23 @@ export function App() {
                     const I = TAB_ICONS[key];
                     return I ? <I size={15} /> : undefined;
                   })(),
-                  badge:
-                    key === "build"
-                      ? board
-                        ? boardOpen.length
-                        : pending
-                      : key === "magic"
-                        ? magicList.length
-                        : key === "equipment"
-                          ? equipPending
-                            ? 1
-                            : undefined
-                          : undefined,
+                  badge: key === "build" ? boardOpen.length : undefined,
                   badgeTitle:
-                    key === "build" && (board ? boardOpen.length : pending)
-                      ? tip("Build", board ? boardOpen.map((o) => o.text) : pendingList)
-                      : key === "magic" && magicList.length
-                        ? tip("Magic", magicList)
-                        : key === "equipment" && equipPending
-                          ? "Starting equipment is not chosen yet"
-                          : undefined,
+                    key === "build" && boardOpen.length
+                      ? tip(
+                          "Build",
+                          boardOpen.map((o) => o.text),
+                        )
+                      : undefined,
                 }));
                 const pick = (...keys: Tab[]) => keys.map((k) => defs.find((d) => d.key === k)!).filter(Boolean);
                 return [
                   { key: "home", label: t("Home"), items: pick("start") },
                   { key: "build", label: t("Build"), items: pick("build") },
-                  ...(board
-                    ? []
-                    : [
-                        { key: "magic", label: t("Magic"), items: pick("magic") },
-                        { key: "equipment", label: t("Equipment"), items: pick("equipment") },
-                      ]),
                   { key: "manage", label: t("Manage"), items: pick("manage") },
                   { key: "content", label: t("Content"), items: pick("content") },
-                  // With the board, Magic and Equipment are gone from here, so Play and Export each get their own tab.
-                  ...(board
-                    ? [
-                        { key: "play", label: t("Play"), items: pick("play") },
-                        { key: "export", label: t("Export"), items: pick("sheet") },
-                      ]
-                    : [{ key: "sheet", label: t("Sheet"), icon: defs.find((d) => d.key === "sheet")?.icon, items: pick("play", "sheet") }]),
+                  { key: "play", label: t("Play"), items: pick("play") },
+                  { key: "export", label: t("Export"), items: pick("sheet") },
                 ];
               })()}
             />
@@ -791,9 +728,9 @@ export function App() {
             install={updater.install}
             dismiss={updater.dismiss}
           />
-          <main className={[showDetail ? "with-detail" : "", tab === "build" && board ? "wide" : ""].filter(Boolean).join(" ")}>
+          <main className={[showDetail ? "with-detail" : "", tab === "build" ? "wide" : ""].filter(Boolean).join(" ")}>
             <div className="pane">
-              {["build", "magic", "equipment", "manage"].includes(tab) && (
+              {["build", "manage"].includes(tab) && (
                 <div className="actionbar" role="toolbar" aria-label="Character actions">
                   {saveState === "failed" ? (
                     <span
@@ -852,26 +789,7 @@ export function App() {
                       reg={content.reg}
                     />
                   )}
-                  {tab === "build" && (
-                    <>
-                      {!board && (
-                        <div className="namebar">
-                          <TextInput
-                            placeholder="Character name"
-                            value={character.name}
-                            onCommit={(v) => set((c) => ({ ...c, name: v }))}
-                          />
-                        </div>
-                      )}
-                      {board ? (
-                        <BuildBoard r={r} ch={character} set={set} />
-                      ) : (
-                        <BuildTab r={r} ch={character} set={set} onDetail={setDetail} />
-                      )}
-                    </>
-                  )}
-                  {tab === "magic" && <MagicTab r={r} ch={character} set={set} onDetail={setDetail} />}
-                  {tab === "equipment" && <EquipmentTab r={r} ch={character} set={set} onDetail={setDetail} />}
+                  {tab === "build" && <BuildBoard r={r} ch={character} set={set} />}
                   {tab === "manage" && <ManageTab r={r} ch={character} set={set} onDetail={setDetail} />}
                   {tab === "play" && <PlayTab r={r} ch={character} set={set} />}
                   {tab === "sheet" && <SheetTab r={r} ch={character} set={set} />}

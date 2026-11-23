@@ -304,7 +304,7 @@ export function Slot({ slot, r, set, onDetail }: { slot: MergedSlot; r: Resolved
           {!slot.listItems && (
             <button
               className={`ghost slot-override ${nothingLeft && !all ? "urgent" : ""}`}
-              title="Show every element of this kind, ignoring this choice's filter and the content filters"
+              title="Show every option of this kind, ignoring this choice's own filter and what this table uses"
               onClick={() => setAll(!all)}
             >
               {all ? "Back to the matching options" : "Show the whole list"}

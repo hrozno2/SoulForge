@@ -9,7 +9,7 @@ test.use({
     origins: [
       {
         origin: "http://localhost:4173",
-        localStorage: [{ name: "charforge.settings", value: JSON.stringify({ buildLayout: "board", reduceMotion: true }) }],
+        localStorage: [{ name: "charforge.settings", value: JSON.stringify({ reduceMotion: true }) }],
       },
     ],
   },

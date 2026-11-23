@@ -76,8 +76,8 @@ export function ImportReport({
           <section className="ir-group warn">
             <h3>To do: choose these ({res.todo.length})</h3>
             <p className="muted small-text">
-              The file does not say, so these are left open for you instead of guessed. Make them on the Build or Magic tab; the list is
-              also in the import notes, which you can keep in the character's journal.
+              The file does not say, so these are left open for you instead of guessed. Make them on Build, where each open choice is
+              listed; the list is also in the import notes, which you can keep in the character's journal.
             </p>
             <ul>
               {res.todo.map((g, i) => (

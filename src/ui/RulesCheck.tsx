@@ -98,11 +98,6 @@ export function useRulesCheck(r: Resolved): RulesCheckResult {
   }, [r, ref, official]);
 }
 
-/** A bar on the Build tab: "Follows the rules", or each problem and what rule it breaks. */
-export function RulesCheckBar({ r, set }: { r: Resolved; set?: (fn: (c: Character) => Character) => void }) {
-  return <RulesCheckView r={r} res={useRulesCheck(r)} set={set} />;
-}
-
 /** Asked for while the panel was not on screen (another tab): it opens when it next shows. */
 let wantOpen = false;
 /** Opens the rules check's panel, now or as soon as Build shows it. */

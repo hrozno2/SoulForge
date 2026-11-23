@@ -414,7 +414,7 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
           </section>
           <section className="block">
             <h3>Attacks</h3>
-            {sheet.attacks.length === 0 && <p className="muted">Equip a weapon on the Equipment tab to see attacks.</p>}
+            {sheet.attacks.length === 0 && <p className="muted">Equip a weapon in the backpack on Build to see attacks.</p>}
             {sheet.attacks.length > 0 && (
               <table className="attacks">
                 <thead>
@@ -489,7 +489,7 @@ export function SheetTab({ r, ch, set }: { r: Resolved; ch: Character; set: SetC
                       <b>
                         Prepared ({prepared.length}/{c.prepareMax}).
                       </b>{" "}
-                      {prepared.join(", ") || <span className="muted">none chosen yet, pick them on the Magic tab</span>}
+                      {prepared.join(", ") || <span className="muted">none chosen yet, pick them in the spellbook on Build</span>}
                     </p>
                   )}
                   {!c.prepare && c.granted.length > 0 && (

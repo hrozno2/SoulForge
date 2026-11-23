@@ -2531,7 +2531,7 @@ export function BuildBoard({ r, ch, set }: { r: Resolved; ch: Character; set: Se
             <small>Ready, set,</small>
             <h2>Start your story...</h2>
             <p className="muted">
-              Your character is a species, a class and a background. Click an entry in a list or drag it onto its space.
+              Your character is a species, a class and a background. Click a card in a list or drag it onto its space.
             </p>
           </div>
         </header>

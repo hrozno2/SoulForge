@@ -131,8 +131,6 @@ export function Tutorial(p: TutorialProps) {
   }
 
   const aurora = content.sources.length > 0;
-  // The build board is explained in its own words; the older tabs layout keeps its own line.
-  const board: boolean = true;
   const steps: { title: string; body: React.ReactNode }[] = [
     {
       title: "Welcome to Soul Forge",
@@ -364,55 +362,48 @@ export function Tutorial(p: TutorialProps) {
       body: (
         <>
           <ul className="tutorial-tour">
-            {board ? (
-              <>
-                <li>
-                  <b>Build</b> is a board that fills in as you go. On the left, <b>Species</b>, <b>Class</b>, <b>Background</b>,{" "}
-                  <b>Spells and magic</b> and <b>Equipment</b> open into lists with search and filters. Click an entry, or drag it onto its
-                  space in the middle, and it flies into place. Above them, the <b>status panel</b> says whether the character follows the
-                  rules and lists every choice still open; click a line to go there.
-                </li>
-                <li>
-                  Click a space in the middle and its card flips out into a <b>window</b> with its own choices (languages, skills, feats,
-                  score increases); its slot waits empty until you press <b>Done</b>. Windows can be dragged (even partly off screen),
-                  resized, shrunk to their title bar with a double-click, or made large with the focus button. Several can be open at once,
-                  two class cards side by side to compare. The card shows which book it comes from; pick another book under <b>Source</b> to
-                  switch versions. The <b>i</b> buttons open the full rules in windows of their own.
-                </li>
-                <li>
-                  The <b>Bag of Holding</b> in the corner keeps windows you are not using: drag a window onto it, or use its ▾ button; click
-                  one in the bag to take it out. <b>Tidy up</b> lines the open windows up, and <b>Put everything in the bag</b> clears the
-                  table. The layout is kept for each character.
-                </li>
-                <li>
-                  A choice folds away when it is complete, and the list slides so you see the next one. Ability increases are boxes: tick
-                  abilities for +1 each, or the same one twice for +2. Your <b>hit points</b> stay gold with <b>Configure</b> until you
-                  choose fixed or rolled.
-                </li>
-                <li>
-                  On the right: your <b>portrait</b> and name (click the portrait to change it), then your <b>ability scores</b>, worked in
-                  place. <b>Point buy</b> has plus and minus and a points counter (Custom rules for house rules); the <b>Standard array</b>{" "}
-                  numbers drag onto the scores to swap; <b>Manual</b> lets you type or roll 4d6 and drop the lowest. Below are your numbers
-                  and training.
-                </li>
-                <li>
-                  The <b>spellbook</b> thickens as you choose spells: each chosen scroll flies in as a page and leaves a grey outline (click
-                  it to take the page back out). It counts <b>Learned</b> and <b>Prepared</b> apart; click Prepared to choose today's
-                  spells. The <b>backpack</b> has three parts: <b>Starting gear</b> (pick A or B, and any item of your choice right in its
-                  box), <b>Inventory</b>, and the <b>Shop</b>, which buys with your coins and sells back at the same price. On a narrow
-                  window the lists and the scores wait at the window edges behind a <b>+</b>; click one (or any See options button) to open
-                  it over the cards.
-                </li>
-                <li>
-                  All the motion can be turned off with <b>Reduce motion</b> in Settings.
-                </li>
-              </>
-            ) : (
+            <>
               <li>
-                <b>Build</b>: species, class and background are picked from cards. Use <b>Learn more</b> to read the full rules. Options you
-                cannot take yet stay visible, grayed out, with what is missing written on them; the <b>Locked</b> switch hides them.
+                <b>Build</b> is a board that fills in as you go. On the left, <b>Species</b>, <b>Class</b>, <b>Background</b>,{" "}
+                <b>Spells and magic</b> and <b>Equipment</b> open into lists with search and filters. Click a card, or drag it onto its
+                space in the middle, and it flies into place. Above them, the <b>status panel</b> says whether the character follows the
+                rules and lists every choice still open; click a line to go there.
               </li>
-            )}
+              <li>
+                Click a space in the middle and its card flips out into a <b>window</b> with its own choices (languages, skills, feats,
+                score increases); its space waits empty until you press <b>Done</b>. Windows can be dragged (even partly off screen),
+                resized, shrunk to their title bar with a double-click, or made large with the focus button. Several can be open at once,
+                two class cards side by side to compare. The card shows which book it comes from; pick another book under <b>Source</b> to
+                switch versions. The <b>i</b> buttons open the full rules in windows of their own.
+              </li>
+              <li>
+                The <b>Bag of Holding</b> in the corner keeps windows you are not using: drag a window onto it, or use its ▾ button; click
+                one in the bag to take it out. <b>Tidy up</b> lines the open windows up, and <b>Put everything in the bag</b> clears the
+                table. The layout is kept for each character.
+              </li>
+              <li>
+                A choice folds away when it is complete, and the list slides so you see the next one. Ability increases are boxes: tick
+                abilities for +1 each, or the same one twice for +2. Your <b>hit points</b> stay gold with <b>Configure</b> until you choose
+                fixed or rolled.
+              </li>
+              <li>
+                On the right: your <b>portrait</b> and name (click the portrait to change it), then your <b>ability scores</b>, worked in
+                place. <b>Point buy</b> has plus and minus and a points counter (Custom rules for house rules); the <b>Standard array</b>{" "}
+                numbers drag onto the scores to swap; <b>Manual</b> lets you type or roll 4d6 and drop the lowest. Below are your numbers
+                and training.
+              </li>
+              <li>
+                The <b>spellbook</b> thickens as you choose spells: each chosen scroll flies in as a page and leaves a grey outline (click
+                it to take the page back out). It counts <b>Learned</b> and <b>Prepared</b> apart; click Prepared to choose today's spells.
+                The <b>backpack</b> has three parts: <b>Starting gear</b> (pick A or B, and any item of your choice right in its box),{" "}
+                <b>Inventory</b>, and the <b>Shop</b>, which buys with your coins and sells back at the same price. On a narrow window the
+                lists and the scores wait at the window edges behind a <b>+</b>; click one (or any See options button) to open it over the
+                cards.
+              </li>
+              <li>
+                All the motion can be turned off with <b>Reduce motion</b> in Settings.
+              </li>
+            </>
             <li>
               <b>Multiclassing</b>: <b>Level up</b> lets you add a level to a class you have or start a new one. Classes whose requirements
               you do not meet show the missing ability scores.

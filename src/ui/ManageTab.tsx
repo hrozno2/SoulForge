@@ -395,7 +395,7 @@ function AutoAttacks({ r, ch, set }: { r: Resolved; ch: Character; set: SetChara
   const [open, setOpen] = useState<string | null>(null);
   const edit = (id: string, p: Partial<AttackEdit>) =>
     set((c) => ({ ...c, attackEdits: { ...(c.attackEdits ?? {}), [id]: { ...(c.attackEdits?.[id] ?? {}), ...p } } }));
-  if (!lines.length) return <p className="muted">Equip a weapon on the Equipment tab and its attack shows up here, ready to edit.</p>;
+  if (!lines.length) return <p className="muted">Equip a weapon in the backpack on Build and its attack shows up here, ready to edit.</p>;
   return (
     <ul className="added auto-attacks">
       {lines.map((a) => {

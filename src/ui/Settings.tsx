@@ -32,8 +32,6 @@ export interface AppSettings {
   allSpells: boolean;
   /** Home's character cards drawn compact (small screens; Chris 2026-10-29). */
   homeCompact?: boolean;
-  /** The Build tab's layout: the build board (lists, board and scores side by side), or the older tabs along the top. */
-  buildLayout: "board" | "tabs";
   /** The test build only: hide the test bar so the app looks like the released one. */
   hideTestTools: boolean;
   /** Soul Forge Test only (D5): load without Aurora's content, as the release app will (D7). */
@@ -54,7 +52,6 @@ const DEFAULTS: AppSettings = {
   showSciFi: false,
   showModern: false,
   allSpells: false,
-  buildLayout: "board",
   hideTestTools: false,
 };
 
@@ -264,11 +261,12 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           </span>
         </div>
         <fieldset className="set-group">
-          <legend>Content shown in lists</legend>
+          <legend>What this table uses</legend>
           <p className="muted set-explain">
-            These filters apply everywhere you pick something: species, classes, backgrounds, every choice, spells, items and the shop. They
-            only hide; the content stays loaded and characters that use it keep working. A choice is never left unable to be completed: when
-            the filters would leave too few options, it shows all of them. Each list's own Filters button narrows that list further.
+            These switches apply everywhere you pick something: species, classes, backgrounds, every choice, spells, items and the shop.
+            They only hide; the content stays loaded and characters that use it keep working. A choice is never left unable to be completed:
+            when the switches would leave too few options, it shows all of them. Every list opens the same switches from its count line, and
+            its own Filters button narrows that list further.
           </p>
           <TableSwitches />
           <p className="muted">What you already picked stays visible even when its book is hidden here.</p>

@@ -589,7 +589,7 @@ function Actions({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: She
   return (
     <>
       <ActGroup title="Action" count={sheet.attacks.length + byKind[0][1].length + actionCantrips.length}>
-        {sheet.attacks.length === 0 && <p className="muted act-empty">No weapon equipped. Equip one on the Equipment tab.</p>}
+        {sheet.attacks.length === 0 && <p className="muted act-empty">No weapon equipped. Equip one in the backpack on Build.</p>}
         {sheet.attacks.map((a, i) => (
           <div key={i} className="act-row weapon" {...favDrag("weapon", a.id ?? a.name)}>
             <span className="act-name">
@@ -1034,7 +1034,9 @@ function Inventory({ r, ch, sheet, set }: { r: Resolved; ch: Character; sheet: S
         ))}
       </div>
       <Panel title="Equipped">{equipped.length ? equipped.map(row) : <p className="muted">Nothing equipped.</p>}</Panel>
-      <Panel title="Carried">{rest.length ? rest.map(row) : <p className="muted">Nothing else. Add gear on the Equipment tab.</p>}</Panel>
+      <Panel title="Carried">
+        {rest.length ? rest.map(row) : <p className="muted">Nothing else. Add gear from the shop, in the backpack on Build.</p>}
+      </Panel>
     </>
   );
 }

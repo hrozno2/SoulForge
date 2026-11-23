@@ -12,7 +12,7 @@ test.use({
         origin: "http://localhost:4173",
         localStorage: [
           { name: "charforge.tutorial", value: "never" },
-          { name: "charforge.settings", value: JSON.stringify({ buildLayout: "tabs" }) },
+          { name: "charforge.settings", value: JSON.stringify({}) },
         ],
       },
     ],

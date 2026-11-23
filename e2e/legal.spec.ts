@@ -14,7 +14,7 @@ test.use({
         origin: "http://localhost:4173",
         localStorage: [
           { name: "charforge.tutorial", value: "never" },
-          { name: "charforge.settings", value: JSON.stringify({ buildLayout: "board", reduceMotion: true }) },
+          { name: "charforge.settings", value: JSON.stringify({ reduceMotion: true }) },
         ],
       },
     ],

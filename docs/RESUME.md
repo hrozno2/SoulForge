@@ -6,6 +6,23 @@
 anything, continue with plan." Usage: no limit today (the last day before the weekly reset); from tomorrow the 70%
 rule applies again except on the last day before a reset.
 
+Chris, later the same evening, on docs/PLAN-2026-11-23.md item 6: "basically everything in the plan is good to
+build". Decided, to build after the hardening below:
+- A. Board only: the tabs Build layout goes (setting, switch in the top bar, Tutorial's tabs line, BuildTab paths
+  only the tabs layout uses, their tests).
+- B. The Journal is the one home for notes: character notes, import notes and move notes become Journal entries
+  (migrate on open, nothing lost); Make it legal already writes there.
+- C. One "What this table uses" panel for the content switches (older editions, playtest, unusual, sci-fi, modern,
+  all spells, 5e.tools only), reachable from every list's filter bar, with the count each switch hides.
+- D. The rules check in one panel with three kinds: to fix, your call, accepted (Make it legal's shape); the
+  older-build notice, the import report's findings and "earlier choices with no place" fold into it.
+- E. Test controls hidden unless it is the test build (identifier app.charforge.test or the dev server).
+- F. A wording pass: one word per thing (species not race in the interface; choice, pick, card, space each for one
+  thing), in the interface text only, ids untouched.
+- G. D7: the release app drops Aurora (the importer for Aurora's index, its files and settings; the test app keeps
+  it). Chris: "go with D7 so we can get towards an Aurora free version soon". Before it: the Aurora-free full check
+  clean (scheduled; first run tonight) and the move screen stays so existing characters can be moved.
+
 Order of work (tick off here as done; each with a failing test first, gates, CI, test app rebuilt):
 1. Import check on the 5etools and srd sets (was running; read any snapshot change before accepting with
    IMPORT_BASELINE=1).

@@ -6988,6 +6988,10 @@ body[data-dragging="application/x-sf-magicitem"] .board-equipment {
   color: var(--text);
   font-size: 15px;
 }
+/* Points not spent yet: the same amber as the rules check's notes. */
+.board-method-note .unspent b {
+  color: #d9a43a;
+}
 .linkish {
   background: none;
   border: 0;

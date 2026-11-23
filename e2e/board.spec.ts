@@ -59,6 +59,8 @@ test.describe("Build board", () => {
     // Scores: point buy shows the points left, and a plus raises a score.
     await page.locator(".board-method button", { hasText: "Point buy" }).click();
     await expect(page.locator(".board-method-note")).toContainText("points left");
+    // Points left over are marked (Chris 2026-11-23).
+    await expect(page.locator(".board-method-note .unspent")).toBeVisible();
     const str = page.locator(".board-score").first().locator(".board-num");
     const before = Number(await str.textContent());
     await page.getByRole("button", { name: "Raise Strength" }).click();
@@ -301,7 +303,19 @@ test("a list's filters stay through slotting, replacing and removing a card", as
   await openSpecies();
   await expect(search()).toHaveValue(letter);
 
-  // Cleared by the player, and only then.
+  // Through a restart too (Chris 2026-11-23): the page loaded anew, the filter is still there.
+  await page.reload();
+  await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
+  await tab(page, "Build");
+  await openSpecies();
+  await expect(search()).toHaveValue(letter);
+
+  // Cleared by the player, and only then; and it stays cleared after a restart.
   await search().fill("");
   await expect(shown()).toHaveCount(names.length + 1);
+  await page.reload();
+  await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
+  await tab(page, "Build");
+  await openSpecies();
+  await expect(search()).toHaveValue("");
 });

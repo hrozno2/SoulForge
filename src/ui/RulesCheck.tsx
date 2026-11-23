@@ -11,6 +11,7 @@ import { RULES_REF_CLASSES } from "../aurora/rulesRef";
 import { markChecked, misalignments } from "../aurora/olderBuild";
 import type { Character } from "../aurora/character";
 import { applyFix } from "../aurora/findingFix";
+import { unspentPoints } from "../aurora/pointBuy";
 
 declare const __APP_VERSION__: string;
 export const APP_VERSION = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev";
@@ -24,6 +25,8 @@ const CONTENT =
 export interface RulesCheckResult {
   rules: Finding[];
   content: Finding[];
+  /** Within the rules, but probably not meant (point buy points left unspent). Never counted as a fault. */
+  notes: Finding[];
   /** False when the 5e.tools reference has not been downloaded: class tables were not checked. */
   full: boolean;
 }
@@ -41,7 +44,16 @@ export function useRulesCheck(r: Resolved): RulesCheckResult {
     };
   }, [official]);
   return useMemo(() => {
-    if (!r.character.classes.length) return { rules: [], content: [], full: !!ref };
+    if (!r.character.classes.length) return { rules: [], content: [], notes: [], full: !!ref };
+    const left = unspentPoints(r.character);
+    const notes: Finding[] = left
+      ? [
+          {
+            rule: "Point buy",
+            detail: `${left} ${left === 1 ? "point is" : "points are"} unspent. That is allowed; spend them on Build if it was not meant.`,
+          },
+        ]
+      : [];
     let found: Finding[] = [];
     try {
       found = checkCharacter(r, buildSheet(r), ref ?? []);
@@ -72,6 +84,7 @@ export function useRulesCheck(r: Resolved): RulesCheckResult {
     return {
       rules: kept.filter((f) => !CONTENT.test(f.rule)),
       content: kept.filter((f) => CONTENT.test(f.rule)),
+      notes,
       full: !!ref || !official,
     };
   }, [r, ref, official]);
@@ -95,15 +108,20 @@ export function RulesCheckView({
 }) {
   const [open, setOpen] = useState(false);
   if (!r.character.classes.length) return null;
-  const n = res.rules.length + res.content.length;
+  const n = res.rules.length + res.content.length + res.notes.length;
   return (
-    <section className={`rules-check ${res.rules.length ? "bad" : res.content.length ? "warn" : "ok"}`} aria-label="Rules check">
+    <section
+      className={`rules-check ${res.rules.length ? "bad" : res.content.length || res.notes.length ? "warn" : "ok"}`}
+      aria-label="Rules check"
+    >
       <button className="rules-check-head" aria-expanded={n ? open : undefined} onClick={() => n && setOpen(!open)}>
         <b>Rules check</b>
         <span>
           {n === 0
             ? "Follows the rules"
-            : `${res.rules.length ? `${res.rules.length} against the rules` : ""}${res.rules.length && res.content.length ? ", " : ""}${res.content.length ? `${res.content.length} content problem${res.content.length > 1 ? "s" : ""}` : ""}`}
+            : !res.rules.length && !res.content.length
+              ? `Follows the rules; ${res.notes.length} to look at`
+              : `${res.rules.length ? `${res.rules.length} against the rules` : ""}${res.rules.length && res.content.length ? ", " : ""}${res.content.length ? `${res.content.length} content problem${res.content.length > 1 ? "s" : ""}` : ""}`}
         </span>
         {!res.full && <small className="muted">class tables not checked yet (the rules reference downloads with content)</small>}
         {n > 0 && <span className="chev">{open ? "▴" : "▾"}</span>}
@@ -125,6 +143,11 @@ export function RulesCheckView({
                   </button>
                 </>
               )}
+            </li>
+          ))}
+          {res.notes.map((f, i) => (
+            <li key={`n${i}`} className="muted">
+              <b>{f.rule}:</b> {f.detail}
             </li>
           ))}
           {res.content.map((f, i) => (

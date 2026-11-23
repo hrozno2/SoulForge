@@ -70,3 +70,19 @@ export const canLower = (rules: PointBuyRules, base: Record<AbilityId, number>, 
 export function clampBase(rules: PointBuyRules, base: Record<AbilityId, number>): Record<AbilityId, number> {
   return Object.fromEntries(ABILITY_IDS.map((a) => [a, Math.max(rules.min, Math.min(rules.max, base[a]))])) as Record<AbilityId, number>;
 }
+
+/**
+ * Points of the budget not spent, for a notice: unspent points are within the rules, but rarely meant. 0 for another
+ * method, and where the scores are already outside the rules (overspent, or a score out of range): that is a finding
+ * of its own.
+ */
+export function unspentPoints(ch: {
+  abilityMethod: string;
+  abilityBase: Record<AbilityId, number>;
+  pointBuy?: Partial<PointBuyRules>;
+}): number {
+  if (ch.abilityMethod !== "pointbuy") return 0;
+  const rules = normalizeRules(ch.pointBuy);
+  if (ABILITY_IDS.some((a) => ch.abilityBase[a] < rules.min || ch.abilityBase[a] > rules.max)) return 0;
+  return Math.max(0, rules.budget - spent(rules, ch.abilityBase));
+}

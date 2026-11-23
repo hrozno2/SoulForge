@@ -42,3 +42,23 @@ describe("point buy", () => {
     expect(clampBase(normalizeRules({ min: 10, max: 14 }), all(8)).dexterity).toBe(10);
   });
 });
+
+// Chris, 2026-11-23: point buy with points left over gets a notice (legal, but probably not meant).
+describe("unspent point buy points", () => {
+  const base = (v: number) => ({ strength: v, dexterity: v, constitution: v, intelligence: v, wisdom: v, charisma: v });
+  it("counts what is left of the budget, by the table's own rules when set", async () => {
+    const { unspentPoints } = await import("./pointBuy");
+    expect(unspentPoints({ abilityMethod: "pointbuy", abilityBase: base(8) })).toBe(27);
+    expect(unspentPoints({ abilityMethod: "pointbuy", abilityBase: { ...base(8), strength: 15, dexterity: 15, constitution: 15 } })).toBe(
+      0,
+    );
+    expect(unspentPoints({ abilityMethod: "pointbuy", abilityBase: base(8), pointBuy: { budget: 30 } })).toBe(30);
+  });
+  it("says nothing for another method, an overspent budget or a score outside the range", async () => {
+    const { unspentPoints } = await import("./pointBuy");
+    expect(unspentPoints({ abilityMethod: "standard", abilityBase: base(8) })).toBe(0);
+    expect(unspentPoints({ abilityMethod: "manual", abilityBase: base(8) })).toBe(0);
+    expect(unspentPoints({ abilityMethod: "pointbuy", abilityBase: base(15) })).toBe(0);
+    expect(unspentPoints({ abilityMethod: "pointbuy", abilityBase: { ...base(8), strength: 18 } })).toBe(0);
+  });
+});

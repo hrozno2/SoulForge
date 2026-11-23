@@ -1152,7 +1152,10 @@ function Scores({ r, ch, set }: { r: Resolved; ch: Character; set: SetCharacter 
       <p className="board-method-note">
         {method === "pointbuy" && (
           <>
-            <span className={spent > rules.budget ? "warn" : ""}>
+            <span
+              className={spent > rules.budget ? "warn" : spent < rules.budget ? "unspent" : ""}
+              title={spent < rules.budget ? "Points you have not spent yet" : undefined}
+            >
               <b>{rules.budget - spent}</b> of {rules.budget} points left
             </span>
             <button className="linkish" onClick={() => setRulesOpen(true)}>

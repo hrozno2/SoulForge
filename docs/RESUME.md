@@ -1,5 +1,58 @@
 # Where we left off
 
+## 2026-11-23: stopped at the usage edge (weekly 73%, rule is 70%); what is left
+
+Chris asked to continue the plan and for a report of what is left. Usage was past the stop rule, so nothing was built;
+this is the full list. State: main at "A list's filters stay until the player clears them" (CI green, Soul Forge Test
+rebuilt from it). v0.27.0 is the release; the filter fix is the only change after it.
+
+Can be done without Chris, in plan order:
+1. A patch release for the filter fix, if Chris wants it out (`caffeinate -i node scripts/release.mjs patch`).
+2. Audit E2, the rest (docs/audit/text-rules.md has the list): reader by reader, 5e.tools' data first and the text as
+   the fallback; a gate listing every element where data and text disagree (start with limited uses and their rest,
+   35 elements where both speak, and a feature's save DC, 33); counts for the 11 readers outside textMechanics.ts.
+3. Audit E6, second half, step one of two: add the `portraits` store (database version 8, only adding a store) and
+   READ a portrait from it when the record has none; keep writing the record's field. The release after that one
+   moves the writing. Never the other order: an older build must not open a character without its picture.
+4. E3.3 importers: Roll20 rebuilt on BetterR20's scripts (source in ~/.soulforge-test/betterr20-src, analyse first);
+   Foundry import of Plutonium-made actors (~/.soulforge-test/plutonium, analyse first); every import showing a
+   list of what came across. The four Eleanor files already import as saved.
+5. E3.5 homebrew as a first-class path on the Soul Forge additions machinery (the Guiding Hand spell would be the
+   first, once Chris says homebrew it).
+6. C6.3 card windows, never verified item by item: Done instead of x; double-click the title bar to shrink; a
+   full-screen focus button; the title bar always reachable when dragged out; dragging onto the Bag of Holding;
+   every "i" opening in a floating window. Check each in the browser, build what is missing.
+7. Loose ends from this stretch:
+   - mixed content only: an EFA Artificer's Mending shows on its own "Tinker's Magic" casting line (same spells, same
+     DC); find which change did it and whether the Artificer line is the better place;
+   - the sheet lists "Blindsight 30 ft" twice for a character with two sources of blindsight (Feral Senses and Blind
+     Fighting): one line, the larger range;
+   - the import snapshots for the 5etools and srd sets were not re-run after this stretch's content fixes (only the
+     default and "both" sets were); run `-t "imported characters"` with RULES_CONTENT=5etools and =srd and read any
+     change before accepting it;
+   - Aurora-only sweep rows, not gated: the 2014 Custom Background's forced picks (12 rows), City Watch's
+     Investigator variant with three skills, a few Plane Shift subraces;
+   - the packaged app has not been seen converting in the worker: after a content update, the log's "content" line
+     says "converted in a worker" or "on the main thread" (it falls back by itself);
+   - what emptied /Applications/SoulForge.app on 18 November was not found (reinstalled from the cask as 0.27.0).
+8. E5 step 2 (screens re-drawing): only if a profile shows a need. Measured on this Mac at 8 to 15 ms a change, under
+   one frame, so nothing was memoized.
+9. A0.1, standing: the Plutonium cross-check for every engine area, more characters built in both.
+
+Waiting on Chris:
+- D5: two weeks of testing Soul Forge Test with "5e.tools only" on, and five clean `full-check --no-aurora` runs
+  (the full check runs only on request). Then D7: dropping Aurora from the release app.
+- Guiding Hand: homebrew it, or leave it as text.
+- The point-buy unspent warning: wanted or not.
+- A real Roll20 2024-sheet file, to build that export.
+- Linux numbers from the CachyOS machine (C5.4 window drawing, C5.6 lag, E3.2): whether it has NVIDIA, and a
+  measurement there.
+- Characters of his the rules check flags (Talaan Istodaewl, Indigo Bones, Waldrom Brahms, Drago: a 2024 species with
+  a 2014 background and no increases; Carl Sneakers: two cantrips off the Bard list; Xarthian: more held than two
+  hands hold). His to fix or keep.
+- Whether filters should also survive a restart (they last while the app is open).
+
+
 ## 2026-11-21: filters stay (Chris)
 
 A list's filters were wiped whenever a card was slotted, replaced or removed, because each list kept them in itself

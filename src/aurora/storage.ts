@@ -2,7 +2,8 @@ import type { Character } from "./character";
 import type { FileCache, SourceConfig } from "./sources";
 
 const DB_NAME = "charforge";
-const DB_VERSION = 7;
+/** 8 (2026-11-24): the `portraits` store, audit E6. A version only ever adds stores (see the VersionError path). */
+export const DB_VERSION = 8;
 
 /**
  * One connection for the session (the audit's S4: every read and write opened its own and none was closed, and Home
@@ -56,6 +57,8 @@ function openNew(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains("backups")) db.createObjectStore("backups");
       // Small downloaded reference data, by key (the condensed 5e.tools rules reference).
       if (!db.objectStoreNames.contains("meta")) db.createObjectStore("meta");
+      // A character's picture by the character's id (audit E6): read when the record holds none.
+      if (!db.objectStoreNames.contains("portraits")) db.createObjectStore("portraits");
       // PDF bytes live in their own store so listing templates stays light.
       if (!db.objectStoreNames.contains("templateBytes")) {
         db.createObjectStore("templateBytes");
@@ -187,8 +190,47 @@ export interface CharacterRecord {
 export async function listCharacters(): Promise<CharacterRecord[]> {
   const db = await openDb();
   const all = (await wrap(db.transaction("characters").objectStore("characters").getAll())) as CharacterRecord[];
+  // Audit E6, step one: a record with no picture gets the one kept for its id in the portraits store.
+  const bare = all.filter((r) => r.data && !r.data.portrait);
+  if (bare.length && db.objectStoreNames.contains("portraits")) {
+    const store = db.transaction("portraits").objectStore("portraits");
+    const kept = await Promise.all(bare.map((r) => wrap(store.get(r.id)) as Promise<unknown>));
+    bare.forEach((r, i) => {
+      const p = kept[i];
+      if (typeof p === "string" && p) r.data = { ...r.data, portrait: p };
+    });
+  }
   return all.sort((a, b) => b.updated - a.updated);
 }
+
+/**
+ * Pictures kept apart from the character records (audit E6: a portrait is a long data URL that rides along in every
+ * autosave, backup and quick-recovery copy). Step one of two, 2026-11-24: the store exists and is READ; the record's
+ * own field is still what is written, so a build before this one never opens a character without its picture. The
+ * release after the one that carries this moves the writing here.
+ */
+export const portraitStore = {
+  async get(id: string): Promise<string | undefined> {
+    const db = await openDb();
+    if (!db.objectStoreNames.contains("portraits")) return undefined;
+    const p = (await wrap(db.transaction("portraits").objectStore("portraits").get(id))) as unknown;
+    return typeof p === "string" && p ? p : undefined;
+  },
+  async put(id: string, dataUrl: string): Promise<void> {
+    const db = await openDb();
+    if (!db.objectStoreNames.contains("portraits")) return;
+    const tx = db.transaction("portraits", "readwrite");
+    tx.objectStore("portraits").put(dataUrl, id);
+    await done(tx);
+  },
+  async remove(id: string): Promise<void> {
+    const db = await openDb();
+    if (!db.objectStoreNames.contains("portraits")) return;
+    const tx = db.transaction("portraits", "readwrite");
+    tx.objectStore("portraits").delete(id);
+    await done(tx);
+  },
+};
 
 export async function saveCharacterRecord(rec: CharacterRecord): Promise<void> {
   const db = await openDb();

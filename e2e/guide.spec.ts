@@ -90,7 +90,11 @@ test("the guide starts from the menu too, and its marks go when it is closed", a
   await expect(coach).toContainText("Pick a class");
   await page.locator(".board-acc-head", { hasText: "Class" }).click();
   await expect(page.locator(".board-acc.open .guide-mark").first()).toBeVisible();
+  // While the guide runs the list holds the free 2024 rules only, and says what waits behind it.
+  const count = page.locator(".board-acc.open .count");
+  await expect(count).toContainText(/\d+ more once the guide is closed/);
   await coach.getByRole("button", { name: "Close the guide" }).click();
   await expect(page.locator(".guide-mark")).toHaveCount(0);
+  await expect(count).not.toContainText("once the guide is closed");
   await context.close();
 });

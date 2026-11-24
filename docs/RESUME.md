@@ -76,6 +76,33 @@ Also done that night, after G:
 - CI failed once on the E2 commit: the test helper's level prompt was lost while the page settled on a slow
   runner; e2e/helpers.ts randomCharacter now opens it again.
 
+- The guide's last piece: while it runs, the lists of classes, species and backgrounds show the free 2024 rules
+  only (guideMarks.ts guideScoped), and the count line says how many more wait.
+
+- The second Aurora-free full check (7fdfd59, seed 214019780, in ../charforge-board) FAILED on two real faults in
+  multiclass characters, both fixed with tests (docs/NO-AURORA-RUNS.md has the line; clean runs in a row: 0):
+  - engine.ts multiclassCasterLevel: beside a caster the rules do not know (a homebrew Monk subclass), a known
+    class's share stated by its subclass ("Eldritch Knight") was counted twice. Now told by the casting line's name
+    and by the class the stating element sits under. Tests in multiclassSlots.test.ts.
+  - textMechanics.ts applyTextUses: a count read from a feature's own table by class level now has a stat of the
+    feature's own (its id), not one shared by name. A 2024 Soulknife 6 beside a Tasha's Psi Warrior had 8 dice
+    for 6. Test in energyDice.test.ts.
+  - Left as it is, on purpose: features that share a count by name through a formula or a plain number (36 names
+    in the 5e.tools set; almost all are the 2014 and 2024 versions of one feature, which one character cannot hold
+    together). Channel Divinity is shared between Cleric and Paladin on purpose (the multiclass rule gives one
+    pool). Not checked yet: whether a Cleric/Paladin shows the right number, and "Channel Divinity: Harness Divine
+    Power" for the same pair.
+  - If these are committed, the gates passed; the next Aurora-free run then needs to come up clean.
+
+- The saved-sheets gate (src/engine/timeline.diff.test.ts) picked its 400 characters by position in
+  ~/.soulforge-test/runs, so every run that added files moved the sample onto snapshot entries nobody had compared
+  since October. After the full check it showed 2 "changes", both old corrections. Now it compares the characters
+  the snapshot holds (the same ones every time) and accepting keeps only what was compared. 67 stale entries were
+  refreshed: 51 in the casting lines' DCs, 10 in initiative, the rest in scores past 20 and one AC. They are the same
+  on 7fdfd59 and on the working tree (compared in ../charforge-board), so none comes from today's fixes; I did not
+  read each of the 67 against the rules. The old snapshot is sheets.before-2026-11-24b.json (1266 entries; the new
+  one holds 400). RULES_DIFF_SHOW=n prints more than 20 changes.
+
 Next, in order: E3.3 waits for those files; E3.5 homebrew waits for Chris; the next Aurora-free run is Friday 01:30 (it runs in this folder: no source
 edits while it runs; long checks can run in the worktree ../charforge-board). One top-bar e2e test failed
 once in a gates run that took 19.7 minutes instead of 3 (a slow machine); it passes alone and in every rerun since.

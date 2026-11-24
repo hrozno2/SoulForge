@@ -1,4 +1,4 @@
-import { isGuideMarked, useGuideMarks } from "./guideMarks";
+import { guideScoped, isGuideMarked, useGuideMarks, useGuideRunning } from "./guideMarks";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { flyInto } from "./flight";
 import type { AElement } from "../aurora/types";
@@ -307,7 +307,7 @@ const ITEM_ICON: Record<string, (p: { size?: number }) => React.ReactNode> = {
 export const dragMime = (type: string) => `application/x-sf-${type.toLowerCase().replace(/[^a-z]/g, "")}`;
 
 export function Browse({
-  items: allItems,
+  items: givenItems,
   type,
   chosen,
   onPick: pickProp,
@@ -346,6 +346,10 @@ export function Browse({
   const [shown, setShown] = useState(perPage);
   const [active, setActive] = useState<Record<string, string>>({});
   const chosenSet = useMemo(() => new Set(chosen), [chosen]);
+  // While the guided first character runs, classes, species and backgrounds show the free 2024 rules only.
+  const guideOn = useGuideRunning();
+  const allItems = useMemo(() => (guideOn ? guideScoped(givenItems, chosenSet) : givenItems), [guideOn, givenItems, chosenSet]);
+  const guideHides = givenItems.length - allItems.length;
   // Playtest content not supported yet shows with a "Coming soon" lock and can never be picked (comingSoon.ts).
   const disabledReason = useMemo(() => {
     const anySoon = allItems.some((e) => e.comingSoon);
@@ -548,6 +552,7 @@ export function Browse({
       <p className="muted count">
         {groups.length} shown{filtered.length !== groups.length ? `, ${filtered.length} versions` : ""}
         {hidden > 0 ? `, ${hidden} hidden by what this table uses` : ""}
+        {guideHides > 0 ? `, ${guideHides} more once the guide is closed (it shows the free 2024 rules)` : ""}
         {!showAll && (
           <>
             {" · "}

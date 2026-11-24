@@ -30,7 +30,17 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "diff")(
     const files = walkDir(join(CACHE!, "runs"), (p) => p.endsWith("-character.json") && !/import_/.test(p)).sort();
     const max = Number(process.env.RULES_DIFF_MAX) || 400;
     const step = Math.max(1, Math.floor(files.length / max));
-    const picked = files.filter((_, i) => i % step === 0).slice(0, max);
+    // The same characters every time: the ones the snapshot holds, while their files exist. Picked by position
+    // alone, the sample moved whenever a run added files, and compared sheets nobody had read since an older fix
+    // (two "changes" on 2026-11-24 that were weeks-old corrections).
+    const snapshotPath = join(CACHE!, "engine", "sheets.json");
+    const held: Record<string, unknown> = existsSync(snapshotPath) ? JSON.parse(readFileSync(snapshotPath, "utf8")) : {};
+    const keyOf = (f: string) => f.split("/").slice(-3).join("/");
+    const known = files.filter((f) => keyOf(f) in held).slice(0, max);
+    const fresh = files.filter((f) => !(keyOf(f) in held));
+    const picked = known.length
+      ? [...known, ...fresh.filter((_, i) => i % Math.max(1, Math.floor(fresh.length / max)) === 0).slice(0, max - known.length)]
+      : files.filter((_, i) => i % step === 0).slice(0, max);
     const now: Record<string, unknown> = {};
     const illegal: string[] = [];
     let ms = 0;
@@ -68,12 +78,13 @@ it.skipIf(!CACHE || process.env.RULES_TIER !== "diff")(
     const changed = Object.keys(now)
       .filter((k) => k in was && JSON.stringify(was[k]) !== JSON.stringify(now[k]))
       .map((k) => `${k}: ${JSON.stringify(was[k])} -> ${JSON.stringify(now[k])}`);
-    if (!existsSync(path) || process.env.RULES_SNAPSHOT) writeFileSync(path, JSON.stringify({ ...was, ...now }, null, 2));
+    // Accepting keeps only what was compared: an entry no run reads any more would go stale unseen.
+    if (!existsSync(path) || process.env.RULES_SNAPSHOT) writeFileSync(path, JSON.stringify(now, null, 2));
     writeFileSync(join(dir, "illegal-picks.txt"), illegal.join("\n"));
     console.log(
       `DIFF characters ${picked.length}; ${Math.round(ms)} ms; sheets changed ${changed.length}; picks the rules rule out ${illegal.length}`,
     );
-    for (const c of changed.slice(0, 20)) console.log(`DIFF changed ${c}`);
+    for (const c of changed.slice(0, Number(process.env.RULES_DIFF_SHOW) || 20)) console.log(`DIFF changed ${c}`);
     if (!process.env.RULES_SNAPSHOT) expect(changed).toEqual([]);
   },
   3600000,

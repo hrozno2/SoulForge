@@ -716,6 +716,10 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
   let unknown = false;
   const knownNames: string[] = [];
   const knownIds = new Set<string>();
+  // The known classes' casting lines by name and by class: a subclass states its class's share under its own name
+  // ("Eldritch Knight" for a Fighter), which is that class's share, not another caster's.
+  const knownLines: string[] = [];
+  const knownRoots = new Set<string>();
   for (const e of byOwner.values()) {
     const cls = reg?.get(e.owner);
     const name = lc(cls?.name ?? e.owner.match(/CLASS_([A-Z]+)$/i)?.[1] ?? e.name);
@@ -724,6 +728,8 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
     if (known) {
       knownNames.push(name);
       knownIds.add(e.owner);
+      knownLines.push(lc(e.name));
+      knownRoots.add(`class:${e.owner}`);
       if (cls?.multiclass?.id) knownIds.add(cls.multiclass.id);
     }
     if (FULL_CASTERS.has(name)) total += e.level;
@@ -748,8 +754,12 @@ export function multiclassCasterLevel(pass: Pass, reg?: ARegistry): number {
   );
   if (parts?.length) {
     // By the element's id first (the class or its multiclass block), by name where a feature of the class states it.
+    const rootOf = new Map((pass.active ?? []).map((a) => [a.el.id, a.root]));
     const fromKnown = (p: { from: string; fromId?: string }) =>
-      (!!p.fromId && knownIds.has(p.fromId)) || knownNames.some((n) => lc(p.from).includes(n)) || /spellcasting|pact magic/i.test(p.from);
+      (!!p.fromId && (knownIds.has(p.fromId) || knownRoots.has(rootOf.get(p.fromId) ?? ""))) ||
+      knownNames.some((n) => lc(p.from).includes(n)) ||
+      knownLines.includes(lc(p.from)) ||
+      /spellcasting|pact magic/i.test(p.from);
     const stated = parts.filter((p) => !fromKnown(p)).reduce((t, p) => t + p.value, 0);
     return total + (stated > 0 ? stated : guessed);
   }

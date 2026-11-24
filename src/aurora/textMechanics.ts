@@ -300,12 +300,16 @@ export function applyTextUses(out: AElement[]): number {
     // The feature's own table of numbers by level comes first: the text beside it only points at the table.
     const table = tableUsesFromHtml(el.description ?? "");
     const max = table ? String(table[0][1]) : (usesFromText(text) ?? "1");
-    const name = `${el.name.toLowerCase()}:uses`;
-    if (el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase() === name)) {
+    const shared = `${el.name.toLowerCase()}:uses`;
+    if (el.rules.some((r) => r.kind === "stat" && r.name.toLowerCase() === shared)) {
       note("limited uses and their rest", el, false);
       continue;
     }
     note("limited uses and their rest", el, true);
+    // A count from the feature's own table goes by that class's level, so it is this feature's alone: under the
+    // shared name, another class's feature of the same name took or gave the higher count (a 2024 Soulknife 6 beside
+    // a Tasha's Psi Warrior had 8 Psionic Energy dice for 6).
+    const name = table ? `${el.id.toLowerCase()}:uses` : shared;
     // More at later levels, stated in the same text: "when you reach Fighter levels 7 (five dice total) and 15 (six
     // dice total)".
     const steps = [...text.matchAll(/\b(\d+) \((\w+) (?:dice|uses) total\)/gi)].map(

@@ -4,7 +4,7 @@
  * the real cards. It watches the character and moves on when a step is done. Nothing is picked for the player, except
  * the recommended scores when they ask for them.
  */
-import { setGuideMarks } from "./guideMarks";
+import { setGuideMarks, setGuideRunning } from "./guideMarks";
 import { useEffect, useState } from "react";
 import type { Character } from "../aurora/character";
 import { stillToChoose, type Resolved } from "../aurora/engine";
@@ -61,6 +61,11 @@ export function GuideCoach({
         : step === "background"
           ? { type: "Background", names: guide?.backgrounds ?? ["Soldier"] }
           : null;
+  // While the guide is open the lists show the free 2024 rules only (guideMarks.ts).
+  useEffect(() => {
+    setGuideRunning(true);
+    return () => setGuideRunning(false);
+  }, []);
   const markKey = marked ? `${marked.type}:${marked.names.join("|")}` : "";
   useEffect(() => {
     setGuideMarks(marked);

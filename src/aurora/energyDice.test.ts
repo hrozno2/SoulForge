@@ -86,4 +86,35 @@ describe.skipIf(!C)("Psionic Energy dice on the sheet", () => {
     }
     expect(new Set(seen).size).toBe(4);
   }, 600000);
+
+  // Found by the Aurora-free full check of 2026-11-24 (seed 214019780, character 8232): a 2024 Rogue 6 (Soulknife) with
+  // four levels of a 2014 Fighter (Tasha's Psi Warrior) showed 8 dice on both features. The two features share a name,
+  // so they shared one count, and the higher (twice the proficiency bonus of a level-10 character) stood for both.
+  it("are counted for each feature on its own when two classes give a feature of that name", () => {
+    const reg = loadContentSet(C!, "5etools");
+    const ref: RefClass[] = JSON.parse(readFileSync(join(C!, "rules-ref.json"), "utf8"));
+    let ch = {
+      ...newCharacter(),
+      classes: [
+        { classId: "ID_5ET_CLASS_XPHB_ROGUE", level: 6 },
+        { classId: "ID_5ET_CLASS_PHB_FIGHTER", level: 4 },
+      ],
+    };
+    for (const [cls, sub] of [
+      ["ID_5ET_CLASS_XPHB_ROGUE", "ID_5ET_SUBCLASS_XPHB_ROGUE_SOULKNIFE"],
+      ["ID_5ET_CLASS_PHB_FIGHTER", "ID_5ET_SUBCLASS_TCE_FIGHTER_PSI_WARRIOR_FOR_PHB"],
+    ]) {
+      const slot = resolve(ch, reg).slots.find((s) => s.rule.type === "Archetype" && s.key.startsWith(`${cls}#`))!;
+      ch = { ...ch, selections: { ...ch.selections, [slot.key]: [sub] } };
+    }
+    ch = autoFill(ch, reg);
+    const sh = buildSheet(resolve(ch, reg));
+    expect(
+      sh.features
+        .filter((f) => f.name === "Psionic Power")
+        .map((f) => f.usage)
+        .sort(),
+    ).toEqual(["6/Long Rest (one on a Short Rest)", "8/Long Rest"]);
+    expect(checkCharacter(resolve(ch, reg), sh, ref).filter((f) => f.rule === "Feature uses by level")).toEqual([]);
+  }, 600000);
 });

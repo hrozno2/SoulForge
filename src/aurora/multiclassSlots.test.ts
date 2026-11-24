@@ -134,3 +134,47 @@ describe("a stated caster level beside classes the rules know", () => {
     ).toBe(9);
   });
 });
+
+describe("a known class beside a caster the rules here do not know", () => {
+  // Found by the Aurora-free full check of 2026-11-24 (seed 214019780, character 1708): a Fighter 3 (Eldritch Knight)
+  // with a Monk 5 of a homebrew subclass that casts had caster level 3 (4/2 slots) for 2 (3 slots). The Eldritch
+  // Knight's stated share was read as the unknown caster's and counted beside the Fighter's own third.
+  const parts = [
+    { from: "Eldritch Knight", fromId: "SUB_EK", value: 1 },
+    { from: "Warrior of the Mystic Arts", fromId: "SUB_MA", value: 1 },
+  ];
+  const make = (active: { el: { id: string }; root: string }[]) =>
+    ({
+      stats: {
+        get: (k: string) => ({ "eldritch knight:spellcasting:slots:1": 2, "mystic arts:spellcasting:slots:1": 3 })[k] ?? 0,
+        parts: () => parts,
+      },
+      active,
+      spellcasting: new Map(
+        (
+          [
+            ["Eldritch Knight", "ID_5ET_CLASS_XPHB_FIGHTER", 3],
+            ["Mystic Arts", "ID_5ET_CLASS_XPHB_MONK", 5],
+          ] as const
+        ).map(([name, owner, level]) => [name.toLowerCase(), { name, owner, level, ability: "", prepare: true, lists: [] }]),
+      ),
+    }) as unknown as P;
+  const reg = {
+    get: (id: string) => ({ name: /FIGHTER/.test(id) ? "Fighter" : "Monk", source: "Player's Handbook (2024)" }),
+  } as unknown as Parameters<typeof multiclassCasterLevel>[1];
+  it("counts the known class's share once, told by the casting line's name", () => {
+    expect(multiclassCasterLevel(make([]), reg)).toBe(2);
+  });
+  it("counts it once, told by the class the stating element sits under", () => {
+    parts[0].from = "Spell Knight";
+    expect(
+      multiclassCasterLevel(
+        make([
+          { el: { id: "SUB_EK" }, root: "class:ID_5ET_CLASS_XPHB_FIGHTER" },
+          { el: { id: "SUB_MA" }, root: "class:ID_5ET_CLASS_XPHB_MONK" },
+        ]),
+        reg,
+      ),
+    ).toBe(2);
+  });
+});

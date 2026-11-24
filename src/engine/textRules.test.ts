@@ -13,6 +13,9 @@ import { walkDir } from "./testContent";
 
 const C = process.env.SOULFORGE_RULES;
 
+/** Disagreements between data and text that have been looked at (docs/audit/text-rules.md lists them). */
+const DISAGREEMENTS = 0;
+
 /** Readers of prose outside the converter's text passes, listed by hand: where each lives and what it decides. */
 const ELSEWHERE: [string, string, string][] = [
   ["a spell's casting ability from a feature's text", "`src/aurora/sheet.ts`, `buildCasting`", "5e.tools `additionalSpells.ability`"],
@@ -46,6 +49,7 @@ it.skipIf(!C || process.env.RULES_TIER !== "text-rules")(
       if (!/index\.json$/.test(rel) && !rel.startsWith("bestiary")) json[rel] = JSON.parse(readFileSync(f, "utf8"));
     }
     textTally.rows.clear();
+    textTally.differs.length = 0;
     textTally.on = true;
     let total = 0;
     try {
@@ -53,6 +57,7 @@ it.skipIf(!C || process.env.RULES_TIER !== "text-rules")(
     } finally {
       textTally.on = false;
     }
+    const differs = [...new Set(textTally.differs)].sort();
     const rows = [...textTally.rows].sort((a, b) => b[1].kept + b[1].had - (a[1].kept + a[1].had));
     const out = [
       "# Rules read from prose (audit E2)",
@@ -71,12 +76,26 @@ it.skipIf(!C || process.env.RULES_TIER !== "text-rules")(
       "| --- | --- | --- |",
       ...ELSEWHERE.map((r) => `| ${r.join(" | ")} |`),
       "",
-      "Open (the rest of E2): reader by reader, data first and text as the fallback, with a gate that lists every element",
-      "where the two disagree; counts for the readers elsewhere.",
+      "## Where the data and the text disagree",
+      "",
+      "Every reader takes the data first and the text only where the data is silent. Where both speak and say",
+      "different things, the data stays and the element is listed here for a person to judge. The gate holds the",
+      `count at ${DISAGREEMENTS}: a new one fails the run until it is judged (fixed at its cause, or the count raised with a reason).`,
+      "",
+      "| Reader | Element | The text says | The data says |",
+      "| --- | --- | --- | --- |",
+      ...differs.map((d) => {
+        const [reader, el, text, data] = d.split(" | ");
+        return `| ${reader} | ${el} | ${text.replace(/^text: /, "")} | ${data.replace(/^data: /, "")} |`;
+      }),
+      "",
+      "Open (the rest of E2): counts for the readers elsewhere.",
       "",
     ];
     writeFileSync(join("docs", "audit", "text-rules.md"), out.join("\n"));
     expect(rows.length).toBeGreaterThan(8);
+    // The gate: no disagreement between the data and the text that nobody has looked at.
+    expect(differs.length, differs.slice(0, 20).join("\n")).toBeLessThanOrEqual(DISAGREEMENTS);
   },
   600000,
 );

@@ -32,7 +32,27 @@ const ABILITY = "strength|dexterity|constitution|intelligence|wisdom|charisma";
 export const textTally = {
   on: false,
   rows: new Map<string, { kept: number; had: number; samples: string[] }>(),
+  /**
+   * Where the data and the text both state a fact and state it differently: one line each. The data decides (the
+   * readers leave it alone); the list is for a person to judge which of the two is wrong (the gate in
+   * src/engine/textRules.test.ts holds its length).
+   */
+  differs: [] as string[],
 };
+/** The data and the text say different things about one fact of one element. */
+function noteDiffers(reader: string, el: { name: string; type: string; source?: string }, text: string, data: string): void {
+  if (textTally.on) textTally.differs.push(`${reader} | ${el.name} (${el.type}, ${el.source ?? "?"}) | text: ${text} | data: ${data}`);
+}
+/** What a usage line says about getting uses back, reduced to its kind, so two wordings of one rule agree. */
+function restKind(usage: string): string {
+  const u = usage.toLowerCase();
+  if (/one on a short rest/.test(u)) return "long, one on a short";
+  if (/short or long|short rest or long|short\/long/.test(u)) return "short";
+  if (/short/.test(u)) return "short";
+  if (/long/.test(u)) return "long";
+  if (/dawn|day/.test(u)) return "day";
+  return u.replace(/^.*\//, "").trim();
+}
 /** A pass that only reports how many elements it changed. */
 export function noteCount(reader: string, n: number): number {
   if (textTally.on && n) {
@@ -273,6 +293,8 @@ export function applyTextUses(out: AElement[]): number {
     if (!rest) continue;
     if (hasUsage) {
       note("limited uses and their rest", el, false);
+      const data = el.sheet?.usage || el.sheet?.descriptions?.find((d) => d.usage)?.usage || "";
+      if (restKind(data) !== restKind(rest)) noteDiffers("limited uses and their rest", el, rest, data);
       continue;
     }
     // The feature's own table of numbers by level comes first: the text beside it only points at the table.
@@ -384,7 +406,14 @@ export function applyTextDc(out: AElement[]): number {
     const dc = dcFromText(plain(el.description ?? ""));
     if (!dc) continue;
     note("a feature's save DC", el, !hasDc);
-    if (hasDc) continue;
+    if (hasDc) {
+      const squash = (v: string) => v.toLowerCase().replace(/\s+/g, "");
+      const data = el.rules
+        .filter((r) => r.kind === "stat" && r.name.toLowerCase().endsWith(":dc"))
+        .map((r) => (r as { value: string }).value);
+      if (!data.some((v) => squash(v) === squash(dc))) noteDiffers("a feature's save DC", el, dc, data.join(" / "));
+      continue;
+    }
     el.rules = [...el.rules, { kind: "stat", name, value: dc, bonus: "text dc" } as ARule];
     n++;
   }
@@ -602,15 +631,18 @@ export function checkBonusFromText(text: string): ARule[] {
   // Or one skill's: "whenever you make a Charisma (Persuasion) check, ... equal to your Wisdom modifier" (the Samurai's
   // Elegant Courtier).
   const m = new RegExp(
-    `whenever you make an? (${ABILITY})(?: \\(([a-z ]+)\\))? check, you gain a bonus to the check equal to your (${ABILITY}) modifier`,
+    `whenever you make an? (${ABILITY})(?: \\(([a-z ]+)\\))? check, you gain a bonus to the check equal to your (${ABILITY}) modifier( \\(minimum of \\+?1\\))?`,
     "i",
   ).exec(text);
   if (!m) return [];
   const of = m[1].toLowerCase();
   const only = m[2]?.toLowerCase().trim();
-  return Object.entries(SKILL_ABILITY)
-    .filter(([skill, a]) => a === of && (!only || skill === only))
-    .map(([skill]) => stat(`${skill}:misc`, `${m[3].toLowerCase()}:modifier`));
+  return (
+    Object.entries(SKILL_ABILITY)
+      .filter(([skill, a]) => a === of && (!only || skill === only))
+      // "(minimum of +1)": never a penalty, written as the Foundry data writes it.
+      .map(([skill]) => stat(`${skill}:misc`, m[4] ? `(max(1,{${m[3].toLowerCase()}:modifier}))` : `${m[3].toLowerCase()}:modifier`))
+  );
 }
 
 /** Attuning to more items, and ability scores raised past 20 at the top of a class: totals the sheet shows. */
@@ -718,6 +750,13 @@ export function applyTextStats(
     const read = (reader: string, found: ARule[]): ARule[] => {
       const kept = found.filter(isNew);
       if (found.length) note(reader, el, kept.length > 0);
+      // A statistic both state: the same name with another value is a disagreement (the data's stays).
+      for (const f of found)
+        if (f.kind === "stat" && f.name !== "ac:calculation" && !kept.includes(f)) {
+          const same = el.rules.filter((r) => r.kind === "stat" && r.name.toLowerCase() === f.name.toLowerCase()) as { value: string }[];
+          if (same.length && !same.some((r) => r.value.toLowerCase() === f.value.toLowerCase()))
+            noteDiffers(reader, el, `${f.name} ${f.value}`, same.map((r) => `${f.name} ${r.value}`).join(" / "));
+        }
       return kept;
     };
     const add = [

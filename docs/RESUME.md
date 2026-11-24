@@ -48,6 +48,15 @@ Also done that night, after G:
   "Guide me through a first character". Still not built: hiding non-SRD content while the guide runs.
 - Loose end: a sense two features give is listed once, at its longest range (src/aurora/senses.ts).
 
+2026-11-24, morning:
+- The first Aurora-free full check FAILED on time only: five unit tests stalled about 7 minutes behind the content
+  suites (docs/NO-AURORA-RUNS.md). Fuzz limits now count processor time (fuzzKit.ts workMs), and the full check's
+  unit step runs a failed test once more (--retry=1). Clean runs in a row: 0 of the 5 that D5 asks for.
+- Audit E2, item 4: the readers already took data first; the missing part was the list of disagreements. It is in
+  docs/audit/text-rules.md with a gate at 0 (RULES_TIER=text-rules, now a step of the full check). It found one
+  real fault: "(minimum of +1)" was not read, so Elegant Courtier and the 2014 Otherworldly Glamour could give a
+  penalty at low Wisdom. Fixed in checkBonusFromText. Left of E2: counts for the readers elsewhere.
+
 Next, in order: read the first Aurora-free run's result (docs/NO-AURORA-RUNS.md; it runs in this folder, so no
 source edits while it runs); the import snapshots may change with the senses fix (read before accepting); item 4
 (audit E2's rest); item 5 (portraits store); item 6; the other loose ends in item 7. One top-bar e2e test failed

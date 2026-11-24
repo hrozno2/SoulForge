@@ -77,6 +77,7 @@ for (const [name, tier, file] of [
   ["the SRD bundle", "srd-bundle", "src/aurora/srdBundle.test.ts"],
   ["against the SRD", "srd-api", "src/engine/srdApi.test.ts"],
   ["every source", "sources", "src/engine/sources.test.ts"],
+  ["data against text", "text-rules", "src/engine/textRules.test.ts"],
   ["saved characters", "diff", "src/engine/timeline.diff.test.ts src/engine/determinism.test.ts"],
   ["FastCharacter", "fastchar", "src/aurora/fastchar.test.ts"],
 ]) {

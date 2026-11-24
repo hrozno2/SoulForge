@@ -300,7 +300,41 @@ describe("a bonus to an ability's checks equal to another's modifier", () => {
       "performance:misc",
       "persuasion:misc",
     ]);
-    expect(rules.every((r) => (r as { value: string }).value === "wisdom:modifier")).toBe(true);
+    // "(minimum of +1)": a Wisdom of 8 still gives +1, never a penalty (found by the audit's disagreement list,
+    // 2026-11-24: 5e.tools' Foundry data had the minimum and the text reading did not).
+    expect(rules.every((r) => (r as { value: string }).value === "(max(1,{wisdom:modifier}))")).toBe(true);
+  });
+  it("gives +1 with a Wisdom of 8, through the engine", () => {
+    const [rule] = checkBonusFromText(
+      "Whenever you make a Charisma (Persuasion) check, you gain a bonus to the check equal to your Wisdom modifier (minimum of +1).",
+    );
+    const reg = new ARegistry();
+    reg.addElements([
+      {
+        id: "CLS",
+        name: "Tester",
+        type: "Class",
+        source: "T",
+        supports: [],
+        description: "",
+        compendiumHidden: false,
+        setters: { hd: { value: "d8", attrs: {} } },
+        rules: [rule],
+      },
+    ]);
+    reg.build();
+    const stats = (wisdom: number) =>
+      resolve(
+        {
+          ...newCharacter(),
+          abilityMethod: "manual",
+          abilityBase: { ...newCharacter().abilityBase, wisdom },
+          classes: [{ classId: "CLS", level: 1 }],
+        },
+        reg,
+      ).stats;
+    expect(stats(8).get("persuasion:misc")).toBe(1);
+    expect(stats(18).get("persuasion:misc")).toBe(4);
   });
   it("and onto one skill when the text names it (the Samurai's Elegant Courtier)", () => {
     const rules = checkBonusFromText(

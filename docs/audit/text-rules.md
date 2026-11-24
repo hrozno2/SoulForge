@@ -42,5 +42,13 @@ already held the same fact from data, 5e.tools' own fields or its Foundry side d
 | skill and expertise choices worded in a feature | `src/aurora/fivetools.ts`, `applyTextSkillChoices`, `applyTextExpertiseOnChoices` | Foundry side data |
 | starting equipment | `src/aurora/startingEquipment.ts`, `equipmentText`, `parseItems` | 5e.tools `startingEquipment` (already the source; the text is the converter's own) |
 
-Open (the rest of E2): reader by reader, data first and text as the fallback, with a gate that lists every element
-where the two disagree; counts for the readers elsewhere.
+## Where the data and the text disagree
+
+Every reader takes the data first and the text only where the data is silent. Where both speak and say
+different things, the data stays and the element is listed here for a person to judge. The gate holds the
+count at 0: a new one fails the run until it is judged (fixed at its cause, or the count raised with a reason).
+
+| Reader | Element | The text says | The data says |
+| --- | --- | --- | --- |
+
+Open (the rest of E2): counts for the readers elsewhere.

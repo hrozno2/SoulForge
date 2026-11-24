@@ -90,9 +90,9 @@ Also done that night, after G:
   - Left as it is, on purpose: features that share a count by name through a formula or a plain number (36 names
     in the 5e.tools set; almost all are the 2014 and 2024 versions of one feature, which one character cannot hold
     together). Channel Divinity is shared between Cleric and Paladin on purpose (the multiclass rule gives one
-    pool). Not checked yet: whether a Cleric/Paladin shows the right number, and "Channel Divinity: Harness Divine
-    Power" for the same pair.
-  - If these are committed, the gates passed; the next Aurora-free run then needs to come up clean.
+    pool). Checked 2026-11-24 on 5e.tools: 2014 Cleric 6 / Paladin 3 shows 2, Cleric 2 / Paladin 3
+    shows 1, 2024 Cleric 6 / Paladin 3 and Cleric 2 / Paladin 11 show 3; all as the multiclass rule reads.
+  - Committed as 78a6491 (gates passed, Soul Forge Test rebuilt). The Aurora-free run on it came up clean the same day (seed 223951090): 1 clean run in a row of the 5 that D5 asks for.
 
 - The saved-sheets gate (src/engine/timeline.diff.test.ts) picked its 400 characters by position in
   ~/.soulforge-test/runs, so every run that added files moved the sample onto snapshot entries nobody had compared

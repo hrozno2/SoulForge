@@ -73,8 +73,14 @@ export async function addTestContent(page: Page, opts: { keepSrd?: boolean } = {
 
 /** Makes a random character at the given level through the Home tab's level prompt. */
 export async function randomCharacter(page: Page, level = 3): Promise<void> {
-  await page.getByRole("button", { name: /random character/i }).click();
-  await page.getByLabel("Character level").fill(String(level));
+  // The button opens a level prompt. On a slow machine the page can still be settling after its content loads, and
+  // a prompt opened in that moment was lost once in CI (2026-11-24): open it again if it is not there.
+  const prompt = page.getByLabel("Character level");
+  await expect(async () => {
+    if (!(await prompt.isVisible())) await page.getByRole("button", { name: /random character/i }).click();
+    await expect(prompt).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  await prompt.fill(String(level));
   await page.getByRole("button", { name: "Create", exact: true }).click();
 }
 

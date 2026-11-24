@@ -589,6 +589,10 @@ test.describe("Soul Forge smoke tests", () => {
     await (await chooser).setFiles({ name: "ira.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(foundry)) });
     const report = page.getByRole("dialog", { name: /import report/i });
     await expect(report).toContainText("Mystery Trinket");
+    // What came across is listed too, folded away: the class, the species and the background the file named.
+    const came = report.locator("details", { hasText: "What came across" });
+    await came.locator("summary").click();
+    await expect(came.locator("li")).toContainText(["Warden", "Hollowfolk", "Wayfarer"]);
     await report.getByText("Close", { exact: true }).click();
     // The notice points to Import notes on Build, which shows the kept report and adds it to the journal.
     const notice = page.locator(".notice-toast");

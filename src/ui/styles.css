@@ -11105,3 +11105,17 @@ button.spell-count.prep.on {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+
+/* The import report's list of what came across */
+.ir-came {
+  margin: 0 0 10px;
+}
+.ir-came summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.ir-came ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+  columns: 2;
+}

@@ -59,6 +59,17 @@ export function ImportReport({
         </button>
         <h2>Imported {name || "the character"}</h2>
         <p className="muted">{res.matched.length} things matched your loaded content. Check these before you play:</p>
+        {res.matched.length > 0 && (
+          // What came across (E3.3): every import shows it, folded away so what needs checking stays on top.
+          <details className="ir-came">
+            <summary>What came across ({res.matched.length})</summary>
+            <ul>
+              {res.matched.map((m, i) => (
+                <li key={i}>{m}</li>
+              ))}
+            </ul>
+          </details>
+        )}
         {other.length > 0 && (
           <section className="ir-group bad">
             <h3>Not imported ({other.length})</h3>

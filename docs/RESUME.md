@@ -68,8 +68,15 @@ Also done that night, after G:
   no choice recorded no longer reads as the first or last of the three. 65 saved sheets changed, in their casting
   lines only, each read; the snapshot was accepted (old one: ~/.soulforge-test/engine/sheets.before-2026-11-24.json).
 
-Next, in order: the import snapshots after the casting-line fix (read before accepting); E3.3 importers (analysis
-first); E3.5 homebrew waits for Chris; the next Aurora-free run is Friday 01:30 (it runs in this folder: no source
+- Import snapshots after the casting-line fix: nine files changed on the four sets, in `numbers.dc` only (same-DC
+  lines merged; Pedro on 5e.tools 11 to 12, a species spell whose ability choice the file does not record now takes
+  the best of the three). Accepted; old ones kept as snapshots*.before-2026-11-24.
+- E3.3: the import report lists what came across, folded away. What E3.3 still needs is files from Chris: a
+  character saved by Roll20's own 2024 sheet, and an actor made by Plutonium (docs/BETTERR20.md, "Not verified").
+- CI failed once on the E2 commit: the test helper's level prompt was lost while the page settled on a slow
+  runner; e2e/helpers.ts randomCharacter now opens it again.
+
+Next, in order: E3.3 waits for those files; E3.5 homebrew waits for Chris; the next Aurora-free run is Friday 01:30 (it runs in this folder: no source
 edits while it runs; long checks can run in the worktree ../charforge-board). One top-bar e2e test failed
 once in a gates run that took 19.7 minutes instead of 3 (a slow machine); it passes alone and in every rerun since.
 

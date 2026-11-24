@@ -17,7 +17,7 @@ import { randomCharacter } from "../aurora/randomCharacter";
 import { planLegal } from "../aurora/makeLegal";
 import { checkStartingEquipment } from "../aurora/equipmentCheck";
 import { loadContentSet } from "./testContent";
-import { mutate, seeded, type Json } from "./fuzzKit";
+import { mutate, seeded, workMs, type Json } from "./fuzzKit";
 
 describe("the engine never breaks on a damaged character", () => {
   const reg = loadContentSet("", "srd");
@@ -47,7 +47,7 @@ describe("the engine never breaks on a damaged character", () => {
       let raw = JSON.parse(JSON.stringify(base)) as Json;
       const hits = 1 + Math.floor(rng() * 4);
       for (let h = 0; h < hits; h++) raw = mutate(raw, rng);
-      const t0 = performance.now();
+      const t0 = workMs();
       try {
         run(raw);
       } catch (e) {
@@ -57,7 +57,7 @@ describe("the engine never breaks on a damaged character", () => {
           broke.push(`#${i}: ${(e as Error).message.slice(0, 160)} @ ${((e as Error).stack ?? "").split("\n")[1]?.trim().slice(0, 120)}`);
         else broke.push(`#${i}`);
       }
-      slowest = Math.max(slowest, performance.now() - t0);
+      slowest = Math.max(slowest, workMs() - t0);
     }
     expect(broke.slice(0, 12)).toEqual([]);
     // A damaged character costs no more than a few seconds (a level of a million must not be walked).

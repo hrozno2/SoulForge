@@ -55,3 +55,13 @@ export function mutate(ch: Json, rng: () => number): Json {
   else parent[key] = NASTY[Math.floor(rng() * NASTY.length)];
   return copy;
 }
+
+/**
+ * The work this process has done, in milliseconds of processor time. A fuzz round's limit is against a hang (a cycle
+ * walked for ever), so it is measured in work done, not in time passed: in the full check every suite runs at once
+ * and a round that does a second of work can take minutes on the clock (it did on 2026-11-24, and failed the run).
+ */
+export const workMs = (): number => {
+  const u = process.cpuUsage();
+  return (u.user + u.system) / 1000;
+};

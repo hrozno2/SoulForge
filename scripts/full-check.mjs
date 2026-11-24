@@ -49,7 +49,10 @@ const run = (name, cmd, cmdArgs, env = {}) =>
 
 console.log(`Full check, seed ${seed}. Files: ${out}`);
 const steps = [];
-steps.push(await run("unit tests", "npx", ["vitest", "run"]));
+// With the cache every content suite runs too, all at once, for half an hour: a small test can stall for minutes
+// behind them and run out of its time (2026-11-17 and 2026-11-24 failed that way, with no wrong result). A test that
+// fails is run once more; a real failure fails both times.
+steps.push(await run("unit tests", "npx", ["vitest", "run", "--retry=1"]));
 steps.push(await run("loader gates", "npx", ["vitest", "run", "src/engine/load.test.ts", "--silent=false"]));
 if (!noAurora) steps.push(await run("rules check", "node", ["scripts/rules-check.mjs", seed]));
 const bigOut = join(out, "big");

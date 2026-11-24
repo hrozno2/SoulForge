@@ -16,7 +16,7 @@ import { checkCharacter } from "../aurora/rulesCheck";
 import { exportFoundry, exportRoll20 } from "../aurora/exportForeign";
 import { importForeignCharacter } from "../aurora/foreign";
 import { randomCharacter } from "../aurora/randomCharacter";
-import { mutate, seeded, type Json } from "./fuzzKit";
+import { mutate, seeded, workMs, type Json } from "./fuzzKit";
 import { loadContentSet } from "./testContent";
 
 describe("the importers never break on a damaged file", () => {
@@ -50,7 +50,7 @@ describe("the importers never break on a damaged file", () => {
       let raw = bases[i % bases.length];
       const hits = 1 + Math.floor(rng() * 4);
       for (let h = 0; h < hits; h++) raw = mutate(raw, rng);
-      const t0 = performance.now();
+      const t0 = workMs();
       try {
         run(raw);
       } catch (e) {
@@ -60,7 +60,7 @@ describe("the importers never break on a damaged file", () => {
           broke.push(`#${i}: ${(e as Error).message.slice(0, 160)} @ ${((e as Error).stack ?? "").split("\n")[1]?.trim().slice(0, 120)}`);
         else broke.push(`#${i}`);
       }
-      slowest = Math.max(slowest, performance.now() - t0);
+      slowest = Math.max(slowest, workMs() - t0);
     }
     expect(broke.slice(0, 12)).toEqual([]);
     expect(slowest).toBeLessThan(15000);

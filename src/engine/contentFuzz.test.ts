@@ -18,6 +18,7 @@ import { checkCharacter } from "../aurora/rulesCheck";
 import { exportFoundry, exportRoll20 } from "../aurora/exportForeign";
 import { randomCharacter } from "../aurora/randomCharacter";
 import { ARegistry } from "../aurora/registry";
+import { workMs } from "./fuzzKit";
 import type { AElement, ARule } from "../aurora/types";
 
 const seeded = (seed: number) => () => {
@@ -186,7 +187,7 @@ describe("the engine never breaks on damaged content", () => {
       let slowestWhat = "";
       for (let i = 0; i < N; i++) {
         const { what, run } = round(damages, rng);
-        const t0 = performance.now();
+        const t0 = workMs();
         try {
           run();
         } catch (e) {
@@ -195,7 +196,7 @@ describe("the engine never breaks on damaged content", () => {
               `#${i} [${what.join("; ")}]: ${(e as Error).message.slice(0, 140)} @ ${((e as Error).stack ?? "").split("\n")[1]?.trim().slice(0, 110)}`,
             );
         }
-        const took = performance.now() - t0;
+        const took = workMs() - t0;
         if (took > slowest) [slowest, slowestWhat] = [took, what.join("; ")];
       }
       expect(broke).toEqual([]);

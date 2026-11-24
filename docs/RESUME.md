@@ -38,10 +38,20 @@ All on main, each with tests; commits 9ab94de to the D7 commit. Nothing of it is
 With the release that carries D7: README.md still describes Aurora links and the element format as the app's
 content (lines 5, 13, 32, 158 to 176); rewrite those then, not before, since they describe v0.27.0 truthfully.
 
-Next, in order: read the first Aurora-free run's result; item 2's rest (fuzz damaged content, the importers, a time
-limit); item 3 (the guide's rest; the welcome text is done); items 4 to 7 below. One top-bar e2e test failed once in
-a gates run that took 19.7 minutes instead of 3 (a slow machine); it passes alone and in full reruns. If it comes
-back, look at it.
+Also done that night, after G:
+- Hardening, item 2's rest: src/aurora/elementShape.ts is the door every element passes into the registry (sound
+  ones untouched, wrong-shaped fields repaired, nameless things left out; all real content passes untouched).
+  src/engine/contentFuzz.test.ts damages content (cycles, dangling grants, impossible numbers, wrong shapes);
+  src/engine/importFuzz.test.ts damages Foundry and Roll20 files (4000 ran clean after the importer's choke points
+  were made tolerant: `each` and `text` in foreign.ts). Each test asserts a time limit per round.
+- The guide's rest (item 3): recommended cards carry "Guide's pick" in the lists (src/ui/guideMarks.ts); Menu has
+  "Guide me through a first character". Still not built: hiding non-SRD content while the guide runs.
+- Loose end: a sense two features give is listed once, at its longest range (src/aurora/senses.ts).
+
+Next, in order: read the first Aurora-free run's result (docs/NO-AURORA-RUNS.md; it runs in this folder, so no
+source edits while it runs); the import snapshots may change with the senses fix (read before accepting); item 4
+(audit E2's rest); item 5 (portraits store); item 6; the other loose ends in item 7. One top-bar e2e test failed
+once in a gates run that took 19.7 minutes instead of 3 (a slow machine); it passes alone and in every rerun since.
 
 ## 2026-11-23, evening: Chris's standing order for this stretch
 

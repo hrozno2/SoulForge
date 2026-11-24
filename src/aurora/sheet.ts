@@ -1,3 +1,4 @@
+import { senseLines } from "./senses";
 import { canonicalName, effectsOfKind } from "../engine/effects";
 import { conceptOf, conceptOfMarker } from "../engine/concepts";
 import type { AElement } from "./types";
@@ -908,18 +909,12 @@ export function buildSheet(r: Resolved): SheetData {
     weight: { carried: Math.round(carried * 10) / 10, capacity: s.get("strength") * 15 },
     attunement: { current: s.get("attunement:current"), max: s.get("attunement:max") },
     size: sizeEl?.el.name,
-    vision: r.active
-      .filter((a) => a.el.type === "Vision")
-      .map((a) => {
-        // Every sense's range from its statistic, so a feature that extends it shows (W3: only darkvision's was read,
-        // and "blindsight:range" changed nothing).
-        const sense = /^(darkvision|blindsight|tremorsense|truesight)\b/i.exec(a.el.name)?.[1];
-        // Without a statistic, the range its name gives ("Blindsight (10 ft.)"), so both providers' copies read alike.
-        const ft = sense
-          ? r.stats.get(`${sense.toLowerCase()}:range`) || Number(/\((\d+) ?(?:ft|feet)\.?\)/i.exec(a.el.name)?.[1] ?? 0)
-          : 0;
-        return sense && ft > 0 ? `${sense.charAt(0).toUpperCase()}${sense.slice(1).toLowerCase()} ${ft} ft` : a.el.name;
-      }),
+    // Every sense once, at its range from its statistic, so a feature that extends it shows (W3) and two sources of
+    // one sense are one line (senses.ts).
+    vision: senseLines(
+      r.active.filter((a) => a.el.type === "Vision").map((a) => ({ name: a.el.name })),
+      (sense) => r.stats.get(`${sense}:range`),
+    ),
     lists: r.slots
       .filter((x) => x.listItems && x.chosen.length)
       .map((x) => ({

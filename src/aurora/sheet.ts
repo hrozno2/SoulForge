@@ -307,16 +307,61 @@ function buildCasting(r: Resolved): CastingLine[] {
     for (const t of texts) {
       // Both ways the books write it: "your spellcasting ability for it is Charisma" and "Charisma is your
       // spellcasting ability for it" (the 2024 Player's Handbook).
+      // One ability named, not a choice among them: "Intelligence, Wisdom, or Charisma is your spellcasting ability
+      // (choose when you select this feat)" names none, and the choice made is the ability element under the giver
+      // (above). With no choice recorded the text is no answer (it read as the first or the last of the three).
       const m =
-        /spellcasting ability for (?:th(?:is|ese)[^.]*?|it)\s+is\s+(intelligence|wisdom|charisma)/i.exec(t) ??
-        /(intelligence|wisdom|charisma) is your spellcasting ability/i.exec(t);
+        /spellcasting ability for (?:th(?:is|ese)[^.]*?|it)\s+is\s+(intelligence|wisdom|charisma)(?!\s*,|\s+or\b)/i.exec(t) ??
+        /(?<!,\s|\bor\s)(intelligence|wisdom|charisma) is your spellcasting ability/i.exec(t);
       if (m) return lc(m[1]);
     }
     return undefined;
   };
+  // Whose a granted spell is: the class's own things lead up to the class; a species trait, a feat or a background on
+  // the way means the spell is theirs.
+  const OF_A_CLASS = /^(Class|Archetype|Class Feature|Archetype Feature|Class Feature Option|Optional Feature)$/;
+  const classOf = (fromId: string | undefined) => {
+    let id = fromId;
+    for (let step = 0; id && step < 8; step++) {
+      const el = r.reg.get(id);
+      if (!el || !OF_A_CLASS.test(el.type)) return undefined;
+      const entry = entries.find((e) => e.owner === id);
+      if (entry) return entry;
+      id = r.active.find((x) => x.el.id === id)?.from;
+    }
+    return undefined;
+  };
+  /**
+   * The casting entry a pick belongs to (castingOf), except that a spell from outside the class is not taken onto a
+   * class's line by being on its list when its giver names another ability: a Tiefling's Chill Touch cast with
+   * Intelligence is not a Warlock's Charisma cantrip (it showed there with the Warlock's DC until 2026-11-24).
+   */
+  const lineOf = (p: SpellPick): string | undefined => {
+    const line = castingOf(r, p);
+    if (!line || !p.granted || p.casting || !p.from || classOf(p.from)) return line;
+    const own = abilityOf(p.from);
+    const entry = entries.find((e) => lc(e.name) === line);
+    return own && entry && own !== lc(entry.ability ?? "") ? undefined : line;
+  };
+  // A spell a class's own feature gives (the Artificer's Tinker's Magic: "You know the Mending cantrip") is that
+  // class's spell: it goes on the class's line, unless the feature casts it with another ability.
+  // By the pick itself, not the spell: the same spell can come from a class feature and from a species trait.
+  const classLine = new Map<SpellPick, string>();
+  const ownerLine = (p: SpellPick): string | undefined => {
+    if (!p.from || !p.granted || p.casting) return undefined;
+    // Up from the giver to the class it belongs to (a feature, a subclass, a subclass's feature).
+    const entry = classOf(p.from);
+    if (!entry) return undefined;
+    const own = abilityOf(p.from);
+    return !own || own === lc(entry.ability ?? "") ? lc(entry.name) : undefined;
+  };
+  for (const p of r.spellPicks) {
+    const line = lineOf(p) ? undefined : ownerLine(p);
+    if (line) classLine.set(p, line);
+  }
   // Granted spells that no class line takes (Light Bearer's Light on a Paladin) always get a line of their own.
   const orphans = r.spellPicks.filter(
-    (p) => !castingOf(r, p) && (!entries.length || (p.from && abilityOf(p.from)) || (p.granted && !p.casting)),
+    (p) => !lineOf(p) && !classLine.has(p) && (!entries.length || (p.from && abilityOf(p.from)) || (p.granted && !p.casting)),
   );
   const orphanIds = new Set(orphans.map((p) => p.id));
   const bySource = new Map<string, SpellPick[]>();
@@ -375,7 +420,9 @@ function buildCasting(r: Resolved): CastingLine[] {
         else slots.push({ level: n, total, used: ch.play.slotsUsed[String(n)] ?? 0 });
       }
       // Spells with no named entry (racial or feat spells) go to the first entry that can cast from their list.
-      const picks = r.spellPicks.filter((p) => !orphanIds.has(p.id) && (castingOf(r, p) ?? lc(entries[0].name)) === key);
+      const picks = r.spellPicks.filter(
+        (p) => (!orphanIds.has(p.id) || classLine.has(p)) && (lineOf(p) ?? classLine.get(p) ?? lc(entries[0].name)) === key,
+      );
       const prepared = new Set(ch.prepared[e.name] ?? []);
       const spells: SpellPick[] = [];
       const cantrips: SpellPick[] = [];

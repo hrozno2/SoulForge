@@ -57,9 +57,20 @@ Also done that night, after G:
   real fault: "(minimum of +1)" was not read, so Elegant Courtier and the 2014 Otherworldly Glamour could give a
   penalty at low Wisdom. Fixed in checkBonusFromText. Left of E2: counts for the readers elsewhere.
 
-Next, in order: read the first Aurora-free run's result (docs/NO-AURORA-RUNS.md; it runs in this folder, so no
-source edits while it runs); the import snapshots may change with the senses fix (read before accepting); item 4
-(audit E2's rest); item 5 (portraits store); item 6; the other loose ends in item 7. One top-bar e2e test failed
+- Portraits store, step one (item 5): database version 8, `portraits` by character id, READ when the record has no
+  picture (src/aurora/storage.ts portraitStore; portraits.test.ts). Step two, moving the writing, belongs to the
+  release AFTER the one that carries step one, never the same one.
+- Casting lines (the Mending loose end, and what it uncovered), src/aurora/sheet.ts buildCasting:
+  a spell a class's own feature gives goes on the class's line (Tinker's Magic's Mending; a Warlock's invocation
+  spells no longer make a line each); a spell from a species, feat or background whose giver names another ability
+  stays off the class's line even when it is on the class's list (a Tiefling Warlock's Chill Touch cast with
+  Intelligence showed with the Warlock's DC); "Intelligence, Wisdom, or Charisma is your spellcasting ability" with
+  no choice recorded no longer reads as the first or last of the three. 65 saved sheets changed, in their casting
+  lines only, each read; the snapshot was accepted (old one: ~/.soulforge-test/engine/sheets.before-2026-11-24.json).
+
+Next, in order: the import snapshots after the casting-line fix (read before accepting); E3.3 importers (analysis
+first); E3.5 homebrew waits for Chris; the next Aurora-free run is Friday 01:30 (it runs in this folder: no source
+edits while it runs; long checks can run in the worktree ../charforge-board). One top-bar e2e test failed
 once in a gates run that took 19.7 minutes instead of 3 (a slow machine); it passes alone and in every rerun since.
 
 ## 2026-11-23, evening: Chris's standing order for this stretch

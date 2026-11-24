@@ -572,11 +572,7 @@ export function walk(ch: Character, reg: ARegistry, prev: Pass | null): Pass {
     const el = reg.get(it.id);
     if (!el) continue;
     // Items that need attunement only count once attuned.
-    const needsAttune =
-      el.setters.attunement?.value === "true" ||
-      /requires attunement/i.test(el.setters.rarity?.value ?? "") ||
-      /requires attunement/i.test(el.description.slice(0, 400));
-    if (needsAttune && !it.attuned) continue;
+    if (needsAttunement(el) && !it.attuned) continue;
     visit(el, lvlTotal, "", "item");
   }
 
@@ -825,3 +821,19 @@ export { ABILITY_IDS };
 export function reqCtx(r: Resolved): ReqCtx {
   return makeCtx(r, r.totalLevel, r.character, r.reg, r.stats);
 }
+
+/**
+ * Whether an item works only once attuned, and where that is stated: the content's own field ("data": Aurora's and
+ * homebrew's `attunement` setter, 5e.tools' `reqAttune`, which the converter writes into the rarity line) or only
+ * the opening of its text ("text"). The one reader of it: the engine, the equipment screen and the printed sheet ask
+ * here (audit E2; each had its own, and the screen's missed the setter).
+ */
+export function attunementFrom(el?: AElement): "data" | "text" | undefined {
+  if (!el) return undefined;
+  if (el.setters.attunement?.value === "true" || /requires attunement/i.test(el.setters.rarity?.value ?? "")) return "data";
+  // 5e.tools states it as data on every item, so there its silence is a no: the Hammer of Thunderbolts gives its +1
+  // to anyone, and only its "Giant's Bane (Requires Attunement)" property asks (the text alone held the +1 back).
+  if (/^ID_5ET_/.test(el.id)) return undefined;
+  return /requires attunement/i.test(el.description.slice(0, 400)) ? "text" : undefined;
+}
+export const needsAttunement = (el?: AElement): boolean => !!attunementFrom(el);

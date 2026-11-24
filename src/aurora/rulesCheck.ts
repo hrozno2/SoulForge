@@ -96,15 +96,16 @@ export interface Finding {
  */
 export function featRepeatable(reg: Resolved["reg"], name: string): boolean {
   if (/repeatable|elemental adept|ability score improvement/i.test(name)) return true;
-  return reg
-    .ofType("Feat")
-    .some(
-      (f) =>
-        f.name === name &&
-        (!!f.setters["allow duplicate"] ||
-          /_\d+$/.test(f.id) ||
-          /(?:take|select|choose) this feat more than once|more than once\b/i.test(f.description ?? "")),
-    );
+  return reg.ofType("Feat").some((f) => f.name === name && !!featRepeatFrom(f));
+}
+/** Where one feat's content says it may be taken again: its data (the setter, a numbered copy) or only its text. */
+export function featRepeatFrom(f: AElement): "data" | "text" | undefined {
+  if (f.setters["allow duplicate"] || /_\d+$/.test(f.id)) return "data";
+  // 5e.tools states it as data (`repeatable`), so there its silence is a no: the 2024 Magic Initiate for one spell
+  // list repeats the feat's sentence, and "a different spell list each time" means that version is taken once.
+  if (/^ID_5ET_/.test(f.id)) return undefined;
+  // The feat's own sentence: "no more than once per turn" (Ember of the Fire Giant) limits a use, not the feat.
+  return /(?:take|select|choose|gain) (?:this feat|it) more than once/i.test(f.description ?? "") ? "text" : undefined;
 }
 
 /** The element a saved choice key belongs to: "<id>#<hash>", or "<id>|<n>" from before stable keys. */
@@ -377,16 +378,20 @@ export function repeatedPicks(r: Resolved, s: Resolved["slots"][number]): string
 export function noBodyArmor(r: Resolved): { name: string; unarmored: number }[] {
   const out: { name: string; unarmored: number }[] = [];
   for (const a of r.active) {
-    const text = (a.el.description ?? "").replace(/<[^>]+>/g, " ");
-    if (!/can(?:'|’)?t wear (?:light, medium, or heavy |any )?armor|cannot wear (?:light, medium, or heavy |any )?armor/i.test(text))
-      continue;
-    const calc = a.el.rules.find(
-      (x) => x.kind === "stat" && x.name === "ac:calculation" && /armor:any|armor:none/.test(String(x.equipped ?? "")),
-    );
-    if (!calc || calc.kind !== "stat") continue;
-    out.push({ name: a.el.name, unarmored: r.stats.get(calc.value) });
+    const calc = unarmoredOnlyCalc(a.el);
+    if (calc) out.push({ name: a.el.name, unarmored: r.stats.get(calc) });
   }
   return out;
+}
+/** The armor class formula of an element whose text rules out body armor (noBodyArmor), or nothing. */
+export function unarmoredOnlyCalc(el: AElement): string | undefined {
+  const text = (el.description ?? "").replace(/<[^>]+>/g, " ");
+  if (!/can(?:'|’)?t wear (?:light, medium, or heavy |any )?armor|cannot wear (?:light, medium, or heavy |any )?armor/i.test(text))
+    return undefined;
+  const calc = el.rules.find(
+    (x) => x.kind === "stat" && x.name === "ac:calculation" && /armor:any|armor:none/.test(String(x.equipped ?? "")),
+  );
+  return calc && calc.kind === "stat" ? calc.value : undefined;
 }
 
 export function checkCharacter(r: Resolved, sh: SheetData, ref: RefClass[]): Finding[] {

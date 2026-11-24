@@ -1,6 +1,6 @@
 import { isModern } from "../aurora/edition";
 import { companionHtml } from "../aurora/companion";
-import type { Resolved } from "../aurora/engine";
+import { needsAttunement, type Resolved } from "../aurora/engine";
 import { grantSource, headerInfo, preparePool, readySpells, type SheetData, featureTypesOf } from "../aurora/sheet";
 import { ABILITY_IDS, ABILITY_LABEL, SKILL_ABILITY, itemLabel, type AbilityId, type InvItem } from "../aurora/character";
 
@@ -385,9 +385,7 @@ export function buildFillData(r: Resolved, sh: SheetData, opts: { allSpells?: bo
     .filter((x) => !(x.el && /magic/i.test(x.el.type) && x.i.equipped))
     .map(nm)
     .join("\n");
-  const magic = inv
-    .filter((x) => x.el?.type === "Magic Item" || /requires attunement/i.test(x.el?.setters.rarity?.value ?? ""))
-    .map((x) => ({ name: nm(x), attuned: x.i.attuned }));
+  const magic = inv.filter((x) => x.el?.type === "Magic Item" || needsAttunement(x.el)).map((x) => ({ name: nm(x), attuned: x.i.attuned }));
 
   const firstComp = r.active.find((a) => a.el.type === "Companion")?.el ?? (ch.companions[0] ? r.reg.get(ch.companions[0].id) : undefined);
   const comp = firstComp

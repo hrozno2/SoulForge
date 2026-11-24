@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { focusNote } from "../aurora/startingEquipment";
 import { HANDS, handsUsed, setTwoHanded, toggleEquip } from "../aurora/hands";
 import type { AElement } from "../aurora/types";
-import type { Resolved } from "../aurora/engine";
+import { needsAttunement, type Resolved } from "../aurora/engine";
 import { buildSheet } from "../aurora/sheet";
 import { itemLabel, uid, type Character, type InvItem } from "../aurora/character";
 import type { SetCharacter } from "./Slots";
@@ -15,8 +15,6 @@ const ITEM_TYPES = ["Item", "Weapon", "Armor", "Magic Item"];
 const COINS = ["pp", "gp", "ep", "sp", "cp"] as const;
 
 const canEquip = (el?: AElement) => !!el && (el.type === "Weapon" || el.type === "Armor" || el.rules.length > 0 || !!el.setters.slot);
-const needsAttune = (el?: AElement) =>
-  !!el && (/requires attunement/i.test(el.setters.rarity?.value ?? "") || /requires attunement/i.test(el.description.slice(0, 400)));
 
 export const ITEM_KINDS = ITEM_TYPES;
 
@@ -169,7 +167,7 @@ export function EquipmentTab({
                       )}
                     </td>
                     <td>
-                      {needsAttune(el) ? (
+                      {needsAttunement(el) ? (
                         <input
                           type="checkbox"
                           checked={it.attuned}

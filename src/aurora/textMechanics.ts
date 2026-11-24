@@ -62,7 +62,8 @@ export function noteCount(reader: string, n: number): number {
   }
   return n;
 }
-function note(reader: string, el: { name: string; type: string }, kept: boolean): void {
+/** One element a reader fired on: `kept` where its reading went in, otherwise the data already said it. */
+export function note(reader: string, el: { name: string; type: string }, kept: boolean): void {
   if (!textTally.on) return;
   const row = textTally.rows.get(reader) ?? { kept: 0, had: 0, samples: [] };
   if (kept) row.kept++;

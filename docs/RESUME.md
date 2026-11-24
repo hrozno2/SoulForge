@@ -55,7 +55,17 @@ Also done that night, after G:
 - Audit E2, item 4: the readers already took data first; the missing part was the list of disagreements. It is in
   docs/audit/text-rules.md with a gate at 0 (RULES_TIER=text-rules, now a step of the full check). It found one
   real fault: "(minimum of +1)" was not read, so Elegant Courtier and the 2014 Otherworldly Glamour could give a
-  penalty at low Wisdom. Fixed in checkBonusFromText. Left of E2: counts for the readers elsewhere.
+  penalty at low Wisdom. Fixed in checkBonusFromText.
+- Audit E2 closed (afternoon): the 11 readers elsewhere are counted too, each by a per-element function the app
+  itself asks (attunementFrom, featRepeatFrom, unarmoredOnlyCalc, weaponAbilityOf, castingAbilityInText,
+  saysDarkvision; the converter's readers note themselves). Three faults came out of the count, each with a test in
+  src/aurora/attunement.test.ts: (1) the engine, the equipment screen and the printed sheet each decided attunement
+  their own way, and the screen missed the content's `attunement` setter, so a homebrew magic item marked "Requires
+  attunement" was held back with no box to attune it: one reader now, and a test that no other file reads it;
+  (2) on 5e.tools content the data decides: the Hammer of Thunderbolts' +1 was held back because its Giant's Bane
+  property says "(Requires Attunement)"; (3) "no more than once per turn" made Ember of the Fire Giant (and Aurora's
+  Rune Carver Adept) repeatable feats, and the 2024 Magic Initiate for one spell list counted as repeatable though
+  the rule is "a different spell list each time".
 
 - Portraits store, step one (item 5): database version 8, `portraits` by character id, READ when the record has no
   picture (src/aurora/storage.ts portraitStore; portraits.test.ts). Step two, moving the writing, belongs to the

@@ -16,7 +16,9 @@ import {
   applyTextDc,
   applyTextStats,
   applyTextUseSteps,
+  note,
   noteCount,
+  textTally,
   applyTextUses,
   dropPoolDefaults,
 } from "./textMechanics";
@@ -988,6 +990,7 @@ export function proseChoiceRules(f: J, idBase: string, level: number | undefined
  * 2024 version's are. Picks saved as the bare skill are read as the option that gives it (engine.ts). Before, the 2014
  * Knowledge Cleric had the skills without the expertise on 5e.tools content (found 2026-11-16).
  */
+const SKILL_CHOICE_READER = "skill and expertise choices worded in a feature";
 function applyTextExpertiseOnChoices(out: AElement[]): void {
   const added: AElement[] = [];
   const have = new Set(out.map((e) => e.id));
@@ -1003,6 +1006,7 @@ function applyTextExpertiseOnChoices(out: AElement[]): void {
       if (r.kind !== "select" || r.type !== "Proficiency") return r;
       const ids = r.supports.split("|");
       if (!ids.length || !ids.every((id) => /^ID_5ET_SKILL_[A-Z_]+$/.test(id))) return r;
+      note(SKILL_CHOICE_READER, el, true);
       const wrapped = ids.map((id) => {
         const oid = `${el.id}_SKILL_${id.slice("ID_5ET_SKILL_".length)}`;
         const skill = out.find((e) => e.id === id);
@@ -1046,7 +1050,10 @@ function applyTextSkillChoices(out: AElement[]): void {
       (r.kind === "grant" && /^ID_5ET_(SKILL|EXPERTISE)_/.test(r.id ?? ""));
     const optionTouches = (r: ARule) =>
       r.kind === "select" && r.supports.split("|").some((id) => out.find((o) => o.id === id)?.rules.some(touchesSkill));
-    if (el.rules.some((r) => touchesSkill(r) || optionTouches(r))) continue;
+    if (el.rules.some((r) => touchesSkill(r) || optionTouches(r))) {
+      note(SKILL_CHOICE_READER, el, false);
+      continue;
+    }
     // A species states its skill choice on itself and words it in a trait (Kenku Training, Primal Intuition): the
     // element that gives this one already asks.
     if (
@@ -1063,6 +1070,7 @@ function applyTextSkillChoices(out: AElement[]): void {
       .map((x) => x.trim().toLowerCase())
       .filter((x) => SKILLS.includes(x));
     if (names.length < 2) continue;
+    note(SKILL_CHOICE_READER, el, true);
     const expert =
       /you (?:also )?have expertise in th(?:ose|e) (?:two |three |chosen )?skills?/i.test(text) ||
       /proficiency bonus is doubled for any ability check you make that uses either of those skills/i.test(text);
@@ -2074,6 +2082,12 @@ function settleFallbacks(out: AElement[], fallbacks: { to: string; rule: ARule }
   }
 }
 
+/** Counts a text reader's yield for the list of rules read from prose (audit E2), and hands it on. */
+function noted(reader: string, f: J, type: string, rules: ARule[], also = false): ARule[] {
+  if (rules.length || also) note(reader, { name: String(f.name), type }, true);
+  return rules;
+}
+
 function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, hide = false, out?: AElement[]): AElement {
   const html = entriesHtml(f.entries);
   // What a use of this feature spends ("consumes": Turn Undead spends a Channel Divinity), as Plutonium links them.
@@ -2095,9 +2109,9 @@ function featureElement(f: J, kind: string, type: string, id: string, ctx: Ctx, 
           } as ARule,
         ]
       : []),
-    ...textProficiencies(f.entries, out, fb),
+    ...noted("proficiencies worded in entries", f, type, textProficiencies(f.entries, out, fb), fb.length > 0),
     ...creatureChoiceRules(f),
-    ...castableSpells(f),
+    ...castableSpells(f, type),
   ];
   if (ctx) for (const rule of fb) (ctx.fallbacks ??= []).push({ to: id, rule });
   return base(id, f.name, type, srcName(ctx, f.source), {
@@ -2844,10 +2858,19 @@ function convertMonster(m: J, ctx: Ctx): AElement {
  * feature's examples ("you can cast cure wounds using either slot") and features with spell data of their own are
  * left alone.
  */
-export function castableSpells(f: J): ARule[] {
+export function castableSpells(f: J, type = "Class Feature"): ARule[] {
   // Class and subclass features only: a species', background's or feat's spells are in its own spell data (Earth
   // Genasi's Pass without Trace came twice, on a line of its own).
-  if (!f.className || /spellcasting|pact magic/i.test(String(f.name ?? "")) || f.additionalSpells) return [];
+  if (!f.className || /spellcasting|pact magic/i.test(String(f.name ?? ""))) return [];
+  const reader = "spells a feature lets the character cast";
+  // The feature's own spell data comes first; its text is read only to count how often it says the same.
+  if (f.additionalSpells) {
+    if (textTally.on && castableInText(f).length) note(reader, { name: String(f.name), type }, false);
+    return [];
+  }
+  return noted(reader, f, type, castableInText(f));
+}
+function castableInText(f: J): ARule[] {
   const text = JSON.stringify(f.entries ?? []);
   const seen = new Set<string>();
   const rules: ARule[] = [];
@@ -3778,13 +3801,9 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
       .map((f) => JSON.stringify(f.entries ?? ""))
       .join(" ")
       .replace(/\{@\w+ ([^|}]*)[^}]*\}/g, "$1");
-    const subCasting = castingRules(
-      s,
-      s.shortName ?? s.name,
-      expandedFrom.length ? [...new Set(expandedFrom)] : [c.name],
-      lname,
-      schoolLimit(castText),
-    );
+    const limit = schoolLimit(castText);
+    if (limit) note("a school limit on a subclass's spells", { name: String(s.name), type: "Archetype" }, true);
+    const subCasting = castingRules(s, s.shortName ?? s.name, expandedFrom.length ? [...new Set(expandedFrom)] : [c.name], lname, limit);
     // A subclass's spells are its class's (domain, oath and patron spells; Arcana Domain's Arcane Mastery picks count as
     // Cleric spells), or its own casting's where it has one. Named after the subclass, the sheet put a Cleric 17's
     // Arcane Mastery spells on a Wizard 3's line. The labels and spell-set ids keep the subclass's name (saved picks).

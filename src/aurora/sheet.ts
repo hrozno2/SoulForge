@@ -202,11 +202,28 @@ function sheetText(a: ActiveElement, r: Resolved): { text: string; usage?: strin
   return { text: withSenses(a, r, text), usage: usage ? fillTemplate(usage, r) : undefined, action };
 }
 
+/**
+ * The one casting ability a feature's text names for its spells. Both ways the books write it: "your spellcasting
+ * ability for it is Charisma" and "Charisma is your spellcasting ability for it" (the 2024 Player's Handbook).
+ * One ability named, not a choice among them: "Intelligence, Wisdom, or Charisma is your spellcasting ability
+ * (choose when you select this feat)" names none, and the choice made is the ability element under the giver. With
+ * no choice recorded the text is no answer (it read as the first or the last of the three).
+ */
+export function castingAbilityInText(t: string): string | undefined {
+  const m =
+    /spellcasting ability for (?:th(?:is|ese)[^.]*?|it)\s+is\s+(intelligence|wisdom|charisma)(?!\s*,|\s+or\b)/i.exec(t) ??
+    /(?<!,\s|\bor\s)(intelligence|wisdom|charisma) is your spellcasting ability/i.exec(t);
+  return m ? m[1].toLowerCase() : undefined;
+}
+
+/** Whether a feature's text already states its darkvision (withSenses adds the line where it does not). */
+export const saysDarkvision = (text: string) => /(you have|you gain|grants?) darkvision|darkvision (of |out to )?\d+/i.test(text);
+
 /** A feature that grants darkvision says so, with its range (Umbral Sight's text is only about being unseen). */
 function withSenses(a: ActiveElement, r: Resolved, text: string): string {
   const range = a.el.rules.find((x) => x.kind === "stat" && (x as { name?: string }).name === "darkvision:range");
   const grantsVision = a.el.rules.some((x) => x.kind === "grant" && x.type === "Vision");
-  if (!range || !grantsVision || /(you have|you gain|grants?) darkvision|darkvision (of |out to )?\d+/i.test(text)) return text;
+  if (!range || !grantsVision || saysDarkvision(text)) return text;
   const ft = r.stats.get("darkvision:range");
   return ft > 0 ? `You have Darkvision ${ft} ft.${text ? ` ${text}` : ""}` : text;
 }
@@ -305,15 +322,8 @@ function buildCasting(r: Resolved): CastingLine[] {
       (x) => `${x?.description ?? ""} ${x?.sheet?.descriptions.map((d) => d.text).join(" ") ?? ""}`,
     );
     for (const t of texts) {
-      // Both ways the books write it: "your spellcasting ability for it is Charisma" and "Charisma is your
-      // spellcasting ability for it" (the 2024 Player's Handbook).
-      // One ability named, not a choice among them: "Intelligence, Wisdom, or Charisma is your spellcasting ability
-      // (choose when you select this feat)" names none, and the choice made is the ability element under the giver
-      // (above). With no choice recorded the text is no answer (it read as the first or the last of the three).
-      const m =
-        /spellcasting ability for (?:th(?:is|ese)[^.]*?|it)\s+is\s+(intelligence|wisdom|charisma)(?!\s*,|\s+or\b)/i.exec(t) ??
-        /(?<!,\s|\bor\s)(intelligence|wisdom|charisma) is your spellcasting ability/i.exec(t);
-      if (m) return lc(m[1]);
+      const m = castingAbilityInText(t);
+      if (m) return m;
     }
     return undefined;
   };
@@ -531,48 +541,47 @@ function buildAc(r: Resolved): { value: number; parts: string[] } {
  * you attack with a magic weapon, you can use your Intelligence modifier..." (Battle Ready). The conditions the same
  * sentence or paragraph sets are kept: a magic weapon, a weapon without the two-handed property.
  */
-export function weaponAbilityOptions(
-  r: Resolved,
-): { ability: AbilityId; magicOnly: boolean; notTwoHanded: boolean; meleeOrMagic: boolean; from: string }[] {
-  const out: { ability: AbilityId; magicOnly: boolean; notTwoHanded: boolean; meleeOrMagic: boolean; from: string }[] = [];
-  for (const a of r.active) {
-    // A list of options is not a feature the character has ("Eldritch Invocation Options" holds every invocation's
-    // text, Pact of the Blade's among them): its options are read when taken.
-    if (/\boptions$/i.test(a.el.name) || /options appear in alphabetical order/i.test(a.el.description)) continue;
-    const text = a.el.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
-    for (const para of [text]) {
-      const m =
-        /use your (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) modifier,? instead of (?:your )?Strength or Dexterity(?: modifiers?)?,? for (?:the )?attack and damage rolls/i.exec(
-          para,
-        ) ??
-        /use your (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) modifier for (?:the |its |the weapon's )?attack and damage rolls,? instead of (?:using )?(?:your )?Strength or Dexterity/i.exec(
-          para,
-        );
-      if (!m) continue;
-      // The conditions are the granting sentence's ("When you attack with a magic weapon, you can use..."), or the
-      // sentence before for a weapon chosen there (Hex Warrior's "lacks the two-handed property").
-      const start = para.lastIndexOf(". ", m.index);
-      const prev = para.lastIndexOf(". ", Math.max(0, start - 1));
-      const sentence = para.slice(start + 1, para.indexOf(".", m.index) + 1 || undefined);
-      const around = para.slice(prev + 1, para.indexOf(".", m.index) + 1 || undefined);
-      // Only while something is active (Bladesong, a Rage): not the sheet's standing attack.
-      if (
-        /while (?:your |the )?[\w' ]{0,30}\bis active|while it(?:'s| is) active|while you(?:'re| are) (?:raging|in)/i.test(
-          para.slice(Math.max(0, m.index - 120), m.index),
-        )
-      )
-        continue;
-      out.push({
-        ability: m[1].toLowerCase() as AbilityId,
-        magicOnly: /attack with a magic weapon/i.test(sentence),
-        notTwoHanded: /lacks the two-handed property/i.test(around),
-        // The 2024 Pact of the Blade: the bonded weapon is "a Simple or Martial Melee weapon" or a magic weapon.
-        meleeOrMagic: /\b(?:simple or martial )?melee weapon\b/i.test(para) && /magic weapon/i.test(para),
-        from: a.el.name,
-      });
-    }
-  }
-  return out;
+export function weaponAbilityOptions(r: Resolved): WeaponAbilityOption[] {
+  return r.active.flatMap((a) => weaponAbilityOf(a.el));
+}
+export type WeaponAbilityOption = { ability: AbilityId; magicOnly: boolean; notTwoHanded: boolean; meleeOrMagic: boolean; from: string };
+/** What one element's text says of it (weaponAbilityOptions). */
+export function weaponAbilityOf(el: AElement): WeaponAbilityOption[] {
+  // A list of options is not a feature the character has ("Eldritch Invocation Options" holds every invocation's
+  // text, Pact of the Blade's among them): its options are read when taken.
+  if (/\boptions$/i.test(el.name) || /options appear in alphabetical order/i.test(el.description)) return [];
+  const para = el.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  const m =
+    /use your (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) modifier,? instead of (?:your )?Strength or Dexterity(?: modifiers?)?,? for (?:the )?attack and damage rolls/i.exec(
+      para,
+    ) ??
+    /use your (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) modifier for (?:the |its |the weapon's )?attack and damage rolls,? instead of (?:using )?(?:your )?Strength or Dexterity/i.exec(
+      para,
+    );
+  if (!m) return [];
+  // The conditions are the granting sentence's ("When you attack with a magic weapon, you can use..."), or the
+  // sentence before for a weapon chosen there (Hex Warrior's "lacks the two-handed property").
+  const start = para.lastIndexOf(". ", m.index);
+  const prev = para.lastIndexOf(". ", Math.max(0, start - 1));
+  const sentence = para.slice(start + 1, para.indexOf(".", m.index) + 1 || undefined);
+  const around = para.slice(prev + 1, para.indexOf(".", m.index) + 1 || undefined);
+  // Only while something is active (Bladesong, a Rage): not the sheet's standing attack.
+  if (
+    /while (?:your |the )?[\w' ]{0,30}\bis active|while it(?:'s| is) active|while you(?:'re| are) (?:raging|in)/i.test(
+      para.slice(Math.max(0, m.index - 120), m.index),
+    )
+  )
+    return [];
+  return [
+    {
+      ability: m[1].toLowerCase() as AbilityId,
+      magicOnly: /attack with a magic weapon/i.test(sentence),
+      notTwoHanded: /lacks the two-handed property/i.test(around),
+      // The 2024 Pact of the Blade: the bonded weapon is "a Simple or Martial Melee weapon" or a magic weapon.
+      meleeOrMagic: /\b(?:simple or martial )?melee weapon\b/i.test(para) && /magic weapon/i.test(para),
+      from: el.name,
+    },
+  ];
 }
 
 /** Whether another ability a feature allows (weaponAbilityOptions) applies to this weapon; the sheet and the rules check both ask. */

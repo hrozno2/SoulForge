@@ -26,21 +26,23 @@ already held the same fact from data, 5e.tools' own fields or its Foundry side d
 | bonuses to checks | 2 | 1 | Elegant Courtier (Archetype Feature); Otherworldly Glamour (Archetype Feature) |
 | a companion's armor class bonus | 1 | 0 |  |
 
-## Readers elsewhere, not counted yet
+## Readers elsewhere
 
-| What is read | Where | The same fact as data |
-| --- | --- | --- |
-| a spell's casting ability from a feature's text | `src/aurora/sheet.ts`, `buildCasting` | 5e.tools `additionalSpells.ability` |
-| which ability a weapon may use (Hexblade, Pact of the Blade, Battle Smith) | `src/aurora/sheet.ts`, `weaponAbilityOptions` | none |
-| senses worded in a feature | `src/aurora/sheet.ts`, `withSenses` | 5e.tools `senses`, `darkvision` |
-| an item's attunement | `src/aurora/engine.ts`, `needsAttune` | 5e.tools `reqAttune` |
-| armor a feature rules out (Unarmored Defense) | `src/aurora/rulesCheck.ts`, `noBodyArmor` | none |
-| feats that may be taken more than once | `src/aurora/rulesCheck.ts`, `featRepeatable` | 5e.tools `repeatable` |
-| a school limit on a subclass's spells | `src/aurora/fivetools.ts`, `schoolLimit` | none |
-| proficiencies worded in entries | `src/aurora/fivetools.ts`, `textProficiencies` | 5e.tools `skillProficiencies` and its kin |
-| spells a feature lets the character cast | `src/aurora/fivetools.ts`, `castableSpells` | 5e.tools `additionalSpells` |
-| skill and expertise choices worded in a feature | `src/aurora/fivetools.ts`, `applyTextSkillChoices`, `applyTextExpertiseOnChoices` | Foundry side data |
-| starting equipment | `src/aurora/startingEquipment.ts`, `equipmentText`, `parseItems` | 5e.tools `startingEquipment` (already the source; the text is the converter's own) |
+Counted over the same converted elements, each by the function the app itself asks.
+
+| What is read | Where | From the text | The data had it | The same fact as data | Examples |
+| --- | --- | ---: | ---: | --- | --- |
+| a spell's casting ability from a feature's text | `src/aurora/sheet.ts`, `castingAbilityInText` (`buildCasting`) | 138 | 0 | 5e.tools `additionalSpells.ability`, as an ability element under the giver, which is asked first | Artificer Initiate (Feat); Blessed Warrior (Feat); Drow High Magic (Feat); Druidic Warrior (Feat) |
+| which ability a weapon may use (Hexblade, Pact of the Blade, Battle Smith) | `src/aurora/sheet.ts`, `weaponAbilityOf` | 5 | 0 | none | Pact of the Blade (Optional Feature); Battle Ready (Archetype Feature); Battle Ready (Archetype Feature); Hex Warrior (Archetype Feature) |
+| darkvision a feature gives and its text does not state (the sheet adds the line) | `src/aurora/sheet.ts`, `withSenses` | 3 | 7 | 5e.tools `senses`, `darkvision`: the data gives the sense, the text is only checked so the sheet says it once | Devil's Sight (Optional Feature); Devil's Sight (Optional Feature); Transmuter's Stone (Archetype Feature) |
+| an item's attunement | `src/aurora/engine.ts`, `attunementFrom` | 0 | 3015 | 5e.tools `reqAttune` |  |
+| armor a feature rules out (Unarmored Defense) | `src/aurora/rulesCheck.ts`, `unarmoredOnlyCalc` (`noBodyArmor`) | 1 | 0 | none | Natural Armor (Racial Trait) |
+| feats that may be taken more than once | `src/aurora/rulesCheck.ts`, `featRepeatFrom` | 0 | 39 | 5e.tools `repeatable` |  |
+| a school limit on a subclass's spells | `src/aurora/fivetools.ts`, `schoolLimit` | 4 | 0 | none | Eldritch Knight (Archetype); Eldritch Knight (Archetype); Arcane Trickster (Archetype); Arcane Trickster (Archetype) |
+| proficiencies worded in entries | `src/aurora/fivetools.ts`, `textProficiencies` | 25 | 0 | 5e.tools `skillProficiencies` and its kin (not compared: the reader runs before the side data is in) | Tools of the Trade (Archetype Feature); Bonus Proficiencies (Archetype Feature); Bonus Proficiencies (Archetype Feature); Bonus Proficiency (Archetype Feature) |
+| spells a feature lets the character cast | `src/aurora/fivetools.ts`, `castableSpells` | 71 | 0 | 5e.tools `additionalSpells` | Restorative Reagents (Archetype Feature); Chemical Mastery (Archetype Feature); Tinker's Magic (Class Feature); Restorative Reagents (Archetype Feature) |
+| skill and expertise choices worded in a feature | `src/aurora/fivetools.ts`, `applyTextSkillChoices`, `applyTextExpertiseOnChoices` | 7 | 9 | Foundry side data | Blessings of Knowledge (Archetype Feature); Blessings of Knowledge (Archetype Feature); Knightly Envoy (Archetype Feature); Genie's Splendor (Archetype Feature) |
+| starting equipment | `src/aurora/startingEquipment.ts`, `equipmentText`, `parseItems` | 0 | 201 | 5e.tools `startingEquipment` (already the source; the text is the converter's own) |  |
 
 ## Where the data and the text disagree
 
@@ -50,5 +52,3 @@ count at 0: a new one fails the run until it is judged (fixed at its cause, or t
 
 | Reader | Element | The text says | The data says |
 | --- | --- | --- | --- |
-
-Open (the rest of E2): counts for the readers elsewhere.

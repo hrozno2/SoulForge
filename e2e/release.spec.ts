@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { newCharacter } from "../src/aurora/character";
-import { stored, tab, watchProblems } from "./helpers";
+import { reloadWithCurrent, stored, tab, watchProblems } from "./helpers";
 
 // Stage D7 (Chris 2026-11-23): the release app reads no Aurora content and offers no way to add it. Aurora's files
 // already on the computer are left alone, and a character built on them is offered the move to 5e.tools.
@@ -69,8 +69,7 @@ test("Aurora files from an earlier version are kept but not read, and their char
     classes: [{ classId: "ID_WOTC_PHB_CLASS_FIGHTER", level: 3 }],
     race: "ID_WOTC_PHB_RACE_HUMAN",
   };
-  await page.evaluate((c) => localStorage.setItem("charforge.current.v2", JSON.stringify({ id: "aurora-test", ch: c })), ch);
-  await page.reload();
+  await reloadWithCurrent(page, JSON.stringify({ id: "aurora-test", ch }));
   await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
 
   // The link's files are on the computer, said so on the Content tab, and none of their content is in the lists.

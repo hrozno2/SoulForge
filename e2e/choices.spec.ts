@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { addTestContent, randomCharacter, tab, stored } from "./helpers";
+import { addTestContent, randomCharacter, reloadWithCurrent, tab, stored } from "./helpers";
 
 // Choices on a card of the build board (src/ui/Slots.tsx). The saved "tabs" layout below is ignored on purpose: the
 // board is the only layout (Chris 2026-11-23), and an old setting must not bring the tabs back.
@@ -12,12 +12,12 @@ test("deselecting never folds a choice; picking folds it (C1.2)", async ({ page 
   await addTestContent(page);
   await randomCharacter(page, 3);
   // An Emberkin: its "Ember gift" is a one-pick choice shown as a list (the random species varies).
-  await page.evaluate(() => {
+  const edited = await page.evaluate(() => {
     const p = JSON.parse(localStorage.getItem("charforge.current.v2")!);
     p.ch.race = "ID_SF_RACE_EMBERKIN";
-    localStorage.setItem("charforge.current.v2", JSON.stringify(p));
+    return JSON.stringify(p);
   });
-  await page.reload();
+  await reloadWithCurrent(page, edited);
   await tab(page, "Build");
   await expect(page.locator("nav.subtabs")).toHaveCount(0);
   await page.locator("[data-tile=race] .chosen-banner").click();

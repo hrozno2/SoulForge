@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
-import { addTestContent, closeFresh, randomCharacter, tab, stored } from "./helpers";
+import { addTestContent, closeFresh, randomCharacter, reloadWithCurrent, tab, stored } from "./helpers";
 
 // Creation paths not covered elsewhere (C5.5): multiclass, preparing spells, the Foundry round trip, the settings.
 test.use({
@@ -15,12 +15,12 @@ test("a level up can take a level in a new class (multiclass)", async ({ page })
   await addTestContent(page);
   await randomCharacter(page, 3);
   // Scores that meet any class's multiclass requirement, so the other class can be taken.
-  await page.evaluate(() => {
+  const edited = await page.evaluate(() => {
     const p = JSON.parse(localStorage.getItem("charforge.current.v2")!);
     p.ch.abilityBase = { strength: 15, dexterity: 15, constitution: 15, intelligence: 15, wisdom: 15, charisma: 15 };
-    localStorage.setItem("charforge.current.v2", JSON.stringify(p));
+    return JSON.stringify(p);
   });
-  await page.reload();
+  await reloadWithCurrent(page, edited);
   await tab(page, "Play");
   const before = (await saved(page)).classes as { classId: string }[];
   await page.locator(".hero-icons").getByRole("button", { name: "Level up" }).click();

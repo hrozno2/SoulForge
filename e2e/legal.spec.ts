@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { newCharacter } from "../src/aurora/character";
-import { tab, stored } from "./helpers";
+import { reloadWithCurrent, tab, stored } from "./helpers";
 
 // Chris, 2026-11-23: a character the rules check flags is made rules legal in one screen. The player decides what is
 // theirs to decide, sees what changed, and the changes go into the character's journal.
@@ -25,8 +25,7 @@ test("Make it legal: the player's call, what changed, and the journal", async ({
     classes: [{ classId: pick(bundle("5.2"), "Class", "Fighter"), level: 1 }],
   };
   await page.goto("/");
-  await page.evaluate((c) => localStorage.setItem("charforge.current.v2", JSON.stringify({ id: "legal-test", ch: c })), ch);
-  await page.reload();
+  await reloadWithCurrent(page, JSON.stringify({ id: "legal-test", ch }));
   await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
   await tab(page, "Build");
 

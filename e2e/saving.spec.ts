@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { randomCharacter, tab, stored } from "./helpers";
+import { randomCharacter, reloadWithCurrent, tab, stored } from "./helpers";
 
 // docs/AUDIT-2026-11-10.md, S1 and S2: a save that fails is shown and tried again, never swallowed under "Saved".
 test.use({
@@ -176,7 +176,7 @@ test("a copy kept without its portrait opens with its edits and gets the portrai
       db.close();
       return all.map((c) => ({ name: c.data.name, portrait: c.data.portrait }));
     });
-  await page.evaluate(async (portrait) => {
+  const edited = await page.evaluate(async (portrait) => {
     const copy = JSON.parse(localStorage.getItem("charforge.current.v2")!) as { id: string; ch: Record<string, unknown> };
     const db = await new Promise<IDBDatabase>((res, rej) => {
       const q = indexedDB.open("charforge");
@@ -198,14 +198,11 @@ test("a copy kept without its portrait opens with its edits and gets the portrai
     db.close();
     const { portrait: _none, ...rest } = copy.ch;
     void _none;
-    localStorage.setItem(
-      "charforge.current.v2",
-      JSON.stringify({ id: copy.id, chNoPortrait: { ...rest, name: "Edited After The Last Save" } }),
-    );
+    return JSON.stringify({ id: copy.id, chNoPortrait: { ...rest, name: "Edited After The Last Save" } });
   }, PORTRAIT);
   expect(await stored()).toEqual([{ name: "Has A Picture", portrait: PORTRAIT }]);
 
-  await page.reload();
+  await reloadWithCurrent(page, edited);
   await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
   await tab(page, "Build");
   await expect(page.getByLabel("Character name")).toHaveValue("Edited After The Last Save");

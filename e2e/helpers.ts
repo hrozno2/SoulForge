@@ -120,3 +120,20 @@ export function stored(settings: Record<string, unknown> = {}, opts: { tutorial?
     ],
   };
 }
+
+// Reloads the page with `text` as the open character's stored copy. The app writes the open character again whenever it
+// re-renders, so a copy a test puts into storage under the running app is written over unless the reload comes first
+// (CI lost that race on 2026-11-25). The copy is put in as the reloaded page starts, before the app reads it, and only
+// that once: later reloads find what the app itself kept.
+export async function reloadWithCurrent(page: Page, text: string): Promise<void> {
+  const token = `cf-seeded-${Date.now()}-${Math.random()}`;
+  await page.addInitScript(
+    ({ text, token }) => {
+      if (sessionStorage.getItem(token)) return;
+      sessionStorage.setItem(token, "1");
+      localStorage.setItem("charforge.current.v2", text);
+    },
+    { text, token },
+  );
+  await page.reload();
+}

@@ -1,5 +1,30 @@
 # Where we left off
 
+## 2026-11-25: v0.28.0 asked for ("cut a release"), not out yet
+
+Chris said "cut a release" on 2026-11-25, knowing D5 stands at 1 of 5 clean runs and D6 at 22 changing characters.
+The bump is minor (0.27.0 to 0.28.0): the first release that reads no Aurora content (D7), with portraits step one.
+README.md is rewritten for it (82db454).
+
+The first attempt (`SOULFORGE_RULES=$HOME/.soulforge-test caffeinate -i node scripts/release.mjs minor`) did not
+tag or push anything. Types, lint, format, unit tests, build and e2e passed; in the rules check (full tier, it
+started 09:10) the first five groups passed and the coverage group ran into its 4-hour limit with 162 of 223
+characters written, none with a finding. Cause: the lid was closed on battery at 09:14 and the Mac slept until
+12:47 (`pmset -g log`). `caffeinate -i` does not hold a closed lid on battery. Nothing in the code was at fault.
+
+To cut it: lid open (or on power with a display), then the same command. Mon to Thu 9 to 17 it runs the full tier,
+about 55 minutes of coverage on top of the rest.
+
+CI failed on the README commit (run 45569539802) for a reason of its own: release.spec.ts wrote the open character
+into localStorage under the running app, and the app, which writes that copy on every re-render, wrote its own back
+before the reload. Fixed in the tests (a1d5522): e2e/helpers.ts reloadWithCurrent puts the copy in as the reloaded
+page starts; the five tests that seeded or edited the stored copy use it. Local e2e runs that afternoon were not
+to be trusted (the Mac kept sleeping: browser launches timed out, one test "took" 17 minutes), so CI is the check
+for that commit. Seen once in those runs and not explained: saving.spec.ts "a copy kept without its portrait" ended
+with the name edited on screen and "Saved" shown while the library still had the older name. Look at it with the
+Mac awake before calling it noise: if listCharacters fails or the library has no portrait, App.tsx never schedules
+the save of the newer copy (withLibraryPortrait returns the same object, so nothing re-renders).
+
 ## 2026-11-23, night: decisions A to G built
 
 All on main, each with tests; commits 9ab94de to the D7 commit. Nothing of it is released (v0.27.0 is the release).

@@ -12,6 +12,11 @@ started 09:10) the first five groups passed and the coverage group ran into its 
 characters written, none with a finding. Cause: the lid was closed on battery at 09:14 and the Mac slept until
 12:47 (`pmset -g log`). `caffeinate -i` does not hold a closed lid on battery. Nothing in the code was at fault.
 
+Second attempt the same day (18:30, lid open, on power): the lid was closed and the power unplugged at 18:57, during
+e2e; twenty tests timed out across the sleeps (one "took" 17 minutes) and the script stopped before the rules check.
+Nothing tagged. Just before it, with the Mac awake, the release-project tests ran 72 of 72 (repeat 8), the portrait
+test among them, so the afternoon's odd failure was the sleeping Mac.
+
 To cut it: lid open (or on power with a display), then the same command. Mon to Thu 9 to 17 it runs the full tier,
 about 55 minutes of coverage on top of the rest.
 

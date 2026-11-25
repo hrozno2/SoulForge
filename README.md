@@ -2,7 +2,7 @@
 
 # Soul Forge
 
-A free, open source D&D 5e (2024 rules) character builder for Windows, macOS and Linux. It builds on the Aurora element format, keeps its content up to date from links, and imports 5e.tools and Plutonium data.
+A free, open source D&D 5e (2024 rules) character builder for Windows, macOS and Linux. The free rules (SRD 5.1 and 5.2.1) come with it, and more books come from 5e.tools and Plutonium data that you supply.
 Original code, not affiliated with Aurora Builder or Wizards of the Coast.
 
 ![The Play tab](docs/screenshots/play.png)
@@ -10,7 +10,7 @@ Original code, not affiliated with Aurora Builder or Wizards of the Coast.
 ## Features
 
 **Build**
-- Species, class and subclass, background, ability scores, languages, proficiencies, feats and multiclassing, using the Aurora element rules (grants, selections, stat bonuses, requirements, spellcasting).
+- Species, class and subclass, background, ability scores, languages, proficiencies, feats and multiclassing, each choice following the rules in the content (grants, selections, stat bonuses, requirements, spellcasting).
 - Filters like 5e.tools on every list, sort by name, recommended or newest, and Badges or List view.
 - The same option from several books is one card; pick the book from chips that show the release date, with the newest marked.
 - "Choose 3" counters, and a hover list of what is still unchosen on each tab.
@@ -29,10 +29,10 @@ Original code, not affiliated with Aurora Builder or Wizards of the Coast.
 - Click any modifier to roll. A dice panel with shaped dice, big results, an optional roll log, and an Advantage / Disadvantage switch.
 
 **Content**
-- Content links update by themselves. Add the AuroraLegacy link or any `.index`.
+- The free rules (SRD 5.1 and 5.2.1) are built in: a character can be made right away.
 - 5etools and Plutonium data: paste 5e.tools links or search a data folder and import only what you pick.
 - Import characters from Foundry VTT and Roll20, and export to both.
-- Write your own homebrew with forms (spells, items, feats, species, backgrounds) or in element XML.
+- Write your own homebrew with forms (spells, items, feats, species, backgrounds).
 - Back up everything to a file; automatic copies are kept inside the app.
 
 **Sheets and PDFs**
@@ -150,12 +150,12 @@ Tauri prerequisites: https://v2.tauri.app/start/prerequisites/
 
 - [User guide](docs/guide.md): every tab, filters, rolling, PDF export, 5etools and Plutonium import, themes.
 - [Code guide](docs/CODE-GUIDE.md): how the code and the app work, for anyone reading or auditing it.
-- [Aurora parity](docs/aurora-parity.md): what the engine supports from the Aurora element format.
+- [Aurora parity](docs/aurora-parity.md): what the engine supports from the Aurora element format (kept for the test build and for moving older characters).
 - [Usability test](docs/usability-test.md): rebuilding published pregens in the app.
 
 ## What it does
 
-A character builder for D&D 5e (2024 rules, and older editions through content files), built around the same element format as Aurora Builder, so existing Aurora content works.
+A character builder for D&D 5e (2024 rules, and the 2014 rules through the content you load). The free rules come with it; other books come from 5e.tools data.
 
 - **Build**: species and subspecies, class with multiclassing and level up, background, ability scores (point buy, standard array, manual), languages, proficiencies, feats and ability score improvements. Every choice comes from rules in the content files, so what you can pick follows the books you load.
 - **Magic**: spellcasting per class with save DC, attack, slots (shared multiclass table and Warlock pact slots), cantrips and spells to learn, prepared spells, always-prepared spells, slot tracking.
@@ -163,19 +163,15 @@ A character builder for D&D 5e (2024 rules, and older editions through content f
 - **Manage**: level, XP and hit points (average or rolled), character details and backstory, options, manual additions (extra languages, feats and spells your table allows), custom attacks, companions with stat blocks, conditions, source restrictions.
 - **Play**: a play screen laid out like D&D Beyond: ability row, hit points with damage, heal and temporary points, short and long rests, saving throws, senses, skills, and tabs for actions, spells (cast from slots), inventory, features and traits, description, notes and extras. Click any bonus to roll it.
 - **Sheet**: a printable sheet with live hit points, death saves, hit dice and spell slots, PDF export of the sheet and printable spell, item and feature cards (A4 or Letter), and filling of fillable character sheet PDFs (see below).
-- **Content**: add Aurora content by link and it keeps itself up to date, import the 5etools data that Plutonium uses, import files, or write your own content.
+- **Content**: the free rules built in, the 5etools data that Plutonium uses, and your own homebrew.
 
 ## Content
 
-Soul Forge ships without rules content. Add it on the Content tab.
+The free rules (SRD 5.1 and 5.2.1) come with Soul Forge. Everything else is added on the Content tab.
 
-### Aurora content by link
+### Aurora content (until 0.27)
 
-Paste the address of an Aurora index file, for example the AuroraLegacy elements:
-
-    https://raw.githubusercontent.com/AuroraLegacy/elements/master/AuroraLegacy.index
-
-Soul Forge reads the index and every index it lists, downloads the files, and keeps a copy for offline use. On each launch (at most once an hour) it fetches the small index files again and downloads only the parts whose version changed. You can switch whole books on or off in the tree, force a full re-download, or remove a link.
+Up to version 0.27 Soul Forge read Aurora element files by link. From this version on it does not: the lists come from the free rules, 5e.tools data and your own homebrew. Nothing is deleted. Aurora sources already on the computer are listed apart on the Content tab, and a character built on them shows a notice with a **Move to 5e.tools** button, which reads those files once more to make a 5e.tools copy of the character. Keep the sources until your characters are moved, and load the 5e.tools data for the same books first.
 
 ### 5etools data and Plutonium
 
@@ -185,14 +181,14 @@ The Content tab also reads the JSON data format used by 5e.tools and by the Plut
 
 Characters made with Plutonium in Foundry export as normal dnd5e actors, so Foundry import on the Start tab reads them.
 
-### Other ways in
+### Homebrew
 
-- Import a ZIP or loose `.xml` element files.
-- Write your own elements in the editor on the Content tab. The format is documented at https://aurorabuilder.com/documentation/
+- Make your own spells, items, feats, species and backgrounds with the forms on the Content tab.
+- Homebrew JSON in the 5etools format imports like the books do.
 
 ### Not included
 
-No book content ships with Soul Forge and none is bundled by the importers. Content comes from files and addresses you supply. Aurora, the Aurora Legacy team, 5e.tools and Wizards of the Coast are not affiliated with Soul Forge.
+Only the free rules ship with Soul Forge (the System Reference Documents 5.1 and 5.2.1, under the Creative Commons Attribution 4.0 license; the statements are in Settings, About, and in `docs/LICENSES.md`). No other book content is included and none is bundled by the importers: it comes from files and addresses you supply. Aurora, the Aurora Legacy team, 5e.tools and Wizards of the Coast are not affiliated with Soul Forge.
 
 ## Choosing things
 
@@ -203,7 +199,7 @@ Every list of choices (species, class, background, feats, subclasses, spells, la
 - **One entry per name.** The versions of the same thing from different books sit together as small tags with the book and release date, newest first, with a "newest" tag and a "playtest" tag for Unearthed Arcana. Pick the version you want on the entry itself. If two content providers supply the same book, it is shown once.
 - **Learn more** opens the full description in a window, in any layout.
 - Choices that need several picks say so, for example `1/3 choose 2 more (3 total)`, right next to the name. The number on a Build sub tab shows what is left when you hover over it.
-- Release dates come from the content (Aurora source files carry them; 5etools books have a publish date).
+- Release dates come from the content (5etools books have a publish date).
 - Ability scores have a Custom column for your own modifier, and the Manage tab has Custom bonuses for any other statistic.
 
 ## Fillable character sheets
@@ -243,7 +239,7 @@ What the pregens showed: things the sheet lists that no rule gives (bonus langua
 
 ## Element format
 
-Content is a set of elements. An element has an id, name, type and source, setters (type specific values), and rules. Rules are `grant` (give another element), `select` (the player picks elements by type and filter) and `stat` (change a statistic). Requirements, level gating, bonus types and the `$(spellcasting:list)` and `{{stat}}` placeholders work as documented by Aurora.
+Inside the app, content is a set of elements, whichever format it came in. An element has an id, name, type and source, setters (type specific values), and rules. Rules are `grant` (give another element), `select` (the player picks elements by type and filter) and `stat` (change a statistic). Requirements, level gating, bonus types and the `$(spellcasting:list)` and `{{stat}}` placeholders work as documented by Aurora, whose format the engine started from.
 
 ## Known gaps
 
@@ -258,6 +254,6 @@ Content is a set of elements. An element has an id, name, type and source, sette
 ## License
 
 MIT, see `LICENSE`. This covers Soul Forge's code only. It does not include or grant rights to any Dungeons & Dragons
-content; import your own copies from the Content tab.
+content beyond the free rules; import your own copies from the Content tab.
 
 Soul Forge is free and open source. Fork it, change it, redistribute it, no permission needed. Contributions are welcome through issues and pull requests. Third-party material is listed in `NOTICE.md`.

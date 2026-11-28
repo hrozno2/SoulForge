@@ -47,7 +47,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "@xmldom/xmldom": "^0.9.12",
     "fake-indexeddb": "^6.2.5",
-    "happy-dom": "^20.14.6",
+    "happy-dom": "^21.0.4",
     "oxlint": "^1.94.0",
     "oxlint-tsgolint": "^7.0.2007",
     "prettier": "^3.10.1",

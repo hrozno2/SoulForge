@@ -1,0 +1,162 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_ROGUE",
+      "level": 12
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 15,
+    "constitution": 13,
+    "intelligence": 14,
+    "wisdom": 10,
+    "charisma": 12
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_PHB24_RACE_AASIMAR#qr5rjd": [
+      "ID_INTERNAL_RACIAL_TRAIT_MEDIUM"
+    ],
+    "ID_WOTC_PHB24_RACE_AASIMAR#7e7vip": [
+      "ID_LANGUAGE_ORC",
+      "ID_LANGUAGE_UNDERCOMMON",
+      "ID_LANGUAGE_HALFLING"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_CON_INT#1dso2r8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_CON_INT_1"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_CON_INT_1#11yhef6": [
+      "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CONSTITUTION_INCREASE_2"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_CON_INT_1#12ib8pd": [
+      "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_INTELLIGENCE_INCREASE_1"
+    ],
+    "ID_WOTC_PHB24_CLASS_ROGUE#q414it": [
+      "ID_PROFICIENCY_SKILL_INVESTIGATION",
+      "ID_PROFICIENCY_SKILL_DECEPTION",
+      "ID_PROFICIENCY_SKILL_ACROBATICS",
+      "ID_PROFICIENCY_SKILL_INTIMIDATION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ROGUE_EXPERTISE#hhvkgz": [
+      "ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_SLEIGHT_OF_HAND",
+      "ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_STEALTH"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ROGUE_THIEVES_CANT#1h7ygez": [
+      "ID_LANGUAGE_GITH"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ROGUE_WEAPON_MASTERY#1u5uive": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_MASTERY_PROPERTY_SCIMITAR_NICK",
+      "ID_WOTC_PHB24_CLASS_FEATURE_MASTERY_PROPERTY_GREATCLUB_PUSH"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ROGUE_ROGUE_SUBCLASS#1pjt49s": [
+      "ID_WOTC_XGTE_ARCHETYPE_SCOUT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ROGUE_ABILITY_SCORE_IMPROVEMENT#17ohkjc": [
+      "ID_WOTC_PHB24_FEAT_CHARGER"
+    ],
+    "ID_WOTC_PHB24_FEAT_CHARGER#pmakk8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_DEXTERITY"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ROGUE_EXPERTISE#1bqp9x0": [
+      "ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_SURVIVAL",
+      "ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_DECEPTION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ROGUE_ABILITY_SCORE_IMPROVEMENT#y766n0": [
+      "ID_WOTC_PHB24_FEAT_TAVERN_BRAWLER"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ROGUE_ABILITY_SCORE_IMPROVEMENT#1wloziu": [
+      "ID_WOTC_PHB24_FEAT_SPEEDY"
+    ],
+    "ID_WOTC_PHB24_FEAT_SPEEDY#fvko1e": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_CONSTITUTION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ROGUE_ABILITY_SCORE_IMPROVEMENT#t4n9ha": [
+      "ID_WOTC_GOTG_FEAT_STRIKE_OF_THE_GIANTS"
+    ],
+    "ID_WOTC_GOTG_FEAT_STRIKE_OF_THE_GIANTS#ymrn6": [
+      "ID_WOTC_GOTG_FEAT_FEATURE_STRIKE_OF_THE_GIANTS_FROST_STRIKE"
+    ]
+  },
+  "options": [
+    "ID_WOTC_SCAG_OPTION_BATTLERAGER",
+    "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI",
+    "ID_WOTC_TCOE_OPTION_CUSTOMIZED_PROFICIENCY",
+    "ID_WOTC_TCOE_OPTION_CUSTOMIZED_LANGUAGE"
+  ],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 150,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [
+    {
+      "uid": "cmp278578583",
+      "id": "ID_WOTC_MM_COMPANION_TRICERATOPS",
+      "name": "Triceratops"
+    }
+  ],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_AASIMAR",
+  "background": "ID_WOTC_PHB24_BACKGROUND_CRIMINAL",
+  "equipmentAdded": [
+    "Rogue, option b",
+    "Criminal, option b"
+  ],
+  "equipmentLedger": {
+    "Rogue, option b": {
+      "items": [],
+      "gp": 100
+    },
+    "Criminal, option b": {
+      "items": [],
+      "gp": 50
+    }
+  },
+  "hpChosen": true
+}

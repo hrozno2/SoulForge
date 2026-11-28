@@ -1,0 +1,300 @@
+{
+  "version": 2,
+  "name": "Four Elements monk",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB_CLASS_MONK",
+      "level": 6
+    }
+  ],
+  "abilityBase": {
+    "strength": 13,
+    "dexterity": 15,
+    "constitution": 12,
+    "intelligence": 8,
+    "wisdom": 14,
+    "charisma": 10
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_RACIAL_TRAIT_HALFLING_SUBRACE#1vs7tzo": [
+      "ID_WOTC_ERLW_SUB_RACE_MARK_OF_HEALING"
+    ],
+    "ID_BACKGROUND_GUILD_ARTISAN#exbb93": [
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_COBBLERS_TOOLS"
+    ],
+    "ID_BACKGROUND_GUILD_ARTISAN#49yqz1": [
+      "ID_WOTC_ERLW_LANGUAGE_DAELKYR"
+    ],
+    "ID_WOTC_PHB_CLASS_MONK#j02c4f": [
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_MASONS_TOOLS"
+    ],
+    "ID_WOTC_PHB_CLASS_MONK#gpm78w": [
+      "ID_PROFICIENCY_SKILL_ATHLETICS",
+      "ID_PROFICIENCY_SKILL_ACROBATICS"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_MONK_MONASTIC_TRADITION#2unawy": [
+      "ID_WOTC_PHB_ARCHETYPE_MONK_WAY_OF_THE_FOUR_ELEMENTS"
+    ],
+    "ID_WOTC_PHB_ARCHETYPE_FEATURE_WAY_OF_THE_FOUR_ELEMENTS_DISCIPLE_OF_THE_ELEMENTS#1iuyr64": [
+      "ID_WOTC_PHB_ARCHETYPE_FEATURE_ELEMENTAL_DISCIPLINE_FANGS_OF_THE_FIRE_SNAKE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_MONK_ABILITYSCOREIMPROVEMENT_MONK#1fqwxqg": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_MONK_4_PLUS1"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_MONK_4_PLUS1#1t64i8z": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_MONK_4_DEXTERITY_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_MONK_4_WISDOM_PLUS_1"
+    ],
+    "ID_WOTC_PHB_ARCHETYPE_FEATURE_WAY_OF_THE_FOUR_ELEMENTS_DISCIPLE_OF_THE_ELEMENTS#thpoue": [
+      "ID_WOTC_PHB_ARCHETYPE_FEATURE_ELEMENTAL_DISCIPLINE_CLENCH_OF_THE_NORTH_WIND"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "d85efem0h2re",
+      "id": "ID_WOTC_PHB_WEAPON_DART",
+      "qty": 10,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "tr1z2vd5h2re",
+      "id": "ID_WOTC_PHB_WEAPON_SHORTSWORD",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "dxlz8n05h2re",
+      "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "t6yk621lh2re",
+      "id": "ID_WOTC_PHB_ITEM_BEDROLL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "tk5rt0coh2re",
+      "id": "ID_WOTC_PHB_ITEM_MESSKIT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "f6fjey58h2re",
+      "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "k91xvwo4h2re",
+      "id": "ID_WOTC_PHB_ITEM_TORCH",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "9wmow7fkh2re",
+      "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ryodhzsbh2re",
+      "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "b0a8mddnh2re",
+      "id": "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "dsdgshjch2rn",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Set of artisan’s tools",
+        "description": "set of artisan’s tools (one of your choice)"
+      },
+      "pending": "artisan"
+    },
+    {
+      "uid": "1bfrj7suh2rn",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Letter of introduction from your guild"
+      }
+    },
+    {
+      "uid": "b2dpn5ieh2rn",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_TRAVELERS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "nwdc3kxwh2rn",
+      "id": "ID_WOTC_PHB_ITEM_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 15,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_RACE_HALFLING",
+  "background": "ID_BACKGROUND_GUILD_ARTISAN",
+  "equipmentAdded": [
+    "Monk, starting equipment",
+    "Guild Artisan, starting equipment"
+  ],
+  "equipmentLedger": {
+    "Monk, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB_WEAPON_DART",
+          "name": "Dart",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_SHORTSWORD",
+          "name": "Shortsword",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BEDROLL",
+          "name": "Bedroll",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_MESSKIT",
+          "name": "Mess Kit",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+          "name": "Tinderbox",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TORCH",
+          "name": "Torch",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+          "name": "Rations (1 day)",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+          "name": "Waterskin",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET",
+          "name": "Rope, Hempen (50 feet)",
+          "qty": 1
+        }
+      ],
+      "gp": 0
+    },
+    "Guild Artisan, starting equipment": {
+      "items": [
+        {
+          "id": "",
+          "name": "Set of artisan’s tools",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Letter of introduction from your guild",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_TRAVELERS",
+          "name": "Clothes, Traveler’s",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 15
+    }
+  },
+  "hpChosen": true
+}

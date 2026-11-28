@@ -1,0 +1,293 @@
+{
+  "version": 2,
+  "name": "Test 2: Cleric 7",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_CLERIC",
+      "level": 4
+    },
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_SORCERER",
+      "level": 6
+    }
+  ],
+  "abilityBase": {
+    "strength": 10,
+    "dexterity": 12,
+    "constitution": 13,
+    "intelligence": 8,
+    "wisdom": 15,
+    "charisma": 14
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_MOTM_RACE_GENASI#11pth5k": [
+      "ID_WOTC_ASI_ABILITY_SCORE_IMPROVEMENT_OPTION_1"
+    ],
+    "ID_WOTC_ASI_ABILITY_SCORE_IMPROVEMENT_OPTION_1#1nu03pl": [
+      "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_STRENGTH_INCREASE_2"
+    ],
+    "ID_WOTC_ASI_ABILITY_SCORE_IMPROVEMENT_OPTION_1#1na41tm": [
+      "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_WISDOM_INCREASE_1"
+    ],
+    "ID_WOTC_MOTM_RACE_GENASI#y931eq": [
+      "ID_INTERNAL_RACIAL_TRAIT_MEDIUM"
+    ],
+    "ID_WOTC_MOTM_RACE_GENASI#1dnoanv": [
+      "ID_WOTC_DSDQ_LANGUAGE_NERAKESE"
+    ],
+    "ID_WOTC_MOTM_RACE_GENASI#1n97nuw": [
+      "ID_WOTC_MOTM_SUBRACE_WATER_GENASI"
+    ],
+    "ID_WOTC_MOTM_RACIAL_TRAIT_WATER_GENASI_CALL_TO_THE_WAVE#1gko21k": [
+      "ID_WOTC_MOTM_RACIAL_TRAIT_WATER_GENASI_CALL_TO_THE_WAVE_INTELLIGENCE"
+    ],
+    "ID_WOTC_BOMT_BACKGROUND_RUINED_STILL_STANDING#94lppt": [
+      "ID_PHB_FEAT_TOUGH"
+    ],
+    "ID_WOTC_BOMT_BACKGROUND_RUINED#zxzoi1": [
+      "ID_OGA_LANGUAGE_GRUNG"
+    ],
+    "ID_WOTC_BOMT_BACKGROUND_RUINED#w2h6nl": [
+      "ID_PROFICIENCY_GAMING_SET_PROFICIENCY_DICE_SET"
+    ],
+    "ID_WOTC_PHB24_CLASS_CLERIC#nhr7h7": [
+      "ID_PROFICIENCY_SKILL_PERSUASION",
+      "ID_PROFICIENCY_SKILL_INSIGHT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_SPELLCASTING#qn2cb0": [
+      "ID_WOTC_PHB24_SPELL_TOLL_THE_DEAD",
+      "ID_WOTC_PHB24_SPELL_THAUMATURGY",
+      "ID_WOTC_PHB24_SPELL_RESISTANCE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_DIVINE_ORDER#1l6pw4r": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_DIVINE_ORDER_PROTECTOR"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_CLERIC_SUBCLASS#h8387i": [
+      "ID_WOTC_XGTE_ARCHETYPE_CLERIC_GRAVE_DOMAIN"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_SPELLCASTING#pt3j83": [
+      "ID_WOTC_PHB24_SPELL_SACRED_FLAME"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_CLERIC_ABILITY_SCORE_IMPROVEMENT#1dwxbjw": [
+      "ID_WOTC_PHB24_FEAT_CRUSHER"
+    ],
+    "ID_WOTC_PHB24_FEAT_CRUSHER#1j3rcxm": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_CONSTITUTION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#d5tmj0": [
+      "ID_WOTC_PHB24_SPELL_CHILL_TOUCH",
+      "ID_WOTC_TCOE_SPELL_BOOMING_BLADE",
+      "ID_WOTC_PHB24_SPELL_PRESTIDIGITATION",
+      "ID_WOTC_PHB24_SPELL_MENDING"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#tn031y": [
+      "ID_WOTC_PHB24_SPELL_SILENT_IMAGE",
+      "ID_WOTC_PHB24_SPELL_GREASE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#td0hcz": [
+      "ID_WOTC_PHB24_SPELL_JUMP",
+      "ID_WOTC_PHB24_SPELL_ICE_KNIFE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC#4amogj": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_EXTENDED_SPELL",
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_DISTANT_SPELL"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#t30vo0": [
+      "ID_WOTC_PHB24_SPELL_FOG_CLOUD",
+      "ID_XGTE_SPELL_SHADOW_BLADE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SORCERER_SUBCLASS#eudybv": [
+      "ID_WOTC_XGTE_SORCERER_ARCHETYPE_SHADOW_MAGIC"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#a5uq5k": [
+      "ID_XGTE_SPELL_SHAPE_WATER"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#v0y3it": [
+      "ID_WOTC_UA20200414_SPELL_MIND_THRUST"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_ABILITY_SCORE_IMPROVEMENT#gthj19": [
+      "ID_WOTC_UA_FEAT_MEDIC"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#uqyhtu": [
+      "ID_WOTC_PHB24_SPELL_DARKNESS",
+      "ID_WOTC_UA20200326_SPELL_SUMMON_SHADOW_SPIRIT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#ugyw4v": [
+      "ID_WOTC_UA20191125_SPELL_ID_INSINUATION"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {
+    "Cleric": [
+      "ID_WOTC_PHB24_SPELL_ZONE_OF_TRUTH",
+      "ID_WOTC_PHB24_SPELL_DETECT_POISON_AND_DISEASE",
+      "ID_WOTC_PHB24_SPELL_CONTINUAL_FLAME",
+      "ID_WOTC_PHB24_SPELL_CALM_EMOTIONS",
+      "ID_WOTC_PHB24_SPELL_HEALING_WORD",
+      "ID_WOTC_PHB24_SPELL_PROTECTION_FROM_EVIL_AND_GOOD",
+      "ID_WOTC_PHB24_SPELL_CURE_WOUNDS"
+    ]
+  },
+  "inventory": [
+    {
+      "uid": "gygoa6xufw2d",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Cracked hourglass"
+      }
+    },
+    {
+      "uid": "mcdbgdzyfw2d",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Set of rusty manacles"
+      }
+    },
+    {
+      "uid": "pw0amnpvfw2d",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Half-empty bottle"
+      }
+    },
+    {
+      "uid": "f1mhjlbnfw2d",
+      "id": "ID_WOTC_PHB24_ITEM_HUNTING_TRAP",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "pxm2oxckfw2d",
+      "id": "ID_WOTC_PHB24_ITEM_TOOL_DICE_SET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "48t8b08yfw2d",
+      "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "mr2opubxfw2d",
+      "id": "ID_WOTC_PHB24_ITEM_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 123,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_MOTM_RACE_GENASI",
+  "background": "ID_WOTC_BOMT_BACKGROUND_RUINED",
+  "equipmentAdded": [
+    "Cleric, option b",
+    "Ruined, starting equipment"
+  ],
+  "equipmentLedger": {
+    "Cleric, option b": {
+      "items": [],
+      "gp": 110
+    },
+    "Ruined, starting equipment": {
+      "items": [
+        {
+          "id": "",
+          "name": "Cracked hourglass",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Set of rusty manacles",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Half-empty bottle",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_HUNTING_TRAP",
+          "name": "Hunting Trap",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TOOL_DICE_SET",
+          "name": "Dice Set",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+          "name": "Clothes, Traveler's",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 13
+    }
+  },
+  "hpChosen": true
+}

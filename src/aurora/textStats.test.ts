@@ -130,6 +130,21 @@ describe("lasting numbers read from a feature's text", () => {
     // Wearing or holding is the item rules' business, and a later sentence's "while" does not make the feature one.
     expect(stateOnly("While you're wearing Light, Medium, or Heavy armor, you gain a +1 bonus to Armor Class.")).toBe(false);
     expect(stateOnly("Your speed increases by 10 feet. While raging, you also ignore difficult terrain.")).toBe(false);
+    // The 2024 Circle of the Moon's Circle Forms: everything it gives is the form's. Its "Until you leave the form,
+    // your AC equals 13 plus your Wisdom modifier" was every Moon Druid's armor class, out of the form too (2026-11-28).
+    const circleForms =
+      "You can channel lunar magic when you assume a Wild Shape form, granting you the benefits below. Armor Class. Until you leave the form, your AC equals 13 plus your Wisdom modifier if that total is higher than the Beast's AC.";
+    expect(stateOnly(circleForms)).toBe(true);
+    expect(armorClassFromText("ID_CF", "Circle Forms", circleForms)).toEqual([]);
+    expect(armorClassFromText("ID_X", "Stone Form", "Until the spell ends, your AC equals 16.")).toEqual([]);
+    // Lasting formulas stay: not wearing armor is the item rules' condition, not a state.
+    expect(
+      armorClassFromText(
+        "ID_U",
+        "Unarmored Defense",
+        "While you aren't wearing any armor, your AC equals 10 + your Dexterity modifier + your Wisdom modifier.",
+      ).length,
+    ).toBeGreaterThan(0);
   });
 
   it("saving throws: all, or the named ones, and never a choice of them", () => {

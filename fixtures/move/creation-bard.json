@@ -1,0 +1,436 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB_CLASS_BARD",
+      "level": 20
+    }
+  ],
+  "abilityBase": {
+    "strength": 10,
+    "dexterity": 14,
+    "constitution": 13,
+    "intelligence": 12,
+    "wisdom": 8,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_BACKGROUND_SAILOR#ntedim": [
+      "ID_SF_BACKGROUND_2024_RULES"
+    ],
+    "ID_WOTC_PHB24_RACE_AASIMAR#qr5rjd": [
+      "ID_INTERNAL_RACIAL_TRAIT_MEDIUM"
+    ],
+    "ID_WOTC_PHB24_RACE_AASIMAR#1nhtzq2": [
+      "ID_GGTR_LANGUAGE_KRAUL",
+      "ID_WOTC_DSDQ_LANGUAGE_ABANASINIAN"
+    ],
+    "ID_SF_BACKGROUND_2024_RULES#yr2p9m": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_CON_INT"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_CON_INT#1dso2r8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_CON_INT_2"
+    ],
+    "ID_SF_BACKGROUND_2024_RULES#1txlalp": [
+      "ID_WOTC_PHB24_FEAT_SAVAGE_ATTACKER"
+    ],
+    "ID_WOTC_PHB_CLASS_BARD#t9p497": [
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_PAN_FLUTE",
+      "ID_SCAG_PROFICIENCY_TOOL_PROFICIENCY_THELARR",
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_VIOL"
+    ],
+    "ID_WOTC_PHB_CLASS_BARD#19scxl0": [
+      "ID_PROFICIENCY_SKILL_ANIMALHANDLING",
+      "ID_PROFICIENCY_SKILL_RELIGION",
+      "ID_PROFICIENCY_SKILL_INVESTIGATION"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#1clgvq9": [
+      "ID_PHB_SPELL_MENDING",
+      "ID_PHB_SPELL_VICIOUS_MOCKERY"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#14ntzjt": [
+      "ID_PHB_SPELL_HEALING_WORD",
+      "ID_PHB_SPELL_ANIMAL_FRIENDSHIP",
+      "ID_PHB_SPELL_LONGSTRIDER",
+      "ID_PHB_SPELL_TASHAS_HIDEOUS_LAUGHTER"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#13tv6gw": [
+      "ID_PHB_SPELL_DISSONANT_WHISPERS"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#143us5v": [
+      "ID_PHB_SPELL_INVISIBILITY"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_BARD_COLLEGE#12cyg6n": [
+      "ID_WOTC_TCOE_ARCHETYPE_BARD_COLLEGE_OF_CREATION"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_EXPERTISE#1ewut8a": [
+      "ID_EXPERTISE_SKILL_PERCEPTION",
+      "ID_EXPERTISE_SKILL_ATHLETICS"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#1dffot6": [
+      "ID_PHB_SPELL_MINOR_ILLUSION"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#15hssmq": [
+      "ID_PHB_SPELL_SILENT_IMAGE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_ABILITYSCOREIMPROVEMENT_BARD#16ja54k": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_4_FEAT"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_4_FEAT#1i2isb5": [
+      "ID_PHB_FEAT_ACTOR"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#15rsebp": [
+      "ID_PHB_SPELL_ENHANCE_ABILITY"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#14xtl8s": [
+      "ID_PHB_SPELL_UNSEEN_SERVANT"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#157t6xr": [
+      "ID_PHB_SPELL_THUNDERWAVE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#16lr7em": [
+      "ID_PHB_SPELL_PHANTASMAL_FORCE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_ABILITYSCOREIMPROVEMENT_BARD#1ya34rw": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_8_PLUS1"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_8_PLUS1#1t64i8z": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_BARD_8_INTELLIGENCE_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_BARD_8_STRENGTH_PLUS_1"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#16vqt3l": [
+      "ID_PHB_SPELL_MODIFY_MEMORY"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#k1916r": [
+      "ID_PHB_SPELL_DANCING_LIGHTS"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_EXPERTISE#6rye0e": [
+      "ID_EXPERTISE_SKILL_INVESTIGATION",
+      "ID_EXPERTISE_SKILL_ANIMALHANDLING"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_MAGICAL_SECRETS#sm6yrb": [
+      "ID_PHB_SPELL_DIVINATION",
+      "ID_PHB_SPELL_DISPEL_EVIL_AND_GOOD"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#1fwoo7s": [
+      "ID_WOTC_FTOD_SPELL_NATHAIRS_MISCHIEF"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_ABILITYSCOREIMPROVEMENT_BARD#1u3vkem": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_12_PLUS2"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_12_PLUS2#1sltmrc": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_BARD_12_STRENGTH_PLUS_2"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#1ggnvlq": [
+      "ID_XGTE_SPELL_ENEMIES_ABOUND"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_MAGICAL_SECRETS#ri8jzf": [
+      "ID_PHB_SPELL_BEACON_OF_HOPE",
+      "ID_XGTE_SPELL_GUARDIAN_OF_NATURE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#1h0n2zo": [
+      "ID_PHB_SPELL_GEAS"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_ABILITYSCOREIMPROVEMENT_BARD#lh423i": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_16_PLUS2"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_16_PLUS2#1sltmrc": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_BARD_16_CONSTITUTION_PLUS_2"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_SPELLCASTING_BARD#1hkmadm": [
+      "ID_PHB_SPELL_CLOUD_OF_DAGGERS"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_MAGICAL_SECRETS#qea57j": [
+      "ID_PHB_SPELL_INSECT_PLAGUE",
+      "ID_PHB_SPELL_GENTLE_REPOSE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_BARD_ABILITYSCOREIMPROVEMENT_BARD#is4hry": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_19_FEAT"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_BARD_19_FEAT#1i2isb5": [
+      "ID_PHB_FEAT_GRAPPLER"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "0qp0o56cg0i3",
+      "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "0sahek61g0i3",
+      "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "4dev2gpsg0i3",
+      "id": "ID_WOTC_PHB_WEAPON_LONGSWORD",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "vcq9cakxg0i3",
+      "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ghqnug8eg0i3",
+      "id": "ID_WOTC_PHB_ITEM_BEDROLL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "bszwa2q9g0i3",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_COSTUME",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ikc89a7zg0i3",
+      "id": "ID_WOTC_PHB_ITEM_CANDLE",
+      "qty": 5,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "hrgpo1xdg0i3",
+      "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+      "qty": 5,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "zdk47556g0i3",
+      "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "dxz0bnqag0i3",
+      "id": "ID_WOTC_PHB_ITEM_TOOL_DISGUISE_KIT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "j81f72qrg0i3",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Any other musical intrument"
+      }
+    },
+    {
+      "uid": "q7399assg0in",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Belaying pin",
+        "description": "belaying pin (club)"
+      }
+    },
+    {
+      "uid": "vii2i5mxg0in",
+      "id": "",
+      "qty": 50,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Feet of silk rope"
+      }
+    },
+    {
+      "uid": "m8m1dt1zg0in",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Lucky charm such as a rabbit foot or a small stone with a hole in the center",
+        "description": "lucky charm such as a rabbit foot or a small stone with a hole in the center (or you may roll for a random trinket on the Trinkets table in chapter 5)"
+      }
+    },
+    {
+      "uid": "rmo8r01pg0in",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "cfzq3v4qg0in",
+      "id": "ID_WOTC_PHB_ITEM_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 10,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_AASIMAR",
+  "background": "ID_BACKGROUND_SAILOR",
+  "taken": [
+    "ID_BACKGROUND_SAILOR#ntedim"
+  ],
+  "equipmentAdded": [
+    "Bard, starting equipment",
+    "Sailor, starting equipment"
+  ],
+  "equipmentLedger": {
+    "Bard, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+          "name": "Leather",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_LONGSWORD",
+          "name": "Longsword",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BEDROLL",
+          "name": "Bedroll",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_COSTUME",
+          "name": "Clothes, Costume",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CANDLE",
+          "name": "Candle",
+          "qty": 5
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+          "name": "Rations (1 day)",
+          "qty": 5
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+          "name": "Waterskin",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TOOL_DISGUISE_KIT",
+          "name": "Disguise Kit",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Any other musical intrument",
+          "qty": 1
+        }
+      ],
+      "gp": 0
+    },
+    "Sailor, starting equipment": {
+      "items": [
+        {
+          "id": "",
+          "name": "Belaying pin",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Feet of silk rope",
+          "qty": 50
+        },
+        {
+          "id": "",
+          "name": "Lucky charm such as a rabbit foot or a small stone with a hole in the center",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+          "name": "Clothes, Common",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 10
+    }
+  },
+  "hpChosen": true
+}

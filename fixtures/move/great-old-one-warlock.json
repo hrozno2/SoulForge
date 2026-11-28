@@ -1,0 +1,380 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB_CLASS_WARLOCK",
+      "level": 6
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 12,
+    "constitution": 13,
+    "intelligence": 10,
+    "wisdom": 14,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_BACKGROUND_SOLDIER#ntedim": [
+      "ID_SF_BACKGROUND_2024_RULES"
+    ],
+    "ID_WOTC_PHB24_RACE_ELF#83j4bt": [
+      "ID_GGTR_LANGUAGE_VEDALKEN",
+      "ID_WOTC_DSDQ_LANGUAGE_SOLAMNIC"
+    ],
+    "ID_WOTC_PHB24_RACIAL_TRAIT_ELF_ELVEN_LINEAGE#ee4rma": [
+      "ID_WOTC_PHB24_RACIAL_TRAIT_ELF_ELVEN_LINEAGE_DROW"
+    ],
+    "ID_WOTC_PHB24_RACIAL_TRAIT_ELF_ELVEN_LINEAGE_DROW#t26x8o": [
+      "ID_WOTC_PHB24_RACIAL_TRAIT_ELF_ELVEN_LINEAGE_DROW_CHARISMA"
+    ],
+    "ID_WOTC_PHB24_RACIAL_TRAIT_ELF_KEEN_SENSES#1fj3lk5": [
+      "ID_PROFICIENCY_SKILL_PERCEPTION"
+    ],
+    "ID_BACKGROUND_SOLDIER#me436l": [
+      "ID_PROFICIENCY_GAMING_SET_PROFICIENCY_DRAGONCHESS_SET"
+    ],
+    "ID_SF_BACKGROUND_2024_RULES#yr2p9m": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_INT_WIS"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_INT_WIS#1dso2r8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_INT_WIS_2"
+    ],
+    "ID_SF_BACKGROUND_2024_RULES#1txlalp": [
+      "ID_WOTC_PHB24_FEAT_HEALER"
+    ],
+    "ID_WOTC_PHB_CLASS_WARLOCK#cxp1ke": [
+      "ID_PROFICIENCY_SKILL_INVESTIGATION",
+      "ID_PROFICIENCY_SKILL_NATURE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_OTHERWORLDLY_PATRON#bgpkvl": [
+      "ID_WOTC_PHB_ARCHETYPE_OTHERWORLDLY_PATRON_THE_GREAT_OLD_ONE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#gw4nkv": [
+      "ID_PHB_SPELL_ELDRITCH_BLAST",
+      "ID_PHB_SPELL_CHILL_TOUCH"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#zsbol3": [
+      "ID_PHB_SPELL_UNSEEN_SERVANT",
+      "ID_PHB_SPELL_COMPREHEND_LANGUAGES"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#102baa2": [
+      "ID_PHB_SPELL_CHARM_PERSON"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#136hxr1": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_DEVILS_SIGHT",
+      "ID_WOTC_XGTE_CLASS_FEATURE_ELDRITCH_INVOCATION_GRASP_OF_HADAR"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#10cavz1": [
+      "ID_PHB_SPELL_ARMOR_OF_AGATHYS"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON#52r8ae": [
+      "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON_PACT_OF_THE_TOME"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON_PACT_OF_THE_TOME#s7x2fz": [
+      "ID_XGTE_SPELL_SHAPE_WATER",
+      "ID_PHB_SPELL_MENDING",
+      "ID_PHB_SPELL_SPARE_THE_DYING"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#fi6n40": [
+      "ID_PHB_SPELL_BLADE_WARD"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#yedo48": [
+      "ID_PHB_SPELL_RAY_OF_ENFEEBLEMENT"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK#11lm71e": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_4_PLUS1"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_4_PLUS1#1t64i8z": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_4_CONSTITUTION_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_4_DEXTERITY_PLUS_1"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#yod9t7": [
+      "ID_PHB_SPELL_HYPNOTIC_PATTERN"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1dijwov": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_UNDYING_SERVITUDE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#yycvi6": [
+      "ID_PHB_SPELL_TONGUES"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "utyu2hdlgfii",
+      "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "vydisbthgfii",
+      "id": "ID_WOTC_PHB_WEAPON_CLUB",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "5si3776qgfii",
+      "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "bykh0igdgfii",
+      "id": "ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "zdmjghufgfii",
+      "id": "ID_WOTC_PHB24_ITEM_BOLT",
+      "qty": 20,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "17hx3kmigfii",
+      "id": "ID_WOTC_PHB_ITEM_COMPONENTPOUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "i3g9xa0dgfii",
+      "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "99uffa07gfii",
+      "id": "ID_WOTC_PHB_ITEM_BOOK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "fl2azfsfgfii",
+      "id": "ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "wfpitosagfii",
+      "id": "ID_WOTC_PHB_ITEM_INKPEN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "axyf0uxugfii",
+      "id": "ID_WOTC_PHB_ITEM_PARCHMENT_ONESHEET",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "caua1u0ugfit",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Insignia of rank"
+      }
+    },
+    {
+      "uid": "ipovnmi4gfit",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Trophy taken from a fallen enemy",
+        "description": "trophy taken from a fallen enemy (a dagger, broken blade, or piece of a banner)"
+      }
+    },
+    {
+      "uid": "x7cwxrgxgfit",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Set of bone dice or deck of cards"
+      }
+    },
+    {
+      "uid": "plg3gveogfit",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "7uujd4gzgfit",
+      "id": "ID_WOTC_PHB_ITEM_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 10,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_ELF",
+  "background": "ID_BACKGROUND_SOLDIER",
+  "taken": [
+    "ID_BACKGROUND_SOLDIER#ntedim"
+  ],
+  "equipmentAdded": [
+    "Warlock, starting equipment",
+    "Soldier, starting equipment"
+  ],
+  "equipmentLedger": {
+    "Warlock, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+          "name": "Leather",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_CLUB",
+          "name": "Club",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT",
+          "name": "Light Crossbow",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BOLT",
+          "name": "Bolt",
+          "qty": 20
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_COMPONENTPOUCH",
+          "name": "Component Pouch",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BOOK",
+          "name": "Book",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE",
+          "name": "Ink (1 ounce bottle)",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_INKPEN",
+          "name": "Ink Pen",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_PARCHMENT_ONESHEET",
+          "name": "Parchment (one sheet)",
+          "qty": 10
+        }
+      ],
+      "gp": 0
+    },
+    "Soldier, starting equipment": {
+      "items": [
+        {
+          "id": "",
+          "name": "Insignia of rank",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Trophy taken from a fallen enemy",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Set of bone dice or deck of cards",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+          "name": "Clothes, Common",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 10
+    }
+  },
+  "hpChosen": true
+}

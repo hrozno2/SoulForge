@@ -3383,6 +3383,55 @@ function refRules(
   return rules;
 }
 
+/**
+ * The options a subclass feature names in its own text, each with the features filed under it: "choose one of the
+ * following armor models: Guardian or Infiltrator" (the Armorer). 5e.tools writes no "options" block for these, so the
+ * features of every option were all given. An option is a named entry holding references (Tasha's) or a referenced
+ * feature of that name (the 2025 book). Undefined unless every name leads to at least one feature: a list of damage
+ * types or skills is another reader's.
+ */
+function namedOptionGroups(
+  f: J,
+  lookup: (uid: string) => J | undefined,
+): { name: string; features: J[]; entries: unknown[] }[] | undefined {
+  const entries = (Array.isArray(f.entries) ? f.entries : []) as unknown[];
+  const text = stripTags(entries.filter((e) => typeof e === "string").join(" "));
+  const m = /\bchoose one of the following ([a-z' ]+?): ([^.]+)\./i.exec(text);
+  if (!m) return undefined;
+  const names = m[2]
+    .split(/,\s*(?:or\s+)?|\s+or\s+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+  if (names.length < 2) return undefined;
+  const named = new Map<string, J>();
+  const refsIn = (x: unknown, top: boolean, found: J[] = []): J[] => {
+    if (Array.isArray(x)) for (const y of x) refsIn(y, top, found);
+    else if (x && typeof x === "object") {
+      const e = x as J;
+      if (e.type === "refSubclassFeature") {
+        const g = lookup(String(e.subclassFeature));
+        if (g) found.push(g);
+      } else {
+        if (top && e.name) named.set(String(e.name).toLowerCase(), e);
+        refsIn(e.entries, top, found);
+        refsIn(e.items, top, found);
+      }
+    }
+    return found;
+  };
+  const all = refsIn(entries, true);
+  const groups = names.map((asWritten) => {
+    const entry = named.get(asWritten.toLowerCase());
+    const own = all.find((x) => String(x.name).toLowerCase() === asWritten.toLowerCase());
+    // The name as the entry or the feature writes it (the sentence is read in lower case).
+    const name = String(entry?.name ?? own?.name ?? asWritten);
+    return entry
+      ? { name, features: refsIn(entry.entries, false), entries: (entry.entries as unknown[]) ?? [] }
+      : { name, features: own ? [own] : [], entries: (own?.entries as unknown[]) ?? [] };
+  });
+  return groups.every((g) => g.features.length) ? groups : undefined;
+}
+
 function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: AElement[]): void {
   const id = ftId("CLASS", c.name, c.source);
   const mcId = `${id}_MULTICLASS`;
@@ -3740,6 +3789,8 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
           return;
         }
         if (e.entries) walk(e.entries);
+        // A list's items too: Tasha's Armorer names each armor model's features in a list, and they were never made.
+        if (e.items) walk(e.items);
       };
       walk(f.entries);
     }
@@ -3753,6 +3804,20 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
             (x.subclassSource ?? s.source) === s.source &&
             (x.classSource ?? c.source) === c.source,
         );
+    // Features that belong to an option a feature names ("choose one of the following armor models"): the option gives
+    // them, not the subclass. A later feature named as an option is that option's too (Perfected Armor's Guardian).
+    const sfId = (x: J) => ftId("SF", `${s.shortName ?? s.name} ${x.name}`, x.source, `${x.level}${x.header ?? ""}`);
+    const optionGroups = new Map<J, NonNullable<ReturnType<typeof namedOptionGroups>>>();
+    const inOption = new Set<J>();
+    for (const f of features) {
+      const groups = namedOptionGroups(f, lookup);
+      if (!groups) continue;
+      for (const g of groups)
+        for (const x of features)
+          if (x !== f && !g.features.includes(x) && String(x.name).toLowerCase() === g.name.toLowerCase()) g.features.push(x);
+      optionGroups.set(f, groups);
+      for (const g of groups) for (const x of g.features) inOption.add(x);
+    }
     for (const f of features) {
       const fid = ftId("SF", `${s.shortName ?? s.name} ${f.name}`, f.source, `${f.level}${f.header ?? ""}`);
       // A feature two copies of one subclass share (the PHB subclass and its copy for the 2024 class) is one element,
@@ -3773,7 +3838,30 @@ function convertClass(c: J, data: { cf: J[]; sc: J[]; sf: J[] }, ctx: Ctx, out: 
         });
         const replaced = /replaces the (.+?) feature/i.exec(stripTags(JSON.stringify(f.entries ?? [])))?.[1]?.toLowerCase();
         if (replaced) variantsOf.push({ name: replaced, by: fid });
-      } else srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
+      } else if (!inOption.has(f)) srules.push({ kind: "grant", type: "Archetype Feature", id: fid, level: f.level });
+      const groups = optionGroups.get(f);
+      if (groups) {
+        const ids = groups.map((g) => {
+          const oid = `${fid}_CHOICE_${slug(g.name)}`;
+          if (!out.some((o) => o.id === oid))
+            out.push(
+              base(oid, g.name, "Training Option", srcName(ctx, f.source), {
+                compendiumHidden: true,
+                description: entriesHtml(g.entries as J),
+                rules: g.features.map((x) => ({ kind: "grant", type: "Archetype Feature", id: sfId(x), level: x.level }) as ARule),
+              }),
+            );
+          return oid;
+        });
+        srules.push({
+          kind: "select",
+          type: "Training Option",
+          name: `${f.name}: choose one`,
+          supports: ids.join("|"),
+          number: 1,
+          level: f.level,
+        });
+      }
       srules.push(...proseChoiceRules(f, fid, f.level, ctx, out));
       srules.push(
         ...refRules(

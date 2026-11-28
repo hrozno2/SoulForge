@@ -1,0 +1,480 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_WARLOCK",
+      "level": 20
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 12,
+    "constitution": 13,
+    "intelligence": 10,
+    "wisdom": 14,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_PHB24_RACE_ORC#y6xt0e": [
+      "ID_WOTC_PHB24_LANGUAGE_COMMON_SIGN",
+      "ID_GGTR_LANGUAGE_VEDALKEN"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_DEX_CHA#1dso2r8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_DEX_CHA_2"
+    ],
+    "ID_WOTC_PHB24_FEAT_MUSICIAN#1l4yu7x": [
+      "ID_SCAG_PROFICIENCY_TOOL_PROFICIENCY_SONGHORN",
+      "ID_SCAG_PROFICIENCY_TOOL_PROFICIENCY_LONGHORN",
+      "ID_SCAG_PROFICIENCY_TOOL_PROFICIENCY_BIRDPIPES"
+    ],
+    "ID_WOTC_PHB24_BACKGROUND_ENTERTAINER#1sil34j": [
+      "ID_SCAG_PROFICIENCY_TOOL_PROFICIENCY_ZULKOON"
+    ],
+    "ID_WOTC_PHB24_CLASS_WARLOCK#cxp1ke": [
+      "ID_PROFICIENCY_SKILL_RELIGION",
+      "ID_PROFICIENCY_SKILL_DECEPTION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#kfeky": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_CHAIN"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_CHAIN#7se2tr": [
+      "ID_WOTC_MM25_COMPANION_RAT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#gw4nkv": [
+      "ID_WOTC_TCOE_SPELL_GREENFLAME_BLADE",
+      "ID_WOTC_PHB24_SPELL_CHILL_TOUCH"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#zsbol3": [
+      "ID_XGTE_SPELL_CAUSE_FEAR",
+      "ID_WOTC_PHB24_SPELL_UNSEEN_SERVANT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1poqvwo": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_BLADE",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES#u5gqcr": [
+      "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE"
+    ],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE#1iy89xc": [
+      "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_WIZARD"
+    ],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_WIZARD#1ponsm7": [
+      "ID_WOTC_PHB24_FEAT_FEATURE_MAGIC_INITIATE_WIZARD_INTELLIGENCE"
+    ],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_WIZARD#44c087": [
+      "ID_XGTE_SPELL_CONTROL_FLAMES",
+      "ID_WOTC_PHB24_SPELL_FIRE_BOLT"
+    ],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_WIZARD#9lmx0t": [
+      "ID_WOTC_PHB24_SPELL_ICE_KNIFE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#102baa2": [
+      "ID_WOTC_PHB24_SPELL_ILLUSORY_SCRIPT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#10cavz1": [
+      "ID_WOTC_PHB24_SPELL_CLOUD_OF_DAGGERS"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_WARLOCK_SUBCLASS#1tc7tnv": [
+      "ID_WOTC_XGTE_ARCHETYPE_CELESTIAL"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#fi6n40": [
+      "ID_WOTC_PHB24_SPELL_TRUE_STRIKE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#yedo48": [
+      "ID_WOTC_PHB24_SPELL_HOLD_PERSON"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT#1novgqn": [
+      "ID_WOTC_PHB24_FEAT_POISONER"
+    ],
+    "ID_WOTC_PHB24_FEAT_POISONER#gq2ynv": [
+      "ID_WOTC_PHB24_FEAT_FEATURE_POISONER_DEXTERITY"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#lrzo3m": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_THIRSTING_BLADE",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_TOME"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_TOME#2baqgk": [
+      "ID_XGTE_SPELL_INFESTATION",
+      "ID_WOTC_PHB24_SPELL_MENDING",
+      "ID_WOTC_PHB24_SPELL_SPARE_THE_DYING"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_TOME#1baeezl": [
+      "ID_WOTC_PHB24_SPELL_SPEAK_WITH_ANIMALS",
+      "ID_WOTC_PHB24_SPELL_PURIFY_FOOD_AND_DRINK"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#yod9t7": [
+      "ID_WOTC_PHB24_SPELL_CURE_WOUNDS"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#yycvi6": [
+      "ID_WOTC_PHB24_SPELL_TONGUES"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#182qcra": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_ELDRITCH_SPEAR"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#z8ch75": [
+      "ID_WOTC_PHB24_SPELL_COMPREHEND_LANGUAGES"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#xaf9cc": [
+      "ID_WOTC_PHB24_SPELL_MIND_SPIKE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT#il89u9": [
+      "ID_WOTC_PHB24_FEAT_CRUSHER"
+    ],
+    "ID_WOTC_PHB24_FEAT_CRUSHER#1j3rcxm": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_CONSTITUTION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#12zv43m": [
+      "ID_WOTC_XGTE_CLASS_FEATURE_ELDRITCH_INVOCATION_IMPROVED_PACT_WEAPON"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#xkev1b": [
+      "ID_WOTC_PHB24_SPELL_GASEOUS_FORM"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#ji1rct": [
+      "ID_WOTC_TCOE_SPELL_LIGHTNING_LURE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#4gu836": [
+      "ID_WOTC_PHB24_SPELL_DISPEL_MAGIC"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM#1y07dog": [
+      "ID_XGTE_SPELL_INVESTITURE_OF_FLAME"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#rkh5sa": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_SCULPTOR_OF_FLESH"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT#1pdu9wn": [
+      "ID_WOTC_PHB24_FEAT_DURABLE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#3wv0p8": [
+      "ID_WOTC_TCOE_SPELL_SPIRIT_SHROUD"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM#7uufil": [
+      "ID_WOTC_TCOE_SPELL_DREAM_OF_THE_BLUE_VEIL"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1jqbcqi": [
+      "ID_WOTC_XGTE_CLASS_FEATURE_ELDRITCH_INVOCATION_CLOAK_OF_FLIES"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#3cvtba": [
+      "ID_XGTE_SPELL_ENEMIES_ABOUND"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM#16rru2i": [
+      "ID_WOTC_PHB24_SPELL_DEMIPLANE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT#1yw5jnb": [
+      "ID_WOTC_PHB24_FEAT_HEALER"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#2swlxc": [
+      "ID_WOTC_BOMT_SPELL_ANTAGONIZE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM#61zq2r": [
+      "ID_WOTC_PHB24_SPELL_FORESIGHT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#cg5eya": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_VISIONS_OF_DISTANT_REALMS"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#6or1my": [
+      "ID_WOTC_SATO_SPELL_GATE_SEAL"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_EPIC_BOON#z9qsma": [
+      "ID_WOTC_PHB24_FEAT_DEFENSIVE_DUELIST"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "lmnitzatg4yk",
+      "id": "ID_WOTC_PHB24_WEAPON_SICKLE",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "ywnra8wng4yk",
+      "id": "ID_WOTC_PHB24_WEAPON_DAGGER",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "hzipo5ryg4yk",
+      "id": "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ORB",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "fowx653jg4yk",
+      "id": "ID_WOTC_PHB24_ITEM_BOOK",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "eyzc4gg3g4yk",
+      "id": "ID_WOTC_PHB24_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "49d0lebjg4yk",
+      "id": "ID_WOTC_PHB24_ITEM_INK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "bxlovyw0g4yk",
+      "id": "ID_WOTC_PHB24_ITEM_INK_PEN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "en87i0p8g4yk",
+      "id": "ID_WOTC_PHB24_ITEM_LAMP",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "07s97e5ag4yk",
+      "id": "ID_WOTC_PHB24_ITEM_OIL",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "nszs2vkfg4yk",
+      "id": "ID_WOTC_PHB24_ITEM_PARCHMENT",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "po7126izg4yk",
+      "id": "ID_WOTC_PHB24_ITEM_TINDERBOX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "3a3sn52cg4yk",
+      "id": "ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "crgw7m5sg4yk",
+      "id": "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "1iriphdzg4z5",
+      "id": "ID_WOTC_PHB24_ITEM_COSTUME",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "uhf8psu1g4z5",
+      "id": "ID_WOTC_PHB24_ITEM_MIRROR",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "4lu8ivkrg4z5",
+      "id": "ID_WOTC_PHB24_ITEM_PERFUME",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "tpk93nn4g4z5",
+      "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "o6z5i06vg4z5",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Musical Instrument",
+        "description": "Musical Instrument (same as above)"
+      },
+      "pending": "instrument"
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 26,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_ORC",
+  "background": "ID_WOTC_PHB24_BACKGROUND_ENTERTAINER",
+  "equipmentAdded": [
+    "Warlock, option a",
+    "Entertainer, option a"
+  ],
+  "equipmentLedger": {
+    "Warlock, option a": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_WEAPON_SICKLE",
+          "name": "Sickle",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ORB",
+          "name": "Orb",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BOOK",
+          "name": "Book",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BOOK",
+          "name": "Book",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_INK",
+          "name": "Ink",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_INK_PEN",
+          "name": "Ink Pen",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_LAMP",
+          "name": "Lamp",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_OIL",
+          "name": "Oil",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_PARCHMENT",
+          "name": "Parchment",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TINDERBOX",
+          "name": "Tinderbox",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER",
+          "name": "Leather",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL",
+          "name": "Crystal",
+          "qty": 1
+        }
+      ],
+      "gp": 15
+    },
+    "Entertainer, option a": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_ITEM_COSTUME",
+          "name": "Costume",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_MIRROR",
+          "name": "Mirror",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_PERFUME",
+          "name": "Perfume",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+          "name": "Clothes, Traveler's",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Musical Instrument",
+          "qty": 1
+        }
+      ],
+      "gp": 11
+    }
+  },
+  "hpChosen": true
+}

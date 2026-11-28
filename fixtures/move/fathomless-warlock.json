@@ -1,0 +1,626 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB_CLASS_WARLOCK",
+      "level": 20
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 12,
+    "constitution": 13,
+    "intelligence": 10,
+    "wisdom": 14,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_BACKGROUND_URCHIN#ntedim": [
+      "ID_SF_BACKGROUND_2024_RULES"
+    ],
+    "ID_WOTC_PHB24_RACE_GNOME#l6dzhc": [
+      "ID_WOTC_PHB24_LANGUAGE_DRACONIC",
+      "ID_GGTR_LANGUAGE_LOXODON"
+    ],
+    "ID_WOTC_PHB24_RACIAL_TRAIT_GNOME_GNOMISH_LINEAGE#13p99ed": [
+      "ID_WOTC_PHB24_RACIAL_TRAIT_GNOME_GNOMISH_LINEAGE_FOREST_GNOME"
+    ],
+    "ID_WOTC_PHB24_RACIAL_TRAIT_GNOME_GNOMISH_LINEAGE_FOREST_GNOME#ioymw9": [
+      "ID_WOTC_PHB24_RACIAL_TRAIT_GNOME_GNOMISH_LINEAGE_FOREST_GNOME_CHARISMA"
+    ],
+    "ID_SF_BACKGROUND_2024_RULES#yr2p9m": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_DEX_CHA"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_DEX_CHA#1dso2r8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_DEX_CHA_2"
+    ],
+    "ID_SF_BACKGROUND_2024_RULES#1txlalp": [
+      "ID_WOTC_PHB24_FEAT_SAVAGE_ATTACKER"
+    ],
+    "ID_WOTC_PHB_CLASS_WARLOCK#cxp1ke": [
+      "ID_PROFICIENCY_SKILL_ARCANA",
+      "ID_PROFICIENCY_SKILL_RELIGION"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_OTHERWORLDLY_PATRON#bgpkvl": [
+      "ID_WOTC_PHB_ARCHETYPE_OTHERWORLDLY_PATRON_THE_GREAT_OLD_ONE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#gw4nkv": [
+      "ID_PHB_SPELL_ELDRITCH_BLAST",
+      "ID_PHB_SPELL_MAGE_HAND"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#zsbol3": [
+      "ID_PHB_SPELL_ILLUSORY_SCRIPT",
+      "ID_XGTE_SPELL_CAUSE_FEAR"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#102baa2": [
+      "ID_PHB_SPELL_TASHAS_HIDEOUS_LAUGHTER"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#136hxr1": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_GAZE_OF_TWO_MINDS",
+      "ID_WOTC_XGTE_CLASS_FEATURE_ELDRITCH_INVOCATION_LANCE_OF_LETHARGY"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#10cavz1": [
+      "ID_PHB_SPELL_ENTHRALL"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON#52r8ae": [
+      "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON_PACT_OF_THE_CHAIN"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON_PACT_OF_THE_CHAIN#iokr19": [
+      "ID_WOTC_MM_COMPANION_IMP"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#fi6n40": [
+      "ID_WOTC_TCOE_SPELL_BOOMING_BLADE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#yedo48": [
+      "ID_PHB_SPELL_PROTECTION_FROM_EVIL_AND_GOOD"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK#11lm71e": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_4_FEAT"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_4_FEAT#1i2isb5": [
+      "ID_PHB_FEAT_LIGHTLYARMORED"
+    ],
+    "ID_PHB_FEAT_LIGHTLYARMORED#18up83b": [
+      "ID_PHB_FEAT_ASI_DEXTERITY"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#yod9t7": [
+      "ID_PHB_SPELL_FEAR"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1dijwov": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_AGONIZING_BLAST"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#yycvi6": [
+      "ID_XGTE_SPELL_ENEMIES_ABOUND"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#z8ch75": [
+      "ID_WOTC_TCOE_SPELL_SUMMON_FEY"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#jvt633": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_DREADFUL_WORD"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#xaf9cc": [
+      "ID_PHB_SPELL_MAGIC_CIRCLE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK#91szqy": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_8_FEAT"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_8_FEAT#1i2isb5": [
+      "ID_PHB_FEAT_MAGESLAYER"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#xkev1b": [
+      "ID_PHB_SPELL_MAJOR_IMAGE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1gyxxnb": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_UNDYING_SERVITUDE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#ji1rct": [
+      "ID_XGTE_SPELL_THUNDERCLAP"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#4gu836": [
+      "ID_PHB_SPELL_REMOVE_CURSE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM#13m7d9p": [
+      "ID_WOTC_TCOE_SPELL_TASHAS_OTHERWORLDLY_GUISE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1nkasnr": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_SCULPTOR_OF_FLESH"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK#1r07ap0": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_12_FEAT"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_12_FEAT#1i2isb5": [
+      "ID_WOTC_TCOE_FEAT_CHEF"
+    ],
+    "ID_WOTC_TCOE_FEAT_CHEF#1vfd3tf": [
+      "ID_PHB_FEAT_ASI_WISDOM"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#3wv0p8": [
+      "ID_PHB_SPELL_DOMINATE_PERSON"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM#13285vr": [
+      "ID_PHB_SPELL_FINGER_OF_DEATH"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#3cvtba": [
+      "ID_PHB_SPELL_EVARDS_BLACK_TENTACLES"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1dxhsx3": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_BEAST_SPEECH"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM#12i8yht": [
+      "ID_XGTE_SPELL_MADDENING_DARKNESS"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK#1m700n8": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_16_PLUS2"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_16_PLUS2#1sltmrc": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_16_CONSTITUTION_PLUS_2"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#2swlxc": [
+      "ID_XGTE_SPELL_FAR_STEP"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM#11y9r3v": [
+      "ID_PHB_SPELL_IMPRISONMENT"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1w8jq0v": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_INVESTMENT_OF_THE_CHAIN_MASTER"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#6or1my": [
+      "ID_PHB_SPELL_HALLUCINATORY_TERRAIN"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK#1pz6t6s": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_19_PLUS2"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_19_PLUS2#1sltmrc": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_19_DEXTERITY_PLUS_2"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "roll",
+  "hpRolls": {
+    "2": 6,
+    "3": 3,
+    "4": 2,
+    "5": 1,
+    "6": 8,
+    "7": 8,
+    "8": 2,
+    "9": 3,
+    "10": 2,
+    "11": 8,
+    "12": 5,
+    "13": 6,
+    "14": 6,
+    "15": 7,
+    "16": 4,
+    "17": 8,
+    "18": 5,
+    "19": 1,
+    "20": 7
+  },
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "cfco86aggfwp",
+      "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "hwwa09tvgfwp",
+      "id": "ID_WOTC_PHB_WEAPON_CLUB",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "ss7ulj9ggfwp",
+      "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "w0gxb99ygfwp",
+      "id": "ID_WOTC_PHB_WEAPON_HANDAXE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "gmbjnn75gfwp",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Arcane Focus"
+      },
+      "pending": "arcane"
+    },
+    {
+      "uid": "2992gp7zgfwp",
+      "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "66fznvz8gfwp",
+      "id": "ID_WOTC_PHB_ITEM_CROWBAR",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "oka43f3qgfwp",
+      "id": "ID_WOTC_PHB_ITEM_HAMMER",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "yt5h5i3bgfwp",
+      "id": "ID_WOTC_PHB_ITEM_PITON",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "izsjrr71gfwp",
+      "id": "ID_WOTC_PHB_ITEM_TORCH",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "s2etbdipgfwp",
+      "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "09epi5gfgfwp",
+      "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "pg8xtan9gfwp",
+      "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "m6m49z85gfwp",
+      "id": "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "aw8d0kg3gfx8",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Small knife"
+      }
+    },
+    {
+      "uid": "0czl0x3ygfx8",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Map of the city you grew up in"
+      }
+    },
+    {
+      "uid": "dbw7xxabgfx8",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Pet mouse"
+      }
+    },
+    {
+      "uid": "nhf70mnvgfx8",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Token to remember your parents by"
+      }
+    },
+    {
+      "uid": "n4ebwzj1gfx8",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "6to6xdd0gfx8",
+      "id": "ID_WOTC_PHB_ITEM_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 10,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_GNOME",
+  "background": "ID_BACKGROUND_URCHIN",
+  "taken": [
+    "ID_BACKGROUND_URCHIN#ntedim"
+  ],
+  "equipmentAdded": [
+    "Warlock, starting equipment",
+    "Urchin, starting equipment"
+  ],
+  "equipmentLedger": {
+    "Warlock, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+          "name": "Leather",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_CLUB",
+          "name": "Club",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_HANDAXE",
+          "name": "Handaxe",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Arcane Focus",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CROWBAR",
+          "name": "Crowbar",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_HAMMER",
+          "name": "Hammer",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_PITON",
+          "name": "Piton",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TORCH",
+          "name": "Torch",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+          "name": "Tinderbox",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+          "name": "Rations (1 day)",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+          "name": "Waterskin",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET",
+          "name": "Rope, Hempen (50 feet)",
+          "qty": 1
+        }
+      ],
+      "gp": 0
+    },
+    "Urchin, starting equipment": {
+      "items": [
+        {
+          "id": "",
+          "name": "Small knife",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Map of the city you grew up in",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Pet mouse",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Token to remember your parents by",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+          "name": "Clothes, Common",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 10
+    }
+  },
+  "hpRollLog": {
+    "2": {
+      "value": 6,
+      "die": 8,
+      "by": "app"
+    },
+    "3": {
+      "value": 3,
+      "die": 8,
+      "by": "app"
+    },
+    "4": {
+      "value": 2,
+      "die": 8,
+      "by": "app"
+    },
+    "5": {
+      "value": 1,
+      "die": 8,
+      "by": "app"
+    },
+    "6": {
+      "value": 8,
+      "die": 8,
+      "by": "app"
+    },
+    "7": {
+      "value": 8,
+      "die": 8,
+      "by": "app"
+    },
+    "8": {
+      "value": 2,
+      "die": 8,
+      "by": "app"
+    },
+    "9": {
+      "value": 3,
+      "die": 8,
+      "by": "app"
+    },
+    "10": {
+      "value": 2,
+      "die": 8,
+      "by": "app"
+    },
+    "11": {
+      "value": 8,
+      "die": 8,
+      "by": "app"
+    },
+    "12": {
+      "value": 5,
+      "die": 8,
+      "by": "app"
+    },
+    "13": {
+      "value": 6,
+      "die": 8,
+      "by": "app"
+    },
+    "14": {
+      "value": 6,
+      "die": 8,
+      "by": "app"
+    },
+    "15": {
+      "value": 7,
+      "die": 8,
+      "by": "app"
+    },
+    "16": {
+      "value": 4,
+      "die": 8,
+      "by": "app"
+    },
+    "17": {
+      "value": 8,
+      "die": 8,
+      "by": "app"
+    },
+    "18": {
+      "value": 5,
+      "die": 8,
+      "by": "app"
+    },
+    "19": {
+      "value": 1,
+      "die": 8,
+      "by": "app"
+    },
+    "20": {
+      "value": 7,
+      "die": 8,
+      "by": "app"
+    }
+  },
+  "hpChosen": true
+}

@@ -1,0 +1,451 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_TCOE_CLASS_ARTIFICER",
+      "level": 20
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 13,
+    "constitution": 14,
+    "intelligence": 15,
+    "wisdom": 10,
+    "charisma": 12
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_BACKGROUND_SOLDIER#me436l": [
+      "ID_PROFICIENCY_GAMING_SET_PROFICIENCY_DICE_SET"
+    ],
+    "ID_WOTC_TCOE_CLASS_ARTIFICER#g4tect": [
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_WOODCARVERS_TOOLS"
+    ],
+    "ID_WOTC_TCOE_CLASS_ARTIFICER#1ttxhz9": [
+      "ID_PROFICIENCY_SKILL_HISTORY",
+      "ID_PROFICIENCY_SKILL_MEDICINE"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_SPELLCASTING#1wbcjo3": [
+      "ID_PHB_SPELL_ACID_SPLASH",
+      "ID_WOTC_TCOE_SPELL_GREENFLAME_BLADE"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSE_ITEM#veo69a": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSION_REPLICATE_MAGIC_ITEM",
+      "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSION_ARMOR_OF_MAGICAL_STRENGTH",
+      "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSION_ENHANCED_DEFENSE",
+      "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSION_MIND_SHARPENER"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_ARTIFICER_SPECIALIST#18kc0s2": [
+      "ID_WOTC_TCOE_ARCHETYPE_ARTIFICER_ARMORER"
+    ],
+    "ID_WOTC_TCOE_ARCHETYPE_FEATURE_ARMORER_ARMOR_MODEL#1fzsgvw": [
+      "ID_WOTC_TCOE_ARCHETYPE_FEATURE_ARMORER_ARMOR_MODEL_INFILTRATOR"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_ABILITY_SCORE_IMPROVEMENT#1hc44hx": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_4"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_4#yccdbi": [
+      "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_4_0_PLUS1"
+    ],
+    "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_4_0_PLUS1#1t64i8z": [
+      "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_4_0_STRENGTH_PLUS_1",
+      "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_4_0_CONSTITUTION_PLUS_1"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSE_ITEM#vpw9hy": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSION_BOOTS_OF_THE_WINDING_PATH",
+      "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSION_RESISTANT_ARMOR"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_ABILITY_SCORE_IMPROVEMENT#1ig2j9t": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_8"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_8#1jpo66y": [
+      "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_8_0_PLUS1"
+    ],
+    "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_8_0_PLUS1#1t64i8z": [
+      "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_8_0_DEXTERITY_PLUS_1",
+      "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_8_0_INTELLIGENCE_PLUS_1"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_SPELLCASTING#1xcfk02": [
+      "ID_XGTE_SPELL_CREATE_BONFIRE"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSE_ITEM#14qse3k": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSION_RADIANT_WEAPON",
+      "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSION_REPULSION_SHIELD"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_ABILITY_SCORE_IMPROVEMENT#147son0": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_12"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_12#1550sbb": [
+      "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_12_0_PLUS1"
+    ],
+    "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_12_0_PLUS1#1t64i8z": [
+      "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_12_0_DEXTERITY_PLUS_1",
+      "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_12_0_CHARISMA_PLUS_1"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_SPELLCASTING#1w8h586": [
+      "ID_PHB_SPELL_MESSAGE"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSE_ITEM#oebwxc": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSION_ARCANE_PROPULSION_ARMOR",
+      "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSION_RETURNING_WEAPON"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSE_ITEM#1fumsc8": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSION_ENHANCED_ARCANE_FOCUS",
+      "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_INFUSION_ENHANCED_WEAPON"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_ABILITY_SCORE_IMPROVEMENT#133u9v4": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_16"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_16#1qiadkz": [
+      "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_16_0_FEAT"
+    ],
+    "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_16_0_FEAT#1i2isb5": [
+      "ID_WOTC_FTOD_FEAT_GIFT_OF_THE_GEM_DRAGON"
+    ],
+    "ID_WOTC_FTOD_FEAT_GIFT_OF_THE_GEM_DRAGON#1ipo42f": [
+      "ID_WOTC_FTOD_FEAT_FEATURE_TELEKINETIC_REPRISAL_WISDOM"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ARTIFICER_ABILITY_SCORE_IMPROVEMENT#179ob9p": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_19"
+    ],
+    "ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_19#143ziv6": [
+      "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_19_0_PLUS2"
+    ],
+    "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_19_0_PLUS2#1sltmrc": [
+      "ID_INTERNAL_CLASS_ASI_ID_WOTC_TCOE_CLASS_FEATURE_ABILITY_19_0_WISDOM_PLUS_2"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {
+    "Artificer": [
+      "ID_PHB_SPELL_CONTINUAL_FLAME",
+      "ID_PHB_SPELL_GREASE",
+      "ID_XGTE_SPELL_CATNAP",
+      "ID_XGTE_SPELL_FLAME_ARROWS",
+      "ID_PHB_SPELL_IDENTIFY",
+      "ID_PHB_SPELL_GLYPH_OF_WARDING",
+      "ID_PHB_SPELL_ARCANE_EYE",
+      "ID_PHB_SPELL_MAGIC_WEAPON",
+      "ID_PHB_SPELL_FREEDOM_OF_MOVEMENT",
+      "ID_PHB_SPELL_WALL_OF_STONE",
+      "ID_PHB_SPELL_ENHANCE_ABILITY",
+      "ID_PHB_SPELL_CREATION",
+      "ID_PHB_SPELL_DETECT_MAGIC"
+    ]
+  },
+  "inventory": [
+    {
+      "uid": "l3ggl5i1m7ot",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Any two simple weapons of your choice"
+      }
+    },
+    {
+      "uid": "9j0vo3tmm7ot",
+      "id": "ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "sfrtqzvrm7ot",
+      "id": "ID_WOTC_PHB24_ITEM_BOLT",
+      "qty": 20,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ce8ehq9rm7ot",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Choice of studded leather armor or scale mail"
+      }
+    },
+    {
+      "uid": "ruerlfazm7ot",
+      "id": "ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "rnt02evdm7ot",
+      "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "iwgk94z3m7ot",
+      "id": "ID_WOTC_PHB_ITEM_CROWBAR",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "hbzq8z2hm7ot",
+      "id": "ID_WOTC_PHB_ITEM_HAMMER",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "669lmyvsm7ot",
+      "id": "ID_WOTC_PHB_ITEM_PITON",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "wq95mpm5m7ot",
+      "id": "ID_WOTC_PHB_ITEM_TORCH",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "042gzsgvm7ot",
+      "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "dwv1v58em7ot",
+      "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "9dfmicvum7ot",
+      "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ihmvr8g8m7ot",
+      "id": "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "a3vvangsm7pa",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Insignia of rank"
+      }
+    },
+    {
+      "uid": "t428l41hm7pa",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Trophy taken from a fallen enemy",
+        "description": "trophy taken from a fallen enemy (a dagger, broken blade, or piece of a banner)"
+      }
+    },
+    {
+      "uid": "wl08qr21m7pa",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Set of bone dice or deck of cards"
+      }
+    },
+    {
+      "uid": "ez1qh81zm7pa",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "s9ozqz92m7pa",
+      "id": "ID_WOTC_PHB_ITEM_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 10,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_RACE_HALFORC",
+  "background": "ID_BACKGROUND_SOLDIER",
+  "equipmentAdded": [
+    "Artificer, starting equipment",
+    "Soldier, starting equipment"
+  ],
+  "equipmentLedger": {
+    "Artificer, starting equipment": {
+      "items": [
+        {
+          "id": "",
+          "name": "Any two simple weapons of your choice",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT",
+          "name": "Light Crossbow",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BOLT",
+          "name": "Bolt",
+          "qty": 20
+        },
+        {
+          "id": "",
+          "name": "Choice of studded leather armor or scale mail",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TOOL_THIEVES_TOOLS",
+          "name": "Thieves’ Tools",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CROWBAR",
+          "name": "Crowbar",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_HAMMER",
+          "name": "Hammer",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_PITON",
+          "name": "Piton",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TORCH",
+          "name": "Torch",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+          "name": "Tinderbox",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+          "name": "Rations (1 day)",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+          "name": "Waterskin",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET",
+          "name": "Rope, Hempen (50 feet)",
+          "qty": 1
+        }
+      ],
+      "gp": 0
+    },
+    "Soldier, starting equipment": {
+      "items": [
+        {
+          "id": "",
+          "name": "Insignia of rank",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Trophy taken from a fallen enemy",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Set of bone dice or deck of cards",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+          "name": "Clothes, Common",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 10
+    }
+  },
+  "hpChosen": true
+}

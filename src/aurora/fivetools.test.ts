@@ -861,6 +861,99 @@ describe("a subclass feature that is a choice of other features", () => {
       .rules.find((r) => r.kind === "select" && r.name.startsWith("Hunter's Prey")) as { supports: string };
     expect(choice.supports.split("|").map((id) => els.find((e) => e.id === id)?.name)).toEqual(["Colossus Slayer", "Giant Killer"]);
   });
+  // "Choose one of the following armor models: Guardian or Infiltrator": the features each model names are the
+  // model's, not all the Armorer's. Both shapes 5e.tools writes it in (found 2026-11-28: a moved Armorer lost its
+  // Infiltrator, and every Armorer had both models' features).
+  it("makes a choice of the options a feature names in its text, each with the features under it", () => {
+    const f = (name: string, level = 3, entries: unknown[] = ["Text."]) => ({
+      name,
+      source: "TCE",
+      className: "Artificer",
+      classSource: "TCE",
+      subclassShortName: "Armorer",
+      subclassSource: "TCE",
+      level,
+      entries,
+    });
+    const ref = (name: string, level = 3) => ({
+      type: "refSubclassFeature",
+      subclassFeature: `${name}|Artificer|TCE|Armorer|TCE|${level}`,
+    });
+    const convert = (model: unknown[], extra: unknown[]) =>
+      convertFiveTools({
+        files: {
+          "class/class-artificer.json": {
+            class: [{ name: "Artificer", source: "TCE", hd: { number: 1, faces: 8 }, classFeatures: [], subclassTitle: "Specialist" }],
+            subclass: [
+              {
+                name: "Armorer",
+                shortName: "Armorer",
+                source: "TCE",
+                className: "Artificer",
+                classSource: "TCE",
+                subclassFeatures: ["Armorer|Artificer|TCE|Armorer|TCE|3", "Perfected Armor|Artificer|TCE|Armorer|TCE|15"],
+              },
+            ],
+            subclassFeature: [
+              f("Armorer", 3, ["Text.", ref("Armor Model")]),
+              f("Armor Model", 3, model),
+              f("Perfected Armor", 15, ["Text.", ref("Guardian", 15), ref("Infiltrator", 15)]),
+              f("Guardian", 15),
+              f("Infiltrator", 15),
+              ...extra,
+            ],
+          },
+        } as never,
+      });
+    const check = (els: ReturnType<typeof convertFiveTools>, guardian: string[], infiltrator: string[]) => {
+      const armorer = els.find((e) => e.type === "Archetype")!;
+      const choice = armorer.rules.find((r) => r.kind === "select" && r.name.startsWith("Armor Model")) as {
+        supports: string;
+        number: number;
+      };
+      expect(choice.number).toBe(1);
+      const options = choice.supports.split("|").map((id) => els.find((e) => e.id === id)!);
+      expect(options.map((o) => o.name)).toEqual(["Guardian", "Infiltrator"]);
+      const gives = (o: (typeof options)[number]) =>
+        o.rules
+          .filter((r) => r.kind === "grant")
+          .map((r) => `${els.find((e) => e.id === (r as { id: string }).id)?.name} ${(r as { level?: number }).level}`);
+      expect(gives(options[0])).toEqual(guardian);
+      expect(gives(options[1])).toEqual(infiltrator);
+      // And the subclass itself gives none of them.
+      const given = new Set(
+        armorer.rules.filter((r) => r.kind === "grant").map((r) => els.find((e) => e.id === (r as { id: string }).id)?.name),
+      );
+      for (const n of ["Guardian", "Infiltrator", "Thunder Gauntlets", "Powered Steps"]) expect(given.has(n), n).toBe(false);
+      expect(given.has("Armor Model")).toBe(true);
+    };
+    const text =
+      "You can customize your Arcane Armor. When you do so, choose one of the following armor models: Guardian or Infiltrator. The model gives benefits.";
+    // Tasha's: each model a named entry listing its features.
+    check(
+      convert(
+        [
+          text,
+          {
+            type: "entries",
+            entries: [
+              { type: "entries", name: "Guardian", entries: ["Front line.", { type: "list", items: [ref("Thunder Gauntlets")] }] },
+              { type: "entries", name: "Infiltrator", entries: ["Subtle.", { type: "list", items: [ref("Powered Steps")] }] },
+            ],
+          },
+        ],
+        [f("Thunder Gauntlets"), f("Powered Steps")],
+      ),
+      ["Thunder Gauntlets 3", "Guardian 15"],
+      ["Powered Steps 3", "Infiltrator 15"],
+    );
+    // The 2025 book: each model a feature of its own.
+    check(
+      convert([text, ref("Guardian"), ref("Infiltrator")], [f("Guardian"), f("Infiltrator")]),
+      ["Guardian 3", "Guardian 15"],
+      ["Infiltrator 3", "Infiltrator 15"],
+    );
+  });
   it("does not offer optional features twice when a progression already does", () => {
     const f = {
       name: "Maneuvers",

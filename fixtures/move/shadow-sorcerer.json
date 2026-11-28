@@ -1,0 +1,539 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB_CLASS_SORCERER",
+      "level": 20
+    }
+  ],
+  "abilityBase": {
+    "strength": 12,
+    "dexterity": 13,
+    "constitution": 14,
+    "intelligence": 10,
+    "wisdom": 8,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_BACKGROUND_OUTLANDER#ntedim": [
+      "ID_SF_BACKGROUND_2024_RULES"
+    ],
+    "ID_WOTC_PHB24_RACE_AASIMAR#qr5rjd": [
+      "ID_INTERNAL_RACIAL_TRAIT_MEDIUM"
+    ],
+    "ID_WOTC_PHB24_RACE_AASIMAR#1nhtzq2": [
+      "ID_LANGUAGE_HALFLING",
+      "ID_LANGUAGE_GOBLIN"
+    ],
+    "ID_BACKGROUND_OUTLANDER#1tzvzos": [
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_FLUTE"
+    ],
+    "ID_BACKGROUND_OUTLANDER#1dda6w6": [
+      "ID_LANGUAGE_CELESTIAL"
+    ],
+    "ID_SF_BACKGROUND_2024_RULES#yr2p9m": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_CON_INT_WIS"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_CON_INT_WIS#1dso2r8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_CON_INT_WIS_2"
+    ],
+    "ID_SF_BACKGROUND_2024_RULES#1txlalp": [
+      "ID_WOTC_PHB24_FEAT_LUCKY"
+    ],
+    "ID_WOTC_PHB_CLASS_SORCERER#1izmyny": [
+      "ID_PROFICIENCY_SKILL_INTIMIDATION",
+      "ID_PROFICIENCY_SKILL_RELIGION"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#bjsqmf": [
+      "ID_PHB_SPELL_DANCING_LIGHTS",
+      "ID_PHB_SPELL_MESSAGE",
+      "ID_XGTE_SPELL_CONTROL_FLAMES",
+      "ID_WOTC_TCOE_SPELL_GREENFLAME_BLADE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#tn031y": [
+      "ID_PHB_SPELL_SLEEP",
+      "ID_PHB_SPELL_FALSE_LIFE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SORCEROUS_ORIGIN#h02eht": [
+      "ID_WOTC_XGTE_SORCERER_ARCHETYPE_SHADOW_MAGIC"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#td0hcz": [
+      "ID_PHB_SPELL_WITCH_BOLT"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#t30vo0": [
+      "ID_WOTC_FTOD_SPELL_RIMES_BINDING_ICE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_METAMAGIC#igfoew": [
+      "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_METAMAGIC_TWINNED_SPELL",
+      "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_METAMAGIC_SUBTLE_SPELL"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#a5uq5k": [
+      "ID_PHB_SPELL_POISON_SPRAY"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#v0y3it": [
+      "ID_WOTC_SATO_SPELL_WARP_SENSE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_ABILITY_SCORE_IMPROVEMENT_SORCERER#1jgbqea": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_SORCERER_4_FEAT"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_SORCERER_4_FEAT#1i2isb5": [
+      "ID_PHB_FEAT_DEFENSIVE_DUELIST"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#uqyhtu": [
+      "ID_PHB_SPELL_DAYLIGHT"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#ugyw4v": [
+      "ID_WOTC_FTOD_SPELL_ASHARDALONS_STRIDE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#u6zafw": [
+      "ID_PHB_SPELL_POLYMORPH"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#w4wiap": [
+      "ID_PHB_SPELL_MAGE_ARMOR"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_ABILITY_SCORE_IMPROVEMENT_SORCERER#q7rebe": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_SORCERER_8_PLUS2"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_SORCERER_8_PLUS2#1sltmrc": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_SORCERER_8_STRENGTH_PLUS_2"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#vuwwlq": [
+      "ID_PHB_SPELL_PHANTASMAL_FORCE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#z4ij11": [
+      "ID_WOTC_TCOE_SPELL_SWORD_BURST"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#uq84s2": [
+      "ID_PHB_SPELL_SHIELD"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_METAMAGIC#bxjzd6": [
+      "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_METAMAGIC_EXTENDED_SPELL"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#v07qh1": [
+      "ID_XGTE_SPELL_CHARM_MONSTER"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_ABILITY_SCORE_IMPROVEMENT_SORCERER#1tuzeas": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_SORCERER_12_PLUS2"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_SORCERER_12_PLUS2#1sltmrc": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_SORCERER_12_CHARISMA_PLUS_2"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#ug8j33": [
+      "ID_PHB_SPELL_ARCANE_GATE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#tw9bp5": [
+      "ID_PHB_SPELL_SEE_INVISIBILITY"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_ABILITY_SCORE_IMPROVEMENT_SORCERER#1p1s490": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_SORCERER_16_PLUS1"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_SORCERER_16_PLUS1#1t64i8z": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_SORCERER_16_DEXTERITY_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_SORCERER_16_INTELLIGENCE_PLUS_1"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_SPELLCASTING_SORCERER#tca4b7": [
+      "ID_XGTE_SPELL_INVESTITURE_OF_FLAME"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_METAMAGIC#ajlywb": [
+      "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_METAMAGIC_DISTANT_SPELL"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_SORCERER_ABILITY_SCORE_IMPROVEMENT_SORCERER#1stywsk": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_SORCERER_19_PLUS2"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_SORCERER_19_PLUS2#1sltmrc": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_SORCERER_19_STRENGTH_PLUS_2"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "roll",
+  "hpRolls": {
+    "2": 6,
+    "3": 1,
+    "4": 2,
+    "5": 1,
+    "6": 6,
+    "7": 3,
+    "8": 4,
+    "9": 6,
+    "10": 3,
+    "11": 6,
+    "12": 2,
+    "13": 6,
+    "14": 2,
+    "15": 2,
+    "16": 2,
+    "17": 5,
+    "18": 1,
+    "19": 2,
+    "20": 3
+  },
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "4c4ro6fxgecd",
+      "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "19vxndf6gecd",
+      "id": "ID_WOTC_PHB_WEAPON_SICKLE",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "8p4c9f0ngecd",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Arcane Focus"
+      },
+      "pending": "arcane"
+    },
+    {
+      "uid": "o6793sjegecd",
+      "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ou7byn3ogecd",
+      "id": "ID_WOTC_PHB_ITEM_BEDROLL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "jz5uwyfpgecd",
+      "id": "ID_WOTC_PHB_ITEM_MESSKIT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "i4k3w3wvgecd",
+      "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ha2oeb86gecd",
+      "id": "ID_WOTC_PHB_ITEM_TORCH",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "rgb1aj6wgecd",
+      "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "qoovdg3xgecd",
+      "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ssg6xuq7gecd",
+      "id": "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "5nb3zl2zgecs",
+      "id": "ID_WOTC_PHB_ITEM_STAFF",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "cu7w1eijgecs",
+      "id": "ID_WOTC_PHB_ITEM_HUNTINGTRAP",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "tnp7k9ougecs",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Trophy from an animal you killed"
+      }
+    },
+    {
+      "uid": "miycriufgecs",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_TRAVELERS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "uymlh0kpgecs",
+      "id": "ID_WOTC_PHB_ITEM_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 10,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_AASIMAR",
+  "background": "ID_BACKGROUND_OUTLANDER",
+  "taken": [
+    "ID_BACKGROUND_OUTLANDER#ntedim"
+  ],
+  "equipmentAdded": [
+    "Sorcerer, starting equipment",
+    "Outlander, starting equipment"
+  ],
+  "equipmentLedger": {
+    "Sorcerer, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_SICKLE",
+          "name": "Sickle",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Arcane Focus",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BEDROLL",
+          "name": "Bedroll",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_MESSKIT",
+          "name": "Mess Kit",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TINDERBOX",
+          "name": "Tinderbox",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_TORCH",
+          "name": "Torch",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_RATIONS_1DAY",
+          "name": "Rations (1 day)",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_WATERSKIN",
+          "name": "Waterskin",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_ROPE_HEMPEN_50FEET",
+          "name": "Rope, Hempen (50 feet)",
+          "qty": 1
+        }
+      ],
+      "gp": 0
+    },
+    "Outlander, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB_ITEM_STAFF",
+          "name": "Staff",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_HUNTINGTRAP",
+          "name": "Hunting Trap",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Trophy from an animal you killed",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_TRAVELERS",
+          "name": "Clothes, Traveler’s",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 10
+    }
+  },
+  "hpRollLog": {
+    "2": {
+      "value": 6,
+      "die": 6,
+      "by": "app"
+    },
+    "3": {
+      "value": 1,
+      "die": 6,
+      "by": "app"
+    },
+    "4": {
+      "value": 2,
+      "die": 6,
+      "by": "app"
+    },
+    "5": {
+      "value": 1,
+      "die": 6,
+      "by": "app"
+    },
+    "6": {
+      "value": 6,
+      "die": 6,
+      "by": "app"
+    },
+    "7": {
+      "value": 3,
+      "die": 6,
+      "by": "app"
+    },
+    "8": {
+      "value": 4,
+      "die": 6,
+      "by": "app"
+    },
+    "9": {
+      "value": 6,
+      "die": 6,
+      "by": "app"
+    },
+    "10": {
+      "value": 3,
+      "die": 6,
+      "by": "app"
+    },
+    "11": {
+      "value": 6,
+      "die": 6,
+      "by": "app"
+    },
+    "12": {
+      "value": 2,
+      "die": 6,
+      "by": "app"
+    },
+    "13": {
+      "value": 6,
+      "die": 6,
+      "by": "app"
+    },
+    "14": {
+      "value": 2,
+      "die": 6,
+      "by": "app"
+    },
+    "15": {
+      "value": 2,
+      "die": 6,
+      "by": "app"
+    },
+    "16": {
+      "value": 2,
+      "die": 6,
+      "by": "app"
+    },
+    "17": {
+      "value": 5,
+      "die": 6,
+      "by": "app"
+    },
+    "18": {
+      "value": 1,
+      "die": 6,
+      "by": "app"
+    },
+    "19": {
+      "value": 2,
+      "die": 6,
+      "by": "app"
+    },
+    "20": {
+      "value": 3,
+      "die": 6,
+      "by": "app"
+    }
+  },
+  "hpChosen": true
+}

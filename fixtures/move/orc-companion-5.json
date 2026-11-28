@@ -1,0 +1,416 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_WARLOCK",
+      "level": 4
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 12,
+    "constitution": 13,
+    "intelligence": 10,
+    "wisdom": 14,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_PHB24_RACE_DWARF#1633jv7": [
+      "ID_LANGUAGE_SYLVAN",
+      "ID_LANGUAGE_GNOMISH",
+      "ID_LANGUAGE_GIANT"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_CON_WIS#1dso2r8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_CON_WIS_1"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_CON_WIS_1#11yhef6": [
+      "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_WISDOM_INCREASE_2"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_CON_WIS_1#12ib8pd": [
+      "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_STRENGTH_INCREASE_1"
+    ],
+    "ID_WOTC_PHB24_CLASS_WARLOCK#cxp1ke": [
+      "ID_PROFICIENCY_SKILL_INTIMIDATION",
+      "ID_PROFICIENCY_SKILL_INVESTIGATION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#kfeky": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_BLADE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#gw4nkv": [
+      "ID_WOTC_PHB24_SPELL_FRIENDS",
+      "ID_WOTC_TCOE_SPELL_GREENFLAME_BLADE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#zsbol3": [
+      "ID_WOTC_PHB24_SPELL_COMPREHEND_LANGUAGES",
+      "ID_WOTC_PHB24_SPELL_ILLUSORY_SCRIPT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1poqvwo": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES",
+      "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_TOME"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_LESSONS_OF_THE_FIRST_ONES#u5gqcr": [
+      "ID_WOTC_PHB24_FEAT_MUSICIAN"
+    ],
+    "ID_WOTC_PHB24_FEAT_MUSICIAN#1l4yu7x": [
+      "ID_SCAG_PROFICIENCY_TOOL_PROFICIENCY_SONGHORN",
+      "ID_WOTC_OGA_PROFICIENCY_TOOL_PROFICIENCY_WHISTLE_STICK",
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_FLUTE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_TOME#2baqgk": [
+      "ID_WOTC_PHB24_SPELL_CHILL_TOUCH",
+      "ID_XGTE_SPELL_CREATE_BONFIRE",
+      "ID_XGTE_SPELL_MOLD_EARTH"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_ELDRITCH_INVOCATION_PACT_OF_THE_TOME#1baeezl": [
+      "ID_WOTC_PHB24_SPELL_FIND_FAMILIAR",
+      "ID_WOTC_PHB24_SPELL_IDENTIFY"
+    ],
+    "ID_WOTC_PHB24_SPELL_FIND_FAMILIAR#3yvd2t": [
+      "ID_WOTC_MM25_COMPANION_EAGLE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#102baa2": [
+      "ID_WOTC_PHB24_SPELL_HELLISH_REBUKE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#10cavz1": [
+      "ID_WOTC_PHB24_SPELL_WITCH_BOLT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_WARLOCK_SUBCLASS#1tc7tnv": [
+      "ID_WOTC_PHB24_ARCHETYPE_WARLOCK_GREAT_OLD_ONE_PATRON"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#fi6n40": [
+      "ID_XGTE_SPELL_INFESTATION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_PACT_MAGIC#yedo48": [
+      "ID_WOTC_PHB24_SPELL_HEX"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT#1novgqn": [
+      "ID_PHB_FEAT_MOBILE"
+    ]
+  },
+  "options": [
+    "ID_WOTC_SCAG_OPTION_BATTLERAGER",
+    "ID_WOTC_SCAG_OPTION_BLADESINGING",
+    "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI",
+    "ID_WOTC_TCOE_OPTION_CUSTOMIZED_PROFICIENCY",
+    "ID_WOTC_TCOE_OPTION_CUSTOMIZED_LANGUAGE"
+  ],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "jsube86ify5o",
+      "id": "ID_WOTC_PHB24_WEAPON_SICKLE",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "kwuzd12bfy5o",
+      "id": "ID_WOTC_PHB24_WEAPON_DAGGER",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "2wg53ihofy5o",
+      "id": "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ORB",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "z4jiis1ufy5o",
+      "id": "ID_WOTC_PHB24_ITEM_BOOK",
+      "qty": 2,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "brctqq6cfy5o",
+      "id": "ID_WOTC_PHB24_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "f4bku4pgfy5o",
+      "id": "ID_WOTC_PHB24_ITEM_INK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "sge0ijslfy5o",
+      "id": "ID_WOTC_PHB24_ITEM_INK_PEN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "opf8psgwfy5o",
+      "id": "ID_WOTC_PHB24_ITEM_LAMP",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "ks0povgmfy5o",
+      "id": "ID_WOTC_PHB24_ITEM_OIL",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "cjx6p9vefy5o",
+      "id": "ID_WOTC_PHB24_ITEM_PARCHMENT",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "sqyy2rb0fy5o",
+      "id": "ID_WOTC_PHB24_ITEM_TINDERBOX",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "pndx6rv0fy5o",
+      "id": "ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "aiza1qprfy5o",
+      "id": "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "hlvioraxfy5x",
+      "id": "ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "11cj123tfy5x",
+      "id": "ID_WOTC_PHB24_ITEM_HEALERS_KIT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "td3t4t9qfy5x",
+      "id": "ID_WOTC_PHB24_ITEM_POT_IRON",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "2plwzpelfy5x",
+      "id": "ID_WOTC_PHB24_ITEM_SHOVEL",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "9s6azj6efy5x",
+      "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "s9n74yp5fy5x",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Iron Pot"
+      }
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 45,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [
+    {
+      "uid": "cmp373777430",
+      "id": "ID_WOTC_PHB_COMPANION_GIANT_WOLF_SPIDER",
+      "name": "Giant Wolf Spider"
+    }
+  ],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_DWARF",
+  "background": "ID_WOTC_PHB24_BACKGROUND_FARMER",
+  "equipmentAdded": [
+    "Warlock, option a",
+    "Farmer, option a"
+  ],
+  "equipmentLedger": {
+    "Warlock, option a": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_WEAPON_SICKLE",
+          "name": "Sickle",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_ORB",
+          "name": "Orb",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BOOK",
+          "name": "Book",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BOOK",
+          "name": "Book",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_INK",
+          "name": "Ink",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_INK_PEN",
+          "name": "Ink Pen",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_LAMP",
+          "name": "Lamp",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_OIL",
+          "name": "Oil",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_PARCHMENT",
+          "name": "Parchment",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TINDERBOX",
+          "name": "Tinderbox",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ARMOR_LIGHT_LEATHER",
+          "name": "Leather",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_ARCANE_FOCUS_CRYSTAL",
+          "name": "Crystal",
+          "qty": 1
+        }
+      ],
+      "gp": 15
+    },
+    "Farmer, option a": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_WEAPON_SICKLE",
+          "name": "Sickle",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TOOL_CARPENTERS_TOOLS",
+          "name": "Carpenter’s Tools",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_HEALERS_KIT",
+          "name": "Healer's Kit",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_POT_IRON",
+          "name": "Pot, Iron",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_SHOVEL",
+          "name": "Shovel",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_CLOTHES_TRAVELERS",
+          "name": "Clothes, Traveler's",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Iron Pot",
+          "qty": 1
+        }
+      ],
+      "gp": 30
+    }
+  },
+  "hpChosen": true
+}

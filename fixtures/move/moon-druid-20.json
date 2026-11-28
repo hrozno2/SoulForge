@@ -1,0 +1,267 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_DRUID",
+      "level": 20
+    }
+  ],
+  "abilityBase": {
+    "strength": 10,
+    "dexterity": 12,
+    "constitution": 13,
+    "intelligence": 14,
+    "wisdom": 15,
+    "charisma": 8
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_PHB24_RACE_TIEFLING#13tmgxn": [
+      "ID_INTERNAL_RACIAL_TRAIT_SMALL"
+    ],
+    "ID_WOTC_PHB24_RACE_TIEFLING#i1hgwq": [
+      "ID_LANGUAGE_GNOMISH",
+      "ID_WOTC_ERLW_LANGUAGE_RIEDRAN"
+    ],
+    "ID_WOTC_PHB24_RACIAL_TRAIT_TIEFLING_FIENDISH_LEGACY#ik9qss": [
+      "ID_WOTC_PHB24_RACIAL_TRAIT_TIEFLING_FIENDISH_LEGACY_ABYSSAL"
+    ],
+    "ID_WOTC_PHB24_RACIAL_TRAIT_TIEFLING_FIENDISH_LEGACY_ABYSSAL#m3nhm6": [
+      "ID_WOTC_PHB24_RACIAL_TRAIT_TIEFLING_FIENDISH_LEGACY_ABYSSAL_CHARISMA"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_INT_WIS_CHA#1dso2r8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_INT_WIS_CHA_1"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_INT_WIS_CHA_1#11yhef6": [
+      "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_INTELLIGENCE_INCREASE_2"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_INT_WIS_CHA_1#12ib8pd": [
+      "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_WISDOM_INCREASE_1"
+    ],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_CLERIC#1ponsm7": [
+      "ID_WOTC_PHB24_FEAT_FEATURE_MAGIC_INITIATE_CLERIC_INTELLIGENCE"
+    ],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_CLERIC#44c087": [
+      "ID_WOTC_PHB24_SPELL_SACRED_FLAME",
+      "ID_WOTC_PHB24_SPELL_WORD_OF_RADIANCE"
+    ],
+    "ID_WOTC_PHB24_FEAT_MAGIC_INITIATE_CLERIC#9lmx0t": [
+      "ID_WOTC_PHB24_SPELL_PURIFY_FOOD_AND_DRINK"
+    ],
+    "ID_WOTC_PHB24_CLASS_DRUID#13ahmdn": [
+      "ID_PROFICIENCY_SKILL_PERCEPTION",
+      "ID_PROFICIENCY_SKILL_ARCANA"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_SPELLCASTING#otbotm": [
+      "ID_WOTC_PHB24_SPELL_THORN_WHIP",
+      "ID_WOTC_PHB24_SPELL_GUIDANCE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_PRIMAL_ORDER#vpst4p": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_PRIMAL_ORDER_WARDEN"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_DRUID_SUBCLASS#18ryg8y": [
+      "ID_WOTC_PHB24_ARCHETYPE_DRUID_CIRCLE_OF_THE_MOON"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_SPELLCASTING#1qh366b": [
+      "ID_XGTE_SPELL_CONTROL_FLAMES"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_ABILITY_SCORE_IMPROVEMENT#lx43pm": [
+      "ID_WOTC_PHB24_FEAT_LUCKY"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_ELEMENTAL_FURY#1uen91f": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_ELEMENTAL_FURY_PRIMAL_STRIKE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_ABILITY_SCORE_IMPROVEMENT#1h1szte": [
+      "ID_PHB_FEAT_MOBILE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_SPELLCASTING#ngg3jt": [
+      "ID_WOTC_PHB24_SPELL_PRODUCE_FLAME"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_ABILITY_SCORE_IMPROVEMENT#1xmvckc": [
+      "ID_WOTC_PHB24_FEAT_HEALER"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_ABILITY_SCORE_IMPROVEMENT#lxzruk": [
+      "ID_WOTC_GOTG_FEAT_RUNE_SHAPER"
+    ],
+    "ID_WOTC_GOTG_FEAT_RUNE_SHAPER#1rekicn": [
+      "ID_PHB_SPELL_ENTANGLE"
+    ],
+    "ID_WOTC_GOTG_FEAT_RUNE_SHAPER#cvrv7z": [
+      "ID_PHB_SPELL_FOG_CLOUD"
+    ],
+    "ID_WOTC_GOTG_FEAT_RUNE_SHAPER#3fkgxg": [
+      "ID_WOTC_GOTG_FEAT_FEATURE_RUNE_SHAPER_CHARISMA"
+    ],
+    "ID_WOTC_GOTG_FEAT_RUNE_SHAPER#804uhw": [
+      "ID_PHB_SPELL_INFLICT_WOUNDS"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_DRUID_EPIC_BOON#1ut1gdv": [
+      "ID_WOTC_PHB24_FEAT_CRAFTER"
+    ],
+    "ID_WOTC_PHB24_FEAT_CRAFTER#1ka3nvv": [
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_LEATHERWORKERS_TOOLS",
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_SMITHS_TOOLS",
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_MASONS_TOOLS"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {
+    "Druid": [
+      "ID_WOTC_PHB24_SPELL_DOMINATE_BEAST",
+      "ID_WOTC_PHB24_SPELL_PURIFY_FOOD_AND_DRINK",
+      "ID_WOTC_PHB24_SPELL_CALL_LIGHTNING",
+      "ID_WOTC_PHB24_SPELL_ENHANCE_ABILITY",
+      "ID_WOTC_PHB24_SPELL_FOG_CLOUD",
+      "ID_XGTE_SPELL_GUARDIAN_OF_NATURE",
+      "ID_POTA_SPELL_ELEMENTALBANE",
+      "ID_WOTC_PHB24_SPELL_FIRE_STORM",
+      "ID_WOTC_PHB24_SPELL_ANIMAL_FRIENDSHIP",
+      "ID_PHB_SPELL_FEEBLEMIND",
+      "ID_WOTC_PHB24_SPELL_BEAST_SENSE",
+      "ID_POTA_SPELL_TRANSMUTEROCK",
+      "ID_WOTC_PHB24_SPELL_SPEAK_WITH_PLANTS",
+      "ID_WOTC_PHB24_SPELL_MOONBEAM",
+      "ID_WOTC_PHB24_SPELL_ICE_STORM",
+      "ID_WOTC_PHB24_SPELL_DETECT_POISON_AND_DISEASE",
+      "ID_WOTC_PHB24_SPELL_PLANE_SHIFT",
+      "ID_WOTC_PHB24_SPELL_REINCARNATE",
+      "ID_WOTC_PHB24_SPELL_ANTILIFE_SHELL",
+      "ID_WOTC_PHB24_SPELL_CONFUSION",
+      "ID_WOTC_PHB24_SPELL_ANTIPATHY_SYMPATHY",
+      "ID_WOTC_PHB24_SPELL_SUNBURST"
+    ]
+  },
+  "inventory": [
+    {
+      "uid": "ikmcp37gg2df",
+      "id": "ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "jzjc3cjkg2df",
+      "id": "ID_WOTC_PHB24_ITEM_BOOK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "a6edqb2ug2df",
+      "id": "ID_WOTC_PHB24_ITEM_PARCHMENT",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "t88x4bnbg2df",
+      "id": "ID_WOTC_PHB24_ITEM_ROBE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "d5rpi6nsg2df",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Holy Symbol"
+      },
+      "pending": "holy"
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 58,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_TIEFLING",
+  "background": "ID_WOTC_PHB24_BACKGROUND_ACOLYTE",
+  "equipmentAdded": [
+    "Druid, option b",
+    "Acolyte, option a"
+  ],
+  "equipmentLedger": {
+    "Druid, option b": {
+      "items": [],
+      "gp": 50
+    },
+    "Acolyte, option a": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TOOL_CALLIGRAPHERS_SUPPLIES",
+          "name": "Calligrapher’s Supplies",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BOOK",
+          "name": "Book",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_PARCHMENT",
+          "name": "Parchment",
+          "qty": 10
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_ROBE",
+          "name": "Robe",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Holy Symbol",
+          "qty": 1
+        }
+      ],
+      "gp": 8
+    }
+  },
+  "hpChosen": true
+}

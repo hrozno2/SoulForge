@@ -1,0 +1,450 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB_CLASS_WARLOCK",
+      "level": 20
+    }
+  ],
+  "abilityBase": {
+    "strength": 8,
+    "dexterity": 12,
+    "constitution": 13,
+    "intelligence": 10,
+    "wisdom": 14,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_BACKGROUND_SAILOR#ntedim": [
+      "ID_SF_BACKGROUND_2024_RULES"
+    ],
+    "ID_WOTC_PHB24_RACE_DWARF#fuby3g": [
+      "ID_LANGUAGE_ORC",
+      "ID_LANGUAGE_GNOMISH"
+    ],
+    "ID_SF_BACKGROUND_2024_RULES#yr2p9m": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_INT_WIS"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_INT_WIS#1dso2r8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_DEX_INT_WIS_2"
+    ],
+    "ID_SF_BACKGROUND_2024_RULES#1txlalp": [
+      "ID_WOTC_PHB24_FEAT_SKILLED"
+    ],
+    "ID_WOTC_PHB24_FEAT_SKILLED#115ds80": [
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_LYRE",
+      "ID_PROFICIENCY_SKILL_PERFORMANCE",
+      "ID_PROFICIENCY_SKILL_ACROBATICS"
+    ],
+    "ID_WOTC_PHB_CLASS_WARLOCK#cxp1ke": [
+      "ID_PROFICIENCY_SKILL_HISTORY",
+      "ID_PROFICIENCY_SKILL_INTIMIDATION"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_OTHERWORLDLY_PATRON#bgpkvl": [
+      "ID_WOTC_PHB_ARCHETYPE_OTHERWORLDLY_PATRON_THE_ARCHFEY"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#gw4nkv": [
+      "ID_PHB_SPELL_ELDRITCH_BLAST",
+      "ID_PHB_SPELL_PRESTIDIGITATION"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#zsbol3": [
+      "ID_PHB_SPELL_FAERIE_FIRE",
+      "ID_PHB_SPELL_UNSEEN_SERVANT"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#102baa2": [
+      "ID_PHB_SPELL_EXPEDITIOUS_RETREAT"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#136hxr1": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_MASK_OF_MANY_FACES",
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_EYES_OF_THE_RUNEKEEPER"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#10cavz1": [
+      "ID_PHB_SPELL_DARKNESS"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON#52r8ae": [
+      "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON_PACT_OF_THE_CHAIN"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_PACT_BOON_PACT_OF_THE_CHAIN#iokr19": [
+      "ID_WOTC_MPP_COMPANION_SUNFLY"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#fi6n40": [
+      "ID_PHB_SPELL_CHILL_TOUCH"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#yedo48": [
+      "ID_PHB_SPELL_WITCH_BOLT"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK#11lm71e": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_4_PLUS2"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_4_PLUS2#1sltmrc": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_4_CHARISMA_PLUS_2"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#yod9t7": [
+      "ID_XGTE_SPELL_SUMMON_LESSER_DEMONS"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1dijwov": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_ELDRITCH_SIGHT"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#yycvi6": [
+      "ID_PHB_SPELL_ILLUSORY_SCRIPT"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#z8ch75": [
+      "ID_PHB_SPELL_HYPNOTIC_PATTERN"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#jvt633": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_ELDRITCH_MIND"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#xaf9cc": [
+      "ID_PHB_SPELL_VAMPIRIC_TOUCH"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK#91szqy": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_8_FEAT"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_8_FEAT#1i2isb5": [
+      "ID_PHB_FEAT_GREATWEAPONMASTER"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#xkev1b": [
+      "ID_PHB_SPELL_DISPEL_MAGIC"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1gyxxnb": [
+      "ID_WOTC_TCOE_CLASS_FEATURE_INVESTMENT_OF_THE_CHAIN_MASTER"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#ji1rct": [
+      "ID_PHB_SPELL_POISON_SPRAY"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#4gu836": [
+      "ID_PHB_SPELL_PHANTASMAL_FORCE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM#13m7d9p": [
+      "ID_PHB_SPELL_ARCANE_GATE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1nkasnr": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_BEGUILING_INFLUENCE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK#1r07ap0": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_12_PLUS1"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_12_PLUS1#1t64i8z": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_12_WISDOM_PLUS_1",
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_12_DEXTERITY_PLUS_1"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#3wv0p8": [
+      "ID_PHB_SPELL_COMPREHEND_LANGUAGES"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM#13285vr": [
+      "ID_WOTC_TCOE_SPELL_DREAM_OF_THE_BLUE_VEIL"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#3cvtba": [
+      "ID_XGTE_SPELL_INFERNAL_CALLING"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1dxhsx3": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_FIENDISH_VIGOR"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM#12i8yht": [
+      "ID_PHB_SPELL_DEMIPLANE"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK#1m700n8": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_16_FEAT"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_16_FEAT#1i2isb5": [
+      "ID_PHB_FEAT_INSPIRINGLEADER"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#2swlxc": [
+      "ID_PHB_SPELL_DOMINATE_BEAST"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_MYSTIC_ARCANUM#11y9r3v": [
+      "ID_WOTC_TCOE_SPELL_BLADE_OF_DISASTER"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ELDRITCH_INVOCATIONS#1w8jq0v": [
+      "ID_WOTC_PHB_CLASS_FEATURE_ELDRITCH_INVOCATION_THIEF_OF_FIVE_FATES"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_SPELLCASTING_WARLOCK_PACT_MAGIC#6or1my": [
+      "ID_WOTC_TCOE_SPELL_SUMMON_UNDEAD"
+    ],
+    "ID_WOTC_PHB_CLASS_FEATURE_WARLOCK_ABILITY_SCORE_IMPROVEMENT_WARLOCK#1pz6t6s": [
+      "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_19_PLUS2"
+    ],
+    "ID_INTERNAL_IMPROVEMENT_IMPROVEMENT_OPTION_WARLOCK_19_PLUS2#1sltmrc": [
+      "ID_INTERNAL_IMPROVEMENT_OPTION_WARLOCK_19_CONSTITUTION_PLUS_2"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "bma1ok4ggfdd",
+      "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "c9sy63vngfdd",
+      "id": "ID_WOTC_PHB_WEAPON_CLUB",
+      "qty": 1,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "267j8h07gfdd",
+      "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+      "qty": 2,
+      "equipped": true,
+      "attuned": false
+    },
+    {
+      "uid": "rbhz858mgfdd",
+      "id": "ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "a0bahvv1gfdd",
+      "id": "ID_WOTC_PHB24_ITEM_BOLT",
+      "qty": 20,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "01to637bgfdd",
+      "id": "ID_WOTC_PHB_ITEM_COMPONENTPOUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "8157cmg2gfdd",
+      "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "icblv2sggfdd",
+      "id": "ID_WOTC_PHB_ITEM_BOOK",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "gq86g6ttgfdd",
+      "id": "ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "vvtatgtcgfdd",
+      "id": "ID_WOTC_PHB_ITEM_INKPEN",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "zho4jfq0gfdd",
+      "id": "ID_WOTC_PHB_ITEM_PARCHMENT_ONESHEET",
+      "qty": 10,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "vep1tllfgfdu",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Belaying pin",
+        "description": "belaying pin (club)"
+      }
+    },
+    {
+      "uid": "owvctk1qgfdu",
+      "id": "",
+      "qty": 50,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Feet of silk rope"
+      }
+    },
+    {
+      "uid": "qob22om6gfdu",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Lucky charm such as a rabbit foot or a small stone with a hole in the center",
+        "description": "lucky charm such as a rabbit foot or a small stone with a hole in the center (or you may roll for a random trinket on the Trinkets table in chapter 5)"
+      }
+    },
+    {
+      "uid": "djbosx4tgfdu",
+      "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "7wb4v6oigfdu",
+      "id": "ID_WOTC_PHB_ITEM_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 10,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_DWARF",
+  "background": "ID_BACKGROUND_SAILOR",
+  "taken": [
+    "ID_BACKGROUND_SAILOR#ntedim"
+  ],
+  "equipmentAdded": [
+    "Warlock, starting equipment",
+    "Sailor, starting equipment"
+  ],
+  "equipmentLedger": {
+    "Warlock, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_ARMOR_LIGHT_LEATHER",
+          "name": "Leather",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_CLUB",
+          "name": "Club",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_DAGGER",
+          "name": "Dagger",
+          "qty": 2
+        },
+        {
+          "id": "ID_WOTC_PHB_WEAPON_CROSSBOW_LIGHT",
+          "name": "Light Crossbow",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_BOLT",
+          "name": "Bolt",
+          "qty": 20
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_COMPONENTPOUCH",
+          "name": "Component Pouch",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BACKPACK",
+          "name": "Backpack",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_BOOK",
+          "name": "Book",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_INK_1OUNCEBOTTLE",
+          "name": "Ink (1 ounce bottle)",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_INKPEN",
+          "name": "Ink Pen",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_PARCHMENT_ONESHEET",
+          "name": "Parchment (one sheet)",
+          "qty": 10
+        }
+      ],
+      "gp": 0
+    },
+    "Sailor, starting equipment": {
+      "items": [
+        {
+          "id": "",
+          "name": "Belaying pin",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Feet of silk rope",
+          "qty": 50
+        },
+        {
+          "id": "",
+          "name": "Lucky charm such as a rabbit foot or a small stone with a hole in the center",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_CLOTHES_COMMON",
+          "name": "Clothes, Common",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 10
+    }
+  },
+  "hpChosen": true
+}

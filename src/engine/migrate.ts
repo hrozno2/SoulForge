@@ -203,6 +203,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     at: number;
   };
   const pool: Pick[] = [];
+  const BARE_SCORE = /^(strength|dexterity|constitution|intelligence|wisdom|charisma)$/i;
   const lists: { owner: string; name: string; values: string[] }[] = [];
   const isAbility = (name: string, type: string) =>
     type === "Ability Score Improvement" ||
@@ -221,7 +222,12 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       // pick of its own.
       if (el && /^variant feature$/i.test(s.rule.name) && /^origin feat$/i.test(el.name)) continue;
       // By what the pick is, not by its choice's name: Aurora's "Ability Score Improvement (Barbarian 4)" holds feats.
-      const ability = el?.type !== "Feat" && (s.rule.type === "Ability Score Improvement" || isAbility(el?.name ?? "", el?.type ?? ""));
+      // A bare score's name under an increase's choice is an increase too (Aurora's 2024 Ritual Caster: "Ability Score
+      // Increase (Ritual Caster)" holds a Feat Feature named "Intelligence"). Carried as an ordinary pick it went to the
+      // first choice offering "+1 Intelligence", the Half-Elf's, and pushed the Constitution chosen there out.
+      const bareScore = /^ability score (improvement|increase)/i.test(s.rule.name) && BARE_SCORE.test(el?.name ?? "");
+      const ability =
+        el?.type !== "Feat" && (s.rule.type === "Ability Score Improvement" || bareScore || isAbility(el?.name ?? "", el?.type ?? ""));
       const t = ability ? id : map(id, false);
       pool.push({
         id: t ?? id,
@@ -357,6 +363,8 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   // infusion Class Features for 5e.tools' Optional Features); or the owner's name with the pick's ("Magic Initiate
   // (Bard)" for Magic Initiate's "Bard").
   type Slot = ReturnType<typeof resolve>["slots"][number];
+  // Kinds both providers type the same way: a pick of one is never an option of another kind by its name alone.
+  const STRICT_KIND = /^(Feat|Spell|Language|Archetype|Class|Background)$/;
   // By name only for the same kind of owner: Magic Initiate's spell list "Druid" (a feat's option) is not the Druid class;
   // taken for it, the feat's cantrips went to the class's places and pushed the class's own pick out (fresh 40,
   // 2026-11-17). The two providers type features differently (Class Feature, Optional Feature), so by family.
@@ -407,7 +415,10 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const kind = (to.get(p.id) ?? from.get(p.id))?.type;
     // A feat only for a feat, a spell only for a spell: the class chosen inside Aurora's Ritual Caster ("Warlock") is
     // not the feat "Ritual Caster (Warlock)" (it took the level-4 feat choice and pushed the increases a level on).
-    const sameKind = (o: (typeof open)[number]) => !((o.type === "Feat" || o.type === "Spell") && kind && kind !== o.type);
+    // Nor a language for a subclass, by the exact name or a near one (`same` below): the Warlock's "The Celestial" is
+    // not the language Celestial (it took one of an Orc's two language places and pushed the Vedalken chosen there
+    // out, 2026-11-28).
+    const sameKind = (o: (typeof open)[number]) => !((STRICT_KIND.test(o.type) || STRICT_KIND.test(kind ?? "")) && kind && kind !== o.type);
     const exact = open.find((o) => nameKey(o.name) === n && sameKind(o)) ?? open.find((o) => withOwner.has(nameKey(o.name)) && sameKind(o));
     if (exact) return exact.id;
     // A feat 5e.tools holds as versions ("Spell Sniper (Wizard)" and five more): the version its own old pick names
@@ -433,6 +444,9 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     // Only a pick that is an ability's bare name does (Fey Touched's "Intelligence" is its "+1 Intelligence").
     if (s.rule.type === "Ability Score Improvement") {
       if (!/^(strength|dexterity|constitution|intelligence|wisdom|charisma)$/.test(n)) return undefined;
+      // And only its own owner's choice, never as the ability a feat casts with: Magic Initiate's "Intelligence"
+      // (its spellcasting ability) took Poisoner's "+1" and the Dexterity chosen there was lost (2026-11-28).
+      if (!ownerOf(s, p) || /spellcasting/i.test(p.choice)) return undefined;
       const hit = open.filter(
         (o) =>
           new RegExp(`^\\+\\d ${n}$`).test(nameKey(o.name).replace(/^(\d)/, "+$1")) ||
@@ -452,7 +466,7 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       !kind ||
       (o.type === kind && kind !== "Spell") ||
       (kind === "Spell" && o.type === "Spell Set") ||
-      (kind !== "Spell" && kind !== "Feat" && o.type !== "Spell" && o.type !== "Feat");
+      (!STRICT_KIND.test(kind) && !STRICT_KIND.test(o.type));
     // Several of one name: the one from the pick's own book (two "Eladrin Elf" sub races, the Dungeon Master's Guide's
     // and the Tome of Foes'; the first by order was taken, fresh 80, 2026-11-17).
     const oldBook = bookKey(from.get(p.id)?.source ?? "");
@@ -734,6 +748,11 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
       const sized = totalsOf(p.name);
       if (sized.size) return [...sized].map(([ability, left]) => ({ p, ability, left }));
       const named = new Set([...p.name.matchAll(ABILITY_ALL)].map((m) => m[1].toLowerCase()));
+      // Unless the pick under it says "+1, +1, +1": then the set is the increase, one to each (the same background rule
+      // taken as three +1s). Left unread, the three were guessed again as the first three scores short of the old
+      // ones, before the level increases were placed: five saved characters moved a +1 from one score to another.
+      if (named.size === 3 && pool.some((q) => q.ownerName === nameKey(p.name) && /^\D*\+1\s*,\s*\+1\s*,\s*\+1\s*$/.test(q.name)))
+        return [...named].map((ability) => ({ p, ability, left: 1 }));
       if (named.size !== 1) return [];
       return [{ p, ability: [...named][0], left: Number(/\+\s*(\d)/.exec(p.name)?.[1] ?? /\+\s*(\d)/.exec(p.choice)?.[1] ?? 1) }];
     })

@@ -1,0 +1,235 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_FIGHTER",
+      "level": 15
+    }
+  ],
+  "abilityBase": {
+    "strength": 15,
+    "dexterity": 14,
+    "constitution": 13,
+    "intelligence": 10,
+    "wisdom": 8,
+    "charisma": 12
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_RACE_HALFELF#o10s8n": [
+      "ID_RACIAL_TRAIT_HALFELF_STRENGTH",
+      "ID_RACIAL_TRAIT_HALFELF_CONSTITUTION"
+    ],
+    "ID_RACE_HALFELF#f3bib3": [
+      "ID_GGTR_LANGUAGE_VEDALKEN"
+    ],
+    "ID_RACIAL_TRAIT_SKILL_VERSATILITY#1ikt7qa": [
+      "ID_PROFICIENCY_SKILL_STEALTH",
+      "ID_PROFICIENCY_SKILL_RELIGION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FIGHTER#4xz3my": [
+      "ID_PROFICIENCY_SKILL_PERCEPTION",
+      "ID_PROFICIENCY_SKILL_ATHLETICS"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_FIGHTER_FIGHTING_STYLE#1fu29hz": [
+      "ID_WOTC_PHB24_FEAT_DUELING"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_FIGHTER_WEAPON_MASTERY#ydi7r0": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_MASTERY_PROPERTY_GREATCLUB_PUSH",
+      "ID_WOTC_PHB24_CLASS_FEATURE_MASTERY_PROPERTY_RAPIER_VEX",
+      "ID_WOTC_PHB24_CLASS_FEATURE_MASTERY_PROPERTY_CROSSBOW_HAND_VEX"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_FIGHTER_FIGHTER_SUBCLASS#1ij35h8": [
+      "ID_WOTC_XGTE_ARCHETYPE_FIGHTER_CAVALIER"
+    ],
+    "ID_WOTC_XGTE_ARCHETYPE_FEATURE_CAVALIER_BONUS_PROFICIENCY#8760us": [
+      "ID_WOTC_XGTE_FIGHTER_CAVALIER_LANGUAGE"
+    ],
+    "ID_WOTC_XGTE_FIGHTER_CAVALIER_LANGUAGE#vs1r1m": [
+      "ID_LANGUAGE_HALFLING"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_FIGHTER_WEAPON_MASTERY#1h3h5oa": [
+      "ID_WOTC_DMG24_CLASS_FEATURE_MASTERY_PROPERTY_AUTOMATIC_RIFLE_SLOW"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_FIGHTER_ABILITY_SCORE_IMPROVEMENT#mb5ysp": [
+      "ID_WOTC_PHB24_FEAT_PIERCER"
+    ],
+    "ID_WOTC_PHB24_FEAT_PIERCER#155m4os": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_STRENGTH"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_FIGHTER_ABILITY_SCORE_IMPROVEMENT#rjqdod": [
+      "ID_WOTC_PHB24_FEAT_SKILL_EXPERT"
+    ],
+    "ID_WOTC_PHB24_FEAT_SKILL_EXPERT#30df7b": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_INTELLIGENCE"
+    ],
+    "ID_WOTC_PHB24_FEAT_SKILL_EXPERT#1id9qbg": [
+      "ID_PROFICIENCY_SKILL_INTIMIDATION"
+    ],
+    "ID_WOTC_PHB24_FEAT_SKILL_EXPERT#ucy3mn": [
+      "ID_INTERNAL_PROFICIENCY_SKILL_EXPERTISE_SLEIGHT_OF_HAND"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_FIGHTER_ABILITY_SCORE_IMPROVEMENT#urvv49": [
+      "ID_WOTC_PHB24_FEAT_DUAL_WIELDER"
+    ],
+    "ID_WOTC_PHB24_FEAT_DUAL_WIELDER#1x0beam": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_DEXTERITY"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_FIGHTER_WEAPON_MASTERY#kw609g": [
+      "ID_WOTC_DMG24_CLASS_FEATURE_MASTERY_PROPERTY_REVOLVER_SAP"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_FIGHTER_ABILITY_SCORE_IMPROVEMENT#1wan7r3": [
+      "ID_WOTC_PHB24_FEAT_RITUAL_CASTER"
+    ],
+    "ID_WOTC_PHB24_FEAT_RITUAL_CASTER#1wcuec7": [
+      "ID_WOTC_PHB24_FEAT_FEATURE_RITUAL_CASTER_INTELLIGENCE"
+    ],
+    "ID_WOTC_PHB24_FEAT_RITUAL_CASTER#41v99u": [
+      "ID_WOTC_PHB24_SPELL_SPEAK_WITH_ANIMALS"
+    ],
+    "ID_WOTC_PHB24_FEAT_RITUAL_CASTER#1jbzeo2": [
+      "ID_WOTC_PHB24_SPELL_DETECT_POISON_AND_DISEASE"
+    ],
+    "ID_WOTC_PHB24_FEAT_RITUAL_CASTER#1y0oc2h": [
+      "ID_WOTC_PHB24_SPELL_FIND_FAMILIAR"
+    ],
+    "ID_WOTC_PHB24_SPELL_FIND_FAMILIAR#3yvd2t": [
+      "ID_WOTC_MM25_COMPANION_BAT"
+    ],
+    "ID_WOTC_PHB24_FEAT_RITUAL_CASTER#n0yh22": [
+      "ID_WOTC_PHB24_SPELL_ILLUSORY_SCRIPT"
+    ],
+    "ID_WOTC_PHB24_FEAT_RITUAL_CASTER#hy45op": [
+      "ID_WOTC_PHB24_SPELL_UNSEEN_SERVANT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_FIGHTER_ABILITY_SCORE_IMPROVEMENT#1eynrh3": [
+      "ID_WOTC_PHB24_FEAT_HEAVILY_ARMORED"
+    ],
+    "ID_WOTC_PHB24_FEAT_HEAVILY_ARMORED#h71o10": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_FEAT_CONSTITUTION"
+    ]
+  },
+  "options": [],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [
+    {
+      "uid": "aku2cl68gx1u",
+      "id": "ID_WOTC_PHB24_ITEM_CLOTHES_FINE",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "5xtp3qr6gx1u",
+      "id": "ID_WOTC_PHB24_ITEM_TOOL_DISGUISE_KIT",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    },
+    {
+      "uid": "34g7pqq4gx1u",
+      "id": "",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false,
+      "custom": {
+        "name": "Tools of the con of your choice",
+        "description": "tools of the con of your choice (ten stoppered bottles filled with colored liquid, a set of weighted dice, a deck of marked cards, or a signet ring of an imaginary duke)"
+      }
+    },
+    {
+      "uid": "cozp5psmgx1u",
+      "id": "ID_WOTC_PHB24_ITEM_POUCH",
+      "qty": 1,
+      "equipped": false,
+      "attuned": false
+    }
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 170,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_RACE_HALFELF",
+  "background": "ID_BACKGROUND_CHARLATAN",
+  "equipmentAdded": [
+    "Fighter, option c",
+    "Charlatan, starting equipment"
+  ],
+  "equipmentLedger": {
+    "Fighter, option c": {
+      "items": [],
+      "gp": 155
+    },
+    "Charlatan, starting equipment": {
+      "items": [
+        {
+          "id": "ID_WOTC_PHB24_ITEM_CLOTHES_FINE",
+          "name": "Clothes, Fine",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_TOOL_DISGUISE_KIT",
+          "name": "Disguise Kit",
+          "qty": 1
+        },
+        {
+          "id": "",
+          "name": "Tools of the con of your choice",
+          "qty": 1
+        },
+        {
+          "id": "ID_WOTC_PHB24_ITEM_POUCH",
+          "name": "Pouch",
+          "qty": 1
+        }
+      ],
+      "gp": 15
+    }
+  },
+  "hpChosen": true
+}

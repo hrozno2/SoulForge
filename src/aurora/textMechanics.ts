@@ -92,8 +92,12 @@ export function stateOnly(html: string): boolean {
     plain(html)
       .trim()
       .split(/(?<=[.:])\s/)[0] ?? "";
-  return /^while (?:you(?:'re| are) )?(?:in (?:a |your )?wild shape\b|shifted\b|raging\b|your rage is active|transformed\b|in your [a-z' ]+ form\b|your [a-z' ]+ is active\b)/i.test(
-    first,
+  return (
+    /^while (?:you(?:'re| are) )?(?:in (?:a |your )?wild shape\b|shifted\b|raging\b|your rage is active|transformed\b|in your [a-z' ]+ form\b|your [a-z' ]+ is active\b)/i.test(
+      first,
+    ) ||
+    // "... when you assume a Wild Shape form, granting you the benefits below" (the 2024 Circle Forms).
+    /\bwhen you (?:assume|adopt|enter|take on) (?:a |your )?[a-z' ]*\bform\b[^.]*\b(?:benefits|following)\b/i.test(first)
   );
 }
 
@@ -538,6 +542,10 @@ export function armorClassFromText(id: string, name: string, text: string): ARul
     "i",
   ).exec(text);
   if (!m) return [];
+  // A formula that holds for a while is not the character's armor class: "Until you leave the form, your AC equals 13
+  // plus your Wisdom modifier" (Circle Forms), "until the spell ends".
+  const own = sentences(text).find((x) => x.toLowerCase().includes(m[0].toLowerCase())) ?? "";
+  if (/^until\b|\buntil (?:you leave|the (?:spell|effect|rage) ends)|\bfor (?:\d+|one|ten) (?:minute|hour|round)s?\b/i.test(own)) return [];
   const calc = `ac:${name.toLowerCase()} ${id.toLowerCase()}`;
   const parts = [stat(calc, m[1], { bonus: "base" })];
   if (m[2]) parts.push(stat(calc, `${m[2].toLowerCase()}:modifier`, { bonus: "primary ability" }));

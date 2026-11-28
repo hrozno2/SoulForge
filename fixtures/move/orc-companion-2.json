@@ -1,0 +1,165 @@
+{
+  "version": 2,
+  "name": "Random adventurer",
+  "playerName": "",
+  "xp": 0,
+  "classes": [
+    {
+      "classId": "ID_WOTC_PHB24_CLASS_SORCERER",
+      "level": 5
+    }
+  ],
+  "abilityBase": {
+    "strength": 12,
+    "dexterity": 13,
+    "constitution": 14,
+    "intelligence": 10,
+    "wisdom": 8,
+    "charisma": 15
+  },
+  "abilityMethod": "standard",
+  "selections": {
+    "ID_WOTC_PHB24_RACE_ORC#swergl": [
+      "ID_LANGUAGE_GIANT",
+      "ID_LANGUAGE_ORC",
+      "ID_LANGUAGE_GOBLIN"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_DEX_CHA#1dso2r8": [
+      "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_DEX_CHA_1"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_DEX_CHA_1#11yhef6": [
+      "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_DEXTERITY_INCREASE_2"
+    ],
+    "ID_INTERNAL_ABILITY_SCORE_IMPROVEMENT_COMBINATION_STR_DEX_CHA_1#12ib8pd": [
+      "ID_WOTC_TCOE_OPTION_CUSTOMIZED_ASI_CHARISMA_INCREASE_1"
+    ],
+    "ID_WOTC_PHB24_FEAT_MUSICIAN#1l4yu7x": [
+      "ID_SCAG_PROFICIENCY_TOOL_PROFICIENCY_BIRDPIPES",
+      "ID_PROFICIENCY_TOOL_PROFICIENCY_BAGPIPES",
+      "ID_SCAG_PROFICIENCY_TOOL_PROFICIENCY_TANTAN"
+    ],
+    "ID_WOTC_PHB24_BACKGROUND_ENTERTAINER#1sil34j": [
+      "ID_SCAG_PROFICIENCY_TOOL_PROFICIENCY_LONGHORN"
+    ],
+    "ID_WOTC_PHB24_CLASS_SORCERER#1izmyny": [
+      "ID_PROFICIENCY_SKILL_DECEPTION",
+      "ID_PROFICIENCY_SKILL_ARCANA"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#d5tmj0": [
+      "ID_WOTC_PHB24_SPELL_FRIENDS",
+      "ID_WOTC_TCOE_SPELL_LIGHTNING_LURE",
+      "ID_WOTC_PHB24_SPELL_MESSAGE",
+      "ID_WOTC_PHB24_SPELL_PRESTIDIGITATION"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#tn031y": [
+      "ID_WOTC_PHB24_SPELL_JUMP",
+      "ID_WOTC_PHB24_SPELL_EXPEDITIOUS_RETREAT"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#td0hcz": [
+      "ID_WOTC_PHB24_SPELL_FEATHER_FALL",
+      "ID_WOTC_PHB24_SPELL_SILENT_IMAGE"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC#4amogj": [
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_SEEKING_SPELL",
+      "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_METAMAGIC_EXTENDED_SPELL"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#t30vo0": [
+      "ID_WOTC_PHB24_SPELL_GUST_OF_WIND",
+      "ID_WOTC_PHB24_SPELL_CROWN_OF_MADNESS"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SORCERER_SUBCLASS#eudybv": [
+      "ID_WOTC_PHB24_ARCHETYPE_SORCERER_DRACONIC_SORCERY"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#a5uq5k": [
+      "ID_WOTC_TCOE_SPELL_SWORD_BURST"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#v0y3it": [
+      "ID_WOTC_FTOD_SPELL_NATHAIRS_MISCHIEF"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_ABILITY_SCORE_IMPROVEMENT#gthj19": [
+      "ID_WOTC_PHB24_FEAT_LUCKY"
+    ],
+    "ID_WOTC_PHB24_CLASS_FEATURE_SORCERER_SPELLCASTING#uqyhtu": [
+      "ID_WOTC_PHB24_SPELL_WITCH_BOLT",
+      "ID_WOTC_PHB24_SPELL_SHIELD"
+    ]
+  },
+  "options": [
+    "ID_WOTC_DMG_OPTION_FIREARMS",
+    "ID_WOTC_SCAG_OPTION_BATTLERAGER",
+    "ID_WOTC_SCAG_OPTION_BLADESINGING",
+    "ID_WOTC_TCOE_OPTION_CUSTOMIZED_PROFICIENCY",
+    "ID_WOTC_TCOE_OPTION_CUSTOMIZED_LANGUAGE"
+  ],
+  "customStats": [],
+  "extras": [],
+  "hpMode": "average",
+  "hpRolls": {},
+  "prepared": {},
+  "inventory": [],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 100,
+    "pp": 0
+  },
+  "attacks": [],
+  "companions": [
+    {
+      "uid": "cmp181962154",
+      "id": "ID_WOTC_PHB_COMPANION_HAWK",
+      "name": "Hawk"
+    }
+  ],
+  "resources": [],
+  "info": {
+    "alignment": "",
+    "gender": "",
+    "age": "",
+    "height": "",
+    "weight": "",
+    "eyes": "",
+    "hair": "",
+    "skin": "",
+    "deity": "",
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "allies": ""
+  },
+  "notes": "",
+  "play": {
+    "hp": null,
+    "tempHp": 0,
+    "inspiration": false,
+    "slotsUsed": {},
+    "hitDiceUsed": 0,
+    "conditions": [],
+    "deathSaves": {
+      "success": 0,
+      "fail": 0
+    },
+    "featureUses": {}
+  },
+  "sources": [],
+  "race": "ID_WOTC_PHB24_RACE_ORC",
+  "background": "ID_WOTC_PHB24_BACKGROUND_ENTERTAINER",
+  "equipmentAdded": [
+    "Sorcerer, option b",
+    "Entertainer, option b"
+  ],
+  "equipmentLedger": {
+    "Sorcerer, option b": {
+      "items": [],
+      "gp": 50
+    },
+    "Entertainer, option b": {
+      "items": [],
+      "gp": 50
+    }
+  },
+  "hpChosen": true
+}

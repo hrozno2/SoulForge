@@ -39,6 +39,20 @@ export function writeCurrentCopy(id: string, ch: Character, put: (text: string) 
   return "nothing";
 }
 
+/**
+ * The open character as a copy without its portrait, whatever its size: for a character that was opened from such a
+ * copy and whose portrait the library has not given back yet. Written as a whole copy it would pass for the whole
+ * character at the next start, and the library's portrait would be saved away. False when the storage refuses it.
+ */
+export function writeCopyWithoutPortrait(id: string, ch: Character, put: (text: string) => void): boolean {
+  try {
+    put(JSON.stringify({ id, chNoPortrait: { ...ch, portrait: undefined } } satisfies CurrentCopy));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** The copy as stored; undefined when there is none or it cannot be read. */
 export function readCurrentCopy(raw: string | null): CurrentCopy | undefined {
   if (!raw) return undefined;

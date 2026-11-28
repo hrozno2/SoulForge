@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { newCharacter } from "../aurora/character";
-import { readCurrentCopy, withLibraryPortrait, writeCurrentCopy } from "./currentCopy";
+import { readCurrentCopy, withLibraryPortrait, writeCopyWithoutPortrait, writeCurrentCopy } from "./currentCopy";
 
 const storage = (limit: number) => {
   const box = { text: null as string | null };
@@ -57,5 +57,16 @@ describe("the portrait put back from the library", () => {
     expect(withLibraryPortrait(ch, { ...newCharacter(), portrait: "data:other" })).toBe(ch);
     expect(withLibraryPortrait(open, newCharacter())).toBe(open);
     expect(withLibraryPortrait(open, undefined)).toBe(open);
+  });
+  // Opened from a copy without its portrait while the library cannot be read: an edit is kept the same way, even
+  // though the character (no portrait on it now) would fit whole and then pass for the whole character.
+  it("stays a copy without its portrait while the portrait has not come back", () => {
+    const s = storage(1e9);
+    const open = { ...newCharacter(), name: "Edited while the library was unread" };
+    expect(writeCopyWithoutPortrait("c1", open, s.put)).toBe(true);
+    const back = readCurrentCopy(s.box.text);
+    expect(back?.ch).toBeUndefined();
+    expect(back?.chNoPortrait?.name).toBe("Edited while the library was unread");
+    expect(writeCopyWithoutPortrait("c1", open, storage(10).put)).toBe(false);
   });
 });

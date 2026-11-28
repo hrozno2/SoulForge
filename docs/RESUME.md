@@ -5,8 +5,22 @@
 Tag v0.28.0 on f47f7d4, cut on the fourth attempt (Saturday, standard rules tier, seed 556837234; 708 unit tests,
 68 e2e, five rules groups passed). The first release that reads no Aurora content (D7), with portraits step one,
 so portraits step two may go into the NEXT release. Chris released it on his own call with D5 at 2 of 5 clean
-Aurora-free runs and D6's 22 changing characters open. Still to look at: the App.tsx path where a copy kept without
-its portrait is not saved again when the library read fails or has no portrait (see below).
+Aurora-free runs and D6's 22 changing characters open.
+
+The save path flagged below, looked at the same day: with no portrait in the library the newer copy was saved anyway
+(the content finishing its load re-ran the save), now by design. Two real faults beside it, fixed with tests in
+e2e/saving.spec.ts: when the library could not be read at the start the app showed "Saved" while writing nothing all
+session, and another character opened in that state was never saved. App.tsx `resume` ("loading", "unread",
+"ready") replaces the `loading` ref; "unread" shows Not saved with Try again, edits are kept as the copy without its
+portrait (currentCopy.ts writeCopyWithoutPortrait), `open()` ends the wait, and a late answer from the library is
+not applied to a character opened meanwhile.
+
+Chris's calls of 2026-11-28 (also in memory): homebrew parked, nothing removed; no file-count rule on imports;
+no code signing; I test in his place; Foundry files are there (16 of 29 actors in the imports are Plutonium-made);
+Roll20's 2024 sheet only if someone at his table uses it. The guide: no quiz, the player picks class, species and
+background from short descriptions as D&D Beyond does, the latest Player's Handbook only with a button for all
+options and one back to fewer, official Wizards sources only. Today's order: portraits step two, a list of the 22
+changing characters for his notes, card windows, rules tests per element, the audit, three Aurora-free checks.
 
 ## 2026-11-25: v0.28.0 asked for ("cut a release"), the attempts that did not get out
 

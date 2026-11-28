@@ -1,7 +1,7 @@
 import { contentFilters } from "../aurora/tableUses";
 import { addJournalNote, hasJournalNote } from "../aurora/journal";
 import { GuideCoach } from "./GuideCoach";
-import { readCurrentCopy, withLibraryPortrait, writeCurrentCopy } from "./currentCopy";
+import { readCurrentCopy, withLibraryPortrait, writeCopyWithoutPortrait, writeCurrentCopy } from "./currentCopy";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { SaveQueue } from "./saveQueue";
 import { TabGuard, browserChannel } from "./tabGuard";
@@ -170,32 +170,41 @@ export function App() {
   useEffect(() => {
     if (saveState === "saved") window.dispatchEvent(new Event("cf-saved"));
   }, [saveState]);
-  // While the open character is still coming from the library, nothing is saved over it.
-  const loading = useRef(!!initial.fromLibrary || !!initial.portraitFromLibrary);
-  useEffect(() => {
-    if (!initial.fromLibrary && !initial.portraitFromLibrary) return;
+  // The character that was open at the last quit may need the library: for all of it (only its id was kept) or for
+  // its portrait (kept without one). Until the library has answered, nothing is saved over either copy; when it cannot
+  // be read ("unread") that is said where "Saved" stands, with Try again, and never passed off as saved.
+  const needsLibrary = !!initial.fromLibrary || !!initial.portraitFromLibrary;
+  const [resume, setResume] = useState<"loading" | "unread" | "ready">(needsLibrary ? "loading" : "ready");
+  // Another character was opened meanwhile: the library's answer about the first one is no longer for the open one.
+  const resumeOver = useRef(!needsLibrary);
+  const readLibrary = useCallback(() => {
+    setResume("loading");
     void listCharacters()
       .then((all) => {
+        if (resumeOver.current) return;
+        resumeOver.current = true;
         const rec = all.find((c) => c.id === initial.id);
-        loading.current = false;
         // The copy that was open is the newer one; only its portrait, left out for size, comes from the library.
         if (initial.portraitFromLibrary) {
           if (rec) setCharacter((c) => withLibraryPortrait(c, rec.data));
-          return;
-        }
-        if (rec) {
+        } else if (rec) {
           const { character: ch, repaired } = openCharacter(rec.data, "the library");
           if (!repaired.length) queue.markStored(initial.id, ch);
           else setReportOpen("repair");
           setCharacter(ch);
         }
+        setResume("ready");
       })
-      .catch(() => {
-        // Without the library the portrait cannot be put back. Nothing is written this session then, neither over the
-        // library's copy nor over the copy that was open: a character with no portrait must not replace either, and
-        // the next start finds both as they were and tries again.
-        if (!initial.portraitFromLibrary) loading.current = false;
+      .catch((e) => {
+        // Nothing is written then, neither over the library's copy nor as a whole copy of the open one: a character
+        // with no portrait, or the empty one standing in for a character still in the library, must not replace it.
+        if (resumeOver.current) return;
+        logEvent("save", `the library could not be read for the open character: ${(e as Error)?.message ?? e}`);
+        setResume("unread");
       });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (needsLibrary) readLibrary();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [detail, setDetail] = useState<AElement | null>(null);
   const content = useContent();
@@ -246,7 +255,12 @@ export function App() {
 
   // Autosave the open character, and keep a copy in the library.
   useEffect(() => {
-    if (loading.current || heldElsewhere) return;
+    if (heldElsewhere) return;
+    if (resume !== "ready") {
+      // Edits made meanwhile are kept on this computer, still as the copy without its portrait that it was.
+      if (initial.portraitFromLibrary) writeCopyWithoutPortrait(id, character, (text) => localStorage.setItem(CUR_KEY, text));
+      return;
+    }
     // The fullest copy this storage takes: whole, or without a large portrait (the library has it), or the id.
     writeCurrentCopy(id, character, (text) => localStorage.setItem(CUR_KEY, text));
     // Only a real change is saved (src/ui/saveQueue.ts): opening a character, or the content loading under it, is no
@@ -257,7 +271,7 @@ export function App() {
     const classes = character.classes.map((c) => `${content.reg.get(c.classId)?.name ?? "?"} ${c.level}`).join(" / ");
     const race = character.race ? content.reg.get(character.race)?.name : "";
     queue.schedule(id, character, { name: character.name, summary: [race, classes].filter(Boolean).join(" ") });
-  }, [character, id, content.reg, content.ready, queue, heldElsewhere]);
+  }, [character, id, content.reg, content.ready, queue, heldElsewhere, resume]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = useCallback((fn: (c: Character) => Character) => setCharacter((c) => fn(c)), []);
   // Opened from the library: what is stored is the same, so nothing is saved (or re-dated) until it is edited.
@@ -266,6 +280,9 @@ export function App() {
   const open = (nid: string, ch: Character, stored = false, file = "") => {
     const { character: n, repaired } = openCharacter(ch, file || (stored ? "the library" : ""), (x) => content.reg.get(x)?.name);
     void queue.flush();
+    // Whatever the library still owed the character open before this one, it is not for this one.
+    resumeOver.current = true;
+    setResume("ready");
     if (stored && !repaired.length) queue.markStored(nid, n);
     setId(nid);
     setCharacter(n);
@@ -660,7 +677,7 @@ export function App() {
               <LevelUp r={r} ch={character} set={set} onDetail={setDetail} onClose={() => setLevelUpOpen(false)} />
             </Suspense>
           )}
-          {checkDue(character, APP_VERSION) && !loading.current && (
+          {checkDue(character, APP_VERSION) && resume === "ready" && (
             <OlderBuildNotice key={id} r={r} set={set} onShow={() => setTab("build")} />
           )}
           {detailsOpen && (
@@ -758,7 +775,19 @@ export function App() {
             <div className="pane">
               {["build", "manage"].includes(tab) && (
                 <div className="actionbar" role="toolbar" aria-label="Character actions">
-                  {saveState === "failed" ? (
+                  {resume === "unread" ? (
+                    <span
+                      className="saved failed"
+                      role="alert"
+                      title={
+                        initial.portraitFromLibrary
+                          ? "Your saved characters could not be read, so this character is not in your library yet and nothing is written over the copy there. Your changes are kept on this computer and saved once the library can be read. To be safe, use Export, Export character."
+                          : "Your saved characters could not be read, so the character that was open could not be opened. Nothing is written over it."
+                      }
+                    >
+                      Not saved <button onClick={readLibrary}>Try again</button>
+                    </span>
+                  ) : saveState === "failed" ? (
                     <span
                       className="saved failed"
                       role="alert"

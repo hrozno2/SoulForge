@@ -190,7 +190,7 @@ export interface CharacterRecord {
 export async function listCharacters(): Promise<CharacterRecord[]> {
   const db = await openDb();
   const all = (await wrap(db.transaction("characters").objectStore("characters").getAll())) as CharacterRecord[];
-  // Audit E6, step one: a record with no picture gets the one kept for its id in the portraits store.
+  // Audit E6: a record with no picture gets the one kept for its id in the portraits store (where a save puts it).
   const bare = all.filter((r) => r.data && !r.data.portrait);
   if (bare.length && db.objectStoreNames.contains("portraits")) {
     const store = db.transaction("portraits").objectStore("portraits");
@@ -204,10 +204,10 @@ export async function listCharacters(): Promise<CharacterRecord[]> {
 }
 
 /**
- * Pictures kept apart from the character records (audit E6: a portrait is a long data URL that rides along in every
- * autosave, backup and quick-recovery copy). Step one of two, 2026-11-24: the store exists and is READ; the record's
- * own field is still what is written, so a build before this one never opens a character without its picture. The
- * release after the one that carries this moves the writing here.
+ * Pictures kept apart from the character records (audit E6: a portrait is a long data URL that rode along in every
+ * autosave). Step one, v0.28.0: the store exists and is read. Step two, after it: a save writes the picture here and
+ * the record without it (saveCharacterRecord). Never both in one release: a build that does not read this store
+ * would open the characters without their pictures.
  */
 export const portraitStore = {
   async get(id: string): Promise<string | undefined> {
@@ -232,17 +232,56 @@ export const portraitStore = {
   },
 };
 
+/** The stores a character's record and picture are in; a database from before the portraits store has only one. */
+const characterStores = (db: IDBDatabase): string[] =>
+  db.objectStoreNames.contains("portraits") ? ["characters", "portraits"] : ["characters"];
+
+/**
+ * Puts a record into the library within `tx`: the picture into the portraits store and the record without it, or the
+ * record whole where there is no such store. A picture already stored is not written again (it is long, and a save
+ * follows every edit); a character with no picture has none kept for it either. `rec` itself is not changed.
+ */
+async function putCharacter(tx: IDBTransaction, rec: CharacterRecord): Promise<void> {
+  const chars = tx.objectStore("characters");
+  if (!tx.objectStoreNames.contains("portraits") || !rec.data) {
+    chars.put(rec);
+    return;
+  }
+  const portraits = tx.objectStore("portraits");
+  const picture = rec.data.portrait;
+  const kept = (await wrap(portraits.get(rec.id))) as unknown;
+  if (picture) {
+    if (kept !== picture) portraits.put(picture, rec.id);
+  } else if (kept !== undefined) portraits.delete(rec.id);
+  chars.put(picture ? { ...rec, data: { ...rec.data, portrait: undefined } } : rec);
+}
+
+/** A record as the characters store holds it, with its picture from the portraits store when it has none itself. */
+async function takeCharacter(tx: IDBTransaction, id: string): Promise<CharacterRecord | undefined> {
+  const rec = (await wrap(tx.objectStore("characters").get(id))) as CharacterRecord | undefined;
+  if (!rec?.data || rec.data.portrait || !tx.objectStoreNames.contains("portraits")) return rec;
+  const kept = (await wrap(tx.objectStore("portraits").get(id))) as unknown;
+  return typeof kept === "string" && kept ? { ...rec, data: { ...rec.data, portrait: kept } } : rec;
+}
+
+/** Takes a record and its picture out of the library within `tx`. */
+function dropCharacter(tx: IDBTransaction, id: string): void {
+  tx.objectStore("characters").delete(id);
+  if (tx.objectStoreNames.contains("portraits")) tx.objectStore("portraits").delete(id);
+}
+
 export async function saveCharacterRecord(rec: CharacterRecord): Promise<void> {
   const db = await openDb();
-  const tx = db.transaction("characters", "readwrite");
-  tx.objectStore("characters").put(rec);
-  await done(tx);
+  const tx = db.transaction(characterStores(db), "readwrite");
+  const finished = done(tx);
+  await putCharacter(tx, rec);
+  await finished;
 }
 
 export async function deleteCharacterRecord(id: string): Promise<void> {
   const db = await openDb();
-  const tx = db.transaction("characters", "readwrite");
-  tx.objectStore("characters").delete(id);
+  const tx = db.transaction(characterStores(db), "readwrite");
+  dropCharacter(tx, id);
   await done(tx);
 }
 
@@ -261,16 +300,17 @@ const fresh = (t: TrashedRecord[], now = Date.now()) => t.filter((x) => now - x.
  */
 export async function trashCharacter(id: string, at = Date.now()): Promise<void> {
   const db = await openDb();
-  const tx = db.transaction(["characters", "meta"], "readwrite");
-  const chars = tx.objectStore("characters");
+  const tx = db.transaction([...characterStores(db), "meta"], "readwrite");
+  const finished = done(tx);
   const meta = tx.objectStore("meta");
-  const rec = (await wrap(chars.get(id))) as CharacterRecord | undefined;
+  // Whole, with its picture: the trash is where it lives until it is restored or forgotten.
+  const rec = await takeCharacter(tx, id);
   const trash = ((await wrap(meta.get(TRASH_KEY))) as TrashedRecord[] | undefined) ?? [];
   if (rec) {
     meta.put(fresh([{ rec, deleted: at }, ...trash.filter((x) => x.rec.id !== id)]), TRASH_KEY);
-    chars.delete(id);
+    dropCharacter(tx, id);
   }
-  await done(tx);
+  await finished;
 }
 
 /** "Recently deleted", newest first. */
@@ -283,18 +323,19 @@ export async function listTrash(): Promise<TrashedRecord[]> {
 /** Puts a deleted character back in the library (and out of the trash), in one transaction. */
 export async function restoreTrashed(id: string): Promise<void> {
   const db = await openDb();
-  const tx = db.transaction(["characters", "meta"], "readwrite");
+  const tx = db.transaction([...characterStores(db), "meta"], "readwrite");
+  const finished = done(tx);
   const meta = tx.objectStore("meta");
   const trash = ((await wrap(meta.get(TRASH_KEY))) as TrashedRecord[] | undefined) ?? [];
   const hit = trash.find((x) => x.rec.id === id);
   if (hit) {
-    tx.objectStore("characters").put(hit.rec);
+    await putCharacter(tx, hit.rec);
     meta.put(
       trash.filter((x) => x.rec.id !== id),
       TRASH_KEY,
     );
   }
-  await done(tx);
+  await finished;
 }
 
 /** Forgets a deleted character for good. */

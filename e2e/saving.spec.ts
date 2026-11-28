@@ -147,6 +147,46 @@ test("a character open in two tabs is saved by one of them only", async ({ page,
   await second.close();
 });
 
+const PICTURE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+type Page = import("@playwright/test").Page;
+
+// Every saved character's name and portrait, read with cursors (the switch further down only breaks getAll, which the
+// app uses).
+const library = (page: Page) =>
+  page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((res, rej) => {
+      const q = indexedDB.open("charforge");
+      q.onsuccess = () => res(q.result);
+      q.onerror = () => rej(q.error);
+    });
+    const out: { id: string; name: string; portrait?: string }[] = [];
+    await new Promise<void>((res, rej) => {
+      const c = db.transaction("characters").objectStore("characters").openCursor();
+      c.onsuccess = () => {
+        const cur = c.result;
+        if (!cur) return res();
+        const rec = cur.value as { id: string; data: { name: string; portrait?: string } };
+        out.push({ id: rec.id, name: rec.data.name, portrait: rec.data.portrait });
+        cur.continue();
+      };
+      c.onerror = () => rej(c.error);
+    });
+    // A character's picture is kept in a store of its own, by its id (audit E6).
+    const pictures = await new Promise<Map<string, string>>((res, rej) => {
+      const got = new Map<string, string>();
+      const c = db.transaction("portraits").objectStore("portraits").openCursor();
+      c.onsuccess = () => {
+        const cur = c.result;
+        if (!cur) return res(got);
+        got.set(String(cur.key), cur.value as string);
+        cur.continue();
+      };
+      c.onerror = () => rej(c.error);
+    });
+    db.close();
+    return out.map((c) => ({ name: c.name, portrait: c.portrait ?? pictures.get(c.id) })).sort((a, b) => a.name.localeCompare(b.name));
+  });
+
 // Audit E6: a character whose portrait is too big for the quick-recovery copy is kept there without the portrait.
 // After a sudden quit the newer copy opens, and the portrait comes back from the library; neither is lost.
 test("a copy kept without its portrait opens with its edits and gets the portrait back", async ({ page }) => {
@@ -160,22 +200,8 @@ test("a copy kept without its portrait opens with its edits and gets the portrai
 
   // As it would be after a quit: the library has the saved character with its portrait; the open copy has a newer
   // edit and no portrait.
-  const PORTRAIT = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
-  const stored = async () =>
-    page.evaluate(async () => {
-      const db = await new Promise<IDBDatabase>((res, rej) => {
-        const q = indexedDB.open("charforge");
-        q.onsuccess = () => res(q.result);
-        q.onerror = () => rej(q.error);
-      });
-      const all = await new Promise<{ id: string; name: string; data: { name: string; portrait?: string } }[]>((res, rej) => {
-        const q = db.transaction("characters").objectStore("characters").getAll();
-        q.onsuccess = () => res(q.result);
-        q.onerror = () => rej(q.error);
-      });
-      db.close();
-      return all.map((c) => ({ name: c.data.name, portrait: c.data.portrait }));
-    });
+  const PORTRAIT = PICTURE;
+  const stored = () => library(page);
   const edited = await page.evaluate(async (portrait) => {
     const copy = JSON.parse(localStorage.getItem("charforge.current.v2")!) as { id: string; ch: Record<string, unknown> };
     const db = await new Promise<IDBDatabase>((res, rej) => {
@@ -216,33 +242,6 @@ test("a copy kept without its portrait opens with its edits and gets the portrai
 });
 
 // The copy that was open at the last quit, when the library's answer does not go the usual way (found 2026-11-25).
-const PICTURE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
-type Page = import("@playwright/test").Page;
-
-// Every record's name and portrait, read with a cursor (the switch below only breaks getAll, which the app uses).
-const library = (page: Page) =>
-  page.evaluate(async () => {
-    const db = await new Promise<IDBDatabase>((res, rej) => {
-      const q = indexedDB.open("charforge");
-      q.onsuccess = () => res(q.result);
-      q.onerror = () => rej(q.error);
-    });
-    const out: { name: string; portrait?: string }[] = [];
-    await new Promise<void>((res, rej) => {
-      const c = db.transaction("characters").objectStore("characters").openCursor();
-      c.onsuccess = () => {
-        const cur = c.result;
-        if (!cur) return res();
-        const data = (cur.value as { data: { name: string; portrait?: string } }).data;
-        out.push({ name: data.name, portrait: data.portrait });
-        cur.continue();
-      };
-      c.onerror = () => rej(c.error);
-    });
-    db.close();
-    return out.sort((a, b) => a.name.localeCompare(b.name));
-  });
-
 // While localStorage has "test.libraryUnread", reading the saved characters fails, as a storage in trouble would.
 const breakableLibrary = (page: Page) =>
   page.addInitScript(() => {

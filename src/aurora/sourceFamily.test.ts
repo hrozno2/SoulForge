@@ -26,9 +26,10 @@ describe("whose content a source holds", () => {
     expect(sourceFamily(local("local://test-aurora", 2000, "aurora"))).toBe("aurora");
     expect(sourceFamily(local("local://builder"))).toBe("homebrew");
     expect(sourceFamily(local("local://custom/My homebrew"))).toBe("homebrew");
-    // Imported from this computer: one file is somebody's homebrew, a repository's ZIP is Aurora's content.
+    // Imported from this computer: the player's own, however many files it is (Chris 2026-11-28: "a user should be
+    // able to import whatever and however many files they want"). Before, more than 25 files counted as Aurora's.
     expect(sourceFamily(local("local://my-subclass"))).toBe("homebrew");
-    expect(sourceFamily(local("local://elements-master", 1400))).toBe("aurora");
+    expect(sourceFamily(local("local://elements-master", 1400))).toBe("homebrew");
   });
   it("leaves 5e.tools and homebrew for an Aurora-free app, in their order", () => {
     const list = [
@@ -37,7 +38,7 @@ describe("whose content a source holds", () => {
       local("local://elements-master", 1400),
       local("local://builder"),
     ];
-    expect(withoutAurora(list).map((s) => s.url)).toEqual(["local://5etools", "local://builder"]);
+    expect(withoutAurora(list).map((s) => s.url)).toEqual(["local://5etools", "local://elements-master", "local://builder"]);
     expect(holdsAurora(list)).toBe(true);
     expect(holdsAurora(withoutAurora(list))).toBe(false);
   });

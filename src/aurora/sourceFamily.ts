@@ -6,10 +6,10 @@
  * cache carries, so a player's own Aurora link counted as 5e.tools content.
  *
  * - "5etools": files imported from 5e.tools (or a Plutonium export), converted on load.
- * - "homebrew": the player's own: the homebrew builder's source and content they wrote out by hand. Small sets of
- *   files they imported from this computer count too (a friend's homebrew file).
- * - "aurora": everything else in Aurora's format: index links, the test cache, and an imported elements repository
- *   (told from a homebrew file by its size: a repository holds hundreds of files).
+ * - "homebrew": the player's own: the homebrew builder's source, content they wrote out by hand, and whatever they
+ *   imported from this computer, of any size. (Until 2026-11-28 an import of more than 25 files counted as an
+ *   elements repository and was not read; Chris: a user imports whatever and however many files they want.)
+ * - "aurora": index links and the test cache.
  */
 import type { SourceConfig } from "./sources";
 
@@ -19,16 +19,12 @@ export type SourceFamily = "5etools" | "homebrew" | "aurora";
 export const HOMEBREW_BUILDER_URL = "local://builder";
 /** Content the player wrote by hand on the Content tab. */
 export const CUSTOM_PREFIX = "local://custom/";
-/** An import from this computer with more files than this is an elements repository, not somebody's homebrew. */
-export const HOMEBREW_MAX_FILES = 25;
-
-type Sourced = Pick<SourceConfig, "url" | "kind" | "format" | "fileCount">;
+type Sourced = Pick<SourceConfig, "url" | "kind" | "format">;
 
 export function sourceFamily(s: Sourced): SourceFamily {
   if (s.format === "5etools") return "5etools";
   if (s.format === "aurora" || s.kind === "link") return "aurora";
-  if (s.url === HOMEBREW_BUILDER_URL || s.url.startsWith(CUSTOM_PREFIX)) return "homebrew";
-  return s.fileCount > HOMEBREW_MAX_FILES ? "aurora" : "homebrew";
+  return "homebrew";
 }
 
 /** The sources an Aurora-free app reads: 5e.tools and the player's own homebrew. */

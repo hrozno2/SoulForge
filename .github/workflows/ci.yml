@@ -15,6 +15,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Known vulnerabilities in what ships with the app (not the build tools).
+      - run: npm audit --omit=dev
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: npm run format:check
@@ -38,18 +40,20 @@ jobs:
           name: playwright-traces
           path: test-results/
 
-  # Builds the real desktop app and runs its self-check under the production security policy.
+  # Builds the real desktop app and runs its self-check under the production security policy. Required since
+  # 2026-11-28 (it had passed on the last twelve pushes).
   desktop-selftest:
     runs-on: macos-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+      - uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: src-tauri
       - run: npm ci

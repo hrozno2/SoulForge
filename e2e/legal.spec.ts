@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { newCharacter } from "../src/aurora/character";
+import { resolve } from "../src/aurora/engine";
+import { ARegistry } from "../src/aurora/registry";
 import { reloadWithCurrent, tab, stored } from "./helpers";
 
 // Chris, 2026-11-23: a character the rules check flags is made rules legal in one screen. The player decides what is
@@ -76,4 +78,69 @@ test("Make it legal: the player's call, what changed, and the journal", async ({
   expect(saved.journal?.map((j) => j.title)).toEqual(["Rules changes"]);
   expect(saved.journal?.[0].text).toContain("Kept as a table ruling: Origin editions mixed");
   expect(saved.acceptedFindings?.length).toBe(1);
+});
+
+// Chris, 2026-11-28: the move to the current rules content asks and never decides. One language too many: which goes.
+// A pick with no version in the content: its place is open, with the choice's own options to pick from.
+test("a moved character's open calls: which language goes, and what takes an empty place", async ({ page }) => {
+  const els = bundle("5.2");
+  const lang = (name: string) => pick(els, "Language", name);
+  const fighter = pick(els, "Class", "Fighter");
+  const ch = {
+    ...newCharacter(),
+    name: "Moved Over",
+    abilityMethod: "manual" as const,
+    race: pick(els, "Race", "Orc"),
+    background: pick(els, "Background", "Soldier"),
+    classes: [{ classId: fighter, level: 1 }],
+    extras: [lang("Giant"), lang("Goblin")],
+    moveDecisions: [
+      { kind: "drop" as const, key: "language 1", older: "", newer: "", what: "language", options: [lang("Giant"), lang("Goblin")] },
+    ],
+  };
+  await page.goto("/");
+  await reloadWithCurrent(page, JSON.stringify({ id: "moved-test", ch }));
+  await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
+  await tab(page, "Build");
+  const drop = page.getByRole("status", { name: "One too many" });
+  await expect(drop).toContainText("one language more than the rules give: Giant, Goblin");
+  await drop.getByRole("button", { name: "Drop Goblin" }).click();
+  await expect(drop).toHaveCount(0);
+  const saved = () =>
+    page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("charforge.current.v2")!).ch as {
+          extras: string[];
+          moveDecisions?: unknown[];
+          selections: Record<string, string[]>;
+        },
+    );
+  await expect.poll(async () => (await saved()).extras).toEqual([lang("Giant")]);
+  expect((await saved()).moveDecisions).toBeUndefined();
+
+  // An open place: the Fighter's fighting style, as a pick with no version would leave it.
+  const reg = new ARegistry();
+  reg.addElements(els as never);
+  reg.build();
+  const slot = resolve({ ...ch, moveDecisions: undefined }, reg).slots.find(
+    (x) => /fighting style/i.test(x.rule.name) && !x.rule.optional,
+  )!;
+  const open = {
+    ...ch,
+    extras: [],
+    moveDecisions: [{ kind: "open" as const, key: slot.key, older: "", newer: "", what: "Brawler's Stance" }],
+  };
+  await reloadWithCurrent(page, JSON.stringify({ id: "moved-test", ch: open }));
+  await expect(page.getByRole("button", { name: /random character/i })).toBeEnabled({ timeout: 60_000 });
+  await tab(page, "Build");
+  const place = page.getByRole("status", { name: "A place left open" });
+  await expect(place).toContainText("Brawler's Stance has no version in the current rules content");
+  await expect(place.getByRole("button", { name: "Take it" })).toBeDisabled();
+  const list = place.getByLabel("In place of Brawler's Stance");
+  expect(await list.locator("option").count()).toBeGreaterThan(3);
+  await list.selectOption({ label: "Defense" });
+  await place.getByRole("button", { name: "Take it" }).click();
+  await expect(place).toHaveCount(0);
+  await expect.poll(async () => (await saved()).selections[slot.key]?.length).toBe(1);
+  expect((await saved()).moveDecisions).toBeUndefined();
 });

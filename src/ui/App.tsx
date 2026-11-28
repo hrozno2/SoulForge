@@ -16,7 +16,7 @@ import { t } from "../i18n";
 import { openChoices } from "./openChoices";
 import { buildSheet } from "../aurora/sheet";
 import { TAB_ICONS } from "./icons";
-import { newCharacter, openCharacter, uid, type Character } from "../aurora/character";
+import { applyMoveDecision, newCharacter, openCharacter, uid, type Character } from "../aurora/character";
 import { resolve } from "../aurora/engine";
 import { randomCharacter } from "../aurora/randomCharacter";
 import { saveCharacterRecord } from "../aurora/storage";
@@ -86,6 +86,30 @@ function loadCurrent(): { id: string; ch: Character; fromLibrary?: boolean; port
     /* start fresh */
   }
   return { id: uid(), ch: newCharacter() };
+}
+
+/** A place a moved character's pick left open (the pick has no version in the current content), with what can take it. */
+function OpenPlace({ what, choice, options, take }: { what: string; choice: string; options: AElement[]; take: (id: string) => void }) {
+  const [pick, setPick] = useState("");
+  return (
+    <div className="notice-toast noprint move-decision" role="status" aria-label="A place left open">
+      <span>
+        {what} has no version in the current rules content, so its place ({choice}) is open. Nothing was chosen for you: pick what takes its
+        place here, or later on the board.
+      </span>
+      <select aria-label={`In place of ${what}`} value={pick} onChange={(e) => setPick(e.target.value)}>
+        <option value="">Choose…</option>
+        {options.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.name}
+          </option>
+        ))}
+      </select>
+      <button className="primary" disabled={!pick} onClick={() => take(pick)}>
+        Take it
+      </button>
+    </div>
+  );
 }
 
 export function App() {
@@ -720,16 +744,37 @@ export function App() {
           {content.ready &&
             tab === "build" &&
             (character.moveDecisions ?? []).map((d) => {
+              const decide = (id: string) => set((c) => applyMoveDecision(c, d, id));
+              // One thing more than the rules give (a language kept from the old content): the player says which goes.
+              if (d.kind === "drop") {
+                const options = (d.options ?? []).map((id) => content.reg.get(id)).filter((e): e is AElement => !!e);
+                if (!options.length) return null;
+                return (
+                  <div key={`drop|${d.key}`} className="notice-toast noprint move-decision" role="status" aria-label="One too many">
+                    <span>
+                      Moved to the current rules content, this character has one {d.what} more than the rules give:{" "}
+                      {options.map((e) => e.name).join(", ")}. Which one goes? Your call.
+                    </span>
+                    {options.map((e) => (
+                      <button key={e.id} onClick={() => decide(e.id)}>
+                        Drop {e.name}
+                      </button>
+                    ))}
+                  </div>
+                );
+              }
+              // A pick with no version in the current content left its place open: the choice's own options to pick from.
+              if (d.kind === "open") {
+                const slot = r.slots.find((x) => x.key === d.key);
+                if (!slot || slot.chosen.length >= slot.rule.number) return null;
+                const options = slot.options
+                  .filter((o) => !slot.blocked.has(o.id) && !slot.chosen.includes(o.id))
+                  .sort((a, b) => a.name.localeCompare(b.name));
+                return <OpenPlace key={`open|${d.key}|${d.what}`} what={d.what} choice={slot.rule.name} options={options} take={decide} />;
+              }
               const older = content.reg.get(d.older),
                 newer = content.reg.get(d.newer);
               if (!older || !newer) return null;
-              // The kept pick is swapped for the chosen one in its choice; the other picks there stay.
-              const decide = (id: string) =>
-                set((c) => ({
-                  ...c,
-                  selections: { ...c.selections, [d.key]: (c.selections[d.key] ?? []).map((x) => (x === d.older ? id : x)) },
-                  moveDecisions: (c.moveDecisions ?? []).filter((x) => !(x.key === d.key && x.older === d.older)),
-                }));
               if (d.kind === "repeat")
                 return (
                   <div key={`${d.key}|${d.older}`} className="notice-toast noprint move-decision" role="status">

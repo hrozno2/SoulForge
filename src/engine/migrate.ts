@@ -1012,10 +1012,13 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   const kindOf = (x: Slot) =>
     x.rule.type === "Spell"
       ? `Spell|${(x.rule.spellcasting ?? "").toLowerCase()}|${/cantrip/i.test(x.rule.name) ? 0 : 1}`
-      : x.rule.type === "Language" || x.rule.type === "Archetype"
+      : x.rule.type === "Language" || x.rule.type === "Archetype" || x.rule.type === "Feat"
         ? x.rule.type
         : `${x.rule.type}|${nameKey(x.owner.name)}`;
   const leftOpen = new Map<string, number>();
+  // The picks with no place whose places stay open, by kind: each is the player's to replace (a decision, with the
+  // choice's own options to pick from), never the auto-fill's.
+  const openFor = new Map<string, string[]>();
   // A pick made twice is not a place left open: the player chose, wrongly, and the fill takes the place ("Chosen for
   // you"); left open, a Sorcerer's Mind Sliver twice came out one cantrip short of the class table.
   for (const x of old.slots)
@@ -1029,10 +1032,13 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     const k =
       p.ruleType === "Spell"
         ? `Spell|${(p.casting ?? "").toLowerCase()}|${pickLevel === 0 ? 0 : 1}`
-        : p.ruleType === "Language" || p.ruleType === "Archetype"
+        : // A feat by its kind alone too: Aurora's improvement and 5e.tools' "Ability Score Improvement or feat" name
+          // their owners differently, and a playtest feat's place (Medic) was filled with +2 Dexterity (2026-11-28).
+          p.ruleType === "Language" || p.ruleType === "Archetype" || p.ruleType === "Feat"
           ? p.ruleType
           : `${p.ruleType}|${p.ownerName}`;
     leftOpen.set(k, (leftOpen.get(k) ?? 0) + 1);
+    openFor.set(k, [...(openFor.get(k) ?? []), p.name]);
   }
   // How often the original picked each thing, by name: twice means the player's own repeat (Aurora allowed the same
   // cantrip from two lists, a skill twice), which is kept as built and offered as a decision; a repeat the move made
@@ -1101,7 +1107,13 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
     }
     const room = Math.max(0, x.rule.number - mine.length);
     const keep = Math.min(room, leftOpen.get(kindOf(x)) ?? 0);
-    if (keep) leftOpen.set(kindOf(x), (leftOpen.get(kindOf(x)) ?? 0) - keep);
+    if (keep) {
+      leftOpen.set(kindOf(x), (leftOpen.get(kindOf(x)) ?? 0) - keep);
+      for (let i = 0; i < keep; i++) {
+        const what = openFor.get(kindOf(x))?.shift();
+        if (what) decisions.push({ kind: "open", key: x.key, older: "", newer: "", what });
+      }
+    }
     const extra = (filledCh0.selections[x.key] ?? []).filter((id) => !mine.includes(id)).slice(0, room - keep);
     filledCh.selections[x.key] = [...mine, ...extra];
     if (!filledCh.selections[x.key].length) delete filledCh.selections[x.key];
@@ -1120,6 +1132,20 @@ export function migrateToFiveTools(ch: Character, from: ARegistry, to: ARegistry
   Object.assign(next, { selections: filledCh.selections, prepared: preparedNow });
   // A pick the rebuilt character has anyway (5e.tools grants what Aurora asked) has its place.
   const final = resolve(next, to);
+  // One language more than before, because a picked one found no place and was kept as a manual addition (a 2024 Orc
+  // built with Aurora's customized languages: three and no Common; 5e.tools gives Common and two picks). The rules give
+  // no such extra, and which one goes is the player's call (Chris 2026-11-28: the move asks, it never decides).
+  {
+    const known = (r: ReturnType<typeof resolve>) =>
+      new Set(r.active.filter((a) => a.el.type === "Language").map((a) => nameKey(a.el.name)));
+    const added = next.extras.filter(
+      (id) => to.get(id)?.type === "Language" && !ch.extras.includes(id) && !(ch.extras ?? []).some((o) => map(o, false) === id),
+    );
+    const surplus = added.length ? Math.min(added.length, known(final).size - known(old).size) : 0;
+    const picked = [...new Set([...final.slots.filter((x) => x.rule.type === "Language").flatMap((x) => x.chosen), ...added])];
+    for (let i = 0; i < surplus; i++)
+      decisions.push({ kind: "drop", key: `language ${i + 1}`, older: "", newer: "", what: "language", options: picked });
+  }
   const names = new Set(final.active.map((a) => nameKey(a.el.name)));
   // "Channel Divinity: Divine Spark" is "Divine Spark" where 5e.tools grants it.
   const had = (n: string) => names.has(nameKey(n)) || names.has(nameKey(n.replace(/^[^:]+:\s*/, "")));

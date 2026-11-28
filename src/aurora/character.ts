@@ -199,8 +199,46 @@ export interface MoveDecision {
   older: string;
   newer: string;
   what: string;
-  /** "subclass" (a newer book's version exists) or "repeat" (the same pick twice, which Aurora allowed). */
-  kind?: "subclass" | "repeat";
+  /**
+   * "subclass" (a newer book's version exists) or "repeat" (the same pick twice, which Aurora allowed);
+   * "open": a pick with no version in the content left its place (`key`) open, `what` is the pick's name, and the
+   * player takes one of the choice's options there; "drop": the moved character has one thing more than the rules
+   * give (a language), and the player says which of `options` goes.
+   */
+  kind?: "subclass" | "repeat" | "open" | "drop";
+  options?: string[];
+}
+
+/** The player's answer to a move decision: the character with it applied and the decision gone. */
+export function applyMoveDecision(c: Character, d: MoveDecision, id: string): Character {
+  const rest = (c.moveDecisions ?? []).filter((x) => x !== d && !(x.key === d.key && x.older === d.older && x.kind === d.kind));
+  const done = (next: Character): Character => {
+    const out = { ...next };
+    if (rest.length) out.moveDecisions = rest;
+    else delete out.moveDecisions;
+    return out;
+  };
+  if (d.kind === "drop") {
+    const selections = Object.fromEntries(
+      Object.entries(c.selections)
+        .map(([k, v]) => [k, v.filter((x) => x !== id)] as const)
+        .filter(([, v]) => v.length),
+    );
+    let extras = c.extras.filter((x) => x !== id);
+    // A place the dropped one leaves in a choice is taken by one of the others that had none (a manual addition).
+    for (const [k, v] of Object.entries(c.selections)) {
+      if (!v.includes(id)) continue;
+      const spare = (d.options ?? []).find((o) => extras.includes(o));
+      if (!spare) continue;
+      selections[k] = [...(selections[k] ?? []), spare];
+      extras = extras.filter((x) => x !== spare);
+    }
+    return done({ ...c, selections, extras });
+  }
+  if (d.kind === "open")
+    return done({ ...c, selections: { ...c.selections, [d.key]: [...(c.selections[d.key] ?? []).filter((x) => x !== id), id] } });
+  // The kept pick is swapped for the chosen one in its choice; the other picks there stay.
+  return done({ ...c, selections: { ...c.selections, [d.key]: (c.selections[d.key] ?? []).map((x) => (x === d.older ? id : x)) } });
 }
 
 export interface Character {

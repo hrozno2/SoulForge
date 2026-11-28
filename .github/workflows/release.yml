@@ -17,7 +17,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Refuse an unconfigured copy
         run: |
           if grep -q "__REPO__\|__UPDATER_PUBKEY__" src-tauri/tauri.conf.json src/config.ts; then
@@ -46,7 +46,7 @@ jobs:
     outputs:
       id: ${{ steps.draft.outputs.id }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - id: draft
@@ -93,7 +93,7 @@ jobs:
             args: ""
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Linux dependencies
         if: startsWith(matrix.platform, 'ubuntu')
@@ -143,7 +143,7 @@ jobs:
     env:
       HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Update the Homebrew cask
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -180,7 +180,7 @@ jobs:
     steps:
       - name: Install tools
         run: pacman -Syu --noconfirm git github-cli pacman-contrib
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build the package
         run: |
           VERSION="${GITHUB_REF_NAME#v}"

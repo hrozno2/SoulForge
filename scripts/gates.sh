@@ -18,6 +18,7 @@ t diff diff src/engine/timeline.diff.test.ts src/engine/determinism.test.ts
 t fastchar fastchar src/aurora/fastchar.test.ts
 t parity parity src/engine/parity.test.ts
 t effect parity-effect src/engine/parityEffect.test.ts
+t each parity-each src/engine/parityEach.test.ts
 sed -n 3p "$SOULFORGE_RULES/engine/parity.md" 2>/dev/null
 sed -n 3p "$SOULFORGE_RULES/engine/parity-effect.md" 2>/dev/null
 # The plain unit run, as CI has it: without the test cache, so the content suites skip (the tiers above ran them).

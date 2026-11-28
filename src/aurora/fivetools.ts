@@ -4521,6 +4521,12 @@ export function convertFiveTools(input: FiveToolsInput): AElement[] {
     armor: (k) => ARMOR_IDS[k],
     skill: (n) => `ID_5ET_SKILL_${slug(n)}`,
     language: (n) => `ID_5ET_LANGUAGE_${slug(n)}`,
+    sense: (kind, range) => {
+      const vid = `ID_5ET_SENSE_${slug(kind)}_${range}`;
+      if (!out.some((o) => o.id === vid))
+        out.push(base(vid, `${cap(kind)} (${range} ft.)`, "Vision", "5etools", { compendiumHidden: true }));
+      return vid;
+    },
   });
   gateTraitTwins(out);
   for (const c of classes) applyTableMechanics(c, out);

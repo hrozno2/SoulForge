@@ -1,0 +1,48 @@
+name: Nightly
+
+# Audit H4: a larger run than every push gets, on a fresh seed, with the rules the app ships (public/srd). It builds
+# many more random characters and damages many more saved characters, content files and import files than the unit
+# tests do. A failure opens an issue with the end of the log, so a finding does not wait for someone to look.
+on:
+  schedule:
+    - cron: "23 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  larger-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Random characters and damaged input, at many times the usual size
+        env:
+          SRD_FRESH: 300
+          ENGINE_FUZZ: 6000
+          CONTENT_FUZZ: 400
+          IMPORT_FUZZ: 2000
+        run: |
+          set -o pipefail
+          npx vitest run src/aurora/srdRandom.test.ts src/engine/engineFuzz.test.ts src/engine/contentFuzz.test.ts \
+            src/engine/importFuzz.test.ts src/aurora/sanitize.test.ts src/engine/cache.test.ts 2>&1 | tee nightly.log
+      - name: Open an issue on a finding
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "The nightly larger run failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo
+            echo '```'
+            tail -n 80 nightly.log 2>/dev/null || echo "(no log: the run failed before the tests)"
+            echo '```'
+          } > issue.md
+          gh issue create --repo "${{ github.repository }}" --title "Nightly run failed ($(date -u +%F))" --body-file issue.md

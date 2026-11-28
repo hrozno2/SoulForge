@@ -74,6 +74,7 @@ for (const [name, tier, file] of [
   ["against Aurora", "aurora", "src/engine/aurora.test.ts"],
   ["Aurora against 5e.tools", "parity", "src/engine/parity.test.ts"],
   ["5e.tools with and without Aurora", "parity-effect", "src/engine/parityEffect.test.ts"],
+  ["each borrowed mechanic with and without Aurora", "parity-each", "src/engine/parityEach.test.ts"],
   ["the SRD bundle", "srd-bundle", "src/aurora/srdBundle.test.ts"],
   ["against the SRD", "srd-api", "src/engine/srdApi.test.ts"],
   ["every source", "sources", "src/engine/sources.test.ts"],
@@ -82,7 +83,7 @@ for (const [name, tier, file] of [
   ["FastCharacter", "fastchar", "src/aurora/fastchar.test.ts"],
 ]) {
   // Built on Aurora's content or a comparison with it: not part of the Aurora-free check.
-  if (noAurora && ["aurora", "parity", "parity-effect", "diff", "fastchar"].includes(tier)) continue;
+  if (noAurora && ["aurora", "parity", "parity-effect", "parity-each", "diff", "fastchar"].includes(tier)) continue;
   steps.push(await run(name, "npx", ["vitest", "run", ...file.split(" "), "--silent=false"], { RULES_TIER: tier }));
 }
 

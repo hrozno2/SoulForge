@@ -1,0 +1,136 @@
+/**
+ * The guided first character (Chris 2026-11-28, replacing the quiz of 2026-11-23): as D&D Beyond does it. The player
+ * picks a class, a species and a background from a short list, each with a line that says what it is; no questions,
+ * no recommendations. The list is the latest Player's Handbook only, with a button for every official option and one
+ * back to fewer. Never anything but official Wizards of the Coast books: no playtest material, no third-party content,
+ * no homebrew, whatever is loaded.
+ */
+import { bookKind, type BookIndex } from "./books";
+import type { AbilityId } from "./character";
+import type { ARegistry } from "./registry";
+import type { AElement } from "./types";
+
+export type GuideKind = "Class" | "Race" | "Background";
+
+/** One line for each option of the latest Player's Handbook, written for someone who has never played. */
+export const GUIDE_LINES: Record<GuideKind, Record<string, string>> = {
+  Class: {
+    Barbarian: "Rages, hits hard and shrugs off blows.",
+    Bard: "Talks, inspires friends and casts a bit of everything.",
+    Cleric: "Heals, protects and calls on a god's power.",
+    Druid: "Nature's magic, and later the shapes of beasts.",
+    Fighter: "Good with every weapon and armor, tough, and simple to run.",
+    Monk: "Fast, unarmed and hard to pin down.",
+    Paladin: "A knight in heavy armor who heals and smites.",
+    Ranger: "A hunter and tracker with a bow and a little magic.",
+    Rogue: "Sneaks, picks locks and strikes where it hurts.",
+    Sorcerer: "A few spells, cast often and bent to your will.",
+    Warlock: "A pact with a patron: few spells, always at full strength.",
+    Wizard: "The most spells of anyone, kept in a spellbook.",
+  },
+  Race: {
+    Aasimar: "Touched by the heavens: heals with a touch and can reveal a radiant form.",
+    Dragonborn: "Dragon's blood: a breath of fire, frost or lightning.",
+    Dwarf: "Sturdy and hard to kill, at home under the mountains.",
+    Elf: "Graceful and keen-eyed, with a little magic of their own.",
+    Gnome: "Small, clever and hard to fool with magic.",
+    Goliath: "Huge and strong, with a gift from their giant ancestors.",
+    Halfling: "Small, brave and remarkably lucky.",
+    Human: "Adaptable: an extra skill and an extra feat to start with.",
+    Orc: "Tireless and fierce, and hard to bring down.",
+    Tiefling: "Marked by the lower planes, with spells from that heritage.",
+  },
+  Background: {
+    Acolyte: "You served in a temple. A little divine magic.",
+    Artisan: "You learned a craft and how to deal with customers.",
+    Charlatan: "You lived by cons, disguises and forged papers.",
+    Criminal: "You broke the law for a living: stealthy and quick-fingered.",
+    Entertainer: "You performed for crowds: music, acrobatics, a stage name.",
+    Farmer: "You worked the land: tough, and good with animals.",
+    Guard: "You stood watch: alert and trained to hold the line.",
+    Guide: "You led others through the wilds. A little nature magic.",
+    Hermit: "You lived apart and studied. Healing and old lore.",
+    Merchant: "You traded far and wide: persuasive and good with animals.",
+    Noble: "You grew up with rank and schooling, and know how to lead.",
+    Sage: "You spent years with books. A little arcane magic.",
+    Sailor: "You crewed a ship: sure-footed and hard to knock down.",
+    Scribe: "You copied and kept records: careful and observant.",
+    Soldier: "You trained for war: strong, and good in a fight.",
+    Wayfarer: "You grew up on the streets: quick, lucky and light-fingered.",
+  },
+};
+
+const LATEST_HANDBOOK = /player.s handbook \(2024\)/i;
+/** The free part of that book, which every install has. */
+const FREE_2024 = /^SRD 5\.2/i;
+
+/**
+ * What a guided step offers. Few (the default): the latest Player's Handbook where its content is loaded, else the free
+ * 2024 rules. All: every official book's, one entry per name (the newest). Playtest, third-party and homebrew
+ * content is never offered, and what the content hides (a sidekick class, an NPC species) stays hidden.
+ */
+export function guideOptions(reg: ARegistry, books: BookIndex, kind: GuideKind, all: boolean): AElement[] {
+  const shown = reg.ofType(kind).filter((e) => !e.compendiumHidden);
+  const official = shown.filter((e) => {
+    const k = bookKind(books.info(e.source), e.source);
+    return k === "official" || k === "setting" || FREE_2024.test(e.source);
+  });
+  const byName = (list: AElement[]) => [...list].sort((a, b) => a.name.localeCompare(b.name));
+  const handbook = official.filter((e) => LATEST_HANDBOOK.test(e.source));
+  const few = handbook.length ? handbook : official.filter((e) => FREE_2024.test(e.source));
+  if (!all) return byName(few.length ? few : official);
+  // One entry per name: the latest handbook's, else the newest book's.
+  const best = new Map<string, AElement>();
+  const rank = (e: AElement) => (LATEST_HANDBOOK.test(e.source) ? 3 : FREE_2024.test(e.source) ? 2 : 1);
+  const year = (e: AElement) => books.info(e.source).release ?? 0;
+  for (const e of official) {
+    const k = e.name.toLowerCase().replace(/\s*\((?:20\d\d|legacy)\)\s*$/, "");
+    const have = best.get(k);
+    if (!have || rank(e) > rank(have) || (rank(e) === rank(have) && year(e) > year(have))) best.set(k, e);
+  }
+  return byName([...best.values()]);
+}
+
+/** The line shown under an option: the guide's own for the handbook's options, else the option's first sentence. */
+export function guideLine(kind: GuideKind, el: AElement): string {
+  const own = GUIDE_LINES[kind][el.name];
+  if (own) return own;
+  const text = (el.description ?? "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const first = /^(.{20,160}?[.!?])(?:\s|$)/.exec(text)?.[1] ?? "";
+  return first;
+}
+
+const S = "strength";
+const D = "dexterity";
+const C = "constitution";
+const I = "intelligence";
+const W = "wisdom";
+const H = "charisma";
+/** The standard array for each class, highest score first. */
+const SCORES: Record<string, AbilityId[]> = {
+  Barbarian: [S, C, D, W, H, I],
+  Bard: [H, D, C, W, I, S],
+  Cleric: [W, C, S, H, D, I],
+  Druid: [W, C, D, I, H, S],
+  Fighter: [S, C, D, W, H, I],
+  Monk: [D, W, C, S, I, H],
+  Paladin: [S, H, C, W, D, I],
+  Ranger: [D, W, C, S, I, H],
+  Rogue: [D, C, H, W, I, S],
+  Sorcerer: [H, C, D, W, I, S],
+  Warlock: [H, C, D, W, I, S],
+  Wizard: [I, C, D, W, H, S],
+};
+export const GUIDE_CLASSES = Object.keys(SCORES);
+
+const ARRAY = [15, 14, 13, 12, 10, 8];
+/** The standard array placed for a class: its best score where the class needs it most. */
+export function recommendedScores(className: string): Record<AbilityId, number> | undefined {
+  const order = SCORES[className];
+  return order ? (Object.fromEntries(order.map((a, i) => [a, ARRAY[i]])) as Record<AbilityId, number>) : undefined;
+}
+/** The score a class wants highest, for the guide's sentence about it. */
+export const mainScore = (className: string | undefined): AbilityId | undefined => (className ? SCORES[className]?.[0] : undefined);

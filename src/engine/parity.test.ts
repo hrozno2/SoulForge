@@ -54,6 +54,7 @@ const EXPLAINED: Record<string, string> = {
   "grants Archetype Path of the Battlerager": FIVE_RIGHT,
   "grants Archetype Scout": FIVE_RIGHT,
   "grants Feat Gunner": FIVE_RIGHT,
+  "grants Archetype Shadow Magic": "the same 120 feet of darkvision: Aurora names it Superior Darkvision, 5e.tools' text gives the range",
   "choices Archetype Circle of Wildfire": "Aurora has a choice for a summoned spirit with one option",
   "choices Feat Planar Wanderer": IN_PLAY,
   "numbers Archetype Oath of Glory": "only the check's holder, which has no species and so no speed to raise; real sheets agree",

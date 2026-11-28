@@ -512,7 +512,7 @@ const sentences = (text: string) =>
       s
         .trim()
         .replace(
-          /^(?:when you (?:join|choose|adopt|select|reach)\b[^,]*,|(?:at|by|beginning at|starting at|starting when you\b[^,]*at) \d+\w* level,)\s*/i,
+          /^(?:when (?:you|the \w+) (?:joins?|chooses?|adopts?|selects?|reach(?:es)?)\b[^,]*,|(?:at|by|beginning at|starting at|starting when you\b[^,]*at) \d+\w* level,)\s*/i,
           "",
         ),
     );
@@ -538,7 +538,7 @@ export function halfProficiencyFromText(text: string): ARule[] {
 /** An armor class formula of the character's own: "your AC equals 10 + your Dexterity modifier + your Wisdom modifier". */
 export function armorClassFromText(id: string, name: string, text: string): ARule[] {
   const m = new RegExp(
-    `(?:your|you an?) (?:base )?(?:armor class|ac)(?: equals| is| of)(?: equal to)? (\\d+)(?: (?:\\+|plus) (?:your )?(${ABILITY})(?: modifier)?(?: (?:\\+|and|plus) (?:your )?(${ABILITY}))?)?`,
+    `(?:your|you an?) (?:base )?(?:armor class|ac)(?: equals| is| of| as)(?: equal to)? (\\d+)(?: (?:\\+|plus) (?:your )?(${ABILITY})(?: modifier)?(?: (?:\\+|and|plus) (?:your )?(${ABILITY}))?)?`,
     "i",
   ).exec(text);
   if (!m) return [];
@@ -565,6 +565,59 @@ export function savesFromText(text: string): ARule[] {
   return m ? [m[1], m[2]].filter(Boolean).map((a) => grant(a.toLowerCase())) : [];
 }
 
+/** A feature turned on in play: what its text gives from that sentence on lasts only while it is on. */
+const TURNED_ON = /\bas an? (?:bonus |magic )?action\b|\bfor (?:\d+|one|ten) (?:minute|hour|round)s?\b/i;
+/** The sentences before a feature is turned on ("As a bonus action...", "for 1 minute"): what they give is lasting. */
+const lastingSentences = (text: string): string[] => {
+  const all = sentences(text);
+  const at = all.findIndex((x) => TURNED_ON.test(x));
+  return at < 0 ? all : all.slice(0, at);
+};
+
+/** A bonus to passive scores: "a +5 bonus to your passive Wisdom (Perception) and passive Intelligence (Investigation) scores". */
+export function passiveFromText(text: string): ARule[] {
+  const out: ARule[] = [];
+  for (const s of lastingSentences(text)) {
+    const m = /\+(\d+) bonus to your passive ([^.]+?) scores?\b/i.exec(s);
+    if (!m || CONDITIONAL.test(s)) continue;
+    for (const skill of SKILL_NAMES) if (new RegExp(`\\(${skill}\\)`, "i").test(m[2])) out.push(stat(`${skill}:passive`, m[1]));
+  }
+  return out.sort((a, b) => m2(a) - m2(b));
+  function m2(r: ARule) {
+    return text.toLowerCase().indexOf(`(${(r as { name: string }).name.split(":")[0]})`);
+  }
+}
+
+/**
+ * Senses a feature gives for good: "You have darkvision out to a range of 300 feet" (Twilight Domain), "you gain
+ * blindsight out to 10 feet". `more`: "If you already have darkvision, its range increases by 30 feet". Not one that
+ * holds while something is on (Mortal Bulwark's truesight for a minute, a sense while raging).
+ */
+export function sensesFromText(text: string): { senses: { kind: string; range: number }[]; more: number } {
+  const senses: { kind: string; range: number }[] = [];
+  // One benefit among several to choose from is the choice's, not everyone's: the Diviner's Third Eye ("choose one of
+  // the following benefits... Darkvision. You gain darkvision out to a range of 60 feet"), Aspect of the Wilds' Owl.
+  if (/\b(?:one|two) of the following\b/i.test(text)) return { senses, more: 0 };
+  for (const s of lastingSentences(text)) {
+    if (CONDITIONAL.test(s)) continue;
+    const m =
+      /\byou (?:also )?(?:have|gain) (darkvision|blindsight|truesight|tremorsense)(?: out to| with| within| to)?(?: a (?:range|radius) of)? (\d+) feet/i.exec(
+        s,
+      );
+    if (m) senses.push({ kind: m[1].toLowerCase(), range: Number(m[2]) });
+  }
+  const more = /\bif you already have darkvision\b[^.]*?\brange increases by (\d+) feet/i.exec(text);
+  return { senses, more: senses.length && more ? Number(more[1]) : 0 };
+}
+
+/** Hit points for each level of a class: "your hit point maximum increases by 1 per mystic level". */
+export function hitPointsFromText(text: string): ARule[] {
+  const m = /\byour hit point maximum increases by 1 (?:per|for each|for every) (?:(\w+) )?level\b/i.exec(text);
+  if (!m) return [];
+  const cls = (m[1] ?? "").toLowerCase();
+  return [stat("hp", !cls || cls === "character" ? "level" : `level:${cls}`)];
+}
+
 /** A lasting bonus to speed, and a speed of another kind "equal to your speed". */
 export function speedFromText(text: string): ARule[] {
   const out: ARule[] = [];
@@ -573,8 +626,9 @@ export function speedFromText(text: string): ARule[] {
     out.push({ kind: "grant", type: "Grants", id: "ID_INTERNAL_GRANT_ARMOR_IGNORE_STRENGTH_REQUIREMENT" } as ARule);
   // A benefit of something the character turns on ("as a Bonus Action... for 10 minutes... your Speed increases") lasts
   // only while it does, however its own sentence reads.
-  if (/\bas an? (?:bonus |magic )?action\b|\bfor (?:\d+|one|ten) (?:minute|hour|round)s?\b/i.test(text)) return out;
-  for (const s of sentences(text)) {
+  // What the text says before that point is the feature's own (the Storm Sorcerer's Wind Soul: "You also gain a magical
+  // flying speed of 60 feet. As an action, you can reduce your flying speed..."); the whole feature was left unread.
+  for (const s of lastingSentences(text)) {
     const up =
       /your (?:walking )?speed increases by (\d+) feet(?: while you (?:aren't|are not) wearing (heavy armor|armor)(?: or wielding a shield)?)?/i.exec(
         s,
@@ -605,6 +659,10 @@ export function speedFromText(text: string): ARule[] {
       burrowing: "burrow",
       burrow: "burrow",
     };
+    // A speed stated as a number: "You have a climbing speed of 25 feet", "a magical flying speed of 60 feet".
+    if (/\byou (?:also )?(?:gain|have)\b/i.test(s) && !CONDITIONAL.test(s))
+      for (const m of s.matchAll(/\b(climbing|swimming|flying|burrowing) speed of (\d+) feet/gi))
+        out.push(stat(`innate speed:${kinds[m[1].toLowerCase()]}`, m[2], { bonus: `speed ${kinds[m[1].toLowerCase()]}` }));
     for (const m of s.matchAll(
       /((?:climbing|climb|swimming|swim|flying|fly|burrowing|burrow) speed(?: and an? (?:climbing|climb|swimming|swim|flying|fly|burrowing|burrow) speed)?) equal to your (?:walking )?speed/gi,
     )) {
@@ -688,13 +746,18 @@ export function trainingsFromText(text: string): { armor: string[]; weapons: str
   const out = { armor: [] as string[], weapons: [] as string[], tools: [] as string[], skills: [] as string[] };
   // "if you don't already have it" is no condition on the gift (the Scout's Survivalist): it goes before the test.
   for (const s of sentences(text).map((x) =>
-    x.replace(/,?\s*if you (?:don't|do not) already have (?:it|them|this proficiency|that proficiency)\b/gi, ""),
+    x
+      .replace(/,?\s*if you (?:don't|do not) already have (?:it|them|this proficiency|that proficiency)\b/gi, "")
+      .replace(/\bhe or she\b/gi, "they"),
   )) {
     if (/\bor\b|your choice|\b(?:one|two|three) (?:type|kind|skill|tool)/i.test(s) || CONDITIONAL.test(s)) continue;
     // "You gain a Disguise Kit and a Poisoner's Kit, and you have proficiency with them."
     const them = /\byou gain ([^.]+?),? and you have proficiency with them/i.exec(s);
-    const w = them ?? (/\byou\b/i.test(s) ? /\b(?:proficiency|training) with ([^.]+)/i.exec(s) : null);
-    if (w && /\byou (?:also )?(?:gain|have)\b/i.test(s))
+    // "You are proficient with improvised weapons" (the 2014 Tavern Brawler); "he or she gains proficiency with martial
+    // weapons" (the Death Domain, written about "the cleric").
+    const are = /\byou are proficient with ([^.]+)/i.exec(s);
+    const w = them ?? are ?? (/\b(?:you|he or she|they)\b/i.test(s) ? /\b(?:proficiency|training) with ([^.]+)/i.exec(s) : null);
+    if (w && (are || /\b(?:you|he or she|they) (?:also )?(?:gains?|have|has)\b/i.test(s)))
       for (const part of w[1]
         .replace(/\btraining with\b/gi, "and")
         .split(/,|\band\b/)
@@ -708,7 +771,7 @@ export function trainingsFromText(text: string): { armor: string[]; weapons: str
         const armor = /^(light|medium|heavy) armor$/.exec(part);
         if (armor) out.armor.push(armor[1]);
         else if (/^shields?$/.test(part)) out.armor.push("shield");
-        else if (/^(simple|martial) weapons$/.test(part)) out.weapons.push(part.split(" ")[0]);
+        else if (/^(simple|martial|improvised) weapons$/.test(part)) out.weapons.push(part.split(" ")[0]);
         else if (/(?:kit|tools|supplies|set|utensils)$/.test(part)) out.tools.push(part);
       }
     const k = /\byou (?:also )?(?:gain|have) proficiency in (?:the )?([^.]+?) skills?\b/i.exec(s);
@@ -744,6 +807,8 @@ export function applyTextStats(
     armor(kind: string): string;
     skill(name: string): string;
     language(name: string): string;
+    /** The Vision element of a sense at a range, made if it is not there. */
+    sense(kind: string, range: number): string;
   },
 ): number {
   let n = 0;
@@ -786,9 +851,22 @@ export function applyTextStats(
         ),
       ),
       ...read("initiative bonuses", initiativeFromText(text)),
+      ...read("bonuses to passive scores", passiveFromText(text)),
+      ...read("hit points for each level", hitPointsFromText(text)),
       ...read("bonuses to checks", checkBonusFromText(text)),
       ...read("score maximums and other limits", limitsFromText(text)),
     ];
+    // A sense, unless the data gave the feature one already. Not a species' trait: 5e.tools states a species' senses
+    // in its data, on the species itself, and the trait only describes them.
+    if (el.type !== "Racial Trait" && !el.rules.some((r) => r.kind === "grant" && r.type === "Vision")) {
+      const seen = sensesFromText(text);
+      add.push(
+        ...read("senses", [
+          ...seen.senses.map((x) => ({ kind: "grant", type: "Vision", id: ids.sense(x.kind, x.range) }) as ARule),
+          ...(seen.more ? [stat("darkvision:range", String(seen.more), { bonus: "darkvision range" })] : []),
+        ]),
+      );
+    }
     const train = trainingsFromText(text);
     const asGrants = (type: string, found: (string | undefined)[]) =>
       found.filter((id): id is string => !!id).map((id) => ({ kind: "grant", type, id }) as ARule);

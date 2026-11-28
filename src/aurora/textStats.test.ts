@@ -12,6 +12,9 @@ import {
   checkBonusFromText,
   languagesFromText,
   limitsFromText,
+  hitPointsFromText,
+  passiveFromText,
+  sensesFromText,
   savesFromText,
   speedFromText,
   trainingsFromText,
@@ -356,5 +359,73 @@ describe("a bonus to an ability's checks equal to another's modifier", () => {
       "Whenever you make a Charisma (Persuasion) check, you gain a bonus to the check equal to your Wisdom modifier.",
     );
     expect(rules).toEqual([expect.objectContaining({ name: "persuasion:misc", value: "wisdom:modifier" })]);
+  });
+
+  // Wordings the app read only through Aurora's twin while Aurora was loaded (found 2026-11-28 by building a
+  // character for each of the 289 features that borrow, on 5e.tools alone and with Aurora).
+  it("reads the wordings that reached a sheet only with Aurora loaded", () => {
+    // Dragon Hide: "you can calculate your AC as 13 + your Dexterity modifier".
+    const hide = armorClassFromText(
+      "ID_DH",
+      "Dragon Hide",
+      "While you aren't wearing armor, you can calculate your AC as 13 + your Dexterity modifier. You can use a shield and still gain this benefit.",
+    );
+    expect(hide).toContainEqual(expect.objectContaining({ value: "13", bonus: "base" }));
+    expect(hide).toContainEqual(expect.objectContaining({ name: "ac:calculation", equipped: "[armor:none]" }));
+    // Observant (2014).
+    expect(
+      passiveFromText("You have a +5 bonus to your passive Wisdom (Perception) and passive Intelligence (Investigation) scores."),
+    ).toEqual([
+      expect.objectContaining({ name: "perception:passive", value: "5" }),
+      expect.objectContaining({ name: "investigation:passive", value: "5" }),
+    ]);
+    // Senses a feature gives for good.
+    expect(sensesFromText("You can see through the deepest gloom. You have darkvision out to a range of 300 feet.")).toEqual({
+      senses: [{ kind: "darkvision", range: 300 }],
+      more: 0,
+    });
+    expect(sensesFromText("Starting at 1st level, you have darkvision with a range of 120 feet.").senses).toEqual([
+      { kind: "darkvision", range: 120 },
+    ]);
+    expect(
+      sensesFromText(
+        "At 3rd level, you gain darkvision out to a range of 60 feet. If you already have darkvision from your race, its range increases by 30 feet.",
+      ),
+    ).toEqual({
+      senses: [{ kind: "darkvision", range: 60 }],
+      more: 30,
+    });
+    expect(sensesFromText("Your draconic spirit reaches its peak. You gain blindsight out to 10 feet.").senses).toEqual([
+      { kind: "blindsight", range: 10 },
+    ]);
+    // Not one that is turned on: Mortal Bulwark's truesight lasts a minute.
+    expect(
+      sensesFromText("As a bonus action, you gain the following benefits for 1 minute: You gain truesight with a range of 120 feet.")
+        .senses,
+    ).toEqual([]);
+    expect(sensesFromText("When you rage, you have darkvision out to a range of 60 feet.").senses).toEqual([]);
+    // Nor one benefit among several to choose from (the Diviner's Third Eye, Aspect of the Wilds' Owl).
+    expect(
+      sensesFromText("You gain one of the following options of your choice. Owl. You have Darkvision with a range of 60 feet.").senses,
+    ).toEqual([]);
+    // Speeds stated as a number, and only what comes before the feature is turned on.
+    expect(
+      speedFromText("You have a climbing speed of 25 feet. You can't use your climbing speed while you wear medium or heavy armor."),
+    ).toEqual([expect.objectContaining({ name: "innate speed:climb", value: "25" })]);
+    expect(
+      speedFromText(
+        "At 18th level, you gain immunity to lightning and thunder damage. You also gain a magical flying speed of 60 feet. As an action, you can reduce your flying speed to 30 feet for 1 hour.",
+      ),
+    ).toEqual([expect.objectContaining({ name: "innate speed:fly", value: "60" })]);
+    expect(speedFromText("As a bonus action, you gain a flying speed of 60 feet for 1 minute.")).toEqual([]);
+    // Training in other words.
+    expect(trainingsFromText("You are proficient with improvised weapons.").weapons).toEqual(["improvised"]);
+    expect(
+      trainingsFromText("When the cleric chooses this domain at 1st level, he or she gains proficiency with martial weapons.").weapons,
+    ).toEqual(["martial"]);
+    // Hit points for each level of a class.
+    expect(hitPointsFromText("Starting at 1st level, your hit point maximum increases by 1 per mystic level.")).toEqual([
+      expect.objectContaining({ name: "hp", value: "level:mystic" }),
+    ]);
   });
 });

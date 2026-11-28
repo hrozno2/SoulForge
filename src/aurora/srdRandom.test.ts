@@ -54,6 +54,7 @@ describe("random characters on the bundled SRD rules", () => {
 
   it("a fresh seed", () => {
     const seed = (Date.now() % 2147483646) + 1;
-    expect(batch("srd", 60, seed).slice(0, 12)).toEqual([]);
+    // SRD_FRESH: many more of them (the nightly run, .github/workflows/nightly.yml).
+    expect(batch("srd", Number(process.env.SRD_FRESH) || 60, seed).slice(0, 12)).toEqual([]);
   }, 300_000);
 });

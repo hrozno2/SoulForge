@@ -1,5 +1,59 @@
 # Where we left off
 
+## 2026-11-28, after the release: Chris's list for the day
+
+Chris: fix the save path, then "keep going with the plan until the app is fully ready"; his numbered answers:
+portraits step two, the changing characters listed for his notes, card windows, rules tests until the engine works
+out every item, feature and spell on its own, the audit's tooling, three Aurora-free checks today. Done so far, each
+committed with gates green unless said:
+
+- Portraits, step two (1a15fdc): a save writes the picture to the `portraits` store and the record without it.
+- Imports from the computer are read whatever their size (cdc24c5); the 25-file rule is gone. Index links stay
+  unread; the release still offers no import of Aurora's element files (D7).
+- CI (19a50ca): third-party actions pinned to commits, `npm audit --omit=dev`, Dependabot monthly, the desktop
+  self-test required. Nightly larger run: .github/workflows/nightly.yml (opens an issue on a failure).
+- D6, the move (06d7079, 750d717): 15 saved characters still changed (not 22; none are Chris's own). Nine were
+  faults, fixed, each named in src/engine/moveCases.test.ts with a copy in fixtures/move. Two are 5e.tools being
+  right (Mark of Healing's spells). Four were Chris's call, and his answer is the rule from now on: the move asks,
+  it never decides. Built as move decisions on the character (kinds "drop" and "open", shown on Build):
+  one language too many, the player says which goes; a pick with no 5e.tools version leaves its place open with the
+  choice's options to pick from. The migrate tier's own gate (RULES_TIER=migrate) fails on its count of
+  "unavailable" (37, was 31): its sample moves with the runs folder, as the saved-sheets gate's did; not fixed yet.
+- 5e.tools content, found through the move: the Armorer's armor model is a choice (namedOptionGroups in
+  fivetools.ts); subclass features referenced inside a list were never made; Circle Forms' armor class held out of
+  the form too.
+- Card windows (C6.3): nothing to build; all six behaviours have end-to-end tests (floating.spec.ts, paths.spec.ts).
+- Every borrowed mechanic, one by one: src/engine/parityEach.test.ts (RULES_TIER=parity-each, in the gates and the
+  full check). The release reads no Aurora, so what a 5e.tools feature takes from its Aurora twin is missing there
+  unless 5e.tools' own data or text gives it. 73 of 289 features gave another sheet; a dozen wordings were unread
+  (an AC "calculated as", passive scores, darkvision "out to a range of", stated climbing and flying speeds, "you
+  are proficient with", "he or she gains proficiency", hit points per class level). Now 0 differ; six kinds of
+  difference are Aurora's own and named in the test. It only covers features that have an Aurora twin.
+
+State at the pause (Chris, about 11:45: "keep model limit quotes in mind, lets pause soon"; the 5-hour limit was at
+77%, the week at 42%):
+- Aurora-free checks: today's first was clean on b90aaf6 (3 in a row). The second was started about 11:35 in
+  ../charforge-board on 750d717 (log: the session's scratchpad, noaurora-4.log; the run folder under
+  ~/.soulforge-test/runs/full-no-aurora-2026-11-28T10-3*). Read its result, add the row to docs/NO-AURORA-RUNS.md,
+  then run the third. Chris asked for all three today.
+- The commit with the text readers went in after a gates run whose only failure was the parity audit (three
+  subclasses with a new darkvision: two false positives fixed in sensesFromText, the Shadow Sorcerer judged in
+  parity.test.ts); after that fix I reran the parity, parity-each and srd-bundle tiers, types, lint, format and the
+  unit tests, not the whole gates and not the end-to-end tests. Run `npm run gates` first thing.
+- The nightly workflow has not run yet: its sizes are a guess (SRD_FRESH 300 inside a 300 s test limit). Start it
+  once by hand (Actions, Nightly, Run workflow) and size it from that.
+- The new guide is drafted but NOT in the source: docs/drafts/guide.ts.txt and GuideCoach.tsx.txt (kept in the repository so they are not lost if the
+  scratchpad is cleared; the design is the paragraph below and is quick to write again). To put it in: replace
+  src/aurora/guide.ts and src/ui/GuideCoach.tsx; in src/ui/guideMarks.ts replace the marks and the free-rules filter
+  with one scope (a set of ids the coach sets: setGuideScope); take "Guide's pick" out of Browse.tsx and reword its
+  count line; rewrite src/aurora/guide.test.ts and e2e/guide.spec.ts; reword the tutorial's offer (Tutorial.tsx
+  147, App.tsx 476: no "questions" or "recommendations"); styles for .guide-options in src/ui/styles.css.
+
+Still to do from that list: the guide as Chris wants it (no quiz; class, species and background picked from short
+descriptions as D&D Beyond does; the latest Player's Handbook only, a button for all options and one back to fewer;
+official Wizards sources only); the rules check's own gaps (weapon damage, ability scores recomputed); the Aurora-free
+checks (the first of today's three started 10:00 on b90aaf6 in ../charforge-board).
+
 ## 2026-11-28: v0.28.0 released
 
 Tag v0.28.0 on f47f7d4, cut on the fourth attempt (Saturday, standard rules tier, seed 556837234; 708 unit tests,

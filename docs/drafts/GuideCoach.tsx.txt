@@ -1,0 +1,187 @@
+/**
+ * The guided first character (Chris 2026-11-28, src/aurora/guide.ts), part of the tutorial: a panel beside the real
+ * Build board, as D&D Beyond does it. The player picks a class, a species and a background from a short list, each
+ * with a line that says what it is; then the scores, then what the cards still ask. No questions and no
+ * recommendations. The lists hold the latest Player's Handbook; "Show all options" adds every other official book,
+ * and "Show fewer options" goes back. Only official Wizards of the Coast content is ever offered here.
+ */
+import { setGuideScope } from "./guideMarks";
+import { useEffect, useMemo, useState } from "react";
+import { BookIndex } from "../aurora/books";
+import type { Character } from "../aurora/character";
+import { stillToChoose, type Resolved } from "../aurora/engine";
+import { guideLine, guideOptions, mainScore, recommendedScores, type GuideKind } from "../aurora/guide";
+import type { AElement } from "../aurora/types";
+
+const STEPS = ["class", "species", "background", "scores", "choices", "done"] as const;
+type Step = (typeof STEPS)[number];
+
+export function GuideCoach({
+  r,
+  set,
+  onGo,
+  onClose,
+}: {
+  r: Resolved;
+  set: (fn: (c: Character) => Character) => void;
+  onGo: (tab: string) => void;
+  onClose: () => void;
+}) {
+  const ch = r.character;
+  const [all, setAll] = useState(false);
+  const [scores, setScores] = useState(false);
+  const books = useMemo(() => new BookIndex(r.reg), [r.reg]);
+  const options = useMemo(
+    () => ({
+      Class: guideOptions(r.reg, books, "Class", all),
+      Race: guideOptions(r.reg, books, "Race", all),
+      Background: guideOptions(r.reg, books, "Background", all),
+    }),
+    [r.reg, books, all],
+  );
+  const cls = ch.classes[0] ? r.reg.get(ch.classes[0].classId) : undefined;
+  const species = ch.race ? r.reg.get(ch.race) : undefined;
+  const background = ch.background ? r.reg.get(ch.background) : undefined;
+  const open = r.slots.filter((s) => stillToChoose(s, r)).length;
+  const step: Step = !cls ? "class" : !species ? "species" : !background ? "background" : !scores ? "scores" : open ? "choices" : "done";
+  // While the guide is open the board's own lists of classes, species and backgrounds hold the same options.
+  useEffect(() => {
+    setGuideScope(new Set([...options.Class, ...options.Race, ...options.Background].map((e) => e.id)));
+    return () => setGuideScope(null);
+  }, [options]);
+  const take = (kind: GuideKind, el: AElement) =>
+    set((c) =>
+      kind === "Class" ? { ...c, classes: [{ classId: el.id, level: 1 }] } : kind === "Race" ? { ...c, race: el.id } : { ...c, background: el.id },
+    );
+  const list = (kind: GuideKind, label: string) => (
+    <>
+      <ul className="guide-options" aria-label={label}>
+        {options[kind].map((el) => (
+          <li key={el.id}>
+            <button className="guide-option" onClick={() => take(kind, el)}>
+              <b>{el.name}</b>
+              {all && <small>{el.source}</small>}
+              <span>{guideLine(kind, el)}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <button className="linkish" onClick={() => setAll(!all)}>
+        {all ? "Show fewer options" : "Show all options"}
+      </button>
+      <p className="muted">
+        {all ? "Every official book that is loaded." : "The latest Player's Handbook."} You can change your mind later on the board.
+      </p>
+    </>
+  );
+  // What is picked so far, each with a way back.
+  const picked: [string, AElement | undefined, (c: Character) => Character][] = [
+    ["class", cls, (c) => ({ ...c, classes: [] })],
+    ["species", species, (c) => ({ ...c, race: undefined })],
+    ["background", background, (c) => ({ ...c, background: undefined })],
+  ];
+  const main = mainScore(cls?.name);
+  return (
+    <aside className="guide-coach" role="region" aria-label="Guide: your first character">
+      <header>
+        <b>Your first character</b>
+        <small>
+          Step {STEPS.indexOf(step) + 1} of {STEPS.length}
+        </small>
+        <button
+          className="modal-close"
+          onClick={onClose}
+          aria-label="Close the guide"
+          title="Close the guide: your character stays as it is"
+        >
+          ×
+        </button>
+      </header>
+      {picked.some(([, el]) => el) && (
+        <p className="guide-picked" aria-label="Picked so far">
+          {picked
+            .filter(([, el]) => el)
+            .map(([what, el, undo]) => (
+              <button key={what} className="pill" title={`Pick another ${what}`} onClick={() => (set(undo), setScores(false))}>
+                {el!.name} ×
+              </button>
+            ))}
+        </p>
+      )}
+      {step === "class" && (
+        <>
+          <p>
+            <b>Pick a class.</b> It is what your character does.
+          </p>
+          {list("Class", "Classes")}
+        </>
+      )}
+      {step === "species" && (
+        <>
+          <p>
+            <b>Pick a species.</b> It is who your people are.
+          </p>
+          {list("Race", "Species")}
+        </>
+      )}
+      {step === "background" && (
+        <>
+          <p>
+            <b>Pick a background.</b> It is what you did before adventuring, and it raises your ability scores.
+          </p>
+          {list("Background", "Backgrounds")}
+        </>
+      )}
+      {step === "scores" && (
+        <>
+          <p>
+            <b>Set your ability scores.</b> They are the six numbers everything else builds on.{" "}
+            {cls && main ? `A ${cls.name} wants ${main} highest.` : ""}
+          </p>
+          <div className="guide-answers">
+            {cls && recommendedScores(cls.name) && (
+              <button
+                className="primary"
+                onClick={() => {
+                  const s = recommendedScores(cls.name);
+                  if (s) set((c) => ({ ...c, abilityMethod: "standard", abilityBase: s }));
+                  setScores(true);
+                }}
+              >
+                Use the usual spread for a {cls.name}
+              </button>
+            )}
+            <button onClick={() => setScores(true)}>I will set them myself</button>
+          </div>
+          <p className="muted">You can change them any time in the scores panel on the right.</p>
+        </>
+      )}
+      {step === "choices" && (
+        <>
+          <p>
+            <b>Finish your cards.</b> Your cards still ask {open} {open === 1 ? "thing" : "things"}: skills, languages, a weapon to master
+            and the like.
+          </p>
+          <p className="muted">
+            Click a card with a number on it to open it, and choose what it asks. The list in each choice puts the usual picks first.
+          </p>
+        </>
+      )}
+      {step === "done" && (
+        <>
+          <p>
+            <b>Your character is ready.</b> Everything it needs is chosen, and the rules check on Build tells you if anything is off.
+          </p>
+          <div className="guide-answers">
+            <button onClick={() => onGo("sheet")}>See the sheet</button>
+            <button onClick={() => onGo("play")}>Play</button>
+            <button className="primary" onClick={onClose}>
+              Done
+            </button>
+          </div>
+          <p className="muted">Gear comes from the shop on the backpack card; the starting gear is there too.</p>
+        </>
+      )}
+    </aside>
+  );
+}

@@ -2,6 +2,51 @@
 
 What changed in each release. Newest first.
 
+## v0.28.0 (2026-11-28)
+
+- No-Aurora full check: clean on 5982476
+- Resume notes: second release attempt stopped by a closed lid
+- Resume notes: v0.28.0 not out yet, why, and how to cut it
+- Tests: a character put into storage is set as the reloaded page starts, not under the running app
+- README for the Aurora-free release: the free rules built in, 5e.tools data, homebrew; Aurora content and the move explained
+- Audit E2 closed: every text reader counted; one attunement reader; data decides attunement and repeatable feats on 5e.tools content
+- Docs: third Aurora-free full check passed on 78a6491, 1 clean in a row
+- Multiclass: a known class's caster share counts once, table-sized uses belong to their feature; guide lists show the free rules; stable saved-sheets sample
+- The import report lists what came across; resume notes
+- e2e: the random-character helper reopens a level prompt lost while the page settles
+- Casting lines: a class feature's spells on the class's line, a species' own ability kept
+- Portraits store, step one: it exists and is read (audit E6)
+- Audit E2: a gate on where data and text disagree; minimum of +1 read
+- Fuzz limits count work done, not clock time; the full check retries a stalled test
+- No-Aurora full check: FAILED on 8c7f308
+- A sense is listed once, at its longest range; resume notes
+- The guide marks its recommendations in the lists and starts from the menu
+- Hardening: a door for content, and fuzz tests for content and importers
+- D7: the release build reads no Aurora content
+- Aurora sources told by family; e2e on two builds
+- Wording pass with a guard test; the tabs layout's dead code removed
+- Rules check in one panel: to fix, your call, accepted
+- What this table uses: the content switches beside every list
+- Journal as the one home for notes
+- Resume notes: board-only merged; the dead code left to remove
+- The board is the only Build layout; the tests that drove the tabs layout run on the board
+- Resume notes: board-only is on a branch, with what is left to port
+- WIP: board only (the tabs layout unreachable); six end-to-end tests still to port
+- Hardening: a damaged character never breaks the engine
+- Resume notes: Chris's decisions on the simplifications and D7
+- Resume notes: the standing order and the order of work
+- A guided first character, offered by the tutorial to someone new to D&D
+- Resume notes: today's work and what is left
+- Make it legal: the rules check's findings worked through, the player's calls, table rulings, the journal
+- The shop is the one place items come from: a keeper, buy or add free, shelves by kind
+- Unspent point buy points get a notice; a list's filters survive a restart
+- Plan: a guided first character as part of the tutorial
+- Plan for the requests of 2026-11-23: point buy warning, make it legal, the shop, kept filters, simplifications
+- The full check has an Aurora-free mode (--no-aurora, stage D5); Guiding Hand stays text
+- Resume notes: everything that is left, written at the usage edge
+- A list's filters stay until the player clears them
+- Notes: v0.27.0 released
+
 ## v0.27.0 (2026-11-20)
 
 - The origin options in the bundled SRD 5.1 are filed as Soul Forge's own, with a text of their own
